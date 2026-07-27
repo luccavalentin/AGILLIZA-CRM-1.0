@@ -18,6 +18,9 @@ import {
   ChevronRight,
   Download,
   Trash2,
+  User as UserIcon,
+  FileText,
+  Calculator,
 } from "lucide-react";
 import { toast } from "sonner";
 import { baixarDemandasPDF } from "@/lib/operacional/export-pdf";
@@ -29,7 +32,7 @@ import {
 } from "@/lib/operacional/demandas.functions";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
-import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
+import { PriorityChip, OpAvatar, OpStat } from "@/components/operacional/ui";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -243,10 +246,10 @@ function Pagina() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="Ativas" valor={kpis.abertas} tone="primary" icon={Inbox} />
-        <Kpi label="Aguardando" valor={kpis.aguardando} tone="warning" icon={Hourglass} />
-        <Kpi label="Vencidas" valor={kpis.vencidas} tone="destructive" icon={Flame} />
-        <Kpi label="Não lidas" valor={kpis.naoLidas} tone="info" icon={Bell} />
+        <OpStat label="Ativas" value={kpis.abertas} icon={<Inbox className="h-4 w-4" />} accent="var(--primary)" />
+        <OpStat label="Aguardando" value={kpis.aguardando} icon={<Hourglass className="h-4 w-4" />} accent="var(--warning)" />
+        <OpStat label="Vencidas" value={kpis.vencidas} icon={<Flame className="h-4 w-4" />} accent="var(--destructive)" alerta={kpis.vencidas > 0} />
+        <OpStat label="Não lidas" value={kpis.naoLidas} icon={<Bell className="h-4 w-4" />} accent="var(--info)" />
       </div>
 
       {/* Filtros */}
@@ -390,9 +393,24 @@ function Pagina() {
                   {d.titulo}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  {d.nome_cliente && <span className="truncate">👤 {d.nome_cliente}</span>}
-                  {d.numero_proposta && <span>📄 {d.numero_proposta}</span>}
-                  {d.numero_simulacao && <span>🧮 {d.numero_simulacao}</span>}
+                  {d.nome_cliente && (
+                    <span className="inline-flex items-center gap-1.5 truncate">
+                      <UserIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <span className="truncate">{d.nome_cliente}</span>
+                    </span>
+                  )}
+                  {d.numero_proposta && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <span className="font-mono text-[11px]">{d.numero_proposta}</span>
+                    </span>
+                  )}
+                  {d.numero_simulacao && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Calculator className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <span className="font-mono text-[11px]">{d.numero_simulacao}</span>
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -476,64 +494,3 @@ function tipoLabel(slug: string): string {
     .join(" ");
 }
 
-function Kpi({
-  label,
-  valor,
-  tone,
-  icon: Icon,
-}: {
-  label: string;
-  valor: number;
-  tone: "primary" | "warning" | "destructive" | "info";
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  const toneMap = {
-    primary: {
-      text: "text-primary",
-      bg: "bg-primary/10",
-      border: "border-primary/20",
-    },
-    warning: {
-      text: "text-warning",
-      bg: "bg-warning/10",
-      border: "border-warning/20",
-    },
-    destructive: {
-      text: "text-destructive",
-      bg: "bg-destructive/10",
-      border: "border-destructive/20",
-    },
-    info: {
-      text: "text-info",
-      bg: "bg-info/10",
-      border: "border-info/20",
-    },
-  } as const;
-  const t = toneMap[tone];
-  return (
-    <div
-      className={cn(
-        "group relative flex items-center gap-3 overflow-hidden rounded-2xl border bg-card px-4 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
-        t.border,
-      )}
-    >
-      <div
-        className={cn(
-          "grid size-10 shrink-0 place-items-center rounded-xl",
-          t.bg,
-          t.text,
-        )}
-      >
-        <Icon className="h-5 w-5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {label}
-        </p>
-        <p className={cn("text-2xl font-bold tabular-nums leading-none mt-1", t.text)}>
-          {valor}
-        </p>
-      </div>
-    </div>
-  );
-}
