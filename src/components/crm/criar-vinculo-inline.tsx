@@ -52,6 +52,7 @@ export function CriarVinculoInline({
   const [email, setEmail] = useState("");
   const [comLogin, setComLogin] = useState(false);
   const [nivelId, setNivelId] = useState("");
+  const [credenciais, setCredenciais] = useState<{ email: string; senha: string; idCriado: string } | null>(null);
 
   const { data: niveis } = useQuery({
     queryKey: ["niveis-acesso"],
