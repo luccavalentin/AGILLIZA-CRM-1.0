@@ -143,7 +143,7 @@ function Pagina() {
   const modeloConhecido = modelosDisponiveis.some((m) => m.value === modelo);
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
       <AdminHero
         icon={<Cpu className="h-5 w-5" />}
         titulo="APIs de IA"
