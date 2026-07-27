@@ -143,7 +143,7 @@ function Pagina() {
   const modeloConhecido = modelosDisponiveis.some((m) => m.value === modelo);
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
       <AdminHero
         icon={<Cpu className="h-5 w-5" />}
         titulo="APIs de IA"
@@ -179,140 +179,147 @@ function Pagina() {
         </div>
       )}
 
-      <div className="space-y-5 rounded-lg border border-border p-4 md:p-6">
-        <div className="flex items-center justify-between rounded-md border border-border p-3">
-          <Label htmlFor="ativo">Integração de IA ativa</Label>
-          <Switch id="ativo" checked={ativo} onCheckedChange={setAtivo} />
-        </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="space-y-5 rounded-lg border border-border p-4 md:p-6">
+          <div className="flex items-center justify-between rounded-md border border-border p-3">
+            <Label htmlFor="ativo">Integração de IA ativa</Label>
+            <Switch id="ativo" checked={ativo} onCheckedChange={setAtivo} />
+          </div>
 
-        <div className="space-y-1.5">
-          <Label>Provedor de IA</Label>
-          <Select value={provedor} onValueChange={(v) => aplicarProvedor(v as ProvedorIA)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gemini">Google Gemini</SelectItem>
-              <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            Ao trocar o provedor, o modelo e o endpoint sugeridos são preenchidos automaticamente.
-          </p>
-        </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Provedor de IA</Label>
+              <Select value={provedor} onValueChange={(v) => aplicarProvedor(v as ProvedorIA)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gemini">Google Gemini</SelectItem>
+                  <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Ao trocar o provedor, o modelo e o endpoint sugeridos são preenchidos automaticamente.
+              </p>
+            </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Nome de exibição</Label>
+              <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Modelo</Label>
+              <Select
+                value={modeloConhecido ? modelo : "__custom__"}
+                onValueChange={(v) => {
+                  if (v === "__custom__") return;
+                  setModelo(v);
+                  setTeste(null);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o modelo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modelosDisponiveis.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                  {!modeloConhecido && (
+                    <SelectItem value="__custom__">Personalizado: {modelo}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              <Input
+                value={modelo}
+                onChange={(e) => setModelo(e.target.value)}
+                placeholder="Ou digite um modelo específico"
+                className="mt-1 text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Base URL</Label>
+              <Input
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                placeholder={PRESETS_IA[provedor].base_url}
+              />
+              <p className="text-xs text-muted-foreground">
+                Endpoint do provedor. Deixe o padrão se não usar um gateway próprio.
+              </p>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
-            <Label>Modelo</Label>
-            <Select
-              value={modeloConhecido ? modelo : "__custom__"}
-              onValueChange={(v) => {
-                if (v === "__custom__") return;
-                setModelo(v);
-                setTeste(null);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o modelo" />
-              </SelectTrigger>
-              <SelectContent>
-                {modelosDisponiveis.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-                {!modeloConhecido && (
-                  <SelectItem value="__custom__">Personalizado: {modelo}</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            <Label className="flex items-center gap-1.5">
+              <KeyRound className="size-4" /> Chave da API
+            </Label>
             <Input
-              value={modelo}
-              onChange={(e) => setModelo(e.target.value)}
-              placeholder="Ou digite um modelo específico"
-              className="mt-1 text-xs"
+              type="password"
+              autoComplete="off"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={
+                hasApiKey ? "•••••••••••••••• (chave já cadastrada — deixe em branco para manter)" : "Cole aqui a chave da API"
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              A chave é armazenada apenas no servidor e nunca é exibida novamente. Deixe em branco para manter a chave atual.
+            </p>
+          </div>
+
+          <div className="flex flex-col justify-end gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              disabled={testar.isPending || (!apiKey.trim() && !hasApiKey)}
+              onClick={() => testar.mutate()}
+            >
+              <PlugZap className="mr-2 h-4 w-4" />
+              {testar.isPending ? "Testando..." : "Testar conexão"}
+            </Button>
+            <Button disabled={salvar.isPending} onClick={() => salvar.mutate()}>
+              {salvar.isPending ? "Salvando..." : "Salvar configuração"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-5 rounded-lg border border-border p-4 md:p-6">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Temperatura</Label>
+              <span className="text-sm tabular-nums text-muted-foreground">
+                {temperatura.toFixed(2)}
+              </span>
+            </div>
+            <Slider
+              min={0}
+              max={2}
+              step={0.05}
+              value={[temperatura]}
+              onValueChange={(v) => setTemperatura(v[0])}
+            />
+            <p className="text-xs text-muted-foreground">
+              Valores baixos deixam a extração mais precisa e previsível.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Prompt do Scan IA</Label>
+            <Textarea
+              rows={14}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              className="font-mono text-xs"
             />
           </div>
-
-          <div className="space-y-1.5">
-            <Label>Nome de exibição</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Base URL</Label>
-          <Input
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder={PRESETS_IA[provedor].base_url}
-          />
-          <p className="text-xs text-muted-foreground">
-            Endpoint do provedor. Deixe o padrão sugerido se não usar um gateway próprio.
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5">
-            <KeyRound className="size-4" /> Chave da API
-          </Label>
-          <Input
-            type="password"
-            autoComplete="off"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder={
-              hasApiKey ? "•••••••••••••••• (chave já cadastrada — deixe em branco para manter)" : "Cole aqui a chave da API"
-            }
-          />
-          <p className="text-xs text-muted-foreground">
-            A chave é armazenada apenas no servidor e nunca é exibida novamente. Deixe em branco para manter a chave atual.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label>Temperatura</Label>
-            <span className="text-sm tabular-nums text-muted-foreground">
-              {temperatura.toFixed(2)}
-            </span>
-          </div>
-          <Slider
-            min={0}
-            max={2}
-            step={0.05}
-            value={[temperatura]}
-            onValueChange={(v) => setTemperatura(v[0])}
-          />
-          <p className="text-xs text-muted-foreground">
-            Valores baixos deixam a extração mais precisa e previsível.
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Prompt do Scan IA</Label>
-          <Textarea
-            rows={6}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="font-mono text-xs"
-          />
-        </div>
-
-        <div className="flex flex-col justify-end gap-2 sm:flex-row">
-          <Button
-            variant="outline"
-            disabled={testar.isPending || (!apiKey.trim() && !hasApiKey)}
-            onClick={() => testar.mutate()}
-          >
-            <PlugZap className="mr-2 h-4 w-4" />
-            {testar.isPending ? "Testando..." : "Testar conexão"}
-          </Button>
-          <Button disabled={salvar.isPending} onClick={() => salvar.mutate()}>
-            {salvar.isPending ? "Salvando..." : "Salvar configuração"}
-          </Button>
         </div>
       </div>
+
     </div>
   );
 }
