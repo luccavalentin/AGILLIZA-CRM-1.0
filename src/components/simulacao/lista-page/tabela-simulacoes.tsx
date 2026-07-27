@@ -80,87 +80,98 @@ export function TabelaSimulacoes({
               </TableCell>
             </TableRow>
           )}
-          {itens.map((s) => (
-            <TableRow
-              key={s.id}
-              className="group cursor-pointer border-border/50 transition-colors odd:bg-muted/[0.18] hover:bg-primary/[0.06]"
-              onClick={() => (verExcluidas ? undefined : handlers.onEditar(s.id))}
-            >
-              <TableCell className="py-3.5">
-                <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 font-mono text-[13px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
-                  {s.numero_simulacao}
-                </span>
-              </TableCell>
+          {itens.map((s) => {
+            const corBanco = corDoBanco(s.bancos?.[0]?.nome_banco);
+            return (
+              <TableRow
+                key={s.id}
+                style={
+                  {
+                    "--banco": corBanco,
+                    "--banco-tint": `${corBanco}12`,
+                    "--banco-ring": `${corBanco}40`,
+                  } as React.CSSProperties
+                }
+                className="group/row relative cursor-pointer border-border/50 transition-all duration-300 ease-out odd:bg-muted/[0.18] hover:z-10 hover:scale-[1.005] hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco),0_12px_28px_-8px_rgba(0,0,0,0.12)] group-hover/table:opacity-60 group-hover/table:blur-[0.3px] hover:opacity-100 hover:blur-0"
+                onClick={() => (verExcluidas ? undefined : handlers.onEditar(s.id))}
+              >
+                <TableCell className="relative py-3.5">
+                  <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-[var(--banco)] transition-transform duration-200 group-hover/row:scale-y-100" />
+                  <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 font-mono text-[13px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
+                    {s.numero_simulacao}
+                  </span>
+                </TableCell>
 
-              <TableCell className="py-3.5 font-medium text-foreground">
-                {s.nome_cliente ?? "—"}
-                {escopo === "todas" && s.nome_responsavel && (
-                  <span className="mt-0.5 flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
-                    <UserIcon className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{s.nome_responsavel}</span>
-                  </span>
-                )}
-                {verExcluidas && (
-                  <span className="mt-1 block text-[11px] font-normal text-destructive">
-                    Excluída por {s.nome_excluidor ?? "—"} · {formatDataHoraBR(s.deleted_at)}
-                    {s.deleted_motivo ? ` · ${s.deleted_motivo}` : ""}
-                  </span>
-                )}
-              </TableCell>
-              <TableCell className="py-3.5">
-                <ProdutoBadge produto={s.produto} />
-              </TableCell>
-              <TableCell className="py-3.5">
-                <BancosSimulados bancos={s.bancos} />
-              </TableCell>
-              <TableCell className="py-3.5 text-right font-semibold tabular-nums text-foreground">
-                {formatBRL(s.valor_imovel)}
-              </TableCell>
-              <TableCell className="py-3.5 text-right tabular-nums text-muted-foreground">
-                {s.prazo ? `${s.prazo} meses` : "—"}
-              </TableCell>
-              <TableCell>
-                <SimulacaoStatusBadge status={s.status} />
-              </TableCell>
-              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                {verExcluidas ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 rounded-lg"
-                    onClick={() => handlers.onRestaurar(s.id)}
-                  >
-                    <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
-                  </Button>
-                ) : (
-                  <div className="flex items-center justify-end gap-1">
+                <TableCell className="py-3.5 font-medium text-foreground">
+                  {s.nome_cliente ?? "—"}
+                  {escopo === "todas" && s.nome_responsavel && (
+                    <span className="mt-0.5 flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
+                      <UserIcon className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{s.nome_responsavel}</span>
+                    </span>
+                  )}
+                  {verExcluidas && (
+                    <span className="mt-1 block text-[11px] font-normal text-destructive">
+                      Excluída por {s.nome_excluidor ?? "—"} · {formatDataHoraBR(s.deleted_at)}
+                      {s.deleted_motivo ? ` · ${s.deleted_motivo}` : ""}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="py-3.5">
+                  <ProdutoBadge produto={s.produto} />
+                </TableCell>
+                <TableCell className="py-3.5">
+                  <BancosSimulados bancos={s.bancos} />
+                </TableCell>
+                <TableCell className="py-3.5 text-right font-semibold tabular-nums text-foreground">
+                  {formatBRL(s.valor_imovel)}
+                </TableCell>
+                <TableCell className="py-3.5 text-right tabular-nums text-muted-foreground">
+                  {s.prazo ? `${s.prazo} meses` : "—"}
+                </TableCell>
+                <TableCell>
+                  <SimulacaoStatusBadge status={s.status} />
+                </TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  {verExcluidas ? (
                     <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      title="Ver detalhes"
-                      aria-label="Ver detalhes da simulação"
-                      onClick={() => handlers.onVer(s.id)}
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-lg"
+                      onClick={() => handlers.onRestaurar(s.id)}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
                     </Button>
-                    <AcoesSimulacao
-                      onVisualizar={() => handlers.onVer(s.id)}
-                      onEditar={() => handlers.onEditar(s.id)}
-                      onBaixarComparativo={() => handlers.onBaixarComparativo(s.id)}
-                      onBaixarDetalhada={() => handlers.onBaixarDetalhada(s.id)}
-                      onDuplicar={() => handlers.onDuplicar(s.id)}
-                      onEnviarProposta={() =>
-                        handlers.onEnviarProposta(s.id, s.numero_simulacao)
-                      }
-                      onExcluir={() => handlers.onExcluir(s.id)}
-                      numero={s.numero_simulacao}
-                    />
-                  </div>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
+                  ) : (
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        title="Ver detalhes"
+                        aria-label="Ver detalhes da simulação"
+                        onClick={() => handlers.onVer(s.id)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <AcoesSimulacao
+                        onVisualizar={() => handlers.onVer(s.id)}
+                        onEditar={() => handlers.onEditar(s.id)}
+                        onBaixarComparativo={() => handlers.onBaixarComparativo(s.id)}
+                        onBaixarDetalhada={() => handlers.onBaixarDetalhada(s.id)}
+                        onDuplicar={() => handlers.onDuplicar(s.id)}
+                        onEnviarProposta={() =>
+                          handlers.onEnviarProposta(s.id, s.numero_simulacao)
+                        }
+                        onExcluir={() => handlers.onExcluir(s.id)}
+                        numero={s.numero_simulacao}
+                      />
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
