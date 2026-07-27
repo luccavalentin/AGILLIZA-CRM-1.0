@@ -53,7 +53,7 @@ export function TabelaSimulacoes({
           </TableRow>
         </TableHeader>
 
-        <TableBody>
+        <TableBody className="group/table">
           {isLoading &&
             Array.from({ length: 6 }).map((_, i) => (
               <TableRow key={`sk-${i}`} className="border-border/50">
