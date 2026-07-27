@@ -262,7 +262,7 @@ export function ReportFiltersBar({
           className="h-9 w-full"
         />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 sm:col-span-2 md:col-span-1 xl:col-span-2">
           <Input
             value={filtros.valorMin ?? ""}
             onChange={(e) => {
@@ -284,6 +284,7 @@ export function ReportFiltersBar({
             className="h-9 min-w-0 flex-1"
           />
         </div>
+
       </div>
 
       <div className="flex justify-end">
