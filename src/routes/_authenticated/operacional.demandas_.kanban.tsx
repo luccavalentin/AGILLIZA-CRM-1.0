@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, MoreHorizontal, Plus, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
