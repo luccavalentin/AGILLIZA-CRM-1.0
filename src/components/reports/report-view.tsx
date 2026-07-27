@@ -56,11 +56,14 @@ export function ReportView({
   codigo,
   comFiltroBanco,
   comFiltroStatus,
+  typeSelector,
 }: {
   codigo: string;
   comFiltroBanco?: boolean;
   comFiltroStatus?: boolean;
+  typeSelector?: import("react").ReactNode;
 }) {
+
   const search = useSearch({ strict: false }) as Record<string, unknown>;
   const navigate = useNavigate();
   const filtros = parseReportSearch(search);
