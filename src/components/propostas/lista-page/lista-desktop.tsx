@@ -105,7 +105,7 @@ export function ListaDesktop({
                       "--banco-ring": `${corBanco}59`,
                     } as React.CSSProperties
                   }
-                  className="group/row relative cursor-pointer transition-all duration-300 ease-out hover:z-10 hover:scale-[1.005] hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco),0_12px_28px_-8px_rgba(0,0,0,0.12)] group-hover/table:opacity-60 group-hover/table:hover:opacity-100 group-hover/table:hover:blur-0 [&:is(:where(.group\/table:hover)_&)]:blur-[0.3px]"
+                  className="group/row relative cursor-pointer transition-all duration-300 ease-out hover:z-10 hover:scale-[1.005] hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco),0_12px_28px_-8px_rgba(0,0,0,0.12)] group-hover/table:opacity-60 group-hover/table:blur-[0.3px] hover:opacity-100 hover:blur-0"
                   onClick={() =>
                     router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
                   }
