@@ -838,22 +838,31 @@ async function enviarPropostaImplInner({
 
       // No POST de inclusão a API pode devolver `retornoIntegracao` com uma
       // mensagem informativa (validação, aviso do banco) MESMO quando a
-      // proposta foi aceita e ganhou um `tipoSituacao` real (S/N/A/R).
-      // Pela documentação oficial só `tipoSituacao` ∈ {P,E} representa
-      // "erro ao enviar proposta". Fora esse caso a proposta CHEGOU ao
-      // banco e não deve ser classificada como "Erro no envio" — a
-      // mensagem fica preservada em `mensagem_banco` para consulta.
+      // proposta foi aceita e ganhou um `tipoSituacao` real (S/N/A/R) OU
+      // quando o banco já devolveu um protocolo/oportunidade.
+      //
+      // Regra oficial (swagger Homefin): só `tipoSituacao` ∈ {P,E} sem
+      // qualquer protocolo devolvido representa "erro ao enviar proposta".
+      // Se o banco devolveu numeroPropostaBanco/codigoPropostaBanco/
+      // codigoOportunidadeBanco, a proposta CHEGOU ao banco — não é erro
+      // de envio, mesmo com mensagem em `retornoIntegracao`. A mensagem
+      // é preservada em `mensagem_banco` apenas como observação.
       const situacaoTipoResp = String(resp?.tipoSituacao ?? "").toUpperCase().charAt(0);
       const erroBanco =
         extrairErroRetorno(resp?.retornoIntegracao, { codigoApenasComoErro: false }) ??
         extrairErroRetorno(resp?.descricaoRespostaBanco?.retornoIntegracao, {
           codigoApenasComoErro: false,
         });
+      const temProtocoloBanco = Boolean(
+        numeroPropostaBancoReal(resp) ?? referenciaIntegracaoBanco(resp),
+      );
       const falhaEnvioReal =
-        situacaoTipoResp === "P" || situacaoTipoResp === "E" || ehFalhaIntegracaoBanco(resp);
+        !temProtocoloBanco &&
+        (situacaoTipoResp === "P" || situacaoTipoResp === "E" || ehFalhaIntegracaoBanco(resp));
       if (erroBanco && falhaEnvioReal) {
         throw new IntegracaoBancariaError(erroBanco);
       }
+
 
 
       // Grava o RETORNO real do banco (taxa, parcela, financiamento, situação e
