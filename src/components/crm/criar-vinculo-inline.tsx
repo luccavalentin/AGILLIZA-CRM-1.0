@@ -103,15 +103,15 @@ export function CriarVinculoInline({
       await qc.invalidateQueries({ queryKey: ["parceiros-disponiveis"] });
       await qc.invalidateQueries({ queryKey: ["pessoas"] });
       if (comLogin && res.senha_temporaria) {
-        toast.success(`Cadastro criado. Senha provisória: ${res.senha_temporaria}`, {
-          duration: 8000,
-        });
+        // Não exibe a senha em toast (pode ser perdida): abre modal dedicado
+        // que persiste até o admin copiar e confirmar.
+        setCredenciais({ email: res.email || email.trim(), senha: res.senha_temporaria, idCriado: res.id });
       } else {
         toast.success("Cadastro criado e vinculado.");
+        onCriado(res.id);
+        limpar();
+        onOpenChange(false);
       }
-      onCriado(res.id);
-      limpar();
-      onOpenChange(false);
     },
     onError: (e: Error) => toast.error(e.message),
   });
