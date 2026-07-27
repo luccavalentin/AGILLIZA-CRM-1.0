@@ -8,10 +8,11 @@ import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mapaFeriados } from "@/lib/feriados-br";
-import { NavegacaoCalendario } from "@/components/operacional/calendario/navegacao-calendario";
+import { NavegacaoCalendario, type VisaoCalendario } from "@/components/operacional/calendario/navegacao-calendario";
 import { GradeCalendario } from "@/components/operacional/calendario/grade-calendario";
 import type { TarefaCelula } from "@/components/operacional/calendario/celula-dia";
 import { chaveDia } from "@/components/operacional/calendario/utils";
+
 
 export const Route = createFileRoute("/_authenticated/operacional/tarefas_/calendario")({
   head: () => ({ meta: [{ title: "Calendário de Tarefas — Agilliza" }] }),
@@ -22,10 +23,23 @@ export const Route = createFileRoute("/_authenticated/operacional/tarefas_/calen
 function Pagina() {
   const hoje = new Date();
   const [ref, setRef] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  const [visao, setVisao] = useState<VisaoCalendario>("mes");
   const [sel, setSel] = useState<string | null>(null);
   const [escopo, setEscopo] = useState<"todas" | "minhas">(
     () => (typeof window !== "undefined" && (localStorage.getItem("tarefas:escopo") as "todas" | "minhas")) || "todas",
   );
+
+  function alterarVisao(v: VisaoCalendario) {
+    setVisao(v);
+    // Ao aproximar (zoom-in) para "dia", ancoramos no dia atual do mês exibido.
+    if (v === "dia") {
+      const base = new Date(ref);
+      if (base.getMonth() === hoje.getMonth() && base.getFullYear() === hoje.getFullYear()) {
+        setRef(new Date(hoje));
+      }
+    }
+  }
+
 
   const { data } = useQuery({
     queryKey: ["tarefas", "calendario", escopo],
@@ -82,16 +96,27 @@ function Pagina() {
         </TabsList>
       </Tabs>
 
-      <NavegacaoCalendario ref={ref} hoje={hoje} onChange={setRef} />
-
+      <NavegacaoCalendario
+        ref={ref}
+        hoje={hoje}
+        visao={visao}
+        onChange={setRef}
+        onVisaoChange={alterarVisao}
+      />
 
       <GradeCalendario
         ref={ref}
+        visao={visao}
         hojeChave={chaveDia(hoje)}
         tarefasPorDia={tarefasPorDia}
         feriados={feriados}
         onSelecionar={setSel}
+        onIrPara={(d) => {
+          setRef(d);
+          setVisao("mes");
+        }}
       />
+
 
       <TarefaDrawer id={sel} onClose={() => setSel(null)} />
     </div>
