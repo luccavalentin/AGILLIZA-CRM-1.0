@@ -710,10 +710,17 @@ export const registrarAlteracaoSalarial = createServerFn({ method: "POST" })
     const cid = await correspondenteId(context.supabase, context.userId);
     const { data: func } = await context.supabase
       .from("rh_funcionarios")
-      .select("salario_atual")
+      .select("salario_atual, data_admissao")
       .eq("id", data.funcionario_id)
       .maybeSingle();
     const anterior = Number(func?.salario_atual ?? 0);
+    if (func?.data_admissao && data.vigencia < func.data_admissao) {
+      throw new Error("Vigência não pode ser anterior à admissão do funcionário.");
+    }
+    if (Math.abs(data.salario_novo - anterior) < 0.01) {
+      throw new Error("O novo salário é igual ao atual — nenhuma alteração a registrar.");
+    }
+
     const { data: row, error } = await context.supabase
       .from("rh_alteracoes_salariais")
       .insert({
