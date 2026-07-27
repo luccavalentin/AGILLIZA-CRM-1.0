@@ -119,6 +119,7 @@ import { Route as AuthenticatedCrmScanIaIdRouteImport } from './routes/_authenti
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authenticated/crm.clientes_.$id'
 import { Route as AuthenticatedAdminComprasPedidosRouteImport } from './routes/_authenticated/admin.compras.pedidos'
+import { Route as AuthenticatedAdminComprasAprovacoesRouteImport } from './routes/_authenticated/admin.compras.aprovacoes'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -750,6 +751,12 @@ const AuthenticatedAdminComprasPedidosRoute =
     path: '/admin/compras/pedidos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminComprasAprovacoesRoute =
+  AuthenticatedAdminComprasAprovacoesRouteImport.update({
+    id: '/admin/compras/aprovacoes',
+    path: '/admin/compras/aprovacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -843,6 +850,7 @@ export interface FileRoutesByFullPath {
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/rh/': typeof AuthenticatedRhIndexRoute
+  '/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
   '/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
@@ -952,6 +960,7 @@ export interface FileRoutesByTo {
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
   '/rh': typeof AuthenticatedRhIndexRoute
+  '/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
   '/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
@@ -1065,6 +1074,7 @@ export interface FileRoutesById {
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/_authenticated/rh/': typeof AuthenticatedRhIndexRoute
+  '/_authenticated/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
   '/_authenticated/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
@@ -1178,6 +1188,7 @@ export interface FileRouteTypes {
     | '/formularios/'
     | '/relatorios/'
     | '/rh/'
+    | '/admin/compras/aprovacoes'
     | '/admin/compras/pedidos'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
@@ -1287,6 +1298,7 @@ export interface FileRouteTypes {
     | '/formularios'
     | '/relatorios'
     | '/rh'
+    | '/admin/compras/aprovacoes'
     | '/admin/compras/pedidos'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
@@ -1399,6 +1411,7 @@ export interface FileRouteTypes {
     | '/_authenticated/formularios/'
     | '/_authenticated/relatorios/'
     | '/_authenticated/rh/'
+    | '/_authenticated/admin/compras/aprovacoes'
     | '/_authenticated/admin/compras/pedidos'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
@@ -2203,6 +2216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminComprasPedidosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/compras/aprovacoes': {
+      id: '/_authenticated/admin/compras/aprovacoes'
+      path: '/admin/compras/aprovacoes'
+      fullPath: '/admin/compras/aprovacoes'
+      preLoaderRoute: typeof AuthenticatedAdminComprasAprovacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -2356,6 +2376,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
   AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
   AuthenticatedRhIndexRoute: typeof AuthenticatedRhIndexRoute
+  AuthenticatedAdminComprasAprovacoesRoute: typeof AuthenticatedAdminComprasAprovacoesRoute
   AuthenticatedAdminComprasPedidosRoute: typeof AuthenticatedAdminComprasPedidosRoute
   AuthenticatedOperacionalDemandasIdRoute: typeof AuthenticatedOperacionalDemandasIdRoute
   AuthenticatedOperacionalDemandasKanbanRoute: typeof AuthenticatedOperacionalDemandasKanbanRoute
@@ -2430,6 +2451,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
   AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,
   AuthenticatedRhIndexRoute: AuthenticatedRhIndexRoute,
+  AuthenticatedAdminComprasAprovacoesRoute:
+    AuthenticatedAdminComprasAprovacoesRoute,
   AuthenticatedAdminComprasPedidosRoute: AuthenticatedAdminComprasPedidosRoute,
   AuthenticatedOperacionalDemandasIdRoute:
     AuthenticatedOperacionalDemandasIdRoute,
