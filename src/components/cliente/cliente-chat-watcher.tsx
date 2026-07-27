@@ -17,9 +17,12 @@ export function ClienteChatWatcher() {
   const { data: atendentes } = useQuery({
     queryKey: ["cliente", "atendentes"],
     queryFn: () => clienteListarAtendentes(),
+    // Só faz polling agressivo quando a aba está visível. Em segundo plano
+    // o alerta sonoro é bloqueado pelo navegador de qualquer forma, então
+    // aliviamos servidor/bateria pausando o poll.
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
-    refetchIntervalInBackground: true,
   });
+
 
 
   const previa = useRef<Map<string, { nao_lidas: number; ultima_em: string | null }> | null>(null);
