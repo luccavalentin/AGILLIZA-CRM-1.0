@@ -1277,6 +1277,7 @@ export type Database = {
           imovel_cidade: string | null
           imovel_complemento: string | null
           imovel_logradouro: string | null
+          imovel_matricula: Json
           imovel_numero: string | null
           imovel_situacao: string | null
           imovel_tipo: string | null
@@ -1364,6 +1365,7 @@ export type Database = {
           imovel_cidade?: string | null
           imovel_complemento?: string | null
           imovel_logradouro?: string | null
+          imovel_matricula?: Json
           imovel_numero?: string | null
           imovel_situacao?: string | null
           imovel_tipo?: string | null
@@ -1451,6 +1453,7 @@ export type Database = {
           imovel_cidade?: string | null
           imovel_complemento?: string | null
           imovel_logradouro?: string | null
+          imovel_matricula?: Json
           imovel_numero?: string | null
           imovel_situacao?: string | null
           imovel_tipo?: string | null
