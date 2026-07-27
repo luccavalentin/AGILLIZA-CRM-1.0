@@ -43,6 +43,18 @@ export function GenericReportPage({
     staleTime: 60_000,
   });
 
+  const [kpiAberto, setKpiAberto] = useState<ReportKpi | null>(null);
+  const linhasKpi = useMemo(() => {
+    if (!kpiAberto?.filters?.length || !data?.rows) return [];
+    return data.rows.filter((r) =>
+      kpiAberto.filters!.every((f) => {
+        const cell = r[f.key];
+        return f.values.some((v) => String(cell ?? "") === String(v));
+      }),
+    );
+  }, [kpiAberto, data]);
+
+
   const metaArr = [
     `Período: ${PERIODO_LABEL[filtros.periodo]}`,
     `Escopo: ${ESCOPO_LABEL[filtros.escopo]}`,
