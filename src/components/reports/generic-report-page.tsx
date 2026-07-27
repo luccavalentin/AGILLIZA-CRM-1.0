@@ -74,10 +74,11 @@ export function GenericReportPage({
 
   return (
     <ReportShell
-      modulo={data?.modulo ?? "—"}
+      modulo={data?.modulo ?? "Operacional"}
       titulo={data?.titulo ?? "Relatório"}
-      descricao={data?.descricao ?? "Carregando…"}
+      typeSelector={typeSelector}
       metaChips={metaArr}
+
       scopeSelector={
         <VisionSelector
           escopo={filtros.escopo}
