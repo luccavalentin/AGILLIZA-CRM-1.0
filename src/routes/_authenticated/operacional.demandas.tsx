@@ -393,9 +393,24 @@ function Pagina() {
                   {d.titulo}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  {d.nome_cliente && <span className="truncate">👤 {d.nome_cliente}</span>}
-                  {d.numero_proposta && <span>📄 {d.numero_proposta}</span>}
-                  {d.numero_simulacao && <span>🧮 {d.numero_simulacao}</span>}
+                  {d.nome_cliente && (
+                    <span className="inline-flex items-center gap-1.5 truncate">
+                      <UserIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <span className="truncate">{d.nome_cliente}</span>
+                    </span>
+                  )}
+                  {d.numero_proposta && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <span className="font-mono text-[11px]">{d.numero_proposta}</span>
+                    </span>
+                  )}
+                  {d.numero_simulacao && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Calculator className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      <span className="font-mono text-[11px]">{d.numero_simulacao}</span>
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
