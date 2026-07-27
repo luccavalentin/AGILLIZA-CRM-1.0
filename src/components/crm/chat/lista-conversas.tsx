@@ -14,7 +14,9 @@ import { cn } from "@/lib/utils";
 import { ChatConfigSheet } from "@/components/shared/chat-config-sheet";
 import { TagChip } from "./tag-chip";
 import { iniciais, rotuloDia, type FiltroChat } from "./helpers";
+import { ItemAcoesMenu } from "./item-acoes-menu";
 import type { UseChatConversas } from "./use-chat-conversas";
+
 
 type Props = {
   hook: UseChatConversas;
