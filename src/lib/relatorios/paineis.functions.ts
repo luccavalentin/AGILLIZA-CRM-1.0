@@ -877,7 +877,16 @@ export const getPanelDados = createServerFn({ method: "POST" })
       0,
     );
     const ticket = contratos ? volumeContratos / contratos : 0;
-    const convSimProp = simRows.length ? (enviadas.length / simRows.length) * 100 : 0;
+    // Conversão simulação → proposta: apenas simulações do período que geraram
+    // proposta enviada (dedup por simulacao_id). Evita contar propostas avulsas
+    // ou de períodos anteriores, o que gerava taxas > 100% (clampadas em 100%).
+    const simIdsNoPeriodo = new Set(simRows.map((s: any) => s.id).filter(Boolean));
+    const simIdsPromovidas = new Set(
+      enviadas
+        .map((p: any) => p.simulacao_id)
+        .filter((id: any) => id && simIdsNoPeriodo.has(id)),
+    );
+    const convSimProp = simRows.length ? (simIdsPromovidas.size / simRows.length) * 100 : 0;
     const convPropContrato = enviadas.length ? (contratos / enviadas.length) * 100 : 0;
     const slaEmDia = demAbertas.length
       ? ((demAbertas.length - demVencidas.length) / demAbertas.length) * 100
