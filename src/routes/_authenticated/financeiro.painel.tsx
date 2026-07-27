@@ -182,7 +182,7 @@ function Pagina() {
           icon={TrendingUp}
           tone="success"
           sub={`Hoje: ${formatBRL(data?.aReceberHoje ?? 0)}`}
-          to="/financeiro/contas-a-receber"
+          onClick={() => setDrill("receber")}
         />
         <ReportKpiCard
           titulo={`A pagar (${periodoLabel})`}
@@ -190,14 +190,14 @@ function Pagina() {
           icon={Wallet}
           tone="warning"
           sub={`Hoje: ${formatBRL(data?.aPagarHoje ?? 0)}`}
-          to="/financeiro/contas-a-pagar"
+          onClick={() => setDrill("pagar")}
         />
         <ReportKpiCard
           titulo="Saldo projetado"
           valor={formatBRL(data?.saldoProjetado ?? 0)}
           icon={LineChartIcon}
           tone="brand"
-          to="/financeiro/fluxo-de-caixa"
+          onClick={() => setDrill("saldo")}
         />
         <ReportKpiCard
           titulo="Inadimplência"
@@ -205,7 +205,7 @@ function Pagina() {
           icon={AlertTriangle}
           tone="danger"
           sub="Vencido há +10 dias"
-          to="/financeiro/contas-a-receber"
+          onClick={() => setDrill("inadimplencia")}
         />
       </div>
 
