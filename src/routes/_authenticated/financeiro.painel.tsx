@@ -36,6 +36,8 @@ function mesLabel(iso: string) {
   return `${m}/${y.slice(2)}`;
 }
 
+type KpiFinKey = "receber" | "pagar" | "saldo" | "inadimplencia";
+
 function Pagina() {
   const padrao = useMemo(() => {
     const hoje = new Date();
@@ -45,10 +47,82 @@ function Pagina() {
   }, []);
   const [de, setDe] = useState(padrao.de);
   const [ate, setAte] = useState(padrao.ate);
+  const [drill, setDrill] = useState<KpiFinKey | null>(null);
   const { data, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ["fin-kpis", de, ate],
     queryFn: () => obterKpisFinanceiros({ data: { de: de || undefined, ate: ate || undefined } }),
   });
+
+  const listarContasFn = useServerFn(listarContas);
+  const drillQuery = useQuery({
+    enabled: !!drill,
+    queryKey: ["fin-kpi-drill", drill, de, ate],
+    queryFn: async () => {
+      if (!drill) return { itens: [] as KpiDrillItem[] };
+      const tipo: "pagar" | "receber" =
+        drill === "pagar" ? "pagar" : "receber";
+      const status =
+        drill === "inadimplencia" ? "atrasada" : drill === "saldo" ? "aberta" : "aberta";
+      const params: Parameters<typeof listarContasFn>[0]["data"] = {
+        tipo,
+        status,
+        pagina: 1,
+        porPagina: 10,
+        ...(drill === "inadimplencia" ? {} : { de, ate }),
+      };
+      const r = await listarContasFn({ data: params });
+      const itens: KpiDrillItem[] = r.itens.map((c) => ({
+        label: c.contraparte ?? c.descricao ?? c.numero ?? "Sem descrição",
+        sub: c.categoria_nome ?? c.descricao ?? undefined,
+        valor: formatBRL(c.valor - c.valor_pago),
+        data: new Date(c.vencimento + "T00:00:00").toLocaleDateString("pt-BR"),
+        to: tipo === "pagar" ? "/financeiro/contas-a-pagar" : "/financeiro/contas-a-receber",
+      }));
+      return { itens };
+    },
+  });
+
+  const drillMeta: Record<
+    KpiFinKey,
+    { titulo: string; subtitulo: string; valor: string; icon: LucideIcon; tone: KpiTone; to: string; empty: string }
+  > = {
+    receber: {
+      titulo: "Contas a receber",
+      subtitulo: "Próximos vencimentos no período",
+      valor: formatBRL(data?.aReceber30d ?? 0),
+      icon: TrendingUp,
+      tone: "success",
+      to: "/financeiro/contas-a-receber",
+      empty: "Nenhum recebimento no período.",
+    },
+    pagar: {
+      titulo: "Contas a pagar",
+      subtitulo: "Próximos vencimentos no período",
+      valor: formatBRL(data?.aPagar30d ?? 0),
+      icon: Wallet,
+      tone: "warning",
+      to: "/financeiro/contas-a-pagar",
+      empty: "Nenhum pagamento no período.",
+    },
+    saldo: {
+      titulo: "Saldo projetado",
+      subtitulo: "Composto pelos recebimentos em aberto",
+      valor: formatBRL(data?.saldoProjetado ?? 0),
+      icon: LineChartIcon,
+      tone: "brand",
+      to: "/financeiro/fluxo-de-caixa",
+      empty: "Sem projeção para o período.",
+    },
+    inadimplencia: {
+      titulo: "Inadimplência",
+      subtitulo: "Contas em atraso há mais de 10 dias",
+      valor: formatBRL(data?.inadimplencia ?? 0),
+      icon: AlertTriangle,
+      tone: "danger",
+      to: "/financeiro/contas-a-receber",
+      empty: "Nenhuma conta em atraso.",
+    },
+  };
 
   const mensal = (data?.receitaDespesaMensal ?? []).map((r) => ({ ...r, label: mesLabel(r.mes) }));
   const alterado = de !== padrao.de || ate !== padrao.ate;
