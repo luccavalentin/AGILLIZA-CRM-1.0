@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -10,6 +11,7 @@ import {
   AlertTriangle,
   FileClock,
   Wallet,
+  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -17,10 +19,12 @@ import {
 } from "recharts";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { obterKpisRh } from "@/lib/rh/dashboard.functions";
-import { ReportKpiCard } from "@/components/financeiro/kpi-card";
+import { listarFuncionarios } from "@/lib/rh/funcionarios.functions";
+import { ReportKpiCard, type KpiTone } from "@/components/financeiro/kpi-card";
 import { PanelHeader, SectionTitle, PanelCard } from "@/components/common/dashboard";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/financeiro/format";
+import { KpiDrilldownDialog, type KpiDrillItem } from "@/components/reports/kpi-drilldown-dialog";
 
 export const Route = createFileRoute("/_authenticated/rh/")({
   head: () => ({ meta: [{ title: "Gestão de Pessoas e RH — Agilliza" }] }),
