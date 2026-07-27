@@ -1,35 +1,37 @@
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { NovaContaDialog } from "@/components/financeiro/nova-conta-dialog";
+import { PanelHeader } from "@/components/common/dashboard";
 import type { ContaTipo } from "@/lib/financeiro/financeiro.functions";
 
 /**
- * Cabeçalho (hero) da página de contas a pagar/receber. Isolado para
- * manter a página principal enxuta e permitir ajustar hierarquia visual
- * de forma centralizada.
+ * Cabeçalho da página de contas a pagar/receber. Reutiliza o PanelHeader
+ * usado no painel e no fluxo de caixa para manter tipografia, hierarquia
+ * e chip de status consistentes em todo o módulo Financeiro.
  */
 export function ContasHeader({ tipo }: { tipo: ContaTipo }) {
   const recebe = tipo === "receber";
-  const titulo = recebe ? "Contas a receber" : "Contas a pagar";
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-      <div className="flex items-start gap-3">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-          {recebe ? <ArrowDownCircle className="h-6 w-6" /> : <ArrowUpCircle className="h-6 w-6" />}
+    <PanelHeader
+      eyebrow={recebe ? "Financeiro · Contas a receber" : "Financeiro · Contas a pagar"}
+      titulo={recebe ? "Contas a receber" : "Contas a pagar"}
+      descricao={
+        recebe
+          ? "Comissões, taxas e outros recebimentos em aberto."
+          : "Fornecedores, parceiros, impostos e despesas."
+      }
+      actions={
+        <div className="flex items-center gap-2">
+          <span className="hidden items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground sm:inline-flex">
+            {recebe ? (
+              <ArrowDownCircle className="h-3.5 w-3.5 text-success" />
+            ) : (
+              <ArrowUpCircle className="h-3.5 w-3.5 text-warning" />
+            )}
+            {recebe ? "Entradas" : "Saídas"}
+          </span>
+          <NovaContaDialog tipo={tipo} />
         </div>
-        <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            {titulo}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {tipo === "pagar"
-              ? "Fornecedores, parceiros, impostos e despesas."
-              : "Comissões, taxas e outros recebimentos."}
-          </p>
-        </div>
-      </div>
-      <div className="shrink-0">
-        <NovaContaDialog tipo={tipo} />
-      </div>
-    </div>
+      }
+    />
   );
 }
