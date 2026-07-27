@@ -18,6 +18,9 @@ import {
   ChevronRight,
   Download,
   Trash2,
+  User as UserIcon,
+  FileText,
+  Calculator,
 } from "lucide-react";
 import { toast } from "sonner";
 import { baixarDemandasPDF } from "@/lib/operacional/export-pdf";
