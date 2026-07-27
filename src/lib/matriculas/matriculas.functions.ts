@@ -49,7 +49,7 @@ async function correspondenteDoUsuario(supabase: any, userId: string): Promise<s
     .eq("id", userId)
     .single();
   if (error) throw new Error(error.message);
-  if (!data?.correspondente_id) throw new Error("Usuário sem correspondente vinculado.");
+  if (!data?.correspondente_id) throw new Error("Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.");
   return data.correspondente_id as string;
 }
 

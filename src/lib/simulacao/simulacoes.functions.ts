@@ -261,7 +261,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       .eq("id", userId)
       .maybeSingle();
     const correspondente_id = prof?.correspondente_id;
-    if (!correspondente_id) throw new Error("Usuário sem correspondente vinculado.");
+    if (!correspondente_id) throw new Error("Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.");
 
     if (data.modo === "completa" && !dd.email_verificado_em) {
       // permite quando cliente do CRM já verificado; senão exige OTP
