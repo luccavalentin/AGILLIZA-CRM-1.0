@@ -18,11 +18,24 @@ export function PainelConversa({
   selecionado,
   estadoPor,
   etiquetaPor,
+  onVoltar,
 }: {
   selecionado: NonNullable<SelecionadoState>;
   estadoPor: Map<string, EstadoChat>;
   etiquetaPor: Map<string, string[]>;
+  onVoltar?: () => void;
 }) {
+  const BackBtn = onVoltar ? (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="size-9 shrink-0 rounded-full lg:hidden"
+      onClick={onVoltar}
+      aria-label="Voltar para a lista"
+    >
+      <ArrowLeft className="size-4" />
+    </Button>
+  ) : null;
   if (selecionado.kind === "dm") {
     const key = chaveConversa("dm", selecionado.conversaId);
     return (
