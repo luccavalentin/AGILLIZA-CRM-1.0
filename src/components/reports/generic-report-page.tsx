@@ -1,6 +1,8 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ReportShell, ReportSection } from "@/components/reports/report-shell";
 import { ReportFiltersBar, VisionSelector } from "@/components/reports/report-filters-bar";
 import { ReportKpiCard, ChartCard } from "@/components/reports/report-kpi-card";
@@ -10,7 +12,8 @@ import { ExportButtons } from "@/components/reports/export-buttons";
 import { EmptyReport } from "@/components/reports/empty-report";
 import { MonthlyComparison } from "@/components/reports/monthly-comparison";
 import { runReport } from "@/lib/relatorios/reports.functions";
-import { ESCOPO_LABEL, PERIODO_LABEL, type ReportFiltros } from "@/lib/relatorios/shared";
+import { ESCOPO_LABEL, PERIODO_LABEL, type ReportFiltros, type ReportKpi } from "@/lib/relatorios/shared";
+
 
 /** Página completa de relatório reutilizada por todas as rotas de /relatorios/*. */
 export function GenericReportPage({
