@@ -362,6 +362,34 @@ export const desligarFuncionario = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+
+    // Valida a data de desligamento contra a admissão e contra o futuro.
+    // Sem isso, a folha pode registrar um desligamento retroativo à admissão
+    // ou datado no futuro — ambos geram inconsistência em holerites e rescisão.
+    const dtDem = new Date(data.data_demissao);
+    if (Number.isNaN(dtDem.getTime())) {
+      throw new Error("Data de desligamento inválida.");
+    }
+    // Compara em UTC pelo dia (evita falso-positivo por fuso).
+    const hojeUtc = new Date(new Date().toISOString().slice(0, 10));
+    if (dtDem.getTime() > hojeUtc.getTime()) {
+      throw new Error("Data de desligamento não pode ser futura.");
+    }
+
+    const { data: atual, error: errBusca } = await supabase
+      .from("rh_funcionarios")
+      .select("data_admissao")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (errBusca) throw new Error(errBusca.message);
+    if (!atual) throw new Error("Funcionário não encontrado.");
+    if (atual.data_admissao) {
+      const dtAdm = new Date(atual.data_admissao);
+      if (!Number.isNaN(dtAdm.getTime()) && dtDem.getTime() < dtAdm.getTime()) {
+        throw new Error("Data de desligamento não pode ser anterior à admissão.");
+      }
+    }
+
     const correspondenteId = (await correspondenteDoUsuario(supabase, userId)) ?? null;
     const { error } = await supabase
       .from("rh_funcionarios")
