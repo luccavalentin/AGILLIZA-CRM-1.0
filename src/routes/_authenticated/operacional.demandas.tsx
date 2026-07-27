@@ -32,7 +32,7 @@ import {
 } from "@/lib/operacional/demandas.functions";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
-import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
+import { PriorityChip, OpAvatar, OpStat } from "@/components/operacional/ui";
 import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
