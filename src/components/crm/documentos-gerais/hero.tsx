@@ -17,10 +17,10 @@ export function DocumentosHero({
     valor: number;
     aba: Aba | null;
   }[] = [
-    { Icon: Folder, label: "Pastas", valor: kpis.pastas, aba: null },
-    { Icon: FileText, label: "Documentos", valor: kpis.documentos, aba: null },
+    { Icon: Folder, label: "Pastas", valor: kpis.pastas, aba: "comercial" },
+    { Icon: FileText, label: "Documentos", valor: kpis.documentos, aba: "cliente" },
     { Icon: Users, label: "Clientes", valor: kpis.clientes, aba: "cliente" },
-    { Icon: FolderKanban, label: "Itens", valor: kpis.itens, aba: null },
+    { Icon: FolderKanban, label: "Itens", valor: kpis.itens, aba: "cliente" },
   ];
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
