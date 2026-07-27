@@ -250,11 +250,20 @@ function Pagina() {
 
   // Relógio compartilhado — evita 1 timer por card.
   const [now, setNow] = useState(() => Date.now());
-  useMemo(() => {
+  // Tick de 1s quando houver algum SLA crítico/vencido; caso contrário 30s.
+  const precisaTickRapido = useMemo(() => {
+    const arr = data ?? [];
+    return arr.some((d) => {
+      if (d.status === "concluida" || d.status === "cancelada" || !d.prazo_sla) return false;
+      const restante = new Date(d.prazo_sla).getTime() - now;
+      return restante < 2 * 3600_000; // crítico ou vencido
+    });
+  }, [data, now]);
+  useEffect(() => {
     if (typeof window === "undefined") return;
-    const t = setInterval(() => setNow(Date.now()), 60_000);
+    const t = setInterval(() => setNow(Date.now()), precisaTickRapido ? 1000 : 30_000);
     return () => clearInterval(t);
-  }, []);
+  }, [precisaTickRapido]);
 
   const onDragStart = useCallback((id: string, status: DemandaStatus) => {
     arrastandoRef.current = { id, status };
