@@ -126,57 +126,61 @@ export function CentralChatPage() {
   const router = useRouter();
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-9rem)] w-full max-w-[1400px] flex-col gap-4 px-4 py-4 lg:px-6">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-fit gap-2 text-muted-foreground hover:text-foreground"
-        onClick={() => router.history.back()}
-      >
-        <ArrowLeft className="h-4 w-4" /> Voltar
-      </Button>
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Central de Conversas</h1>
-          <p className="text-sm text-muted-foreground">
-            Todos os chats do sistema em um único lugar — colegas, clientes e demandas.
+    <div className="mx-auto flex h-[calc(100vh-7rem)] w-full max-w-[1400px] flex-col gap-3 px-3 py-3 lg:px-6">
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8 rounded-full text-muted-foreground hover:text-foreground"
+          onClick={() => router.history.back()}
+          aria-label="Voltar"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-xl font-bold tracking-tight">Conversas</h1>
+          <p className="truncate text-xs text-muted-foreground">
+            Colegas, clientes e demandas — tudo em um só lugar.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {totalNaoLidas > 0 && <Badge className="rounded-full">{totalNaoLidas} não lidas</Badge>}
-          <NovaConversaDialog
-            onCriado={(conv) =>
-              setSelecionado({ kind: "dm", conversaId: conv.id, nome: conv.nome })
-            }
-          />
-        </div>
-      </header>
+        {totalNaoLidas > 0 && (
+          <Badge variant="secondary" className="rounded-full bg-primary/10 font-semibold text-primary">
+            {totalNaoLidas} não {totalNaoLidas === 1 ? "lida" : "lidas"}
+          </Badge>
+        )}
+        <NovaConversaDialog
+          onCriado={(conv) =>
+            setSelecionado({ kind: "dm", conversaId: conv.id, nome: conv.nome })
+          }
+        />
+      </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
-        <Card className="flex min-h-0 flex-col overflow-hidden">
-          <div className="space-y-3 border-b p-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[22rem_minmax(0,1fr)]">
+        {/* Coluna de conversas — estilo mensageiro */}
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/40 backdrop-blur">
+          <div className="space-y-2.5 border-b border-border/50 p-3">
             <IniciarDmInline
               onCriado={(conv) =>
                 setSelecionado({ kind: "dm", conversaId: conv.id, nome: conv.nome })
               }
             />
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={termo}
                 onChange={(e) => setTermo(e.target.value)}
-                placeholder="Pesquisar conversas…"
-                className="pl-9"
+                placeholder="Buscar conversas…"
+                className="h-10 rounded-full border-transparent bg-muted/60 pl-10 text-sm shadow-inner focus-visible:border-primary/40 focus-visible:bg-background"
               />
             </div>
             <Tabs value={aba} onValueChange={(v) => setAba(v as any)}>
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="todos">Tudo</TabsTrigger>
-                <TabsTrigger value="dm">Diretas</TabsTrigger>
-                <TabsTrigger value="cliente">Clientes</TabsTrigger>
-                <TabsTrigger value="demanda">Demandas</TabsTrigger>
-                <TabsTrigger value="arquivadas" className="gap-1">
-                  <Archive className="size-3" />
+              <TabsList className="grid h-9 w-full grid-cols-5 rounded-full bg-muted/50 p-1">
+                <TabsTrigger value="todos" className="rounded-full text-[11.5px] font-semibold">Tudo</TabsTrigger>
+                <TabsTrigger value="dm" className="rounded-full text-[11.5px] font-semibold">Diretas</TabsTrigger>
+                <TabsTrigger value="cliente" className="rounded-full text-[11.5px] font-semibold">Clientes</TabsTrigger>
+                <TabsTrigger value="demanda" className="rounded-full text-[11.5px] font-semibold">Demandas</TabsTrigger>
+                <TabsTrigger value="arquivadas" className="rounded-full gap-1" aria-label="Arquivadas">
+                  <Archive className="size-3.5" />
                   {totalArquivadas > 0 && <span className="text-[10px]">{totalArquivadas}</span>}
                 </TabsTrigger>
               </TabsList>
@@ -188,17 +192,19 @@ export function CentralChatPage() {
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
               </div>
             ) : !filtradas.length ? (
-              <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
-                <div className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+              <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
+                <div className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary">
                   <MessagesSquare className="size-6" />
                 </div>
-                <p className="text-sm font-medium">Nenhuma conversa</p>
-                <p className="text-xs text-muted-foreground">
-                  Inicie uma nova conversa direta com um colega.
-                </p>
+                <div>
+                  <p className="text-sm font-semibold">Nenhuma conversa por aqui</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Chame um colega para bater um papo 👋
+                  </p>
+                </div>
               </div>
             ) : (
-              <ul className="divide-y">
+              <ul className="divide-y divide-border/40">
                 {filtradas.map((r) => {
                   const t = r.th;
                   const chave = chaveConversa(t.kind, t.id);
@@ -223,21 +229,22 @@ export function CentralChatPage() {
               </ul>
             )}
           </ScrollArea>
-        </Card>
+        </div>
 
+        {/* Área da conversa */}
         <div className="min-h-0 min-w-0">
           {!selecionado ? (
-            <Card className="flex h-full flex-col items-center justify-center gap-3 border-dashed p-10 text-center">
-              <div className="grid size-16 place-items-center rounded-full bg-primary/10 text-primary">
+            <div className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border/60 bg-gradient-to-br from-muted/20 to-transparent p-10 text-center">
+              <div className="grid size-16 place-items-center rounded-full bg-primary/10 text-primary shadow-inner">
                 <MessageCircle className="size-8" />
               </div>
               <div>
-                <p className="text-lg font-semibold">Selecione uma conversa</p>
-                <p className="text-sm text-muted-foreground">
-                  Escolha uma conversa à esquerda ou inicie uma nova mensagem direta.
+                <p className="text-lg font-semibold">Suas conversas ficam aqui</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Escolha um contato ao lado ou comece uma nova conversa.
                 </p>
               </div>
-            </Card>
+            </div>
           ) : (
             <PainelConversa
               selecionado={selecionado}
