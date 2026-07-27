@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
 
 /** Máximo de cards visíveis antes de "empilhar" o restante numa pasta com busca. */
-const MAX_VISIVEIS_POR_COLUNA = 6;
+const MAX_VISIVEIS_POR_COLUNA = 2;
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/kanban")({
   head: () => ({ meta: [{ title: "Kanban de Propostas — Agilliza" }] }),
