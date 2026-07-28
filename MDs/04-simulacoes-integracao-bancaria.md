@@ -206,7 +206,8 @@ Resposta: `{ idSimulacao }` → gravar em `simulacao_bancos.homefin_id_simulacao
 
 ### 5) `POST /oportunidade/{id}/simulacao/{idSimulacao}/integracao`
 Dispara a integração real com o banco escolhido. Assíncrono. Retorna `202 Accepted` com `{ situacao }`.
-Sistema deve fazer **polling** de `GET /oportunidade/{id}` a cada 30s por até 10 min, ou consumir webhook em `/api/public/homefin/callback` (ver Etapa 10 — Admin) validando HMAC com `HOMEFIN_WEBHOOK_SECRET`.
+Sistema deve fazer **polling** de `GET /oportunidade/{id}` a cada 30s por até 10 min. Não há webhook HomeFin — não usar `HOMEFIN_WEBHOOK_SECRET`.
+
 
 Ao receber retorno, o job atualiza `simulacao_bancos` com `valor_parcela`, `taxa_juros_ano`, `prazo_pagamento_max`, `valor_financiamento_max`, `valor_parcela_max`, `codigo_indexador`, `valor_iof`, `status_banco='simulada'`. Se erro, `status_banco='erro'` + `mensagem_banco` humanizada.
 
