@@ -1,4 +1,4 @@
-name = "agilliza"
+name = "agilliza-crm"
 main = ".output/server/index.mjs"
 compatibility_date = "2025-07-27"
 compatibility_flags = ["nodejs_compat"]
