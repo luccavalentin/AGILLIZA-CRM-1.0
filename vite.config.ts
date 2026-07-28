@@ -12,4 +12,16 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  nitro: {
+    cloudflare: {
+      nodeCompat: true,
+      // Tell the Nitro Cloudflare preset to merge the repo's wrangler.toml
+      // (name, compatibility flags, [vars], keep_vars, bindings, etc.) into
+      // the generated `.output/server/wrangler.json` used at deploy time.
+      // Without this the generated wrangler.json only contains name/main/
+      // assets and the published Worker ends up with just env.ASSETS as a
+      // binding — dashboard-defined vars/secrets get wiped on deploy.
+      deployConfig: true,
+    },
+  },
 });
