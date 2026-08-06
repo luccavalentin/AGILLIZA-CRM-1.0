@@ -1,0 +1,4297 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.1",
+    "title": "API HomeFin",
+    "description": "A HomeFin tem o prazer de oferecer uma interface de programação de aplicações (API) robusta e escalável, seguindo o padrão RESTful. Através desta interface, é possível interagir eficientemente com o ecossistema HomeFin, permitindo a realização de oportunidades, upload de documentos e consulta de informações, permitindo a integração harmoniosa com seus sistemas existentes.\nA API da HomeFin é construída com base nos princípios REST. Nós exigimos HTTPS em todas as requisições para melhorar a segurança, integridade e privacidade dos dados. A API não suporta HTTP.\n"
+  },
+  "servers": [
+    {
+      "url": "https://api.homefin.com.br/external",
+      "description": "Ambiente de produção"
+    }
+  ],
+  "paths": {
+    "/auth/token": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthOk"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuarios-parceiros": {
+      "get": {
+        "tags": [
+          "Usuários Parceiros"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaUsuariosParceirosResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/oportunidade": {
+      "post": {
+        "tags": [
+          "Oportunidade"
+        ],
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateOpportunityOk"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOpportunityRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oportunidade/{id}": {
+      "put": {
+        "tags": [
+          "Oportunidade"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Opportunity"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Opportunity"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Oportunidade"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetOpportunityOk"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/oportunidade/{id}/incluir-proposta-integracao": {
+      "post": {
+        "tags": [
+          "Oportunidade"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateProposalOk"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProposalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oportunidade/{id}/simulacao": {
+      "post": {
+        "tags": [
+          "Simulação"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSimulationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSimulationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oportunidade/{id}/simulacao/{idSimulacao}": {
+      "put": {
+        "tags": [
+          "Simulação"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idSimulacao",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSimulationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSimulationRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oportunidade/{id}/simulacao/{idSimulacao}/integracao": {
+      "post": {
+        "tags": [
+          "Simulação"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idSimulacao",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationIntegrationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/oportunidade/{id}/incluir-documentos-integracao": {
+      "post": {
+        "tags": [
+          "Oportunidade"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendDocumentsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendDocumentsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oportunidade/{id}/participante": {
+      "post": {
+        "tags": [
+          "Participante"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Participant"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateParticipantRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oportunidade/{idOportunidade}/participante/{id}": {
+      "put": {
+        "tags": [
+          "Participante"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "idOportunidade",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Participant"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateParticipantRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Participante"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "idOportunidade",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/dominios/bancos": {
+      "get": {
+        "tags": [
+          "Domínios"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BancosResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/dominios/operacoes": {
+      "get": {
+        "tags": [
+          "Domínios"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperacoesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/documento/{id}/upload": {
+      "post": {
+        "tags": [
+          "Documentos"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oportunidade/{id}/follow-up": {
+      "post": {
+        "tags": [
+          "Follow-up"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowUp"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowUpRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "AuthRequest": {
+        "type": "object",
+        "properties": {
+          "secretId": {
+            "type": "string",
+            "example": "Secret ID"
+          },
+          "secretKey": {
+            "type": "string",
+            "example": "Secret Key"
+          }
+        }
+      },
+      "AuthOk": {
+        "type": "object",
+        "properties": {
+          "jwt": {
+            "type": "string",
+            "example": "JWT Session token"
+          },
+          "refreshToken": {
+            "type": "string",
+            "example": "JWT Refresh token"
+          },
+          "usuario": {
+            "type": "object",
+            "properties": {
+              "nome": {
+                "type": "string",
+                "example": "Nome do usuário autenticado"
+              },
+              "perfil": {
+                "type": "string",
+                "example": "Perfil do usuário autenticado"
+              },
+              "idParceiro": {
+                "type": "string",
+                "example": "ID do parceiro"
+              },
+              "idRegional": {
+                "type": "string",
+                "example": "ID da regional"
+              },
+              "idUsuarioParceiro": {
+                "type": "string",
+                "example": "ID do usuário parceiro"
+              },
+              "nomeUsuarioParceiro": {
+                "type": "string",
+                "example": "Nome do usuário parceiro"
+              },
+              "telefoneUsuarioParceiro": {
+                "type": "string",
+                "example": "Telefone do usuário parceiro"
+              }
+            }
+          }
+        }
+      },
+      "CreateOpportunityRequest": {
+        "type": "object",
+        "properties": {
+          "operacao": {
+            "type": "object",
+            "properties": {
+              "idOperacao": {
+                "type": "string",
+                "example": "123 (Obtido no serviço de domínio '/dominios/operacoes')"
+              }
+            }
+          },
+          "regional": {
+            "type": "object",
+            "properties": {
+              "idRegional": {
+                "type": "string",
+                "example": "123 (obtido no serviço de autenticação)"
+              }
+            }
+          },
+          "parceiro": {
+            "type": "object",
+            "properties": {
+              "idParceiro": {
+                "type": "string",
+                "example": "123 (obtido no serviço de autenticação)"
+              }
+            }
+          },
+          "usuarioParceiro": {
+            "type": "object",
+            "properties": {
+              "idUsuarioParceiro": {
+                "type": "string",
+                "example": "123 (obtido no serviço de autenticação)"
+              }
+            }
+          },
+          "tipoImovel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)"
+              }
+            }
+          },
+          "usoImovel": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "C/R (Comercial/Residencial)"
+              }
+            }
+          },
+          "uf": {
+            "type": "object",
+            "properties": {
+              "codigo": {
+                "type": "string",
+                "example": "Sigla da UF do imóvel"
+              }
+            }
+          },
+          "valorImovel": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazo": {
+            "type": "number",
+            "example": 123
+          },
+          "utilizaFgtsSimulacao": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "bancos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "idBanco": {
+                  "type": "number",
+                  "example": 123
+                },
+                "codigoBanco": {
+                  "type": "number",
+                  "example": 123
+                },
+                "nomeBanco": {
+                  "type": "string",
+                  "example": "Nome do Banco"
+                },
+                "flagSimulacao": {
+                  "type": "string",
+                  "example": "S/N"
+                }
+              }
+            }
+          },
+          "cpfCnpj": {
+            "type": "string",
+            "example": "12345678909 (apenas números)"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Nome do cliente"
+          },
+          "rendaTotal": {
+            "type": "number",
+            "example": 12345.67
+          },
+          "codigoSistemaAmortizacaoBanco": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "S/P (SAC/PRICE)"
+              }
+            }
+          },
+          "dataNascimento": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "email": {
+            "type": "string",
+            "example": "a@b.com.br"
+          },
+          "celular": {
+            "type": "string",
+            "example": "11912345678 (somente números)"
+          },
+          "fgCompoeRenda": {
+            "type": "boolean",
+            "example": true
+          },
+          "cpfConjuge": {
+            "type": "string",
+            "example": "12345678909 (apenas números)"
+          },
+          "nomeConjuge": {
+            "type": "string",
+            "example": "Nome do cônjuge"
+          },
+          "emailConjuge": {
+            "type": "string",
+            "example": "a@b.com.br"
+          },
+          "celularConjuge": {
+            "type": "string",
+            "example": "11912345678 (somente números)"
+          },
+          "rendaConjuge": {
+            "type": "number",
+            "example": 12345.67
+          },
+          "dataNascimentoConjuge": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "situacaoImovel": {
+            "type": "object",
+            "properties": {
+              "codigo": {
+                "type": "string",
+                "example": "N/U (Novo/Usado)"
+              }
+            }
+          },
+          "fgFinanciarDespesas": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "tipoEstadoCivilConjuge": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União Estável)"
+              }
+            }
+          },
+          "tipoEstadoCivil": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União Estável)"
+              }
+            }
+          }
+        }
+      },
+      "CreateParticipantRequest": {
+        "type": "object",
+        "properties": {
+          "tipoSituacao": {
+            "type": "string",
+            "example": "A/I (Ativa/Inativa)"
+          },
+          "nomeParticipante": {
+            "type": "string",
+            "example": "Nome do participante"
+          },
+          "tipoQualificacao": {
+            "type": "string",
+            "example": "CO/VD (Comprador/Vendedor)"
+          },
+          "tipoPessoa": {
+            "type": "string",
+            "example": "F/J (Física/Jurídica)"
+          },
+          "cpfCnpj": {
+            "type": "string",
+            "example": "12345678909 (apenas números)"
+          },
+          "dataNascimento": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "nomeMae": {
+            "type": "string",
+            "example": "Nome da mãe do participante"
+          },
+          "tipoSexo": {
+            "type": "string",
+            "example": "M/F (Masculino/Feminino)"
+          },
+          "tipoEstadoCivil": {
+            "type": "string",
+            "example": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União Estável)"
+          },
+          "tipoRegimeCasamento": {
+            "type": "string",
+            "example": "CP/CU/PA/SC/SO (Comunhão Parcial de Bens/Comunhão Universal de Bens/Participação Final nos Aquestos/Separação Convencional de Bens/Separação Obrigatória de Bens)"
+          },
+          "tipoDocumentoIdentidade": {
+            "type": "string",
+            "example": "RG/CNH"
+          },
+          "numeroDocumento": {
+            "type": "string",
+            "example": "Número do documento do participante"
+          },
+          "dataExpedicao": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "orgaoExpedidor": {
+            "type": "string",
+            "example": "Órgão expedidor do documento do participante"
+          },
+          "ufExpedicao": {
+            "type": "string",
+            "example": "UF expedidor do documento do participante"
+          },
+          "nomeProfissao": {
+            "type": "string",
+            "example": "Profissão do participante"
+          },
+          "nomeEmpresaProfissao": {
+            "type": "string",
+            "example": "Empresa da profissão do participante"
+          },
+          "renda": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "idBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "codigoAgencia": {
+            "type": "string",
+            "example": "1234"
+          },
+          "codigoContaCorrente": {
+            "type": "string",
+            "example": "001910123"
+          },
+          "digitoContaCorrente": {
+            "type": "string",
+            "example": "4"
+          },
+          "email": {
+            "type": "string",
+            "example": "a@b.com.br"
+          },
+          "celular": {
+            "type": "string",
+            "example": "11912345678 (somente números)"
+          },
+          "cep": {
+            "type": "string",
+            "example": "00000000"
+          },
+          "logradouro": {
+            "type": "string",
+            "example": "Logradouro do participante"
+          },
+          "numeroLogradouro": {
+            "type": "string",
+            "example": "Número do participante"
+          },
+          "complementoLogradouro": {
+            "type": "string",
+            "example": "Complemento do participante"
+          },
+          "bairro": {
+            "type": "string",
+            "example": "Bairro do participante"
+          },
+          "municipio": {
+            "type": "string",
+            "example": "Município do participante"
+          },
+          "uf": {
+            "type": "string",
+            "example": "UF do participante"
+          },
+          "tipoEmpresa": {
+            "type": "string",
+            "example": "SA/EPP/ME/MEI/EIRELI"
+          },
+          "dataRegistroEmpresa": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "faturamentoEmpresa": {
+            "type": "number",
+            "example": 12345678.9
+          },
+          "patrimonioLiquidoEmpresa": {
+            "type": "number",
+            "example": 12345678.9
+          },
+          "capitalSocialEmpresa": {
+            "type": "number",
+            "example": 12345678.9
+          },
+          "utilizaFgts": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "fgAutorizacaoDados": {
+            "type": "boolean",
+            "example": true
+          },
+          "nomeConjuge": {
+            "type": "string",
+            "example": "Nome do cônjuge"
+          },
+          "cpfConjuge": {
+            "type": "string",
+            "example": "12345678909 (apenas números)"
+          },
+          "dataNascimentoConjuge": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "tipoEstadoCivilConjuge": {
+            "type": "string",
+            "example": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União Estável)"
+          },
+          "tipoDocumentoIdentidadeConjuge": {
+            "type": "string",
+            "example": "RG/CNH"
+          },
+          "numeroDocumentoConjuge": {
+            "type": "string",
+            "example": "Número do documento do conjuge"
+          },
+          "dataExpedicaoConjuge": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "orgaoExpedidorConjuge": {
+            "type": "string",
+            "example": "Órgão expedidor do documento do conjuge"
+          },
+          "ufExpedicaoConjuge": {
+            "type": "string",
+            "example": "UF expedidor do documento do conjuge"
+          },
+          "nomeProfissaoConjuge": {
+            "type": "string",
+            "example": "Profissão do conjuge"
+          },
+          "rendaConjuge": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "nomeEmpresaProfissaoConjuge": {
+            "type": "string",
+            "example": "Empresa da profissão do conjuge"
+          },
+          "tipoSexoConjuge": {
+            "type": "string",
+            "example": "M/F (Masculino/Feminino)"
+          }
+        }
+      },
+      "UpdateParticipantRequest": {
+        "$ref": "#/components/schemas/CreateParticipantRequest"
+      },
+      "Participant": {
+        "type": "object",
+        "properties": {
+          "idParticipante": {
+            "type": "number",
+            "example": 123
+          },
+          "idOportunidade": {
+            "type": "number",
+            "example": 123
+          },
+          "tipoSituacao": {
+            "type": "string",
+            "example": "A/I (Ativa/Inativa)"
+          },
+          "nomeParticipante": {
+            "type": "string",
+            "example": "Nome do participante"
+          },
+          "tipoQualificacao": {
+            "type": "string",
+            "example": "CO/VD (Comprador/Vendedor)"
+          },
+          "tipoPessoa": {
+            "type": "string",
+            "example": "F/J (Física/Jurídica)"
+          },
+          "cpfCnpj": {
+            "type": "string",
+            "example": "00000000000 (somente numeros)"
+          },
+          "dataNascimento": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "tipoSexo": {
+            "type": "string",
+            "example": "M/F (Masculino/Feminino)"
+          },
+          "tipoEstadoCivil": {
+            "type": "string",
+            "example": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União Estável)"
+          },
+          "tipoRegimeCasamento": {
+            "type": "string",
+            "example": "CP/CU/PA/SC/SO (Comunhão Parcial de Bens/Comunhão Universal de Bens/Participação Final nos Aquestos/Separação Convencional de Bens/Separação Obrigatória de Bens)"
+          },
+          "tipoDocumentoIdentidade": {
+            "type": "string",
+            "example": "RG/CNH"
+          },
+          "numeroDocumento": {
+            "type": "string",
+            "example": "Número do documento do participante"
+          },
+          "dataExpedicao": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "orgaoExpedidor": {
+            "type": "string",
+            "example": "Órgão expedidor do documento do participante"
+          },
+          "ufExpedicao": {
+            "type": "string",
+            "example": "UF expedidor do documento do participante"
+          },
+          "nomeMae": {
+            "type": "string",
+            "example": "Nome da mãe do participante"
+          },
+          "nomeProfissao": {
+            "type": "string",
+            "example": "Profissão do participante"
+          },
+          "renda": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "idBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "codigoAgencia": {
+            "type": "string",
+            "example": "1234"
+          },
+          "codigoContaCorrente": {
+            "type": "string",
+            "example": "001910123"
+          },
+          "digitoContaCorrente": {
+            "type": "string",
+            "example": "4"
+          },
+          "compradorPrincipal": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "email": {
+            "type": "string",
+            "example": "a@b.com.br"
+          },
+          "celular": {
+            "type": "string",
+            "example": "11912345678 (somente números)"
+          },
+          "cep": {
+            "type": "string",
+            "example": "00000000"
+          },
+          "logradouro": {
+            "type": "string",
+            "example": "Logradouro do participante"
+          },
+          "numeroLogradouro": {
+            "type": "string",
+            "example": "Número do participante"
+          },
+          "complementoLogradouro": {
+            "type": "string",
+            "example": "Complemento do participante"
+          },
+          "bairro": {
+            "type": "string",
+            "example": "Bairro do participante"
+          },
+          "municipio": {
+            "type": "string",
+            "example": "Município do participante"
+          },
+          "uf": {
+            "type": "string",
+            "example": "UF do participante"
+          },
+          "tipoEmpresa": {
+            "type": "string",
+            "example": "SA/EPP/ME/MEI/EIRELI"
+          },
+          "dataRegistroEmpresa": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "faturamentoEmpresa": {
+            "type": "number",
+            "example": 12345678.9
+          },
+          "patrimonioLiquidoEmpresa": {
+            "type": "number",
+            "example": 12345678.9
+          },
+          "capitalSocialEmpresa": {
+            "type": "number",
+            "example": 12345678.9
+          },
+          "nomeConjuge": {
+            "type": "string",
+            "example": "Nome do conjuge"
+          },
+          "cpfConjuge": {
+            "type": "string",
+            "example": "00000000000 (somente numeros)"
+          },
+          "dataNascimentoConjuge": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "tipoEstadoCivilConjuge": {
+            "type": "string",
+            "example": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União Estável)"
+          },
+          "tipoDocumentoIdentidadeConjuge": {
+            "type": "string",
+            "example": "RG/CNH"
+          },
+          "numeroDocumentoConjuge": {
+            "type": "string",
+            "example": "Número do documento do conjuge"
+          },
+          "dataExpedicaoConjuge": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "orgaoExpedidorConjuge": {
+            "type": "string",
+            "example": "Órgão expedidor do documento do conjuge"
+          },
+          "ufExpedicaoConjuge": {
+            "type": "string",
+            "example": "UF expedidor do documento do conjuge"
+          },
+          "dataInativacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "idUsuarioInativacao": {
+            "type": "number",
+            "example": 123
+          },
+          "idUsuarioCriacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraCriacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "idUsuarioAlteracao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraAlteracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "nomeEmpresaProfissao": {
+            "type": "string",
+            "example": "Empresa da profissão do participante"
+          },
+          "utilizaFgts": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "nomeProfissaoConjuge": {
+            "type": "string",
+            "example": "Profissão do conjuge"
+          },
+          "rendaConjuge": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "nomeEmpresaProfissaoConjuge": {
+            "type": "string",
+            "example": "Empresa da profissão do conjuge"
+          },
+          "fgAutorizacaoDados": {
+            "type": "boolean",
+            "example": true
+          },
+          "tipoSexoConjuge": {
+            "type": "string",
+            "example": "M/F (Masculino/Feminino)"
+          }
+        }
+      },
+      "Opportunity": {
+        "type": "object",
+        "properties": {
+          "idOportunidade": {
+            "type": "number",
+            "example": 1234
+          },
+          "codigoOportunidade": {
+            "type": "string",
+            "example": "Código da oportunidade no sistema"
+          },
+          "idOperacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataOportunidade": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "tipoSituacao": {
+            "type": "string",
+            "example": "A/T/C (Ativa/Contrato Emitido/Cancelada)"
+          },
+          "idRegional": {
+            "type": "number",
+            "example": 123
+          },
+          "idParceiro": {
+            "type": "number",
+            "example": 123
+          },
+          "idUsuarioParceiro": {
+            "type": "number",
+            "example": 123
+          },
+          "tipoImovel": {
+            "type": "string",
+            "example": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)"
+          },
+          "tipoUtilizacaoImovel": {
+            "type": "string",
+            "example": "C/R (Comercial/Residencial)"
+          },
+          "cep": {
+            "type": "string",
+            "example": "00000000"
+          },
+          "logradouro": {
+            "type": "string",
+            "example": "Logradouro do imóvel"
+          },
+          "numeroLogradouro": {
+            "type": "string",
+            "example": "Número do imóvel"
+          },
+          "complementoLogradouro": {
+            "type": "string",
+            "example": "Complemento do imóvel"
+          },
+          "bairro": {
+            "type": "string",
+            "example": "Bairro do imóvel"
+          },
+          "municipio": {
+            "type": "string",
+            "example": "Município do imóvel"
+          },
+          "uf": {
+            "type": "string",
+            "example": "UF do imóvel"
+          },
+          "contatoAvaliacao": {
+            "type": "string",
+            "example": "Nome do contato da avaliação"
+          },
+          "telefoneContatoAvaliacao": {
+            "type": "string",
+            "example": "Telefone do contato da avaliação (somente números)"
+          },
+          "valorImovel": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorFinanciamentoSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "utilizaFgtsSimulacao": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "idBancoEscolhido": {
+            "type": "number",
+            "example": 123
+          },
+          "codigoOportunidadeBanco": {
+            "type": "string",
+            "example": "Código da oportunidade no banco"
+          },
+          "valorFinanciamentoBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "valorFinanciamentoBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBancoMax": {
+            "type": "number",
+            "example": 123
+          },
+          "taxaJurosAnoBanco": {
+            "type": "number",
+            "example": 12.34
+          },
+          "valorIofBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "sistemaAmortizacaoBanco": {
+            "type": "string",
+            "example": "S/P (SAC/PRICE)"
+          },
+          "indexadorBanco": {
+            "type": "string",
+            "example": "Indexador da Operação no retorno do Banco Escolhido"
+          },
+          "nomeIntervenienteQuitante": {
+            "type": "string",
+            "example": "Nome do Interveniente Quitante"
+          },
+          "descricaoIntervenienteQuitante": {
+            "type": "string",
+            "example": "Descrição para processo de Interveniente Quitante"
+          },
+          "tipoTemperatura": {
+            "type": "string",
+            "example": "Q/M/F (Quente/Morna/Fria)"
+          },
+          "dataPrevistaEmissaoContrato": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "dataCancelamento": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "idUsuarioCancelamento": {
+            "type": "number",
+            "example": 123
+          },
+          "idUsuarioCriacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraCriacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "idUsuarioAlteracao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraAlteracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "codigoSistemaAmortizacaoBanco": {
+            "type": "string",
+            "example": "S/P (SAC/PRICE)"
+          },
+          "situacaoImovel": {
+            "type": "string",
+            "example": "N/U (Novo/Usado)"
+          },
+          "fgFinanciarDespesas": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "valorTotalFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          }
+        }
+      },
+      "CreateOpportunityOk": {
+        "type": "object",
+        "properties": {
+          "oportunidade": {
+            "$ref": "#/components/schemas/Opportunity"
+          }
+        }
+      },
+      "OpportunityFull": {
+        "type": "object",
+        "properties": {
+          "idOportunidade": {
+            "type": "number",
+            "example": 1234
+          },
+          "codigoOportunidade": {
+            "type": "string",
+            "example": "Código da oportunidade no sistema"
+          },
+          "idOperacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataOportunidade": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "tipoSituacao": {
+            "type": "string",
+            "example": "A/T/C (Ativa/Contrato Emitido/Cancelada)"
+          },
+          "idRegional": {
+            "type": "number",
+            "example": 123
+          },
+          "idParceiro": {
+            "type": "number",
+            "example": 123
+          },
+          "idUsuarioParceiro": {
+            "type": "number",
+            "example": 123
+          },
+          "tipoImovel": {
+            "type": "string",
+            "example": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)"
+          },
+          "tipoUtilizacaoImovel": {
+            "type": "string",
+            "example": "C/R (Comercial/Residencial)"
+          },
+          "cep": {
+            "type": "string",
+            "example": "00000000"
+          },
+          "logradouro": {
+            "type": "string",
+            "example": "Logradouro do imóvel"
+          },
+          "numeroLogradouro": {
+            "type": "string",
+            "example": "Número do imóvel"
+          },
+          "complementoLogradouro": {
+            "type": "string",
+            "example": "Complemento do imóvel"
+          },
+          "bairro": {
+            "type": "string",
+            "example": "Bairro do imóvel"
+          },
+          "municipio": {
+            "type": "string",
+            "example": "Município do imóvel"
+          },
+          "uf": {
+            "type": "string",
+            "example": "UF do imóvel"
+          },
+          "contatoAvaliacao": {
+            "type": "string",
+            "example": "Nome do contato da avaliação"
+          },
+          "telefoneContatoAvaliacao": {
+            "type": "string",
+            "example": "Telefone do contato da avaliação (somente números)"
+          },
+          "valorImovel": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorFinanciamentoSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "utilizaFgtsSimulacao": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "idBancoEscolhido": {
+            "type": "number",
+            "example": 123
+          },
+          "codigoOportunidadeBanco": {
+            "type": "string",
+            "example": "Código da oportunidade no banco"
+          },
+          "valorFinanciamentoBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "valorFinanciamentoBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBancoMax": {
+            "type": "number",
+            "example": 123
+          },
+          "taxaJurosAnoBanco": {
+            "type": "number",
+            "example": 12.34
+          },
+          "valorIofBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "sistemaAmortizacaoBanco": {
+            "type": "string",
+            "example": "S/P (SAC/PRICE)"
+          },
+          "indexadorBanco": {
+            "type": "string",
+            "example": "Indexador da Operação no retorno do Banco Escolhido"
+          },
+          "nomeIntervenienteQuitante": {
+            "type": "string",
+            "example": "Nome do Interveniente Quitante"
+          },
+          "descricaoIntervenienteQuitante": {
+            "type": "string",
+            "example": "Descrição para processo de Interveniente Quitante"
+          },
+          "tipoTemperatura": {
+            "type": "string",
+            "example": "Q/M/F (Quente/Morna/Fria)"
+          },
+          "dataPrevistaEmissaoContrato": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "dataCancelamento": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "idUsuarioCancelamento": {
+            "type": "number",
+            "example": 123
+          },
+          "idUsuarioCriacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraCriacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "idUsuarioAlteracao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraAlteracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "codigoSistemaAmortizacaoBanco": {
+            "type": "string",
+            "example": "S/P (SAC/PRICE)"
+          },
+          "situacaoImovel": {
+            "type": "string",
+            "example": "N/U (Novo/Usado)"
+          },
+          "fgFinanciarDespesas": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "valorTotalFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "simulacoes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "idSimulacao": {
+                  "type": "number",
+                  "example": 123
+                },
+                "idOportunidade": {
+                  "type": "number",
+                  "example": 123
+                },
+                "idBanco": {
+                  "type": "number",
+                  "example": 123
+                },
+                "dataSimulacao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd"
+                },
+                "tipoImovel": {
+                  "type": "string",
+                  "example": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)"
+                },
+                "tipoUtilizacaoImovel": {
+                  "type": "string",
+                  "example": "C/R (Comercial/Residencial)"
+                },
+                "valorImovel": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "valorFinanciamentoSimulacao": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "valorParcelaSimulacao": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "prazoPagamentoSimulacao": {
+                  "type": "number",
+                  "example": 123
+                },
+                "utilizaFgtsSimulacao": {
+                  "type": "string",
+                  "example": "S/N"
+                },
+                "tipoSituacao": {
+                  "type": "string",
+                  "example": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito Recusado)"
+                },
+                "dataHoraEnvioIntegracao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd HH:mm:ss"
+                },
+                "dataHoraRetornoIntegracao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd HH:mm:ss"
+                },
+                "bancoEscolhido": {
+                  "type": "string",
+                  "example": "S/N"
+                },
+                "codigoOportunidadeBanco": {
+                  "type": "string",
+                  "example": "Código da oportunidade no banco"
+                },
+                "valorFinanciamentoBanco": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "valorParcelaBanco": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "prazoPagamentoBanco": {
+                  "type": "number",
+                  "example": 123
+                },
+                "valorFinanciamentoBancoMax": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "valorParcelaBancoMax": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "prazoPagamentoBancoMax": {
+                  "type": "number",
+                  "example": 123
+                },
+                "taxaJurosAnoBanco": {
+                  "type": "number",
+                  "example": 12.34
+                },
+                "valorIofBanco": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "codigoSistemaAmortizacaoBanco": {
+                  "type": "string",
+                  "example": "S/P (SAC/PRICE)"
+                },
+                "codigoIndexadorBanco": {
+                  "type": "string",
+                  "example": "Indexador da Operação no retorno do Banco Escolhido"
+                },
+                "idUsuarioCriacao": {
+                  "type": "number",
+                  "example": 123
+                },
+                "dataHoraCriacao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd HH:mm:ss"
+                },
+                "situacaoImovel": {
+                  "type": "string",
+                  "example": "N/U (Novo/Usado)"
+                },
+                "fgFinanciarDespesas": {
+                  "type": "string",
+                  "example": "S/N"
+                },
+                "agencia": {
+                  "type": "string",
+                  "example": "1234"
+                },
+                "conta": {
+                  "type": "string",
+                  "example": "12313"
+                },
+                "digito": {
+                  "type": "string",
+                  "example": "1"
+                },
+                "valorDespesasFinanciadas": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "valorTotalFinanciamento": {
+                  "type": "number",
+                  "example": 123456.78
+                },
+                "retornoIntegracao": {
+                  "type": "string",
+                  "example": "Retorno da integração"
+                },
+                "fgAutorizacaoDados": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "codigoSituacaoBanco": {
+                  "type": "string",
+                  "example": "Código de situação retornado pelo banco"
+                },
+                "banco": {
+                  "type": "object",
+                  "properties": {
+                    "idBanco": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "codigoBanco": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "nomeBanco": {
+                      "type": "string",
+                      "example": "Nome do Banco"
+                    },
+                    "flagSimulacao": {
+                      "type": "string",
+                      "example": "S/N"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "participantes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Participant"
+            }
+          },
+          "regional": {
+            "type": "object",
+            "properties": {
+              "idRegional": {
+                "type": "number",
+                "example": 123
+              },
+              "nomeRegional": {
+                "type": "string",
+                "example": "Nome da regional"
+              },
+              "cnpj": {
+                "type": "string",
+                "example": "1234567890123456 (somente números)"
+              },
+              "cep": {
+                "type": "string",
+                "example": "00000000"
+              },
+              "logradouro": {
+                "type": "string",
+                "example": "Logradouro da regional"
+              },
+              "numeroLogradouro": {
+                "type": "string",
+                "example": "Número da regional"
+              },
+              "complementoLogradouro": {
+                "type": "string",
+                "example": "Complemento da regional"
+              },
+              "bairro": {
+                "type": "string",
+                "example": "Bairro da regional"
+              },
+              "municipio": {
+                "type": "string",
+                "example": "Município da regional"
+              },
+              "uf": {
+                "type": "string",
+                "example": "UF da regional"
+              },
+              "idUsuarioCriacao": {
+                "type": "number",
+                "example": 123
+              },
+              "dataHoraCriacao": {
+                "type": "string",
+                "example": "yyyy-MM-dd HH:mm:ss"
+              },
+              "idUsuarioAlteracao": {
+                "type": "number",
+                "example": 123
+              },
+              "dataHoraAlteracao": {
+                "type": "string",
+                "example": "yyyy-MM-dd HH:mm:ss"
+              }
+            }
+          },
+          "parceiro": {
+            "type": "object",
+            "properties": {
+              "idParceiro": {
+                "type": "number",
+                "example": 123
+              },
+              "nomeParceiro": {
+                "type": "string",
+                "example": "Razão social do parceiro"
+              },
+              "cpfCnpj": {
+                "type": "string",
+                "example": "1234567890123456 (somente números)"
+              },
+              "tipoOrigem": {
+                "type": "string",
+                "example": "RM/IN/PR/ST/MK (REMAX/Indicação/Prospecção/Site/Marketing)"
+              },
+              "nomeProprietario": {
+                "type": "string",
+                "example": "Nome do proprietário"
+              },
+              "emailProprietario": {
+                "type": "string",
+                "example": "Email do proprietário"
+              },
+              "celularProprietario": {
+                "type": "string",
+                "example": "Telefone do proprietário"
+              },
+              "nomeFaturamento": {
+                "type": "string",
+                "example": "Nome da pessoa que cuida do faturamento"
+              },
+              "emailFaturamento": {
+                "type": "string",
+                "example": "E-mail de faturamento"
+              },
+              "celularFaturamento": {
+                "type": "string",
+                "example": "Telefone de faturamento"
+              },
+              "cep": {
+                "type": "string",
+                "example": "00000000"
+              },
+              "logradouro": {
+                "type": "string",
+                "example": "Logradouro do parceiro"
+              },
+              "numeroLogradouro": {
+                "type": "string",
+                "example": "Número do parceiro"
+              },
+              "complementoLogradouro": {
+                "type": "string",
+                "example": "Complemento do parceiro"
+              },
+              "bairro": {
+                "type": "string",
+                "example": "Bairro do parceiro"
+              },
+              "municipio": {
+                "type": "string",
+                "example": "Município do parceiro"
+              },
+              "uf": {
+                "type": "string",
+                "example": "UF do parceiro"
+              },
+              "idUsuarioCriacao": {
+                "type": "number",
+                "example": 123
+              },
+              "dataHoraCriacao": {
+                "type": "string",
+                "example": "yyyy-MM-dd HH:mm:ss"
+              },
+              "idUsuarioAlteracao": {
+                "type": "number",
+                "example": 123
+              },
+              "dataHoraAlteracao": {
+                "type": "string",
+                "example": "yyyy-MM-dd HH:mm:ss"
+              },
+              "idRegional": {
+                "type": "number",
+                "example": 123
+              },
+              "tipoSituacao": {
+                "type": "string",
+                "example": "A/I (Ativa/Inativa)"
+              },
+              "perfil": {
+                "type": "string",
+                "example": "AS/IM/CO/CA (Assessoria/Imobiliária/Corretor/Cartório)"
+              }
+            }
+          },
+          "bancoEscolhido": {
+            "type": "object",
+            "properties": {
+              "idBanco": {
+                "type": "number",
+                "example": 123
+              },
+              "codigoBanco": {
+                "type": "number",
+                "example": 123
+              },
+              "nomeBanco": {
+                "type": "string",
+                "example": "Nome do Banco"
+              },
+              "flagSimulacao": {
+                "type": "string",
+                "example": "S/N"
+              }
+            }
+          },
+          "operacao": {
+            "type": "object",
+            "properties": {
+              "idOperacao": {
+                "type": "number",
+                "example": 123
+              },
+              "nomeOperacao": {
+                "type": "string",
+                "example": "Nome do Produto"
+              },
+              "idUsuarioCriacao": {
+                "type": "number",
+                "example": 123
+              },
+              "dataHoraCriacao": {
+                "type": "string",
+                "example": "yyyy-MM-dd HH:mm:ss"
+              },
+              "idUsuarioAlteracao": {
+                "type": "number",
+                "example": 123
+              },
+              "dataHoraAlteracao": {
+                "type": "string",
+                "example": "yyyy-MM-dd HH:mm:ss"
+              },
+              "tipoSituacao": {
+                "type": "string",
+                "example": "A/I (Ativa/Inativa)"
+              }
+            }
+          },
+          "usuarioParceiro": {
+            "type": "object",
+            "properties": {
+              "idUsuarioParceiro": {
+                "type": "number",
+                "example": 123
+              },
+              "nomeUsuarioParceiro": {
+                "type": "string",
+                "example": "Razão social do parceiro"
+              },
+              "cpfCnpj": {
+                "type": "string",
+                "example": "1234567890123456 (somente números)"
+              },
+              "tipoOrigem": {
+                "type": "string",
+                "example": "RM/IN/PR/ST/MK (REMAX/Indicação/Prospecção/Site/Marketing)"
+              },
+              "nomeProprietario": {
+                "type": "string",
+                "example": "Nome do proprietário"
+              },
+              "emailProprietario": {
+                "type": "string",
+                "example": "Email do proprietário"
+              },
+              "celularProprietario": {
+                "type": "string",
+                "example": "Telefone do proprietário"
+              },
+              "nomeFaturamento": {
+                "type": "string",
+                "example": "Nome da pessoa que cuida do faturamento"
+              },
+              "emailFaturamento": {
+                "type": "string",
+                "example": "E-mail de faturamento"
+              },
+              "celularFaturamento": {
+                "type": "string",
+                "example": "Telefone de faturamento"
+              },
+              "cep": {
+                "type": "string",
+                "example": "00000000"
+              },
+              "logradouro": {
+                "type": "string",
+                "example": "Logradouro do parceiro"
+              },
+              "numeroLogradouro": {
+                "type": "string",
+                "example": "Número do parceiro"
+              },
+              "complementoLogradouro": {
+                "type": "string",
+                "example": "Complemento do parceiro"
+              },
+              "bairro": {
+                "type": "string",
+                "example": "Bairro do parceiro"
+              },
+              "municipio": {
+                "type": "string",
+                "example": "Município do parceiro"
+              },
+              "uf": {
+                "type": "string",
+                "example": "UF do parceiro"
+              },
+              "idUsuarioConsultor": {
+                "type": "number",
+                "example": 123
+              },
+              "idUsuarioAnalista": {
+                "type": "number",
+                "example": 123
+              },
+              "idUsuarioCriacao": {
+                "type": "number",
+                "example": 123
+              },
+              "dataHoraCriacao": {
+                "type": "string",
+                "example": "yyyy-MM-dd HH:mm:ss"
+              },
+              "idUsuarioAlteracao": {
+                "type": "number",
+                "example": 123
+              },
+              "dataHoraAlteracao": {
+                "type": "string",
+                "example": "yyyy-MM-dd HH:mm:ss"
+              },
+              "idParceiro": {
+                "type": "number",
+                "example": 123
+              },
+              "tipoSituacao": {
+                "type": "string",
+                "example": "A/I (Ativa/Inativa)"
+              },
+              "perfil": {
+                "type": "string",
+                "example": "AS/IM/CO/CA (Assessoria/Imobiliária/Corretor/Cartório)"
+              }
+            }
+          },
+          "atividadesOportunidade": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "idAtividadeOportunidade": {
+                  "type": "number",
+                  "example": 123
+                },
+                "idOportunidade": {
+                  "type": "number",
+                  "example": 123
+                },
+                "idAtividade": {
+                  "type": "number",
+                  "example": 123
+                },
+                "tipoFormaInclusao": {
+                  "type": "string",
+                  "example": "A/M (Automática/Manual)"
+                },
+                "dataInclusao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd"
+                },
+                "dataPrevisaoConclusao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd"
+                },
+                "tipoSituacao": {
+                  "type": "string",
+                  "example": "N/E/C (Não Iniciada/Em Andamento/Concluída)"
+                },
+                "idUsuarioCriacao": {
+                  "type": "number",
+                  "example": 123
+                },
+                "dataHoraCriacao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd HH:mm:ss"
+                },
+                "idUsuarioAtuacao": {
+                  "type": "number",
+                  "example": 123
+                },
+                "dataHoraAtuacao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd HH:mm:ss"
+                },
+                "idUsuarioConclusao": {
+                  "type": "number",
+                  "example": 123
+                },
+                "dataHoraConclusao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd HH:mm:ss"
+                },
+                "idEtapa": {
+                  "type": "number",
+                  "example": 123
+                },
+                "atividade": {
+                  "type": "object",
+                  "properties": {
+                    "idAtividade": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "nomeAtividade": {
+                      "type": "string",
+                      "example": "Nome da atividade"
+                    },
+                    "idEtapa": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "tipoSituacao": {
+                      "type": "string",
+                      "example": "A/I (Ativa/Inativa)"
+                    },
+                    "ordemAtividade": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "diasSla": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "idUsuarioCriacao": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "dataHoraCriacao": {
+                      "type": "string",
+                      "example": "yyyy-MM-dd HH:mm:ss"
+                    },
+                    "idUsuarioAlteracao": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "dataHoraAlteracao": {
+                      "type": "string",
+                      "example": "yyyy-MM-dd HH:mm:ss"
+                    },
+                    "flagEmissaoContrato": {
+                      "type": "string",
+                      "example": "S/N"
+                    }
+                  }
+                },
+                "etapa": {
+                  "type": "object",
+                  "properties": {
+                    "idEtapa": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "nomeEtapa": {
+                      "type": "string",
+                      "example": "Nome da etapa"
+                    },
+                    "idOperacao": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "tipoSituacao": {
+                      "type": "string",
+                      "example": "A/I (Ativa/Inativa)"
+                    },
+                    "ordemEtapa": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "idUsuarioCriacao": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "dataHoraCriacao": {
+                      "type": "string",
+                      "example": "yyyy-MM-dd HH:mm:ss"
+                    },
+                    "idUsuarioAlteracao": {
+                      "type": "number",
+                      "example": 123
+                    },
+                    "dataHoraAlteracao": {
+                      "type": "string",
+                      "example": "yyyy-MM-dd HH:mm:ss"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "GetOpportunityOk": {
+        "type": "object",
+        "properties": {
+          "oportunidade": {
+            "$ref": "#/components/schemas/OpportunityFull"
+          },
+          "etapa": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "idEtapa": {
+                  "type": "number",
+                  "example": 123
+                },
+                "nomeEtapa": {
+                  "type": "string",
+                  "example": "Nome da etapa"
+                },
+                "idOperacao": {
+                  "type": "number",
+                  "example": 123
+                },
+                "tipoSituacao": {
+                  "type": "string",
+                  "example": "A/I (Ativa/Inativa)"
+                },
+                "ordemEtapa": {
+                  "type": "number",
+                  "example": 123
+                },
+                "idUsuarioCriacao": {
+                  "type": "number",
+                  "example": 123
+                },
+                "dataHoraCriacao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd HH:mm:ss"
+                },
+                "idUsuarioAlteracao": {
+                  "type": "number",
+                  "example": 123
+                },
+                "dataHoraAlteracao": {
+                  "type": "string",
+                  "example": "yyyy-MM-dd HH:mm:ss"
+                },
+                "active": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "completed": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "BancosResponse": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "idBanco": {
+              "type": "number",
+              "example": 123
+            },
+            "codigoBanco": {
+              "type": "number",
+              "example": 123
+            },
+            "nomeBanco": {
+              "type": "string",
+              "example": "Nome do Banco"
+            },
+            "flagSimulacao": {
+              "type": "string",
+              "example": "S/N"
+            }
+          }
+        }
+      },
+      "OperacoesResponse": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "idOperacao": {
+              "type": "number",
+              "example": 123
+            },
+            "nomeOperacao": {
+              "type": "string",
+              "example": "Nome do Produto"
+            }
+          }
+        }
+      },
+      "FollowUpRequest": {
+        "type": "object",
+        "properties": {
+          "idOportunidade": {
+            "type": "number",
+            "example": 123
+          },
+          "tipoFup": {
+            "type": "string",
+            "example": "I/E (Interno/Externo)"
+          },
+          "titulo": {
+            "type": "string",
+            "example": "Título do follow-up"
+          },
+          "comentario": {
+            "type": "string",
+            "example": "Texto do follow-up"
+          }
+        }
+      },
+      "FollowUp": {
+        "type": "object",
+        "properties": {
+          "idFupOportunidade": {
+            "type": "number",
+            "example": 123
+          },
+          "idOportunidade": {
+            "type": "number",
+            "example": 123
+          },
+          "tipoFup": {
+            "type": "string",
+            "example": "I/E (Interno/Externo)"
+          },
+          "titulo": {
+            "type": "string",
+            "example": "Título do follow-up"
+          },
+          "comentario": {
+            "type": "string",
+            "example": "Texto do follow-up"
+          },
+          "idUsuarioCriacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraCriacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          }
+        }
+      },
+      "CreateProposalRequest": {
+        "type": "object",
+        "properties": {
+          "idSimulacao": {
+            "type": "number",
+            "example": 123
+          }
+        }
+      },
+      "CreateProposalOk": {
+        "type": "object",
+        "properties": {
+          "idSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "idOportunidade": {
+            "type": "number",
+            "example": 123
+          },
+          "idBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "dataSimulacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "tipoImovel": {
+            "type": "string",
+            "example": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)"
+          },
+          "tipoUtilizacaoImovel": {
+            "type": "string",
+            "example": "C/R (Comercial/Residencial)"
+          },
+          "valorImovel": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorFinanciamentoSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "utilizaFgtsSimulacao": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "tipoSituacao": {
+            "type": "string",
+            "example": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito Recusado)"
+          },
+          "dataHoraEnvioIntegracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "dataHoraRetornoIntegracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "bancoEscolhido": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "codigoOportunidadeBanco": {
+            "type": "string",
+            "example": "Código da oportunidade no banco"
+          },
+          "valorFinanciamentoBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "valorFinanciamentoBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBancoMax": {
+            "type": "number",
+            "example": 123
+          },
+          "taxaJurosAnoBanco": {
+            "type": "number",
+            "example": 12.34
+          },
+          "valorIofBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "codigoSistemaAmortizacaoBanco": {
+            "type": "string",
+            "example": "S/P (SAC/PRICE)"
+          },
+          "codigoIndexadorBanco": {
+            "type": "string",
+            "example": "Indexador da Operação no retorno do Banco Escolhido"
+          },
+          "idUsuarioCriacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraCriacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "situacaoImovel": {
+            "type": "string",
+            "example": "N/U (Novo/Usado)"
+          },
+          "fgFinanciarDespesas": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "agencia": {
+            "type": "string",
+            "example": "1234"
+          },
+          "conta": {
+            "type": "string",
+            "example": "12313"
+          },
+          "digito": {
+            "type": "string",
+            "example": "1"
+          },
+          "valorDespesasFinanciadas": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorTotalFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "retornoIntegracao": {
+            "type": "string",
+            "example": "Retorno da integração"
+          },
+          "fgAutorizacaoDados": {
+            "type": "boolean",
+            "example": true
+          },
+          "codigoSituacaoBanco": {
+            "type": "string",
+            "example": "Código de situação retornado pelo banco"
+          },
+          "banco": {
+            "type": "object",
+            "properties": {
+              "idBanco": {
+                "type": "number",
+                "example": 123
+              },
+              "codigoBanco": {
+                "type": "number",
+                "example": 123
+              },
+              "nomeBanco": {
+                "type": "string",
+                "example": "Nome do Banco"
+              },
+              "flagSimulacao": {
+                "type": "string",
+                "example": "S/N"
+              }
+            }
+          }
+        }
+      },
+      "SendDocumentsRequest": {
+        "type": "object",
+        "properties": {
+          "idSimulacao": {
+            "type": "number",
+            "example": 123
+          }
+        }
+      },
+      "SendDocumentsResponse": {
+        "type": "object",
+        "properties": {
+          "sucesso": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number",
+                  "example": 123
+                },
+                "codigoGrupoDocumento": {
+                  "type": "number",
+                  "example": 123
+                },
+                "codigoIntegracao": {
+                  "type": "string",
+                  "example": "123"
+                },
+                "cpfCnpj": {
+                  "type": "string",
+                  "example": "12345678909"
+                },
+                "nomeDocumento": {
+                  "type": "string",
+                  "example": "Nome do documento"
+                },
+                "nomeParticipante": {
+                  "type": "string",
+                  "example": "Nome do participante"
+                }
+              }
+            }
+          },
+          "error": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number",
+                  "example": 123
+                },
+                "codigoGrupoDocumento": {
+                  "type": "number",
+                  "example": 123
+                },
+                "codigoIntegracao": {
+                  "type": "string",
+                  "example": "123"
+                },
+                "cpfCnpj": {
+                  "type": "string",
+                  "example": "12345678909"
+                },
+                "nomeDocumento": {
+                  "type": "string",
+                  "example": "Nome do documento"
+                },
+                "nomeParticipante": {
+                  "type": "string",
+                  "example": "Nome do participante"
+                },
+                "erroIntegracao": {
+                  "type": "string",
+                  "example": "Mensagem de erro"
+                }
+              }
+            }
+          }
+        }
+      },
+      "BasicError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "Error code"
+          },
+          "message": {
+            "type": "string",
+            "example": "Some message"
+          }
+        }
+      },
+      "SituacaoIntegracaoDocumento": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "success",
+          "error"
+        ]
+      },
+      "CreateSimulationRequest": {
+        "type": "object",
+        "properties": {
+          "valorImovel": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazo": {
+            "type": "number",
+            "example": 123
+          },
+          "codigoSistemaAmortizacaoBanco": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "S/P (SAC/PRICE)"
+              }
+            }
+          },
+          "codigoOportunidadeBanco": {
+            "type": "string",
+            "example": "Código da oportunidade no banco"
+          },
+          "valorParcelaBanco": {
+            "type": "number",
+            "example": 12345.67
+          },
+          "taxaJurosAnoBanco": {
+            "type": "number",
+            "example": 12.34
+          },
+          "codigoIndexadorBanco": {
+            "type": "string",
+            "example": "Indexador da Operação no retorno do Banco Escolhido"
+          },
+          "valorIofBanco": {
+            "type": "number",
+            "example": 12345.67
+          },
+          "valorFinanciamentoBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBancoMax": {
+            "type": "number",
+            "example": 12345.67
+          },
+          "prazoPagamentoBancoMax": {
+            "type": "number",
+            "example": 123
+          },
+          "banco": {
+            "type": "object",
+            "properties": {
+              "idBanco": {
+                "type": "number",
+                "example": 123
+              }
+            }
+          },
+          "fgAutorizacaoDados": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "ListaUsuariosParceirosResponse": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "idUsuarioParceiro": {
+              "type": "number",
+              "example": 123
+            },
+            "nomeUsuarioParceiro": {
+              "type": "string",
+              "example": "Nome do Usuário Parceiro"
+            },
+            "cpfCnpj": {
+              "type": "string",
+              "example": "12345678909 (somente números)"
+            },
+            "nomeProprietario": {
+              "type": "string",
+              "example": "Nome do Proprietário"
+            },
+            "emailProprietario": {
+              "type": "string",
+              "example": "a@b.com.br"
+            },
+            "celularProprietario": {
+              "type": "string",
+              "example": "11912345678"
+            },
+            "nomeFaturamento": {
+              "type": "string",
+              "example": "Nome do Responsável pelo Faturamento"
+            },
+            "emailFaturamento": {
+              "type": "string",
+              "example": "a@b.com.br"
+            },
+            "celularFaturamento": {
+              "type": "string",
+              "example": "11912345678"
+            },
+            "tipoSituacao": {
+              "type": "string",
+              "example": "A/I (Ativa/Inativa)"
+            }
+          }
+        }
+      },
+      "CreateSimulationResponse": {
+        "type": "object",
+        "properties": {
+          "idSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "idOportunidade": {
+            "type": "number",
+            "example": 123
+          },
+          "idBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "dataSimulacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "tipoImovel": {
+            "type": "string",
+            "example": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)"
+          },
+          "tipoUtilizacaoImovel": {
+            "type": "string",
+            "example": "C/R (Comercial/Residencial)"
+          },
+          "valorImovel": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorFinanciamentoSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "utilizaFgtsSimulacao": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "tipoSituacao": {
+            "type": "string",
+            "example": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito Recusado)"
+          },
+          "dataHoraEnvioIntegracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "dataHoraRetornoIntegracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "bancoEscolhido": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "codigoOportunidadeBanco": {
+            "type": "string",
+            "example": "Código da oportunidade no banco"
+          },
+          "valorFinanciamentoBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "valorFinanciamentoBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBancoMax": {
+            "type": "number",
+            "example": 123
+          },
+          "taxaJurosAnoBanco": {
+            "type": "number",
+            "example": 12.34
+          },
+          "valorIofBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "codigoSistemaAmortizacaoBanco": {
+            "type": "string",
+            "example": "S/P (SAC/PRICE)"
+          },
+          "codigoIndexadorBanco": {
+            "type": "string",
+            "example": "Indexador da Operação no retorno do Banco Escolhido"
+          },
+          "idUsuarioCriacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraCriacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "situacaoImovel": {
+            "type": "string",
+            "example": "N/U (Novo/Usado)"
+          },
+          "fgFinanciarDespesas": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "agencia": {
+            "type": "string",
+            "example": "1234"
+          },
+          "conta": {
+            "type": "string",
+            "example": "12313"
+          },
+          "digito": {
+            "type": "string",
+            "example": "1"
+          },
+          "valorDespesasFinanciadas": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorTotalFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "retornoIntegracao": {
+            "type": "string",
+            "example": "Retorno da integração"
+          },
+          "fgAutorizacaoDados": {
+            "type": "boolean",
+            "example": true
+          },
+          "codigoSituacaoBanco": {
+            "type": "string",
+            "example": "Código de situação retornado pelo banco"
+          }
+        }
+      },
+      "UpdateSimulationRequest": {
+        "type": "object",
+        "properties": {
+          "valorImovel": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazo": {
+            "type": "number",
+            "example": 123
+          },
+          "codigoSistemaAmortizacaoBanco": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "S/P (SAC/PRICE)"
+              }
+            }
+          },
+          "codigoOportunidadeBanco": {
+            "type": "string",
+            "example": "Código da oportunidade no banco"
+          },
+          "valorParcelaBanco": {
+            "type": "number",
+            "example": 12345.67
+          },
+          "taxaJurosAnoBanco": {
+            "type": "number",
+            "example": 12.34
+          },
+          "codigoIndexadorBanco": {
+            "type": "string",
+            "example": "Indexador da Operação no retorno do Banco Escolhido"
+          },
+          "valorIofBanco": {
+            "type": "number",
+            "example": 12345.67
+          },
+          "valorFinanciamentoBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBancoMax": {
+            "type": "number",
+            "example": 12345.67
+          },
+          "prazoPagamentoBancoMax": {
+            "type": "number",
+            "example": 123
+          },
+          "valorDespesasFinanciadas": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorTotalFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "fgFinanciarDespesas": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "fgAutorizacaoDados": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "UpdateSimulationResponse": {
+        "type": "object",
+        "properties": {
+          "idSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "idOportunidade": {
+            "type": "number",
+            "example": 123
+          },
+          "idBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "dataSimulacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "tipoImovel": {
+            "type": "string",
+            "example": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)"
+          },
+          "tipoUtilizacaoImovel": {
+            "type": "string",
+            "example": "C/R (Comercial/Residencial)"
+          },
+          "valorImovel": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorFinanciamentoSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "utilizaFgtsSimulacao": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "tipoSituacao": {
+            "type": "string",
+            "example": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito Recusado)"
+          },
+          "dataHoraEnvioIntegracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "dataHoraRetornoIntegracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "bancoEscolhido": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "codigoOportunidadeBanco": {
+            "type": "string",
+            "example": "Código da oportunidade no banco"
+          },
+          "valorFinanciamentoBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "valorFinanciamentoBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBancoMax": {
+            "type": "number",
+            "example": 123
+          },
+          "taxaJurosAnoBanco": {
+            "type": "number",
+            "example": 12.34
+          },
+          "valorIofBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "codigoSistemaAmortizacaoBanco": {
+            "type": "string",
+            "example": "S/P (SAC/PRICE)"
+          },
+          "codigoIndexadorBanco": {
+            "type": "string",
+            "example": "Indexador da Operação no retorno do Banco Escolhido"
+          },
+          "idUsuarioCriacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraCriacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "situacaoImovel": {
+            "type": "string",
+            "example": "N/U (Novo/Usado)"
+          },
+          "fgFinanciarDespesas": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "agencia": {
+            "type": "string",
+            "example": "1234"
+          },
+          "conta": {
+            "type": "string",
+            "example": "12313"
+          },
+          "digito": {
+            "type": "string",
+            "example": "1"
+          },
+          "valorDespesasFinanciadas": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorTotalFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "retornoIntegracao": {
+            "type": "string",
+            "example": "Retorno da integração"
+          },
+          "fgAutorizacaoDados": {
+            "type": "boolean",
+            "example": true
+          },
+          "codigoSituacaoBanco": {
+            "type": "string",
+            "example": "Código de situação retornado pelo banco"
+          }
+        }
+      },
+      "SimulationIntegrationResponse": {
+        "type": "object",
+        "properties": {
+          "idSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "idOportunidade": {
+            "type": "number",
+            "example": 123
+          },
+          "idBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "dataSimulacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd"
+          },
+          "tipoImovel": {
+            "type": "string",
+            "example": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)"
+          },
+          "tipoUtilizacaoImovel": {
+            "type": "string",
+            "example": "C/R (Comercial/Residencial)"
+          },
+          "valorImovel": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorFinanciamentoSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaSimulacao": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoSimulacao": {
+            "type": "number",
+            "example": 123
+          },
+          "utilizaFgtsSimulacao": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "tipoSituacao": {
+            "type": "string",
+            "example": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito Recusado)"
+          },
+          "dataHoraEnvioIntegracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "dataHoraRetornoIntegracao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "bancoEscolhido": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "codigoOportunidadeBanco": {
+            "type": "string",
+            "example": "Código da oportunidade no banco"
+          },
+          "valorFinanciamentoBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBanco": {
+            "type": "number",
+            "example": 123
+          },
+          "valorFinanciamentoBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorParcelaBancoMax": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "prazoPagamentoBancoMax": {
+            "type": "number",
+            "example": 123
+          },
+          "taxaJurosAnoBanco": {
+            "type": "number",
+            "example": 12.34
+          },
+          "valorIofBanco": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "codigoSistemaAmortizacaoBanco": {
+            "type": "string",
+            "example": "S/P (SAC/PRICE)"
+          },
+          "codigoIndexadorBanco": {
+            "type": "string",
+            "example": "Indexador da Operação no retorno do Banco Escolhido"
+          },
+          "idUsuarioCriacao": {
+            "type": "number",
+            "example": 123
+          },
+          "dataHoraCriacao": {
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          },
+          "situacaoImovel": {
+            "type": "string",
+            "example": "N/U (Novo/Usado)"
+          },
+          "fgFinanciarDespesas": {
+            "type": "string",
+            "example": "S/N"
+          },
+          "agencia": {
+            "type": "string",
+            "example": "1234"
+          },
+          "conta": {
+            "type": "string",
+            "example": "12313"
+          },
+          "digito": {
+            "type": "string",
+            "example": "1"
+          },
+          "valorDespesasFinanciadas": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "valorTotalFinanciamento": {
+            "type": "number",
+            "example": 123456.78
+          },
+          "retornoIntegracao": {
+            "type": "string",
+            "example": "Retorno da integração"
+          },
+          "fgAutorizacaoDados": {
+            "type": "boolean",
+            "example": true
+          },
+          "codigoSituacaoBanco": {
+            "type": "string",
+            "example": "Código de situação retornado pelo banco"
+          }
+        }
+      },
+      "UploadRequest": {
+        "type": "object",
+        "properties": {
+          "arquivo": {
+            "type": "string",
+            "format": "binary"
+          },
+          "documentoAprovado": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    }
+  }
+}

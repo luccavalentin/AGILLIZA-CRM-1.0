@@ -1,0 +1,25 @@
+name = "agilliza"
+main = ".output/server/index.mjs"
+compatibility_date = "2025-07-27"
+compatibility_flags = ["nodejs_compat"]
+
+# Preserve variables and secrets configured in the Cloudflare Dashboard
+# (Worker → Settings → Variables and Secrets) across deploys. Without this,
+# `wrangler deploy` wipes dashboard-set vars/secrets on each publish, which
+# is why the runtime was seeing "Missing Supabase environment variable(s)"
+# even though the values existed in the dashboard.
+keep_vars = true
+
+# Declare the runtime env bindings the server code expects. Values are NOT
+# stored here (secrets stay in the Cloudflare dashboard) — declaring the
+# names ensures they appear as bindings on the published Worker and are
+# preserved together with `keep_vars = true`.
+[vars]
+SUPABASE_URL = "https://qjdgdwoxwfqbwxmkatcs.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqZGdkd294d2ZxYnd4bWthdGNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTg0OTMsImV4cCI6MjA5ODY3NDQ5M30.5X1Gu_XUAqX8m6s57gcxUBoidZr3rh9w97KEuMXoffw"
+SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqZGdkd294d2ZxYnd4bWthdGNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTg0OTMsImV4cCI6MjA5ODY3NDQ5M30.5X1Gu_XUAqX8m6s57gcxUBoidZr3rh9w97KEuMXoffw"
+SUPABASE_PROJECT_ID = "qjdgdwoxwfqbwxmkatcs"
+VITE_SUPABASE_URL = "https://qjdgdwoxwfqbwxmkatcs.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqZGdkd294d2ZxYnd4bWthdGNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTg0OTMsImV4cCI6MjA5ODY3NDQ5M30.5X1Gu_XUAqX8m6s57gcxUBoidZr3rh9w97KEuMXoffw"
+VITE_SUPABASE_PROJECT_ID = "qjdgdwoxwfqbwxmkatcs"
+HOMEFIN_BASE_URL = "https://api.homefin.com.br/external"
