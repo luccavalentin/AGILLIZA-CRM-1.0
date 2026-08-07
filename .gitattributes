@@ -1,0 +1,12 @@
+* text=auto
+
+*.ai binary
+*.eps binary
+*.gif binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.pdf binary
+*.png binary
+*.pptx binary
+*.webp binary

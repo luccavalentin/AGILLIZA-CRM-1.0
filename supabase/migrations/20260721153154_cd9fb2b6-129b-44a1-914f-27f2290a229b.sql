@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.sync_cliente_derivados() FROM PUBLIC, anon, authenticated;

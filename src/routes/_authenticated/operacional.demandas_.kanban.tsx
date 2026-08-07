@@ -1,0 +1,478 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { ArrowLeft, MoreHorizontal, Plus, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { assertModuloPermitido } from "@/lib/route-guards";
+import {
+  listarDemandas,
+  moverStatusDemanda,
+  transicaoDemandaPermitida,
+  type DemandaStatus,
+} from "@/lib/operacional/demandas.functions";
+import { listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
+import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
+import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
+import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
+type DemandaItem = Awaited<ReturnType<typeof listarDemandas>>[number];
+
+/* ------------------------------- SLA (kanban) ------------------------------ */
+
+type Urgencia = "overdue" | "critical" | "warning" | "healthy" | "none";
+
+function fmtDur(ms: number, comSegundos = false): string {
+  const total = Math.max(Math.floor(Math.abs(ms) / 1000), 0);
+  const d = Math.floor(total / 86400);
+  const h = Math.floor((total % 86400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
+  if (h > 0) return `${h}h ${m.toString().padStart(2, "0")}m`;
+  if (comSegundos) return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return `${m}m`;
+}
+function fmtDias(inicio: string, now: number): string {
+  const dias = Math.max(Math.floor((now - new Date(inicio).getTime()) / 86_400_000), 0);
+  if (dias <= 0) return "hoje";
+  if (dias === 1) return "há 1 dia";
+  return `há ${dias} dias`;
+}
+function fmtData(d: string): string {
+  return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/** Classifica urgência de SLA para colorir borda, barra e cronômetro. */
+function slaUrgency(d: DemandaItem, now: number): { level: Urgencia; restanteMs: number; progresso: number } {
+  if (d.status === "concluida" || d.status === "cancelada") return { level: "none", restanteMs: 0, progresso: 1 };
+  if (!d.prazo_sla) return { level: "none", restanteMs: 0, progresso: 0 };
+  const fim = new Date(d.prazo_sla).getTime();
+  const ini = new Date(d.sla_inicio).getTime();
+  const restante = fim - now;
+  const total = Math.max(fim - ini, 1);
+  const decorrido = Math.min(Math.max(now - ini, 0), total);
+  const progresso = decorrido / total;
+  if (restante < 0) return { level: "overdue", restanteMs: restante, progresso: 1 };
+  if (restante < 2 * 3600_000) return { level: "critical", restanteMs: restante, progresso };
+  if (restante < 24 * 3600_000) return { level: "warning", restanteMs: restante, progresso };
+  return { level: "healthy", restanteMs: restante, progresso };
+}
+
+const URG_TEXT: Record<Urgencia, string> = {
+  overdue: "text-destructive",
+  critical: "text-destructive",
+  warning: "text-warning",
+  healthy: "text-success",
+  none: "text-muted-foreground",
+};
+const URG_BAR: Record<Urgencia, string> = {
+  overdue: "bg-destructive",
+  critical: "bg-destructive",
+  warning: "bg-warning",
+  healthy: "bg-success",
+  none: "bg-muted-foreground/40",
+};
+const URG_BORDER: Record<Urgencia, string> = {
+  overdue: "border-destructive/50 hover:border-destructive",
+  critical: "border-destructive/40 hover:border-destructive/70",
+  warning: "border-warning/40 hover:border-warning/70",
+  healthy: "border-success/30 hover:border-success/60",
+  none: "border-border/70 hover:border-primary/40",
+};
+
+function SlaLine({ d, now }: { d: DemandaItem; now: number }) {
+  if (d.status === "concluida") {
+    const noPrazo = !d.concluida_em || !d.prazo_sla || new Date(d.concluida_em).getTime() <= new Date(d.prazo_sla).getTime();
+    return (
+      <span className={cn("inline-flex items-center gap-1.5", noPrazo ? "text-success" : "text-destructive")}>
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        Concluída em {d.concluida_em ? fmtData(d.concluida_em) : "—"}
+      </span>
+    );
+  }
+  if (d.status === "cancelada") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+        <Clock className="h-3.5 w-3.5" /> Cancelada
+      </span>
+    );
+  }
+  const { level, restanteMs } = slaUrgency(d, now);
+  if (level === "none") {
+    const rot = d.status === "aguardando" ? "Aguardando" : d.status === "aberta" ? "Aberta" : "Em andamento";
+    return (
+      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+        <Clock className="h-3.5 w-3.5" /> {rot} {fmtDias(d.sla_inicio, now)}
+      </span>
+    );
+  }
+  if (level === "overdue") {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-semibold text-destructive">
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
+          <span className="relative inline-flex size-2 rounded-full bg-destructive" />
+        </span>
+        <AlertTriangle className="h-3.5 w-3.5" /> Vencido {fmtDur(restanteMs)}
+      </span>
+    );
+  }
+  if (level === "critical") {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-semibold text-destructive tabular-nums">
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
+          <span className="relative inline-flex size-2 rounded-full bg-destructive" />
+        </span>
+        <Clock className="h-3.5 w-3.5" /> SLA em {fmtDur(restanteMs, true)}
+      </span>
+    );
+  }
+  if (level === "warning") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-warning font-medium">
+        <Clock className="h-3.5 w-3.5" /> SLA em {fmtDur(restanteMs)}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 text-success">
+      <Clock className="h-3.5 w-3.5" /> SLA em {fmtDur(restanteMs)}
+    </span>
+  );
+}
+
+/* --------------------------------- Card ------------------------------------ */
+
+const KanbanCard = memo(function KanbanCard({
+  d,
+  now,
+  onDragStart,
+  onDragEnd,
+  onOpen,
+}: {
+  d: DemandaItem;
+  now: number;
+  onDragStart: (id: string, status: DemandaStatus) => void;
+  onDragEnd: () => void;
+  onOpen: (id: string) => void;
+}) {
+  const { level, progresso } = slaUrgency(d, now);
+  return (
+    <div
+      draggable
+      onDragStart={() => onDragStart(d.id, d.status as DemandaStatus)}
+      onDragEnd={onDragEnd}
+      onClick={() => onOpen(d.id)}
+      className={cn(
+        "group relative cursor-pointer overflow-hidden rounded-xl border bg-card p-3.5 pl-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg active:cursor-grabbing",
+        URG_BORDER[level],
+      )}
+    >
+      <span className={cn("absolute inset-y-2 left-0 w-1 rounded-r-full", URG_BAR[level])} aria-hidden />
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+          {d.numero ?? "DEM-—"}
+        </span>
+        <PriorityChip prioridade={d.prioridade} />
+      </div>
+      <p className="mt-1.5 line-clamp-2 text-[13.5px] font-semibold leading-snug text-foreground">
+        {d.titulo}
+      </p>
+      {d.nome_cliente && (
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">{d.nome_cliente}</p>
+      )}
+      <div className="mt-2.5 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <OpAvatar nome={d.nome_responsavel} className="size-6 text-[9px]" />
+          <span className="truncate text-xs font-medium text-foreground/80">
+            {d.nome_responsavel ?? "Sem responsável"}
+          </span>
+        </div>
+      </div>
+      <div className="mt-2.5 border-t border-border/60 pt-2 text-[11px] tabular-nums">
+        <SlaLine d={d} now={now} />
+      </div>
+      {level !== "none" && (
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted/60" aria-hidden>
+          <div
+            className={cn("h-full rounded-full transition-all", URG_BAR[level])}
+            style={{ width: `${Math.min(Math.max(progresso, 0.04), 1) * 100}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+});
+
+/* --------------------------------- Rota ------------------------------------ */
+
+export const Route = createFileRoute("/_authenticated/operacional/demandas_/kanban")({
+  head: () => ({ meta: [{ title: "Kanban de Demandas — Agilliza" }] }),
+  beforeLoad: () => assertModuloPermitido("operacional.demandas"),
+  component: Pagina,
+});
+
+const COLUNAS: DemandaStatus[] = ["aberta", "em_andamento", "aguardando", "concluida", "cancelada"];
+
+function Pagina() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const moverFn = useServerFn(moverStatusDemanda);
+  const arrastandoRef = useRef<{ id: string; status: DemandaStatus } | null>(null);
+  const [arrastando, setArrastando] = useState<{ id: string; status: DemandaStatus } | null>(null);
+  const [escopo, setEscopo] = useState<"minhas" | "equipe">(
+    () => (typeof window !== "undefined" && (localStorage.getItem("demandas:escopo") as "minhas" | "equipe")) || "equipe",
+  );
+  const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
+
+  const { data, refetch } = useQuery({
+    queryKey: ["demandas", "kanban", escopo],
+    queryFn: () => listarDemandas({ data: { escopo } }),
+  });
+
+  const { data: responsaveis } = useQuery({
+    queryKey: ["demandas", "responsaveis-equipe"],
+    queryFn: () => listarResponsaveisEquipe(),
+    staleTime: 5 * 60_000,
+  });
+
+  // Relógio compartilhado — evita 1 timer por card.
+  const [now, setNow] = useState(() => Date.now());
+  // Tick de 1s quando houver algum SLA crítico/vencido; caso contrário 30s.
+  const precisaTickRapido = useMemo(() => {
+    const arr = data ?? [];
+    return arr.some((d) => {
+      if (d.status === "concluida" || d.status === "cancelada" || !d.prazo_sla) return false;
+      const restante = new Date(d.prazo_sla).getTime() - now;
+      return restante < 2 * 3600_000; // crítico ou vencido
+    });
+  }, [data, now]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const t = setInterval(() => setNow(Date.now()), precisaTickRapido ? 1000 : 30_000);
+    return () => clearInterval(t);
+  }, [precisaTickRapido]);
+
+  const onDragStart = useCallback((id: string, status: DemandaStatus) => {
+    arrastandoRef.current = { id, status };
+    requestAnimationFrame(() => setArrastando({ id, status }));
+  }, []);
+
+  const onDragEnd = useCallback(() => {
+    arrastandoRef.current = null;
+    setArrastando(null);
+  }, []);
+
+  const onOpen = useCallback(
+    (id: string) => navigate({ to: "/operacional/demandas/$id", params: { id } }),
+    [navigate],
+  );
+
+  const soltar = useCallback(
+    async (coluna: DemandaStatus) => {
+      const origem = arrastandoRef.current;
+      arrastandoRef.current = null;
+      setArrastando(null);
+      if (!origem) return;
+      const { id, status } = origem;
+      if (status === coluna) return;
+      if (!transicaoDemandaPermitida(status, coluna)) {
+        toast.error(
+          `Transição inválida: ${statusDemanda(status).label} → ${statusDemanda(coluna).label}.`,
+        );
+        return;
+      }
+      try {
+        await moverFn({ data: { id, status: coluna } });
+        qc.invalidateQueries({ queryKey: ["demandas"] });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Falha ao mover.");
+      }
+    },
+    [moverFn, qc],
+  );
+
+  const itens = useMemo(() => {
+    const base = data ?? [];
+    if (filtroResponsavel === "todos") return base;
+    if (filtroResponsavel === "sem") return base.filter((d) => !d.responsavel_id);
+    return base.filter((d) => d.responsavel_id === filtroResponsavel);
+  }, [data, filtroResponsavel]);
+  const porStatus = useMemo(() => {
+    const mapa = new Map<DemandaStatus, DemandaItem[]>();
+    for (const col of COLUNAS) mapa.set(col, []);
+    for (const d of itens) mapa.get(d.status as DemandaStatus)?.push(d);
+    return mapa;
+  }, [itens]);
+
+  return (
+    <div className="space-y-5 p-4 md:p-6">
+      <div className="op-hero grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5 md:p-6">
+        <div className="min-w-0">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
+            Operacional
+          </span>
+          <h1 className="mt-0.5 truncate text-2xl font-bold tracking-tight text-foreground md:text-[26px]">
+            Kanban de Demandas
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Arraste os cards entre etapas permitidas para atualizar o status.
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
+          <Link to="/operacional/demandas">
+            <ArrowLeft className="mr-1 h-4 w-4" /> Lista
+          </Link>
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-card/80 p-3 shadow-sm backdrop-blur">
+        <Tabs
+          value={escopo}
+          onValueChange={(v) => {
+            const val = v as "minhas" | "equipe";
+            setEscopo(val);
+            if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
+          }}
+        >
+          <TabsList className="h-9 rounded-lg">
+            <TabsTrigger value="minhas" className="rounded-md text-xs">Minhas</TabsTrigger>
+            <TabsTrigger value="equipe" className="rounded-md text-xs">Gerais</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
+          <SelectTrigger className="h-9 w-full max-w-[260px] rounded-lg text-xs sm:w-[260px]">
+            <SelectValue placeholder="Filtrar por responsável" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os responsáveis</SelectItem>
+            <SelectItem value="sem">Sem responsável</SelectItem>
+            {(responsaveis ?? []).map((r) => (
+              <SelectItem key={r.id} value={r.id}>
+                {r.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {filtroResponsavel !== "todos" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9"
+            onClick={() => setFiltroResponsavel("todos")}
+          >
+            Limpar filtro
+          </Button>
+        )}
+      </div>
+
+      {/* Legenda de SLA */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-border/50 bg-card/60 px-3 py-2 text-[11px] text-muted-foreground">
+        <span className="font-semibold uppercase tracking-wider text-muted-foreground/80">SLA</span>
+        <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" /> No prazo</span>
+        <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-warning" /> &lt; 24h</span>
+        <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-destructive" /> &lt; 2h · crítico</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
+            <span className="relative inline-flex size-2 rounded-full bg-destructive" />
+          </span>
+          Vencido
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-5">
+        {COLUNAS.map((col) => {
+          const cfg = statusDemanda(col);
+          const doStatus = porStatus.get(col) ?? [];
+          const alvo = arrastando && transicaoDemandaPermitida(arrastando.status, col);
+          return (
+            <div
+              key={col}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => soltar(col)}
+              className={cn(
+                "group/col flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-muted/25 shadow-sm transition-all",
+                alvo && "border-primary/60 bg-primary/5 ring-2 ring-primary/30",
+              )}
+            >
+              {/* Header com barra de tom */}
+              <div className="relative border-b border-border/50 bg-card/60 px-4 py-3 backdrop-blur">
+                <span
+                  className={cn(
+                    "absolute inset-x-0 top-0 h-0.5",
+                    TONE_BAR[cfg.tone],
+                  )}
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className={cn("size-2 rounded-full", TONE_BAR[cfg.tone])} />
+                    {cfg.label}
+                    <span className="ml-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums text-muted-foreground">
+                      {doStatus.length}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className="rounded-md p-1 text-muted-foreground/60 opacity-0 transition hover:bg-muted hover:text-foreground group-hover/col:opacity-100"
+                    aria-label="Opções da coluna"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Cards */}
+              <div className="brand-scroll flex-1 space-y-2.5 p-2.5">
+                {doStatus.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-border/60 bg-background/40 px-2 py-8 text-center">
+                    <p className="text-[11px] text-muted-foreground/70">Sem demandas</p>
+                  </div>
+                )}
+                {doStatus.map((d) => (
+                  <KanbanCard
+                    key={d.id}
+                    d={d}
+                    now={now}
+                    onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
+                    onOpen={onOpen}
+                  />
+                ))}
+              </div>
+
+              {/* Footer — criar demanda */}
+              <div className="border-t border-border/50 bg-card/40 p-2">
+                <NovaDemandaDialog
+                  onCriada={() => refetch()}
+                  trigger={
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Criar demanda
+                    </button>
+                  }
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
