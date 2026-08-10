@@ -77,7 +77,7 @@ export function TabEnvolvidos({
   async function editar(e: any) {
     setEditId(e.id);
     setInicial(envolvidoParaForm(e));
-    const conj = envolvidos.find((x) => x.conjuge_de === e.id);
+    const conj = envolvidos?.find((x) => x.conjuge_de === e.id);
     setConjugeInicial(conj ? envolvidoParaForm(conj) : undefined);
     setConjugeId(conj?.id ?? null);
     setOpen(true);
@@ -95,7 +95,7 @@ export function TabEnvolvidos({
   useEffect(() => {
     if (!autoAbrir || tipo !== "CO") return;
     const principal =
-      lista.find((e) => e.tipo_qualificacao === "CO") ?? lista[0] ?? null;
+      envolvidos?.find((e) => e.tipo_qualificacao === "CO") ?? envolvidos?.[0] ?? null;
     if (principal) {
       editar(principal);
     } else {

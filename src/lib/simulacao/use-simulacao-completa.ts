@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { mensagemCamposPendentes } from "@/lib/simulacao/rotulos-campos";
 import { toast } from "sonner";
-import { avaliarRendaMinima, TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES } from "@/lib/simulacao/renda";
+import { avaliarRendaMinima, TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES, limitesLtv } from "@/lib/simulacao/renda";
 import { taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 import { completaSchema } from "@/lib/simulacao/schemas";
 import { formatBRL, maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
@@ -331,19 +331,21 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   useEffect(() => {
     const imovel = Number(f.valor_imovel) || 0;
     if (imovel <= 0) return;
-    const finMax = Math.floor(imovel * ltvMax);
+    const { financiamentoMaximo, entradaMinima } = limitesLtv(imovel, ltvMax);
     const finAtual = Number(f.valor_financiamento) || 0;
 
     // Se o financiamento atual exceder o máximo permitido pelo LTV,
     // ajustamos a entrada para cobrir a diferença.
-    // Usamos uma margem de segurança de 1 real para evitar erros de ponto flutuante/centavos no banco.
-    if (finAtual > finMax) {
-      const novaEntrada = imovel - finMax + 1;
+    // Usamos comparação em centavos para evitar resíduos de float.
+    const finAtualCentavos = Math.round(finAtual * 100);
+    const finMaxCentavos = Math.round(financiamentoMaximo * 100);
+
+    if (finAtualCentavos > finMaxCentavos) {
       setEntradaTocada(true);
       setF((prev) => ({
         ...prev,
-        valor_entrada: novaEntrada,
-        valor_financiamento: imovel - novaEntrada,
+        valor_entrada: entradaMinima,
+        valor_financiamento: financiamentoMaximo,
       }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -384,27 +386,48 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const mensagemPrazoInviavel = terrenoInviavelPorIdade
     ? `Em operações anteriores este banco exigiu no mínimo ${prazoMinOperacional} meses, mas a idade dos proponentes permite no máximo ${maxPrazoIdade}. O banco pode recusar.`
     : null;
-  const financiamentoMaximo = useMemo(
-    () => Math.floor((Number(f.valor_imovel) || 0) * ltvMax),
-    [f.valor_imovel, ltvMax],
-  );
-  const despesasNoTeto = f.fg_financiar_despesas
-    ? Number(f.valor_despesas_financiadas) || 0
-    : 0;
+  const financiamentoMaximo = useMemo(() => {
+    const imovel = Number(f.valor_imovel) || 0;
+    const { financiamentoMaximo } = limitesLtv(imovel, ltvMax);
+    return financiamentoMaximo;
+  }, [f.valor_imovel, ltvMax]);
+
+  const despesasNoTeto = f.fg_financiar_despesas ? (Number(f.valor_despesas_financiadas) || 0) : 0;
   const financiamentoImovelMaximo = Math.max(0, financiamentoMaximo - despesasNoTeto);
+  
   /** Valor a financiar exibido: parcela do imóvel + despesas financiadas. */
   const financiamentoTotalExibido = (Number(f.valor_financiamento) || 0) + despesasNoTeto;
-  const entradaMinima = useMemo(
-    () => Math.max(0, (Number(f.valor_imovel) || 0) - financiamentoMaximo + 1),
-    [f.valor_imovel, financiamentoMaximo],
-  );
-  const entradaMinimaEfetiva = Math.max(
-    0,
-    (Number(f.valor_imovel) || 0) - financiamentoImovelMaximo + 1,
-  );
-  const financiamentoExcedido =
-    (Number(f.valor_imovel) || 0) > 0 &&
-    (Number(f.valor_financiamento) || 0) > financiamentoImovelMaximo;
+
+  const entradaMinima = useMemo(() => {
+    const imovel = Number(f.valor_imovel) || 0;
+    const { entradaMinima } = limitesLtv(imovel, ltvMax);
+    return entradaMinima;
+  }, [f.valor_imovel, ltvMax]);
+
+  const entradaMinimaEfetiva = useMemo(() => {
+    const imovel = Number(f.valor_imovel) || 0;
+    const { entradaMinima } = limitesLtv(imovel, ltvMax);
+    // Se o financiamento máximo é reduzido pelas despesas, a entrada mínima sobe
+    return Math.max(0, imovel - financiamentoImovelMaximo);
+  }, [f.valor_imovel, financiamentoImovelMaximo, ltvMax]);
+
+  const financiamentoExcedido = useMemo(() => {
+    const imovel = Number(f.valor_imovel) || 0;
+    if (imovel <= 0) return false;
+    const atual = Number(f.valor_financiamento) || 0;
+    const atualCentavos = Math.round(atual * 100);
+    const maxCentavos = Math.round(financiamentoImovelMaximo * 100);
+    return atualCentavos > maxCentavos;
+  }, [f.valor_imovel, f.valor_financiamento, financiamentoImovelMaximo]);
+
+  const entradaInsuficiente = useMemo(() => {
+    const imovel = Number(f.valor_imovel) || 0;
+    if (imovel <= 0) return false;
+    const atual = Number(f.valor_entrada) || 0;
+    const atualCentavos = Math.round(atual * 100);
+    const minCentavos = Math.round(entradaMinimaEfetiva * 100);
+    return atualCentavos < minCentavos;
+  }, [f.valor_entrada, entradaMinimaEfetiva, f.valor_imovel]);
 
   /** Aplica o prazo digitado, ajustando pela idade e pelo teto da operação. */
   function definirPrazo(valor: number) {
@@ -1127,6 +1150,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     melhorTaxaAno,
     rendaConsiderada,
     mostraConjuge,
+    isHomeEquity,
     // vínculo CRM / inversão
     cadastroNome,
     invertido,

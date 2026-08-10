@@ -1,4 +1,4 @@
-import { TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES } from "@/lib/simulacao/renda";
+import { TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES, limitesLtv } from "@/lib/simulacao/renda";
 import type { Form } from "./state";
 
 /**
@@ -6,9 +6,6 @@ import type { Form } from "./state";
  * input do usuário + parâmetros derivados e devolve um patch parcial de
  * `Form` para ser aplicado via `setF`. Não fazem side-effects (toast,
  * navegação, `setState`) — isso continua a cargo do hook.
- *
- * Preserva as fórmulas originais bit-a-bit (mesmos arredondamentos, mesmos
- * pisos/tetos) para não alterar nada visível ao usuário.
  */
 
 /**
@@ -18,13 +15,11 @@ import type { Form } from "./state";
 export function calcularEntradaSugerida(
   valorImovel: number,
   ltvMax: number,
-  pctEntrada?: number,
 ): Partial<Form> {
-  const pct = pctEntrada ?? 1 - ltvMax;
-  const entrada = Math.round((valorImovel || 0) * pct);
+  const { entradaMinima } = limitesLtv(valorImovel, ltvMax);
   return {
-    valor_entrada: entrada,
-    valor_financiamento: Math.max(0, (valorImovel || 0) - entrada),
+    valor_entrada: entradaMinima,
+    valor_financiamento: Math.max(0, (Number(valorImovel) || 0) - entradaMinima),
   };
 }
 
@@ -124,12 +119,11 @@ export function calcularPorParcela(
   // centavos e garantir que o financiamento derivado (floor(imovel*LTV))
   // nunca ultrapasse o teto do banco.
   const imovel = Math.max(1000, Math.floor(pv / ltvMax / 1000) * 1000);
-  const financiamento = Math.floor(imovel * ltvMax);
-  const entrada = imovel - financiamento;
+  const { financiamentoMaximo, entradaMinima } = limitesLtv(imovel, ltvMax);
   return {
     parcela_alvo: pmt,
-    valor_financiamento: financiamento,
+    valor_financiamento: financiamentoMaximo,
     valor_imovel: imovel,
-    valor_entrada: entrada,
+    valor_entrada: entradaMinima,
   };
 }

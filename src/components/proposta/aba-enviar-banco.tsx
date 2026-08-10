@@ -392,12 +392,19 @@ export function AbaEnviarBanco({
               <TooltipTrigger asChild>
                 <span>
                   <Button
-                    onClick={() => enviarAoBanco()}
+                    onClick={() => {
+                      if (bloqueado) {
+                        const pendente = envolvidos.find(env => faltantesEnvolvido(env).length > 0);
+                        onCompletar?.(pendente || envolvidos[0]);
+                      } else {
+                        enviarAoBanco();
+                      }
+                    }}
                     disabled={enviando || enviandoBanco || totalPdfs === 0}
                     className="h-11 w-full gap-2 rounded-xl px-6 font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:shadow-none sm:w-auto"
                   >
                     {enviando || enviandoBanco ? <Loader2 className="h-4 w-4 animate-spin" /> : <Landmark className="h-4 w-4" />}
-                    {enviando || enviandoBanco ? "Enviando…" : (bloqueado ? "Completar cadastro e enviar documentos" : "Enviar todos os documentos ao banco")}
+                    {enviando || enviandoBanco ? "Enviando…" : (bloqueado ? "Completar cadastro e enviar" : "Enviar todos os documentos ao banco")}
                   </Button>
                 </span>
               </TooltipTrigger>

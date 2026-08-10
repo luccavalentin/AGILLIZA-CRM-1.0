@@ -129,7 +129,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   function aplicarEntradaSugerida() {
     setW((prev) => ({
       ...prev,
-      ...(calcularEntradaSugerida(prev.valor_imovel || 0, ltvMax, pctEntradaSugerida) as Partial<WizardState>),
+      ...(calcularEntradaSugerida(prev.valor_imovel || 0, ltvMax) as Partial<WizardState>),
     }));
   }
 

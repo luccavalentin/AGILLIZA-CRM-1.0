@@ -162,7 +162,7 @@ export function useEnviarProposta() {
       setBusyBancoId(null);
       clickLock.current[bancoId] = false;
       
-      const bancoInfo = r?.bancos?.find((b: any) => b.banco_id === bancoId);
+      const bancoInfo = (r?.bancos || [])?.find((b: any) => b.banco_id === bancoId);
       const protocolo = bancoInfo?.numero_proposta_banco;
       const tipoStatus = bancoInfo?.status;
       

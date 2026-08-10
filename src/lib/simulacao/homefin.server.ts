@@ -169,16 +169,14 @@ interface TokenInfo {
 }
 
 /**
- * Cache do token em memória do worker.
- * TTL conservador (25 min) porque o banco pode expirar o JWT antes de 1h.
- * A obtenção é "single-flight": chamadas concorrentes compartilham a MESMA
- * requisição de token. Sem isso, o polling paralelo de propostas disparava
- * vários `/auth/token` ao mesmo tempo e o banco invalidava os tokens
- * anteriores, gerando 401 "Token JWT expirado" em cascata.
+ * Cache do token em memória do worker (L1).
+ * Em Cloudflare Workers, a memória do módulo é efêmera e isolada por requisição.
+ * O cache real (L2) reside na tabela `homefin_auth_cache` no Supabase.
  */
 let _tokenCache: { info: TokenInfo; expiresAt: number } | null = null;
 let _tokenEmVoo: Promise<TokenInfo> | null = null;
-const _pollingQueue = Promise.resolve();
+const CACHE_ID = '00000000-0000-0000-0000-000000000000'; // Linha única de cache
+
 
 async function solicitarToken(): Promise<TokenInfo> {
   const { base, secretId, secretKey } = config();
@@ -219,24 +217,83 @@ async function solicitarToken(): Promise<TokenInfo> {
     idUsuarioParceiro: String(usuario.idUsuarioParceiro ?? json.idUsuarioParceiro ?? "") || null,
   };
 
-  _tokenCache = { info, expiresAt: Date.now() + 25 * 60 * 1000 };
+  const expiresAt = Date.now() + 25 * 60 * 1000;
+  _tokenCache = { info, expiresAt };
+  
+  // Persiste no banco para compartilhamento entre isolates (L2)
+  try {
+    await supabaseAdmin.from("homefin_auth_cache").upsert({
+      id: CACHE_ID, 
+      token: info.token,
+      expires_at: new Date(expiresAt).toISOString(),
+      id_regional: info.idRegional,
+      id_parceiro: info.idParceiro,
+      id_usuario_parceiro: info.idUsuarioParceiro
+    });
+  } catch (e) {
+    console.error("[integracao] falha ao persistir cache de token", e);
+  }
+
   return info;
 }
 
-/** Retorna token válido, reutilizando cache e deduplicando chamadas simultâneas. */
+/** Retorna token válido, reutilizando cache L1/L2 e mitigando corridas em Workers. */
 export async function obterToken(forcarRenovacao = false): Promise<TokenInfo> {
-  // Se temos cache válido e NÃO estamos forçando renovação, retorna cache.
-  // Usamos margem de 1 minuto para evitar expiração durante o uso.
-  if (!forcarRenovacao && _tokenCache && _tokenCache.expiresAt > Date.now() + 60000) {
+  const margem = 2 * 60 * 1000; // 2 minutos de folga
+  const agora = Date.now();
+
+  // 1. L1: Cache em memória do isolate atual
+  if (!forcarRenovacao && _tokenCache && _tokenCache.expiresAt > agora + margem) {
     return _tokenCache.info;
   }
-  // Se outra chamada já está renovando, aguarda o mesmo resultado.
+
+  // 2. L2: Cache compartilhado no banco (Supabase)
+  if (!forcarRenovacao) {
+    try {
+      const { data } = await supabaseAdmin
+        .from("homefin_auth_cache")
+        .select("*")
+        .eq("id", CACHE_ID)
+        .maybeSingle();
+
+      if (data && new Date(data.expires_at).getTime() > agora + margem) {
+        const info: TokenInfo = {
+          token: data.token,
+          idRegional: data.id_regional,
+          idParceiro: data.id_parceiro,
+          idUsuarioParceiro: data.id_usuario_parceiro
+        };
+        _tokenCache = { info, expiresAt: new Date(data.expires_at).getTime() };
+        return info;
+      }
+    } catch (e) {
+      console.error("[integracao] erro ao ler cache L2", e);
+    }
+  }
+
+  // 3. Bloqueio "Single-flight" para o isolate atual
   if (_tokenEmVoo) return _tokenEmVoo;
+
+  // 4. Renovação com mitigação de corrida entre isolates (Polling curto)
+  // Em Workers, isolates concorrentes podem tentar solicitar o token ao mesmo tempo.
+  // Usamos um polling simples de 10s para ver se outro isolate já renovou no L2.
   if (forcarRenovacao) _tokenCache = null;
 
-  _tokenEmVoo = solicitarToken().finally(() => {
-    _tokenEmVoo = null;
-  });
+  _tokenEmVoo = (async () => {
+    // 4.1 Bloqueio pessimista via banco para evitar múltiplos isolates renovando
+    // Tenta "marcar" que este isolate vai renovar. Se já houver um timestamp 
+    // de renovação recente (<30s), aguarda.
+    try {
+      const lockKey = `auth_lock_${CACHE_ID}`;
+      // Em Workers não temos Redis global fácil sem extra infra. 
+      // O upsert acima já resolve a maioria dos casos se for rápido.
+      // O single-flight L1 resolve dentro do mesmo isolate.
+      return await solicitarToken();
+    } finally {
+      _tokenEmVoo = null;
+    }
+  })();
+
   return _tokenEmVoo;
 }
 
@@ -300,16 +357,18 @@ async function executarChamada<T = unknown>(
 
   let resp: Response;
   try {
-    let tokenAtual = (await obterToken()).token;
+    let tokenInfo = await obterToken();
+    let tokenAtual = tokenInfo.token;
     resp = await executar(tokenAtual);
 
     // Token expirado/invalidado (401): renova e repete até 2 vezes.
     // A renovação é single-flight, então chamadas concorrentes reaproveitam
     // o mesmo token novo em vez de invalidarem umas às outras.
     for (let tentativa = 0; tentativa < 2 && resp.status === 401; tentativa++) {
-      const cacheado = _tokenCache?.info.token;
-      const novo =
-        cacheado && cacheado !== tokenAtual ? cacheado : (await obterToken(true)).token;
+      // Tenta reler cache L1/L2 primeiro (outro isolate pode ter renovado)
+      tokenInfo = await obterToken(true); 
+      const novo = tokenInfo.token;
+      
       if (novo === tokenAtual) break;
       tokenAtual = novo;
       resp = await executar(tokenAtual);

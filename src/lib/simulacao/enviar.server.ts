@@ -367,7 +367,30 @@ export async function enviarSimulacaoImpl({
   }
 
   const retryLimit = 2; // Tentativas para erros 5xx
-  const TIMEOUT_BANCO_MS = 240_000; // 240 segundos (4 minutos) para acomodar o polling do banco (até 200s no Itaú) e latência da rede.
+  const TIMEOUT_BANCO_MS = 240_000;
+
+  // Watchdog: Recupera simulações presas em "enviando" há mais de 10 minutos (Timeout fantasma)
+  try {
+    const dezMinutosAtras = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: presas } = await supabase
+      .from("simulacoes")
+      .select("id")
+      .eq("status", "enviando")
+      .lt("ultimo_envio_em", dezMinutosAtras)
+      .limit(5);
+
+    for (const p of presas ?? []) {
+      await supabase
+        .from("simulacoes")
+        .update({ 
+          status: "erro", 
+          mensagem_erro: "Falha silenciosa detectada (Watchdog). Tente reenviar." 
+        } as any)
+        .eq("id", p.id);
+    }
+  } catch (e) {
+    console.warn("[enviar.server] Watchdog falhou:", e);
+  }
 
   const envioPorBanco = Boolean(bancoIds && bancoIds.length > 0);
   const { data: sim, error } = await supabase

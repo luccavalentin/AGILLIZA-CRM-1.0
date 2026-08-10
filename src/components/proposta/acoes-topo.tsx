@@ -178,7 +178,17 @@ export function AcoesTopo({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button size="sm" onClick={enviar} disabled={isBusy}>
+                  <Button 
+                    size="sm" 
+                    onClick={() => {
+                      if (bloqueado) {
+                        onCadastroIncompleto?.();
+                      } else {
+                        enviar();
+                      }
+                    }} 
+                    disabled={isBusy}
+                  >
                     {isBusy ? (
                       <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                     ) : (
@@ -209,7 +219,18 @@ export function AcoesTopo({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button size="sm" onClick={enviar} disabled={isBusy} variant="secondary">
+                  <Button 
+                    size="sm" 
+                    onClick={() => {
+                      if (bloqueado) {
+                        onCadastroIncompleto?.();
+                      } else {
+                        enviar();
+                      }
+                    }} 
+                    disabled={isBusy} 
+                    variant="secondary"
+                  >
                     {isBusy ? (
                       <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                     ) : (

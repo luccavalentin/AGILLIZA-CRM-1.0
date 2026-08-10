@@ -469,7 +469,7 @@ function Pagina() {
 
   const bancos = data?.bancos ?? [];
   const envolvidos = data?.envolvidos ?? [];
-  const p = data?.proposta as any;
+  const p = (data?.proposta || {}) as any;
 
   const [tab, setTab] = React.useState<Tab>("RESUMO");
   const [enviandoAuto, setEnviandoAuto] = React.useState(false);
@@ -651,7 +651,7 @@ function Pagina() {
         return;
       }
       const numero =
-        r?.bancos?.find((x: any) => x?.numero_proposta_banco)?.numero_proposta_banco ?? null;
+        (r?.bancos || [])?.find((x: any) => x?.numero_proposta_banco)?.numero_proposta_banco ?? null;
       if (numero) toast.success(`Nº do banco: ${numero}`);
       setTab("RESUMO");
     } catch {
@@ -1051,14 +1051,14 @@ function Pagina() {
         participanteId={participanteModal?.id}
         focarPendencias={true}
         nomeConjugeExistente={React.useMemo(() => {
-          if (!participanteModal?.id) return null;
+          if (!participanteModal?.id || !p?.envolvidos) return null;
           // Se o participante atual é titular e tem um cônjuge que já está na lista de envolvidos
-          const principal = p.envolvidos.find((e: any) => e.id === participanteModal.id);
+          const principal = p.envolvidos?.find((e: any) => e.id === participanteModal.id);
           if (!principal || principal.tipo_qualificacao === 'CJ') return null;
           
-          const conj = p.envolvidos.find((e: any) => e.conjuge_de === principal.id || (principal.conjuge_id && e.id === principal.conjuge_id));
+          const conj = p.envolvidos?.find((e: any) => e.id !== principal.id && (e.conjuge_de === principal.id || (principal.conjuge_id && e.id === principal.conjuge_id)));
           return conj?.nome || null;
-        }, [p.envolvidos, participanteModal?.id])}
+        }, [p?.envolvidos, participanteModal?.id])}
         onSalvar={async (principal, conjuge, opcoes) => {
           if (!participanteModal?.id) return;
           let enviandoAoBanco = false;

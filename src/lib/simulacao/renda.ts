@@ -394,3 +394,26 @@ export function calcularMaximoFinanciável(params: {
   return Math.floor(finanMax / 100) * 100;
 }
 
+/**
+ * Calcula os limites de LTV garantindo invariância (financiamento + entrada = total).
+ * Resolve bugs de arredondamento em ponto flutuante binário operando em centavos (inteiros).
+ */
+export function limitesLtv(valorImovel: number, ltvMax: number): {
+  financiamentoMaximo: number;
+  entradaMinima: number;
+} {
+  const imovelCentavos = Math.round((Number(valorImovel) || 0) * 100);
+  if (imovelCentavos <= 0) return { financiamentoMaximo: 0, entradaMinima: 0 };
+
+  // Calcula o financiamento máximo em centavos arredondando uma única vez
+  const finMaxCentavos = Math.round(imovelCentavos * ltvMax);
+  
+  // A entrada é a diferença exata dos centavos
+  const entradaMinCentavos = imovelCentavos - finMaxCentavos;
+
+  return {
+    financiamentoMaximo: finMaxCentavos / 100,
+    entradaMinima: entradaMinCentavos / 100,
+  };
+}
+
