@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS homefin_bancos_id_banco_key ON public.homefin_bancos (id_banco);

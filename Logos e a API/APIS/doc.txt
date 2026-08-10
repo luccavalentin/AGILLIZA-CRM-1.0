@@ -1,0 +1,2362 @@
+Documentação da API HomeFin
+Guia operacional com endpoints detalhados, campos obrigatórios e exemplos do Swagger
+
+Versão do contrato: 1.0.1
+Base URL: https://api.homefin.com.br/external
+Fonte principal: Swagger + planilha de obrigatoriedade enviada
+
+
+
+Objetivo deste material
+ Este material consolida o contrato Swagger da API HomeFin em um guia de consulta rápida. A leitura
+ foi organizada por operação, com foco em uso prático: finalidade, parâmetros de rota, campos da
+ requisição, obrigatoriedade, exemplo existente no Swagger e respostas esperadas.
+
+
+ Nos endpoints PUT, o entendimento adotado neste documento é: caso seja necessário atualizar dados
+ já cadastrados, utilize a rota de atualização correspondente. Como o contrato fornecido não explicita
+ atualização parcial versus envio completo do objeto, a recomendação operacional é validar com a
+ HomeFin se o comportamento esperado é patch-like ou substituição mais ampla do payload.
+Mapa rápido da integração
+Ordem                              Endpoint                               Uso prático
+
+                                                                          Gerar token e identificar
+1                                  POST /auth/token
+                                                                          regional/parceiro/usuário.
+
+                                                                          Consultar o identificador da
+2                                  GET /dominios/operacoes
+                                                                          operação.
+
+3                                  POST /oportunidade                     Criar a oportunidade base.
+
+                                                                          Criar a simulação vinculada à
+4                                  POST /oportunidade/{id}/simulacao
+                                                                          oportunidade.
+
+                                                                          Cadastrar participante(s) da
+5                                  POST /oportunidade/{id}/participante
+                                                                          oportunidade.
+
+                                   POST
+6                                  /oportunidade/{id}/simulacao/{idSim    Enviar a simulação ao banco.
+                                   ulacao}/integracao
+
+                                   POST /oportunidade/{id}/incluir-
+                                                                          Vincular documentos e subir
+7                                  documentos-integracao + POST
+                                                                          arquivos.
+                                   /documento/{id}/upload
+
+                                                                          Registrar acompanhamento quando
+8                                  POST /oportunidade/{id}/follow-up
+                                                                          necessário.
+
+As rotas GET servem como apoio de consulta e as rotas PUT devem ser usadas quando houver
+necessidade de atualizar dados já cadastrados.
+Acesso e consultas de apoio
+
+POST /auth/token - Autenticação e geração de token
+Utilize esta rota para envio/criação conforme o fluxo da integração.
+
+Corpo da requisição
+Content-Type: application/json | Schema: AuthRequest
+
+Campo                                Obrig.                  Tipo                   Descrição
+
+secretId                             S                       string                 Secret Id.
+
+secretKey                            S                       string                 Secret Key.
+
+
+Campos obrigatórios em destaque
+Campo                                          Tipo                    Descrição
+
+secretId                                       string                  Secret Id.
+
+secretKey                                      string                  Secret Key.
+
+
+Exemplo do Swagger
+   {
+       "secretId": "Secret ID",
+       "secretKey": "Secret Key"
+   }
+
+
+
+Respostas esperadas
+HTTP                                           Schema                  Descrição
+
+200                                            AuthOk                  OK
+
+401                                            BasicError              Unauthorized
+
+403                                            BasicError              Forbidden
+
+404                                            BasicError              Not Found
+
+500                                            BasicError              Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+   {
+       "jwt": "JWT Session token",
+       "refreshToken": "JWT Refresh token",
+       "usuario": {
+        "nome": "Nome do usuário autenticado",
+        "perfil": "Perfil do usuário autenticado",
+        "idParceiro": "ID do parceiro",
+        "idRegional": "ID da regional",
+        "idUsuarioParceiro": "ID do usuário parceiro",
+        "nomeUsuarioParceiro": "Nome do usuário parceiro",
+           "telefoneUsuarioParceiro": "Telefone do usuário parceiro"
+       }
+   }
+
+
+
+
+GET /usuarios-parceiros - Consulta dos usuários/parceiros disponíveis
+Utilize esta rota para consultar informações sem envio de body.
+Body: não se aplica.
+
+Respostas esperadas
+HTTP                                               Schema                           Descrição
+
+200                                                ListaUsuariosParceirosResponse   OK
+
+401                                                BasicError                       Unauthorized
+
+403                                                BasicError                       Forbidden
+
+404                                                BasicError                       Not Found
+
+500                                                BasicError                       Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+   [
+       {
+           "idUsuarioParceiro": 123,
+           "nomeUsuarioParceiro": "Nome do Usuário Parceiro",
+           "cpfCnpj": "12345678909 (somente números)",
+           "nomeProprietario": "Nome do Proprietário",
+           "emailProprietario": "a@b.com.br",
+           "celularProprietario": "11912345678",
+           "nomeFaturamento": "Nome do Responsável pelo Faturamento",
+           "emailFaturamento": "a@b.com.br",
+           "celularFaturamento": "11912345678",
+           "tipoSituacao": "A/I (Ativa/Inativa)"
+       }
+   ]
+
+
+
+
+GET /dominios/operacoes - Consulta das operações disponíveis
+Utilize esta rota para consultar informações sem envio de body.
+Body: não se aplica.
+Respostas esperadas
+HTTP                                       Schema                 Descrição
+
+200                                        OperacoesResponse      OK
+
+401                                        BasicError             Unauthorized
+
+403                                        BasicError             Forbidden
+
+404                                        BasicError             Not Found
+
+500                                        BasicError             Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+   [
+       {
+           "idOperacao": 123,
+           "nomeOperacao": "Nome do Produto"
+       }
+   ]
+
+
+
+
+GET /dominios/bancos - Consulta dos bancos disponíveis
+Utilize esta rota para consultar informações sem envio de body.
+Body: não se aplica.
+
+Respostas esperadas
+HTTP                                       Schema                 Descrição
+
+200                                        BancosResponse         OK
+
+401                                        BasicError             Unauthorized
+
+403                                        BasicError             Forbidden
+
+404                                        BasicError             Not Found
+
+500                                        BasicError             Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+   [
+       {
+           "idBanco": 123,
+           "codigoBanco": 123,
+           "nomeBanco": "Nome do Banco",
+           "flagSimulacao": "S/N"
+       }
+   ]
+Oportunidades
+
+POST /oportunidade - Criação de oportunidade
+Utilize esta rota para envio/criação conforme o fluxo da integração.
+
+Corpo da requisição
+Content-Type: application/json | Schema: CreateOpportunityRequest
+
+Campo                         Obrig.                  Tipo             Descrição
+
+                                                                       123 (Obtido no serviço de
+operacao.idOperacao           S                       string           domínio
+                                                                       '/dominios/operacoes')
+
+                                                                       123 (obtido no serviço de
+regional.idRegional           S                       string
+                                                                       autenticação)
+
+                                                                       123 (obtido no serviço de
+parceiro.idParceiro           S                       string
+                                                                       autenticação)
+
+usuarioParceiro.idUsuarioPa                                            123 (obtido no serviço de
+                              S                       string
+rceiro                                                                 autenticação)
+
+                                                                       AP/CS/GA/TE/TC
+                                                                       (Apartamento/Casa/Galpão/T
+tipoImovel.id                 S                       string
+                                                                       erreno/Terreno em
+                                                                       Condomínio)
+
+usoImovel.id                  S                       string           C/R (Comercial/Residencial)
+
+uf.codigo                     S                       string           Sigla da UF do imóvel
+
+valorImovel                   S                       number           Valor do imóvel.
+
+valorFinanciamento            S                       number           Valor do financiamento.
+
+prazo                         S                       number           Prazo.
+
+utilizaFgtsSimulacao          S                       string           S/N
+
+bancos[].idBanco              -                       number           Identificador Banco.
+
+bancos[].codigoBanco          -                       number           Código do banco.
+
+bancos[].nomeBanco            -                       string           Nome do Banco
+
+bancos[].flagSimulacao        -                       string           S/N
+
+                                                                       12345678909 (apenas
+cpfCnpj                       S                       string
+                                                                       números)
+
+nome                          S                       string           Nome do cliente
+
+rendaTotal                    S                       number           Renda total.
+
+codigoSistemaAmortizacaoB
+                              S                       string           S/P (SAC/PRICE)
+anco.id
+Campo                        Obrig.            Tipo                Descrição
+
+                                                                   Data no formato yyyy-MM-
+dataNascimento               S                 string
+                                                                   dd.
+
+email                        S                 string              a@b.com.br
+
+                                                                   11912345678 (somente
+celular                      S                 string
+                                                                   números)
+
+                                                                   Indicador booleano
+fgCompoeRenda                S                 boolean
+                                                                   (true/false).
+
+                                                                   12345678909 (apenas
+cpfConjuge                   -                 string
+                                                                   números)
+
+nomeConjuge                  -                 string              Nome do cônjuge
+
+emailConjuge                 -                 string              a@b.com.br
+
+                                                                   11912345678 (somente
+celularConjuge               -                 string
+                                                                   números)
+
+rendaConjuge                 -                 number              Renda Conjuge.
+
+                                                                   Data no formato yyyy-MM-
+dataNascimentoConjuge        -                 string
+                                                                   dd.
+
+situacaoImovel.codigo        S                 string              N/U (Novo/Usado)
+
+fgFinanciarDespesas          S                 string              S/N
+
+                                                                   CA/S/VI/DI/SL/UE
+                                                                   (Casado(a)/Solteiro(a)/Viúvo(
+tipoEstadoCivilConjuge.id    -                 string
+                                                                   a)/Divorciado(a)/Separado(a)
+                                                                   Legalmente/União Estável)
+
+                                                                   CA/S/VI/DI/SL/UE
+                                                                   (Casado(a)/Solteiro(a)/Viúvo(
+tipoEstadoCivil.id           S                 string
+                                                                   a)/Divorciado(a)/Separado(a)
+                                                                   Legalmente/União Estável)
+
+
+Campos obrigatórios em destaque
+Campo                                 Tipo               Descrição
+
+                                                         123 (Obtido no serviço de domínio
+operacao.idOperacao                   string
+                                                         '/dominios/operacoes')
+
+regional.idRegional                   string             123 (obtido no serviço de autenticação)
+
+parceiro.idParceiro                   string             123 (obtido no serviço de autenticação)
+
+usuarioParceiro.idUsuarioParceiro     string             123 (obtido no serviço de autenticação)
+
+                                                         AP/CS/GA/TE/TC
+tipoImovel.id                         string             (Apartamento/Casa/Galpão/Terreno/Ter
+                                                         reno em Condomínio)
+
+usoImovel.id                          string             C/R (Comercial/Residencial)
+Campo                                        Tipo                                 Descrição
+
+uf.codigo                                    string                               Sigla da UF do imóvel
+
+valorImovel                                  number                               Valor do imóvel.
+
+valorFinanciamento                           number                               Valor do financiamento.
+
+prazo                                        number                               Prazo.
+
+utilizaFgtsSimulacao                         string                               S/N
+
+cpfCnpj                                      string                               12345678909 (apenas números)
+
+nome                                         string                               Nome do cliente
+
+rendaTotal                                   number                               Renda total.
+
+codigoSistemaAmortizacaoBanco.id             string                               S/P (SAC/PRICE)
+
+dataNascimento                               string                               Data no formato yyyy-MM-dd.
+
+email                                        string                               a@b.com.br
+
+celular                                      string                               11912345678 (somente números)
+
+fgCompoeRenda                                boolean                              Indicador booleano (true/false).
+
+situacaoImovel.codigo                        string                               N/U (Novo/Usado)
+
+fgFinanciarDespesas                          string                               S/N
+
+                                                                                  CA/S/VI/DI/SL/UE
+                                                                                  (Casado(a)/Solteiro(a)/Viúvo(a)/Divorci
+tipoEstadoCivil.id                           string
+                                                                                  ado(a)/Separado(a) Legalmente/União
+                                                                                  Estável)
+
+
+Exemplo do Swagger
+  {
+      "operacao": {
+       "idOperacao": "123 (Obtido no serviço de domínio '/dominios/operacoes')"
+      },
+      "regional": {
+       "idRegional": "123 (obtido no serviço de autenticação)"
+      },
+      "parceiro": {
+       "idParceiro": "123 (obtido no serviço de autenticação)"
+      },
+      "usuarioParceiro": {
+       "idUsuarioParceiro": "123 (obtido no serviço de autenticação)"
+      },
+      "tipoImovel": {
+       "id": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)"
+      },
+      "usoImovel": {
+       "id": "C/R (Comercial/Residencial)"
+      },
+      "uf": {
+          "codigo": "Sigla da UF do imóvel"
+      },
+      "valorImovel": 123456.78,
+      "valorFinanciamento": 123456.78,
+      "prazo": 123,
+      "utilizaFgtsSimulacao": "S/N",
+      "bancos": [
+          {
+              "idBanco": 123,
+              "codigoBanco": 123,
+              "nomeBanco": "Nome do Banco",
+              "flagSimulacao": "S/N"
+          }
+      ],
+      "cpfCnpj": "12345678909 (apenas números)",
+      "nome": "Nome do cliente",
+      "rendaTotal": 12345.67,
+      "codigoSistemaAmortizacaoBanco": {
+          "id": "S/P (SAC/PRICE)"
+      },
+      "dataNascimento": "yyyy-MM-dd",
+      "email": "a@b.com.br",
+      "celular": "11912345678 (somente números)",
+      "fgCompoeRenda": true,
+      "cpfConjuge": "12345678909 (apenas números)",
+      "nomeConjuge": "Nome do cônjuge",
+      "emailConjuge": "a@b.com.br",
+      "celularConjuge": "11912345678 (somente números)",
+      "rendaConjuge": 12345.67,
+      "dataNascimentoConjuge": "yyyy-MM-dd",
+      "situacaoImovel": {
+          "codigo": "N/U (Novo/Usado)"
+      },
+      "fgFinanciarDespesas": "S/N",
+      "tipoEstadoCivilConjuge": {
+          "id": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União Estável)"
+      },
+      "tipoEstadoCivil": {
+          "id": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União Estável)"
+      }
+  }
+
+
+
+Respostas esperadas
+HTTP                                          Schema                                    Descrição
+
+201                                           CreateOpportunityOk                       Created
+
+401                                           BasicError                                Unauthorized
+
+403                                           BasicError                                Forbidden
+
+404                                           BasicError                                Not Found
+HTTP                                          Schema                                Descrição
+
+500                                           BasicError                            Internal Server Error
+
+
+Exemplo de retorno do Swagger (201)
+   {
+       "oportunidade": {
+        "idOportunidade": 1234,
+        "codigoOportunidade": "Código da oportunidade no sistema",
+        "idOperacao": 123,
+        "dataOportunidade": "yyyy-MM-dd",
+        "tipoSituacao": "A/T/C (Ativa/Contrato Emitido/Cancelada)",
+        "idRegional": 123,
+        "idParceiro": 123,
+        "idUsuarioParceiro": 123,
+        "tipoImovel": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)",
+        "tipoUtilizacaoImovel": "C/R (Comercial/Residencial)",
+        "cep": "00000000",
+        "logradouro": "Logradouro do imóvel",
+        "numeroLogradouro": "Número do imóvel",
+        "complementoLogradouro": "Complemento do imóvel",
+        "bairro": "Bairro do imóvel",
+        "municipio": "Município do imóvel",
+        "uf": "UF do imóvel",
+        "contatoAvaliacao": "Nome do contato da avaliação",
+        "telefoneContatoAvaliacao": "Telefone do contato da avaliação (somente números)",
+        "valorImovel": 123456.78,
+        "valorFinanciamentoSimulacao": 123456.78,
+        "valorParcelaSimulacao": 123456.78,
+        "prazoPagamentoSimulacao": 123,
+        "utilizaFgtsSimulacao": "S/N",
+        "idBancoEscolhido": 123,
+        "codigoOportunidadeBanco": "Código da oportunidade no banco",
+        "valorFinanciamentoBanco": 123456.78,
+        "valorParcelaBanco": 123456.78,
+        "prazoPagamentoBanco": 123,
+        "valorFinanciamentoBancoMax": 123456.78,
+        "valorParcelaBancoMax": 123456.78,
+        "prazoPagamentoBancoMax": 123,
+        "taxaJurosAnoBanco": 12.34,
+        "valorIofBanco": 123456.78,
+        "sistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+        "indexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+        "nomeIntervenienteQuitante": "Nome do Interveniente Quitante",
+        "descricaoIntervenienteQuitante": "Descrição para processo de Interveniente Quitante",
+        "tipoTemperatura": "Q/M/F (Quente/Morna/Fria)",
+        "dataPrevistaEmissaoContrato": "yyyy-MM-dd",
+        "dataCancelamento": "yyyy-MM-dd",
+        "idUsuarioCancelamento": 123,
+        "idUsuarioCriacao": 123,
+        "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+             "idUsuarioAlteracao": 123,
+             "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+             "codigoSistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+             "situacaoImovel": "N/U (Novo/Usado)",
+             "fgFinanciarDespesas": "S/N",
+             "valorTotalFinanciamento": 123456.78
+         }
+     }
+
+
+
+
+PUT /oportunidade/{id} - Atualização de oportunidade
+Caso seja necessário atualizar dados já cadastrados, utilize esta rota de atualização.
+
+Parâmetros de rota
+Parâmetro                                          Obrig.                   Descrição
+
+                                                                            Identificador enviado na URL para
+id                                                 S
+                                                                            id.
+
+
+Corpo da requisição
+Content-Type: application/json | Schema: Opportunity
+
+Campo                                     Obrig.                   Tipo              Descrição
+
+                                                                                     Identificador
+idOportunidade                            -                        number
+                                                                                     Oportunidentificadorade.
+
+                                                                                     Código da oportunidade no
+codigoOportunidade                        -                        string
+                                                                                     sistema
+
+idOperacao                                -                        number            Identificador Operacao.
+
+                                                                                     Data no formato yyyy-MM-
+dataOportunidade                          -                        string
+                                                                                     dd.
+
+                                                                                     A/T/C (Ativa/Contrato
+tipoSituacao                              -                        string
+                                                                                     Emitido/Cancelada)
+
+idRegional                                -                        number            Identificador Regional.
+
+idParceiro                                -                        number            Identificador Parceiro.
+
+                                                                                     Identificador Usuario
+idUsuarioParceiro                         -                        number
+                                                                                     Parceiro.
+
+                                                                                     AP/CS/GA/TE/TC
+                                                                                     (Apartamento/Casa/Galpão/T
+tipoImovel                                -                        string
+                                                                                     erreno/Terreno em
+                                                                                     Condomínio)
+
+tipoUtilizacaoImovel                      -                        string            C/R (Comercial/Residencial)
+Campo                       Obrig.   Tipo     Descrição
+
+cep                         -        string   00000000
+
+logradouro                  -        string   Logradouro do imóvel
+
+numeroLogradouro            -        string   Número do imóvel
+
+complementoLogradouro       -        string   Complemento do imóvel
+
+bairro                      -        string   Bairro do imóvel
+
+municipio                   -        string   Município do imóvel
+
+uf                          -        string   UF do imóvel
+
+                                              Nome do contato da
+contatoAvaliacao            -        string
+                                              avaliação
+
+                                              Telefone do contato da
+telefoneContatoAvaliacao    -        string   avaliação (somente
+                                              números)
+
+valorImovel                 -        number   Valor do imóvel.
+
+valorFinanciamentoSimulac                     Valor do financiamento
+                            -        number
+ao                                            Simulacao.
+
+valorParcelaSimulacao       -        number   Valor Parcela Simulacao.
+
+prazoPagamentoSimulacao     -        number   Prazo Pagamento Simulacao.
+
+utilizaFgtsSimulacao        -        string   S/N
+
+                                              Identificador Banco
+idBancoEscolhido            -        number
+                                              Escolhidentificadoro.
+
+                                              Código da oportunidade no
+codigoOportunidadeBanco     -        string
+                                              banco
+
+                                              Valor do financiamento
+valorFinanciamentoBanco     -        number
+                                              Banco.
+
+valorParcelaBanco           -        number   Valor Parcela Banco.
+
+prazoPagamentoBanco         -        number   Prazo Pagamento Banco.
+
+valorFinanciamentoBancoM                      Valor do financiamento
+                            -        number
+ax                                            Banco Max.
+
+valorParcelaBancoMax        -        number   Valor Parcela Banco Max.
+
+                                              Prazo Pagamento Banco
+prazoPagamentoBancoMax      -        number
+                                              Max.
+
+taxaJurosAnoBanco           -        number   Taxa Juros Ano Banco.
+
+valorIofBanco               -        number   Valor Iof Banco.
+
+sistemaAmortizacaoBanco     -        string   S/P (SAC/PRICE)
+
+indexadorBanco              -        string   Indexador da Operação no
+Campo                             Obrig.                            Tipo                 Descrição
+
+                                                                                         retorno do Banco Escolhido
+
+                                                                                         Nome do Interveniente
+nomeIntervenienteQuitante         -                                 string
+                                                                                         Quitante
+
+descricaoIntervenienteQuita                                                              Descrição para processo de
+                                  -                                 string
+nte                                                                                      Interveniente Quitante
+
+tipoTemperatura                   -                                 string               Q/M/F (Quente/Morna/Fria)
+
+dataPrevistaEmissaoContrat                                                               Data no formato yyyy-MM-
+                                  -                                 string
+o                                                                                        dd.
+
+                                                                                         Data no formato yyyy-MM-
+dataCancelamento                  -                                 string
+                                                                                         dd.
+
+                                                                                         Identificador Usuario
+idUsuarioCancelamento             -                                 number
+                                                                                         Cancelamento.
+
+                                                                                         Identificador Usuario
+idUsuarioCriacao                  -                                 number
+                                                                                         Criacao.
+
+                                                                                         Data e hora no formato
+dataHoraCriacao                   -                                 string
+                                                                                         yyyy-MM-dd HH:mm:ss.
+
+                                                                                         Identificador Usuario
+idUsuarioAlteracao                -                                 number
+                                                                                         Alteracao.
+
+                                                                                         Data e hora no formato
+dataHoraAlteracao                 -                                 string
+                                                                                         yyyy-MM-dd HH:mm:ss.
+
+codigoSistemaAmortizacaoB
+                                  -                                 string               S/P (SAC/PRICE)
+anco
+
+situacaoImovel                    -                                 string               N/U (Novo/Usado)
+
+fgFinanciarDespesas               -                                 string               S/N
+
+valorTotalFinanciamento           -                                 number               Valor Total Financiamento.
+
+Observação: a planilha enviada não sinalizou obrigatoriedade específica para este body. Quando a
+coluna estiver com "-", o contrato disponibilizado não trouxe marcação objetiva de obrigatório.
+
+Exemplo do Swagger
+  {
+      "idOportunidade": 1234,
+      "codigoOportunidade": "Código da oportunidade no sistema",
+      "idOperacao": 123,
+      "dataOportunidade": "yyyy-MM-dd",
+      "tipoSituacao": "A/T/C (Ativa/Contrato Emitido/Cancelada)",
+      "idRegional": 123,
+      "idParceiro": 123,
+      "idUsuarioParceiro": 123,
+      "tipoImovel": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)",
+      "tipoUtilizacaoImovel": "C/R (Comercial/Residencial)",
+      "cep": "00000000",
+      "logradouro": "Logradouro do imóvel",
+      "numeroLogradouro": "Número do imóvel",
+      "complementoLogradouro": "Complemento do imóvel",
+      "bairro": "Bairro do imóvel",
+      "municipio": "Município do imóvel",
+      "uf": "UF do imóvel",
+      "contatoAvaliacao": "Nome do contato da avaliação",
+      "telefoneContatoAvaliacao": "Telefone do contato da avaliação (somente números)",
+      "valorImovel": 123456.78,
+      "valorFinanciamentoSimulacao": 123456.78,
+      "valorParcelaSimulacao": 123456.78,
+      "prazoPagamentoSimulacao": 123,
+      "utilizaFgtsSimulacao": "S/N",
+      "idBancoEscolhido": 123,
+      "codigoOportunidadeBanco": "Código da oportunidade no banco",
+      "valorFinanciamentoBanco": 123456.78,
+      "valorParcelaBanco": 123456.78,
+      "prazoPagamentoBanco": 123,
+      "valorFinanciamentoBancoMax": 123456.78,
+      "valorParcelaBancoMax": 123456.78,
+      "prazoPagamentoBancoMax": 123,
+      "taxaJurosAnoBanco": 12.34,
+      "valorIofBanco": 123456.78,
+      "sistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+      "indexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+      "nomeIntervenienteQuitante": "Nome do Interveniente Quitante",
+      "descricaoIntervenienteQuitante": "Descrição para processo de Interveniente Quitante",
+      "tipoTemperatura": "Q/M/F (Quente/Morna/Fria)",
+      "dataPrevistaEmissaoContrato": "yyyy-MM-dd",
+      "dataCancelamento": "yyyy-MM-dd",
+      "idUsuarioCancelamento": 123,
+      "idUsuarioCriacao": 123,
+      "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+      "idUsuarioAlteracao": 123,
+      "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+      "codigoSistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+      "situacaoImovel": "N/U (Novo/Usado)",
+      "fgFinanciarDespesas": "S/N",
+      "valorTotalFinanciamento": 123456.78
+  }
+
+
+
+Respostas esperadas
+HTTP                                        Schema                                  Descrição
+
+200                                         Opportunity                             OK
+
+401                                         BasicError                              Unauthorized
+
+403                                         BasicError                              Forbidden
+
+404                                         BasicError                              Not Found
+HTTP                                         Schema                                  Descrição
+
+500                                          BasicError                              Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+   {
+       "idOportunidade": 1234,
+       "codigoOportunidade": "Código da oportunidade no sistema",
+       "idOperacao": 123,
+       "dataOportunidade": "yyyy-MM-dd",
+       "tipoSituacao": "A/T/C (Ativa/Contrato Emitido/Cancelada)",
+       "idRegional": 123,
+       "idParceiro": 123,
+       "idUsuarioParceiro": 123,
+       "tipoImovel": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)",
+       "tipoUtilizacaoImovel": "C/R (Comercial/Residencial)",
+       "cep": "00000000",
+       "logradouro": "Logradouro do imóvel",
+       "numeroLogradouro": "Número do imóvel",
+       "complementoLogradouro": "Complemento do imóvel",
+       "bairro": "Bairro do imóvel",
+       "municipio": "Município do imóvel",
+       "uf": "UF do imóvel",
+       "contatoAvaliacao": "Nome do contato da avaliação",
+       "telefoneContatoAvaliacao": "Telefone do contato da avaliação (somente números)",
+       "valorImovel": 123456.78,
+       "valorFinanciamentoSimulacao": 123456.78,
+       "valorParcelaSimulacao": 123456.78,
+       "prazoPagamentoSimulacao": 123,
+       "utilizaFgtsSimulacao": "S/N",
+       "idBancoEscolhido": 123,
+       "codigoOportunidadeBanco": "Código da oportunidade no banco",
+       "valorFinanciamentoBanco": 123456.78,
+       "valorParcelaBanco": 123456.78,
+       "prazoPagamentoBanco": 123,
+       "valorFinanciamentoBancoMax": 123456.78,
+       "valorParcelaBancoMax": 123456.78,
+       "prazoPagamentoBancoMax": 123,
+       "taxaJurosAnoBanco": 12.34,
+       "valorIofBanco": 123456.78,
+       "sistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+       "indexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+       "nomeIntervenienteQuitante": "Nome do Interveniente Quitante",
+       "descricaoIntervenienteQuitante": "Descrição para processo de Interveniente Quitante",
+       "tipoTemperatura": "Q/M/F (Quente/Morna/Fria)",
+       "dataPrevistaEmissaoContrato": "yyyy-MM-dd",
+       "dataCancelamento": "yyyy-MM-dd",
+       "idUsuarioCancelamento": 123,
+       "idUsuarioCriacao": 123,
+       "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+       "idUsuarioAlteracao": 123,
+         "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+         "codigoSistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+         "situacaoImovel": "N/U (Novo/Usado)",
+         "fgFinanciarDespesas": "S/N",
+         "valorTotalFinanciamento": 123456.78
+     }
+
+
+
+
+GET /oportunidade/{id} - Consulta de oportunidade
+Utilize esta rota para consultar informações sem envio de body.
+
+Parâmetros de rota
+Parâmetro                                      Obrig.                             Descrição
+
+                                                                                  Identificador enviado na URL para
+id                                             S
+                                                                                  id.
+
+Body: não se aplica.
+
+Respostas esperadas
+HTTP                                           Schema                             Descrição
+
+200                                            GetOpportunityOk                   OK
+
+401                                            BasicError                         Unauthorized
+
+403                                            BasicError                         Forbidden
+
+404                                            BasicError                         Not Found
+
+500                                            BasicError                         Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+     {
+         "oportunidade": {
+          "idOportunidade": 1234,
+          "codigoOportunidade": "Código da oportunidade no sistema",
+          "idOperacao": 123,
+          "dataOportunidade": "yyyy-MM-dd",
+          "tipoSituacao": "A/T/C (Ativa/Contrato Emitido/Cancelada)",
+          "idRegional": 123,
+          "idParceiro": 123,
+          "idUsuarioParceiro": 123,
+          "tipoImovel": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)",
+          "tipoUtilizacaoImovel": "C/R (Comercial/Residencial)",
+          "cep": "00000000",
+          "logradouro": "Logradouro do imóvel",
+          "numeroLogradouro": "Número do imóvel",
+          "complementoLogradouro": "Complemento do imóvel",
+          "bairro": "Bairro do imóvel",
+  "municipio": "Município do imóvel",
+  "uf": "UF do imóvel",
+  "contatoAvaliacao": "Nome do contato da avaliação",
+  "telefoneContatoAvaliacao": "Telefone do contato da avaliação (somente números)",
+  "valorImovel": 123456.78,
+  "valorFinanciamentoSimulacao": 123456.78,
+  "valorParcelaSimulacao": 123456.78,
+  "prazoPagamentoSimulacao": 123,
+  "utilizaFgtsSimulacao": "S/N",
+  "idBancoEscolhido": 123,
+  "codigoOportunidadeBanco": "Código da oportunidade no banco",
+  "valorFinanciamentoBanco": 123456.78,
+  "valorParcelaBanco": 123456.78,
+  "prazoPagamentoBanco": 123,
+  "valorFinanciamentoBancoMax": 123456.78,
+  "valorParcelaBancoMax": 123456.78,
+  "prazoPagamentoBancoMax": 123,
+  "taxaJurosAnoBanco": 12.34,
+  "valorIofBanco": 123456.78,
+  "sistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+  "indexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+  "nomeIntervenienteQuitante": "Nome do Interveniente Quitante",
+  "descricaoIntervenienteQuitante": "Descrição para processo de Interveniente Quitante",
+  "tipoTemperatura": "Q/M/F (Quente/Morna/Fria)",
+  "dataPrevistaEmissaoContrato": "yyyy-MM-dd",
+  "dataCancelamento": "yyyy-MM-dd",
+  "idUsuarioCancelamento": 123,
+  "idUsuarioCriacao": 123,
+  "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+  "idUsuarioAlteracao": 123,
+  "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+  "codigoSistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+  "situacaoImovel": "N/U (Novo/Usado)",
+  "fgFinanciarDespesas": "S/N",
+  "valorTotalFinanciamento": 123456.78,
+  "simulacoes": [
+   {
+       "idSimulacao": 123,
+       "idOportunidade": 123,
+       "idBanco": 123,
+       "dataSimulacao": "yyyy-MM-dd",
+       "tipoImovel": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)",
+       "tipoUtilizacaoImovel": "C/R (Comercial/Residencial)",
+       "valorImovel": 123456.78,
+       "valorFinanciamentoSimulacao": 123456.78,
+       "valorParcelaSimulacao": 123456.78,
+       "prazoPagamentoSimulacao": 123,
+       "utilizaFgtsSimulacao": "S/N",
+       "tipoSituacao": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito
+Recusado)",
+       "dataHoraEnvioIntegracao": "yyyy-MM-dd HH:mm:ss",
+       "dataHoraRetornoIntegracao": "yyyy-MM-dd HH:mm:ss",
+       "bancoEscolhido": "S/N",
+       "codigoOportunidadeBanco": "Código da oportunidade no banco",
+       "valorFinanciamentoBanco": 123456.78,
+       "valorParcelaBanco": 123456.78,
+       "prazoPagamentoBanco": 123,
+       "valorFinanciamentoBancoMax": 123456.78,
+       "valorParcelaBancoMax": 123456.78,
+       "prazoPagamentoBancoMax": 123,
+       "taxaJurosAnoBanco": 12.34,
+       "valorIofBanco": 123456.78,
+       "codigoSistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+       "codigoIndexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+       "idUsuarioCriacao": 123,
+       "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+       "situacaoImovel": "N/U (Novo/Usado)",
+       "fgFinanciarDespesas": "S/N",
+       "agencia": "1234",
+       "conta": "12313",
+       "digito": "1",
+       "valorDespesasFinanciadas": 123456.78,
+       "valorTotalFinanciamento": 123456.78,
+       "retornoIntegracao": "Retorno da integração",
+       "fgAutorizacaoDados": true,
+       "codigoSituacaoBanco": "Código de situação retornado pelo banco",
+       "banco": {
+           "idBanco": 123,
+           "codigoBanco": 123,
+           "nomeBanco": "Nome do Banco",
+           "flagSimulacao": "S/N"
+       }
+   }
+  ],
+  "participantes": [
+   {
+       "idParticipante": 123,
+       "idOportunidade": 123,
+       "tipoSituacao": "A/I (Ativa/Inativa)",
+       "nomeParticipante": "Nome do participante",
+       "tipoQualificacao": "CO/VD (Comprador/Vendedor)",
+       "tipoPessoa": "F/J (Física/Jurídica)",
+       "cpfCnpj": "00000000000 (somente numeros)",
+       "dataNascimento": "yyyy-MM-dd",
+       "tipoSexo": "M/F (Masculino/Feminino)",
+       "tipoEstadoCivil": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União
+Estável)",
+       "tipoRegimeCasamento": "CP/CU/PA/SC/SO (Comunhão Parcial de Bens/Comunhão Universal de Bens/Participação
+Final nos Aquestos/Separação Convencional de Bens/Separação Obrigatória de Bens)",
+       "tipoDocumentoIdentidade": "RG/CNH",
+       "numeroDocumento": "Número do documento do participante",
+       "dataExpedicao": "yyyy-MM-dd",
+       "orgaoExpedidor": "Órgão expedidor do documento do participante",
+       "ufExpedicao": "UF expedidor do documento do participante",
+       "nomeMae": "Nome da mãe do participante",
+       "nomeProfissao": "Profissão do participante",
+       "renda": 123456.78,
+       "idBanco": 123,
+       "codigoAgencia": "1234",
+       "codigoContaCorrente": "001910123",
+       "digitoContaCorrente": "4",
+       "compradorPrincipal": "S/N",
+       "email": "a@b.com.br",
+       "celular": "11912345678 (somente números)",
+       "cep": "00000000",
+       "logradouro": "Logradouro do participante",
+       "numeroLogradouro": "Número do participante",
+       "complementoLogradouro": "Complemento do participante",
+       "bairro": "Bairro do participante",
+       "municipio": "Município do participante",
+       "uf": "UF do participante",
+       "tipoEmpresa": "SA/EPP/ME/MEI/EIRELI",
+       "dataRegistroEmpresa": "yyyy-MM-dd",
+       "faturamentoEmpresa": 12345678.9,
+       "patrimonioLiquidoEmpresa": 12345678.9,
+       "capitalSocialEmpresa": 12345678.9,
+       "nomeConjuge": "Nome do conjuge",
+       "cpfConjuge": "00000000000 (somente numeros)",
+       "dataNascimentoConjuge": "yyyy-MM-dd",
+       "tipoEstadoCivilConjuge": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a)
+Legalmente/União Estável)",
+       "tipoDocumentoIdentidadeConjuge": "RG/CNH",
+       "numeroDocumentoConjuge": "Número do documento do conjuge",
+       "dataExpedicaoConjuge": "yyyy-MM-dd",
+       "orgaoExpedidorConjuge": "Órgão expedidor do documento do conjuge",
+       "ufExpedicaoConjuge": "UF expedidor do documento do conjuge",
+       "dataInativacao": "yyyy-MM-dd",
+       "idUsuarioInativacao": 123,
+       "idUsuarioCriacao": 123,
+       "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+       "idUsuarioAlteracao": 123,
+       "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+       "nomeEmpresaProfissao": "Empresa da profissão do participante",
+       "utilizaFgts": "S/N",
+       "nomeProfissaoConjuge": "Profissão do conjuge",
+       "rendaConjuge": 123456.78,
+       "nomeEmpresaProfissaoConjuge": "Empresa da profissão do conjuge",
+       "fgAutorizacaoDados": true,
+       "tipoSexoConjuge": "M/F (Masculino/Feminino)"
+   }
+  ],
+  "regional": {
+   "idRegional": 123,
+   "nomeRegional": "Nome da regional",
+   "cnpj": "1234567890123456 (somente números)",
+   "cep": "00000000",
+ "logradouro": "Logradouro da regional",
+ "numeroLogradouro": "Número da regional",
+ "complementoLogradouro": "Complemento da regional",
+ "bairro": "Bairro da regional",
+ "municipio": "Município da regional",
+ "uf": "UF da regional",
+ "idUsuarioCriacao": 123,
+ "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+ "idUsuarioAlteracao": 123,
+ "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss"
+},
+"parceiro": {
+ "idParceiro": 123,
+ "nomeParceiro": "Razão social do parceiro",
+ "cpfCnpj": "1234567890123456 (somente números)",
+ "tipoOrigem": "RM/IN/PR/ST/MK (REMAX/Indicação/Prospecção/Site/Marketing)",
+ "nomeProprietario": "Nome do proprietário",
+ "emailProprietario": "Email do proprietário",
+ "celularProprietario": "Telefone do proprietário",
+ "nomeFaturamento": "Nome da pessoa que cuida do faturamento",
+ "emailFaturamento": "E-mail de faturamento",
+ "celularFaturamento": "Telefone de faturamento",
+ "cep": "00000000",
+ "logradouro": "Logradouro do parceiro",
+ "numeroLogradouro": "Número do parceiro",
+ "complementoLogradouro": "Complemento do parceiro",
+ "bairro": "Bairro do parceiro",
+ "municipio": "Município do parceiro",
+ "uf": "UF do parceiro",
+ "idUsuarioCriacao": 123,
+ "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+ "idUsuarioAlteracao": 123,
+ "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+ "idRegional": 123,
+ "tipoSituacao": "A/I (Ativa/Inativa)",
+ "perfil": "AS/IM/CO/CA (Assessoria/Imobiliária/Corretor/Cartório)"
+},
+"bancoEscolhido": {
+ "idBanco": 123,
+ "codigoBanco": 123,
+ "nomeBanco": "Nome do Banco",
+ "flagSimulacao": "S/N"
+},
+"operacao": {
+ "idOperacao": 123,
+ "nomeOperacao": "Nome do Produto",
+ "idUsuarioCriacao": 123,
+ "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+ "idUsuarioAlteracao": 123,
+ "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+ "tipoSituacao": "A/I (Ativa/Inativa)"
+},
+"usuarioParceiro": {
+ "idUsuarioParceiro": 123,
+ "nomeUsuarioParceiro": "Razão social do parceiro",
+ "cpfCnpj": "1234567890123456 (somente números)",
+ "tipoOrigem": "RM/IN/PR/ST/MK (REMAX/Indicação/Prospecção/Site/Marketing)",
+ "nomeProprietario": "Nome do proprietário",
+ "emailProprietario": "Email do proprietário",
+ "celularProprietario": "Telefone do proprietário",
+ "nomeFaturamento": "Nome da pessoa que cuida do faturamento",
+ "emailFaturamento": "E-mail de faturamento",
+ "celularFaturamento": "Telefone de faturamento",
+ "cep": "00000000",
+ "logradouro": "Logradouro do parceiro",
+ "numeroLogradouro": "Número do parceiro",
+ "complementoLogradouro": "Complemento do parceiro",
+ "bairro": "Bairro do parceiro",
+ "municipio": "Município do parceiro",
+ "uf": "UF do parceiro",
+ "idUsuarioConsultor": 123,
+ "idUsuarioAnalista": 123,
+ "idUsuarioCriacao": 123,
+ "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+ "idUsuarioAlteracao": 123,
+ "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+ "idParceiro": 123,
+ "tipoSituacao": "A/I (Ativa/Inativa)",
+ "perfil": "AS/IM/CO/CA (Assessoria/Imobiliária/Corretor/Cartório)"
+},
+"atividadesOportunidade": [
+ {
+     "idAtividadeOportunidade": 123,
+     "idOportunidade": 123,
+     "idAtividade": 123,
+     "tipoFormaInclusao": "A/M (Automática/Manual)",
+     "dataInclusao": "yyyy-MM-dd",
+     "dataPrevisaoConclusao": "yyyy-MM-dd",
+     "tipoSituacao": "N/E/C (Não Iniciada/Em Andamento/Concluída)",
+     "idUsuarioCriacao": 123,
+     "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+     "idUsuarioAtuacao": 123,
+     "dataHoraAtuacao": "yyyy-MM-dd HH:mm:ss",
+     "idUsuarioConclusao": 123,
+     "dataHoraConclusao": "yyyy-MM-dd HH:mm:ss",
+     "idEtapa": 123,
+     "atividade": {
+      "idAtividade": 123,
+      "nomeAtividade": "Nome da atividade",
+      "idEtapa": 123,
+      "tipoSituacao": "A/I (Ativa/Inativa)",
+      "ordemAtividade": 123,
+      "diasSla": 123,
+      "idUsuarioCriacao": 123,
+                         "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+                         "idUsuarioAlteracao": 123,
+                         "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+                         "flagEmissaoContrato": "S/N"
+                     },
+                     "etapa": {
+                         "idEtapa": 123,
+                         "nomeEtapa": "Nome da etapa",
+                         "idOperacao": 123,
+                         "tipoSituacao": "A/I (Ativa/Inativa)",
+                         "ordemEtapa": 123,
+                         "idUsuarioCriacao": 123,
+                         "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+                         "idUsuarioAlteracao": 123,
+                         "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss"
+                     }
+                 }
+             ]
+         },
+         "etapa": [
+             {
+                 "idEtapa": 123,
+                 "nomeEtapa": "Nome da etapa",
+                 "idOperacao": 123,
+                 "tipoSituacao": "A/I (Ativa/Inativa)",
+                 "ordemEtapa": 123,
+                 "idUsuarioCriacao": 123,
+                 "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+                 "idUsuarioAlteracao": 123,
+                 "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+                 "active": true,
+                 "completed": true
+             }
+         ]
+     }
+
+
+
+
+POST /oportunidade/{id}/incluir-proposta-integracao - Associação da proposta de integração
+Utilize esta rota para envio/criação conforme o fluxo da integração.
+
+Parâmetros de rota
+Parâmetro                                                    Obrig.    Descrição
+
+                                                                       Identificador enviado na URL para
+id                                                           S
+                                                                       id.
+
+
+Corpo da requisição
+Content-Type: application/json | Schema: CreateProposalRequest
+Campo                                Obrig.                      Tipo                          Descrição
+
+idSimulacao                          -                           number                        Identificador Simulacao.
+
+Observação: a planilha enviada não sinalizou obrigatoriedade específica para este body. Quando a
+coluna estiver com "-", o contrato disponibilizado não trouxe marcação objetiva de obrigatório.
+
+Exemplo do Swagger
+   {
+       "idSimulacao": 123
+   }
+
+
+
+Respostas esperadas
+HTTP                                          Schema                                 Descrição
+
+200                                           CreateProposalOk                       OK
+
+401                                           BasicError                             Unauthorized
+
+403                                           BasicError                             Forbidden
+
+404                                           BasicError                             Not Found
+
+500                                           BasicError                             Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+   {
+       "idSimulacao": 123,
+       "idOportunidade": 123,
+       "idBanco": 123,
+       "dataSimulacao": "yyyy-MM-dd",
+       "tipoImovel": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)",
+       "tipoUtilizacaoImovel": "C/R (Comercial/Residencial)",
+       "valorImovel": 123456.78,
+       "valorFinanciamentoSimulacao": 123456.78,
+       "valorParcelaSimulacao": 123456.78,
+       "prazoPagamentoSimulacao": 123,
+       "utilizaFgtsSimulacao": "S/N",
+       "tipoSituacao": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito
+   Recusado)",
+       "dataHoraEnvioIntegracao": "yyyy-MM-dd HH:mm:ss",
+       "dataHoraRetornoIntegracao": "yyyy-MM-dd HH:mm:ss",
+       "bancoEscolhido": "S/N",
+       "codigoOportunidadeBanco": "Código da oportunidade no banco",
+       "valorFinanciamentoBanco": 123456.78,
+       "valorParcelaBanco": 123456.78,
+       "prazoPagamentoBanco": 123,
+       "valorFinanciamentoBancoMax": 123456.78,
+       "valorParcelaBancoMax": 123456.78,
+       "prazoPagamentoBancoMax": 123,
+       "taxaJurosAnoBanco": 12.34,
+       "valorIofBanco": 123456.78,
+    "codigoSistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+    "codigoIndexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+    "idUsuarioCriacao": 123,
+    "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+    "situacaoImovel": "N/U (Novo/Usado)",
+    "fgFinanciarDespesas": "S/N",
+    "agencia": "1234",
+    "conta": "12313",
+    "digito": "1",
+    "valorDespesasFinanciadas": 123456.78,
+    "valorTotalFinanciamento": 123456.78,
+    "retornoIntegracao": "Retorno da integração",
+    "fgAutorizacaoDados": true,
+    "codigoSituacaoBanco": "Código de situação retornado pelo banco",
+    "banco": {
+        "idBanco": 123,
+        "codigoBanco": 123,
+        "nomeBanco": "Nome do Banco",
+        "flagSimulacao": "S/N"
+    }
+}
+Simulações
+
+POST /oportunidade/{id}/simulacao - Criação de simulação
+Utilize esta rota para envio/criação conforme o fluxo da integração.
+
+Parâmetros de rota
+Parâmetro                            Obrig.                            Descrição
+
+                                                                       Identificador enviado na URL para
+id                                   S
+                                                                       id.
+
+
+Corpo da requisição
+Content-Type: application/json | Schema: CreateSimulationRequest
+
+Campo                       Obrig.                    Tipo                       Descrição
+
+valorImovel                 S                         number                     Valor do imóvel.
+
+valorFinanciamento          S                         number                     Valor do financiamento.
+
+prazo                       S                         number                     Prazo.
+
+codigoSistemaAmortizacaoB
+                            S                         string                     S/P (SAC/PRICE)
+anco.id
+
+                                                                                 Código da oportunidade no
+codigoOportunidadeBanco     N                         string
+                                                                                 banco
+
+valorParcelaBanco           N                         number                     Valor Parcela Banco.
+
+taxaJurosAnoBanco           N                         number                     Taxa Juros Ano Banco.
+
+                                                                                 Indexador da Operação no
+codigoIndexadorBanco        N                         string
+                                                                                 retorno do Banco Escolhido
+
+valorIofBanco               N                         number                     Valor Iof Banco.
+
+valorFinanciamentoBancoM                                                         Valor do financiamento
+                            N                         number
+ax                                                                               Banco Max.
+
+valorParcelaBancoMax        N                         number                     Valor Parcela Banco Max.
+
+                                                                                 Prazo Pagamento Banco
+prazoPagamentoBancoMax      N                         number
+                                                                                 Max.
+
+banco.idBanco               S                         number                     Identificador Banco.
+
+                                                                                 Indicador booleano
+fgAutorizacaoDados          S                         boolean
+                                                                                 (true/false).
+
+
+Campos obrigatórios em destaque
+Campo                                Tipo                              Descrição
+
+valorImovel                          number                            Valor do imóvel.
+
+valorFinanciamento                   number                            Valor do financiamento.
+Campo                                        Tipo                                Descrição
+
+prazo                                        number                              Prazo.
+
+codigoSistemaAmortizacaoBanco.id             string                              S/P (SAC/PRICE)
+
+banco.idBanco                                number                              Identificador Banco.
+
+fgAutorizacaoDados                           boolean                             Indicador booleano (true/false).
+
+
+Exemplo do Swagger
+   {
+       "valorImovel": 123456.78,
+       "valorFinanciamento": 123456.78,
+       "prazo": 123,
+       "codigoSistemaAmortizacaoBanco": {
+        "id": "S/P (SAC/PRICE)"
+       },
+       "codigoOportunidadeBanco": "Código da oportunidade no banco",
+       "valorParcelaBanco": 12345.67,
+       "taxaJurosAnoBanco": 12.34,
+       "codigoIndexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+       "valorIofBanco": 12345.67,
+       "valorFinanciamentoBancoMax": 123456.78,
+       "valorParcelaBancoMax": 12345.67,
+       "prazoPagamentoBancoMax": 123,
+       "banco": {
+        "idBanco": 123
+       },
+       "fgAutorizacaoDados": true
+   }
+
+
+
+Respostas esperadas
+HTTP                                         Schema                              Descrição
+
+200                                          CreateSimulationResponse            OK
+
+401                                          BasicError                          Unauthorized
+
+403                                          BasicError                          Forbidden
+
+404                                          BasicError                          Not Found
+
+500                                          BasicError                          Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+   {
+       "idSimulacao": 123,
+       "idOportunidade": 123,
+       "idBanco": 123,
+       "dataSimulacao": "yyyy-MM-dd",
+       "tipoImovel": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)",
+       "tipoUtilizacaoImovel": "C/R (Comercial/Residencial)",
+         "valorImovel": 123456.78,
+         "valorFinanciamentoSimulacao": 123456.78,
+         "valorParcelaSimulacao": 123456.78,
+         "prazoPagamentoSimulacao": 123,
+         "utilizaFgtsSimulacao": "S/N",
+         "tipoSituacao": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito
+     Recusado)",
+         "dataHoraEnvioIntegracao": "yyyy-MM-dd HH:mm:ss",
+         "dataHoraRetornoIntegracao": "yyyy-MM-dd HH:mm:ss",
+         "bancoEscolhido": "S/N",
+         "codigoOportunidadeBanco": "Código da oportunidade no banco",
+         "valorFinanciamentoBanco": 123456.78,
+         "valorParcelaBanco": 123456.78,
+         "prazoPagamentoBanco": 123,
+         "valorFinanciamentoBancoMax": 123456.78,
+         "valorParcelaBancoMax": 123456.78,
+         "prazoPagamentoBancoMax": 123,
+         "taxaJurosAnoBanco": 12.34,
+         "valorIofBanco": 123456.78,
+         "codigoSistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+         "codigoIndexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+         "idUsuarioCriacao": 123,
+         "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+         "situacaoImovel": "N/U (Novo/Usado)",
+         "fgFinanciarDespesas": "S/N",
+         "agencia": "1234",
+         "conta": "12313",
+         "digito": "1",
+         "valorDespesasFinanciadas": 123456.78,
+         "valorTotalFinanciamento": 123456.78,
+         "retornoIntegracao": "Retorno da integração",
+         "fgAutorizacaoDados": true,
+         "codigoSituacaoBanco": "Código de situação retornado pelo banco"
+     }
+
+
+
+
+PUT /oportunidade/{id}/simulacao/{idSimulacao} - Atualização de simulação
+Caso seja necessário atualizar dados já cadastrados, utilize esta rota de atualização.
+
+Parâmetros de rota
+Parâmetro                                      Obrig.                                  Descrição
+
+                                                                                       Identificador enviado na URL para
+id                                             S
+                                                                                       id.
+
+                                                                                       Identificador enviado na URL para
+idSimulacao                                    S
+                                                                                       idSimulacao.
+Corpo da requisição
+Content-Type: application/json | Schema: UpdateSimulationRequest
+
+Campo                              Obrig.                    Tipo                      Descrição
+
+valorImovel                        -                         number                    Valor do imóvel.
+
+valorFinanciamento                 -                         number                    Valor do financiamento.
+
+prazo                              -                         number                    Prazo.
+
+codigoSistemaAmortizacaoB
+                                   -                         string                    S/P (SAC/PRICE)
+anco.id
+
+                                                                                       Código da oportunidade no
+codigoOportunidadeBanco            -                         string
+                                                                                       banco
+
+valorParcelaBanco                  -                         number                    Valor Parcela Banco.
+
+taxaJurosAnoBanco                  -                         number                    Taxa Juros Ano Banco.
+
+                                                                                       Indexador da Operação no
+codigoIndexadorBanco               -                         string
+                                                                                       retorno do Banco Escolhido
+
+valorIofBanco                      -                         number                    Valor Iof Banco.
+
+valorFinanciamentoBancoM                                                               Valor do financiamento
+                                   -                         number
+ax                                                                                     Banco Max.
+
+valorParcelaBancoMax               -                         number                    Valor Parcela Banco Max.
+
+                                                                                       Prazo Pagamento Banco
+prazoPagamentoBancoMax             -                         number
+                                                                                       Max.
+
+valorDespesasFinanciadas           -                         number                    Valor Despesas Financiadas.
+
+valorTotalFinanciamento            -                         number                    Valor Total Financiamento.
+
+fgFinanciarDespesas                -                         string                    S/N
+
+                                                                                       Indicador booleano
+fgAutorizacaoDados                 -                         boolean
+                                                                                       (true/false).
+
+Observação: a planilha enviada não sinalizou obrigatoriedade específica para este body. Quando a
+coluna estiver com "-", o contrato disponibilizado não trouxe marcação objetiva de obrigatório.
+
+Exemplo do Swagger
+  {
+      "valorImovel": 123456.78,
+      "valorFinanciamento": 123456.78,
+      "prazo": 123,
+      "codigoSistemaAmortizacaoBanco": {
+       "id": "S/P (SAC/PRICE)"
+      },
+      "codigoOportunidadeBanco": "Código da oportunidade no banco",
+      "valorParcelaBanco": 12345.67,
+      "taxaJurosAnoBanco": 12.34,
+      "codigoIndexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+      "valorIofBanco": 12345.67,
+       "valorFinanciamentoBancoMax": 123456.78,
+       "valorParcelaBancoMax": 12345.67,
+       "prazoPagamentoBancoMax": 123,
+       "valorDespesasFinanciadas": 123456.78,
+       "valorTotalFinanciamento": 123456.78,
+       "fgFinanciarDespesas": "S/N",
+       "fgAutorizacaoDados": true
+   }
+
+
+
+Respostas esperadas
+HTTP                                         Schema                                  Descrição
+
+200                                          UpdateSimulationResponse                OK
+
+401                                          BasicError                              Unauthorized
+
+403                                          BasicError                              Forbidden
+
+404                                          BasicError                              Not Found
+
+500                                          BasicError                              Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+   {
+       "idSimulacao": 123,
+       "idOportunidade": 123,
+       "idBanco": 123,
+       "dataSimulacao": "yyyy-MM-dd",
+       "tipoImovel": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)",
+       "tipoUtilizacaoImovel": "C/R (Comercial/Residencial)",
+       "valorImovel": 123456.78,
+       "valorFinanciamentoSimulacao": 123456.78,
+       "valorParcelaSimulacao": 123456.78,
+       "prazoPagamentoSimulacao": 123,
+       "utilizaFgtsSimulacao": "S/N",
+       "tipoSituacao": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito
+   Recusado)",
+       "dataHoraEnvioIntegracao": "yyyy-MM-dd HH:mm:ss",
+       "dataHoraRetornoIntegracao": "yyyy-MM-dd HH:mm:ss",
+       "bancoEscolhido": "S/N",
+       "codigoOportunidadeBanco": "Código da oportunidade no banco",
+       "valorFinanciamentoBanco": 123456.78,
+       "valorParcelaBanco": 123456.78,
+       "prazoPagamentoBanco": 123,
+       "valorFinanciamentoBancoMax": 123456.78,
+       "valorParcelaBancoMax": 123456.78,
+       "prazoPagamentoBancoMax": 123,
+       "taxaJurosAnoBanco": 12.34,
+       "valorIofBanco": 123456.78,
+       "codigoSistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+       "codigoIndexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+       "idUsuarioCriacao": 123,
+         "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+         "situacaoImovel": "N/U (Novo/Usado)",
+         "fgFinanciarDespesas": "S/N",
+         "agencia": "1234",
+         "conta": "12313",
+         "digito": "1",
+         "valorDespesasFinanciadas": 123456.78,
+         "valorTotalFinanciamento": 123456.78,
+         "retornoIntegracao": "Retorno da integração",
+         "fgAutorizacaoDados": true,
+         "codigoSituacaoBanco": "Código de situação retornado pelo banco"
+     }
+
+
+
+
+POST /oportunidade/{id}/simulacao/{idSimulacao}/integracao - Envio da simulação ao banco
+Utilize esta rota para envio/criação conforme o fluxo da integração.
+
+Parâmetros de rota
+Parâmetro                                      Obrig.                             Descrição
+
+                                                                                  Identificador enviado na URL para
+id                                             S
+                                                                                  id.
+
+                                                                                  Identificador enviado na URL para
+idSimulacao                                    S
+                                                                                  idSimulacao.
+
+Body: não se aplica.
+
+Respostas esperadas
+HTTP                                           Schema                             Descrição
+
+200                                            SimulationIntegrationResponse      OK
+
+401                                            BasicError                         Unauthorized
+
+403                                            BasicError                         Forbidden
+
+404                                            BasicError                         Not Found
+
+500                                            BasicError                         Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+     {
+         "idSimulacao": 123,
+         "idOportunidade": 123,
+         "idBanco": 123,
+         "dataSimulacao": "yyyy-MM-dd",
+         "tipoImovel": "AP/CS/GA/TE/TC (Apartamento/Casa/Galpão/Terreno/Terreno em Condomínio)",
+         "tipoUtilizacaoImovel": "C/R (Comercial/Residencial)",
+         "valorImovel": 123456.78,
+    "valorFinanciamentoSimulacao": 123456.78,
+    "valorParcelaSimulacao": 123456.78,
+    "prazoPagamentoSimulacao": 123,
+    "utilizaFgtsSimulacao": "S/N",
+    "tipoSituacao": "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito Aprovado/Crédito
+Recusado)",
+    "dataHoraEnvioIntegracao": "yyyy-MM-dd HH:mm:ss",
+    "dataHoraRetornoIntegracao": "yyyy-MM-dd HH:mm:ss",
+    "bancoEscolhido": "S/N",
+    "codigoOportunidadeBanco": "Código da oportunidade no banco",
+    "valorFinanciamentoBanco": 123456.78,
+    "valorParcelaBanco": 123456.78,
+    "prazoPagamentoBanco": 123,
+    "valorFinanciamentoBancoMax": 123456.78,
+    "valorParcelaBancoMax": 123456.78,
+    "prazoPagamentoBancoMax": 123,
+    "taxaJurosAnoBanco": 12.34,
+    "valorIofBanco": 123456.78,
+    "codigoSistemaAmortizacaoBanco": "S/P (SAC/PRICE)",
+    "codigoIndexadorBanco": "Indexador da Operação no retorno do Banco Escolhido",
+    "idUsuarioCriacao": 123,
+    "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+    "situacaoImovel": "N/U (Novo/Usado)",
+    "fgFinanciarDespesas": "S/N",
+    "agencia": "1234",
+    "conta": "12313",
+    "digito": "1",
+    "valorDespesasFinanciadas": 123456.78,
+    "valorTotalFinanciamento": 123456.78,
+    "retornoIntegracao": "Retorno da integração",
+    "fgAutorizacaoDados": true,
+    "codigoSituacaoBanco": "Código de situação retornado pelo banco"
+}
+Participantes
+
+POST /oportunidade/{id}/participante - Inclusão de participante
+Utilize esta rota para envio/criação conforme o fluxo da integração.
+
+Parâmetros de rota
+Parâmetro                           Obrig.                             Descrição
+
+                                                                       Identificador enviado na URL para
+id                                  S
+                                                                       id.
+
+
+Corpo da requisição
+Content-Type: application/json | Schema: CreateParticipantRequest
+
+Campo                      Obrig.                     Tipo                      Descrição
+
+tipoSituacao               S                          string                    A/I (Ativa/Inativa)
+
+nomeParticipante           S                          string                    Nome do participante
+
+                                                                                CO/VD
+tipoQualificacao           S                          string
+                                                                                (Comprador/Vendedor)
+
+tipoPessoa                 S                          string                    F/J (Física/Jurídica)
+
+                                                                                12345678909 (apenas
+cpfCnpj                    S                          string
+                                                                                números)
+
+                                                                                Data no formato yyyy-MM-
+dataNascimento             S                          string
+                                                                                dd.
+
+                                                                                Nome da mãe do
+nomeMae                    S                          string
+                                                                                participante
+
+tipoSexo                   S                          string                    M/F (Masculino/Feminino)
+
+                                                                                CA/S/VI/DI/SL/UE
+                                                                                (Casado(a)/Solteiro(a)/Viúvo(
+tipoEstadoCivil            S                          string
+                                                                                a)/Divorciado(a)/Separado(a)
+                                                                                Legalmente/União Estável)
+
+                                                                                CP/CU/PA/SC/SO (Comunhão
+                                                                                Parcial de Bens/Comunhão
+                                                                                Universal de
+                                                                                Bens/Participação Final nos
+tipoRegimeCasamento        -                          string
+                                                                                Aquestos/Separação
+                                                                                Convencional de
+                                                                                Bens/Separação Obrigatória
+                                                                                de Bens)
+
+tipoDocumentoIdentidade    S                          string                    RG/CNH
+
+                                                                                Número do documento do
+numeroDocumento            S                          string
+                                                                                participante
+Campo                      Obrig.   Tipo      Descrição
+
+                                              Data no formato yyyy-MM-
+dataExpedicao              -        string
+                                              dd.
+
+                                              Órgão expedidor do
+orgaoExpedidor             S        string
+                                              documento do participante
+
+                                              UF expedidor do documento
+ufExpedicao                S        string
+                                              do participante
+
+nomeProfissao              S        string    Profissão do participante
+
+                                              Empresa da profissão do
+nomeEmpresaProfissao       -        string
+                                              participante
+
+renda                      S        number    Renda.
+
+idBanco                    N        number    Identificador Banco.
+
+codigoAgencia              N        string    1234
+
+codigoContaCorrente        N        string    001910123
+
+digitoContaCorrente        N        string    4
+
+email                      S        string    a@b.com.br
+
+                                              11912345678 (somente
+celular                    S        string
+                                              números)
+
+cep                        S        string    00000000
+
+logradouro                 S        string    Logradouro do participante
+
+numeroLogradouro           S        string    Número do participante
+
+                                              Complemento do
+complementoLogradouro      N        string
+                                              participante
+
+bairro                     S        string    Bairro do participante
+
+municipio                  S        string    Município do participante
+
+uf                         S        string    UF do participante
+
+tipoEmpresa                -        string    SA/EPP/ME/MEI/EIRELI
+
+                                              Data no formato yyyy-MM-
+dataRegistroEmpresa        -        string
+                                              dd.
+
+faturamentoEmpresa         -        number    Faturamento Empresa.
+
+                                              Patrimonio
+patrimonioLiquidoEmpresa   -        number
+                                              Liquidentificadoro Empresa.
+
+capitalSocialEmpresa       -        number    Capital Social Empresa.
+
+utilizaFgts                S        string    S/N
+
+                                              Indicador booleano
+fgAutorizacaoDados         S        boolean
+                                              (true/false).
+Campo                       Obrig.            Tipo                Descrição
+
+nomeConjuge                 -                 string              Nome do cônjuge
+
+                                                                  12345678909 (apenas
+cpfConjuge                  -                 string
+                                                                  números)
+
+                                                                  Data no formato yyyy-MM-
+dataNascimentoConjuge       -                 string
+                                                                  dd.
+
+                                                                  CA/S/VI/DI/SL/UE
+                                                                  (Casado(a)/Solteiro(a)/Viúvo(
+tipoEstadoCivilConjuge      -                 string
+                                                                  a)/Divorciado(a)/Separado(a)
+                                                                  Legalmente/União Estável)
+
+tipoDocumentoIdentidadeCo
+                            -                 string              RG/CNH
+njuge
+
+                                                                  Número do documento do
+numeroDocumentoConjuge      -                 string
+                                                                  conjuge
+
+                                                                  Data no formato yyyy-MM-
+dataExpedicaoConjuge        -                 string
+                                                                  dd.
+
+                                                                  Órgão expedidor do
+orgaoExpedidorConjuge       -                 string
+                                                                  documento do conjuge
+
+                                                                  UF expedidor do documento
+ufExpedicaoConjuge          -                 string
+                                                                  do conjuge
+
+nomeProfissaoConjuge        -                 string              Profissão do conjuge
+
+rendaConjuge                -                 number              Renda Conjuge.
+
+nomeEmpresaProfissaoConj                                          Empresa da profissão do
+                            -                 string
+uge                                                               conjuge
+
+tipoSexoConjuge             -                 string              M/F (Masculino/Feminino)
+
+
+Campos obrigatórios em destaque
+Campo                                Tipo              Descrição
+
+tipoSituacao                         string            A/I (Ativa/Inativa)
+
+nomeParticipante                     string            Nome do participante
+
+tipoQualificacao                     string            CO/VD (Comprador/Vendedor)
+
+tipoPessoa                           string            F/J (Física/Jurídica)
+
+cpfCnpj                              string            12345678909 (apenas números)
+
+dataNascimento                       string            Data no formato yyyy-MM-dd.
+
+nomeMae                              string            Nome da mãe do participante
+
+tipoSexo                             string            M/F (Masculino/Feminino)
+
+                                                       CA/S/VI/DI/SL/UE
+tipoEstadoCivil                      string
+                                                       (Casado(a)/Solteiro(a)/Viúvo(a)/Divorci
+Campo                                             Tipo                                 Descrição
+
+                                                                                       ado(a)/Separado(a) Legalmente/União
+                                                                                       Estável)
+
+tipoDocumentoIdentidade                           string                               RG/CNH
+
+numeroDocumento                                   string                               Número do documento do participante
+
+                                                                                       Órgão expedidor do documento do
+orgaoExpedidor                                    string
+                                                                                       participante
+
+                                                                                       UF expedidor do documento do
+ufExpedicao                                       string
+                                                                                       participante
+
+nomeProfissao                                     string                               Profissão do participante
+
+renda                                             number                               Renda.
+
+email                                             string                               a@b.com.br
+
+celular                                           string                               11912345678 (somente números)
+
+cep                                               string                               00000000
+
+logradouro                                        string                               Logradouro do participante
+
+numeroLogradouro                                  string                               Número do participante
+
+bairro                                            string                               Bairro do participante
+
+municipio                                         string                               Município do participante
+
+uf                                                string                               UF do participante
+
+utilizaFgts                                       string                               S/N
+
+fgAutorizacaoDados                                boolean                              Indicador booleano (true/false).
+
+
+Exemplo do Swagger
+     {
+         "tipoSituacao": "A/I (Ativa/Inativa)",
+         "nomeParticipante": "Nome do participante",
+         "tipoQualificacao": "CO/VD (Comprador/Vendedor)",
+         "tipoPessoa": "F/J (Física/Jurídica)",
+         "cpfCnpj": "12345678909 (apenas números)",
+         "dataNascimento": "yyyy-MM-dd",
+         "nomeMae": "Nome da mãe do participante",
+         "tipoSexo": "M/F (Masculino/Feminino)",
+         "tipoEstadoCivil": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União
+     Estável)",
+         "tipoRegimeCasamento": "CP/CU/PA/SC/SO (Comunhão Parcial de Bens/Comunhão Universal de Bens/Participação
+     Final nos Aquestos/Separação Convencional de Bens/Separação Obrigatória de Bens)",
+         "tipoDocumentoIdentidade": "RG/CNH",
+         "numeroDocumento": "Número do documento do participante",
+         "dataExpedicao": "yyyy-MM-dd",
+         "orgaoExpedidor": "Órgão expedidor do documento do participante",
+         "ufExpedicao": "UF expedidor do documento do participante",
+      "nomeProfissao": "Profissão do participante",
+      "nomeEmpresaProfissao": "Empresa da profissão do participante",
+      "renda": 123456.78,
+      "idBanco": 123,
+      "codigoAgencia": "1234",
+      "codigoContaCorrente": "001910123",
+      "digitoContaCorrente": "4",
+      "email": "a@b.com.br",
+      "celular": "11912345678 (somente números)",
+      "cep": "00000000",
+      "logradouro": "Logradouro do participante",
+      "numeroLogradouro": "Número do participante",
+      "complementoLogradouro": "Complemento do participante",
+      "bairro": "Bairro do participante",
+      "municipio": "Município do participante",
+      "uf": "UF do participante",
+      "tipoEmpresa": "SA/EPP/ME/MEI/EIRELI",
+      "dataRegistroEmpresa": "yyyy-MM-dd",
+      "faturamentoEmpresa": 12345678.9,
+      "patrimonioLiquidoEmpresa": 12345678.9,
+      "capitalSocialEmpresa": 12345678.9,
+      "utilizaFgts": "S/N",
+      "fgAutorizacaoDados": true,
+      "nomeConjuge": "Nome do cônjuge",
+      "cpfConjuge": "12345678909 (apenas números)",
+      "dataNascimentoConjuge": "yyyy-MM-dd",
+      "tipoEstadoCivilConjuge": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a)
+  Legalmente/União Estável)",
+      "tipoDocumentoIdentidadeConjuge": "RG/CNH",
+      "numeroDocumentoConjuge": "Número do documento do conjuge",
+      "dataExpedicaoConjuge": "yyyy-MM-dd",
+      "orgaoExpedidorConjuge": "Órgão expedidor do documento do conjuge",
+      "ufExpedicaoConjuge": "UF expedidor do documento do conjuge",
+      "nomeProfissaoConjuge": "Profissão do conjuge",
+      "rendaConjuge": 123456.78,
+      "nomeEmpresaProfissaoConjuge": "Empresa da profissão do conjuge",
+      "tipoSexoConjuge": "M/F (Masculino/Feminino)"
+  }
+
+
+
+Respostas esperadas
+HTTP                                        Schema                                   Descrição
+
+201                                         Participant                              Created
+
+401                                         BasicError                               Unauthorized
+
+403                                         BasicError                               Forbidden
+
+404                                         BasicError                               Not Found
+
+500                                         BasicError                               Internal Server Error
+Exemplo de retorno do Swagger (201)
+   {
+       "idParticipante": 123,
+       "idOportunidade": 123,
+       "tipoSituacao": "A/I (Ativa/Inativa)",
+       "nomeParticipante": "Nome do participante",
+       "tipoQualificacao": "CO/VD (Comprador/Vendedor)",
+       "tipoPessoa": "F/J (Física/Jurídica)",
+       "cpfCnpj": "00000000000 (somente numeros)",
+       "dataNascimento": "yyyy-MM-dd",
+       "tipoSexo": "M/F (Masculino/Feminino)",
+       "tipoEstadoCivil": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União
+   Estável)",
+       "tipoRegimeCasamento": "CP/CU/PA/SC/SO (Comunhão Parcial de Bens/Comunhão Universal de Bens/Participação
+   Final nos Aquestos/Separação Convencional de Bens/Separação Obrigatória de Bens)",
+       "tipoDocumentoIdentidade": "RG/CNH",
+       "numeroDocumento": "Número do documento do participante",
+       "dataExpedicao": "yyyy-MM-dd",
+       "orgaoExpedidor": "Órgão expedidor do documento do participante",
+       "ufExpedicao": "UF expedidor do documento do participante",
+       "nomeMae": "Nome da mãe do participante",
+       "nomeProfissao": "Profissão do participante",
+       "renda": 123456.78,
+       "idBanco": 123,
+       "codigoAgencia": "1234",
+       "codigoContaCorrente": "001910123",
+       "digitoContaCorrente": "4",
+       "compradorPrincipal": "S/N",
+       "email": "a@b.com.br",
+       "celular": "11912345678 (somente números)",
+       "cep": "00000000",
+       "logradouro": "Logradouro do participante",
+       "numeroLogradouro": "Número do participante",
+       "complementoLogradouro": "Complemento do participante",
+       "bairro": "Bairro do participante",
+       "municipio": "Município do participante",
+       "uf": "UF do participante",
+       "tipoEmpresa": "SA/EPP/ME/MEI/EIRELI",
+       "dataRegistroEmpresa": "yyyy-MM-dd",
+       "faturamentoEmpresa": 12345678.9,
+       "patrimonioLiquidoEmpresa": 12345678.9,
+       "capitalSocialEmpresa": 12345678.9,
+       "nomeConjuge": "Nome do conjuge",
+       "cpfConjuge": "00000000000 (somente numeros)",
+       "dataNascimentoConjuge": "yyyy-MM-dd",
+       "tipoEstadoCivilConjuge": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a)
+   Legalmente/União Estável)",
+       "tipoDocumentoIdentidadeConjuge": "RG/CNH",
+       "numeroDocumentoConjuge": "Número do documento do conjuge",
+       "dataExpedicaoConjuge": "yyyy-MM-dd",
+       "orgaoExpedidorConjuge": "Órgão expedidor do documento do conjuge",
+       "ufExpedicaoConjuge": "UF expedidor do documento do conjuge",
+         "dataInativacao": "yyyy-MM-dd",
+         "idUsuarioInativacao": 123,
+         "idUsuarioCriacao": 123,
+         "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+         "idUsuarioAlteracao": 123,
+         "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+         "nomeEmpresaProfissao": "Empresa da profissão do participante",
+         "utilizaFgts": "S/N",
+         "nomeProfissaoConjuge": "Profissão do conjuge",
+         "rendaConjuge": 123456.78,
+         "nomeEmpresaProfissaoConjuge": "Empresa da profissão do conjuge",
+         "fgAutorizacaoDados": true,
+         "tipoSexoConjuge": "M/F (Masculino/Feminino)"
+     }
+
+
+
+
+PUT /oportunidade/{idOportunidade}/participante/{id} - Atualização de participante
+Caso seja necessário atualizar dados já cadastrados, utilize esta rota de atualização.
+
+Parâmetros de rota
+Parâmetro                                       Obrig.                       Descrição
+
+                                                                             Identificador enviado na URL para
+idOportunidade                                  S
+                                                                             idOportunidade.
+
+                                                                             Identificador enviado na URL para
+id                                              S
+                                                                             id.
+
+
+Corpo da requisição
+Content-Type: application/json | Schema: UpdateParticipantRequest
+
+Campo                                  Obrig.                   Tipo                  Descrição
+
+body                                   -                        object                Body.
+
+Observação: a planilha enviada não sinalizou obrigatoriedade específica para este body. Quando a
+coluna estiver com "-", o contrato disponibilizado não trouxe marcação objetiva de obrigatório.
+
+Exemplo do Swagger
+     null
+
+
+
+Respostas esperadas
+HTTP                                            Schema                       Descrição
+
+200                                             Participant                  OK
+
+401                                             BasicError                   Unauthorized
+HTTP                                            Schema                               Descrição
+
+403                                             BasicError                           Forbidden
+
+404                                             BasicError                           Not Found
+
+500                                             BasicError                           Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+   {
+       "idParticipante": 123,
+       "idOportunidade": 123,
+       "tipoSituacao": "A/I (Ativa/Inativa)",
+       "nomeParticipante": "Nome do participante",
+       "tipoQualificacao": "CO/VD (Comprador/Vendedor)",
+       "tipoPessoa": "F/J (Física/Jurídica)",
+       "cpfCnpj": "00000000000 (somente numeros)",
+       "dataNascimento": "yyyy-MM-dd",
+       "tipoSexo": "M/F (Masculino/Feminino)",
+       "tipoEstadoCivil": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a) Legalmente/União
+   Estável)",
+       "tipoRegimeCasamento": "CP/CU/PA/SC/SO (Comunhão Parcial de Bens/Comunhão Universal de Bens/Participação
+   Final nos Aquestos/Separação Convencional de Bens/Separação Obrigatória de Bens)",
+       "tipoDocumentoIdentidade": "RG/CNH",
+       "numeroDocumento": "Número do documento do participante",
+       "dataExpedicao": "yyyy-MM-dd",
+       "orgaoExpedidor": "Órgão expedidor do documento do participante",
+       "ufExpedicao": "UF expedidor do documento do participante",
+       "nomeMae": "Nome da mãe do participante",
+       "nomeProfissao": "Profissão do participante",
+       "renda": 123456.78,
+       "idBanco": 123,
+       "codigoAgencia": "1234",
+       "codigoContaCorrente": "001910123",
+       "digitoContaCorrente": "4",
+       "compradorPrincipal": "S/N",
+       "email": "a@b.com.br",
+       "celular": "11912345678 (somente números)",
+       "cep": "00000000",
+       "logradouro": "Logradouro do participante",
+       "numeroLogradouro": "Número do participante",
+       "complementoLogradouro": "Complemento do participante",
+       "bairro": "Bairro do participante",
+       "municipio": "Município do participante",
+       "uf": "UF do participante",
+       "tipoEmpresa": "SA/EPP/ME/MEI/EIRELI",
+       "dataRegistroEmpresa": "yyyy-MM-dd",
+       "faturamentoEmpresa": 12345678.9,
+       "patrimonioLiquidoEmpresa": 12345678.9,
+       "capitalSocialEmpresa": 12345678.9,
+       "nomeConjuge": "Nome do conjuge",
+       "cpfConjuge": "00000000000 (somente numeros)",
+         "dataNascimentoConjuge": "yyyy-MM-dd",
+         "tipoEstadoCivilConjuge": "CA/S/VI/DI/SL/UE (Casado(a)/Solteiro(a)/Viúvo(a)/Divorciado(a)/Separado(a)
+     Legalmente/União Estável)",
+         "tipoDocumentoIdentidadeConjuge": "RG/CNH",
+         "numeroDocumentoConjuge": "Número do documento do conjuge",
+         "dataExpedicaoConjuge": "yyyy-MM-dd",
+         "orgaoExpedidorConjuge": "Órgão expedidor do documento do conjuge",
+         "ufExpedicaoConjuge": "UF expedidor do documento do conjuge",
+         "dataInativacao": "yyyy-MM-dd",
+         "idUsuarioInativacao": 123,
+         "idUsuarioCriacao": 123,
+         "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss",
+         "idUsuarioAlteracao": 123,
+         "dataHoraAlteracao": "yyyy-MM-dd HH:mm:ss",
+         "nomeEmpresaProfissao": "Empresa da profissão do participante",
+         "utilizaFgts": "S/N",
+         "nomeProfissaoConjuge": "Profissão do conjuge",
+         "rendaConjuge": 123456.78,
+         "nomeEmpresaProfissaoConjuge": "Empresa da profissão do conjuge",
+         "fgAutorizacaoDados": true,
+         "tipoSexoConjuge": "M/F (Masculino/Feminino)"
+     }
+
+
+
+
+DELETE /oportunidade/{idOportunidade}/participante/{id} - Exclusão de participante
+Utilize esta rota para remover o registro informado na URL.
+
+Parâmetros de rota
+Parâmetro                                     Obrig.                                    Descrição
+
+                                                                                        Identificador enviado na URL para
+idOportunidade                                S
+                                                                                        idOportunidade.
+
+                                                                                        Identificador enviado na URL para
+id                                            S
+                                                                                        id.
+
+Body: não se aplica.
+
+Respostas esperadas
+HTTP                                          Schema                                    Descrição
+
+204                                           -                                         No Content
+
+401                                           BasicError                                Unauthorized
+
+403                                           BasicError                                Forbidden
+
+404                                           BasicError                                Not Found
+
+500                                           BasicError                                Internal Server Error
+Documentos e acompanhamento
+
+POST /oportunidade/{id}/incluir-documentos-integracao - Vinculação da lista de documentos
+da integração
+Utilize esta rota para envio/criação conforme o fluxo da integração.
+
+Parâmetros de rota
+Parâmetro                                       Obrig.                    Descrição
+
+                                                                          Identificador enviado na URL para
+id                                              S
+                                                                          id.
+
+
+Corpo da requisição
+Content-Type: application/json | Schema: SendDocumentsRequest
+
+Campo                                  Obrig.                    Tipo               Descrição
+
+idSimulacao                            -                         number             Identificador Simulacao.
+
+Observação: a planilha enviada não sinalizou obrigatoriedade específica para este body. Quando a
+coluna estiver com "-", o contrato disponibilizado não trouxe marcação objetiva de obrigatório.
+
+Exemplo do Swagger
+     {
+         "idSimulacao": 123
+     }
+
+
+
+Respostas esperadas
+HTTP                                            Schema                    Descrição
+
+200                                             SendDocumentsResponse     OK
+
+401                                             BasicError                Unauthorized
+
+403                                             BasicError                Forbidden
+
+404                                             BasicError                Not Found
+
+500                                             BasicError                Internal Server Error
+
+
+Exemplo de retorno do Swagger (200)
+     {
+         "sucesso": [
+          {
+              "id": 123,
+              "codigoGrupoDocumento": 123,
+              "codigoIntegracao": "123",
+              "cpfCnpj": "12345678909",
+              "nomeDocumento": "Nome do documento",
+              "nomeParticipante": "Nome do participante"
+             }
+         ],
+         "error": [
+             {
+                 "id": 123,
+                 "codigoGrupoDocumento": 123,
+                 "codigoIntegracao": "123",
+                 "cpfCnpj": "12345678909",
+                 "nomeDocumento": "Nome do documento",
+                 "nomeParticipante": "Nome do participante",
+                 "erroIntegracao": "Mensagem de erro"
+             }
+         ]
+     }
+
+
+
+
+POST /documento/{id}/upload - Upload do arquivo do documento
+Utilize esta rota para envio/criação conforme o fluxo da integração.
+
+Parâmetros de rota
+Parâmetro                                          Obrig.                Descrição
+
+                                                                         Identificador enviado na URL para
+id                                                 S
+                                                                         id.
+
+
+Corpo da requisição
+Content-Type: multipart/form-data | Schema: UploadRequest
+
+Campo                                     Obrig.               Tipo               Descrição
+
+                                                                                  Arquivo binário enviado no
+arquivo                                   -                    string
+                                                                                  multipart/form-data.
+
+                                                                                  Indicador booleano
+documentoAprovado                         -                    boolean
+                                                                                  (true/false).
+
+Observação: a planilha enviada não sinalizou obrigatoriedade específica para este body. Quando a
+coluna estiver com "-", o contrato disponibilizado não trouxe marcação objetiva de obrigatório.
+
+Exemplo do Swagger
+     {
+         "arquivo": "",
+         "documentoAprovado": false
+     }
+Respostas esperadas
+HTTP                                           Schema                  Descrição
+
+200                                            -                       OK
+
+401                                            BasicError              Unauthorized
+
+403                                            BasicError              Forbidden
+
+404                                            BasicError              Not Found
+
+500                                            BasicError              Internal Server Error
+
+
+
+
+POST /oportunidade/{id}/follow-up - Registro de follow-up
+Utilize esta rota para envio/criação conforme o fluxo da integração.
+
+Parâmetros de rota
+Parâmetro                                      Obrig.                  Descrição
+
+                                                                       Identificador enviado na URL para
+id                                             S
+                                                                       id.
+
+
+Corpo da requisição
+Content-Type: application/json | Schema: FollowUpRequest
+
+Campo                                 Obrig.                Tipo                 Descrição
+
+                                                                                 Identificador
+idOportunidade                        -                     number
+                                                                                 Oportunidentificadorade.
+
+tipoFup                               -                     string               I/E (Interno/Externo)
+
+titulo                                -                     string               Título do follow-up
+
+comentario                            -                     string               Texto do follow-up
+
+Observação: a planilha enviada não sinalizou obrigatoriedade específica para este body. Quando a
+coluna estiver com "-", o contrato disponibilizado não trouxe marcação objetiva de obrigatório.
+
+Exemplo do Swagger
+     {
+         "idOportunidade": 123,
+         "tipoFup": "I/E (Interno/Externo)",
+         "titulo": "Título do follow-up",
+         "comentario": "Texto do follow-up"
+     }
+
+
+
+Respostas esperadas
+HTTP                                           Schema                  Descrição
+
+201                                            FollowUp                Created
+HTTP                                         Schema       Descrição
+
+
+
+401                                          BasicError   Unauthorized
+
+403                                          BasicError   Forbidden
+
+404                                          BasicError   Not Found
+
+500                                          BasicError   Internal Server Error
+
+
+Exemplo de retorno do Swagger (201)
+   {
+       "idFupOportunidade": 123,
+       "idOportunidade": 123,
+       "tipoFup": "I/E (Interno/Externo)",
+       "titulo": "Título do follow-up",
+       "comentario": "Texto do follow-up",
+       "idUsuarioCriacao": 123,
+       "dataHoraCriacao": "yyyy-MM-dd HH:mm:ss"
+   }
+Notas finais
+   Os campos obrigatórios marcados com "S" foram posicionados junto dos endpoints correspondentes
+    para facilitar leitura operacional.
+   Quando um endpoint não possui obrigatoriedade explicitada na planilha enviada, o documento
+    mantém a marcação "-" para evitar assumir regra não confirmada.
+   As descrições dos campos foram consolidadas com base no contrato Swagger recebido, especialmente
+    nomes de propriedades e exemplos presentes no schema.
+
