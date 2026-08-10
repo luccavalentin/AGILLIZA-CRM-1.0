@@ -1,0 +1,2 @@
+ALTER TABLE public.arquivos_nos ADD COLUMN IF NOT EXISTS mostrar_no_menu boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS arquivos_nos_menu_idx ON public.arquivos_nos (correspondente_id) WHERE mostrar_no_menu = true AND parent_id IS NULL;

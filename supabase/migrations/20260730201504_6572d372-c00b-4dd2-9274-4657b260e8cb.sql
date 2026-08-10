@@ -1,0 +1,1 @@
+ALTER TYPE public.rh_lancamento_status ADD VALUE IF NOT EXISTS 'recebido';
