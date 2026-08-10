@@ -135,8 +135,6 @@ export function ColunaEsteira({
         </div>
       </div>
 
-
-
       {!readOnly && (
         <button
           type="button"
@@ -152,13 +150,7 @@ export function ColunaEsteira({
 }
 
 /** Card em destaque no final da esteira que abre o arquivo de contratos emitidos. */
-export function PastaArquivados({
-  total,
-  onAbrir,
-}: {
-  total: number;
-  onAbrir: () => void;
-}) {
+export function PastaArquivados({ total, onAbrir }: { total: number; onAbrir: () => void }) {
   return (
     <button
       type="button"

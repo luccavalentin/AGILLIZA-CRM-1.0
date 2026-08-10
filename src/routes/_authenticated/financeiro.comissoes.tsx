@@ -19,10 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ExportarFinanceiro } from "@/components/financeiro/exportar-financeiro";
-import {
-  SecaoRegrasComissao,
-  SimuladorComissao,
-} from "@/components/financeiro/comissoes-gestao";
+import { SecaoRegrasComissao, SimuladorComissao } from "@/components/financeiro/comissoes-gestao";
 import { ComissaoStatusBadge } from "@/components/financeiro/status-badge";
 import { formatBRL } from "@/lib/financeiro/format";
 
@@ -61,9 +58,27 @@ function Pagina() {
   const colunasExport = [
     { key: "proposta", label: "Proposta" },
     { key: "banco", label: "Banco" },
-    { key: "bruto", label: "Valor bruto", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-    { key: "parceiro", label: "Split parceiro", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-    { key: "interno", label: "Split interno", align: "right" as const, format: "brl" as const, footer: "sum" as const },
+    {
+      key: "bruto",
+      label: "Valor bruto",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
+    {
+      key: "parceiro",
+      label: "Split parceiro",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
+    {
+      key: "interno",
+      label: "Split interno",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
     { key: "status", label: "Status" },
   ];
   const linhasExport = (data ?? []).map((c) => ({
@@ -140,112 +155,122 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="lancamentos" className="space-y-6">
-
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-primary/[0.03] p-4 shadow-sm sm:p-5">
-        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          <SlidersHorizontal className="h-3.5 w-3.5 text-primary/70" />
-          Período
-        </div>
-        <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
-          De
-          <Input type="date" className="h-9 w-36 sm:w-40" value={de} onChange={(e) => setDe(e.target.value)} />
-        </label>
-        <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
-          Até
-          <Input type="date" className="h-9 w-36 sm:w-40" value={ate} onChange={(e) => setAte(e.target.value)} />
-        </label>
-        {(de || ate) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setDe("");
-              setAte("");
-            }}
-          >
-            Limpar
-          </Button>
-        )}
-      </div>
-
-
-      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-
-        <Table className="min-w-[760px]">
-          <TableHeader>
-            <TableRow className="bg-muted">
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
-                Proposta
-              </TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
-                Banco
-              </TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
-                Valor bruto
-              </TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
-                Split parceiro
-              </TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
-                Split interno
-              </TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
-                Status
-              </TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                  Carregando…
-                </TableCell>
-              </TableRow>
+          <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-primary/[0.03] p-4 shadow-sm sm:p-5">
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <SlidersHorizontal className="h-3.5 w-3.5 text-primary/70" />
+              Período
+            </div>
+            <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+              De
+              <Input
+                type="date"
+                className="h-9 w-36 sm:w-40"
+                value={de}
+                onChange={(e) => setDe(e.target.value)}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+              Até
+              <Input
+                type="date"
+                className="h-9 w-36 sm:w-40"
+                value={ate}
+                onChange={(e) => setAte(e.target.value)}
+              />
+            </label>
+            {(de || ate) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDe("");
+                  setAte("");
+                }}
+              >
+                Limpar
+              </Button>
             )}
-            {!isLoading && (data?.length ?? 0) === 0 && (
-              <TableRow>
-                <TableCell colSpan={7}>
-                  <div className="flex flex-col items-center gap-3 py-12 text-center">
-                    <Percent className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Nenhum repasse calculado ainda.
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-            {data?.map((c) => (
-              <TableRow key={c.id} className="even:bg-muted/40 dark:even:bg-muted/60">
-                <TableCell className="font-medium">{c.numero_proposta ?? "—"}</TableCell>
-                <TableCell>{c.banco_nome ?? "—"}</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatBRL(c.valor_bruto)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatBRL(c.split_parceiro)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatBRL(c.split_interno)}
-                </TableCell>
-                <TableCell>
-                  <ComissaoStatusBadge status={c.status} />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={recalc.isPending}
-                    onClick={() => recalc.mutate(c.id)}
-                  >
-                    <RefreshCw className="mr-1 h-3.5 w-3.5" /> Recalcular
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+            <Table className="min-w-[760px]">
+              <TableHeader>
+                <TableRow className="bg-muted">
+                  <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Proposta
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Banco
+                  </TableHead>
+                  <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
+                    Valor bruto
+                  </TableHead>
+                  <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
+                    Split parceiro
+                  </TableHead>
+                  <TableHead className="text-right text-xs uppercase tracking-wide text-muted-foreground">
+                    Split interno
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Status
+                  </TableHead>
+                  <TableHead className="w-10" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="py-10 text-center text-sm text-muted-foreground"
+                    >
+                      Carregando…
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!isLoading && (data?.length ?? 0) === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7}>
+                      <div className="flex flex-col items-center gap-3 py-12 text-center">
+                        <Percent className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          Nenhum repasse calculado ainda.
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {data?.map((c) => (
+                  <TableRow key={c.id} className="even:bg-muted/40 dark:even:bg-muted/60">
+                    <TableCell className="font-medium">{c.numero_proposta ?? "—"}</TableCell>
+                    <TableCell>{c.banco_nome ?? "—"}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatBRL(c.valor_bruto)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatBRL(c.split_parceiro)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatBRL(c.split_interno)}
+                    </TableCell>
+                    <TableCell>
+                      <ComissaoStatusBadge status={c.status} />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={recalc.isPending}
+                        onClick={() => recalc.mutate(c.id)}
+                      >
+                        <RefreshCw className="mr-1 h-3.5 w-3.5" /> Recalcular
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -161,7 +161,9 @@ function BancoResultadoCard({
 function Info({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3 px-4 py-2.5">
-      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</dt>
+      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
       <dd
         className={cn(
           "truncate text-right text-[15px] tabular-nums text-foreground",

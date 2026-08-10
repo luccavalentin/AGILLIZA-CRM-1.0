@@ -62,16 +62,11 @@ export interface EnderecoValues {
 }
 
 /** Atualiza um único campo do formulário de cliente. */
-export type SetCampo = <K extends keyof ClienteFormValues>(
-  k: K,
-  val: ClienteFormValues[K],
-) => void;
+export type SetCampo = <K extends keyof ClienteFormValues>(k: K, val: ClienteFormValues[K]) => void;
 
 /** Classe aplicada a um campo obrigatório pendente (destaque em vermelho). */
 export const CLASSE_ERRO =
   "border-destructive ring-1 ring-destructive/40 focus-visible:ring-destructive";
-
-
 
 export const ESTADOS_CIVIS = [
   { v: "solteiro", l: "Solteiro(a)" },
@@ -144,9 +139,33 @@ export const OPCOES_ORGAO_EXPEDIDOR = [
   "DPF",
 ];
 export const OPCOES_UF = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
-  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
-  "SP", "SE", "TO",
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
 ];
 
 // Todas as cidades do Brasil (Cidade/UF) para a naturalidade — fonte IBGE.
@@ -182,7 +201,7 @@ export const OPCOES_BANCO = [
 
 // Exibe um número no formato R$ pt-BR (ex.: 20000 -> "20.000,00").
 export function formatarMoedaBR(n: number): string {
-  return n.toLocaleString("pt-BR", {  minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // Aplica máscara de moeda enquanto o usuário digita (tratando os dígitos como centavos).

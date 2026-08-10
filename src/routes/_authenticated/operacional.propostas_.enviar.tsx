@@ -58,8 +58,7 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas_/env
   ),
 });
 
-const headCell =
-  "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground";
+const headCell = "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground";
 
 function Pagina() {
   const router = useRouter();
@@ -133,10 +132,16 @@ function Pagina() {
       {/* Abas Propostas / Simulações */}
       <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)} className="space-y-4">
         <TabsList className="h-11 rounded-xl">
-          <TabsTrigger value="propostas" className="rounded-lg transition-all data-[state=active]:shadow-sm">
+          <TabsTrigger
+            value="propostas"
+            className="rounded-lg transition-all data-[state=active]:shadow-sm"
+          >
             <FileText className="mr-1.5 h-4 w-4" /> Propostas
           </TabsTrigger>
-          <TabsTrigger value="simulacoes" className="rounded-lg transition-all data-[state=active]:shadow-sm">
+          <TabsTrigger
+            value="simulacoes"
+            className="rounded-lg transition-all data-[state=active]:shadow-sm"
+          >
             <Calculator className="mr-1.5 h-4 w-4" /> Simulações
           </TabsTrigger>
         </TabsList>
@@ -245,49 +250,49 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
           itens.map((p) => {
             const corBanco = corDoBanco(p.bancos?.[0]?.nome_banco);
             return (
-            <Card
-              key={p.id}
-              style={{ ["--banco" as string]: corBanco } as React.CSSProperties}
-              className="cursor-pointer rounded-2xl border-border/60 p-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.025]"
-              onClick={() =>
-                router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
-              }
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  {(() => {
-                    const nb = numeroBancoParaExibir(p.numero_proposta_banco);
-                    return nb ? (
-                      <>
-                        <div className="text-lg font-bold tabular-nums leading-tight tracking-tight text-[var(--banco)]">
-                          Nº banco {nb}
-                        </div>
-                        <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          Interno <span className="tabular-nums">{p.numero_proposta}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <span className="font-semibold tabular-nums text-foreground">
-                        {p.numero_proposta}
-                      </span>
-                    );
-                  })()}
-                  <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                    {p.nome_cliente ?? "—"}
-                  </p>
+              <Card
+                key={p.id}
+                style={{ ["--banco" as string]: corBanco } as React.CSSProperties}
+                className="cursor-pointer rounded-2xl border-border/60 p-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.025]"
+                onClick={() =>
+                  router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
+                }
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    {(() => {
+                      const nb = numeroBancoParaExibir(p.numero_proposta_banco);
+                      return nb ? (
+                        <>
+                          <div className="text-lg font-bold tabular-nums leading-tight tracking-tight text-[var(--banco)]">
+                            Nº banco {nb}
+                          </div>
+                          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                            Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <span className="font-semibold tabular-nums text-foreground">
+                          {p.numero_proposta}
+                        </span>
+                      );
+                    })()}
+                    <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                      {p.nome_cliente ?? "—"}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </div>
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-muted/40 p-3 ring-1 ring-border/50">
-                <span className="text-sm font-semibold tabular-nums text-foreground">
-                  {formatBRL(p.valor_financiamento)}
-                </span>
-                <BancosProposta bancos={p.bancos} />
-              </div>
-              <div className="mt-3">
-                <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
-              </div>
-            </Card>
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-muted/40 p-3 ring-1 ring-border/50">
+                  <span className="text-sm font-semibold tabular-nums text-foreground">
+                    {formatBRL(p.valor_financiamento)}
+                  </span>
+                  <BancosProposta bancos={p.bancos} />
+                </div>
+                <div className="mt-3">
+                  <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
+                </div>
+              </Card>
             );
           })}
       </div>
@@ -327,52 +332,52 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
               itens.map((p) => {
                 const corBanco = corDoBanco(p.bancos?.[0]?.nome_banco);
                 return (
-                <TableRow
-                  key={p.id}
-                  style={
-                    {
-                      ["--banco" as string]: corBanco,
-                      ["--banco-tint" as string]: `${corBanco}12`,
-                    } as React.CSSProperties
-                  }
-                  className="group relative cursor-pointer transition-colors hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco)]"
-                  onClick={() =>
-                    router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
-                  }
-                >
-                  <TableCell className="relative">
-                    <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-[var(--banco)] transition-transform duration-200 group-hover:scale-y-100" />
-                    {(() => {
-                      const nb = numeroBancoParaExibir(p.numero_proposta_banco);
-                      return nb ? (
-                        <>
-                          <div className="text-base font-bold tabular-nums leading-tight text-[var(--banco)]">
-                            Nº banco {nb}
+                  <TableRow
+                    key={p.id}
+                    style={
+                      {
+                        ["--banco" as string]: corBanco,
+                        ["--banco-tint" as string]: `${corBanco}12`,
+                      } as React.CSSProperties
+                    }
+                    className="group relative cursor-pointer transition-colors hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco)]"
+                    onClick={() =>
+                      router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
+                    }
+                  >
+                    <TableCell className="relative">
+                      <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-[var(--banco)] transition-transform duration-200 group-hover:scale-y-100" />
+                      {(() => {
+                        const nb = numeroBancoParaExibir(p.numero_proposta_banco);
+                        return nb ? (
+                          <>
+                            <div className="text-base font-bold tabular-nums leading-tight text-[var(--banco)]">
+                              Nº banco {nb}
+                            </div>
+                            <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                              Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-[var(--banco)]">
+                            {p.numero_proposta}
                           </div>
-                          <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                            Interno <span className="tabular-nums">{p.numero_proposta}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-[var(--banco)]">
-                          {p.numero_proposta}
-                        </div>
-                      );
-                    })()}
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">
-                    {p.nome_cliente ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <BancosProposta bancos={p.bancos} />
-                  </TableCell>
-                  <TableCell className="text-right font-medium tabular-nums text-foreground">
-                    {formatBRL(p.valor_financiamento)}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
-                  </TableCell>
-                </TableRow>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      {p.nome_cliente ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      <BancosProposta bancos={p.bancos} />
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums text-foreground">
+                      {formatBRL(p.valor_financiamento)}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
+                    </TableCell>
+                  </TableRow>
                 );
               })}
           </TableBody>
@@ -476,9 +481,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
             texto="Nenhuma simulação no período."
             acao={
               <Button asChild size="sm" className="rounded-xl">
-                <Link to="/operacional/propostas/nova">
-                  Gerar Nova Proposta
-                </Link>
+                <Link to="/operacional/propostas/nova">Gerar Nova Proposta</Link>
               </Button>
             }
           />
@@ -546,9 +549,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
                     texto="Nenhuma simulação no período."
                     acao={
                       <Button asChild size="sm" className="rounded-xl">
-                        <Link to="/operacional/propostas/nova">
-                          Gerar Nova Proposta
-                        </Link>
+                        <Link to="/operacional/propostas/nova">Gerar Nova Proposta</Link>
                       </Button>
                     }
                   />

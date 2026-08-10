@@ -1,5 +1,6 @@
 export function formatarHora(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",  
+  return new Date(iso).toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -16,7 +17,8 @@ export function formatarDia(iso: string): string {
     a.getDate() === b.getDate();
   if (mesmoDia(d, hoje)) return "Hoje";
   if (mesmoDia(d, ontem)) return "Ontem";
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  
+  return d.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "long",
     year: "numeric",

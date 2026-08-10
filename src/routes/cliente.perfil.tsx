@@ -4,10 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Sun, Moon, Monitor, Download, Trash2, UserRound } from "lucide-react";
 import { setTheme } from "@/lib/theme";
-import {
-  clienteBaixarMeusDados,
-  clienteExcluirDadosApp,
-} from "@/lib/portal/cliente.functions";
+import { clienteBaixarMeusDados, clienteExcluirDadosApp } from "@/lib/portal/cliente.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -95,11 +92,7 @@ function Perfil() {
       y += 16;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      doc.text(
-        `Gerado em ${new Date().toLocaleString("pt-BR")}`,
-        margem,
-        y,
-      );
+      doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, margem, y);
       y += 22;
 
       const c = dados.cliente ?? {};
@@ -109,7 +102,11 @@ function Perfil() {
       linha("E-mail", c.email ?? "—");
       linha("Telefone", c.telefone_celular ?? "—");
       linha("UF de interesse", c.uf_interesse ?? "—");
-      if (c.created_at) linha("Cliente desde", new Date(c.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }));
+      if (c.created_at)
+        linha(
+          "Cliente desde",
+          new Date(c.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+        );
       y += 8;
 
       titulo("Documentos");
@@ -151,7 +148,6 @@ function Perfil() {
     onError: () => toast.error("Falha de conexão. Tente novamente."),
   });
 
-
   const opcoes: { valor: Modo; label: string; icone: typeof Sun }[] = [
     { valor: "light", label: "Claro", icone: Sun },
     { valor: "dark", label: "Escuro", icone: Moon },
@@ -166,7 +162,6 @@ function Perfil() {
         subtitulo="Preferências de aparência, som e privacidade dos seus dados"
       />
       <Card className="border-border">
-
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Aparência</CardTitle>
         </CardHeader>
@@ -200,8 +195,6 @@ function Perfil() {
 
       <ChatSoundSetting />
 
-
-
       <Card className="border-border">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Privacidade e meus dados (LGPD)</CardTitle>
@@ -223,7 +216,12 @@ function Perfil() {
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="lg" className="w-full" disabled={excluir.isPending}>
+              <Button
+                variant="destructive"
+                size="lg"
+                className="w-full"
+                disabled={excluir.isPending}
+              >
                 <Trash2 className="mr-2 h-5 w-5" /> Excluir meus dados do aplicativo
               </Button>
             </AlertDialogTrigger>

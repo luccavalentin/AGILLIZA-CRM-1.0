@@ -32,7 +32,11 @@ export function NotificationSettings() {
     salvar({ ...prefs, ativo: v });
   }
 
-  function alternarTipo(id: (typeof TIPOS_NOTIFICACAO)[number]["id"], campo: "ativo" | "som", v: boolean) {
+  function alternarTipo(
+    id: (typeof TIPOS_NOTIFICACAO)[number]["id"],
+    campo: "ativo" | "som",
+    v: boolean,
+  ) {
     const atual = prefs.tipos[id];
     const novoTipo = { ...atual, [campo]: v };
     // Ligar o som implica manter a notificação ativa.
@@ -101,10 +105,7 @@ export function NotificationSettings() {
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label
-                      htmlFor={`notif-${t.id}-som`}
-                      className="text-xs text-muted-foreground"
-                    >
+                    <Label htmlFor={`notif-${t.id}-som`} className="text-xs text-muted-foreground">
                       Som
                     </Label>
                     <Switch
@@ -119,12 +120,7 @@ export function NotificationSettings() {
             );
           })}
           <div className="pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => previewChatSound()}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => previewChatSound()}>
               <Play className="mr-2 h-3.5 w-3.5" /> Ouvir o som
             </Button>
           </div>

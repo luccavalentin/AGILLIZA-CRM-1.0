@@ -23,9 +23,7 @@ export function PixBanner() {
             <Landmark className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide opacity-80">
-              Segue o Pix da Agilliza
-            </p>
+            <p className="text-xs uppercase tracking-wide opacity-80">Segue o Pix da Agilliza</p>
             <p className="text-lg font-semibold tabular-nums">{PIX_AGILLIZA}</p>
             <p className="text-xs opacity-80">
               Chave CNPJ — os corretores usam para reembolsar a Agilliza.

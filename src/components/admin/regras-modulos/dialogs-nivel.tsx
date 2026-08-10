@@ -78,11 +78,21 @@ export function DialogNovoNivel({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>
-            <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Supervisor" />
+            <Input
+              id="nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex.: Supervisor"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="desc">Descrição</Label>
-            <Input id="desc" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Opcional" />
+            <Input
+              id="desc"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="Opcional"
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -195,7 +205,12 @@ export function DialogEditarNivel({
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-desc">Descrição</Label>
-            <Input id="edit-desc" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Opcional" />
+            <Input
+              id="edit-desc"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="Opcional"
+            />
           </div>
           <div className="space-y-2">
             <Label>Portal</Label>

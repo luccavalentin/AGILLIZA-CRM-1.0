@@ -79,8 +79,7 @@ export function ListaMensagens({
           const proxima = filtradas[i + 1];
           const mostrarDia =
             !anterior || formatarDia(anterior.criada_em) !== formatarDia(m.criada_em);
-          const mesmoAutorAntes =
-            !mostrarDia && anterior?.remetente_tipo === m.remetente_tipo;
+          const mesmoAutorAntes = !mostrarDia && anterior?.remetente_tipo === m.remetente_tipo;
           const mesmoAutorDepois =
             proxima?.remetente_tipo === m.remetente_tipo &&
             formatarDia(proxima?.criada_em ?? "") === formatarDia(m.criada_em);
@@ -99,7 +98,7 @@ export function ListaMensagens({
               )}
               <div
                 className={cn(
-                    "group flex min-w-0 items-end gap-1.5 sm:gap-2",
+                  "group flex min-w-0 items-end gap-1.5 sm:gap-2",
                   doTime ? "justify-end" : "justify-start",
                   mesmoAutorAntes ? "mt-0.5" : "mt-2",
                 )}
@@ -116,8 +115,6 @@ export function ListaMensagens({
                   />
                 )}
 
-
-
                 <div
                   className={cn(
                     "chat-bubble relative min-w-0 max-w-[calc(100%-3.25rem)] overflow-hidden px-4 py-3 text-sm shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all sm:max-w-[78%] sm:px-4.5",
@@ -126,9 +123,7 @@ export function ListaMensagens({
                       : doTime
                         ? "rounded-2xl rounded-br-sm bg-gradient-to-br from-primary via-primary to-[var(--brand-azul-escuro)] text-primary-foreground"
                         : "rounded-2xl rounded-bl-sm border border-border/50 bg-card text-foreground shadow-sm",
-                    mesmoAutorAntes &&
-                      !m.interna &&
-                      (doTime ? "rounded-tr-sm" : "rounded-tl-sm"),
+                    mesmoAutorAntes && !m.interna && (doTime ? "rounded-tr-sm" : "rounded-tl-sm"),
                   )}
                 >
                   {m.interna && (
@@ -232,9 +227,7 @@ export function ListaMensagens({
                         <button
                           key={r.emoji}
                           type="button"
-                          onClick={
-                            podeReagir ? () => onReagir!(m.id, r.emoji) : undefined
-                          }
+                          onClick={podeReagir ? () => onReagir!(m.id, r.emoji) : undefined}
                           className={cn(
                             "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] leading-none transition-colors",
                             r.mine
@@ -256,7 +249,6 @@ export function ListaMensagens({
                   )}
                 </div>
 
-
                 {/* Ações para mensagens do peer (só responder/copiar) */}
                 {!doTime && !excluida && !otimista && (
                   <MsgAcoes
@@ -266,7 +258,6 @@ export function ListaMensagens({
                     onReagir={podeReagir ? (e) => onReagir!(m.id, e) : undefined}
                   />
                 )}
-
               </div>
             </div>
           );

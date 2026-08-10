@@ -66,7 +66,10 @@ export interface PastaNode {
 
 export const PASTA_BADGE: Record<PastaTipo, { label: string; classe: string }> = {
   raiz: { label: "Pasta principal", classe: "border-primary/25 bg-primary/10 text-primary" },
-  comercial: { label: "Comercial Agilliza", classe: "border-primary/25 bg-primary/10 text-primary" },
+  comercial: {
+    label: "Comercial Agilliza",
+    classe: "border-primary/25 bg-primary/10 text-primary",
+  },
   imob: { label: "Imobiliária", classe: "border-primary/25 bg-primary/10 text-primary" },
   corretor: { label: "Corretor", classe: "border-primary/25 bg-primary/10 text-primary" },
   analista: { label: "Analista", classe: "border-primary/25 bg-primary/10 text-primary" },

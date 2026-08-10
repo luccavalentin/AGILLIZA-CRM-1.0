@@ -12,7 +12,6 @@ import {
 import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "./dominios";
 import { propostaQueryOptions } from "./queries";
 
-
 /** ===== Tipos de saída ===== */
 export interface PropostaBancoResumo {
   nome_banco: string | null;
@@ -57,7 +56,10 @@ export interface PropostaCompleta {
 async function correspondenteId(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.");
+  if (!data)
+    throw new Error(
+      "Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.",
+    );
   return data as string;
 }
 
@@ -117,10 +119,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
         .select("cliente_id")
         .eq("parceiro_id", userId);
       const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
-      const partes = [
-        `usuario_responsavel_id.eq.${userId}`,
-        `usuario_criador_id.eq.${userId}`,
-      ];
+      const partes = [`usuario_responsavel_id.eq.${userId}`, `usuario_criador_id.eq.${userId}`];
       if (ids.length) partes.push(`cliente_id.in.(${ids.join(",")})`);
       query = query.or(partes.join(","));
     }
@@ -133,7 +132,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
     if (data.data_inicio) query = query.gte("created_at", data.data_inicio);
     if (data.data_fim) query = query.lte("created_at", data.data_fim);
 
-    // Filtros de nomes (Parceiros/Responsáveis) baseados nos nomes pré-carregados no hook, 
+    // Filtros de nomes (Parceiros/Responsáveis) baseados nos nomes pré-carregados no hook,
     // mas agora aplicados no servidor para garantir que "todos" os dados sejam buscados corretamente.
     // O backend irá filtrar após resolver as tabelas de junção (profiles/parceiros).
 
@@ -149,11 +148,11 @@ export const listarPropostas = createServerFn({ method: "GET" })
 
     // Se houver filtros de nome de parceiro, precisamos buscar uma gama maior no banco
     // para compensar o filtro manual em memória feito logo abaixo.
-    const temFiltroNome = data.responsavel_nome || data.corretor_nome || data.imobiliaria_nome || data.comercial_nome;
+    const temFiltroNome =
+      data.responsavel_nome || data.corretor_nome || data.imobiliaria_nome || data.comercial_nome;
     const finalTo = temFiltroNome ? Math.max(to, 2000) : to;
 
     query = query.order("created_at", { ascending: false }).range(from, finalTo);
-
 
     const { data: itens, count, error } = await query;
     if (error) throw new Error(error.message);
@@ -232,9 +231,9 @@ export const listarPropostas = createServerFn({ method: "GET" })
 
     const lista = rows.map((r: any) => {
       const responsavel_id = r.usuario_responsavel_id ?? r.usuario_criador_id ?? null;
-      const imobId = r.cliente_id ? imobPorCliente.get(r.cliente_id) ?? null : null;
-      const corrId = r.cliente_id ? corrPorCliente.get(r.cliente_id) ?? null : null;
-      const comId = r.cliente_id ? comPorCliente.get(r.cliente_id) ?? null : null;
+      const imobId = r.cliente_id ? (imobPorCliente.get(r.cliente_id) ?? null) : null;
+      const corrId = r.cliente_id ? (corrPorCliente.get(r.cliente_id) ?? null) : null;
+      const comId = r.cliente_id ? (comPorCliente.get(r.cliente_id) ?? null) : null;
       return {
         ...r,
         responsavel_id,
@@ -250,21 +249,19 @@ export const listarPropostas = createServerFn({ method: "GET" })
     // Aplica filtros de nome no servidor se solicitados
     let listaFiltrada = lista;
     if (data.responsavel_nome && data.responsavel_nome !== "todos") {
-      listaFiltrada = listaFiltrada.filter(i => i.nome_responsavel === data.responsavel_nome);
+      listaFiltrada = listaFiltrada.filter((i) => i.nome_responsavel === data.responsavel_nome);
     }
     if (data.corretor_nome && data.corretor_nome !== "todos") {
-      listaFiltrada = listaFiltrada.filter(i => i.corretor_nome === data.corretor_nome);
+      listaFiltrada = listaFiltrada.filter((i) => i.corretor_nome === data.corretor_nome);
     }
     if (data.imobiliaria_nome && data.imobiliaria_nome !== "todos") {
-      listaFiltrada = listaFiltrada.filter(i => i.imobiliaria_nome === data.imobiliaria_nome);
+      listaFiltrada = listaFiltrada.filter((i) => i.imobiliaria_nome === data.imobiliaria_nome);
     }
     if (data.comercial_nome && data.comercial_nome !== "todos") {
-      listaFiltrada = listaFiltrada.filter(i => i.comercial_nome === data.comercial_nome);
+      listaFiltrada = listaFiltrada.filter((i) => i.comercial_nome === data.comercial_nome);
     }
 
-
     return { itens: listaFiltrada as PropostaListaItem[], total: count ?? 0 };
-
   });
 
 /** ===== Detalhe ===== */
@@ -280,7 +277,7 @@ export const obterProposta = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!proposta) throw new Error("Proposta não encontrada.");
-    
+
     // Adiciona o nome de quem excluiu se disponível
     if (proposta.deleted_by) {
       const { data: profile } = await supabase
@@ -290,7 +287,6 @@ export const obterProposta = createServerFn({ method: "GET" })
         .maybeSingle();
       (proposta as any).nome_excluidor = profile?.nome;
     }
-
 
     const [bancos, envolvidos, documentos, followups, historico] = await Promise.all([
       supabase.from("proposta_bancos").select("*").eq("proposta_id", data.id).order("created_at"),
@@ -390,49 +386,38 @@ export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
 /** ===== Equipe interna (para filtros de responsável) ===== */
 export const listarResponsaveisEquipe = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(
-    async ({ context }): Promise<{ id: string; nome: string; papeis: string[] }[]> => {
-      const { supabase, userId } = context;
-      const corr = await correspondenteId(supabase, userId);
-      const { data: membros, error } = await supabase
-        .from("profiles")
-        .select("id, nome, acesso_tipo, ativo")
-        .eq("correspondente_id", corr)
-        .eq("acesso_tipo", "sistema")
-        .order("nome", { ascending: true });
-      if (error) throw new Error(error.message);
-      const ids = (membros ?? []).map((m: any) => m.id);
-      if (ids.length === 0) return [];
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("user_id, role")
-        .in("user_id", ids);
-      const PAPEIS_INTERNOS = new Set([
-        "correspondente",
-        "gestor",
-        "comercial",
-        "analista",
-        "admin",
-      ]);
-      const papeisPorUsuario = new Map<string, string[]>();
-      (roles ?? []).forEach((r: any) => {
-        if (!PAPEIS_INTERNOS.has(r.role)) return;
-        const arr = papeisPorUsuario.get(r.user_id) ?? [];
-        arr.push(r.role);
-        papeisPorUsuario.set(r.user_id, arr);
-      });
-      return (membros ?? [])
-        .filter((m: any) => papeisPorUsuario.has(m.id))
-        .map((m: any) => ({
-          id: m.id,
-          nome: m.nome ?? "—",
-          papeis: papeisPorUsuario.get(m.id) ?? [],
-        }));
-    },
-  );
-
-
-
+  .handler(async ({ context }): Promise<{ id: string; nome: string; papeis: string[] }[]> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteId(supabase, userId);
+    const { data: membros, error } = await supabase
+      .from("profiles")
+      .select("id, nome, acesso_tipo, ativo")
+      .eq("correspondente_id", corr)
+      .eq("acesso_tipo", "sistema")
+      .order("nome", { ascending: true });
+    if (error) throw new Error(error.message);
+    const ids = (membros ?? []).map((m: any) => m.id);
+    if (ids.length === 0) return [];
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("user_id, role")
+      .in("user_id", ids);
+    const PAPEIS_INTERNOS = new Set(["correspondente", "gestor", "comercial", "analista", "admin"]);
+    const papeisPorUsuario = new Map<string, string[]>();
+    (roles ?? []).forEach((r: any) => {
+      if (!PAPEIS_INTERNOS.has(r.role)) return;
+      const arr = papeisPorUsuario.get(r.user_id) ?? [];
+      arr.push(r.role);
+      papeisPorUsuario.set(r.user_id, arr);
+    });
+    return (membros ?? [])
+      .filter((m: any) => papeisPorUsuario.has(m.id))
+      .map((m: any) => ({
+        id: m.id,
+        nome: m.nome ?? "—",
+        papeis: papeisPorUsuario.get(m.id) ?? [],
+      }));
+  });
 
 /** ===== Criar proposta ===== */
 export const criarProposta = createServerFn({ method: "POST" })
@@ -492,8 +477,7 @@ export const criarProposta = createServerFn({ method: "POST" })
       let bancoEscolhido: any = null;
       let simDeOrigem: any = sim;
       if (data.simulacao_banco_id) {
-        bancoEscolhido =
-          bancosSimulados.find((b: any) => b.id === data.simulacao_banco_id) ?? null;
+        bancoEscolhido = bancosSimulados.find((b: any) => b.id === data.simulacao_banco_id) ?? null;
         if (!bancoEscolhido) {
           const { data: sbRow } = await supabase
             .from("simulacao_bancos")
@@ -516,8 +500,7 @@ export const criarProposta = createServerFn({ method: "POST" })
           }
         }
       } else if (data.banco_id) {
-        bancoEscolhido =
-          bancosSimulados.find((b: any) => b.banco_id === data.banco_id) ?? null;
+        bancoEscolhido = bancosSimulados.find((b: any) => b.banco_id === data.banco_id) ?? null;
       } else if (bancosSimulados.length === 1) {
         bancoEscolhido = bancosSimulados[0];
       }
@@ -579,7 +562,6 @@ export const criarProposta = createServerFn({ method: "POST" })
       };
     }
 
-
     const { data: inserted, error: insErr } = await supabaseAdmin
       .from("propostas")
       .insert(snapshot as any)
@@ -618,7 +600,7 @@ export const criarProposta = createServerFn({ method: "POST" })
     const clienteId = snapshot.cliente_id as string | null;
     if (clienteId) {
       const { data: cli } = await supabase
-          .from("clientes")
+        .from("clientes")
         .select("*")
         .eq("id", clienteId)
         .maybeSingle();
@@ -631,42 +613,51 @@ export const criarProposta = createServerFn({ method: "POST" })
           .maybeSingle();
         const c = cli as any;
         const e = (end ?? {}) as any;
-        const { data: insTit, error: titularErr } = await supabaseAdmin.from("proposta_envolvidos").insert({
-          proposta_id: inserted.id,
-          cliente_id: clienteId,
-          tipo_qualificacao: "CO",
-          tipo_pessoa: c.tipo_pessoa === "PJ" ? "J" : "F",
-          nome: c.nome,
-          cpf_cnpj: c.documento,
-          data_nascimento: c.data_nascimento,
-          nome_mae: c.mae,
-          tipo_sexo: c.sexo ? String(c.sexo).trim().charAt(0).toUpperCase() : c.sexo,
-          estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
-          regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
-          tipo_documento_identidade: c.tipo_documento_identidade,
-          numero_documento: c.numero_documento,
-          data_expedicao: c.data_expedicao,
-          orgao_expedidor: c.orgao_expedidor,
-          uf_expedicao: c.uf_expedicao,
-          profissao: c.profissao,
-          empresa: c.empresa,
-          renda: c.renda_total_declarada,
-          agencia: c.agencia,
-          conta_corrente: c.conta_corrente,
-          digito_conta: c.digito_conta,
-          email: c.email,
-          celular: c.telefone_celular,
-          cep: e.cep ?? null,
-          logradouro: e.logradouro ?? null,
-          numero_logradouro: e.numero ?? null,
-          complemento: e.complemento ?? null,
-          bairro: e.bairro ?? null,
-          municipio: e.cidade ?? null,
-          uf: e.uf ?? c.uf_interesse ?? null,
-          utiliza_fgts: c.utiliza_fgts ?? false,
-          fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
-          dados: { pai: c.pai ?? null, nacionalidade: c.nacionalidade ?? null, naturalidade: c.naturalidade ?? null, banco_conta: c.banco_conta ?? null },
-        } as any).select("id").maybeSingle();
+        const { data: insTit, error: titularErr } = await supabaseAdmin
+          .from("proposta_envolvidos")
+          .insert({
+            proposta_id: inserted.id,
+            cliente_id: clienteId,
+            tipo_qualificacao: "CO",
+            tipo_pessoa: c.tipo_pessoa === "PJ" ? "J" : "F",
+            nome: c.nome,
+            cpf_cnpj: c.documento,
+            data_nascimento: c.data_nascimento,
+            nome_mae: c.mae,
+            tipo_sexo: c.sexo ? String(c.sexo).trim().charAt(0).toUpperCase() : c.sexo,
+            estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
+            regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
+            tipo_documento_identidade: c.tipo_documento_identidade,
+            numero_documento: c.numero_documento,
+            data_expedicao: c.data_expedicao,
+            orgao_expedidor: c.orgao_expedidor,
+            uf_expedicao: c.uf_expedicao,
+            profissao: c.profissao,
+            empresa: c.empresa,
+            renda: c.renda_total_declarada,
+            agencia: c.agencia,
+            conta_corrente: c.conta_corrente,
+            digito_conta: c.digito_conta,
+            email: c.email,
+            celular: c.telefone_celular,
+            cep: e.cep ?? null,
+            logradouro: e.logradouro ?? null,
+            numero_logradouro: e.numero ?? null,
+            complemento: e.complemento ?? null,
+            bairro: e.bairro ?? null,
+            municipio: e.cidade ?? null,
+            uf: e.uf ?? c.uf_interesse ?? null,
+            utiliza_fgts: c.utiliza_fgts ?? false,
+            fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
+            dados: {
+              pai: c.pai ?? null,
+              nacionalidade: c.nacionalidade ?? null,
+              naturalidade: c.naturalidade ?? null,
+              banco_conta: c.banco_conta ?? null,
+            },
+          } as any)
+          .select("id")
+          .maybeSingle();
         if (titularErr) throw new Error(titularErr.message);
 
         // Cônjuge/coproponente já cadastrado na ficha do cliente entra como
@@ -684,7 +675,9 @@ export const criarProposta = createServerFn({ method: "POST" })
             cpf_cnpj: c.conjuge_cpf,
             data_nascimento: c.conjuge_data_nascimento,
             nome_mae: c.conjuge_nome_mae,
-            tipo_sexo: c.conjuge_sexo ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase() : c.conjuge_sexo,
+            tipo_sexo: c.conjuge_sexo
+              ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase()
+              : c.conjuge_sexo,
             estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
             regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
             tipo_documento_identidade: c.conjuge_tipo_documento_identidade,
@@ -707,7 +700,10 @@ export const criarProposta = createServerFn({ method: "POST" })
             bairro: e.bairro ?? null,
             municipio: e.cidade ?? null,
             uf: e.uf ?? c.uf_interesse ?? null,
-            dados: { nacionalidade: c.conjuge_nacionalidade ?? null, banco_conta: c.conjuge_banco_conta ?? null },
+            dados: {
+              nacionalidade: c.conjuge_nacionalidade ?? null,
+              banco_conta: c.conjuge_banco_conta ?? null,
+            },
           } as any);
           if (conjugeErr) throw new Error(conjugeErr.message);
         }
@@ -767,8 +763,6 @@ export const criarProposta = createServerFn({ method: "POST" })
       }
     }
 
-
-
     const { error: histErr } = await supabaseAdmin.from("proposta_historico").insert({
       proposta_id: inserted.id,
       tipo_evento: "criada",
@@ -807,7 +801,9 @@ export const obterConjugeCliente = createServerFn({ method: "GET" })
       cpf_cnpj: c.conjuge_cpf,
       data_nascimento: c.conjuge_data_nascimento,
       nome_mae: toTitleCase(c.conjuge_nome_mae),
-      tipo_sexo: c.conjuge_sexo ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase() : c.conjuge_sexo,
+      tipo_sexo: c.conjuge_sexo
+        ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase()
+        : c.conjuge_sexo,
       estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
       regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
       tipo_documento_identidade: c.conjuge_tipo_documento_identidade,
@@ -1031,7 +1027,8 @@ export const atualizarDadosProposta = createServerFn({ method: "POST" })
       "updated_at",
       "enviada_em",
       "contrato_emitido_em",
-    ]) delete (patch as any)[k];
+    ])
+      delete (patch as any)[k];
     const { error } = await supabase
       .from("propostas")
       .update(patch as any)
@@ -1040,7 +1037,6 @@ export const atualizarDadosProposta = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
 
 /** ===== Selecionar banco vencedor ===== */
 export const selecionarBancoProposta = createServerFn({ method: "POST" })
@@ -1156,9 +1152,12 @@ async function sincronizarEnvolvidoParaCliente(
   if (has("data_nascimento")) patch.data_nascimento = dados.data_nascimento;
   if (has("nome_mae")) patch.mae = dados.nome_mae;
   if (has("tipo_sexo")) patch.sexo = dados.tipo_sexo;
-  if (has("estado_civil")) patch.estado_civil = ESTADO_CIVIL_MAP[String(dados.estado_civil)] ?? undefined;
-  if (has("regime_casamento")) patch.regime_casamento = REGIME_MAP[String(dados.regime_casamento)] ?? undefined;
-  if (has("tipo_documento_identidade")) patch.tipo_documento_identidade = dados.tipo_documento_identidade;
+  if (has("estado_civil"))
+    patch.estado_civil = ESTADO_CIVIL_MAP[String(dados.estado_civil)] ?? undefined;
+  if (has("regime_casamento"))
+    patch.regime_casamento = REGIME_MAP[String(dados.regime_casamento)] ?? undefined;
+  if (has("tipo_documento_identidade"))
+    patch.tipo_documento_identidade = dados.tipo_documento_identidade;
   if (has("numero_documento")) patch.numero_documento = dados.numero_documento;
   if (has("orgao_expedidor")) patch.orgao_expedidor = dados.orgao_expedidor;
   if (has("uf_expedicao")) patch.uf_expedicao = dados.uf_expedicao;
@@ -1174,7 +1173,10 @@ async function sincronizarEnvolvidoParaCliente(
   // Remove chaves que ficaram undefined após o mapeamento de enum.
   for (const k of Object.keys(patch)) if (patch[k] === undefined) delete patch[k];
   if (Object.keys(patch).length > 0) {
-    await supabase.from("clientes").update(patch as any).eq("id", clienteId);
+    await supabase
+      .from("clientes")
+      .update(patch as any)
+      .eq("id", clienteId);
   }
 
   // Endereço: grava no endereço principal do cliente.
@@ -1194,7 +1196,10 @@ async function sincronizarEnvolvidoParaCliente(
       .limit(1)
       .maybeSingle();
     if (end?.id) {
-      await supabase.from("cliente_enderecos").update(enderecoPatch as any).eq("id", end.id);
+      await supabase
+        .from("cliente_enderecos")
+        .update(enderecoPatch as any)
+        .eq("id", end.id);
     } else {
       await supabase
         .from("cliente_enderecos")
@@ -1230,9 +1235,7 @@ export const adicionarEnvolvido = createServerFn({ method: "POST" })
 export const atualizarEnvolvido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z
-      .object({ id: z.string().uuid(), dados: z.record(z.string(), z.unknown()) })
-      .parse(data),
+    z.object({ id: z.string().uuid(), dados: z.record(z.string(), z.unknown()) }).parse(data),
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
@@ -1476,9 +1479,7 @@ export const cancelarProposta = createServerFn({ method: "POST" })
     const deStatus = prop.status as PropostaStatus;
     if (deStatus === "cancelada") throw new Error("Proposta já está cancelada.");
     if (!transicaoPermitida(deStatus, "cancelada")) {
-      throw new Error(
-        `Uma proposta no status "${deStatus}" não pode ser cancelada.`,
-      );
+      throw new Error(`Uma proposta no status "${deStatus}" não pode ser cancelada.`);
     }
 
     const { error } = await supabase
@@ -1507,7 +1508,7 @@ export const cancelarProposta = createServerFn({ method: "POST" })
           console.error("[Cancelamento] Erro ao notificar banco:", e);
         }
       })();
-      
+
       const waitUntil = (globalThis as any)?.ctx?.waitUntil ?? (globalThis as any)?.waitUntil;
       if (typeof waitUntil === "function") {
         waitUntil(notificarBanco);
@@ -1518,7 +1519,6 @@ export const cancelarProposta = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
-
 
 /** ===== Enviar / reenviar ao banco ===== */
 export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
@@ -1609,9 +1609,7 @@ export const sincronizarPropostasAtivas = createServerFn({ method: "POST" })
         }
       }
     }
-    await Promise.all(
-      Array.from({ length: Math.min(CONCORRENCIA, fila.length) }, () => worker()),
-    );
+    await Promise.all(Array.from({ length: Math.min(CONCORRENCIA, fila.length) }, () => worker()));
     return { processadas, atualizadas };
   });
 
@@ -1636,8 +1634,6 @@ export const enviarDocumentosBanco = createServerFn({ method: "POST" })
       documentoIds: data.documento_ids,
     });
   });
-
-
 
 /** Exclui uma proposta (e registros dependentes via cascata). Registra um
  * snapshot completo na auditoria antes de apagar — nada se perde nos Logs. */
@@ -1736,7 +1732,6 @@ export const excluirProposta = createServerFn({ method: "POST" })
       else cancelarNoBanco.catch(() => {});
     }
 
-
     if (!removidas || removidas.length === 0) {
       if (!correspondente || prop.correspondente_id !== correspondente) {
         throw new Error("Você não tem permissão para excluir esta proposta.");
@@ -1776,7 +1771,6 @@ export const excluirProposta = createServerFn({ method: "POST" })
       /* não bloqueia a exclusão */
     }
     return { ok: true };
-
   });
 
 /** Restaura uma proposta excluída logicamente. */
@@ -1815,12 +1809,9 @@ export const excluirPropostaDefinitivamente = createServerFn({ method: "POST" })
       console.error("Erro na auditoria de exclusão definitiva:", e);
     }
 
-    // Exclui em cascata usando o client admin para garantir a limpeza total 
+    // Exclui em cascata usando o client admin para garantir a limpeza total
     // se houver restrições de RLS no delete.
-    const { error: deleteErr } = await supabaseAdmin
-      .from("propostas")
-      .delete()
-      .eq("id", data.id);
+    const { error: deleteErr } = await supabaseAdmin.from("propostas").delete().eq("id", data.id);
 
     if (deleteErr) throw deleteErr;
 
@@ -1932,10 +1923,7 @@ export const cadastrarClienteDaProposta = createServerFn({ method: "POST" })
     // Vincula a proposta e a simulação de origem ao novo cadastro.
     await supabase.from("propostas").update({ cliente_id: novo.id }).eq("id", prop.id);
     if (prop.simulacao_id) {
-      await supabase
-        .from("simulacoes")
-        .update({ cliente_id: novo.id })
-        .eq("id", prop.simulacao_id);
+      await supabase.from("simulacoes").update({ cliente_id: novo.id }).eq("id", prop.simulacao_id);
     }
 
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
@@ -2128,7 +2116,9 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
         cpf_cnpj: c.conjuge_cpf,
         data_nascimento: c.conjuge_data_nascimento,
         nome_mae: c.conjuge_nome_mae,
-        tipo_sexo: c.conjuge_sexo ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase() : c.conjuge_sexo,
+        tipo_sexo: c.conjuge_sexo
+          ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase()
+          : c.conjuge_sexo,
         estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
         regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
         tipo_documento_identidade: c.conjuge_tipo_documento_identidade,
@@ -2153,7 +2143,10 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
         uf: e.uf ?? c.uf_interesse ?? null,
         utiliza_fgts: false,
         fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
-        dados: { nacionalidade: c.conjuge_nacionalidade ?? null, banco_conta: c.conjuge_banco_conta ?? null },
+        dados: {
+          nacionalidade: c.conjuge_nacionalidade ?? null,
+          banco_conta: c.conjuge_banco_conta ?? null,
+        },
       };
       const { data: conjExistente } = await supabase
         .from("proposta_envolvidos")
@@ -2177,7 +2170,6 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
-
 
 /** ===== Participantes da oportunidade (provedor bancário) ===== */
 const participanteSchema = z.object({
@@ -2267,7 +2259,7 @@ export const listarUsuariosParceiros = createServerFn({ method: "GET" })
   });
 
 /**
- * Ressincroniza dados ausentes nos envolvidos da proposta a partir do cadastro 
+ * Ressincroniza dados ausentes nos envolvidos da proposta a partir do cadastro
  * (clientes e cliente_enderecos).
  */
 export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" })
@@ -2288,7 +2280,7 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
     for (const envObj of envolvidos) {
       const env = envObj as any;
       if (!env.cliente_id) continue;
-      
+
       const { data: clienteObj } = await supabase
         .from("clientes")
         .select("*")
@@ -2324,7 +2316,7 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
         profissao: "profissao",
         renda: "renda",
         email: "email",
-        celular: "celular"
+        celular: "celular",
       };
 
       for (const [de, para] of Object.entries(mapaCliente)) {
@@ -2342,7 +2334,7 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
         complemento: "complemento",
         bairro: "bairro",
         municipio: "municipio",
-        uf: "uf"
+        uf: "uf",
       };
 
       if (endereco) {
@@ -2359,14 +2351,14 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
           .from("proposta_envolvidos")
           .update(patch as any)
           .eq("id", env.id);
-        
+
         if (!updErr) {
           alteradosTotal++;
           const nome = env.nome || "Participante";
           logs.push({
             proposta_id: data.proposta_id,
             tipo_evento: "sincronizacao",
-            descricao: `Dados de ${nome} completados via cadastro: ${camposCompletados.join(", ")}.`
+            descricao: `Dados de ${nome} completados via cadastro: ${camposCompletados.join(", ")}.`,
           });
         }
       }

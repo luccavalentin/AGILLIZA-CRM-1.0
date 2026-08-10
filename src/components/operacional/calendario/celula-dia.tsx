@@ -3,8 +3,6 @@ import { cn } from "@/lib/utils";
 import brandSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
 import type { FeriadoBR } from "@/lib/feriados-br";
 
-
-
 // Estrutura mínima consumida pela célula (evita acoplar ao tipo completo da tarefa).
 export interface TarefaCelula {
   id: string;
@@ -81,7 +79,6 @@ export function CelulaDia({
           <span className="truncate">{feriado.descricao}</span>
         </div>
       )}
-
 
       <div className="space-y-1">
         {tarefas.slice(0, MAX_VISIVEIS).map((t) => (

@@ -5,26 +5,29 @@
 ## 1. Arquitetura
 
 Aplicação **TanStack Start v1 com SSR**. Isso é importante:
+
 - **Não é site estático.** Precisa de ambiente que execute código no servidor.
 - Build usa **Nitro**; padrão hoje: **Cloudflare Workers**. Vercel e VPS Node também suportados.
 - Banco/Auth/Storage/Realtime no **Supabase** (permanece igual em qualquer deploy).
 
 ### Presets de build
 
-| Ambiente | Preset Nitro |
-|---|---|
-| Cloudflare / Lovable | `cloudflare` |
-| Vercel | `vercel` (auto-detectado por `VERCEL=1`) |
-| VPS Node | `node-server` |
+| Ambiente             | Preset Nitro                             |
+| -------------------- | ---------------------------------------- |
+| Cloudflare / Lovable | `cloudflare`                             |
+| Vercel               | `vercel` (auto-detectado por `VERCEL=1`) |
+| VPS Node             | `node-server`                            |
 
 ## 2. Variáveis de ambiente
 
 ### Públicas (client) — prefixo `VITE_`
+
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_SUPABASE_PROJECT_ID`
 
 ### Secretas (servidor) — nunca com prefixo `VITE_`
+
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PROJECT_ID`
 - `ADMIN_SERVICE_ROLE_KEY` — cliente admin server-only.
 - `CLIENTE_APP_SESSION_SECRET` — sela sessão do App Cliente (≥32 chars).
@@ -76,6 +79,7 @@ Aplicação **TanStack Start v1 com SSR**. Isso é importante:
 ## 6. Opção C — VPS Hostinger (Node)
 
 ### Preparar
+
 ```bash
 sudo apt update && sudo apt upgrade -y
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -84,9 +88,11 @@ sudo npm install -g pm2
 ```
 
 ### Preset
+
 Em `vite.config.ts`, informar `node-server` para o Nitro.
 
 ### Deploy
+
 ```bash
 git clone <URL> app && cd app
 npm install
@@ -98,6 +104,7 @@ pm2 startup
 ```
 
 ### Nginx + HTTPS
+
 ```nginx
 server {
   listen 80;
@@ -115,12 +122,14 @@ server {
   }
 }
 ```
+
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d seu-dominio.com.br
 ```
 
 ### Atualização
+
 ```bash
 cd app && git pull && npm install && npm run build && pm2 restart agilliza
 ```
@@ -156,15 +165,15 @@ cd app && git pull && npm install && npm run build && pm2 restart agilliza
 
 ## 9. Problemas comuns
 
-| Sintoma | Causa | Solução |
-|---|---|---|
-| 404 ao dar F5 | preset errado | Confirmar preset Nitro |
-| "No authorization header" | middleware ausente | Verificar `src/start.ts` (bearer) + sessão |
-| `process.env.X undefined` | secret não configurado | Adicionar no painel |
-| Login não redireciona | URL fora do Redirect URLs | Ajustar Supabase Auth |
-| Tela branca | build falhou / `VITE_*` faltando | Revisar log + env vars |
-| Proposta não atualiza | cron `/api/public/sync-propostas` parado | Verificar agendador + `CRON_SECRET` |
-| Chat sem realtime | WebSocket bloqueado | Verificar CSP/WAF/proxy |
+| Sintoma                   | Causa                                    | Solução                                    |
+| ------------------------- | ---------------------------------------- | ------------------------------------------ |
+| 404 ao dar F5             | preset errado                            | Confirmar preset Nitro                     |
+| "No authorization header" | middleware ausente                       | Verificar `src/start.ts` (bearer) + sessão |
+| `process.env.X undefined` | secret não configurado                   | Adicionar no painel                        |
+| Login não redireciona     | URL fora do Redirect URLs                | Ajustar Supabase Auth                      |
+| Tela branca               | build falhou / `VITE_*` faltando         | Revisar log + env vars                     |
+| Proposta não atualiza     | cron `/api/public/sync-propostas` parado | Verificar agendador + `CRON_SECRET`        |
+| Chat sem realtime         | WebSocket bloqueado                      | Verificar CSP/WAF/proxy                    |
 
 ## 10. Recomendação final
 

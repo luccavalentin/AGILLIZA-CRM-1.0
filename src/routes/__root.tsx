@@ -15,7 +15,9 @@ import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { RealtimeAuthSync } from "@/components/shared/realtime-auth-sync";
 import { PropostaRetornoWatcher } from "@/components/propostas/proposta-retorno-watcher";
 import { PropostaPopupHost } from "@/components/propostas/proposta-popup-host";
-const FloatingChatHost = lazy(() => import("@/components/shared/floating-chat-host").then(m => ({ default: m.FloatingChatHost })));
+const FloatingChatHost = lazy(() =>
+  import("@/components/shared/floating-chat-host").then((m) => ({ default: m.FloatingChatHost })),
+);
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
@@ -97,7 +99,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -169,7 +170,9 @@ function RootComponent() {
     // falha ao carregar — evita a tela em branco após novos deploys.
     const RELOAD_KEY = "__chunk_reload_at";
     const isChunkError = (msg: string) =>
-      /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|error loading dynamically imported module/i.test(msg);
+      /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|error loading dynamically imported module/i.test(
+        msg,
+      );
 
     const tryReload = () => {
       try {

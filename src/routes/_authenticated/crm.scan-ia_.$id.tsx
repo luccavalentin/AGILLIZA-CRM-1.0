@@ -255,10 +255,12 @@ function Pagina() {
               <div className="flex flex-col gap-2 sm:flex-row">
                 {divergencia && (
                   <div className="flex flex-col gap-2 w-full sm:w-auto">
-                    <p className="text-[10px] uppercase font-bold text-warning mb-1">A IA sugere:</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <p className="text-[10px] uppercase font-bold text-warning mb-1">
+                      A IA sugere:
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="border-warning/50 text-warning hover:bg-warning/10 h-10 px-4"
                       onClick={() => {
                         setTipoEscolhido(d.tipo_documento_sugerido!);
@@ -312,9 +314,9 @@ function Pagina() {
                   <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
                   <span>
                     Este documento ainda não pertence a nenhum cliente. Escolha{" "}
-                    <strong>uma das duas opções abaixo</strong> para continuar:{" "}
-                    <strong>A)</strong> buscar um cliente que já existe, ou <strong>B)</strong>{" "}
-                    cadastrar um cliente novo com os dados lidos do documento.
+                    <strong>uma das duas opções abaixo</strong> para continuar: <strong>A)</strong>{" "}
+                    buscar um cliente que já existe, ou <strong>B)</strong> cadastrar um cliente
+                    novo com os dados lidos do documento.
                   </span>
                 </div>
               ) : null}
@@ -378,7 +380,9 @@ function Pagina() {
                   </div>
                   <Button
                     className="w-full"
-                    disabled={criarCliente.isPending || novoNome.trim().length < 3 || !novoDoc.trim()}
+                    disabled={
+                      criarCliente.isPending || novoNome.trim().length < 3 || !novoDoc.trim()
+                    }
                     onClick={() => criarCliente.mutate()}
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
@@ -394,7 +398,6 @@ function Pagina() {
                 </div>
               )}
             </div>
-
 
             {/* 3. Campos extraídos */}
             <div className="space-y-3 rounded-lg border border-border bg-card p-4">
@@ -431,7 +434,10 @@ function Pagina() {
                   {d.campos.map((campo) => {
                     const faixa = faixaConfianca(campo.confianca);
                     return (
-                      <div key={campo.id} className={`rounded-lg border p-3 ${TOM_FAIXA[faixa].box}`}>
+                      <div
+                        key={campo.id}
+                        className={`rounded-lg border p-3 ${TOM_FAIXA[faixa].box}`}
+                      >
                         <div className="mb-1 flex items-center justify-between">
                           <Label htmlFor={campo.id} className="text-xs uppercase tracking-wide">
                             {rotuloCampo(campo.campo)}
@@ -492,7 +498,6 @@ function Pagina() {
                 ) : null}
               </div>
             </div>
-
           </div>
         </div>
       )}

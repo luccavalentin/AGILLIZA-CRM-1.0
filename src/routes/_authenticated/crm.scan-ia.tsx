@@ -25,11 +25,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
-import {
-  TIPOS_DOCUMENTO,
-  TIPO_DOCUMENTO_LABEL,
-  rotuloTipo,
-} from "@/lib/crm/scan-ia-tipos";
+import { TIPOS_DOCUMENTO, TIPO_DOCUMENTO_LABEL, rotuloTipo } from "@/lib/crm/scan-ia-tipos";
 import {
   contextoScanIa,
   listarLeituras,
@@ -132,9 +128,6 @@ function Pagina() {
         </Button>
       </div>
 
-
-
-
       <div className="space-y-3 rounded-lg border border-border bg-card p-4">
         <div className="grid gap-2 sm:max-w-sm">
           <Label htmlFor="tipo-doc">Tipo de documento (opcional)</Label>
@@ -219,132 +212,133 @@ function Pagina() {
           </div>
         ) : (
           <>
-          {/* Mobile: cards */}
-          <ul className="divide-y md:hidden">
-            {leituras.data!.map((l) => (
-              <li key={l.id} className="space-y-2 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {rotuloTipo(l.tipo_documento ?? l.tipo_documento_sugerido)}
-                      {!l.tipo_confirmado ? (
-                        <span className="ml-1 text-xs font-normal text-muted-foreground">
-                          (sugerido pela IA)
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {l.cliente_nome ?? "Sem cliente vinculado"}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {new Date(l.created_at).toLocaleString("pt-BR")}
-                    </p>
-                  </div>
-                  <StatusBadge status={l.status} />
-                </div>
-                {l.status === "erro" && l.erro ? (
-                  <p className="text-xs text-destructive">{l.erro}</p>
-                ) : null}
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="truncate">{l.criador_nome ?? "—"}</span>
-                  <span className="shrink-0">{l.total_campos} campos</span>
-                </div>
-                <div className="flex flex-wrap justify-end gap-2 pt-1">
-                  {(l.status === "erro" || l.status === "pendente") && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={processar.isPending}
-                      onClick={() => processar.mutate(l.id)}
-                    >
-                      Reprocessar
-                    </Button>
-                  )}
-                  <Button asChild variant="ghost" size="sm">
-                    <Link to="/crm/scan-ia/$id" params={{ id: l.id }}>
-                      Revisar <ChevronRight className="ml-1 h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <ConfirmDelete
-                    titulo="Excluir leitura"
-                    descricao="A leitura e seus campos serão removidos. A exclusão fica registrada nos logs de auditoria."
-                    onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          {/* md+: table */}
-          <div className="hidden overflow-x-auto md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Documento</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-center">Campos</TableHead>
-                <TableHead>Enviado por</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+            {/* Mobile: cards */}
+            <ul className="divide-y md:hidden">
               {leituras.data!.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="font-medium">
-                    {rotuloTipo(l.tipo_documento ?? l.tipo_documento_sugerido)}
-                    {!l.tipo_confirmado ? (
-                      <span className="ml-1 text-xs font-normal text-muted-foreground">
-                        (sugerido)
-                      </span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {l.cliente_nome ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={l.status} />
-                    {l.status === "erro" && l.erro ? (
-                      <p className="mt-1 text-xs text-destructive">{l.erro}</p>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-center">{l.total_campos}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.criador_nome ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(l.created_at).toLocaleString("pt-BR")}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {(l.status === "erro" || l.status === "pendente") && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={processar.isPending}
-                          onClick={() => processar.mutate(l.id)}
-                        >
-                          Reprocessar
-                        </Button>
-                      )}
-                      <Button asChild variant="ghost" size="sm">
-                        <Link to="/crm/scan-ia/$id" params={{ id: l.id }}>
-                          Revisar <ChevronRight className="ml-1 h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <ConfirmDelete
-                        titulo="Excluir leitura"
-                        descricao="A leitura e seus campos serão removidos. A exclusão fica registrada nos logs de auditoria."
-                        onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
-                      />
+                <li key={l.id} className="space-y-2 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {rotuloTipo(l.tipo_documento ?? l.tipo_documento_sugerido)}
+                        {!l.tipo_confirmado ? (
+                          <span className="ml-1 text-xs font-normal text-muted-foreground">
+                            (sugerido pela IA)
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {l.cliente_nome ?? "Sem cliente vinculado"}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {new Date(l.created_at).toLocaleString("pt-BR")}
+                      </p>
                     </div>
-                  </TableCell>
-                </TableRow>
+                    <StatusBadge status={l.status} />
+                  </div>
+                  {l.status === "erro" && l.erro ? (
+                    <p className="text-xs text-destructive">{l.erro}</p>
+                  ) : null}
+                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="truncate">{l.criador_nome ?? "—"}</span>
+                    <span className="shrink-0">{l.total_campos} campos</span>
+                  </div>
+                  <div className="flex flex-wrap justify-end gap-2 pt-1">
+                    {(l.status === "erro" || l.status === "pendente") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={processar.isPending}
+                        onClick={() => processar.mutate(l.id)}
+                      >
+                        Reprocessar
+                      </Button>
+                    )}
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to="/crm/scan-ia/$id" params={{ id: l.id }}>
+                        Revisar <ChevronRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <ConfirmDelete
+                      titulo="Excluir leitura"
+                      descricao="A leitura e seus campos serão removidos. A exclusão fica registrada nos logs de auditoria."
+                      onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
+                    />
+                  </div>
+                </li>
               ))}
-            </TableBody>
-          </Table>
-          </div>
-          </>
+            </ul>
 
+            {/* md+: table */}
+            <div className="hidden overflow-x-auto md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Documento</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-center">Campos</TableHead>
+                    <TableHead>Enviado por</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {leituras.data!.map((l) => (
+                    <TableRow key={l.id}>
+                      <TableCell className="font-medium">
+                        {rotuloTipo(l.tipo_documento ?? l.tipo_documento_sugerido)}
+                        {!l.tipo_confirmado ? (
+                          <span className="ml-1 text-xs font-normal text-muted-foreground">
+                            (sugerido)
+                          </span>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {l.cliente_nome ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={l.status} />
+                        {l.status === "erro" && l.erro ? (
+                          <p className="mt-1 text-xs text-destructive">{l.erro}</p>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-center">{l.total_campos}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {l.criador_nome ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(l.created_at).toLocaleString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {(l.status === "erro" || l.status === "pendente") && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={processar.isPending}
+                              onClick={() => processar.mutate(l.id)}
+                            >
+                              Reprocessar
+                            </Button>
+                          )}
+                          <Button asChild variant="ghost" size="sm">
+                            <Link to="/crm/scan-ia/$id" params={{ id: l.id }}>
+                              Revisar <ChevronRight className="ml-1 h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <ConfirmDelete
+                            titulo="Excluir leitura"
+                            descricao="A leitura e seus campos serão removidos. A exclusão fica registrada nos logs de auditoria."
+                            onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
     </div>

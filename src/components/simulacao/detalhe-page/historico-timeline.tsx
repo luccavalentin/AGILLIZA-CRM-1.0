@@ -17,7 +17,12 @@ function classificarEvento(descricao: string): {
       classe: "border-destructive/30 bg-destructive/10 text-destructive",
     };
   }
-  if (d.includes("retorno") || d.includes("recebid") || d.includes("aprov") || d.includes("conclu")) {
+  if (
+    d.includes("retorno") ||
+    d.includes("recebid") ||
+    d.includes("aprov") ||
+    d.includes("conclu")
+  ) {
     return {
       icone: CheckCircle2,
       classe: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",

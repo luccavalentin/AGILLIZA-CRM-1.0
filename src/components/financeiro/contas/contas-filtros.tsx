@@ -97,11 +97,21 @@ export function ContasFiltros({
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground">Vencimento de</span>
-          <Input type="date" className="w-36 sm:w-40" value={de} onChange={(e) => onDe(e.target.value)} />
+          <Input
+            type="date"
+            className="w-36 sm:w-40"
+            value={de}
+            onChange={(e) => onDe(e.target.value)}
+          />
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground">até</span>
-          <Input type="date" className="w-36 sm:w-40" value={ate} onChange={(e) => onAte(e.target.value)} />
+          <Input
+            type="date"
+            className="w-36 sm:w-40"
+            value={ate}
+            onChange={(e) => onAte(e.target.value)}
+          />
         </div>
         <form
           className="flex flex-1 flex-col gap-1"

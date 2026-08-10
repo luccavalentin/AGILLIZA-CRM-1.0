@@ -65,9 +65,7 @@ export function TimelineAuditoria({
                     <Icone className="size-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium leading-snug text-foreground">
-                      {r.mensagem}
-                    </p>
+                    <p className="text-sm font-medium leading-snug text-foreground">{r.mensagem}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span className={cn("inline-flex items-center gap-1.5 font-medium")}>
                         <span className={cn("size-1.5 rounded-full", c.dot)} />

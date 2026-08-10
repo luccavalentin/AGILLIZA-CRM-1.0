@@ -34,15 +34,9 @@ function iniciais(nome?: string | null): string {
     .join("");
 }
 
-export function DemandaChatTab({
-  demandaId,
-  info,
-}: {
-  demandaId: string;
-  info?: DemandaChatInfo;
-}) {
+export function DemandaChatTab({ demandaId, info }: { demandaId: string; info?: DemandaChatInfo }) {
   const janelas = useFloatingChats();
-  const estaFlutuando = janelas.some(c => c.kind === "demanda" && c.demandaId === demandaId);
+  const estaFlutuando = janelas.some((c) => c.kind === "demanda" && c.demandaId === demandaId);
 
   if (estaFlutuando) {
     return (
@@ -125,7 +119,11 @@ export function DemandaChatConversa({
   const souResponsavel = Boolean(meuId && demanda?.responsavel_id === meuId);
   const interlocutorNome =
     info?.interlocutorNome ??
-    (souCriador ? nomeResponsavel : souResponsavel ? nomeCriador : nomeResponsavel ?? nomeCriador) ??
+    (souCriador
+      ? nomeResponsavel
+      : souResponsavel
+        ? nomeCriador
+        : (nomeResponsavel ?? nomeCriador)) ??
     "Usuário";
   const interlocutorContexto = souCriador
     ? "Responsável pela demanda"
@@ -148,7 +146,11 @@ export function DemandaChatConversa({
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b bg-card px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-sm ring-2 ring-primary/15">
           {info?.interlocutorFoto ? (
-            <img src={info.interlocutorFoto} alt={interlocutorNome} className="size-full object-cover" />
+            <img
+              src={info.interlocutorFoto}
+              alt={interlocutorNome}
+              className="size-full object-cover"
+            />
           ) : (
             iniciais(interlocutorNome)
           )}

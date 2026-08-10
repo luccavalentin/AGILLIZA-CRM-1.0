@@ -27,7 +27,6 @@ import {
 } from "@/lib/admin/parametros.functions";
 import { mascararCep, cepValido, consultarCep } from "@/lib/cep";
 
-
 export const Route = createFileRoute("/_authenticated/admin/parametros")({
   head: () => ({ meta: [{ title: "Cadastro da Empresa — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("admin.parametros"),
@@ -273,11 +272,7 @@ function Pagina() {
     }
   }
 
-
-  const alterado = useMemo(
-    () => JSON.stringify(form) !== JSON.stringify(salvo),
-    [form, salvo],
-  );
+  const alterado = useMemo(() => JSON.stringify(form) !== JSON.stringify(salvo), [form, salvo]);
 
   const completude = useMemo(() => {
     const essenciais: (keyof Form)[] = [

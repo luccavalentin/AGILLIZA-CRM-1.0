@@ -55,9 +55,43 @@ export const CATEGORIAS_BASE = [
 ] as const;
 
 const STOPWORDS = new Set([
-  "a","o","as","os","de","da","do","das","dos","e","em","um","uma","para","por","com","que",
-  "qual","quais","como","quando","onde","é","sao","são","no","na","nos","nas","ao","aos","se",
-  "sobre","meu","minha","the","of",
+  "a",
+  "o",
+  "as",
+  "os",
+  "de",
+  "da",
+  "do",
+  "das",
+  "dos",
+  "e",
+  "em",
+  "um",
+  "uma",
+  "para",
+  "por",
+  "com",
+  "que",
+  "qual",
+  "quais",
+  "como",
+  "quando",
+  "onde",
+  "é",
+  "sao",
+  "são",
+  "no",
+  "na",
+  "nos",
+  "nas",
+  "ao",
+  "aos",
+  "se",
+  "sobre",
+  "meu",
+  "minha",
+  "the",
+  "of",
 ]);
 
 function tokens(texto: string): string[] {
@@ -166,9 +200,7 @@ export const avaliarRespostaConsultor = createServerFn({ method: "POST" })
 export const sugerirConteudoBase = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { pergunta: string; observacao?: string }) =>
-    z
-      .object({ pergunta: z.string().min(3), observacao: z.string().optional() })
-      .parse(d),
+    z.object({ pergunta: z.string().min(3), observacao: z.string().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
@@ -265,10 +297,7 @@ export const salvarItemBase = createServerFn({ method: "POST" })
       atualizado_por: userId,
     };
     if (data.id) {
-      const { error } = await supabase
-        .from("consultor_ia_base")
-        .update(payload)
-        .eq("id", data.id);
+      const { error } = await supabase.from("consultor_ia_base").update(payload).eq("id", data.id);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
@@ -385,13 +414,17 @@ export interface PerguntaRespondida {
 export const listarPerguntasRespondidas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d?: { q?: string; limite?: number }) =>
-    z.object({ q: z.string().optional(), limite: z.number().min(1).max(500).optional() }).parse(d ?? {}),
+    z
+      .object({ q: z.string().optional(), limite: z.number().min(1).max(500).optional() })
+      .parse(d ?? {}),
   )
   .handler(async ({ data, context }): Promise<PerguntaRespondida[]> => {
     const { supabase } = context as any;
     const { data: rows, error } = await supabase
       .from("consultor_ia_mensagens")
-      .select("id, conversa_id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at")
+      .select(
+        "id, conversa_id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at",
+      )
       .order("created_at", { ascending: true })
       .limit(1000);
     if (error) throw new Error(error.message);

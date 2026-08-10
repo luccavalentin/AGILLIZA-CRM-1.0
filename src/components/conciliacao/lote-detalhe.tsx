@@ -16,11 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { abaResumo } from "@/lib/conciliacao/xlsx-tipos";
-import {
-  baixarXlsx,
-  gerarPdfComparativo,
-  type ModoSaida,
-} from "@/lib/conciliacao/exportar-lazy";
+import { baixarXlsx, gerarPdfComparativo, type ModoSaida } from "@/lib/conciliacao/exportar-lazy";
 import { listarItensConciliacao } from "@/lib/conciliacao/conciliacao.functions";
 import { SITUACAO_LABEL } from "@/lib/conciliacao/bancos";
 import {
@@ -59,7 +55,6 @@ export function LoteDetalhe({
   const aba = filtro ?? abaLocal;
   const setAba = (v: FiltroLote) => (onFiltroChange ? onFiltroChange(v) : setAbaLocal(v));
   const [busca, setBusca] = useState("");
-
 
   const { data: itens = [], isLoading } = useQuery({
     queryKey: ["conciliacao-itens", lote.id],
@@ -172,7 +167,6 @@ export function LoteDetalhe({
       `Comparativo de dados — ${lote.banco_nome}`,
     );
   }
-
 
   function exportarPdf(modo: ModoSaida) {
     const alvo = filtrados.length ? filtrados : itens;
@@ -334,7 +328,9 @@ export function LoteDetalhe({
                   </TableCell>
                   <TableCell className="text-sm">{i.status_banco ?? "—"}</TableCell>
                   <TableCell className="text-sm">
-                    {i.status_sistema ? (SITUACAO_LABEL[i.status_sistema] ?? i.status_sistema) : "—"}
+                    {i.status_sistema
+                      ? (SITUACAO_LABEL[i.status_sistema] ?? i.status_sistema)
+                      : "—"}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs tabular-nums">
                     {fmtValor(i.valor_financiamento_banco)}
@@ -345,7 +341,9 @@ export function LoteDetalhe({
                   <TableCell className="whitespace-nowrap text-[11px] text-muted-foreground">
                     <div>Envio {fmtData(i.data_envio_banco)}</div>
                     <div>Emissão {fmtData(i.data_emissao_banco)}</div>
-                    {i.data_assinatura_banco && <div>Assin. {fmtData(i.data_assinatura_banco)}</div>}
+                    {i.data_assinatura_banco && (
+                      <div>Assin. {fmtData(i.data_assinatura_banco)}</div>
+                    )}
                   </TableCell>
                   <TableCell className="max-w-[280px] text-xs text-muted-foreground">
                     {i.detalhe_divergencia ?? "—"}

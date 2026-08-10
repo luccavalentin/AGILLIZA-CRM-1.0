@@ -5,6 +5,7 @@
 ## 1. O que o CRM produz
 
 **Tabelas** (todas com RLS + soft delete):
+
 - `clientes` (81 col.) — PF/PJ, numero_cliente `CLI-######`, portal_acesso_ativo bool, snapshot de renda/data/UF, ...
 - `cliente_enderecos`, `cliente_imoveis`, `cliente_vendedores` (43 col. para composição de renda/vendedor), `cliente_parceiros` (vínculo com corretor/imobiliária), `cliente_documentos`, `cliente_documento_pastas`, `cliente_interacoes`, `cliente_historico`, `cliente_portal_acessos`.
 - `pipeline_stages` — 12 etapas fixas semeadas.
@@ -13,6 +14,7 @@
 - `scan_ia_leituras`, `scan_ia_campos_extraidos`, `scan_ia_auditoria`.
 
 **Server fns** em `src/lib/crm/`:
+
 - `clientes.functions.ts`: `criarCliente`, `atualizarCliente`, `buscarClientesCRM`, `listarClientes` (com escopo), `habilitarPortalCliente`, `revogarPortalCliente`.
 - `documento-pastas.functions.ts`, `documentos-gerais.functions.ts`, `documento.ts` — gerenciador de arquivos hierárquico.
 - `chat-cliente.functions.ts` — mensagens com cliente (`{numero_proposta}` templated).
@@ -25,24 +27,25 @@
 
 Semeadas em migração:
 
-| # | Código | Nome interno | Mensagem padrão ao cliente |
-|---|---|---|---|
-| 1 | `cadastro_basico` | Cadastro Básico | Seu cadastro inicial foi recebido. |
-| 2 | `simulacao` | Simulação | Estamos realizando/atualizando sua simulação. |
-| 3 | `aprovacao` | Aprovação | Sua proposta está em análise para aprovação. |
-| 4 | `cadastro_completo` | Cadastro Completo | Seu cadastro foi atualizado e está completo. |
-| 5 | `documentacao_completa` | Documentação Completa | Sua documentação foi recebida. |
-| 6 | `formularios_1` | Formulários — 1ª fase | Iniciamos a primeira fase de formulários. |
-| 7 | `formularios_2` | Formulários — 2ª fase | Segunda fase em andamento. |
-| 8 | `banco_remessa_1` | Enviado ao Banco — 1ª remessa | Documentação enviada ao banco. |
-| 9 | `banco_remessa_2` | Enviado ao Banco — 2ª remessa | Nova remessa complementar. |
-| 10 | `vistoria_agendada` | Vistoria Agendada | Vistoria do imóvel agendada. |
-| 11 | `analise_juridica` | Análise Jurídica | Em análise jurídica. |
-| 12 | `contrato_emitido` | Contrato Emitido | Contrato emitido. |
+| #   | Código                  | Nome interno                  | Mensagem padrão ao cliente                    |
+| --- | ----------------------- | ----------------------------- | --------------------------------------------- |
+| 1   | `cadastro_basico`       | Cadastro Básico               | Seu cadastro inicial foi recebido.            |
+| 2   | `simulacao`             | Simulação                     | Estamos realizando/atualizando sua simulação. |
+| 3   | `aprovacao`             | Aprovação                     | Sua proposta está em análise para aprovação.  |
+| 4   | `cadastro_completo`     | Cadastro Completo             | Seu cadastro foi atualizado e está completo.  |
+| 5   | `documentacao_completa` | Documentação Completa         | Sua documentação foi recebida.                |
+| 6   | `formularios_1`         | Formulários — 1ª fase         | Iniciamos a primeira fase de formulários.     |
+| 7   | `formularios_2`         | Formulários — 2ª fase         | Segunda fase em andamento.                    |
+| 8   | `banco_remessa_1`       | Enviado ao Banco — 1ª remessa | Documentação enviada ao banco.                |
+| 9   | `banco_remessa_2`       | Enviado ao Banco — 2ª remessa | Nova remessa complementar.                    |
+| 10  | `vistoria_agendada`     | Vistoria Agendada             | Vistoria do imóvel agendada.                  |
+| 11  | `analise_juridica`      | Análise Jurídica              | Em análise jurídica.                          |
+| 12  | `contrato_emitido`      | Contrato Emitido              | Contrato emitido.                             |
 
 **Função `cliente_pipeline_avancar_para(cliente_id, codigo, acao, obs?)`** — só avança (nunca retrocede). Grava linha em `cliente_pipeline_historico` com `enviar_ao_cliente=true` para consumo pelo App Cliente (Etapa 09).
 
 **Triggers automáticos**:
+
 - INSERT em `clientes` → `cadastro_basico`.
 - INSERT/UPDATE em `cliente_enderecos` com CEP válido → `cadastro_completo`.
 - INSERT em `simulacoes` → `simulacao`; simulação `simulada`/`parcialmente_simulada` → `aprovacao`.
@@ -81,6 +84,7 @@ Cada arquivo tem: `categoria`, `tipo_documento` (enum), `versao`, `status (pende
 ## 5. Portal do Cliente — habilitação
 
 Card **"Acesso ao Portal do Cliente"** no topo da aba Dados:
+
 - Toggle "Habilitar" (default false). Ao ligar:
   - Cria/atualiza `cliente_portal_acessos(cliente_id UNIQUE, tipo_pessoa, documento_hash, data_referencia, ativo=true, habilitado_por, habilitado_em)`.
   - Marca `clientes.portal_acesso_ativo=true`.
@@ -102,22 +106,23 @@ Card **"Acesso ao Portal do Cliente"** no topo da aba Dados:
 
 Para "Puxar do CRM" funcionar em Simulação Personalizada (Etapa 04) e Proposta manual (Etapa 05), o form de cliente exige:
 
-| Campo | Coluna | Obrigatório |
-|---|---|---|
-| Nome completo | `clientes.nome` | Sim |
-| CPF/CNPJ | `clientes.documento` (só dígitos) | Sim, com DV |
-| Data nasc./abertura | `clientes.data_nascimento` | Sim (18–80 PF) |
-| Estado civil | `clientes.estado_civil` | Sim |
-| E-mail | `clientes.email` | Sim |
-| Celular | `clientes.telefone_celular` | Sim |
-| Renda total declarada | `clientes.renda_total_declarada` | Sim |
-| UF de interesse | `clientes.uf_interesse` | Opcional |
+| Campo                 | Coluna                            | Obrigatório    |
+| --------------------- | --------------------------------- | -------------- |
+| Nome completo         | `clientes.nome`                   | Sim            |
+| CPF/CNPJ              | `clientes.documento` (só dígitos) | Sim, com DV    |
+| Data nasc./abertura   | `clientes.data_nascimento`        | Sim (18–80 PF) |
+| Estado civil          | `clientes.estado_civil`           | Sim            |
+| E-mail                | `clientes.email`                  | Sim            |
+| Celular               | `clientes.telefone_celular`       | Sim            |
+| Renda total declarada | `clientes.renda_total_declarada`  | Sim            |
+| UF de interesse       | `clientes.uf_interesse`           | Opcional       |
 
 `buscarClientesCRM({q})` retorna até 10 resultados casando por nome/doc/e-mail, respeitando `usuario_tem_acesso_cliente`.
 
 ## 8. Ficha do cliente em PDF (2.0)
 
 `src/lib/crm/ficha-pdf.ts` (jsPDF, portrait):
+
 - Cabeçalho azul `#000F9F` com logo Agilliza + dados do ecossistema (razão social, CNPJ do parametros_globais).
 - Foto do cliente (se houver) + dados pessoais, endereço, dados profissionais.
 - Documentos entregues por pasta.

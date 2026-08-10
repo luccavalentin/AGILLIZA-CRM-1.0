@@ -120,9 +120,7 @@ export function KpiCards({
           >
             {k.valor ?? "—"}
           </p>
-          <p className="relative mt-1 truncate text-[11px] text-muted-foreground">
-            {k.hint}
-          </p>
+          <p className="relative mt-1 truncate text-[11px] text-muted-foreground">{k.hint}</p>
         </button>
       ))}
     </div>

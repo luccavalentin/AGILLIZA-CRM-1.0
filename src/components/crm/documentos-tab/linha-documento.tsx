@@ -1,4 +1,14 @@
-import { AlertTriangle, Check, Download, FileText, MessageSquareWarning, Pencil, Trash2, User, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Download,
+  FileText,
+  MessageSquareWarning,
+  Pencil,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { CATEGORIA_LABEL, statusTone, type Categoria } from "./types";
@@ -44,8 +54,7 @@ export function LinhaDocumento({
             {doc.nome_arquivo}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            {CATEGORIA_LABEL[doc.categoria as Categoria]} · {doc.tipo_documento} · v
-            {doc.versao}
+            {CATEGORIA_LABEL[doc.categoria as Categoria]} · {doc.tipo_documento} · v{doc.versao}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {doc.enviado_por_nome ? (
@@ -57,9 +66,7 @@ export function LinhaDocumento({
             {doc.expira_em ? (
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                  vencido
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-muted text-muted-foreground"
+                  vencido ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
                 }`}
               >
                 {vencido ? <AlertTriangle className="size-3" /> : null}

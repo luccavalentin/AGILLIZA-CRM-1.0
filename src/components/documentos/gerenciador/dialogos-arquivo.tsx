@@ -123,9 +123,7 @@ export function ExcluirDialog({
     <AlertDialog open={!!no} onOpenChange={(o) => !o && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            Excluir {no?.tipo === "pasta" ? "pasta" : "arquivo"}?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Excluir {no?.tipo === "pasta" ? "pasta" : "arquivo"}?</AlertDialogTitle>
           <AlertDialogDescription>
             {no?.tipo === "pasta"
               ? "A pasta e todo o seu conteúdo serão removidos permanentemente."

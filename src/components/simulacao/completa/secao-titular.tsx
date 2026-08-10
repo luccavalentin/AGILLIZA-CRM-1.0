@@ -39,7 +39,9 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     <section className="space-y-4">
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Vincular Cliente do CRM</label>
+          <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+            Vincular Cliente do CRM
+          </label>
           <ClienteCRMPicker
             selecionado={f.cliente_id ? f.nome_cliente : null}
             onSelect={selecionarClienteCRM}
@@ -60,13 +62,19 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       {(cadastroNome || invertido) && (
         <div className="flex flex-wrap items-center gap-2 pb-1">
           {cadastroNome && (
-            <Badge variant="secondary" className="h-7 gap-1 px-3 font-medium shadow-sm transition-all hover:bg-secondary/80">
+            <Badge
+              variant="secondary"
+              className="h-7 gap-1 px-3 font-medium shadow-sm transition-all hover:bg-secondary/80"
+            >
               <Link2 className="h-3.5 w-3.5" />
               Vinculado: {cadastroNome}
             </Badge>
           )}
           {invertido && (
-            <Badge variant="outline" className="h-7 gap-1 border-primary/40 bg-primary/5 px-3 font-semibold text-primary shadow-sm">
+            <Badge
+              variant="outline"
+              className="h-7 gap-1 border-primary/40 bg-primary/5 px-3 font-semibold text-primary shadow-sm"
+            >
               <Repeat className="h-3.5 w-3.5" />
               CPFs Invertidos
             </Badge>
@@ -74,7 +82,13 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Campo label={<>Nome <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Nome <Ast />
+            </>
+          }
+        >
           <Input
             value={f.nome_cliente}
             onChange={(e) => set("nome_cliente", e.target.value)}
@@ -82,7 +96,13 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="nome_cliente" />
         </Campo>
-        <Campo label={<>CPF/CNPJ <Ast /></>}>
+        <Campo
+          label={
+            <>
+              CPF/CNPJ <Ast />
+            </>
+          }
+        >
           <Input
             value={f.cpf_cnpj}
             onChange={(e) => set("cpf_cnpj", maskCpfCnpj(e.target.value))}
@@ -91,7 +111,14 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="cpf_cnpj" />
         </Campo>
-        <Campo label={<>{f.sistema_amortizacao === "B" ? "Renda familiar — SAC (R$)" : "Renda total (R$)"} <Ast /></>}>
+        <Campo
+          label={
+            <>
+              {f.sistema_amortizacao === "B" ? "Renda familiar — SAC (R$)" : "Renda total (R$)"}{" "}
+              <Ast />
+            </>
+          }
+        >
           <div className="flex gap-2">
             <CurrencyInput
               value={f.renda_total}
@@ -122,19 +149,20 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             )}
           </div>
           <Erro erros={erros} campo="renda_total" />
-          {f.valor_financiamento > 0 && (f.sistema_amortizacao === "S" || f.sistema_amortizacao === "B") && (
-            <div className="pt-1">
-              <DicaRendaMinima
-                valorFinanciamento={f.valor_financiamento}
-                valorImovel={f.valor_imovel}
-                prazoMeses={f.prazo}
-                taxaAno={ctx.melhorTaxaAno}
-                sistema="S"
-                rendaInformada={0}
-                compoeRendaConjuge={f.compoe_renda && f.compoe_renda_conjuge}
-              />
-            </div>
-          )}
+          {f.valor_financiamento > 0 &&
+            (f.sistema_amortizacao === "S" || f.sistema_amortizacao === "B") && (
+              <div className="pt-1">
+                <DicaRendaMinima
+                  valorFinanciamento={f.valor_financiamento}
+                  valorImovel={f.valor_imovel}
+                  prazoMeses={f.prazo}
+                  taxaAno={ctx.melhorTaxaAno}
+                  sistema="S"
+                  rendaInformada={0}
+                  compoeRendaConjuge={f.compoe_renda && f.compoe_renda_conjuge}
+                />
+              </div>
+            )}
 
           {f.valor_financiamento > 0 && f.sistema_amortizacao === "P" && (
             <div className="pt-1">
@@ -149,10 +177,15 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               />
             </div>
           )}
-
         </Campo>
         {f.sistema_amortizacao === "B" && (
-          <Campo label={<>Renda familiar — PRICE (R$) <Ast /></>}>
+          <Campo
+            label={
+              <>
+                Renda familiar — PRICE (R$) <Ast />
+              </>
+            }
+          >
             <div id="campo-renda-price" className="flex gap-2">
               <CurrencyInput
                 value={f.renda_price ?? 0}
@@ -198,7 +231,13 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             )}
           </Campo>
         )}
-        <Campo label={<>Data de nascimento <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Data de nascimento <Ast />
+            </>
+          }
+        >
           <DateInput
             value={f.data_nascimento}
             onChange={(v) => set("data_nascimento", v)}
@@ -206,7 +245,13 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="data_nascimento" />
         </Campo>
-        <Campo label={<>Estado civil <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Estado civil <Ast />
+            </>
+          }
+        >
           <Select value={f.estado_civil} onValueChange={(v) => set("estado_civil", v)}>
             <SelectTrigger aria-invalid={!!erros.estado_civil}>
               <SelectValue placeholder="Selecione" />
@@ -221,7 +266,13 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </Select>
           <Erro erros={erros} campo="estado_civil" />
         </Campo>
-        <Campo label={<>E-mail <Ast /></>}>
+        <Campo
+          label={
+            <>
+              E-mail <Ast />
+            </>
+          }
+        >
           <Input
             type="email"
             value={f.email}
@@ -231,7 +282,13 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="email" />
         </Campo>
-        <Campo label={<>Celular <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Celular <Ast />
+            </>
+          }
+        >
           <Input
             value={f.celular}
             onChange={(e) => set("celular", maskCelular(e.target.value))}

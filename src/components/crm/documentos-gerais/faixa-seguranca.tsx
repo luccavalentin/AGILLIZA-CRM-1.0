@@ -8,9 +8,7 @@ export function FaixaSeguranca() {
           <Shield className="h-5 w-5" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-foreground">
-            Seus documentos sempre seguros
-          </p>
+          <p className="text-sm font-semibold text-foreground">Seus documentos sempre seguros</p>
           <p className="text-xs text-muted-foreground">
             Armazenamento criptografado e acesso controlado por permissões.
           </p>

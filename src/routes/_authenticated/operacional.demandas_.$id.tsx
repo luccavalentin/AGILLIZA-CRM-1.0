@@ -38,11 +38,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { ColunaLateral } from "@/components/operacional/demanda-page/coluna-lateral";
-import {
-  ChatFlutuandoAviso,
-  StatPill,
-  TabBtn,
-} from "@/components/operacional/demanda-page/ui";
+import { ChatFlutuandoAviso, StatPill, TabBtn } from "@/components/operacional/demanda-page/ui";
 import {
   ArquivosTab,
   AtividadesTab,
@@ -65,7 +61,7 @@ function Pagina() {
   const [aba, setAba] = useState<Aba>("conversas");
   const [copiado, setCopiado] = useState(false);
   const janelas = useFloatingChats();
-  const estaFlutuando = janelas.some(c => c.kind === "demanda" && c.demandaId === id);
+  const estaFlutuando = janelas.some((c) => c.kind === "demanda" && c.demandaId === id);
 
   const { data, refetch } = useQuery({
     queryKey: ["demanda", id],
@@ -205,9 +201,7 @@ function Pagina() {
               <TabBtn active={aba === "arquivos"} onClick={() => setAba("arquivos")}>
                 Arquivos{" "}
                 {anexos.length > 0 && (
-                  <span className="ml-1 text-[10px] text-muted-foreground">
-                    ({anexos.length})
-                  </span>
+                  <span className="ml-1 text-[10px] text-muted-foreground">({anexos.length})</span>
                 )}
               </TabBtn>
               <TabBtn active={aba === "atividades"} onClick={() => setAba("atividades")}>
@@ -249,9 +243,7 @@ function Pagina() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => refetch()}>
-                    Atualizar conversa
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => refetch()}>Atualizar conversa</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

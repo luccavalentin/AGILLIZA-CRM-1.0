@@ -8,11 +8,13 @@ import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mapaFeriados } from "@/lib/feriados-br";
-import { NavegacaoCalendario, type VisaoCalendario } from "@/components/operacional/calendario/navegacao-calendario";
+import {
+  NavegacaoCalendario,
+  type VisaoCalendario,
+} from "@/components/operacional/calendario/navegacao-calendario";
 import { GradeCalendario } from "@/components/operacional/calendario/grade-calendario";
 import type { TarefaCelula } from "@/components/operacional/calendario/celula-dia";
 import { chaveDia } from "@/components/operacional/calendario/utils";
-
 
 export const Route = createFileRoute("/_authenticated/operacional/tarefas_/calendario")({
   head: () => ({ meta: [{ title: "Calendário de Tarefas — Agilliza" }] }),
@@ -26,7 +28,10 @@ function Pagina() {
   const [visao, setVisao] = useState<VisaoCalendario>("mes");
   const [sel, setSel] = useState<string | null>(null);
   const [escopo, setEscopo] = useState<"todas" | "minhas">(
-    () => (typeof window !== "undefined" && (localStorage.getItem("tarefas:escopo") as "todas" | "minhas")) || "todas",
+    () =>
+      (typeof window !== "undefined" &&
+        (localStorage.getItem("tarefas:escopo") as "todas" | "minhas")) ||
+      "todas",
   );
 
   function alterarVisao(v: VisaoCalendario) {
@@ -39,7 +44,6 @@ function Pagina() {
       }
     }
   }
-
 
   const { data } = useQuery({
     queryKey: ["tarefas", "calendario", escopo],
@@ -91,8 +95,12 @@ function Pagina() {
         }}
       >
         <TabsList className="h-10 rounded-xl">
-          <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
-          <TabsTrigger value="todas" className="rounded-lg">Gerais</TabsTrigger>
+          <TabsTrigger value="minhas" className="rounded-lg">
+            Minhas
+          </TabsTrigger>
+          <TabsTrigger value="todas" className="rounded-lg">
+            Gerais
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -116,7 +124,6 @@ function Pagina() {
           setVisao("mes");
         }}
       />
-
 
       <TarefaDrawer id={sel} onClose={() => setSel(null)} />
     </div>

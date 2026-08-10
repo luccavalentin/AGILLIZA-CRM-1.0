@@ -14,9 +14,7 @@ function Pagina() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5 text-muted-foreground" />
-          <h1 className="text-xl font-semibold text-foreground">
-            Configurações de notificação
-          </h1>
+          <h1 className="text-xl font-semibold text-foreground">Configurações de notificação</h1>
         </div>
         <Button asChild variant="outline" size="sm">
           <Link to={"/admin/notificacoes" as string}>
@@ -25,8 +23,8 @@ function Pagina() {
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">
-        Defina quais alertas você quer receber e quais devem tocar som. As
-        preferências valem neste navegador.
+        Defina quais alertas você quer receber e quais devem tocar som. As preferências valem neste
+        navegador.
       </p>
       <NotificationSettings />
     </div>

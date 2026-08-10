@@ -8,7 +8,10 @@ import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { EMAIL_PADRAO, type Form } from "./state";
 
 /** Aplica dados de um cliente do CRM ao titular (e cônjuge, se houver). */
-export function patchSelecionarClienteCRM(prev: Form, c: any): {
+export function patchSelecionarClienteCRM(
+  prev: Form,
+  c: any,
+): {
   next: Form;
   temConjugePreenchido: boolean;
   nomeCadastro: string;
@@ -16,11 +19,7 @@ export function patchSelecionarClienteCRM(prev: Form, c: any): {
   const ecOriginal = estadoCivilCrmParaCodigo(c.estado_civil);
   const conjugePreenchido = Boolean(c.conjuge_nome || c.conjuge_cpf || c.conjuge_renda);
   const ec =
-    ecOriginal === "CA" || ecOriginal === "UE"
-      ? ecOriginal
-      : conjugePreenchido
-        ? "CA"
-        : ecOriginal;
+    ecOriginal === "CA" || ecOriginal === "UE" ? ecOriginal : conjugePreenchido ? "CA" : ecOriginal;
   const temConjuge = ec === "CA" || ec === "UE";
   const next: Form = {
     ...prev,
@@ -103,9 +102,10 @@ export function patchPuxarConjugeCRM(prev: Form, crm: any): Form {
     ...prev,
     possui_conjuge: temConjuge,
     compoe_renda: temConjuge && (prev.compoe_renda || Number(crm.conjuge_renda) > 0),
-    compoe_renda_conjuge: temConjuge && (prev.compoe_renda_conjuge || Number(crm.conjuge_renda) > 0),
+    compoe_renda_conjuge:
+      temConjuge && (prev.compoe_renda_conjuge || Number(crm.conjuge_renda) > 0),
     estado_civil: ecTitular,
-    estado_civil_conjuge: temConjuge ? (prev.estado_civil_conjuge || ecTitular) : "",
+    estado_civil_conjuge: temConjuge ? prev.estado_civil_conjuge || ecTitular : "",
   };
   for (const [k, v] of Object.entries(doCrm)) {
     const atual = (prev as any)[k];

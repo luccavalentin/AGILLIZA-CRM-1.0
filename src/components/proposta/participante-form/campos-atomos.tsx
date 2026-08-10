@@ -36,7 +36,9 @@ export function Campo({
 }) {
   return (
     <div className={className}>
-      <Label className={cn("mb-1 block text-xs transition-colors", erro && "text-destructive font-bold")}>
+      <Label
+        className={cn("mb-1 block text-xs transition-colors", erro && "text-destructive font-bold")}
+      >
         {label}
         {obrigatorio && <span className="text-destructive"> *</span>}
       </Label>

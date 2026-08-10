@@ -68,16 +68,46 @@ export function SecaoVendedor({
         </div>
         {vendPJ ? (
           <>
-            <DocItem {...p} itemKey={`${itemPrefix}v_contrato_social`} cat="vendedor" label={T.vendedor[3]} />
+            <DocItem
+              {...p}
+              itemKey={`${itemPrefix}v_contrato_social`}
+              cat="vendedor"
+              label={T.vendedor[3]}
+            />
             <DocItem {...p} itemKey={`${itemPrefix}v_cnpj`} cat="vendedor" label={T.vendedor[4]} />
-            <DocItem {...p} itemKey={`${itemPrefix}v_doc_socios`} cat="vendedor" label={T.vendedor[5]} />
-            <DocItem {...p} itemKey={`${itemPrefix}v_comp_end_pj`} cat="vendedor" label={T.vendedor[6]} />
+            <DocItem
+              {...p}
+              itemKey={`${itemPrefix}v_doc_socios`}
+              cat="vendedor"
+              label={T.vendedor[5]}
+            />
+            <DocItem
+              {...p}
+              itemKey={`${itemPrefix}v_comp_end_pj`}
+              cat="vendedor"
+              label={T.vendedor[6]}
+            />
           </>
         ) : (
           <>
-            <DocItem {...p} itemKey={`${itemPrefix}v_doc_id`} cat="vendedor" label={T.vendedor[0]} />
-            <DocItem {...p} itemKey={`${itemPrefix}v_comp_end`} cat="vendedor" label={T.vendedor[1]} />
-            <DocItem {...p} itemKey={`${itemPrefix}v_cert_ec`} cat="vendedor" label={T.vendedor[2]} />
+            <DocItem
+              {...p}
+              itemKey={`${itemPrefix}v_doc_id`}
+              cat="vendedor"
+              label={T.vendedor[0]}
+            />
+            <DocItem
+              {...p}
+              itemKey={`${itemPrefix}v_comp_end`}
+              cat="vendedor"
+              label={T.vendedor[1]}
+            />
+            <DocItem
+              {...p}
+              itemKey={`${itemPrefix}v_cert_ec`}
+              cat="vendedor"
+              label={T.vendedor[2]}
+            />
             {vendCasado && (
               <DocItem
                 {...p}

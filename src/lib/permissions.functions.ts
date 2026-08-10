@@ -22,7 +22,7 @@ export const getMinhasPermissoes = createServerFn({ method: "GET" })
       _roles: ["admin", "correspondente", "gestor"],
     });
 
-    // Se o usuário tem o papel de 'gestor' explicitamente em user_roles, 
+    // Se o usuário tem o papel de 'gestor' explicitamente em user_roles,
     // ele deve ignorar a matriz e ter acesso total.
     if (temTudo) {
       return { todas: true, chaves: [] };

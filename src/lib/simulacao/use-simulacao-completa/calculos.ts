@@ -12,10 +12,7 @@ import type { Form } from "./state";
  * Sugere uma entrada compatível com o LTV vigente, mantendo o valor de
  * imóvel corrente. Retorna o patch a aplicar sobre o form atual.
  */
-export function calcularEntradaSugerida(
-  valorImovel: number,
-  ltvMax: number,
-): Partial<Form> {
+export function calcularEntradaSugerida(valorImovel: number, ltvMax: number): Partial<Form> {
   const { entradaMinima } = limitesLtv(valorImovel, ltvMax);
   return {
     valor_entrada: entradaMinima,
@@ -105,9 +102,7 @@ export function calcularPorParcela(
   const i = Math.pow(1 + taxaAno, 1 / 12) - 1;
   const n = Math.max(1, Math.round(Number(prazo) || 360));
   const fator =
-    sistemaAmortizacao === "P"
-      ? (i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1)
-      : 1 / n + i;
+    sistemaAmortizacao === "P" ? (i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1) : 1 / n + i;
   const k = TAXA_MIP_MES + TAXA_DFI_MES / ltvMax;
   const pmtLiq = pmt - TAXA_ADMIN_MES;
   const pv = pmtLiq > 0 ? pmtLiq / (fator + k) : 0;

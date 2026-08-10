@@ -26,9 +26,7 @@ export function OpHero({
     >
       <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-5 sm:flex sm:flex-wrap sm:justify-between">
         <div className="flex min-w-0 items-start gap-4">
-          <span
-            className="relative grid size-12 shrink-0 place-items-center rounded-2xl border border-border/70 bg-card text-[color:var(--op-accent,var(--primary))] shadow-[inset_0_1px_0_color-mix(in_oklab,#fff_60%,transparent),0_10px_24px_-14px_color-mix(in_oklab,var(--op-accent,var(--primary))_55%,transparent)] md:size-[3.25rem]"
-          >
+          <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl border border-border/70 bg-card text-[color:var(--op-accent,var(--primary))] shadow-[inset_0_1px_0_color-mix(in_oklab,#fff_60%,transparent),0_10px_24px_-14px_color-mix(in_oklab,var(--op-accent,var(--primary))_55%,transparent)] md:size-[3.25rem]">
             <span
               aria-hidden
               className="absolute inset-0 rounded-2xl opacity-70"
@@ -68,7 +66,6 @@ export function OpHero({
     </div>
   );
 }
-
 
 /** KPI editorial com barra de acento vertical e número em destaque tipográfico. */
 export function OpStat({
@@ -110,19 +107,14 @@ export function OpStat({
           >
             {value}
           </p>
-          {hint && (
-            <p className="mt-2 truncate text-[11px] text-muted-foreground/90">
-              {hint}
-            </p>
-          )}
+          {hint && <p className="mt-2 truncate text-[11px] text-muted-foreground/90">{hint}</p>}
         </div>
         <span
           className="grid size-9 shrink-0 place-items-center rounded-xl border border-border/70 text-[color:var(--op-accent,var(--primary))]"
           style={{
             background:
               "linear-gradient(180deg, color-mix(in oklab, var(--op-accent, var(--primary)) 10%, var(--card)), var(--card))",
-            boxShadow:
-              "inset 0 1px 0 color-mix(in oklab, #fff 55%, transparent)",
+            boxShadow: "inset 0 1px 0 color-mix(in oklab, #fff 55%, transparent)",
           }}
         >
           {icon}
@@ -131,7 +123,6 @@ export function OpStat({
     </div>
   );
 }
-
 
 /** Chip de prioridade refinado (ponto colorido + rótulo, tom monocromático). */
 export function PriorityChip({ prioridade }: { prioridade: Prioridade }) {

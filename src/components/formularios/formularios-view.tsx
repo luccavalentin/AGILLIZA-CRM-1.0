@@ -115,9 +115,7 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
   return (
     <div className="mx-auto w-full max-w-none space-y-5 p-4 md:p-6">
       <OpHero
-        icon={
-          ehBanco ? <BancoLogo nome={label} size="lg" /> : <FileText className="h-5 w-5" />
-        }
+        icon={ehBanco ? <BancoLogo nome={label} size="lg" /> : <FileText className="h-5 w-5" />}
         accent={accent}
         eyebrow="Documentos · Formulários"
         titulo={label}
@@ -143,13 +141,10 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
         <OpStat
           label="Categoria"
           value={label}
-          icon={
-            ehBanco ? <BancoLogo nome={label} size="md" /> : <FileText className="h-5 w-5" />
-          }
+          icon={ehBanco ? <BancoLogo nome={label} size="md" /> : <FileText className="h-5 w-5" />}
           accent={accent}
         />
       </div>
-
 
       <div className="space-y-2.5">
         {isLoading ? (
@@ -176,7 +171,9 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
                   <FileText className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-foreground group-hover:text-primary">{f.nome}</p>
+                  <p className="truncate font-semibold text-foreground group-hover:text-primary">
+                    {f.nome}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {f.descricao ? `${f.descricao} · ` : ""}
                     {formatBytes(f.tamanho)}

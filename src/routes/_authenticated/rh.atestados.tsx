@@ -63,15 +63,22 @@ function Pagina() {
                   <TableRow key={o.id}>
                     <TableCell className="font-medium">{o.funcionario_nome}</TableCell>
                     <TableCell>{new Date(o.data_inicio).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell>{o.data_fim ? new Date(o.data_fim).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                    <TableCell>
+                      {o.data_fim ? new Date(o.data_fim).toLocaleDateString("pt-BR") : "—"}
+                    </TableCell>
                     <TableCell>{o.dias ?? "—"}</TableCell>
                     <TableCell>{o.cid ?? "—"}</TableCell>
-                    <TableCell className="max-w-[320px] truncate">{o.justificativa ?? "—"}</TableCell>
+                    <TableCell className="max-w-[320px] truncate">
+                      {o.justificativa ?? "—"}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {(!q.data || q.data.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="py-10 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum atestado registrado.
                     </TableCell>
                   </TableRow>

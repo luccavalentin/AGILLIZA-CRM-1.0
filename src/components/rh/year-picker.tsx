@@ -47,10 +47,7 @@ export function YearPicker({
     setPageStart(Math.floor(clamped / 12) * 12);
   }
 
-  const anos = useMemo(
-    () => Array.from({ length: 12 }, (_, i) => pageStart + i),
-    [pageStart],
-  );
+  const anos = useMemo(() => Array.from({ length: 12 }, (_, i) => pageStart + i), [pageStart]);
 
   return (
     <div className={cn("relative inline-block w-32", className)}>

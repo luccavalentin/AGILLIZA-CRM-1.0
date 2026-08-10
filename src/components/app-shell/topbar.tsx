@@ -53,7 +53,6 @@ export function Topbar({
   onToggleCollapse,
   onSignOut,
 }: TopbarProps) {
-
   return (
     <header
       role="banner"
@@ -91,7 +90,6 @@ export function Topbar({
       <div className="mx-1 hidden min-w-0 lg:block">
         <AppBreadcrumbs nav={nav} />
       </div>
-
 
       <div className="ml-auto flex items-center gap-0.5 sm:gap-1.5">
         {showSearch && <GlobalSearch />}

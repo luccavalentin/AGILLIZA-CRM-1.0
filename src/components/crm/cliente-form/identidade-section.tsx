@@ -2,11 +2,7 @@ import { FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  CLASSE_ERRO,
-  type ClienteFormValues,
-  type SetCampo,
-} from "./constants";
+import { CLASSE_ERRO, type ClienteFormValues, type SetCampo } from "./constants";
 
 export function IdentidadeSection({
   v,
@@ -31,8 +27,6 @@ export function IdentidadeSection({
         </p>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
-
-
         <div className="space-y-1.5">
           <Label>Profissão</Label>
           <Input

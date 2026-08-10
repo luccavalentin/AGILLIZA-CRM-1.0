@@ -21,12 +21,7 @@ export interface MetricDelta {
 function DeltaBadge({ delta }: { delta: MetricDelta }) {
   // Sem base anterior para comparar → não há % significativa: não exibe nada.
   if (delta.novo) return null;
-  const Icon =
-    delta.dir === "up"
-      ? TrendingUp
-      : delta.dir === "down"
-        ? TrendingDown
-        : Minus;
+  const Icon = delta.dir === "up" ? TrendingUp : delta.dir === "down" ? TrendingDown : Minus;
 
   // Cor semântica: "bom" indica se subir é positivo (ex.: contratos) ou não (ex.: recusadas).
   const positivo = delta.dir === "flat" ? null : (delta.dir === "up") === delta.bom;
@@ -48,8 +43,7 @@ function DeltaBadge({ delta }: { delta: MetricDelta }) {
       <Icon className="h-3 w-3" />
       {delta.dir === "flat"
         ? "estável"
-        : `${sinal}${delta.pct.toLocaleString("pt-BR", {  maximumFractionDigits: 0 })}%`}
-
+        : `${sinal}${delta.pct.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`}
     </span>
   );
 }
@@ -106,7 +100,6 @@ const toneIconBg: Record<Tone, string> = {
   neutral: "color-mix(in oklab, var(--muted-foreground) 10%, transparent)",
 };
 
-
 /** Cabeçalho da página de painel: eyebrow, título, descrição, chip de atualização e ações. */
 export function PanelHeader({
   eyebrow,
@@ -129,7 +122,6 @@ export function PanelHeader({
   return (
     <div className={cn(dark ? "op-hero-dark" : "op-hero", "p-3 sm:p-4 md:p-6")}>
       <div className="relative grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-
         <div className={cn("min-w-0 flex flex-col justify-center", !actions && "md:col-span-2")}>
           <p
             className={cn(
@@ -153,7 +145,12 @@ export function PanelHeader({
           >
             {titulo}
           </h1>
-          <p className={cn("mt-2 max-w-xl text-sm md:text-base leading-relaxed opacity-85", dark ? "text-white/70" : "text-muted-foreground")}>
+          <p
+            className={cn(
+              "mt-2 max-w-xl text-sm md:text-base leading-relaxed opacity-85",
+              dark ? "text-white/70" : "text-muted-foreground",
+            )}
+          >
             {descricao}
           </p>
         </div>
@@ -193,7 +190,6 @@ export function PanelHeader({
             </Button>
           )}
         </div>
-
       </div>
     </div>
   );
@@ -325,9 +321,7 @@ export function HeroMetric({
             <Icon className="h-4 w-4" strokeWidth={2} />
           </span>
         ) : (
-          <span
-            className={cn("h-8 w-1 shrink-0 rounded-full", toneBar[tone])}
-          />
+          <span className={cn("h-8 w-1 shrink-0 rounded-full", toneBar[tone])} />
         )}
         {clicavel && (
           <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
@@ -342,7 +336,11 @@ export function HeroMetric({
       {(delta || hint) && (
         <div className="relative mt-1.5 flex min-w-0 items-center gap-2">
           {delta && <DeltaBadge delta={delta} />}
-          {hint && <p className="min-w-0 truncate text-[11px] font-medium text-muted-foreground/90">{hint}</p>}
+          {hint && (
+            <p className="min-w-0 truncate text-[11px] font-medium text-muted-foreground/90">
+              {hint}
+            </p>
+          )}
         </div>
       )}
     </Card>
@@ -372,8 +370,6 @@ export function HeroMetric({
   );
 }
 
-
-
 /** Métrica secundária compacta em linha única. */
 export function MiniMetric({
   label,
@@ -393,8 +389,7 @@ export function MiniMetric({
     <Card
       className={cn(
         "group relative h-full min-w-0 overflow-hidden rounded-xl border-l-4 p-3.5 pl-4 shadow-sm transition-all duration-300",
-        clicavel &&
-          "cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5",
+        clicavel && "cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5",
       )}
       style={{ borderLeftColor: toneVar[tone] }}
     >
@@ -430,7 +425,6 @@ export function MiniMetric({
     conteudo
   );
 }
-
 
 /** Moldura padrão de gráfico/lista com título, subtítulo e link "Abrir". */
 export function PanelCard({
@@ -566,7 +560,6 @@ export function MetricList({
   );
 }
 
-
 /** Item de alerta compacto. */
 export function AlertRow({
   tone = "warning",
@@ -587,14 +580,18 @@ export function AlertRow({
     <div
       className={cn(
         "grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 rounded-lg border border-border px-3 py-2.5 transition-all duration-300",
-        onClick && "cursor-pointer hover:border-primary/40 hover:shadow-sm"
+        onClick && "cursor-pointer hover:border-primary/40 hover:shadow-sm",
       )}
       style={{ background: toneWash[tone] }}
     >
       <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", toneDot[tone])} />
       <div className="min-w-0 flex-1">
         <p className="break-words text-sm font-medium leading-snug text-foreground">{titulo}</p>
-        {descricao && <p className="mt-0.5 break-words text-xs leading-snug text-muted-foreground">{descricao}</p>}
+        {descricao && (
+          <p className="mt-0.5 break-words text-xs leading-snug text-muted-foreground">
+            {descricao}
+          </p>
+        )}
       </div>
       {contador != null && (
         <span
@@ -619,11 +616,7 @@ export function AlertRow({
 
   if (onClick) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        className="block w-full text-left"
-      >
+      <button type="button" onClick={onClick} className="block w-full text-left">
         {conteudo}
       </button>
     );

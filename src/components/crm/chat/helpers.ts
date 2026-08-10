@@ -7,12 +7,7 @@ export const CORES = [
   { id: "slate", nome: "Cinza" },
 ] as const;
 
-export type FiltroChat =
-  | "todas"
-  | "nao_lidas"
-  | "sla"
-  | "lembrete"
-  | "arquivadas";
+export type FiltroChat = "todas" | "nao_lidas" | "sla" | "lembrete" | "arquivadas";
 
 export function rotuloDia(iso: string): string {
   const d = new Date(iso);

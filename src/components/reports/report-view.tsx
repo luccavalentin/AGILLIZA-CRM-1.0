@@ -63,7 +63,6 @@ export function ReportView({
   comFiltroStatus?: boolean;
   typeSelector?: import("react").ReactNode;
 }) {
-
   const search = useSearch({ strict: false }) as Record<string, unknown>;
   const navigate = useNavigate();
   const filtros = parseReportSearch(search);
@@ -107,6 +106,5 @@ export function ReportView({
       comFiltroStatus={comFiltroStatus}
       typeSelector={typeSelector}
     />
-
   );
 }

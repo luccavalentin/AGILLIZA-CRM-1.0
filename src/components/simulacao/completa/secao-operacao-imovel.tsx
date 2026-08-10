@@ -17,12 +17,7 @@ import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
 import { cepValido, consultarCep, mascararCep } from "@/lib/cep";
 import { formatBRL } from "@/lib/simulacao/format";
 import { formatarMeses } from "@/lib/simulacao/prazo";
-import {
-  TIPOS_IMOVEL,
-  USOS_IMOVEL,
-  SITUACOES_IMOVEL,
-  PRODUTOS,
-} from "@/lib/simulacao/schemas";
+import { TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL, PRODUTOS } from "@/lib/simulacao/schemas";
 import { UFS } from "@/lib/simulacao/format";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
@@ -70,33 +65,61 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     }
   }
 
-
   return (
     <section className="space-y-4">
       {restricaoEspecial.ativo && (
         <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 shadow-sm transition-colors hover:border-primary/30">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-              <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
           </div>
           <div className="flex-1 space-y-0.5">
-            <p className="text-sm font-semibold leading-none text-foreground">Restrições para {restricaoEspecial.motivo}</p>
+            <p className="text-sm font-semibold leading-none text-foreground">
+              Restrições para {restricaoEspecial.motivo}
+            </p>
             <p className="text-[13px] text-muted-foreground leading-snug">
-              Financiamento máx. <span className="font-semibold text-foreground">{Math.round(restricaoEspecial.ltvMax * 100)}%</span> (entrada mín. de {Math.round((1 - restricaoEspecial.ltvMax) * 100)}%), prazo máx. de <span className="font-semibold text-foreground">{restricaoEspecial.prazoMax} meses</span>{restricaoEspecial.apenasBradesco ? ", operado apenas pelo Bradesco" : ""}.
+              Financiamento máx.{" "}
+              <span className="font-semibold text-foreground">
+                {Math.round(restricaoEspecial.ltvMax * 100)}%
+              </span>{" "}
+              (entrada mín. de {Math.round((1 - restricaoEspecial.ltvMax) * 100)}%), prazo máx. de{" "}
+              <span className="font-semibold text-foreground">
+                {restricaoEspecial.prazoMax} meses
+              </span>
+              {restricaoEspecial.apenasBradesco ? ", operado apenas pelo Bradesco" : ""}.
             </p>
           </div>
         </div>
       )}
       {f.produto === "home_equity" && (
         <div className="rounded-lg border border-destructive/40 border-l-4 border-l-destructive bg-[color-mix(in_oklab,var(--destructive)_12%,var(--card))] px-3 py-2 text-sm leading-relaxed text-foreground">
-          <strong className="font-semibold text-destructive">Home Equity temporariamente indisponível:</strong> a
-          API HomeFin ainda não processa simulações e propostas deste produto. Você pode registrar
+          <strong className="font-semibold text-destructive">
+            Home Equity temporariamente indisponível:
+          </strong>{" "}
+          a API HomeFin ainda não processa simulações e propostas deste produto. Você pode registrar
           a simulação, mas o envio aos bancos não estará disponível.
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Campo label={<>Produto <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Produto <Ast />
+            </>
+          }
+        >
           <Select
             value={f.produto}
             onValueChange={(v) => {
@@ -121,7 +144,13 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </Select>
         </Campo>
 
-        <Campo label={<>Tipo de imóvel <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Tipo de imóvel <Ast />
+            </>
+          }
+        >
           <Select value={f.tipo_imovel} onValueChange={(v) => set("tipo_imovel", v)}>
             <SelectTrigger aria-invalid={!!erros.tipo_imovel}>
               <SelectValue placeholder="Selecione" />
@@ -136,7 +165,13 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </Select>
           <Erro erros={erros} campo="tipo_imovel" />
         </Campo>
-        <Campo label={<>Uso do imóvel <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Uso do imóvel <Ast />
+            </>
+          }
+        >
           <Select value={f.uso_imovel} onValueChange={(v) => set("uso_imovel", v)}>
             <SelectTrigger aria-invalid={!!erros.uso_imovel}>
               <SelectValue placeholder="Selecione" />
@@ -151,7 +186,13 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </Select>
           <Erro erros={erros} campo="uso_imovel" />
         </Campo>
-        <Campo label={<>Situação do imóvel <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Situação do imóvel <Ast />
+            </>
+          }
+        >
           <Select value={f.situacao_imovel} onValueChange={(v) => set("situacao_imovel", v)}>
             <SelectTrigger aria-invalid={!!erros.situacao_imovel}>
               <SelectValue placeholder="Selecione" />
@@ -166,7 +207,13 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </Select>
           <Erro erros={erros} campo="situacao_imovel" />
         </Campo>
-        <Campo label={<>UF <Ast /></>}>
+        <Campo
+          label={
+            <>
+              UF <Ast />
+            </>
+          }
+        >
           <Select value={f.uf} onValueChange={(v) => set("uf", v)}>
             <SelectTrigger aria-invalid={!!erros.uf}>
               <SelectValue placeholder="Selecione" />
@@ -183,7 +230,13 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         </Campo>
         {f.produto === "home_equity" && (
           <div id="campo-cep-imovel">
-            <Campo label={<>CEP do imóvel <Ast /></>}>
+            <Campo
+              label={
+                <>
+                  CEP do imóvel <Ast />
+                </>
+              }
+            >
               <Input
                 inputMode="numeric"
                 autoComplete="postal-code"
@@ -219,8 +272,19 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition hover:border-destructive/50 hover:bg-destructive/5 hover:text-destructive"
             title="Zera imóvel, entrada, financiamento e parcela desejada"
           >
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <svg
+              viewBox="0 0 24 24"
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M3 6h18" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
             </svg>
             Limpar valores
           </button>
@@ -231,7 +295,6 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
         </div>
       </div>
-
 
       <div className="group relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-background to-background shadow-sm transition-all hover:border-primary/40 hover:shadow-md">
         <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary via-primary/60 to-primary/20" />
@@ -252,14 +315,27 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                 </span>
               </div>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Informe a parcela desejada e o sistema ajusta automaticamente imóvel, entrada e financiamento.
+                Informe a parcela desejada e o sistema ajusta automaticamente imóvel, entrada e
+                financiamento.
               </p>
               <div className="flex items-start gap-1.5 rounded-md border border-amber-500/25 bg-amber-500/[0.06] px-2.5 py-1.5">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-3 w-3 shrink-0 text-amber-600 dark:text-amber-500">
-                  <path d="M12 9v4" /><path d="M12 17h.01" /><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mt-0.5 h-3 w-3 shrink-0 text-amber-600 dark:text-amber-500"
+                >
+                  <path d="M12 9v4" />
+                  <path d="M12 17h.01" />
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
                 </svg>
                 <p className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
-                  Valores estimados com taxa de referência — podem sofrer leve variação quando a simulação for enviada ao banco.
+                  Valores estimados com taxa de referência — podem sofrer leve variação quando a
+                  simulação for enviada ao banco.
                 </p>
               </div>
             </div>
@@ -287,12 +363,14 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         </div>
       </div>
 
-
-
-
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-        <Campo label={<>Valor do imóvel (R$) <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Valor do imóvel (R$) <Ast />
+            </>
+          }
+        >
           <CurrencyInput
             value={f.valor_imovel}
             onChange={(v) => set("valor_imovel", v)}
@@ -300,44 +378,49 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="valor_imovel" />
         </Campo>
-        <Campo label={<>Valor de entrada (R$) <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Valor de entrada (R$) <Ast />
+            </>
+          }
+        >
           <CurrencyInput
             value={f.valor_entrada}
             onChange={(v) => aplicarPorEntrada(v)}
             placeholder="Ex: 100.000,00"
           />
-          {f.valor_imovel > 0 && (() => {
-            const pctEntradaSugerida = Math.round((1 - ltvMax) * 100);
-            const { entradaMinima } = limitesLtv(f.valor_imovel, ltvMax);
-            
-            // Comparação em centavos para o botão sumir quando aplicado
-            const atualCentavos = Math.round(f.valor_entrada * 100);
-            const sugeridaCentavos = Math.round(entradaMinima * 100);
+          {f.valor_imovel > 0 &&
+            (() => {
+              const pctEntradaSugerida = Math.round((1 - ltvMax) * 100);
+              const { entradaMinima } = limitesLtv(f.valor_imovel, ltvMax);
 
-            return (
-              <p className="text-xs text-muted-foreground">
-                Entrada sugerida ({pctEntradaSugerida}%):{" "}
-                <span className="font-medium text-foreground">
-                  {formatBRL(entradaMinima)}
-                </span>
-                {atualCentavos !== sugeridaCentavos && (
-                  <button
-                    type="button"
-                    onClick={aplicarEntradaSugerida}
-                    className="ml-2 font-medium text-primary underline-offset-2 hover:underline"
-                  >
-                    Aplicar
-                  </button>
-                )}
-              </p>
-            );
-          })()}
+              // Comparação em centavos para o botão sumir quando aplicado
+              const atualCentavos = Math.round(f.valor_entrada * 100);
+              const sugeridaCentavos = Math.round(entradaMinima * 100);
+
+              return (
+                <p className="text-xs text-muted-foreground">
+                  Entrada sugerida ({pctEntradaSugerida}%):{" "}
+                  <span className="font-medium text-foreground">{formatBRL(entradaMinima)}</span>
+                  {atualCentavos !== sugeridaCentavos && (
+                    <button
+                      type="button"
+                      onClick={aplicarEntradaSugerida}
+                      className="ml-2 font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      Aplicar
+                    </button>
+                  )}
+                </p>
+              );
+            })()}
           {financiamentoExcedido && (
             <p className="text-xs font-medium text-destructive">
               {f.fg_financiar_despesas ? (
                 <>
-                  Financiamento + despesas não pode passar de {Math.round(ltvMax * 100)}% do
-                  imóvel ({formatBRL(financiamentoMaximo)}). Informe uma entrada de pelo menos{" "}
+                  Financiamento + despesas não pode passar de {Math.round(ltvMax * 100)}% do imóvel
+                  ({formatBRL(financiamentoMaximo)}). Informe uma entrada de pelo menos{" "}
                   {formatBRL(entradaMinimaEfetiva)}.
                 </>
               ) : (
@@ -358,22 +441,28 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             placeholder="Ex: 400.000,00"
           />
           <p className="text-xs text-muted-foreground">
-            Ao digitar aqui, o imóvel e a entrada são preenchidos automaticamente
-            considerando o teto do banco ({Math.round(ltvMax * 100)}%).
-            {f.fg_financiar_despesas &&
-              (f.valor_despesas_financiadas || 0) > 0 && (
-                <>
-                  {" "}Já inclui as despesas financiadas de{" "}
-                  <span className="font-medium text-foreground">
-                    {formatBRL(Number(f.valor_despesas_financiadas) || 0)}
-                  </span>{" "}
-                  (imóvel: {formatBRL(Number(f.valor_financiamento) || 0)}).
-                </>
-              )}
+            Ao digitar aqui, o imóvel e a entrada são preenchidos automaticamente considerando o
+            teto do banco ({Math.round(ltvMax * 100)}%).
+            {f.fg_financiar_despesas && (f.valor_despesas_financiadas || 0) > 0 && (
+              <>
+                {" "}
+                Já inclui as despesas financiadas de{" "}
+                <span className="font-medium text-foreground">
+                  {formatBRL(Number(f.valor_despesas_financiadas) || 0)}
+                </span>{" "}
+                (imóvel: {formatBRL(Number(f.valor_financiamento) || 0)}).
+              </>
+            )}
           </p>
         </Campo>
 
-        <Campo label={<>Prazo (meses) <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Prazo (meses) <Ast />
+            </>
+          }
+        >
           <Input
             type="number"
             min={prazoMinOperacional > 0 ? prazoMinOperacional : 60}
@@ -387,12 +476,13 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           {(() => {
             const limites = [];
-            if (restricaoEspecial.ativo) limites.push({ val: restricaoEspecial.prazoMax, label: restricaoEspecial.motivo });
+            if (restricaoEspecial.ativo)
+              limites.push({ val: restricaoEspecial.prazoMax, label: restricaoEspecial.motivo });
             if (isHomeEquity) limites.push({ val: 240, label: "Home Equity" });
             if (maxPrazoIdade != null) limites.push({ val: maxPrazoIdade, label: "idade" });
-            
+
             if (limites.length === 0) return null;
-            
+
             const ordenados = limites.sort((a, b) => a.val - b.val);
             const efetivo = ordenados[0];
             const outros = ordenados.slice(1);
@@ -403,7 +493,13 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                   Prazo máximo: {efetivo.val} meses (limite para {efetivo.label}).
                   {outros.length > 0 && (
                     <span className="ml-1 font-normal text-muted-foreground">
-                      {outros.map(o => `${o.label === 'idade' ? 'A idade' : o.label} permitiria até ${o.val}`).join("; ")}.
+                      {outros
+                        .map(
+                          (o) =>
+                            `${o.label === "idade" ? "A idade" : o.label} permitiria até ${o.val}`,
+                        )
+                        .join("; ")}
+                      .
                     </span>
                   )}
                 </p>
@@ -417,7 +513,13 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           })()}
           <Erro erros={erros} campo="prazo" />
         </Campo>
-        <Campo label={<>Utiliza FGTS? <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Utiliza FGTS? <Ast />
+            </>
+          }
+        >
           <Select value={f.utiliza_fgts} onValueChange={(v) => set("utiliza_fgts", v)}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione" />
@@ -428,7 +530,13 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             </SelectContent>
           </Select>
         </Campo>
-        <Campo label={<>Sistema de amortização <Ast /></>}>
+        <Campo
+          label={
+            <>
+              Sistema de amortização <Ast />
+            </>
+          }
+        >
           <Select value={f.sistema_amortizacao} onValueChange={setSistemaAmortizacao}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione" />

@@ -5,6 +5,7 @@
 ## 1. Escopo
 
 **Tabelas**:
+
 - `tasks` (15 col.), `task_history`, `task_comments`, `task_attachments`, `task_participants`, `task_checklist_items`, `task_tags`, `task_tag_links`, `task_audit_logs`.
 - `demandas` (23 col.), `demanda_historico`, `demanda_mensagens` (10 col.), `demanda_leituras`, `demanda_participantes`, `demanda_anexos`.
 - `sla_configuracoes` (9 col.), `sla_catalogo_itens`, `feriados`.
@@ -12,6 +13,7 @@
 - `dm_conversas`, `dm_participantes`, `dm_mensagens` — direct messages entre operadores (Central de Chats).
 
 **Server fns** em `src/lib/operacional/`:
+
 - `tarefas.functions.ts`, `demandas.functions.ts`, `shared.functions.ts`, `export-pdf.ts` (calendário e listas).
 
 ## 2. Diferença Tarefa × Demanda
@@ -22,11 +24,13 @@
 ## 3. Rotas
 
 ### Tarefas
+
 - `/operacional/tarefas` — lista com filtros (status, responsável, prioridade, período, cliente).
 - `/operacional/tarefas/kanban` — colunas por status; drag persiste + valida.
 - `/operacional/tarefas/calendario` — view mensal/semanal com drag; feriados nacionais destacados; **Dialog centralizado** ao clicar em dia + marca d'água Agilliza no export PDF.
 
 ### Demandas (redesenhada em 2.0)
+
 - `/operacional/demandas` — lista.
 - `/operacional/demandas/kanban` — refinado visualmente; cards mostram cliente, prazo, SLA countdown, responsável (avatar).
 - `/operacional/demandas/$id` — ficha da demanda com:
@@ -36,6 +40,7 @@
   - Participantes, anexos, leituras (quem viu).
 
 ### Central de Chats (**novo em 2.0**)
+
 - `/operacional/chats` — dashboard central estilo Teams/WhatsApp:
   - Coluna 1: lista de conversas (com clientes, DMs entre operadores, chats de demandas) com badge de não lidas + filtros por tipo.
   - Coluna 2: thread ativa.

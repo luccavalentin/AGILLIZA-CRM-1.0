@@ -32,7 +32,6 @@ export function TransferirDialog({
   onTransferida: () => void;
   trigger?: ReactNode;
 }) {
-
   const [aberto, setAberto] = useState(false);
   const [novo, setNovo] = useState("");
   const [motivo, setMotivo] = useState("");

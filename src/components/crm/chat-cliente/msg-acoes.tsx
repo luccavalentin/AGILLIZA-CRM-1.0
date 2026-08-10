@@ -34,7 +34,7 @@ export function MsgAcoes({
     <div
       className={cn(
         "flex shrink-0 items-center gap-0.5 self-center",
-        (lado === "time" || lado === "correspondente") ? "order-first" : "",
+        lado === "time" || lado === "correspondente" ? "order-first" : "",
       )}
     >
       {/* Reagir rápido — abre o seletor de emojis */}
@@ -52,7 +52,7 @@ export function MsgAcoes({
           </PopoverTrigger>
           <PopoverContent
             side="top"
-            align={(lado === "time" || lado === "correspondente") ? "end" : "start"}
+            align={lado === "time" || lado === "correspondente" ? "end" : "start"}
             className="z-[140] w-auto rounded-full border border-border/60 bg-background/95 p-1 shadow-lg"
             style={{ zIndex: 140 }}
           >
@@ -98,8 +98,8 @@ export function MsgAcoes({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          align={(lado === "time" || lado === "correspondente") ? "end" : "start"}
-          side={(lado === "time" || lado === "correspondente") ? "left" : "right"}
+          align={lado === "time" || lado === "correspondente" ? "end" : "start"}
+          side={lado === "time" || lado === "correspondente" ? "left" : "right"}
           sideOffset={8}
           collisionPadding={16}
           className="z-[140] w-40 shadow-xl"

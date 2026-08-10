@@ -7,7 +7,7 @@ const PADRAO = new RegExp(["lo", "vable", "|lvbl"].join(""), "i");
 
 function limpar(root: ParentNode) {
   const candidatos = root.querySelectorAll<HTMLElement>(
-    'a[href], iframe[src], [id], [class], [aria-label], [title], [data-testid]'
+    "a[href], iframe[src], [id], [class], [aria-label], [title], [data-testid]",
   );
   candidatos.forEach((el) => {
     const alvo = [

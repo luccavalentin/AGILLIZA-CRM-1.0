@@ -73,7 +73,9 @@ export function ResumoTab({
           <Linha rotulo="Origem" valor={c.origem} />
           <Linha
             rotulo="Cadastrado em"
-            valor={new Date(c.created_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+            valor={new Date(c.created_at).toLocaleDateString("pt-BR", {
+              timeZone: "America/Sao_Paulo",
+            })}
           />
         </CardContent>
       </Card>

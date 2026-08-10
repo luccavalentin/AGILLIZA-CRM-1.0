@@ -1,12 +1,20 @@
 export const MACRO_STAGES = [
-  { key: "simulacao", label: "Simulação", codes: ["cadastro_basico", "cadastro_completo", "simulacao"] },
+  {
+    key: "simulacao",
+    label: "Simulação",
+    codes: ["cadastro_basico", "cadastro_completo", "simulacao"],
+  },
   { key: "credito", label: "Crédito", codes: ["credito_enviado"] },
   {
     key: "documentacao",
     label: "Documentação",
     codes: ["credito_aprovado", "coleta_documentos", "aguardando_documentos"],
   },
-  { key: "vistoria", label: "Vistoria & Jurídico", codes: ["engenharia_vistoria", "analise_juridica"] },
+  {
+    key: "vistoria",
+    label: "Vistoria & Jurídico",
+    codes: ["engenharia_vistoria", "analise_juridica"],
+  },
   { key: "contratacao", label: "Contrato", codes: ["contrato_emitido"] },
 ] as const;
 

@@ -40,13 +40,48 @@ export function iconeCategoria(valor?: string | null): LucideIcon {
 
 /** Paleta de cores (tokens semânticos) para as categorias. */
 export const CORES_CATEGORIA: { valor: string; label: string; classe: string; dot: string }[] = [
-  { valor: "azul", label: "Azul", classe: "bg-primary/10 text-primary ring-primary/20", dot: "bg-primary" },
-  { valor: "verde", label: "Verde", classe: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20", dot: "bg-emerald-500" },
-  { valor: "ambar", label: "Âmbar", classe: "bg-amber-500/10 text-amber-600 ring-amber-500/20", dot: "bg-amber-500" },
-  { valor: "roxo", label: "Roxo", classe: "bg-violet-500/10 text-violet-600 ring-violet-500/20", dot: "bg-violet-500" },
-  { valor: "vermelho", label: "Vermelho", classe: "bg-destructive/10 text-destructive ring-destructive/20", dot: "bg-destructive" },
-  { valor: "ciano", label: "Ciano", classe: "bg-cyan-500/10 text-cyan-600 ring-cyan-500/20", dot: "bg-cyan-500" },
-  { valor: "cinza", label: "Neutro", classe: "bg-muted text-muted-foreground ring-border", dot: "bg-muted-foreground" },
+  {
+    valor: "azul",
+    label: "Azul",
+    classe: "bg-primary/10 text-primary ring-primary/20",
+    dot: "bg-primary",
+  },
+  {
+    valor: "verde",
+    label: "Verde",
+    classe: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20",
+    dot: "bg-emerald-500",
+  },
+  {
+    valor: "ambar",
+    label: "Âmbar",
+    classe: "bg-amber-500/10 text-amber-600 ring-amber-500/20",
+    dot: "bg-amber-500",
+  },
+  {
+    valor: "roxo",
+    label: "Roxo",
+    classe: "bg-violet-500/10 text-violet-600 ring-violet-500/20",
+    dot: "bg-violet-500",
+  },
+  {
+    valor: "vermelho",
+    label: "Vermelho",
+    classe: "bg-destructive/10 text-destructive ring-destructive/20",
+    dot: "bg-destructive",
+  },
+  {
+    valor: "ciano",
+    label: "Ciano",
+    classe: "bg-cyan-500/10 text-cyan-600 ring-cyan-500/20",
+    dot: "bg-cyan-500",
+  },
+  {
+    valor: "cinza",
+    label: "Neutro",
+    classe: "bg-muted text-muted-foreground ring-border",
+    dot: "bg-muted-foreground",
+  },
 ];
 
 export function classeCategoria(valor?: string | null): string {

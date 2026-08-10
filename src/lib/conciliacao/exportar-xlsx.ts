@@ -85,7 +85,10 @@ function montarCapa(ws: ExcelJS.Worksheet, aba: AbaXlsx, titulo: string) {
     a.font = { name: "Calibri", size: 11, bold: true, color: { argb: BRAND_DARK } };
     b.font = { name: "Calibri", size: 11, color: { argb: TEXTO } };
     a.alignment = { vertical: "middle", indent: 1 };
-    b.alignment = { vertical: "middle", horizontal: typeof l.valor === "number" ? "right" : "left" };
+    b.alignment = {
+      vertical: "middle",
+      horizontal: typeof l.valor === "number" ? "right" : "left",
+    };
     if (typeof l.valor === "number") b.numFmt = "#,##0";
     for (const c of [a, b]) {
       c.border = { bottom: { style: "hair", color: { argb: BORDA } } };
@@ -182,7 +185,6 @@ function montarTabela(ws: ExcelJS.Worksheet, aba: AbaXlsx, titulo: string) {
         }, 0);
         cell.value = soma;
         cell.numFmt = FORMATO[c.tipo ?? "int"] ?? "#,##0";
-
       } else {
         cell.value = null;
       }

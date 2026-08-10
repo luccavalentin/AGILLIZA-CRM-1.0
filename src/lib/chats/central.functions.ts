@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { carregarReacoes } from "@/lib/chat-core/reacoes.functions";
 
-
 // =============================================================================
 // Central de Conversas — server functions
 // Reúne DMs internas + chats de clientes + chats de demandas.
@@ -28,9 +27,7 @@ export interface ThreadCentral {
 /** Busca colegas do mesmo correspondente para iniciar uma nova DM. */
 export const buscarColegasDm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { termo?: string }) =>
-    z.object({ termo: z.string().optional() }).parse(d),
-  )
+  .inputValidator((d: { termo?: string }) => z.object({ termo: z.string().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: me } = await supabase
@@ -65,9 +62,7 @@ export const buscarColegasDm = createServerFn({ method: "POST" })
 /** Cria (ou reutiliza) DM 1:1 com outro usuário. Retorna o id da conversa. */
 export const iniciarDm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { other_id: string }) =>
-    z.object({ other_id: z.string().uuid() }).parse(d),
-  )
+  .inputValidator((d: { other_id: string }) => z.object({ other_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (data.other_id === userId) {
@@ -324,13 +319,14 @@ export const listarThreadsCentral = createServerFn({ method: "GET" })
       for (const d of (demandas ?? []) as any[]) {
         const m = ultimoPor.get(d.id);
         if (!m) continue;
-        const ultimoAutor = m.autor_id && m.autor_id !== userId ? perfisPorId.get(m.autor_id) : null;
+        const ultimoAutor =
+          m.autor_id && m.autor_id !== userId ? perfisPorId.get(m.autor_id) : null;
         const contraparteId =
           d.criador_id === userId
             ? d.responsavel_id
             : d.responsavel_id === userId
               ? d.criador_id
-              : d.responsavel_id ?? d.criador_id;
+              : (d.responsavel_id ?? d.criador_id);
         const contraparte = contraparteId ? perfisPorId.get(contraparteId) : null;
         const interlocutor = ultimoAutor ?? contraparte ?? null;
         dems.push({
@@ -404,7 +400,11 @@ export const listarMensagensDm = createServerFn({ method: "POST" })
     return lista.map((m) => {
       const alvo = m.responde_a ? porId.get(m.responde_a as string) : null;
       const bruto = (m.anexo_url as string | null) ?? null;
-      const url = bruto ? (/^https?:\/\//i.test(bruto) ? bruto : (assinado.get(bruto) ?? null)) : null;
+      const url = bruto
+        ? /^https?:\/\//i.test(bruto)
+          ? bruto
+          : (assinado.get(bruto) ?? null)
+        : null;
       return {
         id: m.id as string,
         autor_id: m.autor_id as string,
@@ -420,9 +420,7 @@ export const listarMensagensDm = createServerFn({ method: "POST" })
         citacao: alvo
           ? {
               autor: (alvo.profiles?.nome as string | null) ?? "Usuário",
-              texto: alvo.excluida_em
-                ? "Mensagem excluída"
-                : (alvo.texto?.trim() || "Anexo"),
+              texto: alvo.excluida_em ? "Mensagem excluída" : alvo.texto?.trim() || "Anexo",
             }
           : null,
         reacoes: reacoes.get(m.id as string) ?? [],
@@ -482,7 +480,6 @@ export const enviarMensagemDm = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 /** Edita o texto da própria mensagem em uma DM. */
 export const editarMensagemDm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -515,7 +512,6 @@ export const excluirMensagemDm = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
 
 /** Marca a DM como lida (atualiza ultima_leitura_em do próprio participante). */
 export const marcarDmLida = createServerFn({ method: "POST" })

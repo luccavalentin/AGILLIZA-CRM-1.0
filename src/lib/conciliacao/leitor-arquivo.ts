@@ -5,12 +5,7 @@
  * cruzamento no servidor — a persistência grava sempre a versão mascarada.
  */
 import * as XLSX from "xlsx";
-import {
-  montarLinha,
-  parseTabulado,
-  type BancoMapping,
-  type LinhaBanco,
-} from "./bancos";
+import { montarLinha, parseTabulado, type BancoMapping, type LinhaBanco } from "./bancos";
 
 /** Detecta se o conteúdo é texto tabulado mesmo com extensão .xls. */
 function pareceTexto(buf: ArrayBuffer): boolean {
@@ -22,10 +17,7 @@ function pareceTexto(buf: ArrayBuffer): boolean {
 }
 
 /** Lê o arquivo e devolve as linhas canônicas conforme o mapeamento do banco. */
-export async function lerArquivoBanco(
-  file: File,
-  mapping: BancoMapping,
-): Promise<LinhaBanco[]> {
+export async function lerArquivoBanco(file: File, mapping: BancoMapping): Promise<LinhaBanco[]> {
   const buf = await file.arrayBuffer();
 
   if (mapping.formato === "tab" || pareceTexto(buf)) {

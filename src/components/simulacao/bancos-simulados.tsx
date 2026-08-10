@@ -28,14 +28,14 @@ export function BancosSimulados({
   return (
     <div className={cn("flex flex-col gap-0.5", className)}>
       {grupos.map((grupo) => (
-        <div
-          key={grupo.sistema ?? "sem-sistema"}
-          className="flex flex-wrap items-center gap-0.5"
-        >
+        <div key={grupo.sistema ?? "sem-sistema"} className="flex flex-wrap items-center gap-0.5">
           {grupo.sistema && <SistemaTarget sistema={grupo.sistema} />}
           <div className="flex flex-wrap items-center gap-1">
             {grupo.bancos.map((b, i) => (
-              <BancoChip key={`${grupo.sistema ?? "banco"}-${b.nome_banco}-${i}`} nome={b.nome_banco} />
+              <BancoChip
+                key={`${grupo.sistema ?? "banco"}-${b.nome_banco}-${i}`}
+                nome={b.nome_banco}
+              />
             ))}
           </div>
         </div>

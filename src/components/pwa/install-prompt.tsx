@@ -133,15 +133,21 @@ export function InstallPrompt() {
             <p className="text-xs font-medium text-foreground">Como instalar no iPhone/iPad:</p>
             <ol className="mt-2 space-y-1.5 text-xs text-muted-foreground">
               <li className="flex items-center gap-2">
-                <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-background text-[10px] font-bold text-foreground">1</span>
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-background text-[10px] font-bold text-foreground">
+                  1
+                </span>
                 Toque em <Share className="mx-0.5 inline h-3.5 w-3.5" /> Compartilhar
               </li>
               <li className="flex items-center gap-2">
-                <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-background text-[10px] font-bold text-foreground">2</span>
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-background text-[10px] font-bold text-foreground">
+                  2
+                </span>
                 Escolha <Plus className="mx-0.5 inline h-3.5 w-3.5" /> "Adicionar à Tela de Início"
               </li>
               <li className="flex items-center gap-2">
-                <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-background text-[10px] font-bold text-foreground">3</span>
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-background text-[10px] font-bold text-foreground">
+                  3
+                </span>
                 Confirme em "Adicionar"
               </li>
             </ol>

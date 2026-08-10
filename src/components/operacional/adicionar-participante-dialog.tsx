@@ -134,9 +134,7 @@ export function AdicionarParticipanteDialog({
               })
             )}
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            {selecionados.size} selecionado(s)
-          </p>
+          <p className="text-[11px] text-muted-foreground">{selecionados.size} selecionado(s)</p>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setAberto(false)}>

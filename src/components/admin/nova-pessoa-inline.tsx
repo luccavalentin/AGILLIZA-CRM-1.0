@@ -280,11 +280,7 @@ export function NovaPessoaInline({
             <div className="space-y-2">
               <Label>Acesso ao sistema</Label>
               <div className="flex items-center gap-3 rounded-md border px-3 py-2">
-                <Switch
-                  id="np-login"
-                  checked={comLogin}
-                  onCheckedChange={setComLogin}
-                />
+                <Switch id="np-login" checked={comLogin} onCheckedChange={setComLogin} />
                 <Label htmlFor="np-login" className="cursor-pointer text-sm font-normal">
                   {comLogin
                     ? "Com login (acessa o Portal do Parceiro)"
@@ -308,9 +304,7 @@ export function NovaPessoaInline({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="np-email">
-              {efetivoComLogin ? "E-mail" : "E-mail (opcional)"}
-            </Label>
+            <Label htmlFor="np-email">{efetivoComLogin ? "E-mail" : "E-mail (opcional)"}</Label>
             <Input
               id="np-email"
               type="email"
@@ -322,7 +316,8 @@ export function NovaPessoaInline({
             />
             {!efetivoComLogin && (
               <p className="text-xs text-muted-foreground">
-                Sem login, o e-mail não é necessário agora. Você pode habilitar o acesso depois na lista de pessoas.
+                Sem login, o e-mail não é necessário agora. Você pode habilitar o acesso depois na
+                lista de pessoas.
               </p>
             )}
           </div>
@@ -352,9 +347,7 @@ export function NovaPessoaInline({
               onChange={(e) => setAvatarUrl(e.target.value)}
             />
           </div>
-          <p className="text-[10px] text-muted-foreground">
-            Insira um link direto para a imagem.
-          </p>
+          <p className="text-[10px] text-muted-foreground">Insira um link direto para a imagem.</p>
         </div>
 
         {/* Campos de parceiro — exibidos quando o nível é do Portal do Parceiro */}
@@ -451,9 +444,7 @@ export function NovaPessoaInline({
                               <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Checkbox
                                   checked={todasMarcadas}
-                                  onCheckedChange={(c) =>
-                                    marcarTodoModulo(mod.modulo, c === true)
-                                  }
+                                  onCheckedChange={(c) => marcarTodoModulo(mod.modulo, c === true)}
                                 />
                                 Marcar tudo
                               </label>

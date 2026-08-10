@@ -17,10 +17,7 @@ export interface ChatMeta {
   arquivado_em: string | null;
 }
 
-async function correspondenteDoUsuario(
-  supabase: any,
-  userId: string,
-): Promise<string> {
+async function correspondenteDoUsuario(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase
     .from("profiles")
     .select("correspondente_id")
@@ -69,16 +66,11 @@ export const criarEtiquetaChat = createServerFn({ method: "POST" })
 
 export const excluirEtiquetaChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) =>
-    z.object({ id: z.string().uuid() }).parse(d),
-  )
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     // Remove primeiro os vínculos com clientes (evita bloqueio por FK/RLS no cascade).
-    await supabase
-      .from("crm_chat_cliente_etiquetas")
-      .delete()
-      .eq("etiqueta_id", data.id);
+    await supabase.from("crm_chat_cliente_etiquetas").delete().eq("etiqueta_id", data.id);
     const { data: removidas, error } = await supabase
       .from("crm_chat_etiquetas")
       .delete()
@@ -123,9 +115,7 @@ export const definirEtiquetasCliente = createServerFn({ method: "POST" })
         etiqueta_id,
         correspondente_id: corr,
       }));
-      const { error: insErr } = await supabase
-        .from("crm_chat_cliente_etiquetas")
-        .insert(linhas);
+      const { error: insErr } = await supabase.from("crm_chat_cliente_etiquetas").insert(linhas);
       if (insErr) throw new Error(insErr.message);
     }
 
@@ -175,9 +165,7 @@ export const getChatMeta = createServerFn({ method: "GET" })
 export const definirArquivamentoConversa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { cliente_id: string; arquivado: boolean }) =>
-    z
-      .object({ cliente_id: z.string().uuid(), arquivado: z.boolean() })
-      .parse(d),
+    z.object({ cliente_id: z.string().uuid(), arquivado: z.boolean() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;

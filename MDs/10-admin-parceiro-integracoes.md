@@ -3,28 +3,32 @@
 > Requer todas as anteriores.
 
 ## Dependências e Produtos
+
 **Depende de:** 00, 00b, **01–09**. Em particular: **01** (papéis, `has_role`, `correspondente_id`, `/admin/pessoas`), **03** (parceiros aparecem como pessoas/empresas), **04/05** (usa `logs_integracao` e webhooks HomeFin para monitor de conectividade), **06** (regras de comissão por parceria).
 **Produz (fecha o ciclo e é consumido em runtime por 04, 05, 06, 09):**
+
 - Tabelas: `banco_credenciais` (client_id/secret, ambiente homolog/prod — lidas pelas Etapas 04/05 no runtime, sobrepondo `.env`), `parceiros` (imobiliária/corretor externo com % de comissão consumido por 06), `parametros_globais`, `auditoria` (append-only de eventos das Etapas 01–09), `backup_jobs`.
 - Telas: `/admin/bancos` (ativar/desativar, testar conectividade), `/admin/webhooks`, `/admin/parametros`, `/admin/auditoria`, `/admin/backup`, `/parceiro/*` (Portal do Parceiro reutilizando componentes da Etapa 08 com filtro por `parceiro_id`).
 - **Não** cria integração de e-mail/SMS/WhatsApp — proibido.
 
-
 ## Assets desta etapa (pasta `Logos e a API/`)
+
 - **Tela de teste de conectividade do provedor de integração bancária** deve validar contra os endpoints definidos em `Logos e a API/APIS/4 - swagger-output 29012026.json` (health check + `/oportunidades` GET com filtro vazio). Documentação de apoio: `Logos e a API/APIS/2 - Documentacao API Homefin.pdf`.
 - **Portal do Parceiro** usa a mesma marca Agilliza em `Logos e a API/Logo PNG/` (sidebar reduzida + tela de login). Se o parceiro tiver logo própria (imobiliária), ela é enviada via upload no cadastro do parceiro; a Agilliza permanece como marca do sistema no rodapé.
 - **Cabeçalhos de relatórios exportados (PDF)** de auditoria/backup usam a versão horizontal da logo Agilliza (`Logos e a API/Logo PNG/`).
 
-
 ## Objetivo
+
 Ferramentas de gestão do sistema: cadastros mestres, integrações externas realmente existentes (provedor de integração bancária e provedor de IA apenas), auditoria completa, backup, parâmetros globais, e o **Portal do Parceiro** (imobiliárias/corretores externos com menu reduzido). **Não existe integração com provedor de e-mail, SMS ou WhatsApp** — qualquer instrução que peça isso deve ser ignorada.
 
 ## 🔑 Configurações → Pessoas é a ÚNICA porta de entrada de TODO usuário (exceto o correspondente-raiz e o cliente final)
+
 Não existe autocadastro em `/parceiro` nem em `/auth` para ninguém além do correspondente-raiz (ver Etapa 01 → "Quem cria cada tipo de acesso"). Todo usuário — seja gestor, comercial, analista, imobiliária ou corretor — **nasce aqui**, cadastrado pelo correspondente (ou por gestor autorizado).
 
 Cliente final **não** é cadastrado aqui — cliente é sempre pelo CRM (Etapa 03). Se o admin tentar criar uma pessoa com papel `cliente`, o formulário bloqueia e redireciona para `/crm/clientes/novo`.
 
 ### Regra de roteamento pós-login (única fonte da verdade)
+
 O que decide **por onde o usuário loga** NÃO é o papel dele — é o toggle **"Acesso ao Portal do Parceiro"** marcado neste formulário:
 
 - **Toggle LIGADO** → usuário só pode logar em `/parceiro` (Portal do Parceiro, menu reduzido, escopo restrito aos clientes que ele vinculou). Se tentar `/auth`, o sistema recusa e redireciona para `/parceiro`. Marca `profiles.acesso_tipo = 'portal_parceiro'`.
@@ -35,9 +39,11 @@ Não existe "aba Equipe" separada de "aba Parceiros". É **uma única lista de p
 ## Sub-módulos
 
 ### 1. `/admin/pessoas` — Pessoas & Níveis de Acesso do meu ecossistema
+
 Lista única de `profiles` do mesmo `correspondente_id`. Colunas: nome, e-mail, telefone, **Acesso** (badge `Portal do Parceiro` / `Sistema — <nível>` / `Sem acesso`), **Nível interno** (só quando acesso = Sistema), **% comissão** (só quando acesso = Portal do Parceiro), ativo, última atividade, ações. Filtros no topo: tipo de acesso (Sistema / Portal do Parceiro / Sem acesso), nível interno, situação.
 
 Formulário de "Nova pessoa" (e edição):
+
 1. **Dados básicos**: nome, e-mail, telefone, documento (CPF/CNPJ). Herda `correspondente_id` do criador.
 2. **Card "Acesso do usuário"** (obrigatório):
    - Toggle **"Habilitar login"** (default `false` — permite pré-cadastrar sem liberar login).
@@ -56,6 +62,7 @@ Reflexo em outras etapas: Etapa 01 (login em `/auth` e `/parceiro`) obedece estr
 ### 2. `/admin/regras-modulos` — matriz de permissões (ver Etapa 01)
 
 ### 3. `/admin/bancos`, `/admin/apis-bancos`
+
 - CRUD de `bancos_parceiros` (nome, código Febraban, logo, produtos aceitos, contatos, `ativo`, `flag_padrao`, `ordem`).
 - **Seed obrigatório** (ver `00-convencoes-globais.md → Bancos parceiros`): a migration inicial insere 5 registros — **Bradesco, Santander, Itaú** com `ativo=true` e `flag_padrao=true`; **Inter, Caixa** com `ativo=false` e `flag_padrao=false` (pré-cadastrados aguardando homologação).
 - Tela lista os 5 sempre. Bancos com `ativo=false` aparecem em `opacity-60` com badge `Aguardando homologação` (`variant="secondary"`) e toggle **"Ativar banco"**. Ativar exige, no mesmo modal: `codigo_agencia_padrao`, `codigo_parceiro`, credenciais do banco (armazenadas como secrets nomeados) e checkbox "Teste de conectividade OK" (rodar `/admin/integracoes/testar-banco/{codigo}` antes de habilitar o toggle).
@@ -63,48 +70,60 @@ Reflexo em outras etapas: Etapa 01 (login em `/auth` e `/parceiro`) obedece estr
 - Todos os seletores de banco do sistema consomem a view `vw_bancos_ativos` — **nunca hardcode** a lista de bancos em código.
 
 ### 4. `/admin/apis-ia`
+
 - Config Gemini (`GEMINI_API_KEY`), prompts, temperatura.
 - Usado por Scan IA (OCR de documentos → extração de campos).
 
 ### 5. `/admin/integracoes`
+
 - **Provedor de integração bancária** (única integração externa de negócio, identificador interno HomeFin): base URL, secrets (nomes: `HOMEFIN_BASE_URL`, `HOMEFIN_SECRET_ID`, `HOMEFIN_SECRET_KEY`), status de conexão (ping em `/auth/token`), refresh manual de domínios (bancos/operações).
 - **Webhook do provedor de integração**: URL pública `/api/public/homefin/callback`, secret HMAC validado no handler.
 - Não listar Twilio, Brevo, Resend, SendGrid, WhatsApp Business ou qualquer outro provedor — não fazem parte do projeto.
 
 ### 6. `/admin/comissoes`
+
 - CRUD de `comissao_regras` (banco × produto × faixa × %).
 - Simulador: “dado proposta X, quanto pagará?”.
 
 ### 7. `/admin/sla`
+
 - CRUD de `sla_configuracoes` e `demanda_sla_config`.
 - Feriados nacionais/regionais.
 
 ### 8. `/admin/notificacoes`
+
 - CRUD de `notificacao_regras` (evento → público-alvo → template). Como só existe o canal in-app, a coluna do canal fica travada em `app`; colunas legadas `canal_email`/`canal_whatsapp` são mantidas por compatibilidade de schema porém ficam sempre `false` e ocultas na UI.
 - Preview do template renderizado a partir de um **evento real recente** escolhido pelo admin (dropdown com últimas 20 ocorrências do evento), nunca com dados inventados. Se não houver evento, botão de preview fica desabilitado com aviso "aguardando primeiro evento real".
 
 ### 9. `/admin/auditoria`
+
 - Consulta `admin_audit_logs`, `financial_audit_logs`, `task_audit_logs`, `report_audit_logs`, `cliente_auditoria`, `envolvidos_audit_logs`, `scan_ia_auditoria`.
 - Filtros por usuário, entidade, período, ação.
 - Export CSV.
 
 ### 10. `/admin/backup`
+
 - Trigger export completo (SQL dump + storage manifest) para bucket seguro.
 - Última execução, tamanho, status.
 - Restauração é manual (documentada); UI só dispara backup.
 
 ### 11. `/admin/configuracoes`
+
 - `parametros_globais`: nome empresa, CNPJ, logo, cor primária, endereço, telefone SAC, política LGPD, política privacidade, e-mail DPO.
 
 ### 12. `/admin/lista-compras`
+
 - `purchase_requests`: solicitações de compra interna com aprovação (`aprovador_id`), integra com Contas a Pagar ao aprovar.
 
 ### 13. Scan IA (`/crm/scan-ia/*`)
+
 - Upload de doc → Gemini extrai campos → grava em `scan_ia_leituras` + `scan_ia_campos_extraidos`.
 - Botão inline nas telas de cliente/proposta para escanear e pré-preencher.
 
 ## Portal do Parceiro (`/parceiro/*`)
+
 Shell próprio (`nav-config` reduzido):
+
 - **Meus clientes** (só vinculados via `cliente_parceiros`).
 - **Simulações** (criar/consultar as próprias).
 - **Propostas** (acompanhar as próprias).
@@ -112,14 +131,17 @@ Shell próprio (`nav-config` reduzido):
 - **Documentos** (upload).
 
 Regras:
+
 - `beforeLoad` do `/parceiro/*` valida `role IN (imobiliaria, corretor)`. Se não, redireciona `/`.
 - Zero acesso a admin, financeiro completo, dados de outros clientes.
 - Menu filtrado pela matriz de permissões (mesmo mecanismo, com `nivel_acesso` específico).
 
 ## Estrutura de dados
+
 - `bancos_parceiros`, `admin_api_integrations`, `parametros_globais`, `admin_audit_logs`, `purchase_requests`, `scan_ia_*`.
 
 ## Regras críticas
+
 1. Secrets NUNCA gravados no DB; apenas o **nome** da variável de ambiente.
 2. Toda ação admin loga em `admin_audit_logs`.
 3. Backup em bucket separado com retenção 90 dias.
@@ -127,6 +149,7 @@ Regras:
 5. Rate-limit em endpoints públicos (`/api/public/*`).
 
 ## Definition of Done
+
 - Admin edita matriz → usuário afetado vê menu atualizado no próximo request.
 - Parceiro logado só vê os 5 itens do menu; tentar URL admin → 403.
 - Webhook do provedor de integração com HMAC inválido → 401.

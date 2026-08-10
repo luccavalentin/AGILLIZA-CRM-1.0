@@ -57,8 +57,6 @@ import {
 import { montarInventarioDocumentos } from "@/lib/admin/backup-documentos.functions";
 import { baixarDocumentosZip, type ProgressoBackup } from "@/lib/admin/backup-documentos-zip";
 
-
-
 export const Route = createFileRoute("/_authenticated/admin/backup")({
   head: () => ({ meta: [{ title: "Backup — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("admin.backup"),
@@ -86,7 +84,10 @@ function formatBytes(n: number | null): string {
 function Pagina() {
   const qc = useQueryClient();
   const backups = useQuery({ queryKey: ["admin-backups"], queryFn: () => listarBackups() });
-  const config = useQuery({ queryKey: ["admin-backup-config"], queryFn: () => obterConfigBackup() });
+  const config = useQuery({
+    queryKey: ["admin-backup-config"],
+    queryFn: () => obterConfigBackup(),
+  });
   const [baixando, setBaixando] = useState(false);
   const [baixandoSql, setBaixandoSql] = useState(false);
   const [baixandoDocs, setBaixandoDocs] = useState(false);
@@ -112,7 +113,6 @@ function Pagina() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar configuração."),
   });
 
-
   const excluir = useMutation({
     mutationFn: (id: string) => excluirBackup({ data: { id } }),
     onSuccess: () => {
@@ -134,7 +134,6 @@ function Pagina() {
       exportarBackupXLSX(humanizarBackup(dados));
       toast.success("Backup completo exportado em Excel.");
       qc.invalidateQueries({ queryKey: ["admin-backups"] });
-
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao exportar backup.");
     } finally {
@@ -171,9 +170,7 @@ function Pagina() {
       const { falhas } = await baixarDocumentosZip(itens, setProgresso);
       const totalFalhas = falhas + falhasLink;
       if (totalFalhas > 0) {
-        toast.warning(
-          `Backup de documentos gerado com ${totalFalhas} arquivo(s) não incluído(s).`,
-        );
+        toast.warning(`Backup de documentos gerado com ${totalFalhas} arquivo(s) não incluído(s).`);
       } else {
         toast.success("Backup de documentos gerado (ZIP).");
       }
@@ -193,33 +190,32 @@ function Pagina() {
         descricao="Baixe todo o sistema em uma planilha Excel simples e legível (sem códigos técnicos) ou em arquivo SQL para restauração do banco de dados. Também é possível baixar todos os documentos em ZIP."
         acoes={
           <>
-          <Button disabled={baixando} onClick={baixarExcel}>
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            {baixando ? "Gerando Excel…" : "Baixar em Excel (planilha)"}
-          </Button>
-          <Button variant="secondary" disabled={baixandoSql} onClick={baixarSQL}>
-            <Database className="mr-2 h-4 w-4" />
-            {baixandoSql ? "Gerando SQL…" : "Baixar em SQL (banco de dados)"}
-          </Button>
-          <Button variant="secondary" disabled={baixandoDocs} onClick={baixarDocumentos}>
-            <FolderArchive className="mr-2 h-4 w-4" />
-            {baixandoDocs ? "Gerando ZIP…" : "Baixar documentos (ZIP)"}
-          </Button>
-          {podeConfigurar ? (
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Configurar retenção de backup"
-              title="Configurar retenção"
-              onClick={() => setConfigAberta(true)}
-            >
-              <Settings className="h-4 w-4" />
+            <Button disabled={baixando} onClick={baixarExcel}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              {baixando ? "Gerando Excel…" : "Baixar em Excel (planilha)"}
             </Button>
-          ) : null}
+            <Button variant="secondary" disabled={baixandoSql} onClick={baixarSQL}>
+              <Database className="mr-2 h-4 w-4" />
+              {baixandoSql ? "Gerando SQL…" : "Baixar em SQL (banco de dados)"}
+            </Button>
+            <Button variant="secondary" disabled={baixandoDocs} onClick={baixarDocumentos}>
+              <FolderArchive className="mr-2 h-4 w-4" />
+              {baixandoDocs ? "Gerando ZIP…" : "Baixar documentos (ZIP)"}
+            </Button>
+            {podeConfigurar ? (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Configurar retenção de backup"
+                title="Configurar retenção"
+                onClick={() => setConfigAberta(true)}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            ) : null}
           </>
         }
       />
-
 
       {baixandoDocs && progresso ? (
         <div className="rounded-lg border border-border bg-card p-4">
@@ -239,8 +235,6 @@ function Pagina() {
         </div>
       ) : null}
 
-
-
       <div className="rounded-lg border border-border bg-card">
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -259,7 +253,6 @@ function Pagina() {
           </Button>
         </div>
 
-
         {backups.isLoading ? (
           <div className="space-y-2 p-4">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -273,73 +266,71 @@ function Pagina() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-          <Table className="min-w-[760px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>Tabelas</TableHead>
-                <TableHead>Tamanho</TableHead>
-                <TableHead>Concluído em</TableHead>
-                <TableHead className="w-12"></TableHead>
-              </TableRow>
-
-            </TableHeader>
-            <TableBody>
-              {backups.data!.map((b) => {
-                const totalRegistros = b.manifesto
-                  ? Object.values(b.manifesto).reduce((a, n) => a + (n ?? 0), 0)
-                  : 0;
-                return (
-                  <TableRow key={b.id}>
-                    <TableCell>
-                      <Badge variant={TONE[b.status] ?? "secondary"}>{b.status}</Badge>
-                      {b.status === "erro" && b.erro ? (
-                        <p className="mt-1 text-xs text-destructive">{b.erro}</p>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {b.manifesto
-                        ? `${Object.keys(b.manifesto).length} tabelas · ${totalRegistros} registros`
-                        : "—"}
-                    </TableCell>
-                    <TableCell>{formatBytes(b.tamanho_bytes)}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {b.concluido_em ? new Date(b.concluido_em).toLocaleString("pt-BR") : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir backup?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Este registro de backup será removido do histórico. Esta ação não
-                              pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => excluir.mutate(b.id)}>
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-
-                );
-              })}
-            </TableBody>
-          </Table>
+            <Table className="min-w-[760px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Tabelas</TableHead>
+                  <TableHead>Tamanho</TableHead>
+                  <TableHead>Concluído em</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {backups.data!.map((b) => {
+                  const totalRegistros = b.manifesto
+                    ? Object.values(b.manifesto).reduce((a, n) => a + (n ?? 0), 0)
+                    : 0;
+                  return (
+                    <TableRow key={b.id}>
+                      <TableCell>
+                        <Badge variant={TONE[b.status] ?? "secondary"}>{b.status}</Badge>
+                        {b.status === "erro" && b.erro ? (
+                          <p className="mt-1 text-xs text-destructive">{b.erro}</p>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {b.manifesto
+                          ? `${Object.keys(b.manifesto).length} tabelas · ${totalRegistros} registros`
+                          : "—"}
+                      </TableCell>
+                      <TableCell>{formatBytes(b.tamanho_bytes)}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {b.concluido_em ? new Date(b.concluido_em).toLocaleString("pt-BR") : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir backup?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Este registro de backup será removido do histórico. Esta ação não
+                                pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => excluir.mutate(b.id)}>
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
@@ -381,6 +372,5 @@ function Pagina() {
         </DialogContent>
       </Dialog>
     </div>
-
   );
 }

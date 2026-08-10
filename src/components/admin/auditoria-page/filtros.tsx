@@ -1,11 +1,7 @@
 import { Check, ChevronDown, ChevronsUpDown, Download, Filter, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Command,
   CommandEmpty,
@@ -100,10 +96,7 @@ function ComboFiltro({
                   }}
                 >
                   <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      valor === o.valor ? "opacity-100" : "opacity-0",
-                    )}
+                    className={cn("mr-2 h-4 w-4", valor === o.valor ? "opacity-100" : "opacity-0")}
                   />
                   {o.rotulo}
                 </CommandItem>
@@ -115,7 +108,6 @@ function ComboFiltro({
     </Popover>
   );
 }
-
 
 export function BarraFiltros({
   rascunho,
@@ -168,10 +160,7 @@ export function BarraFiltros({
                   </Badge>
                 )}
                 <ChevronDown
-                  className={cn(
-                    "ml-1 size-4 transition-transform",
-                    filtrosAbertos && "rotate-180",
-                  )}
+                  className={cn("ml-1 size-4 transition-transform", filtrosAbertos && "rotate-180")}
                 />
               </Button>
             </CollapsibleTrigger>

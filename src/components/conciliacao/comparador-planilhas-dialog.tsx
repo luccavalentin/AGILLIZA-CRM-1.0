@@ -52,11 +52,7 @@ import {
   type ResultadoComparativo,
 } from "@/lib/conciliacao/planilhas";
 import { abaResumo } from "@/lib/conciliacao/xlsx-tipos";
-import {
-  baixarXlsx,
-  gerarPdfComparativo,
-  type ModoSaida,
-} from "@/lib/conciliacao/exportar-lazy";
+import { baixarXlsx, gerarPdfComparativo, type ModoSaida } from "@/lib/conciliacao/exportar-lazy";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const fmtValor = (v: number | null | undefined) => (v == null ? "—" : brl.format(Number(v)));
@@ -183,10 +179,7 @@ export function ComparadorPlanilhasDialog({
       const set = lado === "controle" ? setControle : setBanco;
       set((prev) => ({
         arquivos: [...prev.arquivos.filter((a) => !novos.some((n) => n.nome === a.nome)), ...novos],
-        linhas: [
-          ...prev.linhas.filter((l) => !novos.some((n) => n.nome === l.arquivo)),
-          ...linhas,
-        ],
+        linhas: [...prev.linhas.filter((l) => !novos.some((n) => n.nome === l.arquivo)), ...linhas],
       }));
       setItens(null);
     } catch (e) {
@@ -341,13 +334,13 @@ export function ComparadorPlanilhasDialog({
     );
   }
 
-
   function exportarPdf(modo: ModoSaida) {
     if (!itens?.length) return;
     const alvo = filtrados.length ? filtrados : itens;
     void gerarPdfComparativo({
       titulo: "Comparativo de planilhas e dados",
-      descricao: "Cruzamento entre as planilhas do meu controle, os relatórios dos bancos e o sistema",
+      descricao:
+        "Cruzamento entre as planilhas do meu controle, os relatórios dos bancos e o sistema",
       meta: [
         `${controle.arquivos.length} planilha(s) do meu controle`,
         `${banco.arquivos.length} relatório(s) de banco`,
@@ -409,9 +402,9 @@ export function ComparadorPlanilhasDialog({
             <div className="min-w-[260px] flex-1">
               <DialogTitle>Comparativo de planilhas e dados</DialogTitle>
               <DialogDescription>
-                Envie de um lado as suas planilhas de controle e do outro os relatórios dos
-                bancos. O sistema cruza as planilhas entre si e, se quiser, também contra as
-                propostas cadastradas.
+                Envie de um lado as suas planilhas de controle e do outro os relatórios dos bancos.
+                O sistema cruza as planilhas entre si e, se quiser, também contra as propostas
+                cadastradas.
               </DialogDescription>
             </div>
             <Button
@@ -421,7 +414,11 @@ export function ComparadorPlanilhasDialog({
               disabled={ocupado}
               className="shrink-0"
             >
-              {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : <Layers className="h-4 w-4" />}
+              {ocupado ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Layers className="h-4 w-4" />
+              )}
               Cruzar com o sistema
             </Button>
           </div>
@@ -463,8 +460,7 @@ export function ComparadorPlanilhasDialog({
             Cruzar planilhas
           </Button>
           <span className="text-xs text-muted-foreground">
-            {controle.linhas.length} linhas no controle · {banco.linhas.length} linhas dos
-            bancos
+            {controle.linhas.length} linhas no controle · {banco.linhas.length} linhas dos bancos
           </span>
         </div>
 
@@ -512,9 +508,7 @@ export function ComparadorPlanilhasDialog({
               <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
                 <TabsList>
                   <TabsTrigger value="todos">Todos ({contagens.todos})</TabsTrigger>
-                  <TabsTrigger value="divergente">
-                    Divergentes ({contagens.divergente})
-                  </TabsTrigger>
+                  <TabsTrigger value="divergente">Divergentes ({contagens.divergente})</TabsTrigger>
                   <TabsTrigger value="so_controle">
                     Só meu controle ({contagens.so_controle})
                   </TabsTrigger>
@@ -574,14 +568,23 @@ export function ComparadorPlanilhasDialog({
                     </TableRow>
                   ) : (
                     filtrados.slice(0, 500).map((i, idx) => (
-                      <TableRow key={`${i.chave}-${idx}`} className={idx % 2 ? "bg-muted/25" : undefined}>
+                      <TableRow
+                        key={`${i.chave}-${idx}`}
+                        className={idx % 2 ? "bg-muted/25" : undefined}
+                      >
                         <TableCell>
-                          <Badge variant="outline" className={RESULTADO_COMPARATIVO_TONE[i.resultado]}>
+                          <Badge
+                            variant="outline"
+                            className={RESULTADO_COMPARATIVO_TONE[i.resultado]}
+                          >
                             {RESULTADO_COMPARATIVO_LABEL[i.resultado]}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={ETAPA_COMPARATIVO_TONE[etapaDoItem(i)]}>
+                          <Badge
+                            variant="outline"
+                            className={ETAPA_COMPARATIVO_TONE[etapaDoItem(i)]}
+                          >
                             {ETAPA_COMPARATIVO_LABEL[etapaDoItem(i)]}
                           </Badge>
                         </TableCell>
@@ -601,13 +604,17 @@ export function ComparadorPlanilhasDialog({
                             <div className="space-y-1">
                               {i.controle?.status && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] uppercase text-muted-foreground">Controle</span>
+                                  <span className="text-[10px] uppercase text-muted-foreground">
+                                    Controle
+                                  </span>
                                   <span>{i.controle.status}</span>
                                 </div>
                               )}
                               {i.banco?.status && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] uppercase text-muted-foreground">Banco</span>
+                                  <span className="text-[10px] uppercase text-muted-foreground">
+                                    Banco
+                                  </span>
                                   <span>{i.banco.status}</span>
                                 </div>
                               )}

@@ -168,7 +168,8 @@ export function TiposPessoaPanel({ podeGerenciar }: { podeGerenciar: boolean }) 
                   ) : null}
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                     <LogIn className="h-3 w-3" />
-                    Login padrão: {t.login_padrao ? "Sim" : "Não"} · {t.pessoas_vinculadas} pessoa(s)
+                    Login padrão: {t.login_padrao ? "Sim" : "Não"} · {t.pessoas_vinculadas}{" "}
+                    pessoa(s)
                   </p>
                 </div>
               </div>
@@ -296,8 +297,8 @@ export function TiposPessoaPanel({ podeGerenciar }: { podeGerenciar: boolean }) 
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir tipo de pessoa?</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove o tipo “{excluindo?.nome}”. Não é possível excluir se houver pessoas
-              vinculadas a ele.
+              Remove o tipo “{excluindo?.nome}”. Não é possível excluir se houver pessoas vinculadas
+              a ele.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

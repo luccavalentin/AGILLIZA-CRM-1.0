@@ -5,6 +5,7 @@
 ## 1. Escopo
 
 **Tabelas**:
+
 - `bancos_parceiros` (seed com 5 bancos; ver `00-v2 §4`).
 - `banco_credenciais` (10 col.) — só armazena **nome do secret** + ambiente (homolog/prod). Nunca o valor.
 - `admin_api_integrations` (13 col.).
@@ -37,6 +38,7 @@ Lista única de usuários do mesmo `correspondente_id`. Colunas: Nome · E-mail 
 Filtros: tipo de acesso, nível, situação.
 
 Formulário Nova/Editar Pessoa (ver §5 Etapa 01) — inclui:
+
 1. Dados básicos (nome, e-mail, telefone, doc, tipo_pessoa).
 2. Card "Acesso":
    - Toggle Habilitar login.
@@ -49,12 +51,14 @@ Formulário Nova/Editar Pessoa (ver §5 Etapa 01) — inclui:
 5. Log em `admin_audit_logs`.
 
 **Ações extras 2.0**:
+
 - Botão "Auditar acesso" abre modal com todas as ações do usuário nos últimos 30d (`admin_audit_logs` filtrado).
 - Coluna "Última atividade" com tooltip do IP/UA da última sessão.
 
 ## 4. Portal do Parceiro **unificado** (2.0)
 
 Parceiro (`profiles.acesso_tipo='portal_parceiro'`) **NÃO** tem shell dedicado. Ele:
+
 1. Loga em `/parceiro` (login público, Etapa 01).
 2. Aterrissa em `/parceiro-inicio` — dashboard reduzido dentro do shell interno padrão.
 3. Nav filtrada pela matriz + escopo `proprios` (inclui `cliente_parceiros`).

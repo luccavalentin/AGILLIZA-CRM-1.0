@@ -5,10 +5,7 @@ import {
   type NivelAcesso,
 } from "@/lib/admin/regras-modulos.functions";
 
-export type MatrizEstado = Record<
-  string,
-  { permitido: boolean; escopo: EscopoDados }
->;
+export type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 
 export const ESCOPOS: { value: EscopoDados; label: string }[] = [
   { value: "todos", label: "Todos" },
@@ -45,9 +42,7 @@ export function estadoInicial(nivel: NivelAcesso): MatrizEstado {
   const estado: MatrizEstado = {};
   for (const mod of CATALOGO_MODULOS) {
     for (const a of mod.acoes) {
-      const atual = nivel.permissoes.find(
-          (p) => p.modulo === mod.modulo && p.acao === a.acao,
-      );
+      const atual = nivel.permissoes.find((p) => p.modulo === mod.modulo && p.acao === a.acao);
       estado[chave(mod.modulo, a.acao)] = {
         permitido: atual?.permitido ?? false,
         escopo: atual?.escopo_dados ?? "proprios",

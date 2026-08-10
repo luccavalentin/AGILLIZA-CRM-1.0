@@ -103,7 +103,8 @@ export const DPS_PERGUNTAS: DpsPergunta[] = [
       { letra: "a", texto: "Já foi vacinado para o coronavírus SARS-COV2?" },
       {
         letra: "b",
-        texto: "Em caso positivo, houve internação ou complicações? Encaminhar laudo médico assistente.",
+        texto:
+          "Em caso positivo, houve internação ou complicações? Encaminhar laudo médico assistente.",
       },
     ],
   },
@@ -115,7 +116,8 @@ export const DPS_PERGUNTAS: DpsPergunta[] = [
   },
   {
     numero: 7,
-    texto: "É ou foi portador de alguma doença ou lesão produzida pelo trabalho (doença profissional)?",
+    texto:
+      "É ou foi portador de alguma doença ou lesão produzida pelo trabalho (doença profissional)?",
     esclareca: true,
     nota: "Caso positivado encaminhar Laudo do médico assistente.",
   },

@@ -65,4 +65,3 @@ export const ESTADO_INICIAL: Form = {
   download_automatico: true,
   email_verificado_em: null,
 };
-

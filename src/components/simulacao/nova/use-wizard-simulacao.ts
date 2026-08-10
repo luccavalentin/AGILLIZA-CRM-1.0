@@ -99,9 +99,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
         valor_entrada: entrada,
         valor_financiamento: Math.max(0, imovel - entrada),
         // Despesas acompanham o percentual sobre o novo valor do imóvel.
-        valor_despesas_financiadas: prev.fg_financiar_despesas
-          ? Math.round(imovel * 0.05)
-          : 0,
+        valor_despesas_financiadas: prev.fg_financiar_despesas ? Math.round(imovel * 0.05) : 0,
       };
     });
   }
@@ -111,9 +109,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
     setW((prev) => ({
       ...prev,
       fg_financiar_despesas: marcado,
-      valor_despesas_financiadas: marcado
-        ? Math.round((Number(prev.valor_imovel) || 0) * 0.05)
-        : 0,
+      valor_despesas_financiadas: marcado ? Math.round((Number(prev.valor_imovel) || 0) * 0.05) : 0,
     }));
   }
 

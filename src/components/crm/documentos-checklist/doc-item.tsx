@@ -43,10 +43,7 @@ export function DocItem({
 
   return (
     <div className="flex items-center gap-3 py-1.5">
-      <Checkbox
-        checked={checked}
-        onCheckedChange={(v) => setManual(itemKey, v === true)}
-      />
+      <Checkbox checked={checked} onCheckedChange={(v) => setManual(itemKey, v === true)} />
       {editing ? (
         <Input
           autoFocus
@@ -64,16 +61,12 @@ export function DocItem({
           className="h-8 flex-1"
         />
       ) : (
-        <span
-          className={`flex-1 text-sm ${checked ? "text-foreground" : "text-muted-foreground"}`}
-        >
+        <span className={`flex-1 text-sm ${checked ? "text-foreground" : "text-muted-foreground"}`}>
           {display}
         </span>
       )}
       {has && !editing && (
-        <span className="rounded bg-success/10 px-1.5 py-0.5 text-xs text-success">
-          enviado
-        </span>
+        <span className="rounded bg-success/10 px-1.5 py-0.5 text-xs text-success">enviado</span>
       )}
       {!editing && (
         <button

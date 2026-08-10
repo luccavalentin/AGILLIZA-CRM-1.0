@@ -135,9 +135,7 @@ export function calcularFeriasCLT(entrada: CalculoFeriasEntrada): CalculoFeriasR
     const dias_direito = completo ? diasDireitoPorFaltas(faltasPeriodo) : 0;
 
     const doPeriodo = gozos.filter(
-      (g) =>
-        g.status !== "cancelada" &&
-        g.periodo_aquisitivo_inicio.slice(0, 10) === toIso(inicio),
+      (g) => g.status !== "cancelada" && g.periodo_aquisitivo_inicio.slice(0, 10) === toIso(inicio),
     );
     const dias_gozados = doPeriodo.reduce((a, g) => a + (g.dias_gozados ?? 0), 0);
     const dias_abono = doPeriodo.reduce((a, g) => a + (g.abono_dias ?? 0), 0);
@@ -183,8 +181,7 @@ export function calcularFeriasCLT(entrada: CalculoFeriasEntrada): CalculoFeriasR
 
   const salario = entrada.salario ?? 0;
   const valorDia = salario / 30;
-  const baseProvisao =
-    valorDia * saldo_total + valorDia * ((avos_proporcionais / 12) * 30);
+  const baseProvisao = valorDia * saldo_total + valorDia * ((avos_proporcionais / 12) * 30);
   const provisao = Math.round(baseProvisao * (4 / 3) * 100) / 100;
 
   const pendentes = periodos

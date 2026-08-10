@@ -18,7 +18,15 @@ export const Route = createFileRoute("/_authenticated/crm/chat")({
 
 function Pagina() {
   const hook = useChatConversas();
-  const { conversas, filtradas, alvoAtual, etiquetas, etiquetasCliente, selecionado, abrirConversa } = hook;
+  const {
+    conversas,
+    filtradas,
+    alvoAtual,
+    etiquetas,
+    etiquetasCliente,
+    selecionado,
+    abrirConversa,
+  } = hook;
 
   const search = Route.useSearch();
   const autoAbertoRef = useRef<string | null>(null);
@@ -36,8 +44,7 @@ function Pagina() {
     // Auto-seleciona a primeira conversa apenas no desktop; no mobile o usuário
     // escolhe na lista (padrão master-detail) para a tela não pular direto ao chat.
     const ehDesktop =
-      typeof window !== "undefined" &&
-      window.matchMedia("(min-width: 1024px)").matches;
+      typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
     // Usa a lista JÁ filtrada (sem conversas ocultas/arquivadas). Selecionar
     // uma conversa oculta fazia o painel fechar e reabrir em laço.
     if (ehDesktop && !selecionado && filtradas.length > 0) {

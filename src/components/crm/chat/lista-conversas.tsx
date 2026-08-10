@@ -17,7 +17,6 @@ import { iniciais, rotuloDia, type FiltroChat } from "./helpers";
 import { ItemAcoesMenu } from "./item-acoes-menu";
 import type { UseChatConversas } from "./use-chat-conversas";
 
-
 type Props = {
   hook: UseChatConversas;
 };
@@ -119,9 +118,7 @@ export function ListaConversas({ hook }: Props) {
                 <span
                   className={cn(
                     "rounded-full px-1 text-[10px]",
-                    filtro === chip.id
-                      ? "bg-primary-foreground/20"
-                      : "bg-muted-foreground/15",
+                    filtro === chip.id ? "bg-primary-foreground/20" : "bg-muted-foreground/15",
                   )}
                 >
                   {chip.count}
@@ -186,11 +183,7 @@ export function ListaConversas({ hook }: Props) {
                   );
                 }
                 const tags = etiquetasCliente.get(c.cliente_id) ?? [];
-                const sla = slaEstourado(
-                  c.cliente_id,
-                  c.ultimo_remetente,
-                  c.ultima_em,
-                );
+                const sla = slaEstourado(c.cliente_id, c.ultimo_remetente, c.ultima_em);
                 const lembrete = lembreteDevido(c.cliente_id);
                 const ativo =
                   selecionado === c.cliente_id &&
@@ -214,14 +207,22 @@ export function ListaConversas({ hook }: Props) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <span className={cn(
-                            "truncate text-sm",
-                            ativo ? "font-semibold text-foreground" : "font-medium text-foreground",
-                          )}>
+                          <span
+                            className={cn(
+                              "truncate text-sm",
+                              ativo
+                                ? "font-semibold text-foreground"
+                                : "font-medium text-foreground",
+                            )}
+                          >
                             {c.nome}
                           </span>
                           <span className="shrink-0 text-[10px] text-muted-foreground">
-                            {new Date(c.ultima_em).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}
+                            {new Date(c.ultima_em).toLocaleTimeString("pt-BR", {
+                              timeZone: "America/Sao_Paulo",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         </div>
                         {verTodos && !c.minha && c.atendente_nome && (
@@ -235,9 +236,7 @@ export function ListaConversas({ hook }: Props) {
                             {c.ultima_mensagem}
                           </span>
                           {c.nao_lidas > 0 && (
-                            <Badge className="h-5 shrink-0 px-1.5 text-[10px]">
-                              {c.nao_lidas}
-                            </Badge>
+                            <Badge className="h-5 shrink-0 px-1.5 text-[10px]">{c.nao_lidas}</Badge>
                           )}
                         </div>
                         {(tags.length > 0 || sla || lembrete) && (
@@ -273,7 +272,6 @@ export function ListaConversas({ hook }: Props) {
               }
               return nodes;
             })()}
-
 
             {novosClientes.length > 0 && (
               <>

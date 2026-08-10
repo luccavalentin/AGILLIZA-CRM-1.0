@@ -4,7 +4,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { mensagemCamposPendentes } from "@/lib/simulacao/rotulos-campos";
 import { toast } from "sonner";
-import { avaliarRendaMinima, TAXA_MIP_MES, TAXA_DFI_MES, TAXA_ADMIN_MES, limitesLtv } from "@/lib/simulacao/renda";
+import {
+  avaliarRendaMinima,
+  TAXA_MIP_MES,
+  TAXA_DFI_MES,
+  TAXA_ADMIN_MES,
+  limitesLtv,
+} from "@/lib/simulacao/renda";
 import { taxaAnoDeBanco } from "@/lib/simulacao/simulacao-rapida";
 import { completaSchema } from "@/lib/simulacao/schemas";
 import { formatBRL, maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
@@ -45,10 +51,7 @@ import {
   faltaConjugeDoCRM,
   patchInverterPrincipal,
 } from "./use-simulacao-completa/cliente-crm";
-import {
-  executarEnvioAmbos,
-  executarEnvioSimples,
-} from "./use-simulacao-completa/envio";
+import { executarEnvioAmbos, executarEnvioSimples } from "./use-simulacao-completa/envio";
 
 export type { Form };
 
@@ -78,12 +81,14 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const [simulacaoResultadoId, setSimulacaoResultadoId] = useState<string | null>(null);
   // Segundo id de simulação para o modo "Ambos" (uma simulação SAC + uma PRICE).
   const [simulacaoResultadoIdPrice, setSimulacaoResultadoIdPrice] = useState<string | null>(null);
-  const [simulacaoResultadoIdSecundario, setSimulacaoResultadoIdSecundario] = useState<string | null>(null);
-  
-  const { 
-    enviar: enviarPropostaHook, 
-    statusPorBanco, 
-    iniciarStatus: iniciarStatusEnvio 
+  const [simulacaoResultadoIdSecundario, setSimulacaoResultadoIdSecundario] = useState<
+    string | null
+  >(null);
+
+  const {
+    enviar: enviarPropostaHook,
+    statusPorBanco,
+    iniciarStatus: iniciarStatusEnvio,
   } = useEnviarProposta();
 
   // Estado para o diálogo de "Enviar Proposta"
@@ -96,7 +101,6 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const fecharDialogEnvio = useCallback(() => {
     setEnvioEstado(null);
   }, []);
-
 
   const { data: bancos } = useQuery({
     queryKey: ["bancos-ativos"],
@@ -183,7 +187,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         (s.compoe_renda_conjuge !== undefined
           ? Boolean(s.compoe_renda_conjuge)
           : Boolean(s.compoe_renda)),
-      
+
       nome_conjuge: s.nome_conjuge ?? "",
       cpf_conjuge: s.cpf_conjuge ?? "",
       data_nascimento_conjuge: s.data_nascimento_conjuge ?? "",
@@ -210,7 +214,6 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bancos]);
 
-
   const idOperacao = useMemo(() => {
     const op = operacoes?.find((o) => o.produto_sistema === f.produto);
     return op?.id_operacao ?? null;
@@ -230,7 +233,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       if (k === "valor_imovel" && !entradaTocada)
         next.valor_entrada = Math.round((next.valor_imovel || 0) * pctEntradaDefault);
       if (k === "valor_imovel" || k === "valor_entrada")
-        next.valor_financiamento = Math.max(0, (next.valor_imovel || 0) - (next.valor_entrada || 0));
+        next.valor_financiamento = Math.max(
+          0,
+          (next.valor_imovel || 0) - (next.valor_entrada || 0),
+        );
 
       if (k === "estado_civil") {
         next.possui_conjuge = v === "CA" || v === "UE";
@@ -280,10 +286,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   }, [bancos, f.bancos_ids]);
 
   const rendaConsiderada = useMemo(
-    () => (Number(f.renda_total) || 0) + (f.compoe_renda_conjuge ? Number(f.renda_conjuge) || 0 : 0),
+    () =>
+      (Number(f.renda_total) || 0) + (f.compoe_renda_conjuge ? Number(f.renda_conjuge) || 0 : 0),
     [f.renda_total, f.compoe_renda_conjuge, f.renda_conjuge],
   );
-
 
   // Restrições operacionais por tipo de operação:
   //  - Terreno (TE/TC): apenas Bradesco opera, LTV 70%, prazo máx 240 meses.
@@ -307,21 +313,22 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     );
   }, [isHomeEquity, f.situacao_imovel]);
 
-  function aceitaBancoNaOperacao(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
+  function aceitaBancoNaOperacao(b: {
+    codigo_banco?: number | string | null;
+    nome_banco?: string | null;
+  }) {
     return aceitaBancoNaOperacaoPuro(b, { isHomeEquity, restricao: restricaoEspecial });
   }
 
-  function mensagemBancoIncompativel(b: { codigo_banco?: number | string | null; nome_banco?: string | null }) {
+  function mensagemBancoIncompativel(b: {
+    codigo_banco?: number | string | null;
+    nome_banco?: string | null;
+  }) {
     return mensagemBancoIncompativelPuro(b, { isHomeEquity, restricao: restricaoEspecial });
   }
 
-
   // Teto de financiamento (LTV) por produto e restrição especial.
-  const ltvMax = restricaoEspecial.ativo
-    ? restricaoEspecial.ltvMax
-    : isHomeEquity
-      ? 0.7
-      : 0.8;
+  const ltvMax = restricaoEspecial.ativo ? restricaoEspecial.ltvMax : isHomeEquity ? 0.7 : 0.8;
   // Mantém a ref sincronizada para handlers criados antes desta linha.
   ltvMaxRef.current = ltvMax;
 
@@ -361,7 +368,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
    * selecionados e o tipo de imóvel atual. Vazio = sem piso conhecido.
    */
   const prazoMinOperacional = useMemo(() => {
-    const aprendidos = (configModulos?.["simulacao_prazos_minimos"] ?? {}) as Record<string, unknown>;
+    const aprendidos = (configModulos?.["simulacao_prazos_minimos"] ?? {}) as Record<
+      string,
+      unknown
+    >;
     const tipo = f.tipo_imovel || "NA";
     const selecionados = (bancos ?? []).filter((b: any) => f.bancos_ids.includes(b.id));
     let maior = 0;
@@ -392,9 +402,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     return financiamentoMaximo;
   }, [f.valor_imovel, ltvMax]);
 
-  const despesasNoTeto = f.fg_financiar_despesas ? (Number(f.valor_despesas_financiadas) || 0) : 0;
+  const despesasNoTeto = f.fg_financiar_despesas ? Number(f.valor_despesas_financiadas) || 0 : 0;
   const financiamentoImovelMaximo = Math.max(0, financiamentoMaximo - despesasNoTeto);
-  
+
   /** Valor a financiar exibido: parcela do imóvel + despesas financiadas. */
   const financiamentoTotalExibido = (Number(f.valor_financiamento) || 0) + despesasNoTeto;
 
@@ -435,7 +445,11 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       set("prazo", 0);
       return;
     }
-    const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, f.data_nascimento, datasProponentesPrazo);
+    const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(
+      valor,
+      f.data_nascimento,
+      datasProponentesPrazo,
+    );
     let final = prazo;
     if (restricaoEspecial.ativo && final > restricaoEspecial.prazoMax) {
       final = restricaoEspecial.prazoMax;
@@ -531,7 +545,13 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       return { ...prev, bancos_ids: bancosFiltrados, prazo: prazoClamp };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restricaoEspecial.ativo, restricaoEspecial.apenasBradesco, isHomeEquity, bancos, prazoMaxOperacional]);
+  }, [
+    restricaoEspecial.ativo,
+    restricaoEspecial.apenasBradesco,
+    isHomeEquity,
+    bancos,
+    prazoMaxOperacional,
+  ]);
 
   // Ambos SAC+PRICE: preenche automaticamente "Renda familiar — PRICE" enquanto
   // o campo estiver vazio. Se a renda informada já cobre o mínimo do PRICE, usa
@@ -556,10 +576,14 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     if (!(alvo > 0)) return;
     setF((prev) => (Number(prev.renda_price) > 0 ? prev : { ...prev, renda_price: alvo }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.sistema_amortizacao, f.renda_total, f.valor_financiamento, f.valor_imovel, f.prazo, melhorTaxaAno]);
-
-
-
+  }, [
+    f.sistema_amortizacao,
+    f.renda_total,
+    f.valor_financiamento,
+    f.valor_imovel,
+    f.prazo,
+    melhorTaxaAno,
+  ]);
 
   // Mantém as despesas coladas no percentual e respeita o teto de LTV.
   useEffect(() => {
@@ -651,10 +675,6 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     setF((prev) => ({ ...prev, ...patch }));
   }
 
-
-
-
-
   /** Aplica a "jogada de números": infla o valor de compra e venda para liberar o financiamento. */
   function aplicarJogadaNumeros(dados: {
     valorImovel: number;
@@ -675,9 +695,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       valor_despesas_financiadas: dados.financiaCustas ? dados.valorCustas : 0,
     }));
     if (dados.financiaCustas) {
-      const pct = dados.valorImovel > 0
-        ? Math.round((dados.valorCustas / dados.valorImovel) * 1000) / 10
-        : 5;
+      const pct =
+        dados.valorImovel > 0 ? Math.round((dados.valorCustas / dados.valorImovel) * 1000) / 10 : 5;
       setPctDespesas(pct > 0 ? pct : 5);
     }
     const msgCustas = dados.financiaCustas
@@ -692,7 +711,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     if (v === "P") {
       const elegiveis = (bancos ?? []).filter(aceitaPrice).map((b) => b.id);
       if (elegiveis.length === 0) {
-        toast.error("O sistema PRICE está disponível apenas em Bradesco e Santander — nenhum deles está habilitado.");
+        toast.error(
+          "O sistema PRICE está disponível apenas em Bradesco e Santander — nenhum deles está habilitado.",
+        );
       } else {
         toast.info("Sistema PRICE: apenas Bradesco e Santander foram mantidos na seleção.");
       }
@@ -704,8 +725,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       // Se ainda não há bancos separados, propaga a seleção atual como base
       // para SAC (todos elegíveis) e PRICE (só Bradesco/Santander).
       setF((prev) => {
-        const sacBase =
-          prev.bancos_sac_ids.length > 0 ? prev.bancos_sac_ids : prev.bancos_ids;
+        const sacBase = prev.bancos_sac_ids.length > 0 ? prev.bancos_sac_ids : prev.bancos_ids;
         const priceBase =
           prev.bancos_price_ids.length > 0
             ? prev.bancos_price_ids
@@ -720,7 +740,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           bancos_price_ids: priceBase,
         };
       });
-      toast.info("Modo Ambos: escolha os bancos SAC e PRICE separadamente e preencha a renda para PRICE.");
+      toast.info(
+        "Modo Ambos: escolha os bancos SAC e PRICE separadamente e preencha a renda para PRICE.",
+      );
       return;
     }
     set("sistema_amortizacao", v);
@@ -769,7 +791,6 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     });
   }
 
-
   // Invariante: composição de renda só existe com estado civil CA/UE.
   useEffect(() => {
     const casado = f.estado_civil === "CA" || f.estado_civil === "UE";
@@ -793,7 +814,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   const crmTemConjuge = Boolean(
     crmVinculado &&
-      (crmVinculado.conjuge_nome || crmVinculado.conjuge_cpf || crmVinculado.conjuge_renda),
+    (crmVinculado.conjuge_nome || crmVinculado.conjuge_cpf || crmVinculado.conjuge_renda),
   );
 
   const podePuxarConjugeCrm =
@@ -810,13 +831,15 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   // Também atualiza os dados do titular e do cônjuge quando o cadastro no CRM muda.
   useEffect(() => {
     if (!crmVinculado || invertido) return;
-    
+
     // 1. Atualiza dados do titular se houver mudanças no CRM
     setF((prev) => {
       // Evita loops infinitos: só atualiza se os dados forem diferentes
       const nomeDiferente = crmVinculado.nome && prev.nome_cliente !== crmVinculado.nome;
-      const rendaDiferente = crmVinculado.renda_total_declarada && prev.renda_total !== crmVinculado.renda_total_declarada;
-      
+      const rendaDiferente =
+        crmVinculado.renda_total_declarada &&
+        prev.renda_total !== crmVinculado.renda_total_declarada;
+
       if (nomeDiferente || rendaDiferente) {
         return {
           ...prev,
@@ -824,7 +847,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           renda_total: Number(crmVinculado.renda_total_declarada) || prev.renda_total,
           cpf_cnpj: crmVinculado.documento ? maskCpfCnpj(crmVinculado.documento) : prev.cpf_cnpj,
           email: crmVinculado.email || prev.email,
-          celular: crmVinculado.telefone_celular ? maskCelular(crmVinculado.telefone_celular) : prev.celular,
+          celular: crmVinculado.telefone_celular
+            ? maskCelular(crmVinculado.telefone_celular)
+            : prev.celular,
           data_nascimento: crmVinculado.data_nascimento ?? prev.data_nascimento,
         };
       }
@@ -846,7 +871,6 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
     puxarConjugeDoCRM();
   }, [f.estado_civil, crmVinculado, crmTemConjuge, f.nome_conjuge, puxarConjugeDoCRM, invertido]);
-
 
   const podeInverter = useMemo(() => {
     return (
@@ -937,7 +961,6 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     toast.info("Titular removido. Pesquise outro cliente ou preencha manualmente.");
   }
 
-
   /** Marca/desmarca o financiamento das despesas (padrão 5% do imóvel). */
   function alternarFinanciarDespesas(marcado: boolean) {
     set("fg_financiar_despesas", marcado);
@@ -976,12 +999,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       bancos_ids: f.bancos_ids,
       renda_informada: rendaConsiderada,
     });
-    
+
     if (av && av.suficiente === false) {
-      setConfirmRenda({ 
-        rendaMinima: av.rendaMinima, 
+      setConfirmRenda({
+        rendaMinima: av.rendaMinima,
         rendaInformada: rendaConsiderada,
-        detalhe_fonte: av.detalhe_fonte
+        detalhe_fonte: av.detalhe_fonte,
       });
       return false;
     }
@@ -1017,9 +1040,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           taxa_ano: melhorTaxaAno,
           sistema: "P",
         });
-        const rendaPriceAtual = fEnvio.sistema_amortizacao === "B" 
-          ? (Number(fEnvio.renda_price) || 0) 
-          : (Number(fEnvio.renda_total) || 0);
+        const rendaPriceAtual =
+          fEnvio.sistema_amortizacao === "B"
+            ? Number(fEnvio.renda_price) || 0
+            : Number(fEnvio.renda_total) || 0;
 
         if (avalPrice && rendaPriceAtual < avalPrice.rendaMinima) {
           if (fEnvio.sistema_amortizacao === "B") {
@@ -1034,18 +1058,25 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
     if (houveAjuste) {
       setF(fEnvio);
-      toast.info("Ajustamos a renda para o mínimo necessário para garantir o sucesso da simulação.");
+      toast.info(
+        "Ajustamos a renda para o mínimo necessário para garantir o sucesso da simulação.",
+      );
     }
 
     if (fEnvio.sistema_amortizacao === "B") {
       await executarEnvioAmbos({
-        f: fEnvio, idOperacao, router, setErros, setEnviando, setConcluidos,
-        setSimulacaoResultadoId, setSimulacaoResultadoIdPrice,
+        f: fEnvio,
+        idOperacao,
+        router,
+        setErros,
+        setEnviando,
+        setConcluidos,
+        setSimulacaoResultadoId,
+        setSimulacaoResultadoIdPrice,
         setSimulacaoResultadoIdSecundario,
       });
       return;
     }
-
 
     // 1. Validar esquema completo (Zod)
     const parsed = completaSchema.safeParse({ ...fEnvio, id_operacao_homefin: idOperacao });
@@ -1059,15 +1090,16 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       }
       setErros(novos);
       toast.error(mensagemCamposPendentes(Object.keys(novos)));
-      
+
       // Scroll para o primeiro campo com erro
       if (firstErrorKey && typeof document !== "undefined") {
         const fieldName = firstErrorKey;
-        const el = document.getElementsByName(fieldName)[0] || 
-                   document.getElementById(fieldName) ||
-                   document.querySelector(`[aria-invalid][name="${fieldName}"]`) ||
-                   document.querySelector(`[name="${fieldName}"]`);
-        
+        const el =
+          document.getElementsByName(fieldName)[0] ||
+          document.getElementById(fieldName) ||
+          document.querySelector(`[aria-invalid][name="${fieldName}"]`) ||
+          document.querySelector(`[name="${fieldName}"]`);
+
         if (el) {
           el.scrollIntoView({ behavior: "smooth", block: "center" });
           if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
@@ -1087,7 +1119,6 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         `Os valores não batem: entrada (${formatBRL(entrada)}) + financiamento (${formatBRL(fin)}) = ${formatBRL(entrada + fin)}, mas o imóvel vale ${formatBRL(imovel)}. Ajuste antes de enviar.`,
       );
       return;
-
     }
     if (financiamentoExcedido) {
       toast.error(
@@ -1102,25 +1133,34 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     await executarEnvio(fEnvio);
   }
 
-
   async function enviarAmbos() {
     await executarEnvioAmbos({
-      f, idOperacao, router, setErros, setEnviando, setConcluidos,
-      setSimulacaoResultadoId, setSimulacaoResultadoIdPrice,
+      f,
+      idOperacao,
+      router,
+      setErros,
+      setEnviando,
+      setConcluidos,
+      setSimulacaoResultadoId,
+      setSimulacaoResultadoIdPrice,
       setSimulacaoResultadoIdSecundario,
     });
   }
 
   async function executarEnvio(dados: any) {
     await executarEnvioSimples({
-      f: dados, idOperacao, modoProposta, router, setErros, setEnviando, setConcluidos,
-      setSimulacaoResultadoId, setSimulacaoResultadoIdPrice,
+      f: dados,
+      idOperacao,
+      modoProposta,
+      router,
+      setErros,
+      setEnviando,
+      setConcluidos,
+      setSimulacaoResultadoId,
+      setSimulacaoResultadoIdPrice,
       setSimulacaoResultadoIdSecundario,
     });
   }
-
-
-
 
   return {
     router,
@@ -1199,11 +1239,11 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           const { proposta_id } = await criarProposta({
             data: {
               simulacao_id: envioEstado.id,
-              banco_id: banco.id
-            }
+              banco_id: banco.id,
+            },
           });
           return { proposta_id };
-        }
+        },
       });
     },
     enviarTodosBancos: async (bancos: any[]) => {
@@ -1217,11 +1257,11 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
             const { proposta_id } = await criarProposta({
               data: {
                 simulacao_id: envioEstado.id,
-                banco_id: b.id
-              }
+                banco_id: b.id,
+              },
             });
             return { proposta_id };
-          }
+          },
         });
       }
     },
@@ -1236,5 +1276,3 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     refetchCrm,
   };
 }
-
-

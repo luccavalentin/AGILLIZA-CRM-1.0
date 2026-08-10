@@ -234,9 +234,7 @@ export function PapelTimbradoView() {
           </div>
           <PreviewPagina modelo={modelo}>
             <div className="min-h-[560px] space-y-4 px-8 py-8 text-sm leading-relaxed text-foreground">
-              {linhaCabecalho && (
-                <p className="text-right text-foreground/80">{linhaCabecalho}</p>
-              )}
+              {linhaCabecalho && <p className="text-right text-foreground/80">{linhaCabecalho}</p>}
               {dados.destinatario?.trim() && (
                 <div>
                   <p className="whitespace-pre-line">{dados.destinatario}</p>
@@ -268,10 +266,7 @@ export function PapelTimbradoView() {
                 <div className="pt-8">
                   <div className="h-px w-56 bg-border" />
                   {dados.assinante?.trim() && (
-                    <p
-                      className="mt-1 font-semibold"
-                      style={{ color: modelo.destaqueTexto }}
-                    >
+                    <p className="mt-1 font-semibold" style={{ color: modelo.destaqueTexto }}>
                       {dados.assinante}
                     </p>
                   )}
@@ -324,7 +319,10 @@ function ModeloCard({
       >
         {/* Watermark */}
         {modelo.estilo === "real" ? (
-          <span className="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden>
+          <span
+            className="pointer-events-none absolute inset-0 grid place-items-center"
+            aria-hidden
+          >
             <span className="relative grid size-[74%] place-items-center">
               <span
                 className="absolute inset-0 rounded-full border-2"
@@ -592,7 +590,6 @@ function PreviewPagina({
         </span>
       )}
 
-
       {/* Cabeçalho conforme estilo */}
       {modelo.estilo === "faixa" && (
         <div
@@ -703,7 +700,6 @@ function PreviewPagina({
           )}
         </div>
       )}
-
 
       {/* Corpo */}
       <div className="relative">{children}</div>

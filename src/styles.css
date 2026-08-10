@@ -26,7 +26,6 @@
   }
 }
 
-
 :root {
   --radius: 0.625rem;
 
@@ -100,7 +99,6 @@
   --pipe-13: #7c3aed;
   --pipe-14: #10a37f;
 }
-
 
 .dark {
   /* MODO ESCURO — conteúdo permanece BRANCO; apenas o menu é escuro. */
@@ -290,8 +288,11 @@
 /* Ícone circular refinado — anel sutil, sem bloco quadrado pesado. */
 .landing-icon {
   color: var(--primary-foreground, #fff);
-  background:
-    radial-gradient(120% 120% at 30% 20%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+  background: radial-gradient(
+    120% 120% at 30% 20%,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.02)
+  );
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
@@ -306,8 +307,11 @@
   transform: translateY(-1px);
 }
 .landing-icon-destaque {
-  background:
-    radial-gradient(120% 120% at 30% 20%, rgba(200, 16, 46, 0.35), rgba(200, 16, 46, 0.08));
+  background: radial-gradient(
+    120% 120% at 30% 20%,
+    rgba(200, 16, 46, 0.35),
+    rgba(200, 16, 46, 0.08)
+  );
   border-color: rgba(200, 16, 46, 0.45);
 }
 .group:hover .landing-icon-destaque {
@@ -333,8 +337,6 @@
   z-index: 0;
   opacity: 0.9;
 }
-
-
 
 /* Scrollbar discreta dentro do menu — sem barra branca feia. */
 .sidebar-scroll {
@@ -383,17 +385,25 @@
 
 /* Indicadores de rolagem para modais (sombra/degradê) */
 .scroll-shadow-bottom {
-  background-image: linear-gradient(var(--background), var(--background)),
+  background-image:
+    linear-gradient(var(--background), var(--background)),
     linear-gradient(var(--background), var(--background)),
     linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0)),
     linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1));
-  background-position: 0 0, 0 100%, 0 0, 0 100%;
+  background-position:
+    0 0,
+    0 100%,
+    0 0,
+    0 100%;
   background-repeat: no-repeat;
   background-color: var(--background);
-  background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
+  background-size:
+    100% 40px,
+    100% 40px,
+    100% 14px,
+    100% 14px;
   background-attachment: local, local, scroll, scroll;
 }
-
 
 /* ===================== Hub Operacional (Tarefas & Demandas) ===================== */
 /* Cabeçalho editorial com wash sutil da marca e halo lateral. */
@@ -408,11 +418,16 @@
       color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 10%, transparent) 0%,
       transparent 55%
     ),
-    linear-gradient(180deg, color-mix(in oklab, var(--card) 96%, var(--background)) 0%, var(--card) 100%);
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--card) 96%, var(--background)) 0%,
+      var(--card) 100%
+    );
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, var(--foreground) 4%, transparent),
     0 1px 2px -1px color-mix(in oklab, var(--foreground) 8%, transparent),
-    0 24px 60px -34px color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 40%, transparent);
+    0 24px 60px -34px
+      color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 40%, transparent);
 }
 .op-hero::before {
   content: "";
@@ -429,7 +444,8 @@
     var(--op-accent, var(--brand-azul-profundo)) 80%,
     transparent
   );
-  box-shadow: 0 0 24px color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 55%, transparent);
+  box-shadow: 0 0 24px
+    color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 55%, transparent);
 }
 .op-hero::after {
   content: "";
@@ -499,12 +515,11 @@
   overflow: hidden;
   border-radius: var(--radius-xl);
   border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--op-accent, var(--primary)) 4%, var(--card)) 0%,
-      var(--card) 55%
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--op-accent, var(--primary)) 4%, var(--card)) 0%,
+    var(--card) 55%
+  );
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, #fff 40%, transparent),
     0 1px 2px -1px color-mix(in oklab, var(--foreground) 8%, transparent),
@@ -530,12 +545,7 @@
   bottom: 14%;
   width: 2px;
   border-radius: 0 2px 2px 0;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    var(--op-accent, var(--primary)),
-    transparent
-  );
+  background: linear-gradient(180deg, transparent, var(--op-accent, var(--primary)), transparent);
 }
 .op-stat--alerta {
   border-color: color-mix(in oklab, var(--destructive) 40%, transparent);
@@ -586,7 +596,11 @@
   position: relative;
   border-radius: var(--radius-xl);
   border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--card) 97%, var(--background)) 0%, var(--card) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--card) 97%, var(--background)) 0%,
+    var(--card) 100%
+  );
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, #fff 45%, transparent),
     var(--shadow-card);
@@ -616,7 +630,11 @@
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, #fff 55%, transparent),
     var(--shadow-card-hover);
-  border-color: color-mix(in oklab, var(--op-accent, var(--brand-azul-profundo)) 32%, var(--border));
+  border-color: color-mix(
+    in oklab,
+    var(--op-accent, var(--brand-azul-profundo)) 32%,
+    var(--border)
+  );
 }
 .op-kcard:hover::after {
   opacity: 1;
@@ -624,15 +642,13 @@
 .op-kcol {
   border-radius: var(--radius-2xl);
   border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--muted) 30%, transparent) 0%,
-      color-mix(in oklab, var(--muted) 55%, transparent) 100%
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--muted) 30%, transparent) 0%,
+    color-mix(in oklab, var(--muted) 55%, transparent) 100%
+  );
   box-shadow: inset 0 1px 0 color-mix(in oklab, #fff 35%, transparent);
 }
-
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -733,7 +749,6 @@
     border-radius: var(--radius-sm);
   }
 
-
   /* Títulos com espaçamento levemente mais apertado (aspecto profissional). */
   h1,
   h2,
@@ -753,7 +768,6 @@
     }
   }
 }
-
 
 /* font-mono agora usa Inter (marca) — mantém dígitos tabulares p/ alinhar números e códigos */
 .font-mono {
@@ -775,7 +789,6 @@ iframe[src*="lvbl" i] {
   z-index: -9999 !important;
 }
 
-
 /* Efeito de barra "pilha recarregando" no overlay de consulta */
 @keyframes carga {
   0% {
@@ -792,8 +805,12 @@ iframe[src*="lvbl" i] {
 
 /* Shimmer usado pelo Skeleton para dar sensação de carregamento premium. */
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Utilitários globais de UX: elevação sutil no hover para superfícies interativas. */
@@ -811,16 +828,16 @@ iframe[src*="lvbl" i] {
   }
 }
 
-
 /* Pisca o item de menu do chat quando chega mensagem nova. */
 @keyframes piscar-chat {
-  0%, 100% { 
-    background-color: var(--destructive); 
+  0%,
+  100% {
+    background-color: var(--destructive);
     color: #fff;
     box-shadow: 0 0 0 0 rgba(200, 16, 46, 0.6);
   }
-  50% { 
-    background-color: #ff3b5c; 
+  50% {
+    background-color: #ff3b5c;
     color: #fff;
     box-shadow: 0 0 12px 6px rgba(200, 16, 46, 0.4);
   }
@@ -831,12 +848,17 @@ iframe[src*="lvbl" i] {
 }
 
 @keyframes chat-blink-frame {
-  0%, 100% {
-    box-shadow: 0 12px 40px -12px rgba(200, 16, 46, 0.4), 0 0 0 0 rgba(200, 16, 46, 0.6);
+  0%,
+  100% {
+    box-shadow:
+      0 12px 40px -12px rgba(200, 16, 46, 0.4),
+      0 0 0 0 rgba(200, 16, 46, 0.6);
     border-color: var(--destructive);
   }
   50% {
-    box-shadow: 0 12px 40px -12px rgba(200, 16, 46, 0.7), 0 0 15px 5px rgba(200, 16, 46, 0.5);
+    box-shadow:
+      0 12px 40px -12px rgba(200, 16, 46, 0.7),
+      0 0 15px 5px rgba(200, 16, 46, 0.5);
     border-color: #ff3b5c;
   }
 }
@@ -854,12 +876,12 @@ iframe[src*="lvbl" i] {
   }
 }
 
-
 /* ============= Padrão de cadastro em MAIÚSCULAS ============= */
 /* Todo formulário de cadastro do CRM exibe os textos digitados em caixa
    alta. Campos onde o padrão não faz sentido (e-mail, senha, data) ficam
    preservados. A gravação também é em maiúsculas (ver cliente-form.tsx). */
-.form-cadastro-upper input:not([type="email"]):not([type="password"]):not([type="date"]):not([type="number"]),
+.form-cadastro-upper
+  input:not([type="email"]):not([type="password"]):not([type="date"]):not([type="number"]),
 .form-cadastro-upper textarea {
   text-transform: uppercase;
 }
@@ -867,7 +889,6 @@ iframe[src*="lvbl" i] {
 .form-cadastro-upper textarea::placeholder {
   text-transform: none;
 }
-
 
 /* ============================= DPS ============================= */
 /* Documento da Declaração Pessoal de Saúde (tela + impressão). */
@@ -1271,20 +1292,70 @@ iframe[src*="lvbl" i] {
 }
 
 /* Cores de etiquetas do chat do CRM (evita cores cruas no TSX) */
-.chat-tag { display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 9999px; padding: 0.05rem 0.45rem; font-size: 0.65rem; font-weight: 600; line-height: 1.1; }
-.chat-tag-dot { height: 0.5rem; width: 0.5rem; border-radius: 9999px; display: inline-block; }
-.chat-tag-blue   { background: hsl(214 95% 93%); color: hsl(214 80% 34%); }
-.chat-tag-green  { background: hsl(142 70% 90%); color: hsl(142 60% 26%); }
-.chat-tag-amber  { background: hsl(38 95% 90%);  color: hsl(30 80% 34%); }
-.chat-tag-red    { background: hsl(0 90% 93%);   color: hsl(0 70% 40%); }
-.chat-tag-purple { background: hsl(270 80% 93%); color: hsl(270 60% 42%); }
-.chat-tag-slate  { background: hsl(215 20% 90%); color: hsl(215 25% 32%); }
-.dark .chat-tag-blue   { background: hsl(214 60% 22%); color: hsl(214 90% 82%); }
-.dark .chat-tag-green  { background: hsl(142 45% 20%); color: hsl(142 70% 78%); }
-.dark .chat-tag-amber  { background: hsl(32 55% 22%);  color: hsl(38 90% 78%); }
-.dark .chat-tag-red    { background: hsl(0 45% 26%);   color: hsl(0 90% 84%); }
-.dark .chat-tag-purple { background: hsl(270 45% 28%); color: hsl(270 85% 85%); }
-.dark .chat-tag-slate  { background: hsl(215 20% 28%); color: hsl(215 30% 82%); }
+.chat-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.chat-tag-dot {
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  display: inline-block;
+}
+.chat-tag-blue {
+  background: hsl(214 95% 93%);
+  color: hsl(214 80% 34%);
+}
+.chat-tag-green {
+  background: hsl(142 70% 90%);
+  color: hsl(142 60% 26%);
+}
+.chat-tag-amber {
+  background: hsl(38 95% 90%);
+  color: hsl(30 80% 34%);
+}
+.chat-tag-red {
+  background: hsl(0 90% 93%);
+  color: hsl(0 70% 40%);
+}
+.chat-tag-purple {
+  background: hsl(270 80% 93%);
+  color: hsl(270 60% 42%);
+}
+.chat-tag-slate {
+  background: hsl(215 20% 90%);
+  color: hsl(215 25% 32%);
+}
+.dark .chat-tag-blue {
+  background: hsl(214 60% 22%);
+  color: hsl(214 90% 82%);
+}
+.dark .chat-tag-green {
+  background: hsl(142 45% 20%);
+  color: hsl(142 70% 78%);
+}
+.dark .chat-tag-amber {
+  background: hsl(32 55% 22%);
+  color: hsl(38 90% 78%);
+}
+.dark .chat-tag-red {
+  background: hsl(0 45% 26%);
+  color: hsl(0 90% 84%);
+}
+.dark .chat-tag-purple {
+  background: hsl(270 45% 28%);
+  color: hsl(270 85% 85%);
+}
+.dark .chat-tag-slate {
+  background: hsl(215 20% 28%);
+  color: hsl(215 30% 82%);
+}
 
 /* Superfície do chat: fundo com profundidade e textura sutil (estilo mensageiro) */
 .chat-surface {
@@ -1336,12 +1407,24 @@ iframe[src*="lvbl" i] {
     0 1px 1px color-mix(in oklab, var(--foreground) 8%, transparent),
     0 10px 26px -12px color-mix(in oklab, var(--foreground) 55%, transparent);
 }
-.chat-dot-blue { background: hsl(214 80% 50%); }
-.chat-dot-green { background: hsl(142 60% 42%); }
-.chat-dot-amber { background: hsl(35 90% 50%); }
-.chat-dot-red { background: hsl(0 75% 55%); }
-.chat-dot-purple { background: hsl(270 65% 58%); }
-.chat-dot-slate { background: hsl(215 20% 55%); }
+.chat-dot-blue {
+  background: hsl(214 80% 50%);
+}
+.chat-dot-green {
+  background: hsl(142 60% 42%);
+}
+.chat-dot-amber {
+  background: hsl(35 90% 50%);
+}
+.chat-dot-red {
+  background: hsl(0 75% 55%);
+}
+.chat-dot-purple {
+  background: hsl(270 65% 58%);
+}
+.chat-dot-slate {
+  background: hsl(215 20% 55%);
+}
 
 /* ── Ícones institucionais ──
    Traço mais fino e refinado para um aspecto profissional/institucional.
@@ -1399,12 +1482,17 @@ iframe[src*="lvbl" i] {
 @utility crm-scrollbar-slim {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklab, var(--foreground) 18%, transparent) transparent;
-  &::-webkit-scrollbar { width: 8px; height: 8px; }
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
   &::-webkit-scrollbar-thumb {
     background-color: color-mix(in oklab, var(--foreground) 18%, transparent);
     border-radius: 999px;
   }
-  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 /* ────────────────────────────────────────────────────────────────
@@ -1416,48 +1504,112 @@ iframe[src*="lvbl" i] {
    `html[data-crm-motion="off"]`. */
 
 @keyframes crm-tr-fade {
-  from { opacity: var(--crm-tr-from-opacity, 0); }
-  to   { opacity: 1; }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes crm-tr-fade-up {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(0, 12px, 0); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 @keyframes crm-tr-slide-right {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(-24px, 0, 0); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: translate3d(-24px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 @keyframes crm-tr-slide-left {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(24px, 0, 0); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: translate3d(24px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 @keyframes crm-tr-slide-up {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(0, 24px, 0); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: translate3d(0, 24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 @keyframes crm-tr-slide-down {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(0, -24px, 0); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: translate3d(0, -24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 @keyframes crm-tr-zoom-in {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: scale3d(0.96, 0.96, 1); }
-  to   { opacity: 1; transform: scale3d(1, 1, 1); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: scale3d(0.96, 0.96, 1);
+  }
+  to {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
 }
 @keyframes crm-tr-zoom-out {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: scale3d(1.04, 1.04, 1); }
-  to   { opacity: 1; transform: scale3d(1, 1, 1); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: scale3d(1.04, 1.04, 1);
+  }
+  to {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
 }
 @keyframes crm-tr-flip-x {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: perspective(1200px) rotateX(6deg); }
-  to   { opacity: 1; transform: perspective(1200px) rotateX(0deg); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: perspective(1200px) rotateX(6deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1200px) rotateX(0deg);
+  }
 }
 @keyframes crm-tr-flip-y {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: perspective(1200px) rotateY(6deg); }
-  to   { opacity: 1; transform: perspective(1200px) rotateY(0deg); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: perspective(1200px) rotateY(6deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg);
+  }
 }
 @keyframes crm-tr-parallax {
-  from { opacity: var(--crm-tr-from-opacity, 0); transform: translate3d(0, 32px, 0) scale3d(0.985, 0.985, 1); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0) scale3d(1, 1, 1); }
+  from {
+    opacity: var(--crm-tr-from-opacity, 0);
+    transform: translate3d(0, 32px, 0) scale3d(0.985, 0.985, 1);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+  }
 }
 
 .crm-page-transition {
@@ -1467,17 +1619,39 @@ iframe[src*="lvbl" i] {
   animation-timing-function: var(--crm-tr-easing, cubic-bezier(0.22, 1, 0.36, 1));
   animation-fill-mode: both;
 }
-.crm-page-transition[data-crm-transition="fade"]         { animation-name: crm-tr-fade; }
-.crm-page-transition[data-crm-transition="fade-up"]      { animation-name: crm-tr-fade-up; }
-.crm-page-transition[data-crm-transition="slide-right"]  { animation-name: crm-tr-slide-right; }
-.crm-page-transition[data-crm-transition="slide-left"]   { animation-name: crm-tr-slide-left; }
-.crm-page-transition[data-crm-transition="slide-up"]     { animation-name: crm-tr-slide-up; }
-.crm-page-transition[data-crm-transition="slide-down"]   { animation-name: crm-tr-slide-down; }
-.crm-page-transition[data-crm-transition="zoom-in"]      { animation-name: crm-tr-zoom-in; }
-.crm-page-transition[data-crm-transition="zoom-out"]     { animation-name: crm-tr-zoom-out; }
-.crm-page-transition[data-crm-transition="flip-x"]       { animation-name: crm-tr-flip-x; }
-.crm-page-transition[data-crm-transition="flip-y"]       { animation-name: crm-tr-flip-y; }
-.crm-page-transition[data-crm-transition="parallax"]     { animation-name: crm-tr-parallax; }
+.crm-page-transition[data-crm-transition="fade"] {
+  animation-name: crm-tr-fade;
+}
+.crm-page-transition[data-crm-transition="fade-up"] {
+  animation-name: crm-tr-fade-up;
+}
+.crm-page-transition[data-crm-transition="slide-right"] {
+  animation-name: crm-tr-slide-right;
+}
+.crm-page-transition[data-crm-transition="slide-left"] {
+  animation-name: crm-tr-slide-left;
+}
+.crm-page-transition[data-crm-transition="slide-up"] {
+  animation-name: crm-tr-slide-up;
+}
+.crm-page-transition[data-crm-transition="slide-down"] {
+  animation-name: crm-tr-slide-down;
+}
+.crm-page-transition[data-crm-transition="zoom-in"] {
+  animation-name: crm-tr-zoom-in;
+}
+.crm-page-transition[data-crm-transition="zoom-out"] {
+  animation-name: crm-tr-zoom-out;
+}
+.crm-page-transition[data-crm-transition="flip-x"] {
+  animation-name: crm-tr-flip-x;
+}
+.crm-page-transition[data-crm-transition="flip-y"] {
+  animation-name: crm-tr-flip-y;
+}
+.crm-page-transition[data-crm-transition="parallax"] {
+  animation-name: crm-tr-parallax;
+}
 
 /* Opt-out do usuário (toggle de acessibilidade) — anula a animação
    sem remover o wrapper. */
@@ -1496,50 +1670,65 @@ html[data-crm-motion="off"] .crm-page-transition {
     --depth-highlight: color-mix(in oklab, white 55%, transparent);
     --depth-highlight-soft: color-mix(in oklab, white 22%, transparent);
     /* Sombras difusas em multicamada — halo suave, sem cortes duros */
-    --depth-shadow-1: 0 1px 0 0 var(--depth-highlight-soft) inset,
-                      0 1px 2px -1px color-mix(in oklab, black 10%, transparent),
-                      0 4px 12px -6px color-mix(in oklab, black 10%, transparent);
-    --depth-shadow-2: 0 1px 0 0 var(--depth-highlight) inset,
-                      0 2px 6px -2px color-mix(in oklab, black 10%, transparent),
-                      0 12px 28px -14px color-mix(in oklab, black 14%, transparent);
-    --depth-shadow-3: 0 1px 0 0 var(--depth-highlight) inset,
-                      0 6px 14px -6px color-mix(in oklab, black 12%, transparent),
-                      0 24px 48px -22px color-mix(in oklab, black 18%, transparent);
-    --depth-press: 0 1px 0 0 color-mix(in oklab, black 12%, transparent) inset,
-                   0 2px 4px -2px color-mix(in oklab, black 18%, transparent) inset;
+    --depth-shadow-1:
+      0 1px 0 0 var(--depth-highlight-soft) inset,
+      0 1px 2px -1px color-mix(in oklab, black 10%, transparent),
+      0 4px 12px -6px color-mix(in oklab, black 10%, transparent);
+    --depth-shadow-2:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 2px 6px -2px color-mix(in oklab, black 10%, transparent),
+      0 12px 28px -14px color-mix(in oklab, black 14%, transparent);
+    --depth-shadow-3:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 6px 14px -6px color-mix(in oklab, black 12%, transparent),
+      0 24px 48px -22px color-mix(in oklab, black 18%, transparent);
+    --depth-press:
+      0 1px 0 0 color-mix(in oklab, black 12%, transparent) inset,
+      0 2px 4px -2px color-mix(in oklab, black 18%, transparent) inset;
   }
   .dark {
     --depth-highlight: color-mix(in oklab, white 14%, transparent);
     --depth-highlight-soft: color-mix(in oklab, white 8%, transparent);
-    --depth-shadow-1: 0 1px 0 0 var(--depth-highlight-soft) inset,
-                      0 1px 2px -1px color-mix(in oklab, black 40%, transparent),
-                      0 6px 16px -8px color-mix(in oklab, black 50%, transparent);
-    --depth-shadow-2: 0 1px 0 0 var(--depth-highlight) inset,
-                      0 4px 10px -4px color-mix(in oklab, black 45%, transparent),
-                      0 16px 36px -18px color-mix(in oklab, black 55%, transparent);
-    --depth-shadow-3: 0 1px 0 0 var(--depth-highlight) inset,
-                      0 8px 20px -8px color-mix(in oklab, black 50%, transparent),
-                      0 28px 60px -24px color-mix(in oklab, black 60%, transparent);
+    --depth-shadow-1:
+      0 1px 0 0 var(--depth-highlight-soft) inset,
+      0 1px 2px -1px color-mix(in oklab, black 40%, transparent),
+      0 6px 16px -8px color-mix(in oklab, black 50%, transparent);
+    --depth-shadow-2:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 4px 10px -4px color-mix(in oklab, black 45%, transparent),
+      0 16px 36px -18px color-mix(in oklab, black 55%, transparent);
+    --depth-shadow-3:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 8px 20px -8px color-mix(in oklab, black 50%, transparent),
+      0 28px 60px -24px color-mix(in oklab, black 60%, transparent);
   }
-
 
   /* Botões — relevo com brilho no topo + sombra projetada */
-  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]),
+  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not(
+      [role="option"]
+    ):not([data-radix-collection-item]):not([data-sidebar]),
   [role="button"]:not([data-depth="off"]) {
     box-shadow: var(--depth-shadow-1);
-    transition: transform 160ms cubic-bezier(.2,.8,.2,1), box-shadow 160ms ease, filter 160ms ease;
+    transition:
+      transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 160ms ease,
+      filter 160ms ease;
     transform: translateZ(0);
   }
-  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]):hover,
+  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not(
+      [role="option"]
+    ):not([data-radix-collection-item]):not([data-sidebar]):hover,
   [role="button"]:not([data-depth="off"]):hover {
     box-shadow: var(--depth-shadow-2);
     transform: translateY(-1px);
   }
-  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]):active,
+  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not(
+      [role="option"]
+    ):not([data-radix-collection-item]):not([data-sidebar]):active,
   [role="button"]:not([data-depth="off"]):active {
     box-shadow: var(--depth-press);
     transform: translateY(0);
-    filter: brightness(.97);
+    filter: brightness(0.97);
   }
   /* Ícones-only pequenos ficam mais discretos */
   button.size-7:not([data-depth="off"]),
@@ -1559,7 +1748,9 @@ html[data-crm-motion="off"] .crm-page-transition {
   [data-slot="card"],
   .depth-card {
     box-shadow: var(--depth-shadow-2);
-    transition: box-shadow 220ms ease, transform 220ms cubic-bezier(.2,.8,.2,1);
+    transition:
+      box-shadow 220ms ease,
+      transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
     transform: translateZ(0);
   }
   [data-slot="card"]:hover,
@@ -1572,22 +1763,27 @@ html[data-crm-motion="off"] .crm-page-transition {
   input:not([type="checkbox"]):not([type="radio"]):not([data-depth="off"]),
   textarea:not([data-depth="off"]),
   [data-slot="select-trigger"]:not([data-depth="off"]) {
-    box-shadow: 0 1px 0 0 var(--depth-highlight-soft),
-                inset 0 1px 2px 0 color-mix(in oklab, black 12%, transparent);
-    transition: box-shadow 160ms ease, transform 160ms ease;
+    box-shadow:
+      0 1px 0 0 var(--depth-highlight-soft),
+      inset 0 1px 2px 0 color-mix(in oklab, black 12%, transparent);
+    transition:
+      box-shadow 160ms ease,
+      transform 160ms ease;
   }
   input:not([type="checkbox"]):not([type="radio"]):not([data-depth="off"]):focus-visible,
   textarea:not([data-depth="off"]):focus-visible,
   [data-slot="select-trigger"]:not([data-depth="off"]):focus-visible {
-    box-shadow: 0 0 0 2px color-mix(in oklab, hsl(var(--ring)) 45%, transparent),
-                inset 0 1px 2px 0 color-mix(in oklab, black 14%, transparent);
+    box-shadow:
+      0 0 0 2px color-mix(in oklab, hsl(var(--ring)) 45%, transparent),
+      inset 0 1px 2px 0 color-mix(in oklab, black 14%, transparent);
   }
 
   /* Badges — pastilhas com relevo sutil */
   [data-slot="badge"] {
-    box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
-                0 -1px 0 0 color-mix(in oklab, black 14%, transparent) inset,
-                0 1px 2px -1px color-mix(in oklab, black 20%, transparent);
+    box-shadow:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 -1px 0 0 color-mix(in oklab, black 14%, transparent) inset,
+      0 1px 2px -1px color-mix(in oklab, black 20%, transparent);
   }
 
   /* Popovers, menus e diálogos — flutuação clara sobre a página */
@@ -1601,9 +1797,10 @@ html[data-crm-motion="off"] .crm-page-transition {
 
   /* Avatares circulares — highlight tipo esfera */
   [data-slot="avatar"] {
-    box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
-                0 -2px 4px 0 color-mix(in oklab, black 25%, transparent) inset,
-                0 2px 6px -2px color-mix(in oklab, black 25%, transparent);
+    box-shadow:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 -2px 4px 0 color-mix(in oklab, black 25%, transparent) inset,
+      0 2px 6px -2px color-mix(in oklab, black 25%, transparent);
   }
 
   /* Opt-out por página/elemento */
@@ -1616,7 +1813,9 @@ html[data-crm-motion="off"] .crm-page-transition {
   /* ============================================================
      Hover 3D — elevação, brilho e leve inclinação em perspectiva
      ============================================================ */
-  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]),
+  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not(
+      [role="option"]
+    ):not([data-radix-collection-item]):not([data-sidebar]),
   [role="button"]:not([data-depth="off"]),
   [data-slot="card"],
   .depth-card,
@@ -1626,47 +1825,56 @@ html[data-crm-motion="off"] .crm-page-transition {
     will-change: transform, box-shadow;
   }
 
-  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([data-radix-collection-item]):not([data-sidebar]):hover,
+  button:not(:disabled):not([data-depth="off"]):not([role="tab"]):not([role="menuitem"]):not(
+      [role="option"]
+    ):not([data-radix-collection-item]):not([data-sidebar]):hover,
   [role="button"]:not([data-depth="off"]):hover {
     transform: translateY(-1px);
-    box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
-                0 4px 10px -4px color-mix(in oklab, black 12%, transparent),
-                0 20px 40px -20px color-mix(in oklab, black 18%, transparent);
+    box-shadow:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 4px 10px -4px color-mix(in oklab, black 12%, transparent),
+      0 20px 40px -20px color-mix(in oklab, black 18%, transparent);
   }
 
   [data-slot="card"]:hover,
   .depth-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
-                0 8px 20px -8px color-mix(in oklab, black 12%, transparent),
-                0 32px 60px -28px color-mix(in oklab, black 18%, transparent);
+    box-shadow:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 8px 20px -8px color-mix(in oklab, black 12%, transparent),
+      0 32px 60px -28px color-mix(in oklab, black 18%, transparent);
   }
 
   [data-slot="badge"]:hover {
     transform: translateY(-1px);
-    box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
-                0 4px 10px -4px color-mix(in oklab, black 14%, transparent);
-    transition: transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease;
+    box-shadow:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 4px 10px -4px color-mix(in oklab, black 14%, transparent);
+    transition:
+      transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 180ms ease;
   }
 
   [data-slot="avatar"]:hover {
     transform: translateY(-1px) scale(1.03);
-    box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
-                0 6px 14px -6px color-mix(in oklab, black 20%, transparent);
-    transition: transform 200ms cubic-bezier(.2,.8,.2,1), box-shadow 200ms ease;
+    box-shadow:
+      0 1px 0 0 var(--depth-highlight) inset,
+      0 6px 14px -6px color-mix(in oklab, black 20%, transparent);
+    transition:
+      transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 200ms ease;
   }
-
 
   input:not([type="checkbox"]):not([type="radio"]):not([data-depth="off"]):hover,
   textarea:not([data-depth="off"]):hover,
   [data-slot="select-trigger"]:not([data-depth="off"]):hover {
-    box-shadow: 0 1px 0 0 var(--depth-highlight) inset,
-                inset 0 1px 2px 0 color-mix(in oklab, black 10%, transparent),
-                0 4px 12px -8px color-mix(in oklab, black 14%, transparent);
+    box-shadow:
+      0 1px 0 0 var(--depth-highlight) inset,
+      inset 0 1px 2px 0 color-mix(in oklab, black 10%, transparent),
+      0 4px 12px -8px color-mix(in oklab, black 14%, transparent);
     transform: translateY(-1px);
   }
 }
-
 
 /* Reforço: opt-out sempre respeitado no hover 3D */
 [data-depth="flat"]:hover,
@@ -1674,12 +1882,13 @@ html[data-crm-motion="off"] .crm-page-transition {
   transform: none !important;
 }
 
-
 /* Respeita usuários que preferem menos movimento */
 @media (prefers-reduced-motion: reduce) {
-  button, [role="button"], [data-slot="card"], .depth-card {
+  button,
+  [role="button"],
+  [data-slot="card"],
+  .depth-card {
     transition: none !important;
     transform: none !important;
   }
 }
-

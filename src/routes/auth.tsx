@@ -159,7 +159,6 @@ function AuthPage() {
       bannerTitulo="Sua operação de crédito imobiliário, organizada."
       bannerSubtitulo="Simulações, propostas, contratos, financeiro e comissões em um só lugar."
     >
-
       <Tabs defaultValue="entrar" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="entrar">Entrar</TabsTrigger>
@@ -193,7 +192,7 @@ function AuthPage() {
               {carregando ? "Entrando…" : "Entrar"}
             </Button>
 
-            <BiometricAuth 
+            <BiometricAuth
               onSuccess={(email) => {
                 // Implementação futura de login automático via biometria
                 console.log("Biometria ok para:", email);

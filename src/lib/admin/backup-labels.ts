@@ -103,9 +103,7 @@ const ROTULOS: Record<string, string> = {
 // Converte nome técnico em rótulo amigável (fallback: Title Case).
 export function rotularColuna(col: string): string {
   if (ROTULOS[col]) return ROTULOS[col];
-  return col
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return col.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // Mapas de valores codificados por nome de coluna.
@@ -187,9 +185,7 @@ function colunaSoUUID(tabela: TabelaExportada, col: string): boolean {
 /** Retorna uma cópia do backup com colunas e valores legíveis para leigos. */
 export function humanizarBackup(dados: BackupCompleto): BackupCompleto {
   const tabelas: TabelaExportada[] = dados.tabelas.map((t) => {
-    const visiveis = t.colunas.filter(
-      (c) => !colunaTecnica(c) && !colunaSoUUID(t, c),
-    );
+    const visiveis = t.colunas.filter((c) => !colunaTecnica(c) && !colunaSoUUID(t, c));
 
     const linhas = t.linhas.map((linha) => {
       const nova: Record<string, Valor> = {};

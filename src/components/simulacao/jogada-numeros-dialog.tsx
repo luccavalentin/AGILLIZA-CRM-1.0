@@ -80,7 +80,14 @@ export function JogadaNumerosDialog({
     const liberar = Number(valorLiberar) || 0;
     const divisor = (Number(ltvPct) || 0) / 100;
     if (liberar <= 0 || divisor <= 0) {
-      return { valorImovel: 0, entrada: 0, pctEntrada: 0, custas: 0, financiamentoBase: 0, valido: false };
+      return {
+        valorImovel: 0,
+        entrada: 0,
+        pctEntrada: 0,
+        custas: 0,
+        financiamentoBase: 0,
+        valido: false,
+      };
     }
     // Arredonda o valor de compra e venda PARA CIMA no milhar. Arredondar para o
     // mais próximo podia baixar o valor abaixo do bruto necessário e fazer o
@@ -94,7 +101,6 @@ export function JogadaNumerosDialog({
     const financiamentoTotal = liberar + custas;
     return { valorImovel, entrada, pctEntrada, custas, financiamentoTotal, valido: true };
   }, [valorLiberar, ltvPct, incluirCustas, custasPct]);
-
 
   function aplicar() {
     if (!calc.valido) return;
@@ -117,7 +123,10 @@ export function JogadaNumerosDialog({
           className="group relative inline-flex items-center gap-1.5 overflow-hidden rounded-md border border-primary/30 bg-gradient-to-br from-primary to-primary/80 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm ring-1 ring-inset ring-white/10 transition-all hover:shadow-md hover:shadow-primary/25 hover:-translate-y-px active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           title="Ajusta os valores da operação para viabilizar a proposta"
         >
-          <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" aria-hidden />
+          <span
+            className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full"
+            aria-hidden
+          />
           <Dice5 className="h-3.5 w-3.5 transition-transform group-hover:rotate-12" />
           Jogada de números
         </button>
@@ -172,10 +181,6 @@ export function JogadaNumerosDialog({
               </div>
             )}
           </div>
-
-
-
-
 
           {calc.valido && (
             <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">

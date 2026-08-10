@@ -41,7 +41,7 @@ export function PainelConversa({
     return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <div className="mb-2 flex items-center gap-2 rounded-2xl border border-border/50 bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
-        {BackBtn}
+          {BackBtn}
           <Avatar className="size-10 border border-border/60">
             {selecionado.foto && (
               <AvatarImage src={selecionado.foto} alt={selecionado.nome ?? "Usuário"} />
@@ -62,9 +62,7 @@ export function PainelConversa({
             variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() =>
-              abrirDmFlutuante(selecionado.conversaId, { nome: selecionado.nome })
-            }
+            onClick={() => abrirDmFlutuante(selecionado.conversaId, { nome: selecionado.nome })}
           >
             <Maximize2 className="size-3.5" />
             <span className="hidden sm:inline">Soltar chat</span>
@@ -91,9 +89,11 @@ export function PainelConversa({
     return (
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <div className="mb-2 flex items-center gap-2 rounded-2xl border border-border/50 bg-card/80 px-3 py-2 shadow-sm backdrop-blur">
-        {BackBtn}
+          {BackBtn}
           <Avatar className="size-10 border border-border/60">
-            {selecionado.foto && <AvatarImage src={selecionado.foto} alt={selecionado.nome ?? ""} />}
+            {selecionado.foto && (
+              <AvatarImage src={selecionado.foto} alt={selecionado.nome ?? ""} />
+            )}
             <AvatarFallback className="bg-success text-xs font-semibold text-success-foreground">
               {iniciais(selecionado.nome)}
             </AvatarFallback>
@@ -193,9 +193,7 @@ export function PainelConversa({
           arquivado={!!estadoPor.get(key)?.arquivado_em}
           fixado={!!estadoPor.get(key)?.pinado_em}
           apelidoAtual={estadoPor.get(key)?.apelido ?? null}
-          nomeReferencia={
-            selecionado.interlocutorNome ?? selecionado.titulo ?? selecionado.numero
-          }
+          nomeReferencia={selecionado.interlocutorNome ?? selecionado.titulo ?? selecionado.numero}
           etiquetaIds={etiquetaPor.get(key) ?? []}
         />
       </div>

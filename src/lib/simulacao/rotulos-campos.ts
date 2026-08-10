@@ -41,9 +41,7 @@ export const ROTULOS_CAMPOS_SIMULACAO: Record<string, string> = {
 export function rotuloCampoSimulacao(chave: string): string {
   return (
     ROTULOS_CAMPOS_SIMULACAO[chave] ??
-    chave
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
+    chave.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
   );
 }
 

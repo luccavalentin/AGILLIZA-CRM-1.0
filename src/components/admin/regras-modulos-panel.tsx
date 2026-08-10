@@ -21,11 +21,7 @@ import { listarPessoas } from "@/lib/admin/pessoas.functions";
 import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  chave,
-  estadoInicial,
-  type MatrizEstado,
-} from "./regras-modulos/constants";
+import { chave, estadoInicial, type MatrizEstado } from "./regras-modulos/constants";
 import { AbaPapeis } from "./regras-modulos/aba-papeis";
 import { ListaNiveis, MatrizPermissoes } from "./regras-modulos/matriz";
 import {

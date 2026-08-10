@@ -3,17 +3,20 @@
 > Requer Etapas 01, 03, 05.
 
 ## Dependências e Produtos
+
 **Depende de:** 00, 00b, **01** (papéis: `financeiro`, `correspondente`), **03** (`clientes`, parceiros oriundos de `/admin/pessoas`), **05** (evento `proposta.status='contrato_emitido'` que dispara a comissão).
 **Produz (consumido por 08, 10):**
+
 - Tabelas: `contas_pagar`, `contas_receber`, `comissoes` (com `proposta_id`, `parceiro_id`, `percentual`, `valor`), `fluxo_caixa`, `categorias_financeiras`.
 - Trigger `on_proposta_contrato_emitido` → cria `comissoes` a receber (banco → correspondente) e a pagar (correspondente → corretor/imobiliária) conforme regras da parceria (definidas na Etapa 10).
 - KPIs financeiros — lidos pelos painéis de monitoramento e relatórios ERP da Etapa 08.
 
-
 ## Objetivo
+
 Controlar caixa da correspondente: pagar fornecedores/parceiros, receber comissões do banco e repassar aos corretores/imobiliárias, e apresentar KPIs financeiros. Todo lançamento tem numeração, aprovação, baixa/estorno rastreados.
 
 ## O que o módulo faz
+
 1. Ao `proposta.status='contrato_emitido'`, dispara **cálculo automático da comissão** via `comissao_regras` (banco × produto × valor faixa × % parceiro × % interno) e cria:
    - Conta a **receber** do banco (valor bruto da comissão).
    - Conta a **pagar** ao parceiro (split parceiro).
@@ -25,30 +28,38 @@ Controlar caixa da correspondente: pagar fornecedores/parceiros, receber comiss�
 7. Categorias, centros de custo, formas de pagamento configuráveis.
 
 ## Telas
+
 ### `/financeiro/painel`
+
 KPIs: A receber hoje / 30d, A pagar hoje / 30d, Saldo projetado, Inadimplência (>10 dias vencido).
 Gráficos: receita vs. despesa por mês (últimos 12), receita por banco, despesa por categoria.
 
 ### `/financeiro/contas-a-pagar` e `/contas-a-receber`
+
 Tabela: número, descrição, fornecedor/pagador, categoria, centro de custo, vencimento, valor, status (aberta/parcial/paga/atrasada/cancelada), ações.
 Filtros: status, período, categoria, centro, fornecedor.
 Ações em linha: baixar, editar, cancelar, ver detalhes.
 Botão “Nova conta” abre dialog: descrição, valor, vencimento, categoria, CC, fornecedor, anexo, recorrência (mensal/anual).
 
 ### Drawer de detalhe
+
 Timeline de eventos (`financial_payable_history`), abas: Dados, Anexos, Baixas, Estornos.
 
 ### `/financeiro/comissoes`
+
 Lista de comissões calculadas: proposta, banco, valor bruto, split parceiro, split interno, status (a receber, recebida, paga parceiro, encerrada).
 Botão “Recalcular” (recomputa por `comissao_regras`).
 
 ### `/financeiro/fluxo-de-caixa`
+
 Projeção diária/semanal/mensal.
 
 ### `/financeiro/relatorios`
+
 Ver Etapa 08.
 
 ## Estrutura de dados
+
 - `financial_payables` (35 colunas): usar existente.
 - `financial_receivables` (criar se ausente, mesma estrutura).
 - `financial_payable_history`, `financial_audit_logs`.
@@ -56,6 +67,7 @@ Ver Etapa 08.
 - `comissao_regras`: banco, produto, faixa valor min/max, tipo (percentual/fixo), valor, % parceiro, % interno, vigência.
 
 ## Regras críticas
+
 1. **Cálculo automático**: hook em `propostas UPDATE WHERE status='contrato_emitido'` chama `calcularComissao(proposta_id)`.
 2. **Estorno gera nova linha** (não deleta a original); marca original `estornada`.
 3. **Baixa parcial** possível; status vira `parcial` até quitação total.
@@ -64,6 +76,7 @@ Ver Etapa 08.
 6. Recorrência gera próximas ocorrências automaticamente (job diário).
 
 ## Definition of Done
+
 - Contrato emitido → conta a receber + conta a pagar parceiro criadas com valores corretos.
 - Baixar conta com anexo funciona.
 - Estornar reverte KPI.

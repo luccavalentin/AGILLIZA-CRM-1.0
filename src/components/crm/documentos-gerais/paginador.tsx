@@ -34,7 +34,9 @@ export function Paginador({
       </button>
       {paginas.map((p, i) =>
         p === "..." ? (
-          <span key={`e${i}`} className="px-2 text-xs text-muted-foreground">…</span>
+          <span key={`e${i}`} className="px-2 text-xs text-muted-foreground">
+            …
+          </span>
         ) : (
           <button
             key={p}

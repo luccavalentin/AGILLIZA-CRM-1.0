@@ -135,7 +135,9 @@ function Pagina() {
                 <Input
                   type="date"
                   value={form.periodo_aquisitivo_inicio}
-                  onChange={(e) => setForm((p) => ({ ...p, periodo_aquisitivo_inicio: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, periodo_aquisitivo_inicio: e.target.value }))
+                  }
                 />
               </div>
               <div className="space-y-1.5">
@@ -143,7 +145,9 @@ function Pagina() {
                 <Input
                   type="date"
                   value={form.periodo_aquisitivo_fim}
-                  onChange={(e) => setForm((p) => ({ ...p, periodo_aquisitivo_fim: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, periodo_aquisitivo_fim: e.target.value }))
+                  }
                 />
               </div>
               <div className="space-y-1.5">
@@ -220,8 +224,13 @@ function Pagina() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={() => salvar.mutate()} disabled={salvar.isPending || !form.funcionario_id}>
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => salvar.mutate()}
+                disabled={salvar.isPending || !form.funcionario_id}
+              >
                 Salvar
               </Button>
             </DialogFooter>
@@ -250,54 +259,57 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="programacoes">
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Funcionário</TableHead>
-                  <TableHead>Aquisitivo</TableHead>
-                  <TableHead>Gozo</TableHead>
-                  <TableHead>Dias</TableHead>
-                  <TableHead>Abono</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(q.data ?? []).map((f) => (
-                  <TableRow key={f.id}>
-                    <TableCell className="font-medium">{f.funcionario_nome}</TableCell>
-                    <TableCell className="text-xs">
-                      {new Date(f.periodo_aquisitivo_inicio).toLocaleDateString("pt-BR")} →{" "}
-                      {new Date(f.periodo_aquisitivo_fim).toLocaleDateString("pt-BR")}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {f.data_inicio
-                        ? `${new Date(f.data_inicio).toLocaleDateString("pt-BR")} → ${
-                            f.data_fim ? new Date(f.data_fim).toLocaleDateString("pt-BR") : "—"
-                          }`
-                        : "—"}
-                    </TableCell>
-                    <TableCell>{f.dias_gozados}</TableCell>
-                    <TableCell>{f.abono_dias}</TableCell>
-                    <TableCell>
-                      <Badge className={STATUS[f.status].tone}>{STATUS[f.status].label}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!q.data || q.data.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
-                      Nenhum período de férias cadastrado.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Funcionário</TableHead>
+                      <TableHead>Aquisitivo</TableHead>
+                      <TableHead>Gozo</TableHead>
+                      <TableHead>Dias</TableHead>
+                      <TableHead>Abono</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(q.data ?? []).map((f) => (
+                      <TableRow key={f.id}>
+                        <TableCell className="font-medium">{f.funcionario_nome}</TableCell>
+                        <TableCell className="text-xs">
+                          {new Date(f.periodo_aquisitivo_inicio).toLocaleDateString("pt-BR")} →{" "}
+                          {new Date(f.periodo_aquisitivo_fim).toLocaleDateString("pt-BR")}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {f.data_inicio
+                            ? `${new Date(f.data_inicio).toLocaleDateString("pt-BR")} → ${
+                                f.data_fim ? new Date(f.data_fim).toLocaleDateString("pt-BR") : "—"
+                              }`
+                            : "—"}
+                        </TableCell>
+                        <TableCell>{f.dias_gozados}</TableCell>
+                        <TableCell>{f.abono_dias}</TableCell>
+                        <TableCell>
+                          <Badge className={STATUS[f.status].tone}>{STATUS[f.status].label}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(!q.data || q.data.length === 0) && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="py-10 text-center text-sm text-muted-foreground"
+                        >
+                          Nenhum período de férias cadastrado.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

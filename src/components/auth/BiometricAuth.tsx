@@ -8,10 +8,10 @@ import { toast } from "sonner";
  * Habilita login rápido por impressão digital/rosto em dispositivos compatíveis.
  * Só aparece em ambiente PWA mobile e solicita automaticamente se possível.
  */
-export function BiometricAuth({ 
-  onSuccess, 
-  disabled 
-}: { 
+export function BiometricAuth({
+  onSuccess,
+  disabled,
+}: {
   onSuccess: (email: string) => void;
   disabled?: boolean;
 }) {
@@ -21,16 +21,19 @@ export function BiometricAuth({
 
   useEffect(() => {
     // Verifica se é PWA
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
-      || (window.navigator as any).standalone 
-      || document.referrer.includes('android-app://');
-    
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone ||
+      document.referrer.includes("android-app://");
+
     setIsPWA(isStandalone);
 
     // Verifica suporte básico ao WebAuthn
-    if (window.PublicKeyCredential && 
-        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(result => {
+    if (
+      window.PublicKeyCredential &&
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable
+    ) {
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then((result) => {
         setIsSupported(result);
       });
     }
@@ -54,17 +57,19 @@ export function BiometricAuth({
   async function handleBiometric() {
     try {
       const email = localStorage.getItem("last_logged_in_email");
-      
+
       if (!email) {
         if (!autoRequested.current) {
-          toast.info("Faça o primeiro login com senha para habilitar a biometria neste dispositivo.");
+          toast.info(
+            "Faça o primeiro login com senha para habilitar a biometria neste dispositivo.",
+          );
         }
         return;
       }
 
       // Simulação do fluxo: no futuro, integraremos com o signInWithPasskey do Supabase
       toast.info("Autenticação biométrica solicitada no PWA.");
-      
+
       // Se tivéssemos a implementação real, chamaríamos onSuccess(email) após a validação
       // onSuccess(email);
     } catch (error) {
@@ -80,7 +85,9 @@ export function BiometricAuth({
     <div className="flex flex-col items-center gap-2 pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="flex w-full items-center gap-3 py-2">
         <div className="h-px flex-1 bg-border/60" />
-        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground font-sans">Ou acesse com</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground font-sans">
+          Ou acesse com
+        </span>
         <div className="h-px flex-1 bg-border/60" />
       </div>
       <Button

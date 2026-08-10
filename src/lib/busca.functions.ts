@@ -47,11 +47,7 @@ export const buscaGlobal = createServerFn({ method: "GET" })
         .select("id, nome_cliente, cpf_cnpj, numero_proposta, nome_banco")
         .or(`nome_cliente.ilike.${like},cpf_cnpj.ilike.${like}`)
         .limit(6),
-      supabase
-        .from("tasks")
-        .select("id, titulo, numero")
-        .ilike("titulo", like)
-        .limit(6),
+      supabase.from("tasks").select("id, titulo, numero").ilike("titulo", like).limit(6),
     ]);
 
     for (const c of clientes.data ?? []) {
@@ -68,7 +64,7 @@ export const buscaGlobal = createServerFn({ method: "GET" })
         id: `simulacao-${s.id}`,
         tipo: "simulacao",
         titulo: s.nome_cliente ?? "Simulação",
-        subtitulo: s.numero_simulacao ? `Nº ${s.numero_simulacao}` : s.cpf_cnpj ?? undefined,
+        subtitulo: s.numero_simulacao ? `Nº ${s.numero_simulacao}` : (s.cpf_cnpj ?? undefined),
         link: `/operacional/simulacoes/${s.id}`,
       });
     }
@@ -77,7 +73,7 @@ export const buscaGlobal = createServerFn({ method: "GET" })
         id: `proposta-${p.id}`,
         tipo: "proposta",
         titulo: p.nome_cliente ?? "Proposta",
-        subtitulo: p.numero_proposta ? `Nº ${p.numero_proposta}` : p.nome_banco ?? undefined,
+        subtitulo: p.numero_proposta ? `Nº ${p.numero_proposta}` : (p.nome_banco ?? undefined),
         link: `/operacional/propostas/${p.id}`,
       });
     }

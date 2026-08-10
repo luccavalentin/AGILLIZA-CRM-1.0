@@ -13,9 +13,7 @@ export const Route = createFileRoute("/_authenticated/financeiro/comissoes-usuar
   beforeLoad: () => assertModuloPermitido("financeiro.comissoes"),
   component: Pagina,
   errorComponent: () => (
-    <div className="p-6 text-sm text-muted-foreground">
-      Não foi possível carregar as comissões.
-    </div>
+    <div className="p-6 text-sm text-muted-foreground">Não foi possível carregar as comissões.</div>
   ),
 });
 
@@ -64,4 +62,3 @@ function Pagina() {
     </div>
   );
 }
-

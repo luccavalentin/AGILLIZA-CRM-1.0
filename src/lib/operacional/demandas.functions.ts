@@ -4,7 +4,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 import { carregarReacoes } from "@/lib/chat-core/reacoes.functions";
 
-
 export type DemandaStatus = "aberta" | "em_andamento" | "aguardando" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
 
@@ -85,7 +84,10 @@ async function nomesPorId(
 async function correspondenteId(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.");
+  if (!data)
+    throw new Error(
+      "Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.",
+    );
   return data as string;
 }
 
@@ -174,8 +176,6 @@ export const listarDemandas = createServerFn({ method: "GET" })
       query = query.or(`titulo.ilike.%${t}%,numero.ilike.%${t}%`);
     }
 
-
-
     const { data: itens, error } = await query;
     if (error) throw new Error(error.message);
     const rows = (itens ?? []) as any[];
@@ -183,7 +183,8 @@ export const listarDemandas = createServerFn({ method: "GET" })
     const idsPerfil = rows.flatMap((r) => [r.responsavel_id, r.criador_id]);
     const perfis = await perfisPorId(supabase, idsPerfil);
     const nm = (id: string | null | undefined) => (id ? (perfis.get(id)?.nome ?? null) : null);
-    const tp = (id: string | null | undefined) => (id ? (perfis.get(id)?.tipo_pessoa ?? null) : null);
+    const tp = (id: string | null | undefined) =>
+      id ? (perfis.get(id)?.tipo_pessoa ?? null) : null;
 
     // Contagem simples de "não lidas": mensagens depois da última leitura do usuário
     // (upper bound razoável: total de mensagens quando não há registro de leitura).
@@ -192,8 +193,15 @@ export const listarDemandas = createServerFn({ method: "GET" })
     const ultimaMap = new Map<string, string | null>();
     if (idsDem.length) {
       const [{ data: leituras }, { data: msgs }] = await Promise.all([
-        supabase.from("demanda_leituras").select("demanda_id, lida_em").in("demanda_id", idsDem).eq("user_id", userId),
-        supabase.from("demanda_mensagens").select("demanda_id, autor_id, created_at").in("demanda_id", idsDem),
+        supabase
+          .from("demanda_leituras")
+          .select("demanda_id, lida_em")
+          .in("demanda_id", idsDem)
+          .eq("user_id", userId),
+        supabase
+          .from("demanda_mensagens")
+          .select("demanda_id, autor_id, created_at")
+          .in("demanda_id", idsDem),
       ]);
       const lidasEm = new Map<string, string>();
       for (const l of (leituras ?? []) as any[]) lidasEm.set(l.demanda_id, l.lida_em);
@@ -282,7 +290,6 @@ export const listarSimulacoesOpcoes = createServerFn({ method: "GET" })
       nome_cliente: r.clientes?.nome ?? null,
     }));
   });
-
 
 export const obterDemanda = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -446,9 +453,7 @@ export const listarChatDemanda = createServerFn({ method: "GET" })
           citacao: alvo
             ? {
                 autor: nomes.get(alvo.autor_id as string) ?? "Usuário",
-                texto: alvo.excluida_em
-                  ? "Mensagem excluída"
-                  : (alvo.corpo?.trim() || "Anexo"),
+                texto: alvo.excluida_em ? "Mensagem excluída" : alvo.corpo?.trim() || "Anexo",
               }
             : null,
           reacoes: reacoes.get(m.id as string) ?? [],
@@ -491,9 +496,6 @@ export const excluirChatDemanda = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
-
-
 
 export const criarDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -580,7 +582,8 @@ export const criarDemanda = createServerFn({ method: "POST" })
 
     // Notifica responsável e participantes sobre a nova demanda.
     const destinatarios = new Set<string>();
-    if (data.responsavel_id && data.responsavel_id !== userId) destinatarios.add(data.responsavel_id);
+    if (data.responsavel_id && data.responsavel_id !== userId)
+      destinatarios.add(data.responsavel_id);
     for (const p of participantes) if (p !== userId) destinatarios.add(p);
     for (const uid of destinatarios) {
       await supabase.rpc("emitir_notificacao", {
@@ -649,7 +652,6 @@ export const transferirDemanda = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const moverStatusDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
@@ -691,8 +693,10 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
       .select("user_id")
       .eq("demanda_id", data.id);
     const destinatarios = new Set<string>();
-    if (atual.criador_id && atual.criador_id !== userId) destinatarios.add(atual.criador_id as string);
-    if (atual.responsavel_id && atual.responsavel_id !== userId) destinatarios.add(atual.responsavel_id as string);
+    if (atual.criador_id && atual.criador_id !== userId)
+      destinatarios.add(atual.criador_id as string);
+    if (atual.responsavel_id && atual.responsavel_id !== userId)
+      destinatarios.add(atual.responsavel_id as string);
     for (const p of (parts ?? []) as any[]) {
       if (p.user_id && p.user_id !== userId) destinatarios.add(p.user_id);
     }
@@ -755,7 +759,8 @@ export const comentarDemanda = createServerFn({ method: "POST" })
         .eq("demanda_id", data.demanda_id);
       const destinatarios = new Set<string>();
       if (dem.criador_id && dem.criador_id !== userId) destinatarios.add(dem.criador_id as string);
-      if (dem.responsavel_id && dem.responsavel_id !== userId) destinatarios.add(dem.responsavel_id as string);
+      if (dem.responsavel_id && dem.responsavel_id !== userId)
+        destinatarios.add(dem.responsavel_id as string);
       for (const p of (parts ?? []) as any[]) {
         if (p.user_id && p.user_id !== userId) destinatarios.add(p.user_id);
       }
@@ -928,7 +933,10 @@ export const editarDemanda = createServerFn({ method: "POST" })
       if (prazo) patch.prazo_sla = prazo;
     }
 
-    const { error } = await supabase.from("demandas").update(patch as any).eq("id", data.id);
+    const { error } = await supabase
+      .from("demandas")
+      .update(patch as any)
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase.from("demanda_historico").insert({
       demanda_id: data.id,
@@ -988,5 +996,3 @@ export const adicionarParticipantesDemanda = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
-
-

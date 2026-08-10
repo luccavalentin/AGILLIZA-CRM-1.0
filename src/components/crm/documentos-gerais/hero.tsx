@@ -43,8 +43,8 @@ export function DocumentosHero({
             Documentos Gerais
           </h1>
           <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-            Organizados por Comercial → Imobiliária → Corretor → Cliente, com a
-            documentação de cada cliente.
+            Organizados por Comercial → Imobiliária → Corretor → Cliente, com a documentação de cada
+            cliente.
           </p>
         </div>
 

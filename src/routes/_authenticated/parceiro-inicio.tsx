@@ -47,8 +47,8 @@ function InicioParceiro() {
       {resumo.data && (
         <div className="mt-6 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           Seu percentual de comissão padrão é{" "}
-          <span className="font-medium text-foreground">{resumo.data.percentual_comissao}%</span>. As
-          comissões são calculadas automaticamente quando um contrato é emitido para um cliente
+          <span className="font-medium text-foreground">{resumo.data.percentual_comissao}%</span>.
+          As comissões são calculadas automaticamente quando um contrato é emitido para um cliente
           vinculado a você.
         </div>
       )}

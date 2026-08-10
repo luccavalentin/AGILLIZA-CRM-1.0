@@ -12,7 +12,6 @@ import { humanizarRespostaErro } from "./bank-error-humanizer";
 
 export const TIPO_BANCO_SANTANDER = 33; // Código HomeFin para Santander
 
-
 const SENSIVEIS = new Set([
   "secretId",
   "secretKey",
@@ -33,9 +32,9 @@ const SENSIVEIS = new Set([
   "jwt",
 ]);
 
-/** 
- * Mascara apenas dados sensíveis (identificação, contato, renda). 
- * Preserva campos estruturais como endereço, estado civil e regime 
+/**
+ * Mascara apenas dados sensíveis (identificação, contato, renda).
+ * Preserva campos estruturais como endereço, estado civil e regime
  * para facilitar o diagnóstico (Problema 3a).
  */
 function mascarar(valor: unknown): unknown {
@@ -50,7 +49,6 @@ function mascarar(valor: unknown): unknown {
   }
   return valor;
 }
-
 
 const CAMPOS_TEXTO_LIVRE_BANCO = new Set([
   "nomeProfissao",
@@ -111,7 +109,8 @@ function config() {
  * (marca branca). Nunca vazar nomes de provedores/plataforma.
  */
 export function sanitizarMensagemErro(msg: string | null | undefined): string {
-  const fallback = "O banco não respondeu corretamente. Verifique se todos os campos estão preenchidos e tente novamente em instantes.";
+  const fallback =
+    "O banco não respondeu corretamente. Verifique se todos os campos estão preenchidos e tente novamente em instantes.";
   if (!msg) return fallback;
   if (/supabase|service[_ ]role|environment variable|cloud/i.test(msg)) {
     return fallback;
@@ -175,8 +174,7 @@ interface TokenInfo {
  */
 let _tokenCache: { info: TokenInfo; expiresAt: number } | null = null;
 let _tokenEmVoo: Promise<TokenInfo> | null = null;
-const CACHE_ID = '00000000-0000-0000-0000-000000000000'; // Linha única de cache
-
+const CACHE_ID = "00000000-0000-0000-0000-000000000000"; // Linha única de cache
 
 async function solicitarToken(): Promise<TokenInfo> {
   const { base, secretId, secretKey } = config();
@@ -219,16 +217,16 @@ async function solicitarToken(): Promise<TokenInfo> {
 
   const expiresAt = Date.now() + 25 * 60 * 1000;
   _tokenCache = { info, expiresAt };
-  
+
   // Persiste no banco para compartilhamento entre isolates (L2)
   try {
     await supabaseAdmin.from("homefin_auth_cache").upsert({
-      id: CACHE_ID, 
+      id: CACHE_ID,
       token: info.token,
       expires_at: new Date(expiresAt).toISOString(),
       id_regional: info.idRegional,
       id_parceiro: info.idParceiro,
-      id_usuario_parceiro: info.idUsuarioParceiro
+      id_usuario_parceiro: info.idUsuarioParceiro,
     });
   } catch (e) {
     console.error("[integracao] falha ao persistir cache de token", e);
@@ -261,7 +259,7 @@ export async function obterToken(forcarRenovacao = false): Promise<TokenInfo> {
           token: data.token,
           idRegional: data.id_regional,
           idParceiro: data.id_parceiro,
-          idUsuarioParceiro: data.id_usuario_parceiro
+          idUsuarioParceiro: data.id_usuario_parceiro,
         };
         _tokenCache = { info, expiresAt: new Date(data.expires_at).getTime() };
         return info;
@@ -281,11 +279,11 @@ export async function obterToken(forcarRenovacao = false): Promise<TokenInfo> {
 
   _tokenEmVoo = (async () => {
     // 4.1 Bloqueio pessimista via banco para evitar múltiplos isolates renovando
-    // Tenta "marcar" que este isolate vai renovar. Se já houver um timestamp 
+    // Tenta "marcar" que este isolate vai renovar. Se já houver um timestamp
     // de renovação recente (<30s), aguarda.
     try {
       const lockKey = `auth_lock_${CACHE_ID}`;
-      // Em Workers não temos Redis global fácil sem extra infra. 
+      // Em Workers não temos Redis global fácil sem extra infra.
       // O upsert acima já resolve a maioria dos casos se for rápido.
       // O single-flight L1 resolve dentro do mesmo isolate.
       return await solicitarToken();
@@ -296,7 +294,6 @@ export async function obterToken(forcarRenovacao = false): Promise<TokenInfo> {
 
   return _tokenEmVoo;
 }
-
 
 export interface HomefinRequestCtx {
   simulacao_id?: string | null;
@@ -314,23 +311,23 @@ export async function chamarIntegracao<T = unknown>(
   // Serialização de chamadas para evitar rajadas de 401 que invalidam tokens
   // Apenas para endpoints que costumam ser chamados em paralelo (polling/oportunidade/participante)
   const deveSerializar = !endpoint.startsWith("/auth") && !endpoint.includes("/dominios");
-  
+
   if (deveSerializar) {
     return (async () => {
       // @ts-ignore - _pollingQueue is a simple Promise.resolve()
       return new Promise((resolve, reject) => {
         // @ts-ignore
-        (globalThis._hfQueue = (globalThis._hfQueue || Promise.resolve()).then(async () => {
+        globalThis._hfQueue = (globalThis._hfQueue || Promise.resolve()).then(async () => {
           try {
             resolve(await executarChamada<T>(endpoint, method, body, ctx));
           } catch (e) {
             reject(e);
           }
-        }));
+        });
       });
     })();
   }
-  
+
   return executarChamada<T>(endpoint, method, body, ctx);
 }
 
@@ -366,18 +363,23 @@ async function executarChamada<T = unknown>(
     // o mesmo token novo em vez de invalidarem umas às outras.
     for (let tentativa = 0; tentativa < 2 && resp.status === 401; tentativa++) {
       // Tenta reler cache L1/L2 primeiro (outro isolate pode ter renovado)
-      tokenInfo = await obterToken(true); 
+      tokenInfo = await obterToken(true);
       const novo = tokenInfo.token;
-      
+
       if (novo === tokenAtual) break;
       tokenAtual = novo;
       resp = await executar(tokenAtual);
     }
   } catch (e) {
-    await registrarLog({ ...ctx, endpoint, metodo: method, request: bodyNormalizado, erro: String(e) });
+    await registrarLog({
+      ...ctx,
+      endpoint,
+      metodo: method,
+      request: bodyNormalizado,
+      erro: String(e),
+    });
     throw new IntegracaoBancariaError("O banco não respondeu no tempo esperado. Tente reenviar.");
   }
-
 
   const json = (await resp.json().catch(() => null)) as T;
   await registrarLog({
@@ -391,11 +393,13 @@ async function executarChamada<T = unknown>(
   });
 
   if (!resp.ok) {
-    throw new IntegracaoBancariaError(extrairMensagemErroBanco(json, resp.status, endpoint), resp.status);
+    throw new IntegracaoBancariaError(
+      extrairMensagemErroBanco(json, resp.status, endpoint),
+      resp.status,
+    );
   }
   return json;
 }
-
 
 /**
  * Envia um arquivo binário (multipart/form-data) para a integração bancária.
@@ -445,7 +449,10 @@ export async function enviarArquivoIntegracao<T = unknown>(
   });
 
   if (!resp.ok) {
-    throw new IntegracaoBancariaError(extrairMensagemErroBanco(json, resp.status, endpoint), resp.status);
+    throw new IntegracaoBancariaError(
+      extrairMensagemErroBanco(json, resp.status, endpoint),
+      resp.status,
+    );
   }
   return json;
 }
@@ -459,7 +466,6 @@ export async function enviarArquivoIntegracao<T = unknown>(
 function extrairMensagemErroBanco(json: unknown, status: number, endpoint = ""): string {
   return humanizarRespostaErro(json, status, endpoint);
 }
-
 
 export function integracaoConfigurada(): boolean {
   return Boolean(
@@ -561,7 +567,6 @@ export async function sincronizarDominiosIntegracao(): Promise<ResultadoSincroni
     if (!error) operacoesSync++;
     else console.error("[integracao] sync operação falhou", error.message);
   }
-
 
   return { bancos: bancosSync, operacoes: operacoesSync };
 }

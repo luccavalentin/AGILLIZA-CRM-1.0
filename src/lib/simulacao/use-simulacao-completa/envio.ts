@@ -134,7 +134,11 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
           enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } })
             .then((resp: any) => {
               if (resp?.status === "simulada") {
-                bancosSimulados.push({ idSimulacao: id, banco_id: bid, nome_banco: resp.nome_banco || bid });
+                bancosSimulados.push({
+                  idSimulacao: id,
+                  banco_id: bid,
+                  nome_banco: resp.nome_banco || bid,
+                });
               }
             })
             .catch((e) => {
@@ -188,7 +192,11 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
           enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bid] } })
             .then((resp: any) => {
               if (resp?.status === "simulada") {
-                bancosSimulados.push({ idSimulacao: id, banco_id: bid, nome_banco: resp.nome_banco || bid });
+                bancosSimulados.push({
+                  idSimulacao: id,
+                  banco_id: bid,
+                  nome_banco: resp.nome_banco || bid,
+                });
               }
             })
             .catch((e) => {
@@ -218,19 +226,27 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
       try {
         const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
         // Agrupa bancos por id de simulação para evitar múltiplas chamadas com dados repetidos
-        const porSim = bancosSimulados.reduce((acc, curr) => {
-          if (!acc[curr.idSimulacao]) acc[curr.idSimulacao] = [];
-          acc[curr.idSimulacao].push(curr.banco_id);
-          return acc;
-        }, {} as Record<string, string[]>);
+        const porSim = bancosSimulados.reduce(
+          (acc, curr) => {
+            if (!acc[curr.idSimulacao]) acc[curr.idSimulacao] = [];
+            acc[curr.idSimulacao].push(curr.banco_id);
+            return acc;
+          },
+          {} as Record<string, string[]>,
+        );
 
         for (const [simId, bancoIds] of Object.entries(porSim)) {
           const simData = await obterSimulacao({ data: { id: simId } });
-          const bancosReais = (simData.bancos as any[])?.filter((b: any) => (bancoIds as string[]).includes(b.banco_id));
+          const bancosReais = (simData.bancos as any[])?.filter((b: any) =>
+            (bancoIds as string[]).includes(b.banco_id),
+          );
           if (bancosReais?.length > 0) {
             // No modo Ambos, as simulações já vêm com b._sistema ("SAC" ou "PRICE") marcado no backend
             // para que o PDF saia com o rótulo correto.
-            await baixarSimulacaoDetalhadaPDF({ simulacao: simData.simulacao, bancos: bancosReais });
+            await baixarSimulacaoDetalhadaPDF({
+              simulacao: simData.simulacao,
+              bancos: bancosReais,
+            });
             await new Promise((r) => setTimeout(r, 800));
           }
         }
@@ -290,7 +306,9 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
         promises.push(enviarSimulacaoBanco({ data: { simulacao_id: id_secundario } }));
       } else {
         for (const bid of idsBancos) {
-          promises.push(enviarSimulacaoBanco({ data: { simulacao_id: id_secundario, banco_ids: [bid] } }));
+          promises.push(
+            enviarSimulacaoBanco({ data: { simulacao_id: id_secundario, banco_ids: [bid] } }),
+          );
         }
       }
     }
@@ -298,15 +316,16 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     let feitos = 0;
     await Promise.allSettled(
       promises.map((p) =>
-        p.catch((e) => {
-          console.error("[Envio Banco]", e);
-        }).finally(() => {
-          feitos++;
-          setConcluidos(Math.min(feitos, idsBancos.length > 0 ? idsBancos.length : 1));
-        })
-      )
+        p
+          .catch((e) => {
+            console.error("[Envio Banco]", e);
+          })
+          .finally(() => {
+            feitos++;
+            setConcluidos(Math.min(feitos, idsBancos.length > 0 ? idsBancos.length : 1));
+          }),
+      ),
     );
-
 
     // Fluxo "Nova Proposta": após simular, cria a proposta e redireciona.
     if (modoProposta) {
@@ -355,13 +374,14 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     }
     setEnviando(false);
     setConcluidos(0);
-    toast.success(
-      "Simulação realizada. Os retornos dos bancos estão sendo processados.",
-    );
+    toast.success("Simulação realizada. Os retornos dos bancos estão sendo processados.");
   } catch (e) {
     const msg = e instanceof Error ? e.message : null;
     toast.error(
-      msg ?? (modoProposta ? "Não foi possível criar a proposta." : "Não foi possível criar a simulação."),
+      msg ??
+        (modoProposta
+          ? "Não foi possível criar a proposta."
+          : "Não foi possível criar a simulação."),
     );
     setEnviando(false);
     setConcluidos(0);

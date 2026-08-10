@@ -11,7 +11,6 @@ interface PropostaNotificacao {
   dados_adicionais?: any;
 }
 
-
 interface PropostaNotificacaoStore {
   abertas: PropostaNotificacao[];
   adicionar: (notif: PropostaNotificacao) => void;

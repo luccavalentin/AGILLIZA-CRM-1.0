@@ -230,7 +230,10 @@ export const testarConexaoIA = createServerFn({ method: "POST" })
         apiKey = (row?.api_key ?? "").trim();
       }
       if (!apiKey) {
-        return { ok: false, message: "Nenhuma chave de API cadastrada. Informe a chave e tente novamente." };
+        return {
+          ok: false,
+          message: "Nenhuma chave de API cadastrada. Informe a chave e tente novamente.",
+        };
       }
 
       const baseUrl = (data.base_url || PRESETS_IA[data.provedor].base_url).replace(/\/+$/, "");

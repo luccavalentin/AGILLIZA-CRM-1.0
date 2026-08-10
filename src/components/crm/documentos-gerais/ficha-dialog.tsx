@@ -1,12 +1,7 @@
 import { Printer, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -92,12 +87,19 @@ export function FichaDialog({
                     <Campo rotulo="Nacionalidade" valor={data.comprador.nacionalidade} />
                     <Campo rotulo="E-mail" valor={data.comprador.email} />
                     <Campo rotulo="Celular" valor={data.comprador.telefone_celular} />
-                    <Campo rotulo="Renda declarada" valor={brl(data.comprador.renda_total_declarada)} />
+                    <Campo
+                      rotulo="Renda declarada"
+                      valor={brl(data.comprador.renda_total_declarada)}
+                    />
                     <Campo rotulo="Nome da mãe" valor={data.comprador.nome_mae} />
                     <Campo rotulo="Banco" valor={data.comprador.banco_conta} />
                     <Campo
                       rotulo="Agência / Conta"
-                      valor={[data.comprador.agencia, data.comprador.conta_corrente].filter(Boolean).join(" / ") || "—"}
+                      valor={
+                        [data.comprador.agencia, data.comprador.conta_corrente]
+                          .filter(Boolean)
+                          .join(" / ") || "—"
+                      }
                     />
                   </div>
                 ) : (
@@ -121,7 +123,11 @@ export function FichaDialog({
                     <Campo rotulo="Banco" valor={data.conjuge.banco_conta} />
                     <Campo
                       rotulo="Agência / Conta"
-                      valor={[data.conjuge.agencia, data.conjuge.conta_corrente].filter(Boolean).join(" / ") || "—"}
+                      valor={
+                        [data.conjuge.agencia, data.conjuge.conta_corrente]
+                          .filter(Boolean)
+                          .join(" / ") || "—"
+                      }
                     />
                   </div>
                 </TabsContent>

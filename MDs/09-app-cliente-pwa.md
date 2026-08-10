@@ -3,21 +3,24 @@
 > Requer Etapas 01, 03, 05.
 
 ## Dependências e Produtos
+
 **Depende de:** 00, 00b, **01** (login do cliente por CPF/CNPJ+data, papel `cliente`, RLS restringindo linhas a `cliente.user_id = auth.uid()`), **03** (`clientes`, `documentos`, `pipeline_stages` para timeline visível), **05** (`propostas`, `proposta_status_historico` para acompanhamento), **07** (opcional — `tarefas` que o cliente precisa concluir, ex.: assinar contrato), **06** (opcional — mostra parcela/valores homologados).
 **Produz (consumido por 10 — auditoria de acessos):**
+
 - Rotas `/cliente/*` (PWA autenticado), `public/manifest-cliente.webmanifest`, ícones PWA.
 - Server fns: `clienteMinhasPropostas`, `clienteMeusDocumentos`, `clienteEnviarDocumentoPendente`.
 - Registros de acesso do cliente em `auditoria` (Etapa 10).
 
-
 ## Assets desta etapa (pasta `Logos e a API/`)
+
 - **Ícones do PWA** (`192x192`, `512x512`, maskable, apple-touch-icon), **splash screen** e **logo do topo do app cliente**: gerar a partir de `Logos e a API/Logo Vetor/AGILLIZA-LOGO.pdf`/`.ai` (para nitidez) e das versões quadradas em `Logos e a API/Logo PNG/`. Salvar em `public/icons/cliente/` e referenciar em `public/manifest-cliente.webmanifest`. **Proibido gerar ícone com IA ou usar emoji.**
 
-
 ## Objetivo
+
 Portal para o cliente final acompanhar seu processo: ver etapa atual, receber mensagens do time, subir documentos solicitados, conversar por chat, ver notificações in-app. Isolado do sistema interno — usa sessão selada em cookie HttpOnly, jamais Supabase Auth. **Não integra provedor de SMS, e-mail, WhatsApp nem Web Push** — não existe canal externo de mensageria no projeto.
 
 ## O que o módulo faz
+
 1. Login em `/auth` aba **Portal do Cliente**: seleciona PF ou PJ, informa CPF+data de nascimento (PF) ou CNPJ+data de abertura (PJ). A validação bate contra o cadastro em `clientes` — não há código enviado por SMS/e-mail. Cookie selado (`agz_cliente_app`), TTL 8h.
 2. Ao logar, redireciona para `/cliente/visao-geral`.
 3. Cliente vê: **etapa atual** (com nome amigável e mensagem padrão), **próximas etapas** (cinza), **etapas concluídas** (verde com data), **SLA countdown** (dias/horas restantes na etapa).
@@ -30,22 +33,27 @@ Portal para o cliente final acompanhar seu processo: ver etapa atual, receber me
 ## Telas
 
 ### `/cliente/visao-geral` — home
+
 - Header: nome cliente, foto, botão sair, sino.
 - Card grande **Etapa Atual**: nome, descrição amigável (mensagem padrão), progresso (X/12), SLA countdown.
 - Timeline visual 12 etapas (concluídas verde ✓, atual destaque, próximas cinza).
 - Cards: **Próximas ações** (docs a enviar), **Últimas mensagens**, **Meu contato** (responsável no time).
 
 ### `/cliente/acompanhar-minha-proposta` (tab principal)
+
 Tabs:
+
 1. **Meu processo** — timeline detalhada + descrição de cada etapa.
 2. **Documentos** — lista com status (pendente/enviado/aprovado/reprovado); botão “Enviar/Substituir” (câmera mobile).
 3. **Mensagens** — chat com o time (`cliente_app_mensagens`), input com anexo, indicador digitando.
 4. **Propostas** — cards de propostas ativas (número, banco, valor, status amigável).
 
 ### `/cliente/logout`
+
 Limpa cookie e redireciona `/auth`.
 
 ## Estrutura de dados
+
 - `cliente_app_acessos(cliente_id, documento, tipo_acesso, sucesso, motivo_bloqueio, ip, user_agent, created_at)` — log/rate-limit; NÃO guarda código, pois não há envio de código.
 - `cliente_app_processos(id, cliente_id, proposta_id UNIQUE, etapa_atual, proxima_etapa, status_amigavel, descricao_status, banco, produto, ultima_atualizacao_em)`.
 - `cliente_app_etapas(processo_app_id, cliente_id, etapa, ordem, status_etapa enum(atual|concluida|proxima|aguardando), descricao_cliente, iniciada_em, concluida_em)`.
@@ -56,6 +64,7 @@ Limpa cookie e redireciona `/auth`.
 - `cliente_portal_acessos` (log de acesso).
 
 ## Server functions (contratos)
+
 ```ts
 validarAcessoCliente({ tipo: 'PF'|'PJ', documento, data }) → seta cookie selado; retorna { cliente, processos }
 logoutCliente() → limpa cookie
@@ -68,9 +77,11 @@ clienteUploadDocumento({ processo_id, tipo, parte, file })
 clienteListarNotificacoes()
 clienteMarcarNotificacaoLida({ id })
 ```
+
 Todas com `requireClienteSession` (não `requireSupabaseAuth`).
 
 ## Regras críticas
+
 1. **Sessão selada** com `CLIENTE_APP_SESSION_SECRET` ≥ 32 chars; cookie `HttpOnly`, `Secure`, `SameSite=Lax`, `path=/`, `maxAge=8h`.
 2. **Rate-limit** no `validarAcessoCliente`: máx. 5 tentativas / documento / 15 min (contadas em `cliente_app_acessos`). Bloqueio 24h após 10 falhas consecutivas.
 3. **Sem código, sem OTP, sem mensageria externa** — a "segunda credencial" é a data de nascimento/abertura já armazenada. Se o dado é inválido, retorna a mesma mensagem genérica ("Dados não encontrados").
@@ -83,12 +94,14 @@ Todas com `requireClienteSession` (não `requireSupabaseAuth`).
 10. **Nunca** expor `homefin_id_*`, `numero_proposta`, dados internos.
 
 ## Regras de UI
+
 - Mobile-first (375px). Fontes grandes (16px min). Botões grandes (44px alvo).
 - Cores calmas; badge da etapa sempre visível.
 - Loading skeletons.
 - Toast pt-BR para erros amigáveis (“Falha de conexão. Tente novamente.”).
 
 ## Definition of Done
+
 - Login por CPF+data (PF) e CNPJ+data (PJ) funciona sem qualquer provedor externo.
 - Etapa muda no interno → cliente vê em <5s (realtime Supabase).
 - Upload de doc pelo celular funciona (câmera).

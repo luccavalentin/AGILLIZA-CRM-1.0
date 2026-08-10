@@ -2,12 +2,12 @@
 
 export function formatBRL(v: number | null | undefined): string {
   if (v == null || Number.isNaN(v)) return "—";
-  return v.toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 export function formatPercent(v: number | null | undefined, casas = 2): string {
   if (v == null || Number.isNaN(v)) return "—";
-  return `${(v * 100).toLocaleString("pt-BR", {  minimumFractionDigits: casas, maximumFractionDigits: casas })}%`;
+  return `${(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas })}%`;
 }
 
 /** Formata uma taxa que já vem em formato percentual (ex: 12.30 para 12,30%). */
@@ -31,7 +31,7 @@ export function parseBRL(texto: string): number {
 
 /** Formata um número como texto de moeda para input (sem prefixo R$). */
 export function maskBRLInput(valor: number): string {
-  return valor.toLocaleString("pt-BR", {  minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /**
@@ -43,9 +43,8 @@ export function maskBRLCents(texto: string): string {
   const digits = texto.replace(/\D/g, "");
   if (!digits) return "";
   const n = Number(digits) / 100;
-  return n.toLocaleString("pt-BR", {  minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
 
 export function maskCpfCnpj(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 14);

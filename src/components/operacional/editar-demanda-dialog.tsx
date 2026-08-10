@@ -46,7 +46,6 @@ export function EditarDemandaDialog({
   abertoOverride?: boolean;
   onOpenChangeOverride?: (open: boolean) => void;
 }) {
-
   const [abertoInterno, setAbertoInterno] = useState(false);
   const aberto = abertoOverride ?? abertoInterno;
   const setAberto = onOpenChangeOverride ?? setAbertoInterno;

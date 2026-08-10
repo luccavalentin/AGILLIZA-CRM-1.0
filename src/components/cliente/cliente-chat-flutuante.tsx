@@ -37,8 +37,7 @@ export function ClienteChatFlutuante() {
   useEffect(() => {
     if (!aberto || !atendentes || atendentes.length === 0) return;
     if (!selecionado) {
-      const preferido =
-        atendentes.find((a) => (a.nao_lidas ?? 0) > 0) ?? atendentes[0];
+      const preferido = atendentes.find((a) => (a.nao_lidas ?? 0) > 0) ?? atendentes[0];
       setSelecionado(preferido);
     } else {
       const atualizado = atendentes.find((a) => a.atendente_id === selecionado.atendente_id);
@@ -55,8 +54,7 @@ export function ClienteChatFlutuante() {
     if (!flashing || aberto) return;
     if (!atendentes || atendentes.length === 0) return;
     setSelecionado(
-      (atual) =>
-        atual ?? atendentes.find((a) => (a.nao_lidas ?? 0) > 0) ?? atendentes[0],
+      (atual) => atual ?? atendentes.find((a) => (a.nao_lidas ?? 0) > 0) ?? atendentes[0],
     );
     setAutoMinimizado(true);
     setAberto(true);

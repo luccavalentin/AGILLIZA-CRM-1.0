@@ -41,9 +41,7 @@ export function DmConversa({ conversaId }: { conversaId: string }) {
     [outro?.nome, outro?.foto_url],
   );
 
-  const renderHeader: React.ComponentProps<
-    typeof ChatConversaCore
-  >["adapter"]["renderHeader"] = ({
+  const renderHeader: React.ComponentProps<typeof ChatConversaCore>["adapter"]["renderHeader"] = ({
     buscaAberta,
     toggleBusca,
     buscaMsg,
@@ -52,9 +50,7 @@ export function DmConversa({ conversaId }: { conversaId: string }) {
     <>
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b bg-card px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
         <Avatar className="size-10 border border-border/60">
-          {outro?.foto_url && (
-            <AvatarImage src={outro.foto_url} alt={outro.nome ?? ""} />
-          )}
+          {outro?.foto_url && <AvatarImage src={outro.foto_url} alt={outro.nome ?? ""} />}
           <AvatarFallback className="bg-primary/15 text-sm font-semibold text-primary">
             {iniciais(outro?.nome)}
           </AvatarFallback>

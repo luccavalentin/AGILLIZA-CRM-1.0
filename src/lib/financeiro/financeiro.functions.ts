@@ -12,7 +12,10 @@ const TABELA: Record<ContaTipo, "financial_payables" | "financial_receivables"> 
 async function correspondenteId(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.");
+  if (!data)
+    throw new Error(
+      "Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.",
+    );
   return data as string;
 }
 
@@ -168,9 +171,7 @@ export const resumoContas = createServerFn({ method: "GET" })
   .handler(async ({ context, data }): Promise<ContasResumo> => {
     const { supabase } = context;
     const contraCol = data.tipo === "pagar" ? "fornecedor" : "pagador";
-    let query = supabase
-      .from(TABELA[data.tipo])
-      .select("vencimento, valor, valor_pago, status");
+    let query = supabase.from(TABELA[data.tipo]).select("vencimento, valor, valor_pago, status");
 
     if (data.status === "atrasada") {
       const hojeStr = new Date().toLocaleDateString("sv");
@@ -348,7 +349,6 @@ export const criarConta = createServerFn({ method: "POST" })
     return { id: inserted.id };
   });
 
-
 /** ===== Baixar conta (pagamento/recebimento total ou parcial) ===== */
 export const baixarConta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -376,8 +376,7 @@ export const baixarConta = createServerFn({ method: "POST" })
     if (e1) throw new Error(e1.message);
     if (conta.status === "cancelada" || conta.status === "estornada")
       throw new Error("Conta não pode ser baixada.");
-    if (conta.status === "paga")
-      throw new Error("Conta já está totalmente paga.");
+    if (conta.status === "paga") throw new Error("Conta já está totalmente paga.");
 
     const saldoDevedor = Number(conta.valor) - Number(conta.valor_pago);
     if (data.valor > saldoDevedor + 0.005) {
@@ -611,7 +610,6 @@ export const atualizarConta = createServerFn({ method: "POST" })
     if (!atual) throw new Error("Conta não encontrada.");
     const atualRow = atual as Record<string, any>;
 
-
     const pago = Number(atualRow.valor_pago) || 0;
     if (pago > data.valor)
       throw new Error("O valor não pode ser menor do que o total já baixado nesta conta.");
@@ -642,17 +640,24 @@ export const atualizarConta = createServerFn({ method: "POST" })
       data.descricao,
       data.valor,
     );
-    await registrarAuditoria(supabase, correspondente_id, `conta_${data.tipo}`, data.id, "editada", {
-      antes: {
-        descricao: atualRow.descricao,
-        valor: Number(atualRow.valor),
-        vencimento: atualRow.vencimento,
-        contraparte: atualRow[contraCol] ?? null,
-        categoria_id: atualRow.categoria_id ?? null,
-        cost_center_id: atualRow.cost_center_id ?? null,
+    await registrarAuditoria(
+      supabase,
+      correspondente_id,
+      `conta_${data.tipo}`,
+      data.id,
+      "editada",
+      {
+        antes: {
+          descricao: atualRow.descricao,
+          valor: Number(atualRow.valor),
+          vencimento: atualRow.vencimento,
+          contraparte: atualRow[contraCol] ?? null,
+          categoria_id: atualRow.categoria_id ?? null,
+          cost_center_id: atualRow.cost_center_id ?? null,
+        },
+        depois: patch,
       },
-      depois: patch,
-    });
+    );
     return { ok: true };
   });
 
@@ -930,7 +935,6 @@ export const excluirConfig = createServerFn({ method: "POST" })
     return { ok: true, desativado: false };
   });
 
-
 /** ===== Regras de comissão ===== */
 export const listarRegrasComissao = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -960,9 +964,7 @@ export interface FinanceiroKpis {
 export const obterKpisFinanceiros = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z
-      .object({ de: z.string().optional(), ate: z.string().optional() })
-      .parse(data ?? {}),
+    z.object({ de: z.string().optional(), ate: z.string().optional() }).parse(data ?? {}),
   )
   .handler(async ({ context, data }): Promise<FinanceiroKpis> => {
     const { supabase } = context;
@@ -1213,14 +1215,13 @@ export const excluirConta = createServerFn({ method: "POST" })
   });
 
 /** Remove os vínculos de comissões com as contas que serão excluídas. */
-async function desvincularContaDeComissoes(
-  supabase: any,
-  tipo: ContaTipo,
-  ids: string[],
-) {
+async function desvincularContaDeComissoes(supabase: any, tipo: ContaTipo, ids: string[]) {
   if (!ids.length) return;
   const coluna = tipo === "pagar" ? "payable_id" : "receivable_id";
-  await supabase.from("comissoes").update({ [coluna]: null }).in(coluna, ids);
+  await supabase
+    .from("comissoes")
+    .update({ [coluna]: null })
+    .in(coluna, ids);
   if (tipo === "pagar") {
     await supabase.from("comissoes_usuario").update({ payable_id: null }).in("payable_id", ids);
   }
@@ -1240,7 +1241,7 @@ export const limparFluxoCaixa = createServerFn({ method: "POST" })
   .handler(async ({ context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const correspondente_id = await correspondenteId(supabase, userId);
-    
+
     // Limpa a tabela de fluxo de caixa
     const { error: e1 } = await supabase
       .from("fluxo_caixa")
@@ -1266,14 +1267,11 @@ export const limparFluxoCaixa = createServerFn({ method: "POST" })
       "fluxo_caixa",
       correspondente_id,
       "limpeza_total",
-      { executado_por: userId }
+      { executado_por: userId },
     );
 
     return { ok: true };
   });
-
-
-
 
 /** ===== Fluxo de caixa analítico (ERP) ===== */
 export interface FluxoPontoAnalitico {
@@ -1288,7 +1286,12 @@ export interface FluxoPontoAnalitico {
   resultado: number;
   saldoAcum: number;
   futuro: boolean;
-  movimentacoesRealizadas?: { tipo: "entrada" | "saida"; valor: number; descricao: string | null; ref_id: string | null }[];
+  movimentacoesRealizadas?: {
+    tipo: "entrada" | "saida";
+    valor: number;
+    descricao: string | null;
+    ref_id: string | null;
+  }[];
 }
 
 export interface FluxoResumo {
@@ -1345,7 +1348,9 @@ export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
         .in("status", abertos),
       supabase
         .from("financial_payables")
-        .select("valor, valor_pago, vencimento, descricao, fornecedor, categoria:financial_categories(nome)")
+        .select(
+          "valor, valor_pago, vencimento, descricao, fornecedor, categoria:financial_categories(nome)",
+        )
         .in("status", abertos),
       supabase
         .from("fluxo_caixa")
@@ -1401,11 +1406,22 @@ export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
       saidaReal: number;
       entradaProj: number;
       saidaProj: number;
-      movimentacoesRealizadas: { tipo: "entrada" | "saida"; valor: number; descricao: string | null; ref_id: string | null }[];
+      movimentacoesRealizadas: {
+        tipo: "entrada" | "saida";
+        valor: number;
+        descricao: string | null;
+        ref_id: string | null;
+      }[];
     };
     const mapa: Record<string, Bucket> = {};
     const get = (k: string): Bucket =>
-      (mapa[k] ??= { entradaReal: 0, saidaReal: 0, entradaProj: 0, saidaProj: 0, movimentacoesRealizadas: [] });
+      (mapa[k] ??= {
+        entradaReal: 0,
+        saidaReal: 0,
+        entradaProj: 0,
+        saidaProj: 0,
+        movimentacoesRealizadas: [],
+      });
 
     realizRows.forEach((r: any) => {
       if (!r.data) return;
@@ -1416,7 +1432,7 @@ export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
         tipo: r.tipo as "entrada" | "saida",
         valor: Number(r.valor),
         descricao: r.descricao,
-        ref_id: r.ref_id
+        ref_id: r.ref_id,
       });
     });
     recRows.forEach((r: any) => {

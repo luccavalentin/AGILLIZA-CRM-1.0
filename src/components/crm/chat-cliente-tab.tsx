@@ -4,10 +4,7 @@ import {
   abrirChatFlutuante,
   fecharChatFlutuante,
 } from "@/components/shared/floating-chat-store";
-import {
-  ChatConversaCore,
-  useAdaptadorCliente,
-} from "@/components/shared/chat-core";
+import { ChatConversaCore, useAdaptadorCliente } from "@/components/shared/chat-core";
 import type { ChatClienteInfo } from "./chat-cliente/utils";
 
 export type { ChatClienteInfo } from "./chat-cliente/utils";
@@ -70,7 +67,7 @@ export function ChatClienteTab({
   acoes?: React.ReactNode;
 }) {
   const janelas = useFloatingChats();
-  const estaFlutuando = janelas.some(c => c.kind === "cliente" && c.clienteId === clienteId);
+  const estaFlutuando = janelas.some((c) => c.kind === "cliente" && c.clienteId === clienteId);
 
   // A janela flutuante só vale para a conversa do próprio usuário.
   if (somenteLeitura) {

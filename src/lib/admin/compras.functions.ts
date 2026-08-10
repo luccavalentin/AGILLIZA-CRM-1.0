@@ -121,7 +121,6 @@ export const excluirCompra = createServerFn({ method: "POST" })
   });
 
 export const decidirCompra = createServerFn({ method: "POST" })
-
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z

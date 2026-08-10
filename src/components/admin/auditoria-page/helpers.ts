@@ -51,7 +51,6 @@ export function rotuloEntidade(entidade: string | null | undefined): string {
   return ENTIDADE_LABEL[entidade] ?? entidade.replace(/[._]/g, " ");
 }
 
-
 export interface Filtros {
   dataInicio: string;
   dataFim: string;
@@ -109,15 +108,19 @@ export function classificar(acao: string): { tom: Tom; Icone: LucideIcon } {
   const a = acao.toLowerCase();
   if (a.includes("resetar_senha") || a.includes("habilitar_login") || a.includes("permiss"))
     return { tom: "seguranca", Icone: KeyRound };
-  if (a.includes("excluir") || a.includes("desativar"))
-    return { tom: "excluir", Icone: Trash2 };
+  if (a.includes("excluir") || a.includes("desativar")) return { tom: "excluir", Icone: Trash2 };
   if (a.includes("enviar")) return { tom: "enviar", Icone: Send };
   if (a.includes("criar") || a.includes("anexar") || a.includes("cadastr") || a.includes("ativar"))
     return {
       tom: "criar",
       Icone: a.includes("pessoa") || a.includes("cliente") ? UserPlus : FilePlus2,
     };
-  if (a.includes("atualizar") || a.includes("editar") || a.includes("renomear") || a.includes("personalizar"))
+  if (
+    a.includes("atualizar") ||
+    a.includes("editar") ||
+    a.includes("renomear") ||
+    a.includes("personalizar")
+  )
     return {
       tom: "atualizar",
       Icone: a.includes("pessoa") || a.includes("cliente") ? UserCog : FileEdit,

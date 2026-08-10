@@ -9,12 +9,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { calcularCLT } from "@/lib/rh/clt";
 
-
-export type StatusCompetencia =
-  | "aberta"
-  | "conferida"
-  | "fechada"
-  | "cancelada";
+export type StatusCompetencia = "aberta" | "conferida" | "fechada" | "cancelada";
 
 export type AjusteTipo = "provento" | "desconto";
 
@@ -53,7 +48,6 @@ export interface FolhaItem {
   };
 }
 
-
 export interface FolhaCompetencia {
   id: string;
   mes: number;
@@ -78,11 +72,7 @@ async function correspondenteId(supabase: any, userId: string) {
   return cid;
 }
 
-async function calcularPrevia(
-  supabase: any,
-  mes: number,
-  ano: number,
-): Promise<FolhaItem[]> {
+async function calcularPrevia(supabase: any, mes: number, ano: number): Promise<FolhaItem[]> {
   const { data: funcs } = await supabase
     .from("rh_funcionarios")
     .select("id, nome, salario_atual, rh_cargos(nome)")
@@ -164,8 +154,7 @@ async function calcularPrevia(
     const bruto = salario + provAv;
     const clt = calcularCLT(bruto, depIR, 0);
     const proventos = salario + b.valor + provAv;
-    const descontos =
-      b.desconto + adi + des + descAv + clt.inss + clt.irrf;
+    const descontos = b.desconto + adi + des + descAv + clt.inss + clt.irrf;
     return {
       funcionario_id: f.id,
       funcionario_nome: f.nome,
@@ -191,7 +180,6 @@ async function calcularPrevia(
   });
 }
 
-
 /** Calcula a prévia dinamicamente para uma competência (não persiste). */
 export const previaFolha = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -203,9 +191,7 @@ export const previaFolha = createServerFn({ method: "GET" })
       })
       .parse(data),
   )
-  .handler(async ({ data, context }) =>
-    calcularPrevia(context.supabase, data.mes, data.ano),
-  );
+  .handler(async ({ data, context }) => calcularPrevia(context.supabase, data.mes, data.ano));
 
 // ============================================================
 // AJUSTES AVULSOS (proventos/descontos manuais por competência)
@@ -295,10 +281,7 @@ export const excluirAjuste = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("rh_folha_ajustes")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("rh_folha_ajustes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -407,9 +390,7 @@ export const fecharCompetencia = createServerFn({ method: "POST" })
         status: "aberta" as const,
       }));
     if (payables.length > 0) {
-      const { error: pErr } = await context.supabase
-        .from("financial_payables")
-        .insert(payables);
+      const { error: pErr } = await context.supabase.from("financial_payables").insert(payables);
       if (pErr) throw new Error(pErr.message);
     }
 

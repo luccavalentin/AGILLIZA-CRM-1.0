@@ -97,7 +97,9 @@ export const listarAuditoria = createServerFn({ method: "GET" })
 
     let query = supabase
       .from("admin_audit_logs")
-      .select("id, acao, descricao, entidade, entidade_id, ip, user_agent, payload_anterior, payload_novo, user_id, created_at")
+      .select(
+        "id, acao, descricao, entidade, entidade_id, ip, user_agent, payload_anterior, payload_novo, user_id, created_at",
+      )
       .eq("correspondente_id", corr);
 
     if (data?.dataInicio) query = query.gte("created_at", data.dataInicio);
@@ -107,7 +109,9 @@ export const listarAuditoria = createServerFn({ method: "GET" })
     if (data?.entidade) query = query.eq("entidade", data.entidade);
     if (data?.busca && data.busca.trim()) {
       const term = `%${data.busca.trim()}%`;
-      query = query.or(`acao.ilike.${term},descricao.ilike.${term},entidade.ilike.${term},ip.ilike.${term}`);
+      query = query.or(
+        `acao.ilike.${term},descricao.ilike.${term},entidade.ilike.${term},ip.ilike.${term}`,
+      );
     }
 
     const { data: rows, error } = await query
@@ -165,12 +169,9 @@ export const opcoesAuditoria = createServerFn({ method: "GET" })
       .map((p: any) => ({ id: p.id as string, nome: (p.nome as string) ?? "—" }))
       .sort((a: { nome: string }, b: { nome: string }) => a.nome.localeCompare(b.nome));
 
-
     return {
       atores,
-      acoes: [...acoes]
-        .sort()
-        .map((valor) => ({ valor, rotulo: rotuloAcao(valor) })),
+      acoes: [...acoes].sort().map((valor) => ({ valor, rotulo: rotuloAcao(valor) })),
       entidades: [...entidades].sort(),
     };
   });

@@ -16,7 +16,11 @@ import { toast } from "sonner";
 interface EncaminharChecklistDialogProps {
   aberto: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (dados: { email: string; whatsapp: string; canal: "email" | "whatsapp" | "pdf" }) => void;
+  onConfirm: (dados: {
+    email: string;
+    whatsapp: string;
+    canal: "email" | "whatsapp" | "pdf";
+  }) => void;
   bancoNome: string;
   clienteNome?: string;
 }
@@ -65,7 +69,9 @@ export function EncaminharChecklistDialog({
             <button
               onClick={() => setCanal("pdf")}
               className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
-                canal === "pdf" ? "bg-primary/5 border-primary ring-1 ring-primary" : "border-border hover:border-primary/50"
+                canal === "pdf"
+                  ? "bg-primary/5 border-primary ring-1 ring-primary"
+                  : "border-border hover:border-primary/50"
               }`}
             >
               <div className="p-3 rounded-full bg-primary/10 text-primary">
@@ -76,7 +82,9 @@ export function EncaminharChecklistDialog({
             <button
               onClick={() => setCanal("whatsapp")}
               className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
-                canal === "whatsapp" ? "bg-[#25D366]/5 border-[#25D366] ring-1 ring-[#25D366]" : "border-border hover:border-[#25D366]/50"
+                canal === "whatsapp"
+                  ? "bg-[#25D366]/5 border-[#25D366] ring-1 ring-[#25D366]"
+                  : "border-border hover:border-[#25D366]/50"
               }`}
             >
               <div className="p-3 rounded-full bg-[#25D366]/10 text-[#25D366]">
@@ -87,7 +95,9 @@ export function EncaminharChecklistDialog({
             <button
               onClick={() => setCanal("email")}
               className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
-                canal === "email" ? "bg-[#EA4335]/5 border-[#EA4335] ring-1 ring-[#EA4335]" : "border-border hover:border-[#EA4335]/50"
+                canal === "email"
+                  ? "bg-[#EA4335]/5 border-[#EA4335] ring-1 ring-[#EA4335]"
+                  : "border-border hover:border-[#EA4335]/50"
               }`}
             >
               <div className="p-3 rounded-full bg-[#EA4335]/10 text-[#EA4335]">
@@ -99,7 +109,9 @@ export function EncaminharChecklistDialog({
 
           {canal === "whatsapp" && (
             <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
-              <Label htmlFor="whatsapp" className="font-bold text-[#25D366]">WhatsApp (com DDD)</Label>
+              <Label htmlFor="whatsapp" className="font-bold text-[#25D366]">
+                WhatsApp (com DDD)
+              </Label>
               <Input
                 id="whatsapp"
                 placeholder="11999999999"
@@ -113,7 +125,9 @@ export function EncaminharChecklistDialog({
 
           {canal === "email" && (
             <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
-              <Label htmlFor="email" className="font-bold text-[#EA4335]">E-mail de destino</Label>
+              <Label htmlFor="email" className="font-bold text-[#EA4335]">
+                E-mail de destino
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -137,13 +151,13 @@ export function EncaminharChecklistDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirm}
             className={
-              canal === "whatsapp" 
-                ? "bg-[#25D366] hover:bg-[#20ba5a] text-white" 
-                : canal === "pdf" 
-                  ? "bg-primary" 
+              canal === "whatsapp"
+                ? "bg-[#25D366] hover:bg-[#20ba5a] text-white"
+                : canal === "pdf"
+                  ? "bg-primary"
                   : "bg-[#EA4335] hover:bg-[#d93025] text-white"
             }
           >

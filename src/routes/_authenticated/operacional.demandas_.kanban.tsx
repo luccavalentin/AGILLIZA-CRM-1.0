@@ -50,12 +50,20 @@ function fmtDias(inicio: string, now: number): string {
   return `há ${dias} dias`;
 }
 function fmtData(d: string): string {
-  return new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return new Date(d).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 /** Classifica urgência de SLA para colorir borda, barra e cronômetro. */
-function slaUrgency(d: DemandaItem, now: number): { level: Urgencia; restanteMs: number; progresso: number } {
-  if (d.status === "concluida" || d.status === "cancelada") return { level: "none", restanteMs: 0, progresso: 1 };
+function slaUrgency(
+  d: DemandaItem,
+  now: number,
+): { level: Urgencia; restanteMs: number; progresso: number } {
+  if (d.status === "concluida" || d.status === "cancelada")
+    return { level: "none", restanteMs: 0, progresso: 1 };
   if (!d.prazo_sla) return { level: "none", restanteMs: 0, progresso: 0 };
   const fim = new Date(d.prazo_sla).getTime();
   const ini = new Date(d.sla_inicio).getTime();
@@ -93,9 +101,17 @@ const URG_BORDER: Record<Urgencia, string> = {
 
 function SlaLine({ d, now }: { d: DemandaItem; now: number }) {
   if (d.status === "concluida") {
-    const noPrazo = !d.concluida_em || !d.prazo_sla || new Date(d.concluida_em).getTime() <= new Date(d.prazo_sla).getTime();
+    const noPrazo =
+      !d.concluida_em ||
+      !d.prazo_sla ||
+      new Date(d.concluida_em).getTime() <= new Date(d.prazo_sla).getTime();
     return (
-      <span className={cn("inline-flex items-center gap-1.5", noPrazo ? "text-success" : "text-destructive")}>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5",
+          noPrazo ? "text-success" : "text-destructive",
+        )}
+      >
         <CheckCircle2 className="h-3.5 w-3.5" />
         Concluída em {d.concluida_em ? fmtData(d.concluida_em) : "—"}
       </span>
@@ -110,7 +126,8 @@ function SlaLine({ d, now }: { d: DemandaItem; now: number }) {
   }
   const { level, restanteMs } = slaUrgency(d, now);
   if (level === "none") {
-    const rot = d.status === "aguardando" ? "Aguardando" : d.status === "aberta" ? "Aberta" : "Em andamento";
+    const rot =
+      d.status === "aguardando" ? "Aguardando" : d.status === "aberta" ? "Aberta" : "Em andamento";
     return (
       <span className="inline-flex items-center gap-1.5 text-muted-foreground">
         <Clock className="h-3.5 w-3.5" /> {rot} {fmtDias(d.sla_inicio, now)}
@@ -180,7 +197,10 @@ const KanbanCard = memo(function KanbanCard({
         URG_BORDER[level],
       )}
     >
-      <span className={cn("absolute inset-y-2 left-0 w-1 rounded-r-full", URG_BAR[level])} aria-hidden />
+      <span
+        className={cn("absolute inset-y-2 left-0 w-1 rounded-r-full", URG_BAR[level])}
+        aria-hidden
+      />
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground/80">
           {d.numero ?? "DEM-—"}
@@ -233,7 +253,10 @@ function Pagina() {
   const arrastandoRef = useRef<{ id: string; status: DemandaStatus } | null>(null);
   const [arrastando, setArrastando] = useState<{ id: string; status: DemandaStatus } | null>(null);
   const [escopo, setEscopo] = useState<"minhas" | "equipe">(
-    () => (typeof window !== "undefined" && (localStorage.getItem("demandas:escopo") as "minhas" | "equipe")) || "equipe",
+    () =>
+      (typeof window !== "undefined" &&
+        (localStorage.getItem("demandas:escopo") as "minhas" | "equipe")) ||
+      "equipe",
   );
   const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
 
@@ -348,8 +371,12 @@ function Pagina() {
           }}
         >
           <TabsList className="h-9 rounded-lg">
-            <TabsTrigger value="minhas" className="rounded-md text-xs">Minhas</TabsTrigger>
-            <TabsTrigger value="equipe" className="rounded-md text-xs">Gerais</TabsTrigger>
+            <TabsTrigger value="minhas" className="rounded-md text-xs">
+              Minhas
+            </TabsTrigger>
+            <TabsTrigger value="equipe" className="rounded-md text-xs">
+              Gerais
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -383,9 +410,15 @@ function Pagina() {
       {/* Legenda de SLA */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-border/50 bg-card/60 px-3 py-2 text-[11px] text-muted-foreground">
         <span className="font-semibold uppercase tracking-wider text-muted-foreground/80">SLA</span>
-        <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" /> No prazo</span>
-        <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-warning" /> &lt; 24h</span>
-        <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-destructive" /> &lt; 2h · crítico</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-success" /> No prazo
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-warning" /> &lt; 24h
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-destructive" /> &lt; 2h · crítico
+        </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="relative flex size-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
@@ -412,12 +445,7 @@ function Pagina() {
             >
               {/* Header com barra de tom */}
               <div className="relative border-b border-border/50 bg-card/60 px-4 py-3 backdrop-blur">
-                <span
-                  className={cn(
-                    "absolute inset-x-0 top-0 h-0.5",
-                    TONE_BAR[cfg.tone],
-                  )}
-                />
+                <span className={cn("absolute inset-x-0 top-0 h-0.5", TONE_BAR[cfg.tone])} />
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <span className={cn("size-2 rounded-full", TONE_BAR[cfg.tone])} />

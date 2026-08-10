@@ -7,7 +7,8 @@
 const MAPA: Record<string, string> = {
   RENDA_INSUFICIENTE: "Renda declarada insuficiente para o valor solicitado.",
   DOC_INVALIDO: "Documento do cliente inválido ou não reconhecido pelo banco.",
-  LIMITE_EXCEDIDO: "O valor informado não foi aceito pela regra de crédito do banco. Consulte os detalhes do retorno e revise os dados da operação.",
+  LIMITE_EXCEDIDO:
+    "O valor informado não foi aceito pela regra de crédito do banco. Consulte os detalhes do retorno e revise os dados da operação.",
   IDADE_MAX_EXCEDIDA: "Idade do cliente excede o limite permitido pelo banco no fim do contrato.",
   PRAZO_INVALIDO: "Prazo solicitado fora da faixa aceita pelo banco.",
   IMOVEL_NAO_ELEGIVEL: "Tipo ou situação do imóvel não é elegível para este banco.",
@@ -17,7 +18,8 @@ const MAPA: Record<string, string> = {
 
 /** Códigos de recusa devolvidos pelo Bradesco dentro de INT-006. */
 const BRADESCO: Record<string, string> = {
-  "119": "Bradesco: renda mensal informada é menor que a renda mínima exigida para este valor de financiamento. Reduza o valor financiado, aumente o prazo ou inclua composição de renda.",
+  "119":
+    "Bradesco: renda mensal informada é menor que a renda mínima exigida para este valor de financiamento. Reduza o valor financiado, aumente o prazo ou inclua composição de renda.",
   "121-L":
     "Bradesco: a operação não passou nas regras de crédito do banco (limite/valor x renda x prazo). Ajuste valor financiado, entrada ou prazo e reenvie.",
   "014": "Bradesco: dados cadastrais do proponente incompletos ou divergentes na base do banco.",
@@ -35,7 +37,11 @@ const CAMPOS_PT: Record<string, string> = {
 function moeda(v: unknown): string {
   const n = Number(v);
   if (!Number.isFinite(n)) return String(v ?? "");
-  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  return n.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  });
 }
 
 /**
@@ -53,7 +59,9 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
   // Faixa de valores fora do permitido (Santander e similares)
   if (ctx && (ctx.min != null || ctx.max != null) && ctx.field) {
     const campo = CAMPOS_PT[String(ctx.field)] ?? String(ctx.field);
-    const banco = ctx.bank ? String(ctx.bank).replace(/^\w/, (c: string) => c.toUpperCase()) : "O banco";
+    const banco = ctx.bank
+      ? String(ctx.bank).replace(/^\w/, (c: string) => c.toUpperCase())
+      : "O banco";
     const ehValor = /amount|value|payment/i.test(String(ctx.field));
     const fmt = ehValor ? moeda : (v: unknown) => String(v);
     return `${banco}: ${campo} de ${fmt(ctx.valueProvided)} está fora do intervalo aceito (mínimo ${fmt(
@@ -97,14 +105,12 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
     return `Prazo acima do máximo aceito por este banco nesta operação: ${meses} meses (${(meses / 12).toFixed(0)} anos). Reduza o prazo para ${meses} meses ou menos e reenvie.`;
   }
 
-
   // Sessão com o banco expirada — não é erro de preenchimento.
   if (status === 401 || /token\s*jwt\s*expirado|unauthorized/i.test(bruta)) {
     return "A sessão com o banco expirou durante o envio. Nenhum dado foi perdido — clique em reenviar/atualizar status para concluir.";
   }
 
   if (code === "INTERNAL_ERROR" || status >= 500) {
-
     const ondeParticipante = /participante/i.test(endpoint);
     const ondeSimulacao = /\/simulacao/i.test(endpoint);
     if (ondeParticipante) {

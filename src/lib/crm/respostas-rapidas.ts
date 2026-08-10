@@ -68,7 +68,7 @@ const PADRAO: RespostaRapida[] = [
     id: "atualizacao-proposta",
     titulo: "Atualização da proposta",
     texto:
-      "Olá, {primeiro_nome}! Temos novidades sobre a sua proposta {numero_proposta}: ela está agora na etapa \"{etapa}\". Seguimos acompanhando de perto.",
+      'Olá, {primeiro_nome}! Temos novidades sobre a sua proposta {numero_proposta}: ela está agora na etapa "{etapa}". Seguimos acompanhando de perto.',
   },
   {
     id: "documentos-proposta",
@@ -86,7 +86,7 @@ const PADRAO: RespostaRapida[] = [
     id: "aprovacao",
     titulo: "Boa notícia / aprovação",
     texto:
-      "Ótima notícia, {primeiro_nome}! Sua proposta {numero_proposta} avançou para a etapa \"{etapa}\". Em breve trazemos os próximos passos.",
+      'Ótima notícia, {primeiro_nome}! Sua proposta {numero_proposta} avançou para a etapa "{etapa}". Em breve trazemos os próximos passos.',
   },
   {
     id: "agradecimento",

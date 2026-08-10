@@ -33,8 +33,7 @@ function getCtx(): AudioContext | null {
     if (!audioCtx) {
       const Ctor =
         window.AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!Ctor) return null;
       audioCtx = new Ctor();
     }
@@ -67,14 +66,7 @@ function tone(
 }
 
 /** Identificadores dos sons disponíveis. */
-export type ChatSoundId =
-  | "pop"
-  | "duo"
-  | "sino"
-  | "gota"
-  | "marimba"
-  | "tri"
-  | "suave";
+export type ChatSoundId = "pop" | "duo" | "sino" | "gota" | "marimba" | "tri" | "suave";
 
 export interface ChatSoundOption {
   id: ChatSoundId;

@@ -89,10 +89,7 @@ function Pagina() {
   ]);
 
   function irParaCompleta() {
-    sessionStorage.setItem(
-      "simulacao_wizard",
-      JSON.stringify({ ...w, prazo: w.prazo_meses }),
-    );
+    sessionStorage.setItem("simulacao_wizard", JSON.stringify({ ...w, prazo: w.prazo_meses }));
     router.navigate({ to: "/operacional/simulacoes/completa" });
   }
 
@@ -100,8 +97,9 @@ function Pagina() {
     if (comparativo.length === 0) return;
     setBaixando(true);
     try {
-      const { baixarSimulacaoDetalhadaPDF, baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
-      
+      const { baixarSimulacaoDetalhadaPDF, baixarSimulacaoPDF } =
+        await import("@/lib/simulacao/simulacao-pdf");
+
       const simulacaoData = {
         numero_simulacao: null,
         nome_cliente: "SIMULAÇÃO RÁPIDA",
@@ -110,11 +108,12 @@ function Pagina() {
         valor_financiamento: financiamentoTotalExibido,
         valor_entrada: w.valor_entrada,
         prazo: w.prazo_meses,
-        sistema_amortizacao: w.sistema_amortizacao === "AMBOS" ? "B" : (w.sistema_amortizacao === "P" ? "P" : "S"),
+        sistema_amortizacao:
+          w.sistema_amortizacao === "AMBOS" ? "B" : w.sistema_amortizacao === "P" ? "P" : "S",
         created_at: new Date().toISOString(),
       };
 
-      const bancosParaPDF = comparativo.map(c => ({
+      const bancosParaPDF = comparativo.map((c) => ({
         nome_banco: c.nome_banco,
         status_banco: "simulada",
         valor_parcela: c.resultado.primeira_parcela,
@@ -128,14 +127,15 @@ function Pagina() {
 
       // Se clicou em um banco específico, baixa somente o individual dele
       if (bancoId) {
-        const c = comparativo.find(item => item.banco_id === bancoId);
+        const c = comparativo.find((item) => item.banco_id === bancoId);
         if (c) {
-          const sistemaCode = c.resultado.primeira_parcela === c.resultado.ultima_parcela ? "P" : "S";
+          const sistemaCode =
+            c.resultado.primeira_parcela === c.resultado.ultima_parcela ? "P" : "S";
           baixarSimulacaoDetalhadaPDF({
             simulacao: { ...simulacaoData, sistema_amortizacao: sistemaCode },
             bancos: [
               {
-                ...bancosParaPDF.find(b => b.nome_banco === c.nome_banco),
+                ...bancosParaPDF.find((b) => b.nome_banco === c.nome_banco),
                 raw_response: {
                   simulacao: {
                     codigoSistemaAmortizacaoSimulacao: sistemaCode,
@@ -156,7 +156,7 @@ function Pagina() {
         // Baixa somente o comparativo consolidado (chamado pelo botão principal)
         baixarSimulacaoPDF({
           simulacao: simulacaoData,
-          bancos: bancosParaPDF
+          bancos: bancosParaPDF,
         });
       }
     } catch (err) {

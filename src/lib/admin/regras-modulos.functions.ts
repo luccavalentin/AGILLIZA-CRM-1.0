@@ -557,8 +557,7 @@ export const listarNiveisAcesso = createServerFn({ method: "GET" })
     return (niveis ?? [])
       .filter(
         (n: any) =>
-          n.correspondente_id ||
-          !chavesProprias.has(`${n.nome}::${n.acesso_tipo ?? "sistema"}`),
+          n.correspondente_id || !chavesProprias.has(`${n.nome}::${n.acesso_tipo ?? "sistema"}`),
       )
       .map((n: any) => ({
         id: n.id,

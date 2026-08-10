@@ -50,7 +50,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-
 function hostname(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -79,13 +78,11 @@ export function LinksView() {
     return m;
   }, [categorias]);
 
-
   const [busca, setBusca] = useState("");
   const [criando, setCriando] = useState(false);
   const [gerenciandoCats, setGerenciandoCats] = useState(false);
   const [editando, setEditando] = useState<LinkUtil | null>(null);
   const [excluindo, setExcluindo] = useState<LinkUtil | null>(null);
-
 
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -174,7 +171,6 @@ export function LinksView() {
       )}
 
       <div className="relative">
-
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={busca}
@@ -204,67 +200,74 @@ export function LinksView() {
             const CatIcon = meta ? iconeCategoria(meta.icone) : ExternalLink;
             const bancoLogo = logoUrlDoBanco(`${l.titulo} ${l.url}`);
             return (
-            <div
-              key={l.id}
-              className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_10px_30px_-15px_hsl(var(--primary)/0.5)]"
-            >
-              <a
-                href={l.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex min-w-0 flex-1 items-center gap-3"
+              <div
+                key={l.id}
+                className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_10px_30px_-15px_hsl(var(--primary)/0.5)]"
               >
-                <span
-                  className={cn(
-                    "grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl ring-1 transition-transform group-hover:scale-105",
-                    bancoLogo ? "bg-white ring-border" : classeCategoria(meta?.cor),
-                  )}
+                <a
+                  href={l.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-w-0 flex-1 items-center gap-3"
                 >
-                  {bancoLogo ? (
-                    <img src={bancoLogo} alt="" className="h-6 w-6 object-contain" loading="lazy" />
-                  ) : (
-                    <CatIcon className="h-4 w-4" />
-                  )}
-                </span>
-
-                <div className="min-w-0">
-                  <p className="flex items-center gap-2 truncate font-semibold text-foreground group-hover:text-primary">
-                    {l.titulo}
-                    {l.categoria && (
-                      <Badge
-                        variant="secondary"
-                        className={cn("shrink-0 gap-1 font-normal", meta && classeCategoria(meta.cor))}
-                      >
-                        <CatIcon className="h-3 w-3" />
-                        {l.categoria}
-                      </Badge>
+                  <span
+                    className={cn(
+                      "grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl ring-1 transition-transform group-hover:scale-105",
+                      bancoLogo ? "bg-white ring-border" : classeCategoria(meta?.cor),
                     )}
-                  </p>
+                  >
+                    {bancoLogo ? (
+                      <img
+                        src={bancoLogo}
+                        alt=""
+                        className="h-6 w-6 object-contain"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <CatIcon className="h-4 w-4" />
+                    )}
+                  </span>
 
-                  <p className="truncate text-xs text-muted-foreground">
-                    {l.descricao ? `${l.descricao} · ` : ""}
-                    {hostname(l.url)}
-                  </p>
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 truncate font-semibold text-foreground group-hover:text-primary">
+                      {l.titulo}
+                      {l.categoria && (
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "shrink-0 gap-1 font-normal",
+                            meta && classeCategoria(meta.cor),
+                          )}
+                        >
+                          <CatIcon className="h-3 w-3" />
+                          {l.categoria}
+                        </Badge>
+                      )}
+                    </p>
+
+                    <p className="truncate text-xs text-muted-foreground">
+                      {l.descricao ? `${l.descricao} · ` : ""}
+                      {hostname(l.url)}
+                    </p>
+                  </div>
+                </a>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => setEditando(l)}>
+                    <Pencil className="mr-1 h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setExcluindo(l)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              </a>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" onClick={() => setEditando(l)}>
-                  <Pencil className="mr-1 h-4 w-4" />
-                  Editar
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setExcluindo(l)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
-            </div>
             );
           })
-
         )}
       </div>
 
@@ -292,7 +295,6 @@ export function LinksView() {
           }}
         />
       )}
-
 
       <AlertDialog open={!!excluindo} onOpenChange={(o) => !o && setExcluindo(null)}>
         <AlertDialogContent>
@@ -328,7 +330,6 @@ function LinkDialog({
   onClose: () => void;
   onDone: () => void;
 }) {
-
   const criar = useServerFn(criarLink);
   const atualizar = useServerFn(atualizarLink);
   const [titulo, setTitulo] = useState(link?.titulo ?? "");
@@ -389,11 +390,7 @@ function LinkDialog({
           </div>
           <div className="space-y-1.5">
             <Label>URL</Label>
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://…"
-            />
+            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
           </div>
           <div className="space-y-1.5">
             <Label>Categoria (opcional)</Label>

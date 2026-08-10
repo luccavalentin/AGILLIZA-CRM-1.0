@@ -34,9 +34,9 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
   const [vencimento, setVencimento] = useState(hojeISO());
   const [categoriaId, setCategoriaId] = useState<string>("");
   const [ccId, setCcId] = useState<string>("");
-  const [recorrencia, setRecorrencia] = useState<
-    "nenhuma" | "mensal" | "anual" | "parcelado"
-  >("nenhuma");
+  const [recorrencia, setRecorrencia] = useState<"nenhuma" | "mensal" | "anual" | "parcelado">(
+    "nenhuma",
+  );
   const [parcelas, setParcelas] = useState(2);
   const [file, setFile] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -183,9 +183,7 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
                 <SelectContent>
                   {(cfg?.categorias ?? [])
                     .filter(
-                      (c: any) =>
-                        !c.tipo ||
-                        c.tipo === (tipo === "pagar" ? "despesa" : "receita"),
+                      (c: any) => !c.tipo || c.tipo === (tipo === "pagar" ? "despesa" : "receita"),
                     )
                     .map((c: any) => (
                       <SelectItem key={c.id} value={c.id}>

@@ -1,4 +1,12 @@
-import { Briefcase, Building2, Folder, FolderKanban, FolderOpen, IdCard, UserCog } from "lucide-react";
+import {
+  Briefcase,
+  Building2,
+  Folder,
+  FolderKanban,
+  FolderOpen,
+  IdCard,
+  UserCog,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PastaTipo } from "./helpers";
 

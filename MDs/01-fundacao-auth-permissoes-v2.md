@@ -5,6 +5,7 @@
 ## 1. O que este módulo produz
 
 **Tabelas** (todas com RLS obrigatória):
+
 - `profiles(id, correspondente_id, nome, email, telefone, foto_url, ativo, acesso_tipo enum('sistema'|'portal_parceiro'), nivel_acesso_id, tipo_pessoa, tema_preferido, ...)`.
 - `user_roles(user_id, role app_role, created_at)` — separada de profiles (evita privilege escalation).
 - `access_levels(id, correspondente_id, nome, descricao, ativo)` — níveis customizáveis pelo correspondente.
@@ -14,6 +15,7 @@
 - `admin_audit_logs(id, actor_id, acao, entidade, entidade_id, payload_anterior, payload_novo, ip, user_agent, created_at)`.
 
 **Funções SQL SECURITY DEFINER**:
+
 - `has_role(uid uuid, r app_role) → bool` — usada em TODAS as policies de negócio.
 - `usuario_tem_permissao(uid, modulo, acao) → bool` — leitura da matriz.
 - `usuario_escopo_dados(uid, modulo) → text` — retorna `todos|equipe|proprios|personalizado`.
@@ -21,6 +23,7 @@
 - `handle_new_user_profile()` — trigger AFTER INSERT em `auth.users`, cria `profiles` + `user_roles`, define `correspondente_id = NEW.id` para correspondente-raiz.
 
 **Rotas públicas obrigatórias**:
+
 - `/` — landing com 3 cards (Correspondente, Cliente, Parceiro).
 - `/auth` — abas **Entrar** (todos) e **Criar conta** (só correspondente-raiz).
 - `/portal` — login do cliente (CPF/CNPJ + data).
@@ -28,31 +31,33 @@
 - `/politica-de-privacidade`, `/cliente-consentimento` — LGPD.
 
 **Rotas autenticadas administrativas** (nesta etapa: esqueleto; Etapa 10 estende):
+
 - `/admin/pessoas` — CRUD unificado de pessoas do ecossistema (equipe interna + parceiros na mesma lista, com 3 abas: **Pessoas**, **Tipos de Pessoa**, **Regras & Permissões**).
 
 ## 2. Papéis (fixos)
 
-| `app_role` | Quem é | Escopo padrão | Cria usuários? |
-|---|---|---|---|
-| `admin` | Suporte técnico da plataforma | Global (manutenção) | Só correspondente-raiz |
-| `correspondente` | Dono do ecossistema | Todo o ecossistema | **SIM** — todos os demais |
-| `gestor` | Braço direito do correspondente | Todo, limitado pela matriz | Sim, quando autorizado |
-| `comercial` | Vendedor | Próprios + equipe | Não |
-| `analista` | Analista de crédito | Propostas atribuídas | Não |
-| `financeiro` | Financeiro | Módulo financeiro completo | Não |
-| `imobiliaria` | Imobiliária parceira (PJ) | Só clientes indicados | Corretores da própria imobiliária |
-| `corretor` | Corretor autônomo/vinculado | Só clientes indicados | Não |
-| `cliente` | Cliente final | Só o próprio processo | Não |
+| `app_role`       | Quem é                          | Escopo padrão              | Cria usuários?                    |
+| ---------------- | ------------------------------- | -------------------------- | --------------------------------- |
+| `admin`          | Suporte técnico da plataforma   | Global (manutenção)        | Só correspondente-raiz            |
+| `correspondente` | Dono do ecossistema             | Todo o ecossistema         | **SIM** — todos os demais         |
+| `gestor`         | Braço direito do correspondente | Todo, limitado pela matriz | Sim, quando autorizado            |
+| `comercial`      | Vendedor                        | Próprios + equipe          | Não                               |
+| `analista`       | Analista de crédito             | Propostas atribuídas       | Não                               |
+| `financeiro`     | Financeiro                      | Módulo financeiro completo | Não                               |
+| `imobiliaria`    | Imobiliária parceira (PJ)       | Só clientes indicados      | Corretores da própria imobiliária |
+| `corretor`       | Corretor autônomo/vinculado     | Só clientes indicados      | Não                               |
+| `cliente`        | Cliente final                   | Só o próprio processo      | Não                               |
 
 ## 3. Regra de origem de conta (única fonte da verdade)
 
-| Tipo de acesso | Onde loga | Como nasce | Quem cria |
-|---|---|---|---|
-| Correspondente | `/auth` (aba **Criar conta**) | Auto-cadastro público (nome+email+telefone+senha) + confirmação nativa Supabase | Ele mesmo |
-| Cliente final | `/portal` (CPF/CNPJ + data) | Cadastrado no CRM + toggle "Habilitar acesso ao Portal do Cliente" ligado | Correspondente/gestor autorizado |
-| Qualquer outro (gestor/comercial/analista/financeiro/imobiliária/corretor) | `/auth` OU `/parceiro` conforme toggle | Cadastro em `/admin/pessoas` com senha temporária exibida uma vez | Correspondente/gestor autorizado |
+| Tipo de acesso                                                             | Onde loga                              | Como nasce                                                                      | Quem cria                        |
+| -------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------- |
+| Correspondente                                                             | `/auth` (aba **Criar conta**)          | Auto-cadastro público (nome+email+telefone+senha) + confirmação nativa Supabase | Ele mesmo                        |
+| Cliente final                                                              | `/portal` (CPF/CNPJ + data)            | Cadastrado no CRM + toggle "Habilitar acesso ao Portal do Cliente" ligado       | Correspondente/gestor autorizado |
+| Qualquer outro (gestor/comercial/analista/financeiro/imobiliária/corretor) | `/auth` OU `/parceiro` conforme toggle | Cadastro em `/admin/pessoas` com senha temporária exibida uma vez               | Correspondente/gestor autorizado |
 
 **Roteamento pós-login** é decidido pelo toggle **"Acesso ao Portal do Parceiro"** em `/admin/pessoas` → grava `profiles.acesso_tipo`:
+
 - `sistema` → login em `/auth`, shell interno completo filtrado pelo nível.
 - `portal_parceiro` → login em `/parceiro`, mesmo shell interno mas com nav e escopo restritos.
 - `cliente` → só `/portal`.
@@ -74,6 +79,7 @@ Não é o papel que decide — é o toggle. Trocar o toggle depois revoga sessõ
 ## 5. Fluxo de convite (equipe interna e parceiros — lista única)
 
 Formulário `/admin/pessoas` → **Nova pessoa** (também em edição):
+
 1. **Dados básicos**: nome, e-mail, telefone, CPF/CNPJ.
 2. **Card "Acesso"**:
    - Toggle **"Habilitar login"** (default false).
@@ -92,6 +98,7 @@ Formulário `/admin/pessoas` → **Nova pessoa** (também em edição):
 ## 6. Matriz de permissões
 
 **Módulos** (chave `modulo:acao`):
+
 - `crm.clientes:view/create/edit/delete/export/pii:view/portal:manage`
 - `crm.chat:view/enviar/gerenciar_etiquetas`
 - `crm.parceiros:view/create/edit`
@@ -112,6 +119,7 @@ Formulário `/admin/pessoas` → **Nova pessoa** (também em edição):
 - `shell.notificacoes:view`, `conta.perfil:view`, `conta.seguranca:view`
 
 **Escopo** por par (modulo, acao):
+
 - `todos` — enxerga tudo do `correspondente_id`.
 - `equipe` — enxerga próprios + de subordinados diretos.
 - `proprios` — só os próprios (inclui `cliente_parceiros` quando aplicável).
@@ -135,23 +143,28 @@ Toda listagem no sistema aplica escopo via `usuario_escopo_dados(uid, modulo)`. 
 ## 8. Telas desta etapa
 
 ### `/` — Landing (pública, sem menu)
+
 3 cards empilhados: Correspondente (`/auth`), Cliente (`/portal`), Parceiro (`/parceiro`). Logo Agilliza no topo. `head()` com `robots: noindex`.
 
 ### `/auth`
+
 - Aba **Entrar**: e-mail + senha; "Esqueci senha" usa reset nativo Supabase.
 - Aba **Criar conta**: nome, e-mail, telefone, senha + confirmação, aceite LGPD → `supabase.auth.signUp` com `papel_inicial='correspondente'`.
 - Redirecionamento pós-login por `acesso_tipo`. Mensagem de erro sempre genérica.
 
 ### `/portal`
+
 - Toggle PF/PJ. Inputs: CPF (11 dig) ou CNPJ (14 dig) + data de nascimento/abertura.
 - Sem "Criar conta". Rodapé: "Ainda não tem acesso? Peça ao seu correspondente."
 - Chama `validarAcessoCliente(tipo, doc, data)` — verifica `cliente_portal_acessos.ativo=true`, hash bate, rate-limit OK.
 
 ### `/parceiro`
+
 - E-mail + senha. Sem signup. Rodapé: "Ainda não é parceiro? Fale com o correspondente."
 - Redireciona para `/parceiro-inicio` (dashboard reduzido, no mesmo shell interno).
 
 ### `/admin/pessoas` (3 abas)
+
 1. **Pessoas** — lista unificada com colunas: Nome, E-mail, Tipo de acesso (`Sistema — <nível>` / `Portal do Parceiro` / `Sem acesso`), Nível interno, % comissão (se parceiro), Ativo, Última atividade, Ações. Filtros por tipo de acesso e nível. Botão **Nova pessoa**.
 2. **Tipos de Pessoa** — CRUD de `tipos_pessoa` (slug obrigatório, aparece no dropdown de tipo em `profiles`).
 3. **Regras & Permissões** — matriz visual (grid módulos × ações) por nível de acesso, com toggle por célula e select de escopo. Muda em tempo real (invalidação de query).

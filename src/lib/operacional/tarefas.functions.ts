@@ -126,7 +126,6 @@ export const listarTarefas = createServerFn({ method: "GET" })
     }));
   });
 
-
 export const obterTarefa = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
@@ -193,7 +192,10 @@ export const obterTarefa = createServerFn({ method: "GET" })
 async function correspondenteId(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.");
+  if (!data)
+    throw new Error(
+      "Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.",
+    );
   return data as string;
 }
 
@@ -291,7 +293,10 @@ export const moverStatusTarefa = createServerFn({ method: "POST" })
     // funcionarem corretamente ao reabrir tarefas.
     if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
     else if (atual.status === "concluida") patch.concluida_em = null;
-    const { error } = await supabase.from("tasks").update(patch as any).eq("id", data.id);
+    const { error } = await supabase
+      .from("tasks")
+      .update(patch as any)
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabase
       .from("task_history")
@@ -375,12 +380,9 @@ export const atualizarTarefa = createServerFn({ method: "POST" })
       .update(patch as any)
       .eq("id", id);
     if (error) throw new Error(error.message);
-    await supabase
-      .from("task_history")
-      .insert({ task_id: id, ator_id: userId, acao: "editada" });
+    await supabase.from("task_history").insert({ task_id: id, ator_id: userId, acao: "editada" });
     return { ok: true };
   });
-
 
 export const toggleChecklistItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -435,11 +437,7 @@ export const excluirTarefa = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
-    const { data: snap } = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("id", data.id)
-      .maybeSingle();
+    const { data: snap } = await supabase.from("tasks").select("*").eq("id", data.id).maybeSingle();
     if (snap) {
       await supabase.from("task_audit_logs").insert({
         correspondente_id: (snap as any).correspondente_id ?? null,
@@ -453,7 +451,6 @@ export const excluirTarefa = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
 
 /* ------------------------- Tags (etiquetas) ------------------------- */
 

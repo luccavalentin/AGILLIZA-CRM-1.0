@@ -27,8 +27,7 @@ export function clienteParaFormInicial(c: any) {
     digito_conta: c.digito_conta ?? "",
     email: c.email ?? "",
     telefone_celular: c.telefone_celular ?? "",
-    renda_total_declarada:
-      c.renda_total_declarada != null ? String(c.renda_total_declarada) : "",
+    renda_total_declarada: c.renda_total_declarada != null ? String(c.renda_total_declarada) : "",
     uf_interesse: c.uf_interesse ?? "",
     utiliza_fgts: c.utiliza_fgts ?? false,
     fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,

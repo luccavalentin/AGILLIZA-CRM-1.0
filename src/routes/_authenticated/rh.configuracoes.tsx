@@ -56,9 +56,7 @@ function ConfiguracoesPage() {
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 sm:p-4 md:p-6">
       <div>
-        <h1 className="text-xl font-semibold text-foreground md:text-2xl">
-          Configurações do RH
-        </h1>
+        <h1 className="text-xl font-semibold text-foreground md:text-2xl">Configurações do RH</h1>
         <p className="text-xs text-muted-foreground">
           Cargos, departamentos, catálogo de benefícios e as regras CLT aplicadas pelo sistema.
         </p>
@@ -135,10 +133,7 @@ function CargosTab() {
               </div>
             </div>
             <DialogFooter>
-              <Button
-                onClick={() => mut.mutate()}
-                disabled={!nome.trim() || mut.isPending}
-              >
+              <Button onClick={() => mut.mutate()} disabled={!nome.trim() || mut.isPending}>
                 {mut.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -232,10 +227,7 @@ function DepartamentosTab() {
               <Input value={nome} onChange={(e) => setNome(e.target.value)} />
             </div>
             <DialogFooter>
-              <Button
-                onClick={() => mut.mutate()}
-                disabled={!nome.trim() || mut.isPending}
-              >
+              <Button onClick={() => mut.mutate()} disabled={!nome.trim() || mut.isPending}>
                 {mut.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -512,10 +504,7 @@ function BeneficiosTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button
-              onClick={() => mut.mutate()}
-              disabled={!form.nome.trim() || mut.isPending}
-            >
+            <Button onClick={() => mut.mutate()} disabled={!form.nome.trim() || mut.isPending}>
               {mut.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (

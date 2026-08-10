@@ -10,7 +10,7 @@ export interface ChecklistItem {
   observacao?: string;
 }
 
-export const CHECKLISTS_BANCOS: Record<string, { docs: string[], logos: string[] }> = {
+export const CHECKLISTS_BANCOS: Record<string, { docs: string[]; logos: string[] }> = {
   itau: {
     docs: [
       "TELEFONE",

@@ -3,14 +3,16 @@
 > Requer Etapas 03–07.
 
 ## Dependências e Produtos
+
 **Depende de:** 00, 00b, **01** (RLS/`correspondente_id` para escopo de dados), **02** (shell), **03** (pipeline, clientes), **04** (`simulacoes`, `logs_integracao`), **05** (`propostas`, `proposta_status_historico`), **06** (`comissoes`, `contas_*`, `fluxo_caixa`), **07** (`tarefas`, `demandas`, `sla_regras`).
 **Produz (consumido por 09, 10):**
+
 - Views/materialized views agregadas por `correspondente_id`, banco, parceiro, período — reutilizadas pelo Portal do Parceiro (Etapa 10) com filtro adicional por `parceiro_id`.
 - Componentes de painel e relatório reutilizáveis — o Portal do Parceiro (Etapa 10) reaproveita 100% para a visão restrita do parceiro.
 - **Não cria tabelas de negócio** — apenas leitura.
 
-
 ## Objetivo
+
 Consolidar a decisão gerencial em dois tipos de tela, com padrões visuais e componentes reutilizáveis distintos:
 
 - **Painéis de monitoramento** (`/*/painel`): visão em tempo real do estado atual da operação. Poucas métricas, focadas, hierarquia forte.
@@ -23,18 +25,20 @@ Painel ≠ Relatório. Painel responde "como estou agora?"; Relatório responde 
 ## Parte 1 — Painéis de Monitoramento
 
 ### Regra número um: um painel = um foco
+
 Cada painel responde a **uma pergunta principal**. Não repita KPIs do painel do módulo vizinho.
 
-| Painel | Pergunta principal | KPIs hero (máx. 4) |
-|---|---|---|
-| `/visao-geral/painel` | Como está a produção comercial? | Simulações · Propostas enviadas · Taxa de aprovação · Contratos emitidos (com R$) |
-| `/crm/painel` | Como está a base ativa e a esteira? | Total de clientes · Novos no período · SLA vencido · Pendências críticas |
-| `/operacional/painel` | Como está a execução (propostas, demandas, tarefas)? | Simulações · Propostas · Aprovadas · Contratos |
-| `/financeiro/painel` | Como está o fluxo? | Total a pagar · Vencido · Pago no período · Saldo previsto 30d |
+| Painel                | Pergunta principal                                   | KPIs hero (máx. 4)                                                                |
+| --------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `/visao-geral/painel` | Como está a produção comercial?                      | Simulações · Propostas enviadas · Taxa de aprovação · Contratos emitidos (com R$) |
+| `/crm/painel`         | Como está a base ativa e a esteira?                  | Total de clientes · Novos no período · SLA vencido · Pendências críticas          |
+| `/operacional/painel` | Como está a execução (propostas, demandas, tarefas)? | Simulações · Propostas · Aprovadas · Contratos                                    |
+| `/financeiro/painel`  | Como está o fluxo?                                   | Total a pagar · Vencido · Pago no período · Saldo previsto 30d                    |
 
 Depois dos 4 heros, **no máximo 6 mini-métricas** (linha única) e **1 gráfico principal** + **1–2 apoio**. Nada mais no fold. Se houver mais dado, vira relatório.
 
 ### Componentes canônicos (`src/components/common/dashboard.tsx`)
+
 - `PanelHeader` — eyebrow (módulo · painel), título, descrição, chip de "Atualizado HH:mm", ações à direita (tabs de escopo + refresh + export).
 - `PanelToolbar` — barra fina de filtros (período, escopo, busca de usuário).
 - `SectionTitle` — separador entre grupos ("Indicadores executivos", "Volumes", "Operação").
@@ -45,6 +49,7 @@ Depois dos 4 heros, **no máximo 6 mini-métricas** (linha única) e **1 gráfic
 - `AlertRow` — item de alerta compacto (dot colorido + título + descrição + contador + link).
 
 ### Padrão visual ERP sóbrio (não negociável)
+
 - Números **sempre** `font-mono tabular-nums`.
 - Cor só como **status**: barra lateral de 2–3px + micro-chip. Sem cards com fundo colorido, sem gradientes, sem "hero card" chamativo.
 - Densidade média. Espaçamento vertical de seção 20–24px; entre cards 12px.
@@ -54,6 +59,7 @@ Depois dos 4 heros, **no máximo 6 mini-métricas** (linha única) e **1 gráfic
 - Modo escuro obrigatório e testado — tokens semânticos apenas (`bg-card`, `border-border`, `text-foreground`, `text-muted-foreground`).
 
 ### Regras funcionais
+
 1. **Escopo (`Tabs`)**: Minha · Equipe · Geral — respeitando `usuario_escopo_dados(uid, 'painel')`.
 2. **Período (`Select`)**: hoje · 7d · 15d · 30d · este mês · mês anterior · este ano · custom. Default `mes`.
 3. **Realtime**: uma subscrição `supabase.channel(...)` por painel, com invalidação estreita da queryKey de KPIs. Cleanup em `useEffect`.
@@ -63,6 +69,7 @@ Depois dos 4 heros, **no máximo 6 mini-métricas** (linha única) e **1 gráfic
 7. **Ações rápidas**: rodapé com `Button variant="ghost"` linkando para o próximo passo mais provável — não como grid principal.
 
 ### Definition of Done — Painéis
+
 - 4 heros + até 6 minis + 1 gráfico principal + 1 lista/ranking + alertas. Nada mais no fold.
 - Tudo carrega em < 1s para 10k propostas.
 - Layout responsivo em 375, 768, 1280 e 1440 sem overflow horizontal.
@@ -74,7 +81,9 @@ Depois dos 4 heros, **no máximo 6 mini-métricas** (linha única) e **1 gráfic
 ## Parte 2 — Relatórios ERP (`/relatorios/*`)
 
 ### Filosofia
+
 Um relatório é um **documento executivo** que responde uma pergunta gerencial completa. Deve ser:
+
 1. **Filtrável** — período, escopo, banco, produto, status, responsável, cliente, faixa de valor.
 2. **Contextualizado** — mostrar acima do detalhamento os indicadores agregados do que está sendo listado.
 3. **Detalhado** — tabela completa com todas as colunas relevantes, ordenação, busca, totais no rodapé.
@@ -83,6 +92,7 @@ Um relatório é um **documento executivo** que responde uma pergunta gerencial 
 6. **Imprimível** — botão "Imprimir" com CSS `@media print` que esconde toolbar/filters e mantém tabela + KPIs.
 
 ### Estrutura obrigatória de todo relatório
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  RELATÓRIOS · <MÓDULO>                                          │
@@ -107,6 +117,7 @@ Um relatório é um **documento executivo** que responde uma pergunta gerencial 
 ```
 
 ### Componentes canônicos (`src/components/reports/*`)
+
 - `ReportShell` — cabeçalho executivo com eyebrow, título, descrição, meta (período · escopo · registros), botão Imprimir automático.
 - `ReportSection` — separador semântico entre seções ("Indicadores", "Análise", "Ranking", "Detalhamento").
 - `ReportFiltersBar` — barra de filtros com Período (obrigatório) + Mais filtros (dropdown) + Limpar. Filtros ativos aparecem como chips com `X` para remover.
@@ -118,9 +129,11 @@ Um relatório é um **documento executivo** que responde uma pergunta gerencial 
 - `GenericReportPage` — página completa que combina tudo acima. **Todo relatório de módulo consome esse componente.**
 
 ### Rotas obrigatórias (não reduzir)
+
 `painel-geral`, `consolidado`, `comerciais`, `simulacoes`, `propostas`, `crm`, `clientes`, `demandas`, `tarefas`, `financeiros`, `comissoes`, `app-cliente`, `operacionais`, `exportacoes`, `personalizados`.
 
 ### KPIs por relatório (mínimo obrigatório)
+
 - **Painel Geral / Consolidado**: 6 KPIs (Clientes, Simulações, Propostas, Aprovadas, Contratos, Volume contratado) + funil + ranking de bancos + evolução mensal.
 - **Comerciais**: Propostas, Taxa de aprovação, Ticket médio, Valor contratado, Contratos, Banco líder + série mensal + top 10 usuários.
 - **Simulações**: Total, Rápidas, Completas, Erro, Conversão sim→prop, Ticket médio simulado.
@@ -132,6 +145,7 @@ Um relatório é um **documento executivo** que responde uma pergunta gerencial 
 - **App Cliente**: Habilitados, Ativos 7d, Ativos 30d, Docs enviados, Mensagens novas.
 
 ### Regras críticas
+
 1. **Escopo**: `can_view_global_reports` / `can_view_team_reports` (funções SQL existentes) definem se vê tudo, equipe ou próprio. Padrão: `minha`.
 2. **PII**: se usuário não tem `pii:view`, CPF/CNPJ/renda vão **mascarados** na tela, no XLSX e no PDF (`mask_pii_jsonb` no server).
 3. **Cache**: server function usa `cache-control` 60s para views agregadas; invalidar por evento (proposta mudou de status ⇒ `queryClient.invalidateQueries`).
@@ -142,6 +156,7 @@ Um relatório é um **documento executivo** que responde uma pergunta gerencial 
 8. **Sem "tela vazia bonita"**: se não há dado, mostra `EmptyReport` com filtros sugeridos para ampliar o período.
 
 ### Padrão visual ERP (relatórios)
+
 - Mesma linguagem sóbria dos painéis: números monoespaçados, cores só como status, barras laterais finas.
 - Tabelas com **zebra** (`bg-muted/25` nas ímpares), **cabeçalho sticky**, **borda 2px acima do rodapé de totais**, `text-right tabular-nums` em colunas numéricas.
 - Rodapé de totais com fundo `bg-muted/60`, `font-semibold`, label "TOTAIS" em uppercase micro à esquerda.
@@ -149,18 +164,22 @@ Um relatório é um **documento executivo** que responde uma pergunta gerencial 
 - PDF exportado: cabeçalho azul `#000F9F`, tabela zebrada `#F7F8FA/#FFFFFF`, títulos grafite `#0B0B0F`. Ignora o tema do usuário.
 
 ### `/relatorios/personalizados`
+
 Constructor: usuário escolhe view base + colunas + filtros + tipo de gráfico. Salva em `report_saved_filters` (`private` ou `shared_team`). Executa via `runReport`. Compartilhamento respeita permissão do escopo.
 
 ### `/relatorios/exportacoes`
+
 Histórico de exports (`report_exports`) com status, formato, filtros aplicados (JSON legível), botão de re-download (se ainda existe no bucket) ou de reexecução com os mesmos filtros.
 
 ---
 
 ## Estrutura de dados
+
 - `report_definitions`, `report_saved_filters`, `report_exports`, `report_audit_logs`.
 - Views: `vw_reports_dashboard_general`, `vw_reports_bank_performance`, `vw_reports_user_performance`, `vw_reports_clients_summary`, `vw_reports_simulations_summary`, `vw_reports_proposals_summary`, `vw_reports_demands_summary`, `vw_reports_tasks_summary`, `vw_reports_financial_summary`. Todas `security_invoker` (respeitam RLS do usuário).
 
 ## Definition of Done — Relatórios
+
 - Toda rota de relatório consome `ReportShell` (não reimplementar header).
 - Toda tabela detalhada tem rodapé de totais preenchido.
 - Botões Imprimir + PDF + XLSX funcionam em todo relatório.

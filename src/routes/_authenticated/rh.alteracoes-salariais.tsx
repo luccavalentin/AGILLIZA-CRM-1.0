@@ -122,7 +122,9 @@ function Pagina() {
                     type="number"
                     step="0.01"
                     value={form.salario_novo || ""}
-                    onChange={(e) => setForm((p) => ({ ...p, salario_novo: Number(e.target.value) }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, salario_novo: Number(e.target.value) }))
+                    }
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -136,7 +138,10 @@ function Pagina() {
               </div>
               <div className="space-y-1.5">
                 <Label>Tipo</Label>
-                <Select value={form.tipo} onValueChange={(v) => setForm((p) => ({ ...p, tipo: v }))}>
+                <Select
+                  value={form.tipo}
+                  onValueChange={(v) => setForm((p) => ({ ...p, tipo: v }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -159,8 +164,13 @@ function Pagina() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={() => salvar.mutate()} disabled={!form.funcionario_id || salvar.isPending}>
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => salvar.mutate()}
+                disabled={!form.funcionario_id || salvar.isPending}
+              >
                 Salvar
               </Button>
             </DialogFooter>
@@ -204,7 +214,10 @@ function Pagina() {
                 })}
                 {(!q.data || q.data.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="py-10 text-center text-sm text-muted-foreground"
+                    >
                       Nenhuma alteração registrada.
                     </TableCell>
                   </TableRow>

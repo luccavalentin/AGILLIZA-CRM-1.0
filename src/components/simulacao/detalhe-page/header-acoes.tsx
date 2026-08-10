@@ -138,16 +138,10 @@ export function HeaderAcoes({
                 <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                   Titular ⇄ Cônjuge
                 </DropdownMenuLabel>
-                <DropdownMenuItem
-                  disabled={invertendo}
-                  onClick={() => onInverterTitular(false)}
-                >
+                <DropdownMenuItem disabled={invertendo} onClick={() => onInverterTitular(false)}>
                   <ArrowLeftRight className="mr-2 h-4 w-4" /> Inverter titular
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={invertendo}
-                  onClick={() => onInverterTitular(true)}
-                >
+                <DropdownMenuItem disabled={invertendo} onClick={() => onInverterTitular(true)}>
                   <RefreshCw className="mr-2 h-4 w-4" /> Inverter e reenviar aos bancos
                 </DropdownMenuItem>
               </>

@@ -185,11 +185,7 @@ export function ConversaMenuAcoes({
             <MoreVertical className={compact ? "size-4" : "size-4"} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align={align}
-          onClick={(e) => e.stopPropagation()}
-          className="w-56"
-        >
+        <DropdownMenuContent align={align} onClick={(e) => e.stopPropagation()} className="w-56">
           <DropdownMenuLabel className="text-xs">Ações</DropdownMenuLabel>
           <DropdownMenuItem onSelect={() => mFixar.mutate()}>
             {fixado ? (
@@ -262,10 +258,7 @@ export function ConversaMenuAcoes({
             <Button variant="ghost" onClick={() => setOpenRenomear(false)}>
               Cancelar
             </Button>
-            <Button
-              onClick={() => mRenomear.mutate()}
-              disabled={mRenomear.isPending}
-            >
+            <Button onClick={() => mRenomear.mutate()} disabled={mRenomear.isPending}>
               Salvar
             </Button>
           </DialogFooter>
@@ -290,8 +283,8 @@ export function ConversaMenuAcoes({
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir esta conversa?</AlertDialogTitle>
             <AlertDialogDescription>
-              A conversa some da sua lista. O histórico permanece salvo e outros
-              participantes continuam vendo normalmente.
+              A conversa some da sua lista. O histórico permanece salvo e outros participantes
+              continuam vendo normalmente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -332,9 +325,7 @@ function PopoverEtiquetasHelper({
   const criarFn = useServerFn(criarEtiqueta);
   const definirFn = useServerFn(definirEtiquetasConversa);
 
-  const [selecionadas, setSelecionadas] = useState<Set<string>>(
-    new Set(etiquetaIdsAtuais),
-  );
+  const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set(etiquetaIdsAtuais));
   const [novoNome, setNovoNome] = useState("");
   const [novaCor, setNovaCor] = useState(CORES[0]);
 
@@ -345,8 +336,7 @@ function PopoverEtiquetasHelper({
   });
 
   const mCriar = useMutation({
-    mutationFn: async () =>
-      criarFn({ data: { nome: novoNome.trim(), cor: novaCor } }),
+    mutationFn: async () => criarFn({ data: { nome: novoNome.trim(), cor: novaCor } }),
     onSuccess: (nova: EtiquetaChat) => {
       setNovoNome("");
       qc.invalidateQueries({ queryKey: ["chat-etiquetas"] });
@@ -378,11 +368,7 @@ function PopoverEtiquetasHelper({
       <PopoverTrigger asChild>
         <span aria-hidden className="sr-only" />
       </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        className="w-72 p-0"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <PopoverContent align="end" className="w-72 p-0" onClick={(e) => e.stopPropagation()}>
         <div className="border-b p-3">
           <p className="text-sm font-semibold">Etiquetas</p>
           <p className="text-[11px] text-muted-foreground">
@@ -410,10 +396,7 @@ function PopoverEtiquetasHelper({
                       on && "bg-muted/40",
                     )}
                   >
-                    <span
-                      className="size-3 shrink-0 rounded-full"
-                      style={{ background: et.cor }}
-                    />
+                    <span className="size-3 shrink-0 rounded-full" style={{ background: et.cor }} />
                     <span className="flex-1 truncate">{et.nome}</span>
                     {on && <Check className="size-4 text-primary" />}
                   </button>
@@ -464,11 +447,7 @@ function PopoverEtiquetasHelper({
             <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button
-              size="sm"
-              onClick={() => mDefinir.mutate()}
-              disabled={mDefinir.isPending}
-            >
+            <Button size="sm" onClick={() => mDefinir.mutate()} disabled={mDefinir.isPending}>
               Aplicar
             </Button>
           </div>
@@ -479,11 +458,7 @@ function PopoverEtiquetasHelper({
 }
 
 /** Renderiza pílulas coloridas para uma lista de etiquetas. */
-export function EtiquetasPills({
-  etiquetas,
-}: {
-  etiquetas: EtiquetaChat[];
-}) {
+export function EtiquetasPills({ etiquetas }: { etiquetas: EtiquetaChat[] }) {
   if (!etiquetas.length) return null;
   return (
     <div className="flex flex-wrap gap-1">
@@ -494,10 +469,7 @@ export function EtiquetasPills({
           className="h-5 gap-1 px-1.5 text-[10px] font-medium"
           style={{ borderColor: et.cor, color: et.cor }}
         >
-          <span
-            className="size-1.5 rounded-full"
-            style={{ background: et.cor }}
-          />
+          <span className="size-1.5 rounded-full" style={{ background: et.cor }} />
           {et.nome}
         </Badge>
       ))}
@@ -541,9 +513,7 @@ export function ConversaMenuAcoesLive({
     enabled: suportaEtiquetas,
   });
 
-  const estado = (estados ?? []).find(
-    (e: any) => e.chat_tipo === chatTipo && e.chat_id === chatId,
-  );
+  const estado = (estados ?? []).find((e: any) => e.chat_tipo === chatTipo && e.chat_id === chatId);
   const etiquetaIds = ((vinc ?? []) as any[])
     .filter((v) => v.chat_tipo === chatTipo && v.chat_id === chatId)
     .map((v) => v.etiqueta_id);

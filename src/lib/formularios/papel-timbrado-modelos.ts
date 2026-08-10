@@ -194,6 +194,8 @@ export const PAPEL_TIMBRADO_MODELOS: PapelTimbradoModelo[] = [
   },
 ];
 
-export function getPapelTimbradoModelo(id: PapelTimbradoModeloId | undefined | null): PapelTimbradoModelo {
+export function getPapelTimbradoModelo(
+  id: PapelTimbradoModeloId | undefined | null,
+): PapelTimbradoModelo {
   return PAPEL_TIMBRADO_MODELOS.find((m) => m.id === id) ?? PAPEL_TIMBRADO_MODELOS[0];
 }

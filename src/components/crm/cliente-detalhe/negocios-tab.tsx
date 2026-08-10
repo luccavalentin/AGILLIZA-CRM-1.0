@@ -39,17 +39,30 @@ export function NegociosTab({
                   className="group relative flex w-full flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border bg-card p-3.5 pl-4 text-left text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
                   style={{ ["--banco-cor" as string]: cor }}
                 >
-                  <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: cor }} />
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 w-1"
+                    style={{ backgroundColor: cor }}
+                  />
                   <div className="flex min-w-0 items-center gap-3">
                     <span
                       className="grid size-10 shrink-0 place-items-center rounded-lg"
-                      style={{ backgroundColor: primeiro ? `${cor}14` : "hsl(var(--primary) / 0.10)" }}
+                      style={{
+                        backgroundColor: primeiro ? `${cor}14` : "hsl(var(--primary) / 0.10)",
+                      }}
                     >
-                      {primeiro ? <BancoLogo nome={primeiro} size="lg" /> : <FileText className="size-5 text-primary" />}
+                      {primeiro ? (
+                        <BancoLogo nome={primeiro} size="lg" />
+                      ) : (
+                        <FileText className="size-5 text-primary" />
+                      )}
                     </span>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold" style={{ color: primeiro ? cor : undefined }}>
+                        <span
+                          className="font-semibold"
+                          style={{ color: primeiro ? cor : undefined }}
+                        >
                           {primeiro
                             ? s.bancos.length > 1
                               ? `${primeiro} +${s.bancos.length - 1}`
@@ -69,7 +82,9 @@ export function NegociosTab({
                     <div className="text-base font-bold tabular-nums text-foreground">
                       {fmtValor(s.valor_financiamento)}
                     </div>
-                    <span className="text-[11px] text-muted-foreground">Valor do financiamento</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Valor do financiamento
+                    </span>
                   </div>
                 </button>
               );
@@ -99,7 +114,11 @@ export function NegociosTab({
                   className="group relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border bg-card p-3.5 pl-4 text-sm shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
                   style={{ ["--banco-cor" as string]: cor }}
                 >
-                  <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: cor }} />
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 w-1"
+                    style={{ backgroundColor: cor }}
+                  />
                   <div className="flex min-w-0 items-center gap-3">
                     <span
                       className="grid size-10 shrink-0 place-items-center rounded-lg"
@@ -123,7 +142,9 @@ export function NegociosTab({
                     <div className="text-base font-bold tabular-nums text-foreground">
                       {fmtValor(p.valor_financiamento)}
                     </div>
-                    <span className="text-[11px] text-muted-foreground">Valor do financiamento</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Valor do financiamento
+                    </span>
                   </div>
                 </Link>
               );

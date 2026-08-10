@@ -23,7 +23,8 @@ export const listarOportunidadesOrfas = createServerFn({ method: "GET" })
     // Usamos query builder flexível para evitar erros de tipagem com relacionamentos complexos
     const { data: props, error: errP } = await supabase
       .from("propostas")
-      .select(`
+      .select(
+        `
         id, 
         numero_proposta, 
         homefin_id_oportunidade, 
@@ -31,7 +32,8 @@ export const listarOportunidadesOrfas = createServerFn({ method: "GET" })
         deleted_at, 
         cancelamento_pendente_banco,
         proposta_envolvidos(nome_completo, tipo_qualificacao)
-      `)
+      `,
+      )
       .not("homefin_id_oportunidade", "is", null)
       .or("status.eq.cancelada,deleted_at.not.is.null")
       .limit(300);
@@ -53,7 +55,7 @@ export const listarOportunidadesOrfas = createServerFn({ method: "GET" })
     (props ?? []).forEach((p: any) => {
       // Filtra o titular localmente para garantir o nome correto
       const titular = p.proposta_envolvidos?.find((e: any) => e.tipo_qualificacao === "titular");
-      
+
       result.push({
         tipo: "proposta",
         id: p.id,
@@ -84,10 +86,14 @@ export const listarOportunidadesOrfas = createServerFn({ method: "GET" })
 
 export const cancelarOrfaEmLote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ 
-    ids: z.array(z.string()),
-    tipo: z.enum(["proposta", "simulacao"])
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        ids: z.array(z.string()),
+        tipo: z.enum(["proposta", "simulacao"]),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { cancelarOportunidadeHomefinGenerico } = await import("@/lib/propostas/enviar.server");
@@ -134,4 +140,3 @@ export const cancelarOrfaEmLote = createServerFn({ method: "POST" })
 
     return { sucessos, falhas, relatorio };
   });
-

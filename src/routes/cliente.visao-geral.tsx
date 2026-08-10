@@ -41,7 +41,11 @@ function diasNaEtapa(iso: string | null) {
 
 function formatarData(iso: string | null) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   day: "2-digit", month: "short" });
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "short",
+  });
 }
 
 function StatCard({
@@ -132,7 +136,11 @@ function VisaoGeral() {
   const heroData = [{ name: "p", value: progresso, fill: "#ffffff" }];
   const panoramaData = [
     { name: "Concluídas", value: concluidas, cor: "var(--primary)" },
-    { name: "Em andamento", value: emAndamento, cor: "color-mix(in oklab, var(--primary) 55%, white)" },
+    {
+      name: "Em andamento",
+      value: emAndamento,
+      cor: "color-mix(in oklab, var(--primary) 55%, white)",
+    },
     { name: "Pendentes", value: pendentes, cor: "color-mix(in oklab, var(--primary) 15%, white)" },
   ].filter((d) => d.value > 0);
 
@@ -142,8 +150,7 @@ function VisaoGeral() {
       <div
         className="relative overflow-hidden rounded-2xl text-primary-foreground shadow-xl"
         style={{
-          background:
-            "linear-gradient(120deg, #000a6b 0%, #000f9f 45%, #1a2ec4 100%)",
+          background: "linear-gradient(120deg, #000a6b 0%, #000f9f 45%, #1a2ec4 100%)",
         }}
       >
         {/* padrão sutil de arquitetura */}
@@ -230,7 +237,6 @@ function VisaoGeral() {
             </div>
           </div>
         </div>
-
       </div>
 
       {/* STAT CARDS */}
@@ -382,9 +388,7 @@ function VisaoGeral() {
               </span>
               <div>
                 <p className="text-sm font-semibold text-foreground">Seu processo passo a passo</p>
-                <p className="text-xs text-muted-foreground">
-                  Acompanhe cada etapa da sua jornada
-                </p>
+                <p className="text-xs text-muted-foreground">Acompanhe cada etapa da sua jornada</p>
               </div>
             </div>
 
@@ -433,8 +437,7 @@ function VisaoGeral() {
                     <div
                       className={cn(
                         "flex-1 pb-3",
-                        etapa.status === "atual" &&
-                          "-mx-2 rounded-lg bg-primary/5 px-2 py-1.5",
+                        etapa.status === "atual" && "-mx-2 rounded-lg bg-primary/5 px-2 py-1.5",
                       )}
                     >
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">

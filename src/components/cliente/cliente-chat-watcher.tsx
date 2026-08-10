@@ -26,8 +26,6 @@ export function ClienteChatWatcher() {
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 3000), // Aumentamos a frequência para 3s para ser quase imediato
   });
 
-
-
   useEffect(() => {
     pedirPermissaoNotificacao();
   }, []);
@@ -53,8 +51,7 @@ export function ClienteChatWatcher() {
       const nlAtual = a.nao_lidas ?? 0;
       const nlPrev = prev?.nao_lidas ?? 0;
       const chegou =
-        (nlAtual > nlPrev) ||
-        (!!a.ultima_em && a.ultima_em !== prev?.ultima_em && nlAtual > 0);
+        nlAtual > nlPrev || (!!a.ultima_em && a.ultima_em !== prev?.ultima_em && nlAtual > 0);
       if (chegou) {
         // Id sintético estável por (atendente + timestamp) — o store dedupa.
         signalIncomingChat(`cliente:${a.atendente_id}:${a.ultima_em ?? ""}`, {

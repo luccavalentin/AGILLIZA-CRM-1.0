@@ -5,10 +5,12 @@
 ## 1. Produto do módulo
 
 **Duas telas + duas modalidades**:
+
 - **Simulação rápida** (`/operacional/simulacoes/nova`) — cálculo local (SAC/PRICE) sem API. PDF sai imediato. Persiste em `simulacoes` só se usuário clicar "Salvar no CRM".
 - **Simulação completa/personalizada** (`/operacional/simulacoes/completa`) — envia à Integração Bancária (Bradesco/Santander/Itaú por padrão). Verificação por e-mail (OTP servido pela integração — rótulo neutro "Verificação por e-mail").
 
 **Tabelas**:
+
 - `simulacoes` (62 col.) — snapshot completo, `homefin_id_oportunidade`, `numero_simulacao SIM-######`, `tipo_simulacao ('simplificada'|'completa')`, `status ('rascunho'|'enviando'|'simulada'|'parcialmente_simulada'|'erro_banco'|'expirada'|'cancelada'|'promovida')`.
 - `simulacao_bancos` (24 col.) — uma linha por banco por simulação, com `valor_parcela`, `taxa_juros_ano`, `prazo_pagamento_max`, `valor_financiamento_max`, `valor_iof`, `sistema_amortizacao_banco`, `status_banco`, `mensagem_banco`.
 - `simulacao_participantes` — comprador adicional / vendedor / composição de renda com todos os campos da API.
@@ -83,6 +85,7 @@ Todo request loga em `simulacao_logs_homefin` (com `mask_pii_jsonb` no payload).
 ## 7. PDF de simulação
 
 `src/lib/simulacao/simulacao-pdf.ts` (jsPDF, portrait):
+
 - Cabeçalho Agilliza + logo dos bancos comparados.
 - Comparativo (tabela dos bancos, ordenado pelo menor parcela).
 - Bloco "Renda necessária" abaixo do comparativo.

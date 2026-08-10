@@ -54,9 +54,7 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
 
   async function baixarDetalhado() {
     if (!sim) return;
-    const { baixarSimulacoesDetalhadasZipPDF } = await import(
-      "@/lib/simulacao/simulacao-pdf"
-    );
+    const { baixarSimulacoesDetalhadasZipPDF } = await import("@/lib/simulacao/simulacao-pdf");
     await baixarSimulacoesDetalhadasZipPDF({ simulacao: sim, bancos });
   }
 
@@ -85,8 +83,8 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
             {sim ? <SimulacaoStatusBadge status={sim.status ?? "—"} /> : null}
           </DialogTitle>
           <DialogDescription>
-            Pré-visualização dos dados e dos bancos simulados. Baixe o PDF ou
-            abra a tela completa para editar.
+            Pré-visualização dos dados e dos bancos simulados. Baixe o PDF ou abra a tela completa
+            para editar.
           </DialogDescription>
         </DialogHeader>
 
@@ -100,20 +98,11 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
             <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-muted/30 p-3 text-sm sm:grid-cols-4">
               <Linha rotulo="Produto" valor={produtoLabel(sim.produto)} />
               <Linha rotulo="Valor do imóvel" valor={formatBRL(sim.valor_imovel)} />
-              <Linha
-                rotulo="Financiamento"
-                valor={formatBRL(sim.valor_financiamento)}
-              />
-              <Linha
-                rotulo="Prazo"
-                valor={sim.prazo_meses ? `${sim.prazo_meses} meses` : "—"}
-              />
+              <Linha rotulo="Financiamento" valor={formatBRL(sim.valor_financiamento)} />
+              <Linha rotulo="Prazo" valor={sim.prazo_meses ? `${sim.prazo_meses} meses` : "—"} />
               <Linha rotulo="Entrada" valor={formatBRL(sim.valor_entrada)} />
               <Linha rotulo="FGTS" valor={formatBRL(sim.valor_fgts)} />
-              <Linha
-                rotulo="Renda declarada"
-                valor={formatBRL(sim.renda_total)}
-              />
+              <Linha rotulo="Renda declarada" valor={formatBRL(sim.renda_total)} />
               <Linha rotulo="Amortização" valor={sistemaLabel ?? "—"} />
             </div>
 
@@ -186,15 +175,8 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
         )}
 
         <DialogFooter className="flex flex-wrap gap-2 sm:justify-between">
-          <Button
-            variant="ghost"
-            asChild
-            disabled={!sim}
-          >
-            <Link
-              to="/operacional/simulacoes/$id"
-              params={{ id: simulacaoId ?? "" }}
-            >
+          <Button variant="ghost" asChild disabled={!sim}>
+            <Link to="/operacional/simulacoes/$id" params={{ id: simulacaoId ?? "" }}>
               <ExternalLink className="mr-1 size-4" /> Abrir simulação
             </Link>
           </Button>
@@ -206,10 +188,7 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
             >
               <Download className="mr-1 size-4" /> Comparativo
             </Button>
-            <Button
-              onClick={baixarDetalhado}
-              disabled={!sim || bancos.length === 0}
-            >
+            <Button onClick={baixarDetalhado} disabled={!sim || bancos.length === 0}>
               <Download className="mr-1 size-4" /> Baixar PDFs detalhados
             </Button>
           </div>
@@ -222,9 +201,7 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
 function Linha({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        {rotulo}
-      </p>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{rotulo}</p>
       <p className="truncate font-medium text-foreground">{valor ?? "—"}</p>
     </div>
   );

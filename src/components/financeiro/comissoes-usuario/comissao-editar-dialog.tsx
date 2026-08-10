@@ -83,7 +83,9 @@ export function ComissaoEditarDialog({
           <DialogTitle>Editar lançamento</DialogTitle>
           <DialogDescription>
             {lancamento?.usuario_nome ?? "Usuário"} ·{" "}
-            {lancamento?.numero_proposta ? `Proposta ${lancamento.numero_proposta}` : "Sem proposta"}
+            {lancamento?.numero_proposta
+              ? `Proposta ${lancamento.numero_proposta}`
+              : "Sem proposta"}
           </DialogDescription>
         </DialogHeader>
 

@@ -23,8 +23,7 @@ export function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
   )
     return "credito_recusado";
   if (n.includes("contrato") || n.includes("registr")) return "contrato_emitido";
-  if (n.includes("juríd") || n.includes("jurid") || n.includes("emiss"))
-    return "analise_juridica";
+  if (n.includes("juríd") || n.includes("jurid") || n.includes("emiss")) return "analise_juridica";
   if (n.includes("vistoria") || n.includes("engenharia") || n.includes("avaliaç"))
     return "engenharia_vistoria";
   if (n.includes("document")) return "aguardando_documentos";
@@ -58,18 +57,17 @@ export function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
  *    protocolo é regida pela presença do log de confirmação de envio.
  */
 export function ehFalhaIntegracaoBanco(sim: any): boolean {
-  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  const tipo = String(sim?.tipoSituacao ?? "")
+    .toUpperCase()
+    .charAt(0);
   // P (Pendente) ou E (Erro) sem protocolo real é falha de integração.
   if (tipo !== "P" && tipo !== "E") return false;
   if (numeroPropostaBancoReal(sim) || referenciaIntegracaoBanco(sim)) return false;
   return true;
 }
 
-
 export const MSG_FALHA_INTEGRACAO =
   "A proposta ainda não foi recebida pelo banco devido a uma falha na comunicação. Por favor, revise os dados do cliente e tente reenviar.";
-
-
 
 /** Rótulos amigáveis (pt-BR) para os campos que os bancos costumam recusar. */
 const ROTULO_CAMPO: Record<string, string> = {
@@ -184,7 +182,12 @@ export function extrairErroRetorno(
   if (typeof error === "string") return error;
   if (error && typeof error === "object") {
     if (Array.isArray(error.fields) && error.fields.length > 0) {
-      return error.fields.map((f: any) => formatarErroCampo(f)).filter(Boolean).join("; ") || null;
+      return (
+        error.fields
+          .map((f: any) => formatarErroCampo(f))
+          .filter(Boolean)
+          .join("; ") || null
+      );
     }
     if (error.message) return String(error.message);
   }
@@ -195,19 +198,22 @@ export function extrairErroRetorno(
     const c = String(codigo).trim();
     // Só códigos exatamente positivos indicam sucesso; prefixos como "01.03"
     // podem ser códigos de fase/erro do banco e não devem ser mascarados.
-    if (c && !(c === "0" || c === "00" || c === "000" || c === "200" || /^(ok|success|sucesso)$/i.test(c))) {
+    if (
+      c &&
+      !(c === "0" || c === "00" || c === "000" || c === "200" || /^(ok|success|sucesso)$/i.test(c))
+    ) {
       // Quando retornoIntegracao vier vazio ({"error":{}}) ou apenas com código,
       // orientar o acionamento do suporte.
-      const erroVazio = typeof obj?.error === "object" && obj?.error !== null && Object.keys(obj.error).length === 0;
-      
+      const erroVazio =
+        typeof obj?.error === "object" &&
+        obj?.error !== null &&
+        Object.keys(obj.error).length === 0;
+
       if (erroVazio) {
         return `O banco não informou o motivo da recusa (código ${c}). Por favor, acione o suporte técnico com o número desta proposta.`;
       }
       return `A proposta não foi efetivada no banco (falha na integração - código ${c}).`;
-
-
     }
-
   }
   return null;
 }
@@ -324,8 +330,7 @@ export function bancoJaEnviado(b: {
   // (ex.: codigoSimulacaoBanco) não caracteriza proposta ativa no banco.
   if (String(b.status_banco ?? "") === "erro") return false;
   return (
-    Boolean(b.numero_proposta_banco) ||
-    STATUS_BANCO_JA_ENVIADO.has(String(b.status_banco ?? ""))
+    Boolean(b.numero_proposta_banco) || STATUS_BANCO_JA_ENVIADO.has(String(b.status_banco ?? ""))
   );
 }
 
@@ -411,8 +416,10 @@ function protocoloValido(valor: string | null): string | null {
  * d) Referências técnicas (UUIDs) são filtradas.
  */
 export function numeroPropostaBancoReal(sim: any, enviouReal: boolean = false): string | null {
-  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
-  
+  const tipo = String(sim?.tipoSituacao ?? "")
+    .toUpperCase()
+    .charAt(0);
+
   // Se não enviou real (log 2xx), só aceita se for status terminal (A/R/N/C)
   // que indica que a esteira já andou.
   const terminal = tipo === "A" || tipo === "R" || tipo === "N" || tipo === "C";
@@ -435,7 +442,6 @@ export function referenciaIntegracaoBanco(sim: any): string | null {
   );
 }
 
-
 export function numeroBancoDaOportunidade(op: any): string | null {
   // Busca RASA: o payload da oportunidade contém as simulações de TODOS os
   // bancos; descer nele copiaria o protocolo de um banco para outro.
@@ -449,7 +455,6 @@ export function numeroBancoDaOportunidade(op: any): string | null {
     ]),
   );
 }
-
 
 export function numeroAtualEhReferenciaTecnica(pb: any, sim: any): boolean {
   const atual = String(pb?.numero_proposta_banco ?? "").trim();
@@ -476,8 +481,15 @@ function protocoloBanco(sim: any): string | null {
 }
 
 function prioridadeSimulacao(sim: any, exata: boolean): number {
-  const erroMsg = extrairErroRetorno(sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao);
-  const mapa = statusInternoBanco(sim?.tipoSituacao, Boolean(erroMsg), sim?.codigoSituacaoBanco, sim);
+  const erroMsg = extrairErroRetorno(
+    sim?.retornoIntegracao ?? sim?.descricaoRespostaBanco?.retornoIntegracao,
+  );
+  const mapa = statusInternoBanco(
+    sim?.tipoSituacao,
+    Boolean(erroMsg),
+    sim?.codigoSituacaoBanco,
+    sim,
+  );
   const statusScore =
     mapa.proposta === "credito_aprovado"
       ? 80
@@ -504,17 +516,22 @@ export function escolherSimulacaoBanco(pb: any, simulacoes: any[]): any | null {
 
   if (!candidatas.length) {
     // Fallback apenas se não achou pelo ID exato, tenta pelo banco
-    const porBanco = simulacoes.filter(sim => mesmoBanco(pb, sim));
+    const porBanco = simulacoes.filter((sim) => mesmoBanco(pb, sim));
     if (!porBanco.length) return null;
-    return porBanco.sort((a, b) => prioridadeSimulacao(b, false) - prioridadeSimulacao(a, false))[0];
+    return porBanco.sort(
+      (a, b) => prioridadeSimulacao(b, false) - prioridadeSimulacao(a, false),
+    )[0];
   }
 
-  return candidatas
-    .sort((a, b) => prioridadeSimulacao(b.sim, b.exata) - prioridadeSimulacao(a.sim, a.exata))[0]
-    .sim;
+  return candidatas.sort(
+    (a, b) => prioridadeSimulacao(b.sim, b.exata) - prioridadeSimulacao(a.sim, a.exata),
+  )[0].sim;
 }
 
-export function statusDaAtividade(atividades: any[]): { status: PropostaStatus | null; detalhe: string | null } {
+export function statusDaAtividade(atividades: any[]): {
+  status: PropostaStatus | null;
+  detalhe: string | null;
+} {
   const ativas = atividades
     .filter((a) => String(a?.tipoSituacao ?? "").toUpperCase() !== "N")
     .sort((a, b) => {

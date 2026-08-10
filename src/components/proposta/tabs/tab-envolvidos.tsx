@@ -43,7 +43,6 @@ export function TabEnvolvidos({
   onFechouAposSalvar?: () => void;
   idBanco?: number;
 }) {
-
   const qc = useQueryClient();
   const addFn = useServerFn(adicionarEnvolvido);
   const updFn = useServerFn(atualizarEnvolvido);
@@ -148,9 +147,7 @@ export function TabEnvolvidos({
       await delFn({ data: { id } });
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Falha ao remover participante.",
-      );
+      toast.error(e instanceof Error ? e.message : "Falha ao remover participante.");
     }
   }
 
@@ -169,9 +166,7 @@ export function TabEnvolvidos({
         open={open}
         onOpenChange={setOpen}
         titulo={
-          editId
-            ? "Editar participante"
-            : `Incluir ${tipo === "CO" ? "comprador" : "vendedor"}`
+          editId ? "Editar participante" : `Incluir ${tipo === "CO" ? "comprador" : "vendedor"}`
         }
         inicial={inicial}
         conjugeInicial={conjugeInicial}
@@ -181,7 +176,6 @@ export function TabEnvolvidos({
         onSalvar={salvar}
         idBanco={idBanco}
       />
-
 
       <Table>
         <TableHeader>
@@ -203,11 +197,7 @@ export function TabEnvolvidos({
             </TableRow>
           )}
           {lista.map((e) => (
-            <TableRow
-              key={e.id}
-              className="cursor-pointer"
-              onClick={() => editar(e)}
-            >
+            <TableRow key={e.id} className="cursor-pointer" onClick={() => editar(e)}>
               <TableCell>{e.cpf_cnpj ?? "—"}</TableCell>
               <TableCell className="font-medium">{e.nome}</TableCell>
               <TableCell>{e.email ?? "—"}</TableCell>

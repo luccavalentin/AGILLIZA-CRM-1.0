@@ -31,7 +31,13 @@ import {
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { obterKpisFinanceiros, listarContas } from "@/lib/financeiro/financeiro.functions";
 import type { KpiTone } from "@/components/financeiro/kpi-card";
-import { PanelHeader, SectionTitle, PanelCard, HeroMetric, MiniMetric } from "@/components/common/dashboard";
+import {
+  PanelHeader,
+  SectionTitle,
+  PanelCard,
+  HeroMetric,
+  MiniMetric,
+} from "@/components/common/dashboard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/financeiro/format";
@@ -68,7 +74,13 @@ const SERIES: Record<string, { rotulo: string; cor: string }> = {
   resultado: { rotulo: "Resultado", cor: "var(--chart-1)" },
 };
 
-const PALETA = ["var(--chart-1)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--chart-2)"];
+const PALETA = [
+  "var(--chart-1)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-2)",
+];
 
 /** Tooltip editorial com tipografia tabular e cor por série. */
 function FinTooltip({ active, payload, label }: any) {
@@ -213,7 +225,15 @@ function Pagina() {
 
   const drillMeta: Record<
     KpiFinKey,
-    { titulo: string; subtitulo: string; valor: string; icon: LucideIcon; tone: KpiTone; to: string; empty: string }
+    {
+      titulo: string;
+      subtitulo: string;
+      valor: string;
+      icon: LucideIcon;
+      tone: KpiTone;
+      to: string;
+      empty: string;
+    }
   > = {
     receber: {
       titulo: "Contas a receber",
@@ -276,9 +296,27 @@ function Pagina() {
 
   const exportColunas = [
     { key: "mes", label: "Competência" },
-    { key: "receita", label: "Receitas", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-    { key: "despesa", label: "Despesas", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-    { key: "resultado", label: "Resultado", align: "right" as const, format: "brl" as const, footer: "sum" as const },
+    {
+      key: "receita",
+      label: "Receitas",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
+    {
+      key: "despesa",
+      label: "Despesas",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
+    {
+      key: "resultado",
+      label: "Resultado",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
   ];
   const exportLinhas = mensal.map((m: any) => ({
     mes: m.label,
@@ -289,7 +327,11 @@ function Pagina() {
   const exportKpis = [
     { label: "A receber", valor: formatBRL(data?.aReceber30d ?? 0), tone: "success" as const },
     { label: "A pagar", valor: formatBRL(data?.aPagar30d ?? 0), tone: "warning" as const },
-    { label: "Saldo projetado", valor: formatBRL(data?.saldoProjetado ?? 0), tone: "brand" as const },
+    {
+      label: "Saldo projetado",
+      valor: formatBRL(data?.saldoProjetado ?? 0),
+      tone: "brand" as const,
+    },
     { label: "Inadimplência", valor: formatBRL(data?.inadimplencia ?? 0), tone: "danger" as const },
   ];
   const alterado = de !== padrao.de || ate !== padrao.ate;
@@ -428,7 +470,11 @@ function Pagina() {
             </p>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={mensal} margin={{ top: 12, right: 12, left: 0, bottom: 0 }} barGap={6}>
+              <ComposedChart
+                data={mensal}
+                margin={{ top: 12, right: 12, left: 0, bottom: 0 }}
+                barGap={6}
+              >
                 <defs>
                   <linearGradient id="pfReceita" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.95} />
@@ -443,7 +489,12 @@ function Pagina() {
                     <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="4 6" stroke="hsl(var(--border))" strokeOpacity={0.6} vertical={false} />
+                <CartesianGrid
+                  strokeDasharray="4 6"
+                  stroke="hsl(var(--border))"
+                  strokeOpacity={0.6}
+                  vertical={false}
+                />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
@@ -475,8 +526,20 @@ function Pagina() {
                   dot={false}
                   activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(var(--card))" }}
                 />
-                <Bar dataKey="receita" name="Receitas" fill="url(#pfReceita)" radius={[6, 6, 0, 0]} maxBarSize={26} />
-                <Bar dataKey="despesa" name="Despesas" fill="url(#pfDespesa)" radius={[6, 6, 0, 0]} maxBarSize={26} />
+                <Bar
+                  dataKey="receita"
+                  name="Receitas"
+                  fill="url(#pfReceita)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={26}
+                />
+                <Bar
+                  dataKey="despesa"
+                  name="Despesas"
+                  fill="url(#pfDespesa)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={26}
+                />
                 <Line
                   type="monotone"
                   dataKey="resultado"
@@ -502,7 +565,9 @@ function Pagina() {
         >
           <div className="mb-4 flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
             <Banknote className="size-4 text-primary" />
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Total em aberto</span>
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Total em aberto
+            </span>
             <span className="ml-auto font-mono text-sm font-semibold tabular-nums text-foreground">
               {formatBRL(bancos.reduce((s, b) => s + (Number(b.valor) || 0), 0))}
             </span>
@@ -522,7 +587,9 @@ function Pagina() {
           {isLoading ? (
             <div className="h-56 w-full animate-pulse rounded-xl bg-muted/50" />
           ) : categoriasTop.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">Nenhuma despesa em aberto.</p>
+            <p className="py-16 text-center text-sm text-muted-foreground">
+              Nenhuma despesa em aberto.
+            </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)] sm:items-center">
               <div className="relative h-[220px] w-full">
@@ -546,7 +613,9 @@ function Pagina() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Total</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Total
+                  </span>
                   <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
                     {formatBRL(totalCategorias)}
                   </span>
@@ -557,10 +626,21 @@ function Pagina() {
                   const pct = totalCategorias > 0 ? (c.valor / totalCategorias) * 100 : 0;
                   return (
                     <li key={c.nome} className="flex items-center gap-2 text-xs">
-                      <span className="size-2.5 shrink-0 rounded-full" style={{ background: c.cor }} />
-                      <span className="min-w-0 flex-1 truncate font-medium text-foreground">{c.nome}</span>
-                      <span className="font-mono tabular-nums text-muted-foreground">{pct.toFixed(1)}%</span>
-                      <span className={cn("w-24 shrink-0 text-right font-mono font-semibold tabular-nums text-foreground")}>
+                      <span
+                        className="size-2.5 shrink-0 rounded-full"
+                        style={{ background: c.cor }}
+                      />
+                      <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+                        {c.nome}
+                      </span>
+                      <span className="font-mono tabular-nums text-muted-foreground">
+                        {pct.toFixed(1)}%
+                      </span>
+                      <span
+                        className={cn(
+                          "w-24 shrink-0 text-right font-mono font-semibold tabular-nums text-foreground",
+                        )}
+                      >
                         {formatBRL(c.valor)}
                       </span>
                     </li>

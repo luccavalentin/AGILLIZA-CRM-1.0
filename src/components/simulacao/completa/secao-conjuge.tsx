@@ -37,10 +37,7 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               set("compoe_renda", checked);
             }}
           />
-          <Label
-            htmlFor="compoe-renda-conjuge"
-            className="text-sm font-medium cursor-pointer"
-          >
+          <Label htmlFor="compoe-renda-conjuge" className="text-sm font-medium cursor-pointer">
             Compor renda com este cônjuge
           </Label>
           {!casado && (
@@ -84,10 +81,7 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         </Campo>
         {f.compoe_renda_conjuge && (
           <Campo label="Renda do Cônjuge (R$)">
-            <CurrencyInput
-              value={f.renda_conjuge ?? 0}
-              onChange={(v) => set("renda_conjuge", v)}
-            />
+            <CurrencyInput value={f.renda_conjuge ?? 0} onChange={(v) => set("renda_conjuge", v)} />
           </Campo>
         )}
 

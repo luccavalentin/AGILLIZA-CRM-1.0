@@ -76,7 +76,6 @@ export function RegrasAbas({
       total: 0,
     };
 
-
   const del = useMutation({
     mutationFn: (id: string) => excluirRegraComissaoUsuario({ data: { id } }),
     onSuccess: () => {
@@ -97,41 +96,58 @@ export function RegrasAbas({
           </p>
         </div>
         <div className="flex items-center gap-2">
-        <ExportarFinanceiro
-          titulo="Regras de comissão por usuário"
-          descricao="Percentuais e bases de cálculo configurados por vínculo."
-          meta={[`Vínculo: ${rotulo(TIPOS_VINCULO_COMISSAO, tipo)}`]}
-          columns={[
-            { key: "usuario", label: "Usuário" },
-            { key: "vinculo", label: "Vínculo" },
-            { key: "banco", label: "Banco" },
-            { key: "gatilho", label: "Gatilho" },
-            { key: "base", label: "Base de cálculo" },
-            { key: "percentual", label: "Percentual", align: "right" as const, format: "pct" as const },
-            { key: "a_pagar", label: "A pagar", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-            { key: "pago", label: "Pago", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-            { key: "ativo", label: "Situação" },
-          ]}
-          rows={(regras ?? []).map((r: any) => {
-            const res = resumoDe(r.id);
-            return {
-              usuario: r.usuario_nome ?? "—",
-              vinculo: rotulo(TIPOS_VINCULO_COMISSAO, r.tipo_vinculo),
-              banco: r.banco_nome ?? "Todos",
-              gatilho: rotuloGatilho(r.gatilho),
-              base: rotulo(BASES_CALCULO, r.base_calculo),
-              percentual: Number(r.percentual) || 0,
-              a_pagar: Number(res.a_pagar) || 0,
-              pago: Number(res.paga) || 0,
-              ativo: r.ativo ? "Ativa" : "Inativa",
-            };
-          })}
-        />
-        <RecalcularComissoesButton />
-        <Button onClick={() => setDialog({ aberto: true, regra: null })} size="sm">
-          <Plus className="mr-2 size-4" />
-          Nova regra
-        </Button>
+          <ExportarFinanceiro
+            titulo="Regras de comissão por usuário"
+            descricao="Percentuais e bases de cálculo configurados por vínculo."
+            meta={[`Vínculo: ${rotulo(TIPOS_VINCULO_COMISSAO, tipo)}`]}
+            columns={[
+              { key: "usuario", label: "Usuário" },
+              { key: "vinculo", label: "Vínculo" },
+              { key: "banco", label: "Banco" },
+              { key: "gatilho", label: "Gatilho" },
+              { key: "base", label: "Base de cálculo" },
+              {
+                key: "percentual",
+                label: "Percentual",
+                align: "right" as const,
+                format: "pct" as const,
+              },
+              {
+                key: "a_pagar",
+                label: "A pagar",
+                align: "right" as const,
+                format: "brl" as const,
+                footer: "sum" as const,
+              },
+              {
+                key: "pago",
+                label: "Pago",
+                align: "right" as const,
+                format: "brl" as const,
+                footer: "sum" as const,
+              },
+              { key: "ativo", label: "Situação" },
+            ]}
+            rows={(regras ?? []).map((r: any) => {
+              const res = resumoDe(r.id);
+              return {
+                usuario: r.usuario_nome ?? "—",
+                vinculo: rotulo(TIPOS_VINCULO_COMISSAO, r.tipo_vinculo),
+                banco: r.banco_nome ?? "Todos",
+                gatilho: rotuloGatilho(r.gatilho),
+                base: rotulo(BASES_CALCULO, r.base_calculo),
+                percentual: Number(r.percentual) || 0,
+                a_pagar: Number(res.a_pagar) || 0,
+                pago: Number(res.paga) || 0,
+                ativo: r.ativo ? "Ativa" : "Inativa",
+              };
+            })}
+          />
+          <RecalcularComissoesButton />
+          <Button onClick={() => setDialog({ aberto: true, regra: null })} size="sm">
+            <Plus className="mr-2 size-4" />
+            Nova regra
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -169,7 +185,6 @@ export function RegrasAbas({
                         <TableHead className="text-right">Pago</TableHead>
                         <TableHead className="text-center">Ativo</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
-
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -232,17 +247,12 @@ export function RegrasAbas({
                             >
                               <Pencil className="size-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setExcluir(r)}
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => setExcluir(r)}>
                               <Trash2 className="size-4 text-destructive" />
                             </Button>
                           </TableCell>
                         </TableRow>
                       ))}
-
                     </TableBody>
                   </Table>
                 </div>
@@ -264,7 +274,8 @@ export function RegrasAbas({
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir regra?</AlertDialogTitle>
             <AlertDialogDescription>
-              A regra deixará de valer para novos contratos. Lançamentos já gerados não serão alterados.
+              A regra deixará de valer para novos contratos. Lançamentos já gerados não serão
+              alterados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

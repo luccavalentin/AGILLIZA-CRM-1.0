@@ -1,5 +1,9 @@
 import { jsPDF } from "jspdf";
-import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_DARK, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
+import {
+  AGILLIZA_LOGO_LIGHT,
+  AGILLIZA_LOGO_DARK,
+  AGILLIZA_LOGO_RATIO,
+} from "@/lib/relatorios/brand-logo";
 import {
   getPapelTimbradoModelo,
   type PapelTimbradoModelo,
@@ -374,17 +378,16 @@ function drawPagina(doc: jsPDF, pageW: number, pageH: number, m: PapelTimbradoMo
   return drawHeader(doc, pageW, m);
 }
 
-
 /**
  * Gera um PDF de papel timbrado Agilliza. Se `dados` estiver vazio ou omitido
  * (fora `modelo`), emite apenas o cabeçalho + marca d'água + rodapé.
  */
 export function gerarPapelTimbradoPDF(dados: PapelTimbradoDados = {}, filename?: string) {
-  const doc = new jsPDF({ 
-    orientation: "portrait", 
-    unit: "pt", 
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
     format: "a4",
-    compress: true
+    compress: true,
   });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -402,7 +405,6 @@ export function gerarPapelTimbradoPDF(dados: PapelTimbradoDados = {}, filename?:
   let y = drawPagina(doc, pageW, pageH, modelo);
   const largura = pageW - margem * 2;
   const fonteCorpo = ehReal ? "times" : "helvetica";
-
 
   const linhaCabecalho = [dados.cidade?.trim(), dados.data?.trim()].filter(Boolean).join(", ");
   if (linhaCabecalho) {
@@ -424,7 +426,6 @@ export function gerarPapelTimbradoPDF(dados: PapelTimbradoDados = {}, filename?:
     });
     y += 10;
   }
-
 
   if (dados.referencia?.trim()) {
     doc.setFont(fonteCorpo, "bold");
@@ -529,7 +530,6 @@ export function gerarPapelTimbradoPDF(dados: PapelTimbradoDados = {}, filename?:
     doc.text(`${modelo.rodape}  —  Emitido em ${emitido}`, margem, yF + 14);
     doc.text(`Página ${i} de ${total}`, pageW - margem, yF + 14, { align: "right" });
   }
-
 
   const suf = modelo.id;
   const nome =

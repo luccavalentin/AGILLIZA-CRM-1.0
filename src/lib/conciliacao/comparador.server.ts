@@ -52,8 +52,7 @@ export async function cruzarComSistemaImpl(
     if (!m && c.cpf) {
       const cand = porCpf.get(c.cpf) ?? [];
       const nome = normalizarNome(c.nome);
-      m =
-        cand.find((x) => x.nome_norm && nome && x.nome_norm === nome) ?? cand[0] ?? undefined;
+      m = cand.find((x) => x.nome_norm && nome && x.nome_norm === nome) ?? cand[0] ?? undefined;
     }
     if (!m) continue;
     saida[c.chave] = {

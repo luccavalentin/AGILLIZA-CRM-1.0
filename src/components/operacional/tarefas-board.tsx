@@ -77,7 +77,11 @@ function StatusPill({ status, onChange }: { status: string; onChange: (s: string
       <DropdownMenuContent align="start" className="w-44">
         {STATUS_OPCOES.map((s) => (
           <DropdownMenuItem key={s} onSelect={() => onChange(s)} className="gap-2">
-            <span className="size-2.5 rounded-full" style={{ background: STATUS_COR[s] }} aria-hidden />
+            <span
+              className="size-2.5 rounded-full"
+              style={{ background: STATUS_COR[s] }}
+              aria-hidden
+            />
             {STATUS_TAREFA[s].label}
           </DropdownMenuItem>
         ))}
@@ -130,7 +134,9 @@ export function TarefasBoard({
                   aria-label={aberto ? "Recolher grupo" : "Expandir grupo"}
                   className="grid size-6 shrink-0 place-items-center rounded-md text-[color:var(--op-accent)] transition-colors hover:bg-accent"
                 >
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", !aberto && "-rotate-90")} />
+                  <ChevronDown
+                    className={cn("h-4 w-4 transition-transform", !aberto && "-rotate-90")}
+                  />
                 </button>
                 <span
                   className="h-5 w-1 shrink-0 rounded-full"
@@ -268,10 +274,7 @@ export function TarefasBoard({
                         </div>
 
                         <div
-                          className={cn(
-                            "hidden justify-center md:flex",
-                            late && "font-semibold",
-                          )}
+                          className={cn("hidden justify-center md:flex", late && "font-semibold")}
                         >
                           <span
                             className={cn(

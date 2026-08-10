@@ -89,7 +89,14 @@ function Pagina() {
       toast.success("Tipo de benefício salvo.");
       qc.invalidateQueries({ queryKey: ["rh-ben-tipos"] });
       setOpenTipo(false);
-      setTipo({ nome: "", descricao: "", valor_padrao: 0, desconto_padrao: 0, natureza: "beneficio", ativo: true });
+      setTipo({
+        nome: "",
+        descricao: "",
+        valor_padrao: 0,
+        desconto_padrao: 0,
+        natureza: "beneficio",
+        ativo: true,
+      });
     },
   });
 
@@ -148,53 +155,83 @@ function Pagina() {
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label>Tipo</Label>
-                    <Select value={vinc.tipo_id} onValueChange={(v) => {
-                      const t = tipos.data?.find((x) => x.id === v);
-                      setVinc((p) => ({
-                        ...p,
-                        tipo_id: v,
-                        valor: t?.valor_padrao ?? 0,
-                        desconto: t?.desconto_padrao ?? 0,
-                      }));
-                    }}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <Select
+                      value={vinc.tipo_id}
+                      onValueChange={(v) => {
+                        const t = tipos.data?.find((x) => x.id === v);
+                        setVinc((p) => ({
+                          ...p,
+                          tipo_id: v,
+                          valor: t?.valor_padrao ?? 0,
+                          desconto: t?.desconto_padrao ?? 0,
+                        }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
                       <SelectContent>
-                        {(tipos.data ?? []).filter((t) => t.ativo).map((t) => (
-                          <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
-                        ))}
+                        {(tipos.data ?? [])
+                          .filter((t) => t.ativo)
+                          .map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.nome}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5">
                     <Label>Valor (empresa)</Label>
-                    <Input type="number" step="0.01" value={vinc.valor || ""}
-                      onChange={(e) => setVinc((p) => ({ ...p, valor: Number(e.target.value) }))} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={vinc.valor || ""}
+                      onChange={(e) => setVinc((p) => ({ ...p, valor: Number(e.target.value) }))}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Desconto (funcionário)</Label>
-                    <Input type="number" step="0.01" value={vinc.desconto || ""}
-                      onChange={(e) => setVinc((p) => ({ ...p, desconto: Number(e.target.value) }))} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={vinc.desconto || ""}
+                      onChange={(e) => setVinc((p) => ({ ...p, desconto: Number(e.target.value) }))}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Vigência início</Label>
-                    <Input type="date" value={vinc.vigencia_inicio}
-                      onChange={(e) => setVinc((p) => ({ ...p, vigencia_inicio: e.target.value }))} />
+                    <Input
+                      type="date"
+                      value={vinc.vigencia_inicio}
+                      onChange={(e) => setVinc((p) => ({ ...p, vigencia_inicio: e.target.value }))}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Vigência fim</Label>
-                    <Input type="date" value={vinc.vigencia_fim}
-                      onChange={(e) => setVinc((p) => ({ ...p, vigencia_fim: e.target.value }))} />
+                    <Input
+                      type="date"
+                      value={vinc.vigencia_fim}
+                      onChange={(e) => setVinc((p) => ({ ...p, vigencia_fim: e.target.value }))}
+                    />
                   </div>
                   <div className="flex items-end gap-2 sm:col-span-2">
-                    <Checkbox id="ben-ativo" checked={vinc.ativo}
-                      onCheckedChange={(v) => setVinc((p) => ({ ...p, ativo: !!v }))} />
+                    <Checkbox
+                      id="ben-ativo"
+                      checked={vinc.ativo}
+                      onCheckedChange={(v) => setVinc((p) => ({ ...p, ativo: !!v }))}
+                    />
                     <Label htmlFor="ben-ativo">Ativo</Label>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpenVinc(false)}>Cancelar</Button>
-                  <Button onClick={() => criarVinc.mutate()}
-                    disabled={criarVinc.isPending || !vinc.funcionario_id || !vinc.tipo_id}>
+                  <Button variant="outline" onClick={() => setOpenVinc(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={() => criarVinc.mutate()}
+                    disabled={criarVinc.isPending || !vinc.funcionario_id || !vinc.tipo_id}
+                  >
                     Salvar
                   </Button>
                 </DialogFooter>
@@ -234,7 +271,10 @@ function Pagina() {
                     ))}
                     {(!vincs.data || vincs.data.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                        <TableCell
+                          colSpan={6}
+                          className="py-10 text-center text-sm text-muted-foreground"
+                        >
                           Nenhum benefício atribuído.
                         </TableCell>
                       </TableRow>
@@ -261,28 +301,51 @@ function Pagina() {
                 <div className="grid gap-3">
                   <div className="space-y-1.5">
                     <Label>Nome</Label>
-                    <Input value={tipo.nome} onChange={(e) => setTipo((p) => ({ ...p, nome: e.target.value }))} />
+                    <Input
+                      value={tipo.nome}
+                      onChange={(e) => setTipo((p) => ({ ...p, nome: e.target.value }))}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Descrição</Label>
-                    <Input value={tipo.descricao} onChange={(e) => setTipo((p) => ({ ...p, descricao: e.target.value }))} />
+                    <Input
+                      value={tipo.descricao}
+                      onChange={(e) => setTipo((p) => ({ ...p, descricao: e.target.value }))}
+                    />
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label>Valor padrão</Label>
-                      <Input type="number" step="0.01" value={tipo.valor_padrao || ""}
-                        onChange={(e) => setTipo((p) => ({ ...p, valor_padrao: Number(e.target.value) }))} />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={tipo.valor_padrao || ""}
+                        onChange={(e) =>
+                          setTipo((p) => ({ ...p, valor_padrao: Number(e.target.value) }))
+                        }
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <Label>Desconto padrão</Label>
-                      <Input type="number" step="0.01" value={tipo.desconto_padrao || ""}
-                        onChange={(e) => setTipo((p) => ({ ...p, desconto_padrao: Number(e.target.value) }))} />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={tipo.desconto_padrao || ""}
+                        onChange={(e) =>
+                          setTipo((p) => ({ ...p, desconto_padrao: Number(e.target.value) }))
+                        }
+                      />
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpenTipo(false)}>Cancelar</Button>
-                  <Button onClick={() => criarTipo.mutate()} disabled={!tipo.nome || criarTipo.isPending}>
+                  <Button variant="outline" onClick={() => setOpenTipo(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={() => criarTipo.mutate()}
+                    disabled={!tipo.nome || criarTipo.isPending}
+                  >
                     Salvar
                   </Button>
                 </DialogFooter>
@@ -291,7 +354,9 @@ function Pagina() {
           </div>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Catálogo de tipos</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Catálogo de tipos</CardTitle>
+            </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
@@ -308,7 +373,9 @@ function Pagina() {
                     {(tipos.data ?? []).map((t) => (
                       <TableRow key={t.id}>
                         <TableCell className="font-medium">{t.nome}</TableCell>
-                        <TableCell className="max-w-[280px] truncate">{t.descricao ?? "—"}</TableCell>
+                        <TableCell className="max-w-[280px] truncate">
+                          {t.descricao ?? "—"}
+                        </TableCell>
                         <TableCell>{formatBRL(t.valor_padrao)}</TableCell>
                         <TableCell>{formatBRL(t.desconto_padrao)}</TableCell>
                         <TableCell>{t.ativo ? "Sim" : "Não"}</TableCell>
@@ -316,7 +383,10 @@ function Pagina() {
                     ))}
                     {(!tipos.data || tipos.data.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                        <TableCell
+                          colSpan={5}
+                          className="py-10 text-center text-sm text-muted-foreground"
+                        >
                           Nenhum tipo cadastrado.
                         </TableCell>
                       </TableRow>

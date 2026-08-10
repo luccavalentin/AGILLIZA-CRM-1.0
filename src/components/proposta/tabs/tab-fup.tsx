@@ -16,13 +16,7 @@ import {
 } from "@/components/ui/select";
 import { ToneBadge } from "@/components/crm/tone-badge";
 
-export function TabFup({
-  propostaId,
-  followups,
-}: {
-  propostaId: string;
-  followups: any[];
-}) {
+export function TabFup({ propostaId, followups }: { propostaId: string; followups: any[] }) {
   const qc = useQueryClient();
   const addFn = useServerFn(adicionarFollowup);
   const [tipo, setTipo] = useState<"interno" | "externo">("interno");
@@ -100,8 +94,7 @@ export function TabFup({
           {followups.map((f) => {
             const rotulo =
               f.tipo === "banco" ? "Banco" : f.tipo === "externo" ? "Externo" : "Interno";
-            const tone =
-              f.tipo === "banco" ? "success" : f.tipo === "externo" ? "info" : "muted";
+            const tone = f.tipo === "banco" ? "success" : f.tipo === "externo" ? "info" : "muted";
             return (
               <div key={f.id} className="rounded-md border border-border p-3">
                 <div className="flex items-center justify-between">

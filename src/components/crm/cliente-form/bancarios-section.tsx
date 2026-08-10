@@ -43,10 +43,7 @@ export function BancariosSection({ v, set }: { v: ClienteFormValues; set: SetCam
           </div>
           <div className="w-20 space-y-1.5">
             <Label>Dígito</Label>
-            <Input
-              value={v.digito_conta}
-              onChange={(e) => set("digito_conta", e.target.value)}
-            />
+            <Input value={v.digito_conta} onChange={(e) => set("digito_conta", e.target.value)} />
           </div>
         </div>
 

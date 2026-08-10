@@ -76,7 +76,10 @@ async function registrarPrazoMinimoAprendido(
       .maybeSingle();
     const config = { ...((atual?.config as Record<string, unknown>) ?? {}), [chave]: prazoMinimo };
     if (atual?.id) {
-      await supabase.from("configuracoes_modulos").update({ config, updated_by: userId ?? null }).eq("id", atual.id);
+      await supabase
+        .from("configuracoes_modulos")
+        .update({ config, updated_by: userId ?? null })
+        .eq("id", atual.id);
     } else {
       await supabase.from("configuracoes_modulos").insert({
         correspondente_id: correspondenteId,
@@ -113,7 +116,9 @@ function primeiroTexto(...valores: unknown[]): string | undefined {
 }
 
 function normalizarSexo(v: unknown): string | undefined {
-  const s = String(v ?? "").trim().toUpperCase();
+  const s = String(v ?? "")
+    .trim()
+    .toUpperCase();
   if (s === "M" || s.startsWith("MASC")) return "M";
   if (s === "F" || s.startsWith("FEM")) return "F";
   return undefined;
@@ -205,9 +210,25 @@ async function montarEnderecoParticipante(sim: any, cliente: any, endPrincipal?:
       cliente?.imovel_numero,
       "S/N",
     ),
-    complementoLogradouro: primeiroTexto(endPrincipal?.complemento, cliente?.complemento, cliente?.imovel_complemento),
-    bairro: primeiroTexto(endPrincipal?.bairro, cliente?.bairro, cliente?.imovel_bairro, viaCep.bairro),
-    municipio: primeiroTexto(endPrincipal?.cidade, endPrincipal?.municipio, cliente?.cidade, cliente?.municipio, cliente?.imovel_cidade, viaCep.municipio),
+    complementoLogradouro: primeiroTexto(
+      endPrincipal?.complemento,
+      cliente?.complemento,
+      cliente?.imovel_complemento,
+    ),
+    bairro: primeiroTexto(
+      endPrincipal?.bairro,
+      cliente?.bairro,
+      cliente?.imovel_bairro,
+      viaCep.bairro,
+    ),
+    municipio: primeiroTexto(
+      endPrincipal?.cidade,
+      endPrincipal?.municipio,
+      cliente?.cidade,
+      cliente?.municipio,
+      cliente?.imovel_cidade,
+      viaCep.municipio,
+    ),
     uf: primeiroTexto(endPrincipal?.uf, cliente?.uf, cliente?.imovel_uf, sim.uf, viaCep.uf),
   };
 }
@@ -267,9 +288,7 @@ async function garantirDadosParticipantesSimulacao({
 
     // REGRA 1: A renda enviada ao banco é SEMPRE a renda declarada para o participante.
     // O sistema NUNCA substitui esse valor.
-    const rendaDeclarada = ehConjuge 
-      ? num(sim.renda_conjuge) 
-      : num(sim.renda_total);
+    const rendaDeclarada = ehConjuge ? num(sim.renda_conjuge) : num(sim.renda_total);
 
     const payload: Record<string, unknown> = {
       tipoSituacao: part?.tipoSituacao ?? "A",
@@ -284,9 +303,10 @@ async function garantirDadosParticipantesSimulacao({
       tipoEstadoCivil:
         part?.tipoEstadoCivil ??
         (ehConjuge ? sim.estado_civil_conjuge : sim.estado_civil) ??
-        cliente?.estado_civil ?? 
+        cliente?.estado_civil ??
         undefined,
-      tipoRegimeCasamento: part?.tipoRegimeCasamento ?? sim.regime_casamento ?? cliente?.regime_casamento ?? undefined,
+      tipoRegimeCasamento:
+        part?.tipoRegimeCasamento ?? sim.regime_casamento ?? cliente?.regime_casamento ?? undefined,
       tipoSexo: part?.tipoSexo ?? normalizarSexo(cliente?.sexo),
       tipoDocumentoIdentidade:
         part?.tipoDocumentoIdentidade ?? cliente?.tipo_documento_identidade ?? undefined,
@@ -315,7 +335,10 @@ async function garantirDadosParticipantesSimulacao({
             dataNascimentoConjuge:
               part?.dataNascimentoConjuge ?? sim.data_nascimento_conjuge ?? undefined,
             tipoEstadoCivilConjuge:
-              part?.tipoEstadoCivilConjuge ?? sim.estado_civil_conjuge ?? sim.estado_civil ?? undefined,
+              part?.tipoEstadoCivilConjuge ??
+              sim.estado_civil_conjuge ??
+              sim.estado_civil ??
+              undefined,
             rendaConjuge: part?.rendaConjuge ?? num(sim.renda_conjuge) ?? undefined,
           }
         : {}),
@@ -324,7 +347,7 @@ async function garantirDadosParticipantesSimulacao({
 
     // Remove campos undefined para evitar que a API receba "undefined" como string
     const cleanedPayload = Object.fromEntries(
-      Object.entries(payload).filter(([_, v]) => v !== undefined)
+      Object.entries(payload).filter(([_, v]) => v !== undefined),
     );
 
     try {
@@ -343,7 +366,6 @@ async function garantirDadosParticipantesSimulacao({
   }
 }
 
-
 export async function enviarSimulacaoImpl({
   simulacaoId,
   userId,
@@ -357,7 +379,7 @@ export async function enviarSimulacaoImpl({
     .select("*, cliente:clientes(*)")
     .eq("id", simulacaoId)
     .maybeSingle();
-  
+
   if (simPreCheck) {
     const faltantesObrigatorios = validarCamposSimulacao(simPreCheck);
     if (faltantesObrigatorios.length > 0) {
@@ -388,9 +410,9 @@ export async function enviarSimulacaoImpl({
     for (const p of presas ?? []) {
       await supabase
         .from("simulacoes")
-        .update({ 
-          status: "erro", 
-          mensagem_erro: "Falha silenciosa detectada (Watchdog). Tente reenviar." 
+        .update({
+          status: "erro",
+          mensagem_erro: "Falha silenciosa detectada (Watchdog). Tente reenviar.",
         } as any)
         .eq("id", p.id);
     }
@@ -424,21 +446,22 @@ export async function enviarSimulacaoImpl({
 
   // Trava anti-duplicidade e proteção de registro histórico
   if (sim.status !== "rascunho" && sim.status !== "erro") {
-     // Se não for rascunho nem erro, a simulação já teve um ciclo de vida iniciado.
-     // Se estiver "enviando" há menos de 60s, bloqueia.
-     if (sim.status === "enviando" && sim.ultimo_envio_em) {
-       const inicio = new Date(sim.ultimo_envio_em).getTime();
-       if (Number.isFinite(inicio) && Date.now() - inicio < 60_000) {
-         throw new Error("Um envio ao banco já está em andamento. Aguarde a conclusão.");
-       }
-     }
-     
-     // Se já foi finalizada (simulada/recusada), não permite re-envio que altere dados.
-     if (sim.status === "simulada" || sim.status === "recusada" || sim.status === "aprovada") {
-        throw new Error("Esta simulação já foi concluída e não pode ser alterada. Gere uma nova simulação para atualizar os dados.");
-     }
-  }
+    // Se não for rascunho nem erro, a simulação já teve um ciclo de vida iniciado.
+    // Se estiver "enviando" há menos de 60s, bloqueia.
+    if (sim.status === "enviando" && sim.ultimo_envio_em) {
+      const inicio = new Date(sim.ultimo_envio_em).getTime();
+      if (Number.isFinite(inicio) && Date.now() - inicio < 60_000) {
+        throw new Error("Um envio ao banco já está em andamento. Aguarde a conclusão.");
+      }
+    }
 
+    // Se já foi finalizada (simulada/recusada), não permite re-envio que altere dados.
+    if (sim.status === "simulada" || sim.status === "recusada" || sim.status === "aprovada") {
+      throw new Error(
+        "Esta simulação já foi concluída e não pode ser alterada. Gere uma nova simulação para atualizar os dados.",
+      );
+    }
+  }
 
   // Regras de negócio
   if (!sim.consentimento_lgpd || !sim.consentimento_scr) {
@@ -453,7 +476,9 @@ export async function enviarSimulacaoImpl({
   // Validação informativa (não bloqueante para simulação) (Princípio #1 - Simulação nunca trava)
   const faltantesSimulacao = validarCamposSimulacao(sim);
   if (faltantesSimulacao.length > 0) {
-    console.info(`[enviar.server] Campos básicos ausentes para simulação: ${faltantesSimulacao.join(", ")}`);
+    console.info(
+      `[enviar.server] Campos básicos ausentes para simulação: ${faltantesSimulacao.join(", ")}`,
+    );
   }
 
   const estadoCivil = String(sim.estado_civil ?? "").toUpperCase();
@@ -469,10 +494,11 @@ export async function enviarSimulacaoImpl({
       !(Number(sim.renda_conjuge) > 0) && "Renda do cônjuge",
     ].filter(Boolean);
     if (faltantesConjuge.length > 0) {
-      console.info(`[enviar.server] Composição ativa mas faltam dados do cônjuge: ${faltantesConjuge.join(", ")}`);
+      console.info(
+        `[enviar.server] Composição ativa mas faltam dados do cônjuge: ${faltantesConjuge.join(", ")}`,
+      );
     }
   }
-
 
   // Todos os bancos selecionados (usados para registrar a oportunidade completa).
   const { data: bancosSelecionados } = await supabase
@@ -494,7 +520,7 @@ export async function enviarSimulacaoImpl({
   }
 
   const correspondente_id = sim.correspondente_id;
-  
+
   // Garantia de sanitização de CPFs para evitar erros silenciosos na API (500)
   sim.cpf_cnpj = (sim.cpf_cnpj ?? "").replace(/\D/g, "");
   if (sim.cpf_conjuge) sim.cpf_conjuge = (sim.cpf_conjuge ?? "").replace(/\D/g, "");
@@ -511,15 +537,12 @@ export async function enviarSimulacaoImpl({
     sim.celular_conjuge = (cliente as any).conjuge_celular;
   }
 
-
   // ===== Financiar despesas =====
   // A API da integração espera a flag como string "S"/"N" (nunca booleano) e, quando
   // marcada, os valores de despesas e o total financiado (financiamento + despesas).
   const financiarDespesas = Boolean(sim.fg_financiar_despesas);
   const fgFinanciarDespesas = financiarDespesas ? "S" : "N";
-  const valorDespesasFinanciadas = financiarDespesas
-    ? num(sim.valor_despesas_financiadas)
-    : 0;
+  const valorDespesasFinanciadas = financiarDespesas ? num(sim.valor_despesas_financiadas) : 0;
   const valorFinanciamentoBase = num(sim.valor_financiamento);
   const valorTotalFinanciamento = valorFinanciamentoBase + valorDespesasFinanciadas;
 
@@ -528,10 +551,12 @@ export async function enviarSimulacaoImpl({
   // Verificação informativa (Princípio #1 - Simulação nunca trava)
   if (financiarDespesas) {
     if (!(valorDespesasFinanciadas > 0)) {
-      console.warn('[enviar.server] Financiar despesas marcado mas valor zerado.');
+      console.warn("[enviar.server] Financiar despesas marcado mas valor zerado.");
     }
     if (!(valorTotalFinanciamento > valorFinanciamentoBase)) {
-      console.warn('[enviar.server] Valor total financiamento igual ao base mesmo com despesas marcadas.');
+      console.warn(
+        "[enviar.server] Valor total financiamento igual ao base mesmo com despesas marcadas.",
+      );
     }
   }
 
@@ -565,7 +590,6 @@ export async function enviarSimulacaoImpl({
     sim.prazo = prazoSeguro;
   }
 
-
   // grava consentimento_ip e status enviando
   await supabase
     .from("simulacoes")
@@ -586,16 +610,20 @@ export async function enviarSimulacaoImpl({
 
     // Usamos o 'cliente' já carregado no início da função (com endereço), em vez de recarregar parcial.
     const clienteCompleto = cliente;
-    
+
     // REGISTRO DE AVISO: A ausência de dados do dossiê não bloqueia mais o envio da simulação.
     // Esses campos são obrigatórios apenas na proposta/formalização.
     const faltantesCadastro = validarCamposParticipante(sim, clienteCompleto);
     if (faltantesCadastro.length > 0) {
-      console.info(`[enviar.server] Dados de dossiê ausentes para simulação: ${faltantesCadastro.map(f => f.campo).join(", ")}`);
+      console.info(
+        `[enviar.server] Dados de dossiê ausentes para simulação: ${faltantesCadastro.map((f) => f.campo).join(", ")}`,
+      );
     }
 
     const enderecoImovelGarantia =
-      sim.produto === "home_equity" ? await montarEnderecoImovelGarantia(sim, clienteCompleto) : null;
+      sim.produto === "home_equity"
+        ? await montarEnderecoImovelGarantia(sim, clienteCompleto)
+        : null;
     if (sim.produto === "home_equity") {
       if (!enderecoImovelGarantia?.cep) {
         console.warn("[enviar.server] CEP do imóvel ausente para Home Equity.");
@@ -618,7 +646,8 @@ export async function enviarSimulacaoImpl({
     // antigas criadas como Home Equity comum ficam sem retorno. Para reenvio,
     // criamos uma nova oportunidade na operação correta.
     let idOportunidade = usaRotaSantanderHomeEquity
-      ? null : (sim.homefin_id_oportunidade as string | null);
+      ? null
+      : (sim.homefin_id_oportunidade as string | null);
 
     if (idOportunidade) {
       try {
@@ -629,16 +658,21 @@ export async function enviarSimulacaoImpl({
           ctx,
         );
         const opData = checkOp?.oportunidade ?? checkOp ?? {};
-        const situacao = String(opData?.tipoSituacao ?? "").toUpperCase().charAt(0);
-        
+        const situacao = String(opData?.tipoSituacao ?? "")
+          .toUpperCase()
+          .charAt(0);
+
         if (situacao === "C" || situacao === "T") {
-          console.log(`[HomeFin] Oportunidade ${idOportunidade} está em estado terminal (${situacao}). Criando uma nova.`);
+          console.log(
+            `[HomeFin] Oportunidade ${idOportunidade} está em estado terminal (${situacao}). Criando uma nova.`,
+          );
           idOportunidade = null;
           if (situacao === "C") {
             await supabase.from("simulacao_historico").insert({
               simulacao_id: simulacaoId,
               tipo: "info",
-              descricao: "A oportunidade desta simulação estava cancelada na integração. Uma nova oportunidade será gerada automaticamente.",
+              descricao:
+                "A oportunidade desta simulação estava cancelada na integração. Uma nova oportunidade será gerada automaticamente.",
               ator_id: userId,
             });
           }
@@ -706,17 +740,19 @@ export async function enviarSimulacaoImpl({
             .select("homefin_id_oportunidade")
             .eq("id", simulacaoId)
             .maybeSingle();
-          
+
           if (retrySim?.homefin_id_oportunidade) {
             idOportunidade = retrySim.homefin_id_oportunidade;
             break;
           }
-          await new Promise(r => setTimeout(r, 300));
+          await new Promise((r) => setTimeout(r, 300));
         }
 
         if (!idOportunidade) {
           // Timeout no polling: falha apenas esta requisição.
-          throw new Error("Não foi possível iniciar a simulação neste banco. Nenhum dado foi enviado ao banco. Clique em reenviar.");
+          throw new Error(
+            "Não foi possível iniciar a simulação neste banco. Nenhum dado foi enviado ao banco. Clique em reenviar.",
+          );
         }
       }
     }
@@ -724,9 +760,13 @@ export async function enviarSimulacaoImpl({
     if (!idOportunidade) {
       // Líder ou Santander Home Equity: executa a criação da oportunidade
       // (Embora o loop de bancos agora seja sequencial, o ID da oportunidade deve ser persistido antes).
-      const rendaTotalCalculada = num(sim.compoe_renda_conjuge ? (num(sim.renda_total) + num(sim.renda_conjuge)) : sim.renda_total);
-      
-      console.log(`[HomeFin] Criando oportunidade para ${sim.numero_simulacao}. Renda Total: ${rendaTotalCalculada}`);
+      const rendaTotalCalculada = num(
+        sim.compoe_renda_conjuge ? num(sim.renda_total) + num(sim.renda_conjuge) : sim.renda_total,
+      );
+
+      console.log(
+        `[HomeFin] Criando oportunidade para ${sim.numero_simulacao}. Renda Total: ${rendaTotalCalculada}`,
+      );
       const payload: Record<string, unknown> = {
         operacao: { idOperacao: String(idOperacaoIntegracao) },
         ...(auth.idRegional ? { regional: { idRegional: auth.idRegional } } : {}),
@@ -753,7 +793,9 @@ export async function enviarSimulacaoImpl({
               celularConjuge: (sim.celular_conjuge ?? "").replace(/\D/g, ""),
               rendaConjuge: num(sim.renda_conjuge),
               dataNascimentoConjuge: sim.data_nascimento_conjuge,
-              tipoEstadoCivilConjuge: sim.estado_civil_conjuge ? { id: sim.estado_civil_conjuge } : undefined,
+              tipoEstadoCivilConjuge: sim.estado_civil_conjuge
+                ? { id: sim.estado_civil_conjuge }
+                : undefined,
             }
           : {}),
       };
@@ -771,26 +813,31 @@ export async function enviarSimulacaoImpl({
         .eq("id", simulacaoId);
     }
 
-
     if (idOportunidade) {
-      await garantirDadosParticipantesSimulacao({ sim, cliente: clienteCompleto, endPrincipal: end, idOportunidade, ctx });
+      await garantirDadosParticipantesSimulacao({
+        sim,
+        cliente: clienteCompleto,
+        endPrincipal: end,
+        idOportunidade,
+        ctx,
+      });
     }
-    
+
     // Auditoria de renda enviada ao banco (Princípio #2d - Log de auditoria)
-    const rendaEnviada = num(sim.compoe_renda_conjuge ? (num(sim.renda_total) + num(sim.renda_conjuge)) : sim.renda_total);
+    const rendaEnviada = num(
+      sim.compoe_renda_conjuge ? num(sim.renda_total) + num(sim.renda_conjuge) : sim.renda_total,
+    );
     await supabase.from("simulacao_historico").insert({
       simulacao_id: simulacaoId,
       tipo: "info",
-      descricao: `Renda total enviada para análise bancária: ${rendaEnviada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`,
+      descricao: `Renda total enviada para análise bancária: ${rendaEnviada.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}.`,
       ator_id: userId,
     });
-
-
 
     // A integração HomeFin devolve HTTP 500 ("Erro interno do servidor") de forma
     // intermitente ao criar/integrar a simulação (visto no Itaú). Nesses casos o
     // reenvio manual funciona segundos depois, então repetimos automaticamente.
-    const chamarComRetry = async <T,>(
+    const chamarComRetry = async <T>(
       rota: string,
       metodo: "POST" | "PUT",
       corpo: unknown,
@@ -811,24 +858,25 @@ export async function enviarSimulacaoImpl({
       throw ultimoErro;
     };
 
-
     // 2 + 3) Simulação + integração por banco.
     // REGRA 3: A simulação só sai de "enviando" quando todos os bancos tiverem desfecho.
     // O loop de bancos é SEQUENCIAL para evitar condições de corrida na oportunidade.
     const resultados: EnviarResultado["bancos"] = [];
     const enviarBanco = async (b: any): Promise<EnviarResultado["bancos"][number]> => {
       // Registrar início do envio para este banco
-      await supabase.from("simulacao_bancos").update({ 
-        status_banco: "enviando", 
-        mensagem_banco: null,
-        simulado_em: new Date().toISOString()
-      }).eq("id", b.id);
-
+      await supabase
+        .from("simulacao_bancos")
+        .update({
+          status_banco: "enviando",
+          mensagem_banco: null,
+          simulado_em: new Date().toISOString(),
+        })
+        .eq("id", b.id);
 
       let timeoutId: any;
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(() => {
-          reject(new Error(`Timeout: o banco ${b.nome_banco || ''} não respondeu em 240s.`));
+          reject(new Error(`Timeout: o banco ${b.nome_banco || ""} não respondeu em 240s.`));
         }, TIMEOUT_BANCO_MS);
       });
 
@@ -837,336 +885,329 @@ export async function enviarSimulacaoImpl({
         // Enviamos o prazo já validado pela idade, limitado a até 420 meses.
         const prazoBanco = num(sim.prazo);
         try {
-        const simPayload = {
-          valorImovel: num(sim.valor_imovel),
-          valorFinanciamento: num(sim.valor_financiamento),
-          prazo: prazoBanco,
-          codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
-          banco: { idBanco: idBancoParaSimulacao(sim, b) },
-          fgFinanciarDespesas,
-          valorDespesasFinanciadas,
-          valorTotalFinanciamento,
-          fgAutorizacaoDados: true,
-        };
-        console.log(
-          "Payload enviado para criar simulação bancária:",
-          JSON.stringify(simPayload),
-        );
-        const simResp = await chamarComRetry<any>(
-          `/oportunidade/${idOportunidade}/simulacao`,
-          "POST",
-          simPayload,
-        );
-        const idSimulacao = String(simResp?.idSimulacao ?? "");
-
-        // PUT completo da simulação: garante que a integração persista os campos de
-        // despesas financiadas ANTES da integração bancária. Enviamos o payload
-        // completo (não parcial) para não apagar/ignorar demais campos.
-        const putPayload = {
-          valorImovel: num(sim.valor_imovel),
-          valorFinanciamento: num(sim.valor_financiamento),
-          prazo: prazoBanco,
-          codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
-          valorDespesasFinanciadas,
-          valorTotalFinanciamento,
-          fgFinanciarDespesas,
-          fgAutorizacaoDados: true,
-        };
-        console.log(
-          "Payload enviado para atualizar simulação bancária:",
-          JSON.stringify(putPayload),
-          "fgFinanciarDespesas:",
-          fgFinanciarDespesas,
-          "valorDespesasFinanciadas:",
-          valorDespesasFinanciadas,
-          "valorTotalFinanciamento:",
-          valorTotalFinanciamento,
-        );
-        const putResp = await chamarIntegracao<any>(
-          `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}`,
-          "PUT",
-          putPayload,
-          ctx,
-        );
-        console.log(
-          "Retorno atualização simulação bancária:",
-          JSON.stringify(putResp),
-        );
-
-        // Confirma que a integração persistiu a flag antes de enviar ao banco.
-        if (financiarDespesas) {
-          const persistido =
-            putResp?.simulacao?.fgFinanciarDespesas ?? putResp?.fgFinanciarDespesas;
-          if (persistido != null && String(persistido).toUpperCase() !== "S") {
-            throw new Error(
-              "A integração não confirmou o financiamento de despesas na simulação. Envio ao banco cancelado.",
-            );
-          }
-        }
-
-        // A resposta da integração traz os valores retornados pelo banco.
-        // Em terreno, o Bradesco pode calcular e devolver um prazo mínimo para
-        // aquela operação (por exemplo, 180), embora esse piso não seja
-        // documentado como constante. Quando isso ocorrer, adotamos exatamente
-        // o número informado pela API, sincronizamos oportunidade + simulação e
-        // repetimos a integração uma única vez. Não alteramos o mínimo global.
-        const endpointIntegracao =
-          `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}/integracao`;
-        let integ: any;
-        try {
-          integ = await chamarComRetry<any>(endpointIntegracao, "POST", {});
-        } catch (erroIntegracao) {
-          const mensagem =
-            erroIntegracao instanceof Error ? erroIntegracao.message : String(erroIntegracao);
-          const prazoSolicitado = prazoMinimoSolicitadoPeloBanco(mensagem);
-          const nomeBanco = String(b.nome_banco ?? "").toLowerCase();
-          if (prazoSolicitado != null) {
-            await registrarPrazoMinimoAprendido(
-              supabase,
-              sim.correspondente_id,
-              `${codigoBancoNormalizado(b) || nomeBanco}:${sim.tipo_imovel ?? "NA"}`,
-              prazoSolicitado,
-              userId,
-            );
-          }
-          // Não há prazo mínimo documentado: adotamos exatamente o número que a
-          // própria API informou, para qualquer banco e tipo de imóvel.
-          const prazoAjustavel =
-            prazoSolicitado != null && prazoSolicitado >= PRAZO_MIN && prazoSolicitado <= 420;
-
-          if (!prazoAjustavel || prazoSolicitado === prazoBanco) {
-            throw erroIntegracao;
-          }
-
-          // O teto por idade dos proponentes é intransponível: se o prazo
-          // exigido pelo banco o ultrapassar, a operação é inviável e a
-          // mensagem original do banco deve prevalecer.
-          const tetoIdade = prazoMaxIdade;
-          if (tetoIdade != null && prazoSolicitado > tetoIdade) {
-            throw erroIntegracao;
-          }
-
-          // O PUT /oportunidade aceita SOMENTE estes três campos. Enviar o
-          // objeto completo devolve HTTP 500 INTERNAL_ERROR.
-          const oportunidadeAjustada = {
+          const simPayload = {
             valorImovel: num(sim.valor_imovel),
             valorFinanciamento: num(sim.valor_financiamento),
-            prazo: prazoSolicitado,
+            prazo: prazoBanco,
+            codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
+            banco: { idBanco: idBancoParaSimulacao(sim, b) },
+            fgFinanciarDespesas,
+            valorDespesasFinanciadas,
+            valorTotalFinanciamento,
+            fgAutorizacaoDados: true,
           };
-          const simulacaoAjustada = { ...putPayload, prazo: prazoSolicitado };
-
-          try {
-            await chamarIntegracao<any>(
-              `/oportunidade/${idOportunidade}`,
-              "PUT",
-              oportunidadeAjustada,
-              ctx,
-            );
-            await chamarIntegracao<any>(
-              `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}`,
-              "PUT",
-              simulacaoAjustada,
-              ctx,
-            );
-          } catch (erroAjuste) {
-            // Nunca deixar o erro do reenvio mascarar o motivo informado pelo
-            // banco (ex.: "prazo igual ou superior a 180").
-            console.error("[enviar.server] Falha ao ajustar prazo:", erroAjuste);
-            throw erroIntegracao;
-          }
-          await supabase
-            .from("simulacoes")
-            .update({ prazo: prazoSolicitado })
-            .eq("id", simulacaoId);
-          await supabase.from("simulacao_historico").insert({
-            simulacao_id: simulacaoId,
-            tipo: "ajuste",
-            descricao: `Prazo ajustado automaticamente de ${prazoBanco} para ${prazoSolicitado} meses conforme o mínimo devolvido pela API do banco.`,
-            ator_id: userId,
-          });
-          sim.prazo = prazoSolicitado;
-          integ = await chamarComRetry<any>(endpointIntegracao, "POST", {});
-        }
-
-        let dados = integ ?? simResp;
-        let dadosApi = dados?.simulacao ?? dados?.data ?? dados;
-
-        // Detecção de retorno vazio: alguns bancos (ex.: Santander em Home
-        // Equity) respondem à /integracao sem processar a simulação, deixando
-        // valorParcelaBanco / taxaJurosAnoBanco / valorFinanciamentoBanco em
-        // null ou zero. Sem esse guard o registro fica marcado como "simulada"
-        // mas exibe zeros/vazio na UI. Marcamos como "erro" com mensagem clara
-        // e mostramos qualquer descricaoRespostaBanco devolvida pelo banco.
-        const vazio = (d: any) => {
-          const parcela = d?.valorParcelaBanco ?? d?.valorParcelaBancoMax ?? d?.valorParcelaSimulacao;
-          const taxa = d?.taxaJurosAnoBanco ?? d?.taxaCetAnoBanco;
-          const financ = d?.valorFinanciamentoBanco ?? d?.valorFinanciamentoBancoMax;
-          return (
-            (parcela == null || Number(parcela) <= 0) &&
-            (taxa == null || Number(taxa) <= 0) &&
-            (financ == null || Number(financ) <= 0)
+          console.log("Payload enviado para criar simulação bancária:", JSON.stringify(simPayload));
+          const simResp = await chamarComRetry<any>(
+            `/oportunidade/${idOportunidade}/simulacao`,
+            "POST",
+            simPayload,
           );
-        };
+          const idSimulacao = String(simResp?.idSimulacao ?? "");
 
-        // Alguns bancos (Itaú, principalmente) processam a integração de forma
-        // assíncrona: a resposta do POST /integracao volta ainda "em
-        // processamento" (tipoSituacao "P") e sem valores. A integração não
-        // possui webhook, então consultamos a oportunidade algumas vezes para
-        // capturar o retorno assim que ele chegar. Bancos que já respondem
-        // com valores no POST não entram neste laço.
-        // Alguns bancos (Itaú, principalmente) processam a integração de forma
-        // assíncrona: a resposta do POST /integracao volta ainda "em
-        // processamento" (tipoSituacao "P") e sem valores. A integração não
-        // possui webhook, então consultamos a oportunidade algumas vezes para
-        // capturar o retorno assim que ele chegar. Aumentamos o polling para o
-        // Itaú (20 tentativas a cada 10s) para garantir o retorno.
-        if (vazio(dadosApi)) {
-          // Backoff progressivo (3s, 6s, 12s, 24s… teto 30s) com orçamento
-          // total de tempo. Encerra imediatamente em desfecho definitivo
-          // (situação diferente de "em processamento") para não gastar os
-          // ~100s que o laço fixo consumia.
-          const ORCAMENTO_MS = 60_000;
-          const iniciouPolling = Date.now();
-          let espera = 3_000;
-          let tentativas = 0;
-          let motivoFim = "orcamento_esgotado";
+          // PUT completo da simulação: garante que a integração persista os campos de
+          // despesas financiadas ANTES da integração bancária. Enviamos o payload
+          // completo (não parcial) para não apagar/ignorar demais campos.
+          const putPayload = {
+            valorImovel: num(sim.valor_imovel),
+            valorFinanciamento: num(sim.valor_financiamento),
+            prazo: prazoBanco,
+            codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
+            valorDespesasFinanciadas,
+            valorTotalFinanciamento,
+            fgFinanciarDespesas,
+            fgAutorizacaoDados: true,
+          };
+          console.log(
+            "Payload enviado para atualizar simulação bancária:",
+            JSON.stringify(putPayload),
+            "fgFinanciarDespesas:",
+            fgFinanciarDespesas,
+            "valorDespesasFinanciadas:",
+            valorDespesasFinanciadas,
+            "valorTotalFinanciamento:",
+            valorTotalFinanciamento,
+          );
+          const putResp = await chamarIntegracao<any>(
+            `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}`,
+            "PUT",
+            putPayload,
+            ctx,
+          );
+          console.log("Retorno atualização simulação bancária:", JSON.stringify(putResp));
 
-          while (vazio(dadosApi) && Date.now() - iniciouPolling < ORCAMENTO_MS) {
-            await new Promise((r) => setTimeout(r, espera));
-            espera = Math.min(espera * 2, 30_000);
-            tentativas++;
-            try {
-              const op = await chamarIntegracao<any>(
-                `/oportunidade/${idOportunidade}`,
-                "GET",
-                undefined,
-                ctx,
+          // Confirma que a integração persistiu a flag antes de enviar ao banco.
+          if (financiarDespesas) {
+            const persistido =
+              putResp?.simulacao?.fgFinanciarDespesas ?? putResp?.fgFinanciarDespesas;
+            if (persistido != null && String(persistido).toUpperCase() !== "S") {
+              throw new Error(
+                "A integração não confirmou o financiamento de despesas na simulação. Envio ao banco cancelado.",
               );
-              const lista: any[] =
-                op?.oportunidade?.simulacoes ?? op?.simulacoes ?? [];
-              const achado = lista.find(
-                (s: any) => String(s?.idSimulacao ?? "") === String(idSimulacao),
-              );
-              if (achado && !vazio(achado)) {
-                dados = achado;
-                dadosApi = achado;
-                motivoFim = "retorno_recebido";
-                break;
-              }
-              // Desfecho definitivo sem valores: o banco já concluiu e não vai
-              // devolver nada. Continuar consultando é desperdício.
-              const situacao = String(
-                achado?.tipoSituacao ?? achado?.situacao ?? "",
-              ).toUpperCase();
-              if (situacao && situacao !== "P" && situacao !== "A") {
-                motivoFim = `situacao_definitiva_${situacao}`;
-                break;
-              }
-            } catch (e) {
-              motivoFim = "falha_consulta";
-              console.warn(
-                "Falha ao consultar retorno da simulação (polling).",
-                e instanceof Error ? e.message : String(e),
-              );
-              break;
             }
           }
 
-          const duracao = Math.round((Date.now() - iniciouPolling) / 1000);
+          // A resposta da integração traz os valores retornados pelo banco.
+          // Em terreno, o Bradesco pode calcular e devolver um prazo mínimo para
+          // aquela operação (por exemplo, 180), embora esse piso não seja
+          // documentado como constante. Quando isso ocorrer, adotamos exatamente
+          // o número informado pela API, sincronizamos oportunidade + simulação e
+          // repetimos a integração uma única vez. Não alteramos o mínimo global.
+          const endpointIntegracao = `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}/integracao`;
+          let integ: any;
           try {
+            integ = await chamarComRetry<any>(endpointIntegracao, "POST", {});
+          } catch (erroIntegracao) {
+            const mensagem =
+              erroIntegracao instanceof Error ? erroIntegracao.message : String(erroIntegracao);
+            const prazoSolicitado = prazoMinimoSolicitadoPeloBanco(mensagem);
+            const nomeBanco = String(b.nome_banco ?? "").toLowerCase();
+            if (prazoSolicitado != null) {
+              await registrarPrazoMinimoAprendido(
+                supabase,
+                sim.correspondente_id,
+                `${codigoBancoNormalizado(b) || nomeBanco}:${sim.tipo_imovel ?? "NA"}`,
+                prazoSolicitado,
+                userId,
+              );
+            }
+            // Não há prazo mínimo documentado: adotamos exatamente o número que a
+            // própria API informou, para qualquer banco e tipo de imóvel.
+            const prazoAjustavel =
+              prazoSolicitado != null && prazoSolicitado >= PRAZO_MIN && prazoSolicitado <= 420;
+
+            if (!prazoAjustavel || prazoSolicitado === prazoBanco) {
+              throw erroIntegracao;
+            }
+
+            // O teto por idade dos proponentes é intransponível: se o prazo
+            // exigido pelo banco o ultrapassar, a operação é inviável e a
+            // mensagem original do banco deve prevalecer.
+            const tetoIdade = prazoMaxIdade;
+            if (tetoIdade != null && prazoSolicitado > tetoIdade) {
+              throw erroIntegracao;
+            }
+
+            // O PUT /oportunidade aceita SOMENTE estes três campos. Enviar o
+            // objeto completo devolve HTTP 500 INTERNAL_ERROR.
+            const oportunidadeAjustada = {
+              valorImovel: num(sim.valor_imovel),
+              valorFinanciamento: num(sim.valor_financiamento),
+              prazo: prazoSolicitado,
+            };
+            const simulacaoAjustada = { ...putPayload, prazo: prazoSolicitado };
+
+            try {
+              await chamarIntegracao<any>(
+                `/oportunidade/${idOportunidade}`,
+                "PUT",
+                oportunidadeAjustada,
+                ctx,
+              );
+              await chamarIntegracao<any>(
+                `/oportunidade/${idOportunidade}/simulacao/${idSimulacao}`,
+                "PUT",
+                simulacaoAjustada,
+                ctx,
+              );
+            } catch (erroAjuste) {
+              // Nunca deixar o erro do reenvio mascarar o motivo informado pelo
+              // banco (ex.: "prazo igual ou superior a 180").
+              console.error("[enviar.server] Falha ao ajustar prazo:", erroAjuste);
+              throw erroIntegracao;
+            }
+            await supabase
+              .from("simulacoes")
+              .update({ prazo: prazoSolicitado })
+              .eq("id", simulacaoId);
             await supabase.from("simulacao_historico").insert({
               simulacao_id: simulacaoId,
-              tipo: "info",
-              descricao: `Consulta de retorno (${String(b.nome_banco ?? "banco")}): ${tentativas} tentativa(s) em ${duracao}s — ${motivoFim}.`,
-            } as any);
-          } catch {}
-        }
+              tipo: "ajuste",
+              descricao: `Prazo ajustado automaticamente de ${prazoBanco} para ${prazoSolicitado} meses conforme o mínimo devolvido pela API do banco.`,
+              ator_id: userId,
+            });
+            sim.prazo = prazoSolicitado;
+            integ = await chamarComRetry<any>(endpointIntegracao, "POST", {});
+          }
 
+          let dados = integ ?? simResp;
+          let dadosApi = dados?.simulacao ?? dados?.data ?? dados;
 
-        const semParcela = vazio(dadosApi);
-        const semTaxa = semParcela;
-        const semFinanc = semParcela;
+          // Detecção de retorno vazio: alguns bancos (ex.: Santander em Home
+          // Equity) respondem à /integracao sem processar a simulação, deixando
+          // valorParcelaBanco / taxaJurosAnoBanco / valorFinanciamentoBanco em
+          // null ou zero. Sem esse guard o registro fica marcado como "simulada"
+          // mas exibe zeros/vazio na UI. Marcamos como "erro" com mensagem clara
+          // e mostramos qualquer descricaoRespostaBanco devolvida pelo banco.
+          const vazio = (d: any) => {
+            const parcela =
+              d?.valorParcelaBanco ?? d?.valorParcelaBancoMax ?? d?.valorParcelaSimulacao;
+            const taxa = d?.taxaJurosAnoBanco ?? d?.taxaCetAnoBanco;
+            const financ = d?.valorFinanciamentoBanco ?? d?.valorFinanciamentoBancoMax;
+            return (
+              (parcela == null || Number(parcela) <= 0) &&
+              (taxa == null || Number(taxa) <= 0) &&
+              (financ == null || Number(financ) <= 0)
+            );
+          };
 
-        if (semParcela && semTaxa && semFinanc) {
-          const desc = dadosApi?.descricaoRespostaBanco;
-          const motivoBanco =
-            typeof desc === "string" && desc.trim()
-              ? desc.trim()
-              : typeof desc === "object" && desc && "mensagem" in (desc as any)
-                ? String((desc as any).mensagem ?? "")
-                : "";
-          const msg = motivoBanco
-            ? `O banco não retornou valores para esta simulação: ${motivoBanco}`
-            : `O banco não retornou valores para esta operação. Verifique se ${String(b.nome_banco ?? "o banco")} opera este produto ou tente reenviar.`;
+          // Alguns bancos (Itaú, principalmente) processam a integração de forma
+          // assíncrona: a resposta do POST /integracao volta ainda "em
+          // processamento" (tipoSituacao "P") e sem valores. A integração não
+          // possui webhook, então consultamos a oportunidade algumas vezes para
+          // capturar o retorno assim que ele chegar. Bancos que já respondem
+          // com valores no POST não entram neste laço.
+          // Alguns bancos (Itaú, principalmente) processam a integração de forma
+          // assíncrona: a resposta do POST /integracao volta ainda "em
+          // processamento" (tipoSituacao "P") e sem valores. A integração não
+          // possui webhook, então consultamos a oportunidade algumas vezes para
+          // capturar o retorno assim que ele chegar. Aumentamos o polling para o
+          // Itaú (20 tentativas a cada 10s) para garantir o retorno.
+          if (vazio(dadosApi)) {
+            // Backoff progressivo (3s, 6s, 12s, 24s… teto 30s) com orçamento
+            // total de tempo. Encerra imediatamente em desfecho definitivo
+            // (situação diferente de "em processamento") para não gastar os
+            // ~100s que o laço fixo consumia.
+            const ORCAMENTO_MS = 60_000;
+            const iniciouPolling = Date.now();
+            let espera = 3_000;
+            let tentativas = 0;
+            let motivoFim = "orcamento_esgotado";
+
+            while (vazio(dadosApi) && Date.now() - iniciouPolling < ORCAMENTO_MS) {
+              await new Promise((r) => setTimeout(r, espera));
+              espera = Math.min(espera * 2, 30_000);
+              tentativas++;
+              try {
+                const op = await chamarIntegracao<any>(
+                  `/oportunidade/${idOportunidade}`,
+                  "GET",
+                  undefined,
+                  ctx,
+                );
+                const lista: any[] = op?.oportunidade?.simulacoes ?? op?.simulacoes ?? [];
+                const achado = lista.find(
+                  (s: any) => String(s?.idSimulacao ?? "") === String(idSimulacao),
+                );
+                if (achado && !vazio(achado)) {
+                  dados = achado;
+                  dadosApi = achado;
+                  motivoFim = "retorno_recebido";
+                  break;
+                }
+                // Desfecho definitivo sem valores: o banco já concluiu e não vai
+                // devolver nada. Continuar consultando é desperdício.
+                const situacao = String(
+                  achado?.tipoSituacao ?? achado?.situacao ?? "",
+                ).toUpperCase();
+                if (situacao && situacao !== "P" && situacao !== "A") {
+                  motivoFim = `situacao_definitiva_${situacao}`;
+                  break;
+                }
+              } catch (e) {
+                motivoFim = "falha_consulta";
+                console.warn(
+                  "Falha ao consultar retorno da simulação (polling).",
+                  e instanceof Error ? e.message : String(e),
+                );
+                break;
+              }
+            }
+
+            const duracao = Math.round((Date.now() - iniciouPolling) / 1000);
+            try {
+              await supabase.from("simulacao_historico").insert({
+                simulacao_id: simulacaoId,
+                tipo: "info",
+                descricao: `Consulta de retorno (${String(b.nome_banco ?? "banco")}): ${tentativas} tentativa(s) em ${duracao}s — ${motivoFim}.`,
+              } as any);
+            } catch {}
+          }
+
+          const semParcela = vazio(dadosApi);
+          const semTaxa = semParcela;
+          const semFinanc = semParcela;
+
+          if (semParcela && semTaxa && semFinanc) {
+            const desc = dadosApi?.descricaoRespostaBanco;
+            const motivoBanco =
+              typeof desc === "string" && desc.trim()
+                ? desc.trim()
+                : typeof desc === "object" && desc && "mensagem" in (desc as any)
+                  ? String((desc as any).mensagem ?? "")
+                  : "";
+            const msg = motivoBanco
+              ? `O banco não retornou valores para esta simulação: ${motivoBanco}`
+              : `O banco não retornou valores para esta operação. Verifique se ${String(b.nome_banco ?? "o banco")} opera este produto ou tente reenviar.`;
+            await supabase
+              .from("simulacao_bancos")
+              .update({
+                homefin_id_simulacao_banco: idSimulacao,
+                status_banco: "erro",
+                mensagem_banco: msg,
+                raw_response: dados,
+                simulado_em: new Date().toISOString(),
+              })
+              .eq("id", b.id);
+            return { banco_id: b.banco_id, status: "erro" as const, mensagem: msg };
+          }
+
           await supabase
             .from("simulacao_bancos")
             .update({
               homefin_id_simulacao_banco: idSimulacao,
-              status_banco: "erro",
-              mensagem_banco: msg,
-              raw_response: dados,
+              status_banco: "simulada",
+              mensagem_banco: null, // Limpa qualquer erro residual de tentativa anterior
+              // Marca a ORIGEM dos campos que têm fallback para o valor
+              // solicitado: a tela só exibe como resposta do banco o que o banco
+              // realmente informou (ver src/lib/simulacao/origem-dados.ts).
+              raw_response:
+                dados && typeof dados === "object"
+                  ? { ...(dados as any), _origem_dados: marcarOrigemDados(dadosApi) }
+                  : dados,
+
               simulado_em: new Date().toISOString(),
+              valor_parcela: dadosApi?.valorParcelaBanco ?? dadosApi?.valorParcelaSimulacao ?? null,
+              taxa_juros_ano: dadosApi?.taxa_juros_ano_banco ?? dadosApi?.taxaJurosAnoBanco ?? null,
+              prazo_pagamento_max:
+                dadosApi?.prazoPagamentoBancoMax ??
+                dadosApi?.prazoPagamentoBanco ??
+                dadosApi?.prazoPagamentoSimulacao ??
+                num(sim.prazo) ??
+                null,
+              valor_financiamento_max:
+                dadosApi?.valorFinanciamentoBancoMax ??
+                dadosApi?.valorFinanciamentoBanco ??
+                dadosApi?.valorTotalFinanciamento ??
+                dadosApi?.valorFinanciamentoSimulacao ??
+                num(sim.valor_financiamento) ??
+                null,
+              valor_parcela_max: dadosApi?.valorParcelaBancoMax ?? null,
+              codigo_indexador: dadosApi?.codigoIndexadorBanco ?? null,
+              valor_iof: dadosApi?.valorIofBanco ?? null,
+              // A API devolve `codigoSistemaAmortizacaoBanco` ora como string
+              // ("S"/"P"), ora como objeto `{ id: "S" }` — normalizamos para
+              // string curta antes de persistir na coluna texto.
+              sistema_amortizacao_banco: (() => {
+                const v = dadosApi?.codigoSistemaAmortizacaoBanco;
+                if (v == null) return null;
+                if (typeof v === "string") return v;
+                if (typeof v === "object" && "id" in (v as any))
+                  return String((v as any).id ?? "") || null;
+                return String(v);
+              })(),
             })
             .eq("id", b.id);
-          return { banco_id: b.banco_id, status: "erro" as const, mensagem: msg };
-        }
-
-
-        await supabase
-          .from("simulacao_bancos")
-          .update({
-            homefin_id_simulacao_banco: idSimulacao,
-            status_banco: "simulada",
-            mensagem_banco: null, // Limpa qualquer erro residual de tentativa anterior
-            // Marca a ORIGEM dos campos que têm fallback para o valor
-            // solicitado: a tela só exibe como resposta do banco o que o banco
-            // realmente informou (ver src/lib/simulacao/origem-dados.ts).
-            raw_response:
-              dados && typeof dados === "object"
-                ? { ...(dados as any), _origem_dados: marcarOrigemDados(dadosApi) }
-                : dados,
-
-            simulado_em: new Date().toISOString(),
-            valor_parcela: dadosApi?.valorParcelaBanco ?? dadosApi?.valorParcelaSimulacao ?? null,
-            taxa_juros_ano: dadosApi?.taxa_juros_ano_banco ?? dadosApi?.taxaJurosAnoBanco ?? null,
-            prazo_pagamento_max:
-              dadosApi?.prazoPagamentoBancoMax ??
-              dadosApi?.prazoPagamentoBanco ??
-              dadosApi?.prazoPagamentoSimulacao ??
-              num(sim.prazo) ??
-              null,
-            valor_financiamento_max:
-              dadosApi?.valorFinanciamentoBancoMax ??
-              dadosApi?.valorFinanciamentoBanco ??
-              dadosApi?.valorTotalFinanciamento ??
-              dadosApi?.valorFinanciamentoSimulacao ??
-              num(sim.valor_financiamento) ??
-              null,
-            valor_parcela_max: dadosApi?.valorParcelaBancoMax ?? null,
-            codigo_indexador: dadosApi?.codigoIndexadorBanco ?? null,
-            valor_iof: dadosApi?.valorIofBanco ?? null,
-            // A API devolve `codigoSistemaAmortizacaoBanco` ora como string
-            // ("S"/"P"), ora como objeto `{ id: "S" }` — normalizamos para
-            // string curta antes de persistir na coluna texto.
-            sistema_amortizacao_banco: (() => {
-              const v = dadosApi?.codigoSistemaAmortizacaoBanco;
-              if (v == null) return null;
-              if (typeof v === "string") return v;
-              if (typeof v === "object" && "id" in (v as any))
-                return String((v as any).id ?? "") || null;
-              return String(v);
-            })(),
-
-          })
-          .eq("id", b.id);
-        return { banco_id: b.banco_id, status: "simulada" as const };
+          return { banco_id: b.banco_id, status: "simulada" as const };
         } finally {
           clearTimeout(timeoutId);
         }
       };
 
       try {
-        return await Promise.race([processarBanco(), timeoutPromise]) as EnviarResultado["bancos"][number];
+        return (await Promise.race([
+          processarBanco(),
+          timeoutPromise,
+        ])) as EnviarResultado["bancos"][number];
       } catch (e: any) {
         const base =
           e instanceof IntegracaoBancariaError ? e.message : humanizarErroBanco(null, String(e));
@@ -1178,7 +1219,6 @@ export async function enviarSimulacaoImpl({
         return { banco_id: b.banco_id, status: "erro" as const, mensagem: msg };
       }
     };
-
 
     for (const b of bancos as any[]) {
       resultados.push(await enviarBanco(b));
@@ -1193,19 +1233,20 @@ export async function enviarSimulacaoImpl({
 
     for (const b of bancosFinais ?? []) {
       if (b.status_banco === "aguardando" && !b.homefin_id_simulacao_banco) {
-        const msg = "Não foi possível iniciar a simulação neste banco. Nenhum dado foi enviado ao banco. Clique em reenviar.";
-        await supabase.from("simulacao_bancos").update({
-          status_banco: "erro",
-          mensagem_banco: msg
-        }).eq("id", b.id);
+        const msg =
+          "Não foi possível iniciar a simulação neste banco. Nenhum dado foi enviado ao banco. Clique em reenviar.";
+        await supabase
+          .from("simulacao_bancos")
+          .update({
+            status_banco: "erro",
+            mensagem_banco: msg,
+          })
+          .eq("id", b.id);
       }
     }
 
     // O comparativo de CPFs (Problema 3) foi removido daqui para evitar conflitos com a lógica de agrupador_id.
     // Agora o comparativo é feito via duas simulações distintas criadas em criarSimulacao.
-
-
-
 
     // Status geral considerando TODOS os bancos selecionados (não só os desta
     // chamada), pois o envio pode ser feito banco a banco para dar progresso.
@@ -1256,7 +1297,6 @@ export async function enviarSimulacaoImpl({
     // REGRA 2: Remoção de sincronização retroativa.
     // O registro da simulação mantém os dados do momento da criação.
 
-
     return { oportunidade_id: idOportunidade, status: novoStatus, bancos: resultados };
   } catch (e) {
     const bruto =
@@ -1274,7 +1314,7 @@ export async function enviarSimulacaoImpl({
         .from("simulacao_bancos")
         .update({ status_banco: "erro", mensagem_banco: msg })
         .in("id", idsLote)
-        .or('status_banco.eq.aguardando,status_banco.eq.enviando');
+        .or("status_banco.eq.aguardando,status_banco.eq.enviando");
     }
 
     await supabase

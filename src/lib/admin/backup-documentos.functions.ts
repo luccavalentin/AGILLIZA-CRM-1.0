@@ -21,7 +21,10 @@ async function correspondenteDoUsuario(
 
 function sanitize(s: string | null | undefined, fallback = "sem-nome"): string {
   const base = (s ?? "").toString().trim() || fallback;
-  return base.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").slice(0, 120);
+  return base
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, " ")
+    .slice(0, 120);
 }
 
 /** Extrai um nome de arquivo legível de um storage_path. */
@@ -220,12 +223,10 @@ export const montarInventarioDocumentos = createServerFn({ method: "GET" })
     for (const [bucket, lista] of porBucket) {
       for (let i = 0; i < lista.length; i += 100) {
         const chunk = lista.slice(i, i + 100);
-        const { data: signed, error } = await supabase.storage
-          .from(bucket)
-          .createSignedUrls(
-            chunk.map((c) => c.path),
-            3600,
-          );
+        const { data: signed, error } = await supabase.storage.from(bucket).createSignedUrls(
+          chunk.map((c) => c.path),
+          3600,
+        );
         if (error || !signed) {
           falhas += chunk.length;
           continue;

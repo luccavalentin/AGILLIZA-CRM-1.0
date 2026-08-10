@@ -22,10 +22,10 @@ function fmtNum(v: number): string {
 
 export function gerarEbookFaqPDF(ebook: EbookFaq, filename?: string) {
   const P = getPdfPalette();
-  const doc = new jsPDF({ 
-    unit: "pt", 
+  const doc = new jsPDF({
+    unit: "pt",
     format: "a4",
-    compress: true
+    compress: true,
   });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -63,13 +63,12 @@ export function gerarEbookFaqPDF(ebook: EbookFaq, filename?: string) {
   doc.text(subCapa.slice(0, 3), MARGEM, pageH * 0.47 + 18 + tituloCapa.length * 30);
 
   doc.setFontSize(9.5);
-  doc.text(
-    `Categoria: ${ebook.categoria.replace(/_/g, " ")}`,
-    MARGEM,
-    pageH * 0.68,
-  );
+  doc.text(`Categoria: ${ebook.categoria.replace(/_/g, " ")}`, MARGEM, pageH * 0.68);
   if (ebook.tags.length) {
-    const tags = doc.splitTextToSize(`Palavras-chave: ${ebook.tags.join(" · ")}`, larguraUtil) as string[];
+    const tags = doc.splitTextToSize(
+      `Palavras-chave: ${ebook.tags.join(" · ")}`,
+      larguraUtil,
+    ) as string[];
     doc.text(tags.slice(0, 2), MARGEM, pageH * 0.68 + 16);
   }
   doc.text(
@@ -105,7 +104,10 @@ export function gerarEbookFaqPDF(ebook: EbookFaq, filename?: string) {
     y += linhas.length * 16 + 12;
   }
 
-  function paragrafo(texto: string, opts: { cor?: string; tamanho?: number; italico?: boolean } = {}) {
+  function paragrafo(
+    texto: string,
+    opts: { cor?: string; tamanho?: number; italico?: boolean } = {},
+  ) {
     doc.setFont("helvetica", opts.italico ? "italic" : "normal");
     doc.setFontSize(opts.tamanho ?? 10);
     doc.setTextColor(opts.cor ?? P.texto);
@@ -168,11 +170,19 @@ export function gerarEbookFaqPDF(ebook: EbookFaq, filename?: string) {
       body: linhas,
       startY: y,
       margin: { left: MARGEM, right: MARGEM, top: HEADER_H + 30 },
-      styles: { font: "helvetica", fontSize: 9, cellPadding: 6, textColor: P.texto, lineColor: P.borda, lineWidth: 0.4 },
+      styles: {
+        font: "helvetica",
+        fontSize: 9,
+        cellPadding: 6,
+        textColor: P.texto,
+        lineColor: P.borda,
+        lineWidth: 0.4,
+      },
       headStyles: { fillColor: P.azul, textColor: "#FFFFFF", fontStyle: "bold", fontSize: 9 },
       alternateRowStyles: { fillColor: P.card },
       didDrawPage: () => {
-        if (doc.getNumberOfPages() > 1) drawBrandHeader(doc, pageW, HEADER_H, ebook.titulo, ebook.subtitulo);
+        if (doc.getNumberOfPages() > 1)
+          drawBrandHeader(doc, pageW, HEADER_H, ebook.titulo, ebook.subtitulo);
       },
     });
     y = ((doc as any).lastAutoTable?.finalY ?? y) + 20;
@@ -223,7 +233,11 @@ export function gerarEbookFaqPDF(ebook: EbookFaq, filename?: string) {
         doc.setFontSize(9);
         doc.setTextColor(P.texto);
         const pct = ((Math.abs(s.valor) / total) * 100).toFixed(1);
-        doc.text(`${s.rotulo} — ${fmtNum(s.valor)}${g.unidade ? ` ${g.unidade}` : ""} (${pct}%)`, cx + 116, ly);
+        doc.text(
+          `${s.rotulo} — ${fmtNum(s.valor)}${g.unidade ? ` ${g.unidade}` : ""} (${pct}%)`,
+          cx + 116,
+          ly,
+        );
         ly += 16;
       });
     } else {
@@ -300,14 +314,16 @@ export function gerarEbookFaqPDF(ebook: EbookFaq, filename?: string) {
   if (ebook.secoes.length) {
     tituloSecao("Neste documento");
     bullets(
-      ebook.secoes.map((s, i) => `${i + 1}. ${s.titulo}`).concat(
-        ebook.exemplos.length ? ["Exemplos práticos"] : [],
-        ebook.graficos.length ? ["Dados e gráficos"] : [],
-        ebook.perguntas_frequentes.length ? ["Perguntas frequentes"] : [],
-        ebook.checklist.length ? ["Checklist operacional"] : [],
-        ebook.glossario.length ? ["Glossário"] : [],
-        ebook.fontes_pesquisa.length ? ["Fontes de pesquisa"] : [],
-      ),
+      ebook.secoes
+        .map((s, i) => `${i + 1}. ${s.titulo}`)
+        .concat(
+          ebook.exemplos.length ? ["Exemplos práticos"] : [],
+          ebook.graficos.length ? ["Dados e gráficos"] : [],
+          ebook.perguntas_frequentes.length ? ["Perguntas frequentes"] : [],
+          ebook.checklist.length ? ["Checklist operacional"] : [],
+          ebook.glossario.length ? ["Glossário"] : [],
+          ebook.fontes_pesquisa.length ? ["Fontes de pesquisa"] : [],
+        ),
       "›",
     );
   }
@@ -346,7 +362,10 @@ export function gerarEbookFaqPDF(ebook: EbookFaq, filename?: string) {
         });
         if (ex.resultado) {
           y += 6;
-          const linhas = doc.splitTextToSize(`Resultado: ${ex.resultado}`, larguraUtil - 28) as string[];
+          const linhas = doc.splitTextToSize(
+            `Resultado: ${ex.resultado}`,
+            larguraUtil - 28,
+          ) as string[];
           garantir(linhas.length * 14);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(9.5);
@@ -396,16 +415,26 @@ export function gerarEbookFaqPDF(ebook: EbookFaq, filename?: string) {
 
   if (ebook.glossario.length) {
     tituloSecao("Glossário");
-    tabela(["Termo", "Definição"], ebook.glossario.map((g) => [g.termo, g.definicao]));
+    tabela(
+      ["Termo", "Definição"],
+      ebook.glossario.map((g) => [g.termo, g.definicao]),
+    );
   }
 
   if (ebook.fontes_pesquisa.length || ebook.fontes_base.length) {
     tituloSecao("Fontes de pesquisa");
     if (ebook.fontes_pesquisa.length) {
-      bullets(ebook.fontes_pesquisa.map((f) => (f.referencia ? `${f.titulo} — ${f.referencia}` : f.titulo)));
+      bullets(
+        ebook.fontes_pesquisa.map((f) =>
+          f.referencia ? `${f.titulo} — ${f.referencia}` : f.titulo,
+        ),
+      );
     }
     if (ebook.fontes_base.length) {
-      paragrafo("Conteúdo interno consultado na base de conhecimento:", { cor: P.cinza, tamanho: 9 });
+      paragrafo("Conteúdo interno consultado na base de conhecimento:", {
+        cor: P.cinza,
+        tamanho: 9,
+      });
       bullets(ebook.fontes_base.map((f) => `${f.categoria.replace(/_/g, " ")} — ${f.titulo}`));
     }
     paragrafo(

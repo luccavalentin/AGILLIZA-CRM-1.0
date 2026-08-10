@@ -2,7 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Paperclip, Download, Trash2, Tag as TagIcon, X, Calendar, User, Building2, CheckCircle2, MessageSquare, ListChecks, History, ChevronDown, ChevronUp, Pencil, Save } from "lucide-react";
+import {
+  Plus,
+  Paperclip,
+  Download,
+  Trash2,
+  Tag as TagIcon,
+  X,
+  Calendar,
+  User,
+  Building2,
+  CheckCircle2,
+  MessageSquare,
+  ListChecks,
+  History,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Save,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import brandSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,7 +29,13 @@ import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { PRIORIDADE, statusTarefa } from "@/components/operacional/status";
@@ -35,7 +59,8 @@ import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.fu
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
+  return new Date(iso).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -179,7 +204,6 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
     }
   }
 
-
   const t = data?.tarefa;
   const tagsAtuais = data?.tags ?? [];
   const tagIds = new Set(tagsAtuais.map((tg: any) => tg.id));
@@ -271,19 +295,40 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                   <div className="mr-8 flex items-center gap-1.5">
                     {!editando ? (
                       <>
-                        <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => setEditando(true)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => setEditando(true)}
+                        >
                           <Pencil className="h-3.5 w-3.5" /> Editar
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={excluirTarefaAtual}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={excluirTarefaAtual}
+                        >
                           <Trash2 className="h-3.5 w-3.5" /> Excluir
                         </Button>
                       </>
                     ) : (
                       <>
-                        <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setEditando(false)} disabled={salvando}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => setEditando(false)}
+                          disabled={salvando}
+                        >
                           Cancelar
                         </Button>
-                        <Button size="sm" className="h-7 gap-1 text-xs" onClick={salvarEdicao} disabled={salvando}>
+                        <Button
+                          size="sm"
+                          className="h-7 gap-1 text-xs"
+                          onClick={salvarEdicao}
+                          disabled={salvando}
+                        >
                           <Save className="h-3.5 w-3.5" /> {salvando ? "Salvando…" : "Salvar"}
                         </Button>
                       </>
@@ -293,7 +338,9 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                 {editando ? (
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Título</Label>
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Título
+                      </Label>
                       <Input
                         value={form.titulo}
                         onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))}
@@ -301,7 +348,9 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Descrição</Label>
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Descrição
+                      </Label>
                       <Textarea
                         value={form.descricao}
                         onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
@@ -332,9 +381,18 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                 {editando ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Prioridade</Label>
-                      <Select value={form.prioridade} onValueChange={(v) => setForm((f) => ({ ...f, prioridade: v as "p1" | "p2" | "p3" }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Prioridade
+                      </Label>
+                      <Select
+                        value={form.prioridade}
+                        onValueChange={(v) =>
+                          setForm((f) => ({ ...f, prioridade: v as "p1" | "p2" | "p3" }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="p1">P1 — Alta</SelectItem>
                           <SelectItem value="p2">P2 — Média</SelectItem>
@@ -343,7 +401,9 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                       </Select>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Prazo</Label>
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Prazo
+                      </Label>
                       <Input
                         type="datetime-local"
                         value={form.prazo}
@@ -351,62 +411,84 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Responsável</Label>
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Responsável
+                      </Label>
                       <Select
                         value={form.responsavel_id || "__none__"}
-                        onValueChange={(v) => setForm((f) => ({ ...f, responsavel_id: v === "__none__" ? "" : v }))}
+                        onValueChange={(v) =>
+                          setForm((f) => ({ ...f, responsavel_id: v === "__none__" ? "" : v }))
+                        }
                       >
-                        <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecionar" />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">Sem responsável</SelectItem>
                           {(colegas ?? []).map((c) => (
-                            <SelectItem key={c.id} value={c.id}>{c.nome ?? c.email}</SelectItem>
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.nome ?? c.email}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cliente</Label>
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Cliente
+                      </Label>
                       <Select
                         value={form.cliente_id || "__none__"}
-                        onValueChange={(v) => setForm((f) => ({ ...f, cliente_id: v === "__none__" ? "" : v }))}
+                        onValueChange={(v) =>
+                          setForm((f) => ({ ...f, cliente_id: v === "__none__" ? "" : v }))
+                        }
                       >
-                        <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Nenhum" />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">Nenhum</SelectItem>
                           {(clientesOpcoes ?? []).map((c) => (
-                            <SelectItem key={c.id} value={c.id}>{c.nome ?? c.numero_cliente}</SelectItem>
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.nome ?? c.numero_cliente}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                 ) : (
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-sm backdrop-blur">
-                    <User className="h-4 w-4 shrink-0 text-primary" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Responsável</p>
-                      <p className="truncate text-foreground">{data?.nome_responsavel ?? "—"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-sm backdrop-blur">
-                    <Calendar className="h-4 w-4 shrink-0 text-primary" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Prazo</p>
-                      <p className="truncate text-foreground tabular-nums">{fmtData(t.prazo)}</p>
-                    </div>
-                  </div>
-                  {t.clientes?.nome && (
-                    <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-sm backdrop-blur sm:col-span-2">
-                      <Building2 className="h-4 w-4 shrink-0 text-primary" />
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-sm backdrop-blur">
+                      <User className="h-4 w-4 shrink-0 text-primary" />
                       <div className="min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cliente</p>
-                        <p className="truncate text-foreground">{t.clientes.nome}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Responsável
+                        </p>
+                        <p className="truncate text-foreground">{data?.nome_responsavel ?? "—"}</p>
                       </div>
                     </div>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-sm backdrop-blur">
+                      <Calendar className="h-4 w-4 shrink-0 text-primary" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Prazo
+                        </p>
+                        <p className="truncate text-foreground tabular-nums">{fmtData(t.prazo)}</p>
+                      </div>
+                    </div>
+                    {t.clientes?.nome && (
+                      <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-sm backdrop-blur sm:col-span-2">
+                        <Building2 className="h-4 w-4 shrink-0 text-primary" />
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                            Cliente
+                          </p>
+                          <p className="truncate text-foreground">{t.clientes.nome}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Etiquetas */}
@@ -527,7 +609,9 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                           />
                           <span
                             className={
-                              it.concluido ? "text-muted-foreground line-through" : "text-foreground"
+                              it.concluido
+                                ? "text-muted-foreground line-through"
+                                : "text-foreground"
                             }
                           >
                             {it.descricao}
@@ -613,19 +697,26 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                   </div>
                   <div className="space-y-2">
                     {(data?.comentarios ?? []).length === 0 ? (
-                      <p className="text-xs text-muted-foreground">Nenhum comentário ainda. Seja o primeiro a comentar.</p>
+                      <p className="text-xs text-muted-foreground">
+                        Nenhum comentário ainda. Seja o primeiro a comentar.
+                      </p>
                     ) : (
                       data!.comentarios.map((c: any) => {
-                        const proprio = c.autor_id && c.autor_id === (data as any)?.usuario_atual_id;
+                        const proprio =
+                          c.autor_id && c.autor_id === (data as any)?.usuario_atual_id;
                         return (
                           <div
                             key={c.id}
                             className="group rounded-lg border border-border/60 bg-background p-3 text-sm shadow-sm ring-1 ring-primary/5 border-l-4 border-l-primary"
                           >
                             <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
-                              <span className="font-semibold text-foreground">{c.nome_autor ?? "—"}</span>
+                              <span className="font-semibold text-foreground">
+                                {c.nome_autor ?? "—"}
+                              </span>
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground tabular-nums">{fmtData(c.created_at)}</span>
+                                <span className="text-muted-foreground tabular-nums">
+                                  {fmtData(c.created_at)}
+                                </span>
                                 {proprio && (
                                   <button
                                     type="button"
@@ -636,7 +727,9 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                                         await excluirComentarioFn({ data: { id: c.id } });
                                         invalidar();
                                       } catch (e) {
-                                        toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+                                        toast.error(
+                                          e instanceof Error ? e.message : "Falha ao excluir.",
+                                        );
                                       }
                                     }}
                                     className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive focus:opacity-100 group-hover:opacity-100"
@@ -646,7 +739,9 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                                 )}
                               </div>
                             </div>
-                            <p className="whitespace-pre-wrap leading-relaxed text-foreground">{c.corpo}</p>
+                            <p className="whitespace-pre-wrap leading-relaxed text-foreground">
+                              {c.corpo}
+                            </p>
                           </div>
                         );
                       })

@@ -16,7 +16,6 @@ export function formatData(iso: string | Date | null | undefined | unknown): str
   return `${day}/${m}/${y}`;
 }
 
-
 /** Data de hoje em yyyy-mm-dd (horário local). */
 export function hojeISO(): string {
   const d = new Date();

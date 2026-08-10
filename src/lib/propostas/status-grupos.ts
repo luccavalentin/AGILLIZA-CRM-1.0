@@ -4,11 +4,7 @@
  */
 import type { PropostaStatus } from "./state-machine";
 
-export type GrupoProposta =
-  | "enviadas"
-  | "aprovadas"
-  | "recusadas"
-  | "canceladas";
+export type GrupoProposta = "enviadas" | "aprovadas" | "recusadas" | "canceladas";
 
 /** Config de cada grupo (rótulo + tom para o card). */
 export const GRUPOS_PROPOSTA: Array<{
@@ -57,4 +53,3 @@ export function grupoDoStatus(status: string | null | undefined): GrupoProposta 
       return null;
   }
 }
-

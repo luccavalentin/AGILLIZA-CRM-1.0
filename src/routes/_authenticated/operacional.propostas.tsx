@@ -16,34 +16,22 @@ import { propostaQueryOptions } from "@/lib/propostas/queries";
 
 import { Button } from "@/components/ui/button";
 import { listarColegas } from "@/lib/operacional/shared.functions";
-import {
-  GRUPOS_PROPOSTA,
-  grupoDoStatus,
-  type GrupoProposta,
-} from "@/lib/propostas/status-grupos";
-import {
-  StatusCard,
-  VolumeCard,
-} from "@/components/propostas/lista-page/cards-status";
+import { GRUPOS_PROPOSTA, grupoDoStatus, type GrupoProposta } from "@/lib/propostas/status-grupos";
+import { StatusCard, VolumeCard } from "@/components/propostas/lista-page/cards-status";
 import { FiltrosPropostas } from "@/components/propostas/lista-page/filtros";
 import { ListaMobile } from "@/components/propostas/lista-page/lista-mobile";
 import { ListaDesktop } from "@/components/propostas/lista-page/lista-desktop";
 import { BarraSelecao } from "@/components/shared/barra-selecao";
 
 import { listarParceiros } from "@/lib/crm/parceiros.functions";
-import {
-  intervaloMesAtual,
-  type Escopo,
-} from "@/components/propostas/lista-page/helpers";
+import { intervaloMesAtual, type Escopo } from "@/components/propostas/lista-page/helpers";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas")({
   head: () => ({ meta: [{ title: "Propostas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
   component: Pagina,
   errorComponent: () => (
-    <div className="p-6 text-sm text-muted-foreground">
-      Não foi possível carregar as propostas.
-    </div>
+    <div className="p-6 text-sm text-muted-foreground">Não foi possível carregar as propostas.</div>
   ),
 });
 
@@ -124,11 +112,7 @@ function Pagina() {
       if (cancelado) return;
       canalRef = supabase
         .channel("propostas-lista")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "propostas" },
-          invalidar,
-        )
+        .on("postgres_changes", { event: "*", schema: "public", table: "propostas" }, invalidar)
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "proposta_bancos" },
@@ -180,14 +164,24 @@ function Pagina() {
   }, [sincronizarLoteFn]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["propostas", escopo, busca, dataInicio, dataFim, responsavel, verExcluidas, corretorFiltro, imobFiltro, comercialFiltro],
+    queryKey: [
+      "propostas",
+      escopo,
+      busca,
+      dataInicio,
+      dataFim,
+      responsavel,
+      verExcluidas,
+      corretorFiltro,
+      imobFiltro,
+      comercialFiltro,
+    ],
     queryFn: () =>
       listarPropostas({
         data: {
           escopo,
           q: busca || undefined,
-          responsavel:
-            escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
+          responsavel: escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
           data_inicio: dataInicio ? `${dataInicio}T00:00:00` : undefined,
           data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
           pagina: 1,
@@ -200,7 +194,10 @@ function Pagina() {
       }),
   });
 
-  const todosItens = useMemo(() => (data?.itens ?? []).filter(i => !i.deleted_at || verExcluidas), [data?.itens, verExcluidas]);
+  const todosItens = useMemo(
+    () => (data?.itens ?? []).filter((i) => !i.deleted_at || verExcluidas),
+    [data?.itens, verExcluidas],
+  );
 
   const estatisticasGrupo = useMemo(() => {
     const base: Record<GrupoProposta, { count: number; volume: number }> = {
@@ -219,10 +216,7 @@ function Pagina() {
   }, [todosItens]);
 
   const itens = useMemo(
-    () =>
-      grupo
-        ? todosItens.filter((p) => grupoDoStatus(p.status) === grupo)
-        : todosItens,
+    () => (grupo ? todosItens.filter((p) => grupoDoStatus(p.status) === grupo) : todosItens),
     [todosItens, grupo],
   );
   const totalItens = itens.length;
@@ -311,7 +305,6 @@ function Pagina() {
     else toast.error("Não foi possível excluir as propostas selecionadas.");
   }
 
-
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-3 sm:space-y-6 sm:p-6">
       {/* Cabeçalho */}
@@ -378,31 +371,31 @@ function Pagina() {
         <VolumeCard volume={volumeTotal} loading={isLoading} />
       </div>
 
-        <FiltrosPropostas
-          escopo={escopo}
-          setEscopo={setEscopo}
-          q={q}
-          setQ={setQ}
-          responsavel={responsavel}
-          setResponsavel={setResponsavel}
-          colegas={colegas}
-          dataInicio={dataInicio}
-          setDataInicio={setDataInicio}
-          dataFim={dataFim}
-          setDataFim={setDataFim}
-          onLimpar={limparFiltros}
-          verExcluidas={verExcluidas}
-          setVerExcluidas={setVerExcluidas}
-          corretorFiltro={corretorFiltro}
-          setCorretorFiltro={setCorretorFiltro}
-          corretores={corretores}
-          imobFiltro={imobFiltro}
-          setImobFiltro={setImobFiltro}
-          imobiliarias={imobiliarias}
-          comercialFiltro={comercialFiltro}
-          setComercialFiltro={setComercialFiltro}
-          comerciais={comerciais}
-        />
+      <FiltrosPropostas
+        escopo={escopo}
+        setEscopo={setEscopo}
+        q={q}
+        setQ={setQ}
+        responsavel={responsavel}
+        setResponsavel={setResponsavel}
+        colegas={colegas}
+        dataInicio={dataInicio}
+        setDataInicio={setDataInicio}
+        dataFim={dataFim}
+        setDataFim={setDataFim}
+        onLimpar={limparFiltros}
+        verExcluidas={verExcluidas}
+        setVerExcluidas={setVerExcluidas}
+        corretorFiltro={corretorFiltro}
+        setCorretorFiltro={setCorretorFiltro}
+        corretores={corretores}
+        imobFiltro={imobFiltro}
+        setImobFiltro={setImobFiltro}
+        imobiliarias={imobiliarias}
+        comercialFiltro={comercialFiltro}
+        setComercialFiltro={setComercialFiltro}
+        comerciais={comerciais}
+      />
 
       <ListaMobile
         isLoading={isLoading}
@@ -436,7 +429,6 @@ function Pagina() {
         excluindo={excluindoLote}
         rotulo="proposta(s) selecionada(s)"
       />
-
     </div>
   );
 }

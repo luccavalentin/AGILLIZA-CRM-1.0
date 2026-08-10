@@ -9,11 +9,7 @@ export function registrarSwCliente() {
   // Domínios de preview/hospedagem em que o SW não deve ser registrado.
   // Montados dinamicamente para não deixar literais da plataforma no código.
   const p = ["lo", "vable"].join("");
-  const dominiosPreview = [
-    `${p}project.com`,
-    `${p}project-dev.com`,
-    `beta.${p}.dev`,
-  ];
+  const dominiosPreview = [`${p}project.com`, `${p}project-dev.com`, `beta.${p}.dev`];
   const emPreview = dominiosPreview.some((d) => h === d || h.endsWith(`.${d}`));
   const bloqueado =
     !import.meta.env.PROD ||

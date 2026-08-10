@@ -56,7 +56,6 @@ export interface LeituraDetalhe {
   criador_nome: string | null;
 }
 
-
 /**
  * Detecta o MIME real pelos bytes ("magic numbers"). O `blob.type` vindo do
  * Storage costuma chegar vazio ou como octet-stream no runtime do servidor —
@@ -184,7 +183,6 @@ export const listarLeituras = createServerFn({ method: "GET" })
       criador_id: r.criador_id ?? null,
       criador_nome: r.criador_id ? (nomes.get(r.criador_id) ?? null) : null,
     }));
-
   });
 
 export const obterLeitura = createServerFn({ method: "GET" })
@@ -289,7 +287,6 @@ export const criarLeitura = createServerFn({ method: "POST" })
     if (error) throw error;
     return { id: inserida.id };
   });
-
 
 /** Processa a leitura com IA (OCR + extração estruturada de campos). */
 export const processarLeitura = createServerFn({ method: "POST" })
@@ -401,12 +398,11 @@ export const processarLeitura = createServerFn({ method: "POST" })
         `Não invente valores: se um campo não existir no documento, não o inclua.`;
       const prompt = promptSistema ? `${promptSistema}\n\n${instrucaoBase}` : instrucaoBase;
 
-
-
       let resp: Response;
       if (provedor === "openai") {
         const baseUrl = (
-          (typeof cfgRow?.base_url === "string" && cfgRow.base_url) || "https://api.openai.com/v1"
+          (typeof cfgRow?.base_url === "string" && cfgRow.base_url) ||
+          "https://api.openai.com/v1"
         ).replace(/\/+$/, "");
         resp = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
@@ -429,7 +425,7 @@ export const processarLeitura = createServerFn({ method: "POST" })
                     ? {
                         type: "file",
                         file: {
-                          filename: (leitura.arquivo_url.split("/").pop() ?? "documento.pdf"),
+                          filename: leitura.arquivo_url.split("/").pop() ?? "documento.pdf",
                           file_data: `data:${mime};base64,${base64}`,
                         },
                       }
@@ -453,10 +449,7 @@ export const processarLeitura = createServerFn({ method: "POST" })
               contents: [
                 {
                   role: "user",
-                  parts: [
-                    { text: prompt },
-                    { inline_data: { mime_type: mime, data: base64 } },
-                  ],
+                  parts: [{ text: prompt }, { inline_data: { mime_type: mime, data: base64 } }],
                 },
               ],
               generationConfig: {
@@ -464,7 +457,6 @@ export const processarLeitura = createServerFn({ method: "POST" })
                 responseMimeType: "application/json",
                 maxOutputTokens: 16384,
               },
-
             }),
           },
         );
@@ -511,21 +503,24 @@ export const processarLeitura = createServerFn({ method: "POST" })
           try {
             parsed = JSON.parse(m[0]);
           } catch {
-            throw new Error(`JSON malformado devolvido pela IA: ${parseError.message}. Resposta: ${texto.slice(0, 500)}`);
+            throw new Error(
+              `JSON malformado devolvido pela IA: ${parseError.message}. Resposta: ${texto.slice(0, 500)}`,
+            );
           }
         } else {
-          throw new Error(`Resposta da IA não contém um JSON válido: ${parseError.message}. Resposta: ${texto.slice(0, 500)}`);
+          throw new Error(
+            `Resposta da IA não contém um JSON válido: ${parseError.message}. Resposta: ${texto.slice(0, 500)}`,
+          );
         }
       }
 
       // Identificação automática do tipo
       const confiancaTipo = Number(parsed.confianca_tipo) || 0;
-      const tipoSugerido = ehTipoConhecido(parsed.tipo_documento)
-        ? parsed.tipo_documento
-        : "outro";
+      const tipoSugerido = ehTipoConhecido(parsed.tipo_documento) ? parsed.tipo_documento : "outro";
 
       // O tipo informado pelo usuário tem precedência para o processamento de campos se existir
-      const tipoParaFiltro = tipoInformado && ehTipoConhecido(tipoInformado) ? tipoInformado : tipoSugerido;
+      const tipoParaFiltro =
+        tipoInformado && ehTipoConhecido(tipoInformado) ? tipoInformado : tipoSugerido;
 
       // Só aceita campos previstos para o tipo sugerido (evita ruído do modelo).
       const permitidos = new Set([
@@ -562,7 +557,6 @@ export const processarLeitura = createServerFn({ method: "POST" })
         }))
         .filter((c) => c.valor.length > 0);
 
-
       // Substitui campos anteriores
       await supabase.from("scan_ia_campos_extraidos").delete().eq("leitura_id", data.id);
       if (campos.length > 0) {
@@ -581,8 +575,10 @@ export const processarLeitura = createServerFn({ method: "POST" })
               : null,
           tipo_documento_sugerido: tipoSugerido,
           // Se não houver tipo informado e a confiança for alta, podemos pré-selecionar
-          tipo_documento: !tipoInformado && confiancaTipo >= 0.8 ? tipoSugerido : leitura.tipo_documento,
-          tipo_confirmado: !tipoInformado && confiancaTipo >= 0.8 ? false : !!leitura.tipo_confirmado,
+          tipo_documento:
+            !tipoInformado && confiancaTipo >= 0.8 ? tipoSugerido : leitura.tipo_documento,
+          tipo_confirmado:
+            !tipoInformado && confiancaTipo >= 0.8 ? false : !!leitura.tipo_confirmado,
         })
         .eq("id", data.id);
 
@@ -601,21 +597,20 @@ export const processarLeitura = createServerFn({ method: "POST" })
         },
       });
 
-
       return { ok: true };
     } catch (e: any) {
       console.error("[processarLeitura] Erro:", e);
       const msg = e?.message ? String(e.message).slice(0, 1000) : "Erro ao processar leitura.";
-      
+
       // Garante que o erro seja persistido para diagnóstico
       await supabase
         .from("scan_ia_leituras")
-        .update({ 
-          status: "erro", 
-          erro: msg 
+        .update({
+          status: "erro",
+          erro: msg,
         })
         .eq("id", data.id);
-        
+
       return { ok: false, erro: msg };
     }
   });
@@ -759,9 +754,7 @@ export const confirmarTipoDocumento = createServerFn({ method: "POST" })
 export const vincularClienteLeitura = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { leitura_id: string; cliente_id: string | null }) =>
-    z
-      .object({ leitura_id: z.string().uuid(), cliente_id: z.string().uuid().nullable() })
-      .parse(d),
+    z.object({ leitura_id: z.string().uuid(), cliente_id: z.string().uuid().nullable() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
@@ -925,12 +918,20 @@ function textoValorAtual(v: unknown): string | null {
   return String(v);
 }
 
-function normalizarCampoExtraido(campo: string, valor: string): Array<{ campo: string; valor: string }> {
+function normalizarCampoExtraido(
+  campo: string,
+  valor: string,
+): Array<{ campo: string; valor: string }> {
   const c = campo.trim();
   const v = valor.trim();
   if (c === "endereco_completo" || c === "endereco") {
     const cep = v.match(/\b\d{5}[-\s]?\d{3}\b/);
-    const linha = cep ? v.replace(cep[0], "").trim().replace(/[,-]\s*$/, "") : v;
+    const linha = cep
+      ? v
+          .replace(cep[0], "")
+          .trim()
+          .replace(/[,-]\s*$/, "")
+      : v;
     return cep
       ? [
           { campo: c, valor: linha },
@@ -998,8 +999,7 @@ export const previaAplicacao = createServerFn({ method: "GET" })
         if (destino.tipo === "coluna") valorAtual = textoValorAtual(cliente[destino.coluna]);
         else if (destino.tipo === "endereco") {
           valorAtual = textoValorAtual(enderecoPrincipal?.[destino.coluna]);
-        }
-        else if (destino.tipo === "matricula") {
+        } else if (destino.tipo === "matricula") {
           const m = (cliente.imovel_matricula ?? {}) as Record<string, unknown>;
           valorAtual = textoValorAtual(m?.[destino.chave]);
         }
@@ -1022,9 +1022,9 @@ export const previaAplicacao = createServerFn({ method: "GET" })
             ? destino.coluna
             : destino.tipo === "endereco"
               ? `endereco_principal.${destino.coluna}`
-            : destino.tipo === "matricula"
-              ? `imovel_matricula.${destino.chave}`
-              : "—",
+              : destino.tipo === "matricula"
+                ? `imovel_matricula.${destino.chave}`
+                : "—",
         valor_atual: valorAtual,
         conflito,
       };
@@ -1080,9 +1080,7 @@ export const aplicarAoCadastro = createServerFn({ method: "POST" })
 
       const { data: leitura } = await supabase
         .from("scan_ia_leituras")
-        .select(
-          "id, correspondente_id, cliente_id, tipo_documento, tipo_confirmado, arquivo_url",
-        )
+        .select("id, correspondente_id, cliente_id, tipo_documento, tipo_confirmado, arquivo_url")
         .eq("id", data.leitura_id)
         .maybeSingle();
       if (!leitura || leitura.correspondente_id !== corr)
@@ -1134,7 +1132,8 @@ export const aplicarAoCadastro = createServerFn({ method: "POST" })
         }
         const temAtual = valorAtual !== null && valorAtual !== undefined && valorAtual !== "";
         const novoTexto = conv.ok ? textoValorAtual(conv.valor) : null;
-        const conflito = temAtual && !!novoTexto && !valoresEquivalentes(textoValorAtual(valorAtual), novoTexto);
+        const conflito =
+          temAtual && !!novoTexto && !valoresEquivalentes(textoValorAtual(valorAtual), novoTexto);
 
         const registro = {
           campo: campo.campo,
@@ -1252,7 +1251,10 @@ export const arquivarDocumentoDaLeitura = createServerFn({ method: "POST" })
     z.object({ leitura_id: z.string().uuid() }).parse(d),
   )
   .handler(
-    async ({ data, context }): Promise<{ ok: boolean; ja_existia: boolean; erro: string | null }> => {
+    async ({
+      data,
+      context,
+    }): Promise<{ ok: boolean; ja_existia: boolean; erro: string | null }> => {
       const { supabase, userId } = context;
       const corr = await correspondenteDoUsuario(supabase, userId);
       if (!corr) throw new Error("Sem correspondente.");
@@ -1262,7 +1264,8 @@ export const arquivarDocumentoDaLeitura = createServerFn({ method: "POST" })
         .select("id, correspondente_id, cliente_id, tipo_documento, arquivo_url")
         .eq("id", data.leitura_id)
         .maybeSingle();
-      if (!leitura || leitura.correspondente_id !== corr) throw new Error("Leitura não encontrada.");
+      if (!leitura || leitura.correspondente_id !== corr)
+        throw new Error("Leitura não encontrada.");
       if (!leitura.cliente_id) throw new Error("Vincule um cliente antes de arquivar o documento.");
 
       const { arquivarLeituraNaDocumentacao } = await import("./scan-ia-arquivar.server");

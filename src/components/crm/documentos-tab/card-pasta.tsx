@@ -28,9 +28,7 @@ export function CardPasta({
           <Folder className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">
-            {pasta.nome}
-          </p>
+          <p className="truncate text-sm font-semibold text-foreground">{pasta.nome}</p>
           <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
             <FileText className="size-3" /> {pasta.total_documentos} documento(s)
           </p>

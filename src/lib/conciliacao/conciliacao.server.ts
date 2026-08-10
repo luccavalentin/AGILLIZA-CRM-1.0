@@ -107,7 +107,8 @@ export function cruzar(
         match =
           candidatos.find((c) => c.nome_norm && nome && c.nome_norm === nome) ??
           candidatos.find(
-            (c) => c.nome_norm && nome && (c.nome_norm.includes(nome) || nome.includes(c.nome_norm)),
+            (c) =>
+              c.nome_norm && nome && (c.nome_norm.includes(nome) || nome.includes(c.nome_norm)),
           ) ??
           candidatos[0];
       }

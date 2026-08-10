@@ -73,8 +73,6 @@ function inferirTipoVinculo(
   return "outro";
 }
 
-
-
 interface Props {
   aberto: boolean;
   onFechar: () => void;
@@ -187,7 +185,8 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
         <DialogHeader>
           <DialogTitle>{regra ? "Editar regra" : "Nova regra de comissão"}</DialogTitle>
           <DialogDescription>
-            Defina quanto o usuário recebe por contrato. Deixe banco/produto vazios para valer em todos.
+            Defina quanto o usuário recebe por contrato. Deixe banco/produto vazios para valer em
+            todos.
           </DialogDescription>
         </DialogHeader>
 
@@ -207,16 +206,15 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
                 >
                   <span className="truncate">
                     {usuarioSelecionado
-                      ? usuarioSelecionado.nome ?? usuarioSelecionado.email ?? usuarioSelecionado.id
+                      ? (usuarioSelecionado.nome ??
+                        usuarioSelecionado.email ??
+                        usuarioSelecionado.id)
                       : "Selecione ou digite o nome do usuário"}
                   </span>
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent
-                className="w-[--radix-popover-trigger-width] p-0"
-                align="start"
-              >
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                 <Command
                   filter={(value, search) =>
                     value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
@@ -234,7 +232,8 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
                             value={`${label} ${u.email ?? ""}`}
                             onSelect={() => {
                               setUsuarioId(u.id);
-                              if (!regra) setTipoVinculo(inferirTipoVinculo(u.tipo_pessoa, u.papeis));
+                              if (!regra)
+                                setTipoVinculo(inferirTipoVinculo(u.tipo_pessoa, u.papeis));
                               setUsuarioOpen(false);
                             }}
                           >
@@ -262,7 +261,10 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
 
           <div className="space-y-1.5">
             <Label>Tipo de vínculo</Label>
-            <Select value={tipoVinculo} onValueChange={(v) => setTipoVinculo(v as TipoVinculoComissao)}>
+            <Select
+              value={tipoVinculo}
+              onValueChange={(v) => setTipoVinculo(v as TipoVinculoComissao)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -275,7 +277,6 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
               </SelectContent>
             </Select>
           </div>
-
 
           <div className="space-y-1.5">
             <Label>Gatilho</Label>

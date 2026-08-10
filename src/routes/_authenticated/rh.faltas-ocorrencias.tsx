@@ -45,11 +45,23 @@ import {
 
 const TIPOS: { value: OcorrenciaTipo; label: string; tone: string }[] = [
   { value: "falta", label: "Falta", tone: "bg-destructive/15 text-destructive" },
-  { value: "atestado", label: "Atestado", tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
-  { value: "advertencia", label: "Advertência", tone: "bg-orange-500/15 text-orange-700 dark:text-orange-300" },
+  {
+    value: "atestado",
+    label: "Atestado",
+    tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  },
+  {
+    value: "advertencia",
+    label: "Advertência",
+    tone: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  },
   { value: "licenca", label: "Licença", tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
   { value: "suspensao", label: "Suspensão", tone: "bg-destructive/15 text-destructive" },
-  { value: "elogio", label: "Elogio", tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  {
+    value: "elogio",
+    label: "Elogio",
+    tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  },
   { value: "outro", label: "Outro", tone: "bg-muted text-muted-foreground" },
 ];
 
@@ -128,7 +140,9 @@ function Pagina() {
           <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground md:text-2xl">
             <AlertTriangle className="h-5 w-5 text-primary" /> Faltas, atestados e ocorrências
           </h1>
-          <p className="text-sm text-muted-foreground">Registro cronológico das ocorrências do quadro.</p>
+          <p className="text-sm text-muted-foreground">
+            Registro cronológico das ocorrências do quadro.
+          </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -150,7 +164,10 @@ function Pagina() {
               </div>
               <div className="space-y-1.5">
                 <Label>Tipo</Label>
-                <Select value={form.tipo} onValueChange={(v) => setForm((p) => ({ ...p, tipo: v as OcorrenciaTipo }))}>
+                <Select
+                  value={form.tipo}
+                  onValueChange={(v) => setForm((p) => ({ ...p, tipo: v as OcorrenciaTipo }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -165,7 +182,10 @@ function Pagina() {
               </div>
               <div className="space-y-1.5">
                 <Label>CID (atestado)</Label>
-                <Input value={form.cid} onChange={(e) => setForm((p) => ({ ...p, cid: e.target.value }))} />
+                <Input
+                  value={form.cid}
+                  onChange={(e) => setForm((p) => ({ ...p, cid: e.target.value }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Data início</Label>
@@ -212,8 +232,13 @@ function Pagina() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={() => salvar.mutate()} disabled={salvar.isPending || !form.funcionario_id}>
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => salvar.mutate()}
+                disabled={salvar.isPending || !form.funcionario_id}
+              >
                 Salvar
               </Button>
             </DialogFooter>
@@ -229,7 +254,10 @@ function Pagina() {
           </div>
           <div className="space-y-1.5">
             <Label>Tipo</Label>
-            <Select value={filtroTipo || "__all__"} onValueChange={(v) => setFiltroTipo(v === "__all__" ? "" : v)}>
+            <Select
+              value={filtroTipo || "__all__"}
+              onValueChange={(v) => setFiltroTipo(v === "__all__" ? "" : v)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -272,7 +300,9 @@ function Pagina() {
                         <Badge className={tipo?.tone}>{tipo?.label ?? o.tipo}</Badge>
                       </TableCell>
                       <TableCell>{new Date(o.data_inicio).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>{o.data_fim ? new Date(o.data_fim).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                      <TableCell>
+                        {o.data_fim ? new Date(o.data_fim).toLocaleDateString("pt-BR") : "—"}
+                      </TableCell>
                       <TableCell>{o.dias ?? "—"}</TableCell>
                       <TableCell>{o.cid ?? "—"}</TableCell>
                       <TableCell>{o.abonada ? "Sim" : "Não"}</TableCell>
@@ -286,7 +316,10 @@ function Pagina() {
                 })}
                 {(!lista.data || lista.data.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={8}
+                      className="py-10 text-center text-sm text-muted-foreground"
+                    >
                       Nenhuma ocorrência registrada.
                     </TableCell>
                   </TableRow>

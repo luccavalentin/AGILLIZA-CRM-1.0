@@ -45,11 +45,7 @@ export function EnvioResultadoDialog({
                 : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
             )}
           >
-            {soErro ? (
-              <XCircle className="h-7 w-7" />
-            ) : (
-              <CheckCircle2 className="h-7 w-7" />
-            )}
+            {soErro ? <XCircle className="h-7 w-7" /> : <CheckCircle2 className="h-7 w-7" />}
           </div>
           <DialogTitle className="text-center">{titulo}</DialogTitle>
           <DialogDescription className="text-center">
@@ -83,12 +79,8 @@ export function EnvioResultadoDialog({
             >
               <BancoLogo nome={r.nome_banco} size="lg" className="shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground">
-                  {r.nome_banco ?? "Banco"}
-                </p>
-                {r.mensagem && (
-                  <p className="text-xs text-muted-foreground">{r.mensagem}</p>
-                )}
+                <p className="text-sm font-medium text-foreground">{r.nome_banco ?? "Banco"}</p>
+                {r.mensagem && <p className="text-xs text-muted-foreground">{r.mensagem}</p>}
               </div>
               <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
             </div>

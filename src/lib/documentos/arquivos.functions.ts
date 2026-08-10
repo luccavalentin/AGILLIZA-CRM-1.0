@@ -27,7 +27,6 @@ export interface PastaFlat {
   caminho: string;
 }
 
-
 async function correspondenteDoUsuario(
   supabase: { from: (t: string) => any },
   userId: string,
@@ -48,10 +47,7 @@ async function nomesDeUsuarios(
   const unicos = Array.from(new Set(ids.filter((v): v is string => !!v)));
   const mapa = new Map<string, string>();
   if (unicos.length === 0) return mapa;
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, nome")
-    .in("id", unicos);
+  const { data } = await supabase.from("profiles").select("id, nome").in("id", unicos);
   for (const p of (data ?? []) as { id: string; nome: string | null }[]) {
     if (p.nome) mapa.set(p.id, p.nome);
   }
@@ -90,7 +86,10 @@ export const listarNos = createServerFn({ method: "GET" })
       if (lote.length < 1000) break;
     }
 
-    const nomes = await nomesDeUsuarios(supabase, lista.map((r) => r.criado_por));
+    const nomes = await nomesDeUsuarios(
+      supabase,
+      lista.map((r) => r.criado_por),
+    );
     return lista.map((r) => ({
       ...r,
       criado_por_nome: r.criado_por ? (nomes.get(r.criado_por) ?? null) : null,
@@ -119,9 +118,7 @@ export const listarPastasRaiz = createServerFn({ method: "GET" })
 /** Marca/desmarca uma pasta para aparecer no menu lateral. */
 export const definirMostrarNoMenu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
-    z.object({ id: z.string().uuid(), mostrar: z.boolean() }).parse(data),
-  )
+  .inputValidator((data) => z.object({ id: z.string().uuid(), mostrar: z.boolean() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -149,9 +146,7 @@ export interface ResultadoPesquisa {
 /** Pesquisa global por nome em pastas e arquivos, retornando o caminho até o nó. */
 export const pesquisarArquivos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
-    z.object({ termo: z.string().trim().min(1).max(200) }).parse(data),
-  )
+  .inputValidator((data) => z.object({ termo: z.string().trim().min(1).max(200) }).parse(data))
   .handler(async ({ context, data }): Promise<ResultadoPesquisa[]> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -421,7 +416,6 @@ export const excluirNo = createServerFn({ method: "POST" })
       }
     }
 
-
     if (pathsStorage.length > 0) {
       for (let i = 0; i < pathsStorage.length; i += 100) {
         await supabase.storage.from("arquivos").remove(pathsStorage.slice(i, i + 100));
@@ -456,11 +450,7 @@ export const urlArquivo = createServerFn({ method: "POST" })
     if (!no?.storage_path) throw new Error("Arquivo não encontrado.");
     const { data: signed, error } = await supabase.storage
       .from("arquivos")
-      .createSignedUrl(
-        no.storage_path,
-        300,
-        data.download ? { download: no.nome } : undefined,
-      );
+      .createSignedUrl(no.storage_path, 300, data.download ? { download: no.nome } : undefined);
     if (error || !signed?.signedUrl) throw new Error("Não foi possível gerar o link.");
     return { url: signed.signedUrl, nome: no.nome };
   });

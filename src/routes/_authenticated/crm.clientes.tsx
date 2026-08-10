@@ -49,8 +49,7 @@ function Pagina() {
   const [statusF, setStatusF] = useState<StatusF>("todos");
   const [escopo, setEscopo] = useState<Escopo>(
     () =>
-      (typeof window !== "undefined" &&
-        (localStorage.getItem("clientes:escopo") as Escopo)) ||
+      (typeof window !== "undefined" && (localStorage.getItem("clientes:escopo") as Escopo)) ||
       "geral",
   );
 
@@ -94,7 +93,6 @@ function Pagina() {
     refetchOnMount: "always",
   });
 
-
   const { data: etapas } = useQuery({
     queryKey: ["pipeline-etapas"],
     queryFn: () => etapasFn(),
@@ -130,8 +128,7 @@ function Pagina() {
     setPagina(1);
   }
 
-  const navigateToFicha = (id: string) =>
-    navigate({ to: "/crm/clientes/$id", params: { id } });
+  const navigateToFicha = (id: string) => navigate({ to: "/crm/clientes/$id", params: { id } });
 
   const total = data?.total ?? 0;
   const itens = data?.itens ?? [];

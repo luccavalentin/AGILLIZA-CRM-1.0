@@ -75,10 +75,9 @@ function garantirHttps(): void {
   // apenas 127.0.0.1/localhost para permitir testes explícitos em http.
   const ehLocal = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
   if (proto !== "https" && !ehLocal) {
-    throw new Response(
-      "Portal do Cliente exige HTTPS. Verifique o certificado do domínio.",
-      { status: 400 },
-    );
+    throw new Response("Portal do Cliente exige HTTPS. Verifique o certificado do domínio.", {
+      status: 400,
+    });
   }
 }
 

@@ -73,9 +73,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const [renomearNome, setRenomearNome] = useState("");
   const [delPasta, setDelPasta] = useState<DocumentoPasta | null>(null);
   const [excluindoPasta, setExcluindoPasta] = useState(false);
-  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(
-    null,
-  );
+  const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
 
   const { data: docs, isLoading } = useQuery({
     queryKey: ["cliente-docs", clienteId],
@@ -115,10 +113,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   }, [pastas, pastaId]);
 
   const tiposCategoria = useMemo(() => tiposParaCategorias([categoria]), [categoria]);
-  const tiposEditCategoria = useMemo(
-    () => tiposParaCategorias([editCategoria]),
-    [editCategoria],
-  );
+  const tiposEditCategoria = useMemo(() => tiposParaCategorias([editCategoria]), [editCategoria]);
 
   function abrirPasta(p: DocumentoPasta) {
     setPastaId(p.id);
@@ -131,16 +126,9 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     qc.invalidateQueries({ queryKey: ["cliente-doc-pastas", clienteId] });
   }
 
-  async function enviarUm(
-    file: File,
-    pastaDestinoId: string,
-    cat: Categoria,
-    tipoDoc: string,
-  ) {
+  async function enviarUm(file: File, pastaDestinoId: string, cat: Categoria, tipoDoc: string) {
     const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
-    const { error: upErr } = await supabase.storage
-      .from("cliente-documentos")
-      .upload(path, file);
+    const { error: upErr } = await supabase.storage.from("cliente-documentos").upload(path, file);
     if (upErr) throw upErr;
     await anexar({
       data: {
@@ -449,11 +437,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Trilha
-          cadeia={trilhaPastas}
-          onRaiz={() => setPastaId(null)}
-          onNavegar={setPastaId}
-        />
+        <Trilha cadeia={trilhaPastas} onRaiz={() => setPastaId(null)} onNavegar={setPastaId} />
         <Button size="sm" variant="outline" onClick={() => setNovaPastaOpen(true)}>
           <FolderPlus className="size-4" />
           Nova subpasta

@@ -12,13 +12,7 @@ import { definirAcessoPortal } from "@/lib/crm/clientes.functions";
  * Barra de acesso ao App do Cliente exibida na aba "App cliente" da ficha,
  * para habilitar/desabilitar o portal sem precisar abrir o cadastro.
  */
-export function AppClienteAcesso({
-  clienteId,
-  ativo,
-}: {
-  clienteId: string;
-  ativo: boolean;
-}) {
+export function AppClienteAcesso({ clienteId, ativo }: { clienteId: string; ativo: boolean }) {
   const qc = useQueryClient();
   const definirPortal = useServerFn(definirAcessoPortal);
   const [salvando, setSalvando] = useState(false);
@@ -48,7 +42,12 @@ export function AppClienteAcesso({
           {local ? "Habilitado" : "Desabilitado"}
         </Badge>
       </div>
-      <Button size="sm" variant={local ? "outline" : "default"} disabled={salvando} onClick={alternar}>
+      <Button
+        size="sm"
+        variant={local ? "outline" : "default"}
+        disabled={salvando}
+        onClick={alternar}
+      >
         {salvando ? (
           <Loader2 className="mr-2 size-4 animate-spin" />
         ) : local ? (

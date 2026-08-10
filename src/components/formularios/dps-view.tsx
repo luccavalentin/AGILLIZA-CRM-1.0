@@ -90,8 +90,8 @@ export function DpsView() {
             DPS · Declaração Pessoal de Saúde
           </h1>
           <p className="text-sm text-muted-foreground">
-            Escolha como deseja gerar a declaração de saúde do proponente. Em qualquer opção
-            você pode editar todos os campos e marcar as respostas na tela antes de imprimir.
+            Escolha como deseja gerar a declaração de saúde do proponente. Em qualquer opção você
+            pode editar todos os campos e marcar as respostas na tela antes de imprimir.
           </p>
         </div>
       </div>
@@ -244,13 +244,7 @@ function ClientePicker({ onSelecionar }: { onSelecionar: (p: Proponente) => void
 type Resposta = "sim" | "nao" | null;
 
 /** Toggle clicável de Sim/Não que também imprime como caixinhas marcadas. */
-function SimNao({
-  valor,
-  onChange,
-}: {
-  valor: Resposta;
-  onChange: (v: Resposta) => void;
-}) {
+function SimNao({ valor, onChange }: { valor: Resposta; onChange: (v: Resposta) => void }) {
   return (
     <div className="dps-simnao">
       {(["sim", "nao"] as const).map((op) => {
@@ -352,7 +346,12 @@ function DpsDocumento({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={limparRespostas} title="Limpar marcações Sim/Não">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={limparRespostas}
+            title="Limpar marcações Sim/Não"
+          >
             <Eraser className="mr-2 h-4 w-4" />
             Limpar marcações
           </Button>
@@ -425,7 +424,10 @@ function DpsDocumento({
                           <p className="dps-q-text">
                             <b>{s.letra})</b> {s.texto}
                           </p>
-                          <SimNao valor={respostas[chave] ?? null} onChange={(v) => marcar(chave, v)} />
+                          <SimNao
+                            valor={respostas[chave] ?? null}
+                            onChange={(v) => marcar(chave, v)}
+                          />
                         </div>
                         {p.numero === 4 && (
                           <EsclarecaCampo
@@ -547,13 +549,7 @@ function CampoEditavel({
   );
 }
 
-function EsclarecaCampo({
-  valor,
-  onChange,
-}: {
-  valor: string;
-  onChange: (v: string) => void;
-}) {
+function EsclarecaCampo({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
   return (
     <div className="dps-esclareca">
       <span className="dps-esclareca-label">Esclareça:</span>

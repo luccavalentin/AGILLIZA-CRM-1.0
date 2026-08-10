@@ -3,14 +3,12 @@ import {
   LayoutDashboard,
   Users,
   KanbanSquare,
-  
   Calculator,
   FileText,
   FileSignature,
   ListChecks,
   FolderOpen,
   Wallet,
-  
   BarChart3,
   UserCog,
   SlidersHorizontal,
@@ -27,11 +25,9 @@ import {
   Inbox,
   CalendarDays,
   Gauge,
-  
   Building2,
   ShoppingCart,
   MessagesSquare,
-  
   Landmark,
   Cpu,
   ClipboardList,
@@ -573,7 +569,6 @@ export const navInterno: NavGroup[] = [
         ],
       },
 
-
       {
         label: "Parâmetros",
         icon: Building2,
@@ -601,9 +596,6 @@ export const navInterno: NavGroup[] = [
       },
     ],
   },
-
-
-
 
   {
     id: "conta",

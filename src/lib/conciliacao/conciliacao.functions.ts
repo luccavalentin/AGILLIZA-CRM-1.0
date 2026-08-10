@@ -1,11 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type {
-  ConciliacaoItem,
-  ConciliacaoLote,
-  ResumoBanco,
-} from "@/lib/conciliacao/tipos";
+import type { ConciliacaoItem, ConciliacaoLote, ResumoBanco } from "@/lib/conciliacao/tipos";
 
 /** Processa um arquivo já lido no navegador e grava o lote conciliado. */
 export const processarConciliacao = createServerFn({ method: "POST" })
@@ -47,7 +43,11 @@ export const listarLotesConciliacao = createServerFn({ method: "GET" })
     z
       .object({
         banco: z.string().trim().max(120).optional().nullable(),
-        periodo: z.string().regex(/^\d{4}-\d{2}$/).optional().nullable(),
+        periodo: z
+          .string()
+          .regex(/^\d{4}-\d{2}$/)
+          .optional()
+          .nullable(),
       })
       .default({})
       .parse(data ?? {}),
@@ -70,7 +70,13 @@ export const resumoConciliacao = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
-      .object({ periodo: z.string().regex(/^\d{4}-\d{2}$/).optional().nullable() })
+      .object({
+        periodo: z
+          .string()
+          .regex(/^\d{4}-\d{2}$/)
+          .optional()
+          .nullable(),
+      })
       .default({})
       .parse(data ?? {}),
   )

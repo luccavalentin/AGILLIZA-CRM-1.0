@@ -74,7 +74,6 @@ const DARK: PdfPalette = {
   dark: true,
 };
 
-
 /** Devolve a paleta do documento conforme o tema ativo do sistema. */
 export function getPdfPalette(): PdfPalette {
   return getTheme() === "dark" ? DARK : LIGHT;

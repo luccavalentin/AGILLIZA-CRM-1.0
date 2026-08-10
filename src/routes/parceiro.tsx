@@ -75,7 +75,7 @@ function PortalParceiro() {
       }
       // Salva o e-mail para habilitar biometria futura
       localStorage.setItem("last_logged_in_email", email);
-      
+
       await queryClient.invalidateQueries({ queryKey: ["minha-sessao"] });
       toast.success("Bem-vindo(a) de volta.");
     } catch {
@@ -101,7 +101,6 @@ function PortalParceiro() {
     );
   }
 
-
   return (
     <AuthSplitLayout
       portalNome="Portal do Parceiro"
@@ -114,8 +113,6 @@ function PortalParceiro() {
         { titulo: "Comissões", descricao: "Acompanhe seus repasses e recebíveis." },
       ]}
     >
-
-
       <form onSubmit={entrar} className="mt-6 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="p-email">E-mail</Label>
@@ -134,7 +131,7 @@ function PortalParceiro() {
         <Button type="submit" className="w-full" disabled={carregando}>
           {carregando ? "Entrando…" : "Entrar"}
         </Button>
-        <BiometricAuth 
+        <BiometricAuth
           onSuccess={(email) => console.log("Biometria parceiro:", email)}
           disabled={carregando}
         />

@@ -9,7 +9,11 @@ import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarPropostas, moverStatusProposta, listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
+import {
+  listarPropostas,
+  moverStatusProposta,
+  listarResponsaveisEquipe,
+} from "@/lib/propostas/propostas.functions";
 import { listarParceiros } from "@/lib/crm/parceiros.functions";
 import { statusProposta } from "@/components/propostas/status";
 import {
@@ -113,8 +117,6 @@ function tempoNaEtapa(iso: string): string {
   return `${Math.floor(dias / 30)}m`;
 }
 
-
-
 function Pagina() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -129,12 +131,10 @@ function Pagina() {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
-
   const [respFiltro, setRespFiltro] = useState("todos");
   const [corretorFiltro, setCorretorFiltro] = useState("todos");
   const [imobFiltro, setImobFiltro] = useState("todos");
   const [comercialFiltro, setComercialFiltro] = useState("todos");
-
 
   // Busca ao vivo: filtra conforme o usuário digita (com debounce).
   useEffect(() => {
@@ -143,7 +143,18 @@ function Pagina() {
   }, [q]);
 
   const { data } = useQuery({
-    queryKey: ["propostas", "kanban", escopo, busca, dataInicio, dataFim, respFiltro, corretorFiltro, imobFiltro, comercialFiltro],
+    queryKey: [
+      "propostas",
+      "kanban",
+      escopo,
+      busca,
+      dataInicio,
+      dataFim,
+      respFiltro,
+      corretorFiltro,
+      imobFiltro,
+      comercialFiltro,
+    ],
     queryFn: () =>
       listarPropostas({
         data: {
@@ -161,7 +172,6 @@ function Pagina() {
       }),
   });
 
-
   // Comunicação em tempo real com a proposta: qualquer mudança de status/etapa
   // (via ficha, sincronização com o banco ou outro usuário) atualiza o Kanban.
   // Coalescemos rajadas (trigger + update em cascata) numa única invalidação.
@@ -171,11 +181,7 @@ function Pagina() {
     );
     const canal = supabase
       .channel("kanban:propostas")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "propostas" },
-        schedule,
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "propostas" }, schedule)
       .subscribe();
     return () => {
       cancel();
@@ -183,14 +189,11 @@ function Pagina() {
     };
   }, [qc]);
 
-
-
   function limparFiltros() {
     setQ("");
     setBusca("");
     setDataInicio("");
     setDataFim("");
-
 
     setEscopo("minhas");
     setRespFiltro("todos");
@@ -198,7 +201,6 @@ function Pagina() {
     setImobFiltro("todos");
     setComercialFiltro("todos");
   }
-
 
   async function soltar(coluna: PropostaStatus) {
     if (!arrastando) return;
@@ -265,9 +267,7 @@ function Pagina() {
     return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [parceirosCadastrados]);
 
-
   const itensFiltrados = itens;
-
 
   // Agrupa uma única vez por coluna, em vez de refiltrar a lista inteira
   // (até 500 itens) para cada uma das colunas a cada render.
@@ -284,8 +284,6 @@ function Pagina() {
     }
     return mapa;
   }, [itensFiltrados]);
-
-
 
   const [pastaAberta, setPastaAberta] = useState<PropostaStatus | null>(null);
   const [buscaPasta, setBuscaPasta] = useState("");
@@ -353,7 +351,9 @@ function Pagina() {
                 <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-primary">
                   Nº banco {nb}
                 </span>
-                <span className="tabular-nums text-muted-foreground">Interno #{c.numero_proposta}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  Interno #{c.numero_proposta}
+                </span>
               </>
             ) : (
               <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
@@ -391,7 +391,14 @@ function Pagina() {
     const q = buscaPasta.trim().toLowerCase();
     if (!q) return todos;
     return todos.filter((c: any) =>
-      [c.nome_cliente, c.cpf_cnpj, c.numero_proposta, c.numero_proposta_banco, c.nome_banco, c.nome_responsavel]
+      [
+        c.nome_cliente,
+        c.cpf_cnpj,
+        c.numero_proposta,
+        c.numero_proposta_banco,
+        c.nome_banco,
+        c.nome_responsavel,
+      ]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q)),
     );
@@ -471,7 +478,11 @@ function Pagina() {
                 className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="todos">Todos</option>
-                {responsaveis.map((r) => <option key={r} value={r}>{r}</option>)}
+                {responsaveis.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
               </select>
             </div>
           )}
@@ -483,7 +494,11 @@ function Pagina() {
               className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="todos">Todos</option>
-              {corretores.map((r) => <option key={r} value={r}>{r}</option>)}
+              {corretores.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
@@ -494,7 +509,11 @@ function Pagina() {
               className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="todos">Todos</option>
-              {comerciais.map((r) => <option key={r} value={r}>{r}</option>)}
+              {comerciais.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
@@ -505,7 +524,11 @@ function Pagina() {
               className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="todos">Todos</option>
-              {imobiliarias.map((r) => <option key={r} value={r}>{r}</option>)}
+              {imobiliarias.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
           </div>
           <Button variant="ghost" className="h-11 rounded-xl" onClick={limparFiltros}>
@@ -513,12 +536,12 @@ function Pagina() {
           </Button>
         </div>
       </Card>
-      
+
       {/* KPI - Propostas em Andamento */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {(() => {
           const stats = useMemo(() => {
-            const ativos = itens.filter(i => {
+            const ativos = itens.filter((i) => {
               const s = i.status as PropostaStatus;
               // Lógica: Se o crédito está em coleta de documentos até analise juridica está em andamento.
               const emAndamento = [
@@ -534,14 +557,14 @@ function Pagina() {
                 "envio_documentos_banco",
                 "vistoria_agendamento",
                 "vistoria_concluida",
-                "emissao_contrato"
+                "emissao_contrato",
               ].includes(s);
               return emAndamento;
             });
 
             return {
               count: ativos.length,
-              total: ativos.reduce((acc, i) => acc + (Number(i.valor_financiamento) || 0), 0)
+              total: ativos.reduce((acc, i) => acc + (Number(i.valor_financiamento) || 0), 0),
             };
           }, [itens]);
 
@@ -551,19 +574,20 @@ function Pagina() {
                 <Clock className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Propostas em Andamento</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Propostas em Andamento
+                </p>
                 <div className="flex items-baseline gap-2">
                   <h3 className="text-2xl font-bold text-foreground">{stats.count}</h3>
-                  <span className="text-sm font-medium text-muted-foreground">{formatBRL(stats.total)}</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {formatBRL(stats.total)}
+                  </span>
                 </div>
-                
               </div>
             </Card>
           );
         })()}
       </div>
-
-
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {COLUNAS.map((col, idx) => {
@@ -613,12 +637,13 @@ function Pagina() {
                   <div className="flex flex-col gap-2">
                     {visiveis.map((c) => renderCard(c, cfg))}
                     {cards.length === 0 && (
-                      <p className="py-8 text-center text-xs text-muted-foreground">Nenhuma proposta nesta etapa</p>
+                      <p className="py-8 text-center text-xs text-muted-foreground">
+                        Nenhuma proposta nesta etapa
+                      </p>
                     )}
                   </div>
                 </div>
               </div>
-
             </div>
           );
         })}
@@ -637,7 +662,7 @@ function Pagina() {
                 <span className="inline-block h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]" />
                 {pastaAberta ? statusProposta(pastaAberta).label : ""}
                 <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  {(pastaAberta ? cardsPorColuna.get(pastaAberta) ?? [] : []).length} propostas
+                  {(pastaAberta ? (cardsPorColuna.get(pastaAberta) ?? []) : []).length} propostas
                 </span>
               </DialogTitle>
             </DialogHeader>

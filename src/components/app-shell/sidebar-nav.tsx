@@ -64,7 +64,6 @@ function itemAtivo(item: NavItem, melhor: string | null, pasta?: string): boolea
   return false;
 }
 
-
 interface SidebarProps {
   nav: NavGroup[];
   onNavigate?: () => void;
@@ -260,10 +259,7 @@ export function SidebarSkeleton() {
   return (
     <div className="flex flex-col gap-1.5 px-3 py-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={i}
-          className="h-9 animate-pulse rounded-md bg-sidebar-foreground/10"
-        />
+        <div key={i} className="h-9 animate-pulse rounded-md bg-sidebar-foreground/10" />
       ))}
     </div>
   );

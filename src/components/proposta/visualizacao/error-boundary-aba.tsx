@@ -35,18 +35,19 @@ export class ErrorBoundaryAba extends React.Component<ErrorBoundaryProps, ErrorB
             <h3 className="font-semibold">Erro na aba {this.props.nomeAba}</h3>
           </div>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Ocorreu um erro ao renderizar esta seção da proposta. As outras abas continuam funcionando.
+            Ocorreu um erro ao renderizar esta seção da proposta. As outras abas continuam
+            funcionando.
           </p>
           <div className="flex gap-2 justify-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => this.setState({ hasError: false, error: null })}
             >
               Tentar novamente
             </Button>
           </div>
-          {process.env.NODE_ENV === 'development' && (
+          {process.env.NODE_ENV === "development" && (
             <pre className="mt-4 p-3 bg-black/5 rounded text-[10px] text-left overflow-auto max-h-[150px]">
               {this.state.error?.message}
             </pre>

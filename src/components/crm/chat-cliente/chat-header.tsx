@@ -8,10 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import {
-  listarEstadoChatDoUsuario,
-  fixarConversa,
-} from "@/lib/chats/gestao.functions";
+import { listarEstadoChatDoUsuario, fixarConversa } from "@/lib/chats/gestao.functions";
 import { iniciais, type ChatClienteInfo } from "./utils";
 
 export function ChatClienteHeader({
@@ -57,8 +54,7 @@ export function ChatClienteHeader({
       qc.invalidateQueries({ queryKey: ["chat-estado-usuario"] });
       qc.invalidateQueries({ queryKey: ["conversas-cliente"] });
     },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Não foi possível favoritar."),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível favoritar."),
   });
 
   return (
@@ -106,9 +102,7 @@ export function ChatClienteHeader({
               size="icon"
               className={cn(
                 "size-9 shrink-0 rounded-lg",
-                fixado
-                  ? "text-amber-500 hover:text-amber-500"
-                  : "text-muted-foreground",
+                fixado ? "text-amber-500 hover:text-amber-500" : "text-muted-foreground",
               )}
               onClick={() => mFixar.mutate()}
               disabled={mFixar.isPending}

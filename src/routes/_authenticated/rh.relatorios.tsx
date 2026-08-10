@@ -30,15 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/rh/relatorios")({
@@ -47,8 +39,7 @@ export const Route = createFileRoute("/_authenticated/rh/relatorios")({
   component: RelatoriosRhPage,
 });
 
-const brl = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const dataBR = (iso?: string | null) =>
   iso ? new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR") : "—";
 
@@ -138,7 +129,10 @@ function RelatoriosRhPage() {
         "Períodos aquisitivos apurados a partir da data de admissão de cada colaborador.",
         meta,
         [
-          { label: "Com férias vencidas", valor: String(ferias.data?.resumo.comFeriasVencidas ?? 0) },
+          {
+            label: "Com férias vencidas",
+            valor: String(ferias.data?.resumo.comFeriasVencidas ?? 0),
+          },
           { label: "Vencem em 90 dias", valor: String(ferias.data?.resumo.aVencer90 ?? 0) },
           { label: "Saldo de dias", valor: String(ferias.data?.resumo.diasSaldoTotal ?? 0) },
           { label: "Provisão", valor: brl(ferias.data?.resumo.provisaoTotal ?? 0) },
@@ -260,14 +254,20 @@ function RelatoriosRhPage() {
               <TableBody>
                 {ferias.isLoading && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Carregando…
                     </TableCell>
                   </TableRow>
                 )}
                 {!ferias.isLoading && criticos.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Nenhuma pendência de férias no momento.
                     </TableCell>
                   </TableRow>
@@ -317,18 +317,41 @@ function RelatoriosRhPage() {
         acima e nos relatórios detalhados abaixo.
       */}
 
-
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Relatórios detalhados</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-2">
-          <RelLink to="/rh/funcionarios" titulo="Quadro de funcionários" desc="Lista completa com filtros por cargo, departamento e status." />
-          <RelLink to="/rh/ferias" titulo="Controle de férias (CLT)" desc="Períodos aquisitivos, saldos e prazos de concessão." />
-          <RelLink to="/rh/faltas-ocorrencias" titulo="Faltas e ocorrências" desc="Registros por competência e funcionário." />
-          <RelLink to="/rh/previa-folha" titulo="Prévia da folha" desc="Consolidado mensal com fechamento e envio ao financeiro." />
-          <RelLink to="/rh/holerites" titulo="Holerites" desc="Geração e histórico de recibos de pagamento." />
-          <RelLink to="/rh/adiantamentos" titulo="Adiantamentos e descontos" desc="Lançamentos por competência." />
+          <RelLink
+            to="/rh/funcionarios"
+            titulo="Quadro de funcionários"
+            desc="Lista completa com filtros por cargo, departamento e status."
+          />
+          <RelLink
+            to="/rh/ferias"
+            titulo="Controle de férias (CLT)"
+            desc="Períodos aquisitivos, saldos e prazos de concessão."
+          />
+          <RelLink
+            to="/rh/faltas-ocorrencias"
+            titulo="Faltas e ocorrências"
+            desc="Registros por competência e funcionário."
+          />
+          <RelLink
+            to="/rh/previa-folha"
+            titulo="Prévia da folha"
+            desc="Consolidado mensal com fechamento e envio ao financeiro."
+          />
+          <RelLink
+            to="/rh/holerites"
+            titulo="Holerites"
+            desc="Geração e histórico de recibos de pagamento."
+          />
+          <RelLink
+            to="/rh/adiantamentos"
+            titulo="Adiantamentos e descontos"
+            desc="Lançamentos por competência."
+          />
         </CardContent>
       </Card>
     </div>
@@ -385,9 +408,7 @@ function RelLink({ to, titulo, desc }: { to: string; titulo: string; desc: strin
     >
       <BarChart3 className="mt-0.5 h-4 w-4 text-primary" />
       <div className="min-w-0">
-        <div className="text-sm font-medium text-foreground group-hover:text-primary">
-          {titulo}
-        </div>
+        <div className="text-sm font-medium text-foreground group-hover:text-primary">{titulo}</div>
         <div className="text-xs text-muted-foreground">{desc}</div>
       </div>
     </Link>

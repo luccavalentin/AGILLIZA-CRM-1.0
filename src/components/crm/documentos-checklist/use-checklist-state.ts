@@ -3,10 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  anexarDocumento,
-  salvarChecklist,
-} from "@/lib/crm/clientes.functions";
+import { anexarDocumento, salvarChecklist } from "@/lib/crm/clientes.functions";
 import type { Categoria, GrupoChecklist } from "./types";
 
 type Dados = { cliente?: { documentos_checklist?: unknown; utiliza_fgts?: boolean | null } | null };
@@ -243,11 +240,7 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
     await persistir(check, v);
   }
 
-  async function enviar(
-    e: React.ChangeEvent<HTMLInputElement>,
-    cat: Categoria,
-    key: string,
-  ) {
+  async function enviar(e: React.ChangeEvent<HTMLInputElement>, cat: Categoria, key: string) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -255,9 +248,7 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
     setSubindo(key);
     try {
       const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
-      const { error: upErr } = await supabase.storage
-        .from("cliente-documentos")
-        .upload(path, file);
+      const { error: upErr } = await supabase.storage.from("cliente-documentos").upload(path, file);
       if (upErr) throw upErr;
       await anexar({
         data: {

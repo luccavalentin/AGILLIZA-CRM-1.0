@@ -7,18 +7,23 @@
 import { Fragment } from "react";
 
 function inline(texto: string, key: string) {
-  const partes = texto.split(/(!\[[^\]]*\]\([^)]+\)|\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g).filter(Boolean);
+  const partes = texto
+    .split(/(!\[[^\]]*\]\([^)]+\)|\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g)
+    .filter(Boolean);
   return partes.map((p, i) => {
     const k = `${key}-${i}`;
-    
+
     // Suporte a Imagens Markdown ![alt](url)
     const imgMatch = p.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
     if (imgMatch) {
       return (
-        <div key={k} className="my-4 overflow-hidden rounded-2xl border border-primary/10 shadow-lg">
-          <img 
-            src={imgMatch[2]} 
-            alt={imgMatch[1] || "Imagem gerada pela IA"} 
+        <div
+          key={k}
+          className="my-4 overflow-hidden rounded-2xl border border-primary/10 shadow-lg"
+        >
+          <img
+            src={imgMatch[2]}
+            alt={imgMatch[1] || "Imagem gerada pela IA"}
             className="h-auto w-full object-cover transition-transform hover:scale-[1.02]"
             loading="lazy"
           />

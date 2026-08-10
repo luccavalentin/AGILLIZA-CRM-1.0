@@ -47,12 +47,19 @@ export const Route = createFileRoute("/cliente/acompanhar-minha-proposta")({
 
 function fmtBRL(v: number | null | undefined) {
   if (v == null) return "—";
-  return v.toLocaleString("pt-BR", {  style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  return v.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  });
 }
 
 function fmtData(iso: string | null | undefined, opts?: Intl.DateTimeFormatOptions) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("pt-BR", opts ?? { day: "2-digit", month: "2-digit", year: "numeric" });
+  return new Date(iso).toLocaleDateString(
+    "pt-BR",
+    opts ?? { day: "2-digit", month: "2-digit", year: "numeric" },
+  );
 }
 
 function fmtDataHora(iso: string | null | undefined) {
@@ -60,9 +67,13 @@ function fmtDataHora(iso: string | null | undefined) {
   const d = new Date(iso);
   const hoje = new Date();
   const isHoje = d.toDateString() === hoje.toDateString();
-  const hora = d.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",   hour: "2-digit", minute: "2-digit" });
+  const hora = d.toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   if (isHoje) return `Hoje, ${hora}`;
-  return `${d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   day: "2-digit", month: "2-digit" })}, ${hora}`;
+  return `${d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })}, ${hora}`;
 }
 
 function diasNaEtapa(iso: string | null) {
@@ -89,7 +100,15 @@ function Acompanhar() {
     );
   }
 
-  const { processo, etapas, resumo, historico, evolucao, documentos_pendentes, prazo_proxima_etapa } = data;
+  const {
+    processo,
+    etapas,
+    resumo,
+    historico,
+    evolucao,
+    documentos_pendentes,
+    prazo_proxima_etapa,
+  } = data;
   const total = processo.total || etapas.length || 1;
   const progresso = total > 0 ? Math.round((processo.ordem_atual / total) * 100) : 0;
   const dias = diasNaEtapa(processo.ultima_atualizacao);
@@ -101,16 +120,28 @@ function Acompanhar() {
   const heroData = [{ name: "p", value: progresso, fill: "#ffffff" }];
   const panoramaData = [
     { name: "Concluído", value: concluidas, cor: "var(--primary)" },
-    { name: "Em andamento", value: emAndamento, cor: "color-mix(in oklab, var(--primary) 55%, white)" },
+    {
+      name: "Em andamento",
+      value: emAndamento,
+      cor: "color-mix(in oklab, var(--primary) 55%, white)",
+    },
     { name: "Pendente", value: pendentes, cor: "color-mix(in oklab, var(--primary) 15%, white)" },
   ].filter((d) => d.value > 0);
   const distribuicao = [
     { name: "Concluídas", value: concluidas, fill: "var(--primary)" },
-    { name: "Em andamento", value: emAndamento, fill: "color-mix(in oklab, var(--primary) 55%, white)" },
+    {
+      name: "Em andamento",
+      value: emAndamento,
+      fill: "color-mix(in oklab, var(--primary) 55%, white)",
+    },
     { name: "Pendentes", value: pendentes, fill: "color-mix(in oklab, var(--primary) 20%, white)" },
   ];
   const evolucaoData = evolucao.map((e) => ({
-    dia: new Date(e.dia).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   day: "2-digit", month: "2-digit" }),
+    dia: new Date(e.dia).toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+    }),
     percentual: e.percentual,
   }));
 
@@ -142,9 +173,19 @@ function Acompanhar() {
               </div>
               <div className="relative h-14 w-14 shrink-0 sm:h-16 sm:w-16">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart innerRadius="72%" outerRadius="100%" data={heroData} startAngle={90} endAngle={-270}>
+                  <RadialBarChart
+                    innerRadius="72%"
+                    outerRadius="100%"
+                    data={heroData}
+                    startAngle={90}
+                    endAngle={-270}
+                  >
                     <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                    <RadialBar background={{ fill: "rgba(255,255,255,0.18)" }} dataKey="value" cornerRadius={20} />
+                    <RadialBar
+                      background={{ fill: "rgba(255,255,255,0.18)" }}
+                      dataKey="value"
+                      cornerRadius={20}
+                    />
                   </RadialBarChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -159,7 +200,9 @@ function Acompanhar() {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[9px] font-semibold uppercase tracking-wider opacity-80 sm:text-[10px]">Etapa atual</span>
+                  <span className="text-[9px] font-semibold uppercase tracking-wider opacity-80 sm:text-[10px]">
+                    Etapa atual
+                  </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
                     {dias === 0 ? "Hoje" : dias != null ? `Há ${dias}d` : "Aguardando"}
@@ -172,7 +215,9 @@ function Acompanhar() {
                   {processo.etapa_atual ?? "Processo em andamento"}
                 </p>
                 {processo.descricao && (
-                  <p className="mt-0.5 line-clamp-2 text-[11px] opacity-85 sm:text-xs">{processo.descricao}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[11px] opacity-85 sm:text-xs">
+                    {processo.descricao}
+                  </p>
                 )}
               </div>
             </div>
@@ -191,19 +236,32 @@ function Acompanhar() {
                           className={cn(
                             "flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ring-2 transition sm:h-8 sm:w-8 sm:text-xs",
                             done && "bg-white text-primary ring-white",
-                            curr && "bg-red-500 text-white ring-red-300 shadow-lg shadow-red-500/50 animate-pulse",
+                            curr &&
+                              "bg-red-500 text-white ring-red-300 shadow-lg shadow-red-500/50 animate-pulse",
                             !done && !curr && "bg-white/10 text-white/70 ring-white/30",
                           )}
                         >
-                          {done ? <Check className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={3} /> : etapa.ordem}
+                          {done ? (
+                            <Check className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={3} />
+                          ) : (
+                            etapa.ordem
+                          )}
                         </span>
-                        <span className={cn("mt-1 line-clamp-2 text-[9px] leading-tight sm:text-[10px]", curr ? "font-semibold" : "opacity-80")}>
+                        <span
+                          className={cn(
+                            "mt-1 line-clamp-2 text-[9px] leading-tight sm:text-[10px]",
+                            curr ? "font-semibold" : "opacity-80",
+                          )}
+                        >
                           {etapa.nome}
                         </span>
                       </div>
                       {!last && (
                         <span
-                          className={cn("mt-3.5 h-0.5 w-3 shrink-0 sm:mt-4 sm:w-4", done ? "bg-white" : "bg-white/25")}
+                          className={cn(
+                            "mt-3.5 h-0.5 w-3 shrink-0 sm:mt-4 sm:w-4",
+                            done ? "bg-white" : "bg-white/25",
+                          )}
                         />
                       )}
                     </li>
@@ -221,14 +279,26 @@ function Acompanhar() {
               <div className="relative aspect-square w-full max-w-[160px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={panoramaData} dataKey="value" nameKey="name" innerRadius="70%" outerRadius="100%" paddingAngle={panoramaData.length > 1 ? 2 : 0} stroke="none">
-                      {panoramaData.map((d) => <Cell key={d.name} fill={d.cor} />)}
+                    <Pie
+                      data={panoramaData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius="70%"
+                      outerRadius="100%"
+                      paddingAngle={panoramaData.length > 1 ? 2 : 0}
+                      stroke="none"
+                    >
+                      {panoramaData.map((d) => (
+                        <Cell key={d.name} fill={d.cor} />
+                      ))}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-xl font-bold text-primary sm:text-2xl">{progresso}%</span>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Concluído</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Concluído
+                  </span>
                 </div>
               </div>
             </div>
@@ -236,13 +306,25 @@ function Acompanhar() {
             <ul className="mt-3 space-y-1.5 text-xs">
               {[
                 { k: "Concluído", v: concluidas, cor: "var(--primary)" },
-                { k: "Em andamento", v: emAndamento, cor: "color-mix(in oklab, var(--primary) 55%, white)" },
-                { k: "Pendente", v: pendentes, cor: "color-mix(in oklab, var(--primary) 20%, white)" },
+                {
+                  k: "Em andamento",
+                  v: emAndamento,
+                  cor: "color-mix(in oklab, var(--primary) 55%, white)",
+                },
+                {
+                  k: "Pendente",
+                  v: pendentes,
+                  cor: "color-mix(in oklab, var(--primary) 20%, white)",
+                },
               ].map((r) => (
                 <li key={r.k} className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full" style={{ background: r.cor }} />
-                  <span className="flex-1 text-foreground">{r.k} ({r.v})</span>
-                  <span className="font-medium text-muted-foreground">{Math.round((r.v / total) * 100)}%</span>
+                  <span className="flex-1 text-foreground">
+                    {r.k} ({r.v})
+                  </span>
+                  <span className="font-medium text-muted-foreground">
+                    {Math.round((r.v / total) * 100)}%
+                  </span>
                 </li>
               ))}
             </ul>
@@ -284,7 +366,11 @@ function Acompanhar() {
                           {e.nome}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {atual ? "Em andamento agora" : i === 0 ? "Próxima etapa" : `Em ${i + 1}º na fila`}
+                          {atual
+                            ? "Em andamento agora"
+                            : i === 0
+                              ? "Próxima etapa"
+                              : `Em ${i + 1}º na fila`}
                         </p>
                       </div>
                     </li>
@@ -297,7 +383,10 @@ function Acompanhar() {
           <ChartCard titulo="Evolução dos últimos dias">
             <div className="h-40 sm:h-44 md:h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={evolucaoData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+                <LineChart
+                  data={evolucaoData}
+                  margin={{ top: 15, right: 15, left: -20, bottom: 0 }}
+                >
                   <XAxis dataKey="dia" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis
                     tick={{ fontSize: 10 }}
@@ -308,8 +397,19 @@ function Acompanhar() {
                     tickLine={false}
                     tickFormatter={(v) => `${v}%`}
                   />
-                  <RTooltip formatter={(v: any) => [`${v}%`, "Progresso"]} labelStyle={{ fontSize: 11 }} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                  <Line type="monotone" dataKey="percentual" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--primary)" }} activeDot={{ r: 5 }} />
+                  <RTooltip
+                    formatter={(v: any) => [`${v}%`, "Progresso"]}
+                    labelStyle={{ fontSize: 11 }}
+                    contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="percentual"
+                    stroke="var(--primary)"
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: "var(--primary)" }}
+                    activeDot={{ r: 5 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -318,11 +418,39 @@ function Acompanhar() {
 
         {/* STAT CARDS BOTTOM */}
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-5">
-          <MiniStat icon={ClipboardCheck} valor={String(concluidas)} label="Etapas concluídas" hint={`${Math.round((concluidas / total) * 100)}% do processo`} />
-          <MiniStat icon={ListChecks} valor={String(restantes)} label="Etapas restantes" hint={`${Math.round((restantes / total) * 100)}% do processo`} />
-          <MiniStat icon={FileText} valor={String(documentos_pendentes)} label="Documentos pendentes" linkLabel={documentos_pendentes ? "Ver documentos" : "Tudo em dia"} to="/cliente/chat" />
-          <MiniStat icon={Calendar} valor={`Até ${fmtData(prazo_proxima_etapa, { day: "2-digit", month: "2-digit", year: "numeric" })}`} label="Prazo estimado" hint="Para próxima etapa" small />
-          <MiniStat icon={Clock} valor={fmtDataHora(processo.ultima_atualizacao)} label="Última atualização" hint={processo.etapa_atual ?? undefined} small />
+          <MiniStat
+            icon={ClipboardCheck}
+            valor={String(concluidas)}
+            label="Etapas concluídas"
+            hint={`${Math.round((concluidas / total) * 100)}% do processo`}
+          />
+          <MiniStat
+            icon={ListChecks}
+            valor={String(restantes)}
+            label="Etapas restantes"
+            hint={`${Math.round((restantes / total) * 100)}% do processo`}
+          />
+          <MiniStat
+            icon={FileText}
+            valor={String(documentos_pendentes)}
+            label="Documentos pendentes"
+            linkLabel={documentos_pendentes ? "Ver documentos" : "Tudo em dia"}
+            to="/cliente/chat"
+          />
+          <MiniStat
+            icon={Calendar}
+            valor={`Até ${fmtData(prazo_proxima_etapa, { day: "2-digit", month: "2-digit", year: "numeric" })}`}
+            label="Prazo estimado"
+            hint="Para próxima etapa"
+            small
+          />
+          <MiniStat
+            icon={Clock}
+            valor={fmtDataHora(processo.ultima_atualizacao)}
+            label="Última atualização"
+            hint={processo.etapa_atual ?? undefined}
+            small
+          />
         </div>
       </div>
 
@@ -332,15 +460,31 @@ function Acompanhar() {
           <CardContent className="p-5">
             <p className="mb-3 text-sm font-semibold text-foreground">Resumo do status</p>
             <dl className="space-y-2.5 text-sm">
-              <ResumoLinha icon={FileText} label="Nº da proposta" value={resumo?.numero_proposta ?? "—"} />
+              <ResumoLinha
+                icon={FileText}
+                label="Nº da proposta"
+                value={resumo?.numero_proposta ?? "—"}
+              />
               <ResumoLinha
                 icon={Building2}
                 label="Banco em análise"
                 value={resumo?.banco ? <BancoChip nome={resumo.banco} /> : "—"}
               />
-              <ResumoLinha icon={Home} label="Valor do imóvel" value={fmtBRL(resumo?.valor_imovel)} />
-              <ResumoLinha icon={DollarSign} label="Valor solicitado" value={fmtBRL(resumo?.valor_solicitado)} />
-              <ResumoLinha icon={Clock} label="Prazo do financiamento" value={resumo?.prazo ? `${resumo.prazo} meses` : "—"} />
+              <ResumoLinha
+                icon={Home}
+                label="Valor do imóvel"
+                value={fmtBRL(resumo?.valor_imovel)}
+              />
+              <ResumoLinha
+                icon={DollarSign}
+                label="Valor solicitado"
+                value={fmtBRL(resumo?.valor_solicitado)}
+              />
+              <ResumoLinha
+                icon={Clock}
+                label="Prazo do financiamento"
+                value={resumo?.prazo ? `${resumo.prazo} meses` : "—"}
+              />
               <ResumoLinha
                 icon={User}
                 label="Responsável"
@@ -351,18 +495,26 @@ function Acompanhar() {
           </CardContent>
         </Card>
 
-
         <Card className="border-border/70 shadow-sm">
           <CardContent className="space-y-2 p-5">
             <p className="mb-2 text-sm font-semibold text-foreground">Próximas ações</p>
             <Button asChild className="w-full justify-start" size="sm">
-              <Link to="/cliente/chat"><Upload className="mr-1.5 h-4 w-4" />Enviar documentos</Link>
+              <Link to="/cliente/chat">
+                <Upload className="mr-1.5 h-4 w-4" />
+                Enviar documentos
+              </Link>
             </Button>
             <Button asChild variant="outline" size="sm" className="w-full justify-start">
-              <Link to="/cliente/chat"><Headphones className="mr-1.5 h-4 w-4" />Falar com especialista</Link>
+              <Link to="/cliente/chat">
+                <Headphones className="mr-1.5 h-4 w-4" />
+                Falar com especialista
+              </Link>
             </Button>
             <Button asChild variant="outline" size="sm" className="w-full justify-start">
-              <Link to="/cliente/visao-geral"><Eye className="mr-1.5 h-4 w-4" />Ver visão geral</Link>
+              <Link to="/cliente/visao-geral">
+                <Eye className="mr-1.5 h-4 w-4" />
+                Ver visão geral
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -406,14 +558,22 @@ function MiniStat({
           <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </span>
         <div className="min-w-0">
-          <p className={cn("truncate font-bold text-foreground", small ? "text-xs sm:text-sm" : "text-lg leading-tight sm:text-2xl")}>
+          <p
+            className={cn(
+              "truncate font-bold text-foreground",
+              small ? "text-xs sm:text-sm" : "text-lg leading-tight sm:text-2xl",
+            )}
+          >
             {valor}
           </p>
 
           <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
           {hint && <p className="mt-0.5 truncate text-[11px] text-muted-foreground/80">{hint}</p>}
           {linkLabel && to && (
-            <Link to={to} className="mt-0.5 inline-block truncate text-[11px] font-medium text-primary hover:underline">
+            <Link
+              to={to}
+              className="mt-0.5 inline-block truncate text-[11px] font-medium text-primary hover:underline"
+            >
               {linkLabel}
             </Link>
           )}

@@ -67,8 +67,7 @@ export const Route = createFileRoute("/_authenticated/admin/consultor-ia-base")(
       { property: "og:title", content: "Biblioteca de conhecimento — Agilliza" },
       {
         property: "og:description",
-        content:
-          "Pesquise por palavra-chave e consulte verbetes curados de crédito imobiliário.",
+        content: "Pesquise por palavra-chave e consulte verbetes curados de crédito imobiliário.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -100,8 +99,36 @@ const VAZIO: Rascunho = {
 type Ordem = "relevancia" | "recentes" | "antigos" | "az";
 
 const STOP = new Set([
-  "a","o","as","os","de","da","do","das","dos","e","em","um","uma","para","por","com","que",
-  "qual","quais","como","quando","onde","no","na","nos","nas","ao","aos","se","sobre",
+  "a",
+  "o",
+  "as",
+  "os",
+  "de",
+  "da",
+  "do",
+  "das",
+  "dos",
+  "e",
+  "em",
+  "um",
+  "uma",
+  "para",
+  "por",
+  "com",
+  "que",
+  "qual",
+  "quais",
+  "como",
+  "quando",
+  "onde",
+  "no",
+  "na",
+  "nos",
+  "nas",
+  "ao",
+  "aos",
+  "se",
+  "sobre",
 ]);
 
 function normalizar(t: string) {
@@ -149,7 +176,10 @@ function trechoDestaque(it: ItemBase, termos: string[]) {
   const plano = textoPlano(it.conteudo);
   if (!termos.length) return plano.slice(0, 230);
   const alvo = normalizar(plano);
-  const pos = termos.map((t) => alvo.indexOf(t)).filter((p) => p >= 0).sort((a, b) => a - b)[0];
+  const pos = termos
+    .map((t) => alvo.indexOf(t))
+    .filter((p) => p >= 0)
+    .sort((a, b) => a - b)[0];
   if (pos === undefined) return plano.slice(0, 230);
   const ini = Math.max(0, pos - 90);
   return `${ini > 0 ? "… " : ""}${plano.slice(ini, ini + 240)}…`;
@@ -195,7 +225,10 @@ function BibliotecaPage() {
           categoria: r.categoria,
           titulo: r.titulo.trim(),
           conteudo: r.conteudo.trim(),
-          tags: r.tags.split(",").map((t) => t.trim()).filter(Boolean),
+          tags: r.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
           ativo: r.ativo,
           global: r.global,
         },
@@ -314,8 +347,8 @@ function BibliotecaPage() {
                 Conhecimento em crédito imobiliário
               </h1>
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                Pesquise por palavra-chave e encontre verbetes curados — ordenados por
-                relevância ou data. É esse acervo que fundamenta a inteligência moderna.
+                Pesquise por palavra-chave e encontre verbetes curados — ordenados por relevância ou
+                data. É esse acervo que fundamenta a inteligência moderna.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -387,7 +420,6 @@ function BibliotecaPage() {
         </div>
       </section>
 
-
       <div className="grid gap-5 lg:grid-cols-[248px_minmax(0,1fr)]">
         {/* Estantes / facetas */}
         <aside className="space-y-5 lg:sticky lg:top-4 lg:self-start">
@@ -415,9 +447,7 @@ function BibliotecaPage() {
                   onClick={() => setCategoria(c)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",
-                    categoria === c
-                      ? "bg-primary/10 font-medium text-primary"
-                      : "hover:bg-muted",
+                    categoria === c ? "bg-primary/10 font-medium text-primary" : "hover:bg-muted",
                   )}
                 >
                   <span className="truncate">{c.replace(/_/g, " ")}</span>
@@ -454,9 +484,7 @@ function BibliotecaPage() {
                         key={t}
                         type="button"
                         onClick={() =>
-                          setTagsSel((prev) =>
-                            on ? prev.filter((x) => x !== t) : [...prev, t],
-                          )
+                          setTagsSel((prev) => (on ? prev.filter((x) => x !== t) : [...prev, t]))
                         }
                         className={cn(
                           "rounded-full border px-2.5 py-1 text-[11px] transition-colors",
@@ -543,9 +571,7 @@ function BibliotecaPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                          <Badge variant="secondary">
-                            {it.categoria.replace(/_/g, " ")}
-                          </Badge>
+                          <Badge variant="secondary">{it.categoria.replace(/_/g, " ")}</Badge>
                           {it.correspondente_id === null ? (
                             <Badge variant="outline" className="gap-1">
                               <Globe2 className="size-3" /> Global
@@ -630,8 +656,7 @@ function BibliotecaPage() {
                 <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                   <Badge variant="secondary">{lendo.categoria.replace(/_/g, " ")}</Badge>
                   <span className="text-muted-foreground">
-                    Atualizado em {dataCurta(lendo.updated_at)} ·{" "}
-                    {tempoLeitura(lendo.conteudo)} min
+                    Atualizado em {dataCurta(lendo.updated_at)} · {tempoLeitura(lendo.conteudo)} min
                   </span>
                 </div>
                 <DialogTitle className="text-xl leading-snug">{lendo.titulo}</DialogTitle>

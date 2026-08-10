@@ -150,21 +150,20 @@ export function participanteCompleto(e: any): boolean {
  * (`CAMPOS_OBRIGATORIOS_PARTICIPANTE`); aqui só acrescentamos as validações de
  * FORMATO que o formulário consegue fazer (CPF, e-mail, celular).
  *
-  * `tipoRegimeCasamento` e `dataExpedicao` NÃO são obrigatórios pela
-  * documentação e nunca entram nesta lista.
-  */
+ * `tipoRegimeCasamento` e `dataExpedicao` NÃO são obrigatórios pela
+ * documentação e nunca entram nesta lista.
+ */
 export function camposFaltantes(f: ParticipanteForm): Set<string> {
   const faltantes = faltantesEnvolvido(f as any);
   const faltando = new Set(faltantes.map((c) => c.chave));
-  
+
   // Validações de formato (o campo existe, mas o valor não serve).
   if (f.cpf_cnpj && !validarCpfCnpj(f.cpf_cnpj)) faltando.add("cpf_cnpj");
   if (f.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) faltando.add("email");
   if (f.celular && apenasDigitos(f.celular).length < 10) faltando.add("celular");
-  
+
   return faltando;
 }
-
 
 export function mascararCep(raw: string) {
   const d = raw.replace(/\D/g, "").slice(0, 8);

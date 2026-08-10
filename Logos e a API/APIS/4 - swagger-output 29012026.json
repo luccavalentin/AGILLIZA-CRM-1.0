@@ -14,9 +14,7 @@
   "paths": {
     "/auth/token": {
       "post": {
-        "tags": [
-          "Autenticação"
-        ],
+        "tags": ["Autenticação"],
         "description": "",
         "responses": {
           "200": {
@@ -84,9 +82,7 @@
     },
     "/usuarios-parceiros": {
       "get": {
-        "tags": [
-          "Usuários Parceiros"
-        ],
+        "tags": ["Usuários Parceiros"],
         "description": "",
         "responses": {
           "200": {
@@ -149,9 +145,7 @@
     },
     "/oportunidade": {
       "post": {
-        "tags": [
-          "Oportunidade"
-        ],
+        "tags": ["Oportunidade"],
         "description": "",
         "responses": {
           "201": {
@@ -224,9 +218,7 @@
     },
     "/oportunidade/{id}": {
       "put": {
-        "tags": [
-          "Oportunidade"
-        ],
+        "tags": ["Oportunidade"],
         "description": "",
         "parameters": [
           {
@@ -307,9 +299,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Oportunidade"
-        ],
+        "tags": ["Oportunidade"],
         "description": "",
         "parameters": [
           {
@@ -382,9 +372,7 @@
     },
     "/oportunidade/{id}/incluir-proposta-integracao": {
       "post": {
-        "tags": [
-          "Oportunidade"
-        ],
+        "tags": ["Oportunidade"],
         "description": "",
         "parameters": [
           {
@@ -467,9 +455,7 @@
     },
     "/oportunidade/{id}/simulacao": {
       "post": {
-        "tags": [
-          "Simulação"
-        ],
+        "tags": ["Simulação"],
         "description": "",
         "parameters": [
           {
@@ -552,9 +538,7 @@
     },
     "/oportunidade/{id}/simulacao/{idSimulacao}": {
       "put": {
-        "tags": [
-          "Simulação"
-        ],
+        "tags": ["Simulação"],
         "description": "",
         "parameters": [
           {
@@ -645,9 +629,7 @@
     },
     "/oportunidade/{id}/simulacao/{idSimulacao}/integracao": {
       "post": {
-        "tags": [
-          "Simulação"
-        ],
+        "tags": ["Simulação"],
         "description": "",
         "parameters": [
           {
@@ -728,9 +710,7 @@
     },
     "/oportunidade/{id}/incluir-documentos-integracao": {
       "post": {
-        "tags": [
-          "Oportunidade"
-        ],
+        "tags": ["Oportunidade"],
         "description": "",
         "parameters": [
           {
@@ -813,9 +793,7 @@
     },
     "/oportunidade/{id}/participante": {
       "post": {
-        "tags": [
-          "Participante"
-        ],
+        "tags": ["Participante"],
         "description": "",
         "parameters": [
           {
@@ -898,9 +876,7 @@
     },
     "/oportunidade/{idOportunidade}/participante/{id}": {
       "put": {
-        "tags": [
-          "Participante"
-        ],
+        "tags": ["Participante"],
         "description": "",
         "parameters": [
           {
@@ -989,9 +965,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "Participante"
-        ],
+        "tags": ["Participante"],
         "description": "",
         "parameters": [
           {
@@ -1068,9 +1042,7 @@
     },
     "/dominios/bancos": {
       "get": {
-        "tags": [
-          "Domínios"
-        ],
+        "tags": ["Domínios"],
         "description": "",
         "responses": {
           "200": {
@@ -1133,9 +1105,7 @@
     },
     "/dominios/operacoes": {
       "get": {
-        "tags": [
-          "Domínios"
-        ],
+        "tags": ["Domínios"],
         "description": "",
         "responses": {
           "200": {
@@ -1198,9 +1168,7 @@
     },
     "/documento/{id}/upload": {
       "post": {
-        "tags": [
-          "Documentos"
-        ],
+        "tags": ["Documentos"],
         "description": "",
         "parameters": [
           {
@@ -1279,9 +1247,7 @@
     },
     "/oportunidade/{id}/follow-up": {
       "post": {
-        "tags": [
-          "Follow-up"
-        ],
+        "tags": ["Follow-up"],
         "description": "",
         "parameters": [
           {
@@ -3609,11 +3575,7 @@
       },
       "SituacaoIntegracaoDocumento": {
         "type": "string",
-        "enum": [
-          "pending",
-          "success",
-          "error"
-        ]
+        "enum": ["pending", "success", "error"]
       },
       "CreateSimulationRequest": {
         "type": "object",

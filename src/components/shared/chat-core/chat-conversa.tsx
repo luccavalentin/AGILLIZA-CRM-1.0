@@ -66,12 +66,9 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     refetchIntervalInBackground: false,
   });
 
-
   useEffect(() => {
     if (somenteLeitura) return;
-    const temNaoLidas = (mensagens ?? []).some(
-      (m) => m.remetente_tipo !== mineTipo && !m.lida_em,
-    );
+    const temNaoLidas = (mensagens ?? []).some((m) => m.remetente_tipo !== mineTipo && !m.lida_em);
     if (!temNaoLidas) return;
     adapter.marcarLido().catch(() => {});
   }, [adapter, mensagens, mineTipo, somenteLeitura]);
@@ -123,7 +120,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
       await qc.cancelQueries({ queryKey });
       const anterior = qc.getQueryData<ChatMensagem[]>(queryKey);
       const alvo = payload.responde_a
-        ? anterior?.find((m) => m.id === payload.responde_a) ?? null
+        ? (anterior?.find((m) => m.id === payload.responde_a) ?? null)
         : null;
       const otimista: ChatMensagem = {
         id: `otimista-${crypto.randomUUID()}`,
@@ -151,7 +148,6 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
           : null,
         reacoes: [],
       };
-
 
       qc.setQueryData<ChatMensagem[]>(queryKey, [...(anterior ?? []), otimista]);
       setTexto("");
@@ -235,7 +231,6 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     onSettled: () => qc.invalidateQueries({ queryKey }),
   });
   void meuIdReacao;
-
 
   const criarTarefaMut = useMutation({
     mutationFn: (payload: { titulo: string; prazo?: string; retorno?: boolean }) => {
@@ -449,7 +444,6 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
         }}
       />
 
-
       {somenteLeitura ? (
         <div className="border-t border-border/60 bg-muted/30 px-4 py-3 text-center text-xs text-muted-foreground">
           Visualizando a conversa de{" "}
@@ -494,16 +488,13 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
         />
       )}
 
-      <AlertDialog
-        open={!!confirmarExcluir}
-        onOpenChange={(o) => !o && setConfirmarExcluir(null)}
-      >
+      <AlertDialog open={!!confirmarExcluir} onOpenChange={(o) => !o && setConfirmarExcluir(null)}>
         <AlertDialogContent className="z-[90]">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir mensagem?</AlertDialogTitle>
             <AlertDialogDescription>
-              A mensagem será marcada como excluída para você e para o cliente. Esta ação não
-              pode ser desfeita.
+              A mensagem será marcada como excluída para você e para o cliente. Esta ação não pode
+              ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

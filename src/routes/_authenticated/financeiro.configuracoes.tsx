@@ -10,7 +10,6 @@ import {
   Trash2,
   Tags,
   Building2,
-  
   Percent,
   Users,
   TrendingUp,
@@ -56,10 +55,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
-import {
-  SecaoRegrasComissao,
-  SimuladorComissao,
-} from "@/components/financeiro/comissoes-gestao";
+import { SecaoRegrasComissao, SimuladorComissao } from "@/components/financeiro/comissoes-gestao";
 import { RegrasAbas } from "@/components/financeiro/comissoes-usuario/regras-abas";
 import { ExportarFinanceiro } from "@/components/financeiro/exportar-financeiro";
 
@@ -102,8 +98,8 @@ function Pagina() {
             Configurações financeiras
           </h1>
           <p className="text-sm text-muted-foreground">
-            Centralize aqui os parâmetros do módulo financeiro: plano de contas, centros de
-            custo e regras de repasse por banco.
+            Centralize aqui os parâmetros do módulo financeiro: plano de contas, centros de custo e
+            regras de repasse por banco.
           </p>
         </div>
         <ExportarFinanceiro
@@ -208,7 +204,9 @@ function SecaoCategorias() {
   const remover = useMutation({
     mutationFn: (id: string) => excluir({ data: { entidade: "categoria", id } }),
     onSuccess: (r) => {
-      toast.success(r.desativado ? "Categoria desativada (possui lançamentos)." : "Categoria removida.");
+      toast.success(
+        r.desativado ? "Categoria desativada (possui lançamentos)." : "Categoria removida.",
+      );
       invalidate();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao remover."),

@@ -139,7 +139,11 @@ export function FiltrosPropostas({
             className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="todos">Todos</option>
-            {corretores.map((r) => <option key={r} value={r}>{r}</option>)}
+            {corretores.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -151,7 +155,11 @@ export function FiltrosPropostas({
             className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="todos">Todos</option>
-            {imobiliarias.map((r) => <option key={r} value={r}>{r}</option>)}
+            {imobiliarias.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -163,7 +171,11 @@ export function FiltrosPropostas({
             className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="todos">Todos</option>
-            {comerciais.map((r) => <option key={r} value={r}>{r}</option>)}
+            {comerciais.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
           </select>
         </div>
       </div>

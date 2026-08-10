@@ -2,22 +2,9 @@ import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import {
-  Send,
-  Ban,
-  Loader2,
-  Download,
-  RefreshCw,
-  ChevronDown,
-  AlertTriangle,
-} from "lucide-react";
+import { Send, Ban, Loader2, Download, RefreshCw, ChevronDown, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -46,10 +33,7 @@ import { descreverParticipante } from "@/lib/propostas/campos-obrigatorios";
 import { bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
 import { TRANSICOES, type PropostaStatus } from "@/lib/propostas/state-machine";
 import { statusProposta } from "@/components/propostas/status";
-import {
-  baixarPropostaDetalhadaPDF,
-  baixarPropostaConsolidadoPDF,
-} from "@/lib/propostas/pdf-lazy";
+import { baixarPropostaDetalhadaPDF, baixarPropostaConsolidadoPDF } from "@/lib/propostas/pdf-lazy";
 import { cn } from "@/lib/utils";
 
 export function AcoesTopo({
@@ -76,20 +60,24 @@ export function AcoesTopo({
   const cancelarFn = useServerFn(cancelarProposta);
   const moverFn = useServerFn(moverStatusProposta);
   const sincronizarFn = useServerFn(sincronizarProposta);
-  
+
   const [busy, setBusy] = useState(false);
   const isBusy = busy || enviarBusy;
 
   const status = proposta.status as PropostaStatus;
-  const proximos = (status && TRANSICOES[status] ? TRANSICOES[status] : []).filter((s) => s !== "cancelada");
+  const proximos = (status && TRANSICOES[status] ? TRANSICOES[status] : []).filter(
+    (s) => s !== "cancelada",
+  );
 
   const pendencias = useMemo(() => {
     const { faltantesEnvolvido } = require("@/lib/propostas/campos-obrigatorios");
-    return (envolvidos ?? []).map(env => ({
-      env,
-      faltantes: faltantesEnvolvido(env || {}),
-      descrever: descreverParticipante(env || {})
-    })).filter(p => p.faltantes && p.faltantes.length > 0);
+    return (envolvidos ?? [])
+      .map((env) => ({
+        env,
+        faltantes: faltantesEnvolvido(env || {}),
+        descrever: descreverParticipante(env || {}),
+      }))
+      .filter((p) => p.faltantes && p.faltantes.length > 0);
   }, [envolvidos]);
 
   const bloqueado = pendencias.length > 0;
@@ -105,7 +93,7 @@ export function AcoesTopo({
         propostaId,
         bancoId: "todos",
         envolvidos,
-        onCadastroIncompleto: () => onCadastroIncompleto?.()
+        onCadastroIncompleto: () => onCadastroIncompleto?.(),
       });
     } catch (e) {
       // toast já mostrado pelo hook
@@ -159,9 +147,7 @@ export function AcoesTopo({
     }
   }
 
-  const bancosPendentes = (bancos ?? []).filter(
-    (b: any) => b.selecionado && !bancoJaEnviado(b),
-  );
+  const bancosPendentes = (bancos ?? []).filter((b: any) => b.selecionado && !bancoJaEnviado(b));
   const jaEnviou = Boolean(proposta.enviada_em);
   const podeEnviarNovos =
     jaEnviou &&
@@ -178,15 +164,15 @@ export function AcoesTopo({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={() => {
                       if (bloqueado) {
                         onCadastroIncompleto?.();
                       } else {
                         enviar();
                       }
-                    }} 
+                    }}
                     disabled={isBusy}
                   >
                     {isBusy ? (
@@ -194,7 +180,11 @@ export function AcoesTopo({
                     ) : (
                       <Send className="mr-1 h-4 w-4" />
                     )}
-                    {bloqueado ? "Completar cadastro e enviar" : (proposta.enviada_em ? "Reenviar" : "Enviar ao banco")}
+                    {bloqueado
+                      ? "Completar cadastro e enviar"
+                      : proposta.enviada_em
+                        ? "Reenviar"
+                        : "Enviar ao banco"}
                   </Button>
                 </span>
               </TooltipTrigger>
@@ -205,7 +195,9 @@ export function AcoesTopo({
                   </p>
                   <ul className="text-xs space-y-1">
                     {pendencias.map((p, i) => (
-                      <li key={i}>• Faltam dados obrigatórios de {p.descrever}. Clique para preencher agora.</li>
+                      <li key={i}>
+                        • Faltam dados obrigatórios de {p.descrever}. Clique para preencher agora.
+                      </li>
                     ))}
                   </ul>
                   <p className="text-xs text-muted-foreground">Clique para abrir o cadastro.</p>
@@ -219,16 +211,16 @@ export function AcoesTopo({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={() => {
                       if (bloqueado) {
                         onCadastroIncompleto?.();
                       } else {
                         enviar();
                       }
-                    }} 
-                    disabled={isBusy} 
+                    }}
+                    disabled={isBusy}
                     variant="secondary"
                   >
                     {isBusy ? (
@@ -236,7 +228,9 @@ export function AcoesTopo({
                     ) : (
                       <Send className="mr-1 h-4 w-4" />
                     )}
-                    {bloqueado ? "Completar cadastro e enviar" : `Enviar a ${bancosPendentes.length > 1 ? `${bancosPendentes.length} novos bancos` : "novo banco"}`}
+                    {bloqueado
+                      ? "Completar cadastro e enviar"
+                      : `Enviar a ${bancosPendentes.length > 1 ? `${bancosPendentes.length} novos bancos` : "novo banco"}`}
                   </Button>
                 </span>
               </TooltipTrigger>
@@ -280,9 +274,8 @@ export function AcoesTopo({
                 const gerar = async () => {
                   const t = toast.loading("Gerando ficha da proposta…");
                   try {
-                    const { baixarPropostaOficialPDF } = await import(
-                      "@/lib/propostas/proposta-oficial-pdf"
-                    );
+                    const { baixarPropostaOficialPDF } =
+                      await import("@/lib/propostas/proposta-oficial-pdf");
                     await new Promise((r) => setTimeout(r, 30));
                     baixarPropostaOficialPDF({
                       proposta,
@@ -371,9 +364,7 @@ export function AcoesTopo({
                 variant={isRecusa ? "destructive" : "secondary"}
                 onClick={() => mover(s)}
                 disabled={busy}
-                className={cn(
-                  isAprova && "bg-success text-success-foreground hover:bg-success/90",
-                )}
+                className={cn(isAprova && "bg-success text-success-foreground hover:bg-success/90")}
               >
                 {isRecusa ? "✕" : "→"} {statusProposta(s).label}
               </Button>

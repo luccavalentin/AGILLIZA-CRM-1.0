@@ -37,7 +37,6 @@ import {
   type CompraLinha,
 } from "@/lib/admin/compras.functions";
 
-
 export const Route = createFileRoute("/_authenticated/admin/compras/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos de Compras — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("admin.compras.pedidos", ["admin.compras"]),
@@ -60,7 +59,9 @@ function Pagina() {
   const [categoria, setCategoria] = useState("");
   const [justificativa, setJustificativa] = useState("");
   const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState<"todos" | "pendente" | "aprovada" | "recusada">("todos");
+  const [filtroStatus, setFiltroStatus] = useState<"todos" | "pendente" | "aprovada" | "recusada">(
+    "todos",
+  );
 
   const sessao = useQuery({ queryKey: ["minha-sessao"], queryFn: () => getMinhaSessao() });
   const meuId = sessao.data?.profile?.id ?? null;
@@ -95,9 +96,7 @@ function Pagina() {
     mutationFn: () =>
       criarCompra({
         data: {
-          descricao: justificativa.trim()
-            ? `${descricao} — ${justificativa.trim()}`
-            : descricao,
+          descricao: justificativa.trim() ? `${descricao} — ${justificativa.trim()}` : descricao,
           valor: Number(valor.replace(/\./g, "").replace(",", ".")) || 0,
           categoria: categoria || null,
         },
@@ -246,7 +245,9 @@ function Pagina() {
             ) : (
               meusPedidos.map((c) => (
                 <TableRow key={c.id}>
-                  <TableCell className="tabular-nums text-muted-foreground">{c.numero ?? "—"}</TableCell>
+                  <TableCell className="tabular-nums text-muted-foreground">
+                    {c.numero ?? "—"}
+                  </TableCell>
                   <TableCell className="font-medium text-foreground">{c.descricao}</TableCell>
                   <TableCell className="text-muted-foreground">{c.categoria ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{brl(c.valor)}</TableCell>
@@ -275,7 +276,6 @@ function Pagina() {
                 </TableRow>
               ))
             )}
-
           </TableBody>
         </Table>
       </div>
@@ -305,13 +305,7 @@ function KpiCard({
   );
 }
 
-function EditarPedidoDialog({
-  pedido,
-  onSalvo,
-}: {
-  pedido: CompraLinha;
-  onSalvo: () => void;
-}) {
+function EditarPedidoDialog({ pedido, onSalvo }: { pedido: CompraLinha; onSalvo: () => void }) {
   const [open, setOpen] = useState(false);
   const [descricao, setDescricao] = useState(pedido.descricao);
   const [categoria, setCategoria] = useState(pedido.categoria ?? "");

@@ -59,7 +59,6 @@ const salvarSchema = z.object({
   politica_privacidade: z.string().max(20000).optional().nullable(),
 });
 
-
 async function corr(supabase: any, userId: string): Promise<string | null> {
   const { data } = await supabase
     .from("profiles")
@@ -110,7 +109,6 @@ export const obterParametros = createServerFn({ method: "GET" })
     if (error) throw error;
     return (data as ParametrosGlobais | null) ?? vazio;
   });
-
 
 export const salvarParametros = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

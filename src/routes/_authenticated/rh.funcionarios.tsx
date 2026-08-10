@@ -21,11 +21,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { StatusFuncionarioBadge } from "@/components/rh/status-badge";
 import { formatBRL } from "@/lib/financeiro/format";
-
 
 export const Route = createFileRoute("/_authenticated/rh/funcionarios")({
   head: () => ({ meta: [{ title: "Funcionários — Agilliza" }] }),
@@ -69,7 +72,6 @@ function Pagina() {
 
   const total = data?.length ?? 0;
 
-
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-3 sm:p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -100,8 +102,13 @@ function Pagina() {
               className="pl-9"
             />
           </div>
-          <Select value={status || "todos"} onValueChange={(v) => setStatus(v === "todos" ? "" : v)}>
-            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+          <Select
+            value={status || "todos"}
+            onValueChange={(v) => setStatus(v === "todos" ? "" : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os status</SelectItem>
               <SelectItem value="ativo">Ativos</SelectItem>
@@ -124,7 +131,9 @@ function Pagina() {
 
       {isLoading ? (
         <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
         </div>
       ) : total === 0 ? (
         <Card>
@@ -161,7 +170,8 @@ function Pagina() {
                     {f.departamento_nome ? ` · ${f.departamento_nome}` : ""}
                   </p>
                   <p className="text-xs tabular-nums text-muted-foreground">
-                    {formatBRL(f.salario_atual)} · Admissão {new Date(f.data_admissao).toLocaleDateString("pt-BR")}
+                    {formatBRL(f.salario_atual)} · Admissão{" "}
+                    {new Date(f.data_admissao).toLocaleDateString("pt-BR")}
                   </p>
                   <div className="flex justify-end gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
                     <Button
@@ -184,7 +194,6 @@ function Pagina() {
                   </div>
                 </CardContent>
               </Card>
-
             ))}
           </div>
 
@@ -209,24 +218,32 @@ function Pagina() {
                     className={`cursor-pointer transition hover:bg-muted/60 ${idx % 2 === 0 ? "" : "bg-muted/30"}`}
                     onClick={() => navigate({ to: "/rh/funcionarios/$id", params: { id: f.id } })}
                   >
-                    <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{f.numero}</td>
+                    <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
+                      {f.numero}
+                    </td>
                     <td className="px-4 py-2 font-medium text-foreground">{f.nome}</td>
                     <td className="px-4 py-2 text-muted-foreground">
                       {f.cargo_nome ?? "—"}
                       {f.departamento_nome ? ` · ${f.departamento_nome}` : ""}
                     </td>
-                    <td className="px-4 py-2"><StatusFuncionarioBadge status={f.status} /></td>
+                    <td className="px-4 py-2">
+                      <StatusFuncionarioBadge status={f.status} />
+                    </td>
                     <td className="px-4 py-2 tabular-nums text-muted-foreground">
                       {new Date(f.data_admissao).toLocaleDateString("pt-BR")}
                     </td>
-                    <td className="px-4 py-2 text-right tabular-nums">{formatBRL(f.salario_atual)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">
+                      {formatBRL(f.salario_atual)}
+                    </td>
                     <td className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
                           title="Editar"
-                          onClick={() => navigate({ to: "/rh/funcionarios/$id", params: { id: f.id } })}
+                          onClick={() =>
+                            navigate({ to: "/rh/funcionarios/$id", params: { id: f.id } })
+                          }
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -246,7 +263,6 @@ function Pagina() {
               </tbody>
             </table>
           </div>
-
         </>
       )}
 
@@ -255,9 +271,9 @@ function Pagina() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir funcionário</AlertDialogTitle>
             <AlertDialogDescription>
-              {paraExcluir?.nome} será excluído definitivamente, junto com documentos,
-              dependentes, férias, benefícios, holerites e lançamentos vinculados apenas
-              a ele. Esta ação não pode ser desfeita.
+              {paraExcluir?.nome} será excluído definitivamente, junto com documentos, dependentes,
+              férias, benefícios, holerites e lançamentos vinculados apenas a ele. Esta ação não
+              pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -277,5 +293,4 @@ function Pagina() {
       </AlertDialog>
     </div>
   );
-
 }

@@ -63,13 +63,8 @@ export function EditarDocumentoDialog({
         <div className="space-y-4">
           {categoriasPasta.length > 1 && (
             <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">
-                Titular do documento
-              </label>
-              <Select
-                value={editCategoria}
-                onValueChange={(v) => setEditCategoria(v as Categoria)}
-              >
+              <label className="text-xs text-muted-foreground">Titular do documento</label>
+              <Select value={editCategoria} onValueChange={(v) => setEditCategoria(v as Categoria)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -87,9 +82,7 @@ export function EditarDocumentoDialog({
             <label className="text-xs text-muted-foreground">Tipo de documento</label>
             <Select
               value={
-                tiposEditCategoria.includes(editTipo) || editTipo === ""
-                  ? editTipo
-                  : TIPO_OUTRO
+                tiposEditCategoria.includes(editTipo) || editTipo === "" ? editTipo : TIPO_OUTRO
               }
               onValueChange={(v) => {
                 if (v === TIPO_OUTRO) {
@@ -155,8 +148,8 @@ export function ExcluirDocumentoDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir documento?</AlertDialogTitle>
           <AlertDialogDescription>
-            O arquivo "{doc?.nome_arquivo}" será removido permanentemente. Esta ação
-            não pode ser desfeita.
+            O arquivo "{doc?.nome_arquivo}" será removido permanentemente. Esta ação não pode ser
+            desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

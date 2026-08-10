@@ -23,9 +23,6 @@ export {
   rotuloGatilho,
 } from "@/lib/financeiro/comissoes-gatilhos";
 
-
-
-
 export const BASES_CALCULO = [
   { valor: "valor_contrato", rotulo: "% do valor do contrato" },
   { valor: "percentual_repasse", rotulo: "% do repasse do correspondente" },
@@ -76,7 +73,10 @@ export interface ComissaoUsuarioLancamento {
 async function corrDoUsuario(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.");
+  if (!data)
+    throw new Error(
+      "Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.",
+    );
   return data as string;
 }
 
@@ -100,7 +100,8 @@ export const listarRegrasComissaoUsuario = createServerFn({ method: "GET" })
       .select("*")
       .eq("correspondente_id", corr)
       .order("created_at", { ascending: false });
-    if (data.tipo_vinculo) query = query.eq("tipo_vinculo", data.tipo_vinculo as TipoVinculoComissao);
+    if (data.tipo_vinculo)
+      query = query.eq("tipo_vinculo", data.tipo_vinculo as TipoVinculoComissao);
     if (typeof data.ativo === "boolean") query = query.eq("ativo", data.ativo);
     const { data: regras, error } = await query;
     if (error) throw new Error(error.message);
@@ -211,7 +212,6 @@ export const salvarRegraComissaoUsuario = createServerFn({ method: "POST" })
     return { id: regraId, gerados };
   });
 
-
 // Resumo de lançamentos por regra (a pagar / pago / cancelado)
 export interface ResumoRegraComissao {
   regra_id: string;
@@ -236,9 +236,14 @@ export const resumoRegrasComissaoUsuario = createServerFn({ method: "GET" })
     const mapa = new Map<string, ResumoRegraComissao>();
     (data ?? []).forEach((r: any) => {
       if (!r.regra_id) return;
-      const atual =
-        mapa.get(r.regra_id) ??
-        { regra_id: r.regra_id, qtd: 0, a_pagar: 0, paga: 0, cancelada: 0, total: 0 };
+      const atual = mapa.get(r.regra_id) ?? {
+        regra_id: r.regra_id,
+        qtd: 0,
+        a_pagar: 0,
+        paga: 0,
+        cancelada: 0,
+        total: 0,
+      };
       const v = Number(r.valor_comissao ?? 0);
       atual.qtd += 1;
       if (r.status === "paga") atual.paga += v;
@@ -249,7 +254,6 @@ export const resumoRegrasComissaoUsuario = createServerFn({ method: "GET" })
     });
     return Array.from(mapa.values());
   });
-
 
 export const excluirRegraComissaoUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -265,7 +269,6 @@ export const excluirRegraComissaoUsuario = createServerFn({ method: "POST" })
     return { ok: true, removidos: Number(removidos ?? 0) };
   });
 
-
 // ---------- LANÇAMENTOS ----------
 
 export const recalcularComissoesUsuario = createServerFn({ method: "POST" })
@@ -280,7 +283,6 @@ export const recalcularComissoesUsuario = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { criados: Number(data ?? 0) };
   });
-
 
 export const listarComissoesUsuario = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -307,7 +309,8 @@ export const listarComissoesUsuario = createServerFn({ method: "GET" })
     if (data.status) query = query.eq("status", data.status);
     if (data.usuario_id) query = query.eq("usuario_id", data.usuario_id);
     if (data.banco_nome) query = query.eq("banco_nome", data.banco_nome);
-    if (data.tipo_vinculo) query = query.eq("tipo_vinculo", data.tipo_vinculo as TipoVinculoComissao);
+    if (data.tipo_vinculo)
+      query = query.eq("tipo_vinculo", data.tipo_vinculo as TipoVinculoComissao);
     if (data.de) query = query.gte("created_at", data.de);
     if (data.ate) query = query.lte("created_at", `${data.ate}T23:59:59.999-03:00`);
     const { data: rows, error } = await query;
@@ -320,9 +323,7 @@ export const listarComissoesUsuario = createServerFn({ method: "GET" })
     const simIds = Array.from(
       new Set((rows ?? []).map((r: any) => r.simulacao_id).filter(Boolean)),
     );
-    const payIds = Array.from(
-      new Set((rows ?? []).map((r: any) => r.payable_id).filter(Boolean)),
-    );
+    const payIds = Array.from(new Set((rows ?? []).map((r: any) => r.payable_id).filter(Boolean)));
 
     const nomes = new Map<string, string | null>();
     if (userIds.length) {
@@ -345,10 +346,7 @@ export const listarComissoesUsuario = createServerFn({ method: "GET" })
       (ss ?? []).forEach((s: any) => props.set(s.id, s.nome_cliente));
     }
 
-    const pays = new Map<
-      string,
-      { vencimento: string | null; data_pagamento: string | null }
-    >();
+    const pays = new Map<string, { vencimento: string | null; data_pagamento: string | null }>();
     if (payIds.length) {
       const { data: pp } = await supabase
         .from("financial_payables")
@@ -378,8 +376,8 @@ export const listarComissoesUsuario = createServerFn({ method: "GET" })
       produto: r.produto,
       status: r.status,
       payable_id: r.payable_id,
-      vencimento: r.payable_id ? pays.get(r.payable_id)?.vencimento ?? null : null,
-      data_pagamento: r.payable_id ? pays.get(r.payable_id)?.data_pagamento ?? null : null,
+      vencimento: r.payable_id ? (pays.get(r.payable_id)?.vencimento ?? null) : null,
+      data_pagamento: r.payable_id ? (pays.get(r.payable_id)?.data_pagamento ?? null) : null,
       created_at: r.created_at,
     }));
   });
@@ -442,15 +440,12 @@ export const cancelarComissaoUsuario = createServerFn({ method: "POST" })
 
 export const recalcularComissoesProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ proposta_id: z.string().uuid() }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ proposta_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const { data: qtd, error } = await supabase.rpc(
-      "calcular_comissoes_usuario_proposta",
-      { _prop_id: data.proposta_id },
-    );
+    const { data: qtd, error } = await supabase.rpc("calcular_comissoes_usuario_proposta", {
+      _prop_id: data.proposta_id,
+    });
     if (error) throw new Error(error.message);
     return { criadas: (qtd as number) ?? 0 };
   });
@@ -499,7 +494,6 @@ export const listarUsuariosComissionaveis = createServerFn({ method: "GET" })
       papeis: papeis.get(p.id) ?? [],
     }));
   });
-
 
 // Bancos disponíveis (para o filtro do formulário)
 export const listarBancosComissao = createServerFn({ method: "GET" })
@@ -570,9 +564,7 @@ export const atualizarComissaoUsuario = createServerFn({ method: "POST" })
 
 export const excluirComissoesUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ ids: z.array(z.string().uuid()).min(1) }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ ids: z.array(z.string().uuid()).min(1) }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const { data: rows, error: e0 } = await supabase
@@ -592,9 +584,7 @@ export const excluirComissoesUsuario = createServerFn({ method: "POST" })
 
 export const marcarComissoesUsuarioPagas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ ids: z.array(z.string().uuid()).min(1) }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ ids: z.array(z.string().uuid()).min(1) }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const hoje = new Date().toISOString().slice(0, 10);

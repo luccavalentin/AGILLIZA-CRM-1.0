@@ -3,18 +3,19 @@
 > Cole as **Convenções Globais** antes deste prompt.
 
 ## Dependências e Produtos (mapa de integração)
+
 **Depende de:** `00-convencoes-globais.md` (marca branca, bancos ativos por padrão, proibição de e-mail/SMS/WhatsApp) e `00b-tons-cores-design-tokens.md` (tokens de tema).
 **Produz (consumido por TODAS as etapas seguintes):**
+
 - Tabelas: `profiles`, `user_roles` (enum `app_role`), `correspondentes`, `permissoes_gestor`.
 - Coluna `correspondente_id` (ecossistema) — chave de isolamento RLS reutilizada em CRM, Simulações, Propostas, Financeiro, Tarefas, Relatórios, Admin, Portal do Parceiro, App do Cliente.
 - Função `public.has_role(uuid, app_role)` — usada em **todas** as policies RLS das etapas 02–10.
 - Trigger `handle_new_user_profile` que define `correspondente_id = profiles.id` no auto-cadastro do correspondente-raiz e herda `correspondente_id` + `role` em convites (usado em Etapa 02 sidebar, Etapa 10 pessoas/parceiros).
 - Telas públicas **obrigatórias já nesta etapa**: `/` (landing com 3 cards: Correspondente, Cliente, Parceiro), `/auth` (login + criar conta correspondente), `/portal` (esqueleto de login do cliente PF/PJ) e `/parceiro` (esqueleto de login do parceiro). `/admin/pessoas` (convite de equipe e parceiros) também nasce aqui — Etapa 02 monta a rota interna, Etapa 10 estende a gestão.
 
-
 ## Assets desta etapa (pasta `Logos e a API/`)
-- **Logo da tela `/auth`, cabeçalho do e-mail de convite (se houver PDF impresso) e favicon**: usar arquivos de `Logos e a API/Logo PNG/` (transparência) e `Logos e a API/Logo Vetor/AGILLIZA-LOGO.pdf` como referência para gerar o favicon SVG. Copiar as PNGs escolhidas para `src/assets/brand/` e importar via ES6. **Proibido gerar logo com IA ou usar texto estilizado no lugar da marca.**
 
+- **Logo da tela `/auth`, cabeçalho do e-mail de convite (se houver PDF impresso) e favicon**: usar arquivos de `Logos e a API/Logo PNG/` (transparência) e `Logos e a API/Logo Vetor/AGILLIZA-LOGO.pdf` como referência para gerar o favicon SVG. Copiar as PNGs escolhidas para `src/assets/brand/` e importar via ES6. **Proibido gerar logo com IA ou usar texto estilizado no lugar da marca.**
 
 ## Como o sistema pensa acesso (leitura obrigatória, sem jargão)
 
@@ -34,16 +35,16 @@ Regra de ouro que deve ser respeitada em toda tela, endpoint e política: **quem
 
 ## Papéis do sistema (nomes fixos usados no código)
 
-| Papel (`app_role`) | Quem é na vida real | Escopo padrão | Pode criar/gerenciar contas? |
-|--------------------|---------------------|---------------|------------------------------|
-| `correspondente` | Dono do negócio, titular do contrato com os bancos | **Todo o ecossistema dele** (todos os clientes, simulações, propostas, financeiro, parceiros, corretores e funcionários que ele cadastrou) | **SIM — cria e gerencia todos os demais usuários do próprio ecossistema** (gestor, comercial, analista, imobiliária, corretor). Também aprova/bloqueia parceiros. |
-| `gestor` | Braço direito do correspondente, gerente de equipe | Todo o ecossistema, mas com limites definidos pelo correspondente (ex.: sem financeiro) | **SIM, quando o correspondente autorizar** — pode cadastrar comercial, analista, corretor. Não pode remover o correspondente nem promover ninguém a correspondente. |
-| `comercial` | Vendedor / originador de negócio | Seus próprios clientes + os da equipe dele | **Não cadastra usuários**. Só cadastra cliente final no CRM (e habilita o Portal do Cliente dele, se autorizado). Cadastro de qualquer outro tipo de usuário (gestor, analista, imobiliária, corretor) é sempre pelo correspondente ou gestor em Configurações. |
-| `analista` | Analista de crédito / operacional | Propostas atribuídas a ele | Não cadastra usuário. Só trabalha em cima do que já existe. |
-| `imobiliaria` | Empresa parceira (imobiliária) | Só os clientes que ela indicou | Pode cadastrar os **corretores da própria imobiliária** (subusuários dela). Não vê nada fora dos próprios indicados. |
-| `corretor` | Corretor autônomo ou vinculado a uma imobiliária | Só os clientes que ele indicou | Não cadastra ninguém. |
-| `cliente` | Cliente final (PF ou PJ) tomador do crédito | Só o próprio processo | Não cadastra ninguém. |
-| `admin` | Suporte técnico da plataforma Agilliza/Lovable | Global, só para manutenção | Cadastra **correspondente** (raiz de um novo ecossistema). No dia a dia comercial, não aparece. |
+| Papel (`app_role`) | Quem é na vida real                                | Escopo padrão                                                                                                                              | Pode criar/gerenciar contas?                                                                                                                                                                                                                                    |
+| ------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `correspondente`   | Dono do negócio, titular do contrato com os bancos | **Todo o ecossistema dele** (todos os clientes, simulações, propostas, financeiro, parceiros, corretores e funcionários que ele cadastrou) | **SIM — cria e gerencia todos os demais usuários do próprio ecossistema** (gestor, comercial, analista, imobiliária, corretor). Também aprova/bloqueia parceiros.                                                                                               |
+| `gestor`           | Braço direito do correspondente, gerente de equipe | Todo o ecossistema, mas com limites definidos pelo correspondente (ex.: sem financeiro)                                                    | **SIM, quando o correspondente autorizar** — pode cadastrar comercial, analista, corretor. Não pode remover o correspondente nem promover ninguém a correspondente.                                                                                             |
+| `comercial`        | Vendedor / originador de negócio                   | Seus próprios clientes + os da equipe dele                                                                                                 | **Não cadastra usuários**. Só cadastra cliente final no CRM (e habilita o Portal do Cliente dele, se autorizado). Cadastro de qualquer outro tipo de usuário (gestor, analista, imobiliária, corretor) é sempre pelo correspondente ou gestor em Configurações. |
+| `analista`         | Analista de crédito / operacional                  | Propostas atribuídas a ele                                                                                                                 | Não cadastra usuário. Só trabalha em cima do que já existe.                                                                                                                                                                                                     |
+| `imobiliaria`      | Empresa parceira (imobiliária)                     | Só os clientes que ela indicou                                                                                                             | Pode cadastrar os **corretores da própria imobiliária** (subusuários dela). Não vê nada fora dos próprios indicados.                                                                                                                                            |
+| `corretor`         | Corretor autônomo ou vinculado a uma imobiliária   | Só os clientes que ele indicou                                                                                                             | Não cadastra ninguém.                                                                                                                                                                                                                                           |
+| `cliente`          | Cliente final (PF ou PJ) tomador do crédito        | Só o próprio processo                                                                                                                      | Não cadastra ninguém.                                                                                                                                                                                                                                           |
+| `admin`            | Suporte técnico da plataforma Agilliza/Lovable     | Global, só para manutenção                                                                                                                 | Cadastra **correspondente** (raiz de um novo ecossistema). No dia a dia comercial, não aparece.                                                                                                                                                                 |
 
 > Se em algum lugar do sistema o botão "Novo usuário" só aparece para `admin`, isso está **errado**. O botão deve aparecer para `correspondente` sempre, e para `gestor` quando o correspondente marcou a permissão "gerenciar equipe".
 
@@ -52,6 +53,7 @@ Regra de ouro que deve ser respeitada em toda tela, endpoint e política: **quem
 > **IMPORTANTE — leia antes de codificar:** O correspondente **SE CADASTRA SOZINHO** na tela `/auth` (aba **"Criar conta"** — nome + e-mail + telefone + senha). **NÃO é a Agilliza que precisa criar o correspondente-raiz via SQL, e NÃO existe convite prévio para ele.** Ao concluir o cadastro, o próprio Supabase envia o e-mail de confirmação e, ao logar pela primeira vez, o trigger `handle_new_user_profile` cria o `profiles` já com `role='correspondente'` e `correspondente_id = profiles.id` (aponta para si mesmo). A partir daí ele é o dono do próprio ecossistema.
 >
 > Depois disso, dentro do sistema, o correspondente:
+>
 > 1. **Ativa/cadastra clientes finais** pelo CRM (`/crm/clientes/novo` ou importando leads) — o cliente ganha acesso ao Portal/App do Cliente com CPF + data de nascimento.
 > 2. **Cadastra todos os demais usuários** em **Configurações → Pessoas & Níveis de Acesso** (`/admin/pessoas`) — gestor, comercial, analista, imobiliária, corretor. Cada um recebe **senha temporária exibida uma única vez no modal** para o correspondente repassar manualmente (o sistema não envia e-mail). O toggle "Acesso ao Portal do Parceiro" no cadastro decide se o usuário vai logar em `/parceiro` (toggle ligado) ou em `/auth` como usuário interno com nível de acesso configurável (toggle desligado).
 >
@@ -76,6 +78,7 @@ Regra de ouro que deve ser respeitada em toda tela, endpoint e política: **quem
 ```
 
 Regras importantes desse desenho:
+
 1. **Todo usuário criado herda o `correspondente_id` de quem o convidou.** Esse campo é a "cor" do ecossistema — é o que a RLS usa para separar um correspondente do outro. Ninguém enxerga dado de outro ecossistema, ponto.
 2. **O correspondente enxerga tudo do próprio ecossistema, sempre.** Financeiro, comissões, propostas de qualquer analista, cliente de qualquer corretor.
 3. **Parceiros (imobiliária/corretor) só enxergam o cliente que trouxeram.** Nunca a base inteira, nunca a comissão dos outros.
@@ -95,13 +98,14 @@ Regras importantes desse desenho:
 
 O sistema tem **3 portas de entrada** (`/auth`, `/portal`, `/parceiro`), mas **só existe UMA forma de cada usuário aparecer no banco**. Nenhuma dessas 3 telas tem "Criar conta" — exceto a `/auth`, que é a **única** onde alguém se cadastra sozinho (o correspondente-raiz). As outras duas contas nascem sempre pela mão do correspondente/gestor. Isso precisa estar visível no código e na UI:
 
-| Tipo de acesso | Onde loga | Como a conta nasce | Quem cria | Onde no sistema |
-|----------------|-----------|-------------------|-----------|-----------------|
-| **Correspondente** (dono do ecossistema) | `/auth` (aba **Criar conta**) | **Auto-cadastro público** (nome + e-mail + telefone + senha). Confirmação por e-mail nativa do Supabase. | Ele mesmo | `/auth` — única tela pública com signup |
-| **Cliente final** (PF ou PJ) | `/portal` (CPF/CNPJ + data) | **Cadastrado no CRM pelo correspondente** e depois tem o **"Acesso ao Portal do Cliente" habilitado** por quem cadastrou. Sem habilitar, o cliente não consegue logar. | Correspondente ou gestor autorizado | **CRM → `/crm/clientes/novo`** e ficha `/crm/clientes/$id` (toggle "Habilitar acesso ao Portal do Cliente") — ver Etapa 03 |
-| **Qualquer outro usuário** (gestor, comercial, analista, imobiliária, corretor, ou qualquer nível interno customizado) | Depende do toggle **"Acesso ao Portal do Parceiro"** marcado no cadastro (ver abaixo) | **Cadastrado em Configurações → Pessoas pelo correspondente/gestor**, com senha temporária exibida uma única vez no modal para repasse manual (não há envio de e-mail). | Correspondente ou gestor autorizado | **Configurações → `/admin/pessoas`** (lista única de pessoas) — ver Etapa 10 |
+| Tipo de acesso                                                                                                         | Onde loga                                                                             | Como a conta nasce                                                                                                                                                      | Quem cria                           | Onde no sistema                                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Correspondente** (dono do ecossistema)                                                                               | `/auth` (aba **Criar conta**)                                                         | **Auto-cadastro público** (nome + e-mail + telefone + senha). Confirmação por e-mail nativa do Supabase.                                                                | Ele mesmo                           | `/auth` — única tela pública com signup                                                                                    |
+| **Cliente final** (PF ou PJ)                                                                                           | `/portal` (CPF/CNPJ + data)                                                           | **Cadastrado no CRM pelo correspondente** e depois tem o **"Acesso ao Portal do Cliente" habilitado** por quem cadastrou. Sem habilitar, o cliente não consegue logar.  | Correspondente ou gestor autorizado | **CRM → `/crm/clientes/novo`** e ficha `/crm/clientes/$id` (toggle "Habilitar acesso ao Portal do Cliente") — ver Etapa 03 |
+| **Qualquer outro usuário** (gestor, comercial, analista, imobiliária, corretor, ou qualquer nível interno customizado) | Depende do toggle **"Acesso ao Portal do Parceiro"** marcado no cadastro (ver abaixo) | **Cadastrado em Configurações → Pessoas pelo correspondente/gestor**, com senha temporária exibida uma única vez no modal para repasse manual (não há envio de e-mail). | Correspondente ou gestor autorizado | **Configurações → `/admin/pessoas`** (lista única de pessoas) — ver Etapa 10                                               |
 
 ### Como o roteamento pós-login é decidido (fluxo único que vale para TODO usuário criado em Configurações)
+
 O papel do usuário **não** decide por onde ele loga — quem decide é o toggle **"Acesso ao Portal do Parceiro"** no cadastro em `/admin/pessoas`:
 
 - **Toggle LIGADO** → `profiles.acesso_tipo = 'portal_parceiro'`. Usuário só entra por `/parceiro` (menu reduzido, escopo restrito aos clientes que ele vinculou). Se tentar `/auth`, o backend recusa e redireciona para `/parceiro`. Campos exclusivos ficam disponíveis no cadastro (CRECI, % de comissão, imobiliária vinculada) e o papel gravado em `user_roles` é `imobiliaria` ou `corretor`.
@@ -110,6 +114,7 @@ O papel do usuário **não** decide por onde ele loga — quem decide é o toggl
 Não existe "aba Equipe" separada de "aba Parceiros" em Configurações. É **uma única lista** de pessoas do ecossistema, com badge visível de tipo de acesso.
 
 **Regras que valem para as 3 telas de login (`/auth`, `/portal`, `/parceiro`):**
+
 - `/portal` e `/parceiro` **não têm** aba "Criar conta", **não têm** link "Cadastre-se" e **não têm** botão "Registrar". Só têm login e "Esqueci minha senha".
 - `/auth` **tem** aba "Criar conta" exclusiva para o papel `correspondente` — nenhum outro papel se auto-cadastra em lugar nenhum.
 - Mensagem de rodapé em `/portal`: _"Ainda não tem acesso? Peça ao seu correspondente para habilitar seu Portal do Cliente."_
@@ -117,6 +122,7 @@ Não existe "aba Equipe" separada de "aba Parceiros" em Configurações. É **um
 - No login: se `profiles.acesso_tipo = 'portal_parceiro'` e o usuário entrar por `/auth`, desloga e manda para `/parceiro`; se `acesso_tipo = 'sistema'` e o usuário entrar por `/parceiro`, desloga e manda para `/auth`; papel `cliente` em qualquer uma dessas duas → desloga e manda para `/portal`.
 
 **Consequência para o CRM (Etapa 03) e para Configurações (Etapa 10):**
+
 - No formulário de **novo cliente** (CRM) existe a seção **"Acesso ao Portal do Cliente"** com toggle "Habilitar acesso", que grava `clientes.portal_acesso_ativo = true` e insere linha em `cliente_portal_acessos` — sem esse toggle ativo, `validarAcessoCliente` em `/portal` responde "Cliente não encontrado".
 - No formulário de **nova pessoa** (Configurações), o toggle "Acesso ao Portal do Parceiro" alterna dinamicamente entre os dois modos (campos de parceiro vs. dropdown "Nível de acesso interno"). Se o correspondente trocar o modo numa pessoa já existente, o sistema revoga sessões ativas e atualiza `acesso_tipo` + `user_roles` no mesmo salvamento.
 
@@ -124,10 +130,10 @@ Essa é a única regra de origem de conta e de roteamento no sistema. Se alguma 
 
 ## Telas
 
-
-
 ### `/` — Landing de acesso (pública, sem menu) **OBRIGATÓRIA NESTA ETAPA**
+
 Página inicial com **três cards de acesso empilhados**, um abaixo do outro, cada um levando a uma tela de login distinta:
+
 1. **Correspondente** → `/auth` (ícone `Building2`, subtítulo "Acesso interno").
 2. **Cliente** → `/portal` (ícone `UserRound`, subtítulo "Portal do processo", cor de destaque `--alert`).
 3. **Parceiro** → `/parceiro` (ícone `Handshake`, subtítulo "Portal do parceiro").
@@ -135,6 +141,7 @@ Página inicial com **três cards de acesso empilhados**, um abaixo do outro, ca
 Logo Agilliza centralizada no topo. Rodapé com copyright. `head()` com `robots: noindex`. **Sem esta landing, o usuário não enxerga o caminho para Cliente e Parceiro — logo, é bloqueante nesta etapa.**
 
 ### `/auth` (pública, sem menu) — Correspondente e equipe interna
+
 - Aba **Criar conta** (auto-cadastro do CORRESPONDENTE): nome, e-mail, telefone, senha + confirmação, aceite dos termos/LGPD. Ao submeter chama `supabase.auth.signUp` com `options.data = { full_name, telefone, papel_inicial: 'correspondente' }`. O trigger `handle_new_user_profile` lê esses campos, cria `profiles` com `correspondente_id = NEW.id` e insere `user_roles(role='correspondente')`. Mostra "Confirme seu e-mail para ativar a conta." — a confirmação é a nativa do Supabase.
 - Aba **Entrar** (interno: e-mail + senha; "Esqueci senha" usa o reset nativo do Supabase).
 - No login, se o papel for `imobiliaria` / `corretor` / `parceiro`, redireciona para `/parceiro` (não deixa entrar no shell interno). Se for `cliente`, desloga e manda para `/portal`.
@@ -142,14 +149,17 @@ Logo Agilliza centralizada no topo. Rodapé com copyright. `head()` com `robots:
 - Limite de tentativa: 5 por IP a cada 15 min (login e signup).
 
 ### `/portal` (pública, sem menu) — Portal do Cliente **OBRIGATÓRIA NESTA ETAPA (esqueleto de login)**
+
 Tela de login do cliente final com layout split (banner à esquerda, formulário à direita) e abas **Pessoa Física** / **Pessoa Jurídica**. Cada aba pede documento (CPF/CNPJ com máscara) + data (nascimento ou abertura). Botão "Acessar Portal" chama server function `validarAcessoCliente({ tipo, documento, data })` — **nesta etapa a função pode retornar erro "Cliente não encontrado" (o CRM só nasce na Etapa 03), o importante é a tela existir e estar navegável**. A implementação completa (sessão selada, cookie HttpOnly, telas internas do cliente) fica em Etapa 09.
 
 ### `/parceiro` (pública, sem menu) — Portal do Parceiro **OBRIGATÓRIA NESTA ETAPA (esqueleto de login)**
+
 Tela de login do parceiro (imobiliária/corretor) com o mesmo layout split, formulário e-mail + senha via `supabase.auth.signInWithPassword`. Após login, verifica em `profiles.acesso_tipo` / `user_roles` se o usuário tem papel `imobiliaria` / `corretor` / `parceiro` (e **não** tem papel interno); se não tiver, desloga e mostra "Acesso restrito". Botão "Esqueci minha senha" usa `resetPasswordForEmail` com `redirectTo: origin + '/parceiro'`. Fluxo pós-login e telas do parceiro ficam nas Etapas 03–10.
 
 > **⚠️ Não pule nenhuma destas 4 rotas nesta etapa.** Um bug frequente é o builder criar só `/auth` e deixar `/`, `/portal` e `/parceiro` para depois — o resultado é que o usuário abre o app e não encontra caminho para Cliente/Parceiro. Todas as 4 telas nascem juntas na Etapa 01.
 
 ### `/admin/pessoas` — Pessoas do meu ecossistema (equipe interna + parceiros, LISTA ÚNICA)
+
 Apesar do prefixo `/admin/`, esta tela **é do correspondente e do gestor autorizado** — não do admin da plataforma. Título na UI: "Pessoas do meu ecossistema". Detalhamento completo da tela e formulário está na **Etapa 10**; aqui na Etapa 01 nasce apenas o esqueleto necessário para convidar o primeiro usuário e testar login.
 
 - **Uma única lista** de pessoas (equipe interna + parceiros juntos), com badge da coluna "Acesso" mostrando `Sistema (nome do nível)` ou `Portal do Parceiro`. **Nunca criar abas separadas "Equipe" e "Parceiros"** — é a mesma lista com um filtro no topo por tipo de acesso.
@@ -159,16 +169,19 @@ Apesar do prefixo `/admin/`, esta tela **é do correspondente e do gestor autori
 - Ações por linha: editar, ativar/inativar, resetar senha (gera nova temporária no mesmo modal), alternar tipo de acesso (revoga sessões ativas via `supabase.auth.admin.signOut` antes de trocar `acesso_tipo`+`user_roles`), transferir carteira.
 
 ### `/admin/regras-modulos` (matriz de permissões)
+
 - Linhas = módulos (`crm.clientes`, `operacional.simulacoes`, `operacional.propostas`, `financeiro.*`, `admin.pessoas` etc.).
 - Colunas = ações (`view`, `create`, `edit`, `delete`, `export`, `approve`).
 - Célula = `permitido: boolean` + `escopo_dados: todos | equipe | proprios`.
 - Editável pelo correspondente para os níveis de acesso do próprio ecossistema. Nunca deixa o correspondente rebaixar o próprio nível (proteção contra "trancar-se para fora").
 
 ### `/conta/perfil`, `/conta/seguranca`, `/conta/notificacoes`
+
 - Nome, telefone, foto. Trocar senha e habilitar 2FA (TOTP). Listar/revogar sessões.
 - Notificações **apenas in-app** (sino no topbar). Se aparecer alguma opção de e-mail/SMS/WhatsApp na UI, remover — o sistema não dispara mensagem por esses canais nesta versão.
 
 ### `/cliente/logout` e `/logout` interno
+
 - Limpa sessão e volta para `/auth`.
 
 ## Estrutura de dados (o mínimo, com a "cor" do ecossistema)

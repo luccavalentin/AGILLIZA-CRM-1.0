@@ -18,11 +18,7 @@ import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog"
 import { formatBRL, formatPercent, formatTaxa } from "@/lib/simulacao/format";
 import { rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
 import { ErroBancoDetalhe } from "@/components/simulacao/erro-banco-detalhe";
-import {
-  AmortizacaoTag,
-  MobileStat,
-  ResumoCelula,
-} from "@/components/simulacao/detalhe-page/ui";
+import { AmortizacaoTag, MobileStat, ResumoCelula } from "@/components/simulacao/detalhe-page/ui";
 import { totalFinanciadoBanco } from "@/lib/simulacao/origem-dados";
 
 /**
@@ -33,8 +29,6 @@ const totalBancoTexto = (b: any) => {
   const v = totalFinanciadoBanco(b);
   return v == null ? "—" : formatBRL(v);
 };
-
-
 
 type Props = {
   s: any;
@@ -80,7 +74,11 @@ export function ComparativoBancos({
   const melhorPriceId = bancosPrice
     .filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
     .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
-  const melhorId = isMista ? undefined : bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined;
+  const melhorId = isMista
+    ? undefined
+    : bancosComTaxa.length > 1
+      ? bancosComTaxa[0]?.id
+      : undefined;
   const bancosExibicao: any[] = isMista ? [...bancosSac, ...bancosPrice] : bancos;
   const ehMelhor = (b: any) => {
     if (!isMista) return b.id === melhorId;
@@ -118,10 +116,7 @@ export function ComparativoBancos({
             />
           )
         )}
-        <ResumoCelula
-          rotulo="Financiar despesas"
-          valor={s.fg_financiar_despesas ? "Sim" : "Não"}
-        />
+        <ResumoCelula rotulo="Financiar despesas" valor={s.fg_financiar_despesas ? "Sim" : "Não"} />
         {s.fg_financiar_despesas && (
           <>
             <ResumoCelula
@@ -132,8 +127,7 @@ export function ComparativoBancos({
               rotulo="Total financiado"
               destaque
               valor={formatBRL(
-                (Number(s.valor_financiamento) || 0) +
-                  (Number(s.valor_despesas_financiadas) || 0),
+                (Number(s.valor_financiamento) || 0) + (Number(s.valor_despesas_financiadas) || 0),
               )}
             />
           </>
@@ -173,27 +167,32 @@ export function ComparativoBancos({
                 </div>
 
                 {b.status_banco === "erro" && b.mensagem_banco && (
-                  <div className="mt-2"><ErroBancoDetalhe mensagem={b.mensagem_banco} nomeBanco={b.nome_banco} /></div>
+                  <div className="mt-2">
+                    <ErroBancoDetalhe mensagem={b.mensagem_banco} nomeBanco={b.nome_banco} />
+                  </div>
                 )}
 
                 <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                   <MobileStat rotulo="Parcela" valor={formatBRL(b.valor_parcela)} />
                   <MobileStat
                     rotulo="Taxa a.a."
-                    valor={
-                      b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—"
-                    }
+                    valor={b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—"}
                   />
                   <MobileStat
                     rotulo="Prazo"
-                    valor={b.prazo_pagamento_max != null ? `${b.prazo_pagamento_max}m` : s.prazo != null ? `${s.prazo}m` : "—"}
+                    valor={
+                      b.prazo_pagamento_max != null
+                        ? `${b.prazo_pagamento_max}m`
+                        : s.prazo != null
+                          ? `${s.prazo}m`
+                          : "—"
+                    }
                   />
+                  <MobileStat rotulo="Total fin. (banco)" valor={totalBancoTexto(b)} />
                   <MobileStat
-                    rotulo="Total fin. (banco)"
-                    valor={totalBancoTexto(b)}
+                    rotulo="IOF (banco)"
+                    valor={b.valor_iof != null ? formatBRL(b.valor_iof) : "—"}
                   />
-                  <MobileStat rotulo="IOF (banco)" valor={b.valor_iof != null ? formatBRL(b.valor_iof) : "—"} />
-
                 </dl>
 
                 <div className="mt-3 flex items-center justify-end gap-2">
@@ -223,10 +222,10 @@ export function ComparativoBancos({
                     <Button
                       size="sm"
                       className="bg-gradient-to-b from-primary to-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
-                        disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                        onClick={() => onCriar(b.id, b.banco_id)}
+                      disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                      onClick={() => onCriar(b.id, b.banco_id)}
                     >
-                        {criandoBanco === b.id ? "Enviando…" : "Enviar Aprovação"}
+                      {criandoBanco === b.id ? "Enviando…" : "Enviar Aprovação"}
                     </Button>
                   )}
                 </div>
@@ -269,8 +268,7 @@ export function ComparativoBancos({
           <TableBody>
             {bancosExibicao.map((b: any, idx: number) => {
               const primeiroDoGrupo =
-                isMista &&
-                (idx === 0 || bancosExibicao[idx - 1]._sistema !== b._sistema);
+                isMista && (idx === 0 || bancosExibicao[idx - 1]._sistema !== b._sistema);
               const melhor = ehMelhor(b);
               return (
                 <Fragment key={b.id}>
@@ -298,15 +296,17 @@ export function ComparativoBancos({
                     <TableCell className="py-3 text-sm font-semibold">
                       <div className="flex items-center gap-2.5">
                         <BancoLogo nome={b.nome_banco} size="lg" />
-                        <span style={{ color: corDoBanco(b.nome_banco) }}>
-                          {b.nome_banco}
-                        </span>
-                        {b.id === melhorId && (
-                          <ToneBadge tone="success">Melhor taxa</ToneBadge>
-                        )}
+                        <span style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
+                        {b.id === melhorId && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
                       </div>
                       {b.status_banco === "erro" && b.mensagem_banco && (
-                        <div className="mt-1"><ErroBancoDetalhe mensagem={b.mensagem_banco} nomeBanco={b.nome_banco} linhas={1} /></div>
+                        <div className="mt-1">
+                          <ErroBancoDetalhe
+                            mensagem={b.mensagem_banco}
+                            nomeBanco={b.nome_banco}
+                            linhas={1}
+                          />
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="py-3">
@@ -319,7 +319,8 @@ export function ComparativoBancos({
                       {b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—"}
                     </TableCell>
                     <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
-                      {b.prazo_pagamento_max ?? s.prazo ?? "—"}{b.prazo_pagamento_max || s.prazo ? "m" : ""}
+                      {b.prazo_pagamento_max ?? s.prazo ?? "—"}
+                      {b.prazo_pagamento_max || s.prazo ? "m" : ""}
                     </TableCell>
                     <TableCell className="py-3 text-right text-sm font-medium tabular-nums whitespace-nowrap">
                       {totalBancoTexto(b)}
@@ -373,10 +374,9 @@ export function ComparativoBancos({
       </div>
 
       <p className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
-        <strong className="font-medium text-foreground">Importante:</strong> Isto é apenas
-        uma simulação. A efetivação do resultado apresentado está condicionada à análise de
-        sua proposta de financiamento. A taxa de juros apresentada na simulação é apenas
-        para referência.
+        <strong className="font-medium text-foreground">Importante:</strong> Isto é apenas uma
+        simulação. A efetivação do resultado apresentado está condicionada à análise de sua proposta
+        de financiamento. A taxa de juros apresentada na simulação é apenas para referência.
       </p>
     </>
   );

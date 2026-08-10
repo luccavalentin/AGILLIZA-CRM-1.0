@@ -5,7 +5,6 @@ import { signalIncomingChat } from "@/components/shared/chat-alert-store";
 import { tipoAtivo, tipoComSom } from "@/lib/notification-prefs";
 import { playChatSound, previewChatSound } from "@/lib/chat-sound";
 
-
 interface Props {
   userId?: string | null;
 }
@@ -38,7 +37,8 @@ export function PropostaRetornoWatcher({ userId }: Props) {
           if (row.tipo === "info" && row.descricao.includes("Comparativo de taxas concluído")) {
             const { data: sim } = await supabase
               .from("simulacoes")
-              .select(`
+              .select(
+                `
                 id, 
                 numero_simulacao, 
                 nome_cliente, 
@@ -59,16 +59,21 @@ export function PropostaRetornoWatcher({ userId }: Props) {
                   valor_financiamento_max,
                   valor_iof
                 )
-              `)
+              `,
+              )
               .eq("id", row.simulacao_id)
               .maybeSingle();
 
-            if (!sim || (sim.usuario_responsavel_id !== userId && sim.usuario_criador_id !== userId)) return;
+            if (
+              !sim ||
+              (sim.usuario_responsavel_id !== userId && sim.usuario_criador_id !== userId)
+            )
+              return;
 
             const uniqueKey = `sim-info-${row.id}`;
             if (seenSimIds.current.has(uniqueKey)) return;
             seenSimIds.current.add(uniqueKey);
-            
+
             if (!tipoAtivo("retorno_simulacao")) return;
 
             if (tipoComSom("retorno_simulacao")) {
@@ -83,16 +88,16 @@ export function PropostaRetornoWatcher({ userId }: Props) {
               nome_cliente: sim.nome_cliente || "—",
               banco: "Multi-proponente",
               dados_adicionais: {
-                bancos: (sim.bancos || []).filter((b: any) => b.selecionado && b.status_banco === 'simulada'),
-                simulacao: sim
-              }
+                bancos: (sim.bancos || []).filter(
+                  (b: any) => b.selecionado && b.status_banco === "simulada",
+                ),
+                simulacao: sim,
+              },
             });
-
           }
-        }
+        },
       )
       .subscribe();
-
 
     // Monitora alterações em proposta_bancos (onde o retorno do banco chega)
     const channel = supabase
@@ -107,10 +112,14 @@ export function PropostaRetornoWatcher({ userId }: Props) {
         async (payload) => {
           const row = payload.new as any;
           if (!row.id || !row.proposta_id) return;
-          
+
           // Só alerta se houver mudança de status ou mensagem significativa do banco
           const old = payload.old as any;
-          if (old && old.status_banco === row.status_banco && old.mensagem_banco === row.mensagem_banco) {
+          if (
+            old &&
+            old.status_banco === row.status_banco &&
+            old.mensagem_banco === row.mensagem_banco
+          ) {
             return;
           }
 
@@ -139,7 +148,7 @@ export function PropostaRetornoWatcher({ userId }: Props) {
             const status = (row.status_banco || "").toLowerCase();
             const isPositive = ["aprovada", "aprovado", "simulada"].includes(status);
             const isNegative = ["recusada", "recusado", "erro"].includes(status);
-            
+
             if (isPositive) previewChatSound("tri");
             else if (isNegative) previewChatSound("suave");
             else previewChatSound("pop");
@@ -163,11 +172,10 @@ export function PropostaRetornoWatcher({ userId }: Props) {
             banco: row.nome_banco || "Banco",
             dados_adicionais: {
               proposta: prop,
-              banco_row: row
-            }
+              banco_row: row,
+            },
           });
-        }
-
+        },
       )
       .subscribe();
 
@@ -176,7 +184,6 @@ export function PropostaRetornoWatcher({ userId }: Props) {
       supabase.removeChannel(channelSim);
     };
   }, [userId, adicionarPopup]);
-
 
   return null;
 }

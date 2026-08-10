@@ -99,13 +99,7 @@ export function CategoriasLinksDialog({ onClose }: { onClose: () => void }) {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir categoria."),
   });
 
-  function Editor({
-    valor,
-    onChange,
-  }: {
-    valor: Rascunho;
-    onChange: (r: Rascunho) => void;
-  }) {
+  function Editor({ valor, onChange }: { valor: Rascunho; onChange: (r: Rascunho) => void }) {
     return (
       <div className="space-y-3">
         <div className="space-y-1.5">

@@ -6,7 +6,6 @@ import type { ChatOrigem } from "@/lib/chat-core/reacoes.functions";
 
 export type { ChatMensagem, ChatClienteInfo, ContextoResposta, ChatOrigem };
 
-
 export type ChatSendPayload = {
   mensagem?: string;
   responde_a?: string;
@@ -40,7 +39,6 @@ export interface ChatCapabilities {
   /** Gravar/enviar áudio. */
   audio?: boolean;
 }
-
 
 export interface ChatHeaderRenderProps {
   buscaAberta: boolean;
@@ -104,8 +102,6 @@ export interface ChatAdapter {
   /** Toggle de reação (Fase 6). */
   reagir?(p: { mensagem_id: string; emoji: string }): Promise<unknown>;
 
-
-
   /** Canal Postgres Changes (nome do canal + bindings tabela/filtro). */
   realtime: {
     channel: string;
@@ -119,9 +115,5 @@ export interface ChatAdapter {
   uploadAnexo(file: File): Promise<string>;
 
   /** Criação de tarefa a partir do chat (opcional). */
-  criarTarefa?: (p: {
-    titulo: string;
-    prazo?: string;
-    descricao?: string;
-  }) => Promise<unknown>;
+  criarTarefa?: (p: { titulo: string; prazo?: string; descricao?: string }) => Promise<unknown>;
 }

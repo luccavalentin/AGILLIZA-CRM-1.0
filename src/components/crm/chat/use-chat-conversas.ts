@@ -3,10 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  listarConversasCliente,
-  buscarClientesApp,
-} from "@/lib/crm/chat-cliente.functions";
+import { listarConversasCliente, buscarClientesApp } from "@/lib/crm/chat-cliente.functions";
 import {
   listarEtiquetasChat,
   overviewGestaoChat,
@@ -107,10 +104,7 @@ export function useChatConversas() {
     return new Date(ultimaEm).getTime() <= new Date(oc).getTime();
   }
 
-  const idsConversa = useMemo(
-    () => (conversas ?? []).map((c) => c.cliente_id),
-    [conversas],
-  );
+  const idsConversa = useMemo(() => (conversas ?? []).map((c) => c.cliente_id), [conversas]);
 
   const { data: overview } = useQuery({
     queryKey: ["chat-overview", idsConversa],
@@ -210,21 +204,15 @@ export function useChatConversas() {
 
   const filtradas = useMemo(() => {
     const t = busca.trim().toLowerCase();
-    let lista = (conversas ?? []).filter(
-      (c) => !ocultaCliente(c.cliente_id, c.ultima_em),
-    );
+    let lista = (conversas ?? []).filter((c) => !ocultaCliente(c.cliente_id, c.ultima_em));
     if (t) {
       lista = lista.filter(
-        (c) =>
-          c.nome.toLowerCase().includes(t) ||
-          (c.documento ?? "").toLowerCase().includes(t),
+        (c) => c.nome.toLowerCase().includes(t) || (c.documento ?? "").toLowerCase().includes(t),
       );
     }
     if (etiquetaFiltro !== "all") {
       lista = lista.filter((c) =>
-        (etiquetasCliente.get(c.cliente_id) ?? []).some(
-          (e) => e.id === etiquetaFiltro,
-        ),
+        (etiquetasCliente.get(c.cliente_id) ?? []).some((e) => e.id === etiquetaFiltro),
       );
     }
     // Arquivadas ficam ocultas exceto no filtro dedicado.
@@ -235,11 +223,8 @@ export function useChatConversas() {
     }
     if (filtro === "nao_lidas") lista = lista.filter((c) => c.nao_lidas > 0);
     if (filtro === "sla")
-      lista = lista.filter((c) =>
-        slaEstourado(c.cliente_id, c.ultimo_remetente, c.ultima_em),
-      );
-    if (filtro === "lembrete")
-      lista = lista.filter((c) => lembreteDevido(c.cliente_id));
+      lista = lista.filter((c) => slaEstourado(c.cliente_id, c.ultimo_remetente, c.ultima_em));
+    if (filtro === "lembrete") lista = lista.filter((c) => lembreteDevido(c.cliente_id));
     // Fixadas primeiro (mantém a ordem original dentro de cada grupo).
     lista = [...lista].sort((a, b) => {
       const fa = fixadoCliente(a.cliente_id) ? 1 : 0;
@@ -248,7 +233,16 @@ export function useChatConversas() {
     });
     return lista;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversas, busca, etiquetaFiltro, filtro, etiquetasCliente, metasCliente, estadoPorCliente, tickMinuto]);
+  }, [
+    conversas,
+    busca,
+    etiquetaFiltro,
+    filtro,
+    etiquetasCliente,
+    metasCliente,
+    estadoPorCliente,
+    tickMinuto,
+  ]);
 
   // Se a conversa aberta foi excluída (oculta), fecha o painel.
   useEffect(() => {
@@ -261,7 +255,6 @@ export function useChatConversas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selecionado, estadoPorCliente, conversas]);
 
-
   const novosClientes = useMemo(() => {
     if (termoBusca.length < 2) return [];
     const jaEmConversa = new Set((conversas ?? []).map((c) => c.cliente_id));
@@ -270,12 +263,9 @@ export function useChatConversas() {
 
   const conversaAtual = (conversas ?? []).find(
     (c) =>
-      c.cliente_id === selecionado &&
-      (atendenteSel == null || c.atendente_id === atendenteSel),
+      c.cliente_id === selecionado && (atendenteSel == null || c.atendente_id === atendenteSel),
   );
-  const clienteAppAtual = (clientesApp ?? []).find(
-    (c) => c.cliente_id === selecionado,
-  );
+  const clienteAppAtual = (clientesApp ?? []).find((c) => c.cliente_id === selecionado);
   const alvoAtual = conversaAtual
     ? {
         cliente_id: conversaAtual.cliente_id,
@@ -301,15 +291,11 @@ export function useChatConversas() {
       : null;
 
   const contadores = useMemo(() => {
-    const visiveis = (conversas ?? []).filter(
-      (c) => !ocultaCliente(c.cliente_id, c.ultima_em),
-    );
+    const visiveis = (conversas ?? []).filter((c) => !ocultaCliente(c.cliente_id, c.ultima_em));
     const lista = visiveis.filter((c) => !arquivada(c.cliente_id));
     return {
       nao_lidas: lista.filter((c) => c.nao_lidas > 0).length,
-      sla: lista.filter((c) =>
-        slaEstourado(c.cliente_id, c.ultimo_remetente, c.ultima_em),
-      ).length,
+      sla: lista.filter((c) => slaEstourado(c.cliente_id, c.ultimo_remetente, c.ultima_em)).length,
       lembrete: lista.filter((c) => lembreteDevido(c.cliente_id)).length,
       arquivadas: visiveis.filter((c) => arquivada(c.cliente_id)).length,
     };

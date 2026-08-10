@@ -73,7 +73,13 @@ function VisaoMes({ ref, hojeChave, tarefasPorDia, feriados, onSelecionar }: Gra
 }
 
 /* ---------- Semana ---------- */
-function VisaoSemana({ ref, hojeChave, tarefasPorDia, feriados, onSelecionar }: GradeCalendarioProps) {
+function VisaoSemana({
+  ref,
+  hojeChave,
+  tarefasPorDia,
+  feriados,
+  onSelecionar,
+}: GradeCalendarioProps) {
   const inicio = new Date(ref);
   inicio.setDate(inicio.getDate() - inicio.getDay());
   const dias: Date[] = [];
@@ -156,7 +162,6 @@ function VisaoDia({ ref, hojeChave, tarefasPorDia, feriados, onSelecionar }: Gra
               {feriado.facultativo ? " (facultativo)" : ""}
             </p>
           )}
-
         </div>
       </div>
 

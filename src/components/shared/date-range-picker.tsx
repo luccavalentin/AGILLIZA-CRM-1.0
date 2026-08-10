@@ -52,8 +52,7 @@ export function DateRangePicker({
     ? { from: parseISO(de), to: parseISO(ate) || undefined }
     : undefined;
 
-  const rotulo =
-    de && ate ? `${fmt(de)} — ${fmt(ate)}` : de ? `${fmt(de)} — …` : placeholder;
+  const rotulo = de && ate ? `${fmt(de)} — ${fmt(ate)}` : de ? `${fmt(de)} — …` : placeholder;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -76,7 +75,12 @@ export function DateRangePicker({
         <Calendar
           mode="range"
           selected={range}
-          defaultMonth={parseISO(de) ?? (numberOfMonths > 1 ? new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1) : undefined)}
+          defaultMonth={
+            parseISO(de) ??
+            (numberOfMonths > 1
+              ? new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
+              : undefined)
+          }
           numberOfMonths={numberOfMonths}
           onSelect={(r) => {
             const novoDe = r?.from ? toISO(r.from) : "";
@@ -90,4 +94,3 @@ export function DateRangePicker({
     </Popover>
   );
 }
-

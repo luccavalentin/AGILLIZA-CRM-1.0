@@ -19,10 +19,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  mascararDocumentoTipo,
-  mascararTelefone,
-} from "@/lib/crm/documento";
+import { mascararDocumentoTipo, mascararTelefone } from "@/lib/crm/documento";
 import {
   ESTADOS_CIVIS,
   REGIMES,
@@ -63,14 +60,11 @@ export function DialogVendedor({
   onSubmeter: () => void;
   idBanco?: number;
 }) {
-
   const pf = form.tipo_pessoa === "PF";
-  const casado =
-    form.estado_civil === "casado" || form.estado_civil === "uniao_estavel";
+  const casado = form.estado_civil === "casado" || form.estado_civil === "uniao_estavel";
   const set = (p: Partial<VendedorForm>) => setForm((f) => ({ ...f, ...p }));
   const cls = (k: string) => (erros.has(k) ? CLASSE_ERRO : undefined);
-  const clsBox = (k: string) =>
-    erros.has(k) ? "rounded-md ring-1 ring-destructive" : undefined;
+  const clsBox = (k: string) => (erros.has(k) ? "rounded-md ring-1 ring-destructive" : undefined);
 
   const [natCidade, natUf] = useMemo(() => {
     const s = form.naturalidade || "";
@@ -81,14 +75,11 @@ export function DialogVendedor({
   const cidadesDoEstado = useMemo(
     () =>
       natUf
-        ? OPCOES_NATURALIDADE.filter((m) => m.endsWith(`/${natUf}`)).map((m) =>
-            m.slice(0, -3),
-          )
+        ? OPCOES_NATURALIDADE.filter((m) => m.endsWith(`/${natUf}`)).map((m) => m.slice(0, -3))
         : [],
     [natUf],
   );
-  const setNatUf = (uf: string) =>
-    setForm((f) => ({ ...f, naturalidade: uf ? `/${uf}` : "" }));
+  const setNatUf = (uf: string) => setForm((f) => ({ ...f, naturalidade: uf ? `/${uf}` : "" }));
   const setNatCidade = (cidade: string) =>
     setForm((f) => ({
       ...f,
@@ -115,7 +106,9 @@ export function DialogVendedor({
                   }))
                 }
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="PF">Pessoa Física</SelectItem>
                   <SelectItem value="PJ">Pessoa Jurídica</SelectItem>
@@ -156,29 +149,48 @@ export function DialogVendedor({
                 </Campo>
                 <Campo label="Sexo">
                   <Select value={form.sexo || undefined} onValueChange={(v) => set({ sexo: v })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
                     <SelectContent>
                       {OPCOES_SEXO.map((o) => (
-                        <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>
+                        <SelectItem key={o.v} value={o.v}>
+                          {o.l}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </Campo>
                 <Campo label="Estado civil">
                   <Select value={form.estado_civil} onValueChange={(v) => set({ estado_civil: v })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {ESTADOS_CIVIS.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
+                      {ESTADOS_CIVIS.map((o) => (
+                        <SelectItem key={o.v} value={o.v}>
+                          {o.l}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Campo>
                 {casado && (
                   <Campo label={`Regime de casamento ${idBanco === 33 ? "*" : ""}`}>
-                    <Select value={form.regime_casamento} onValueChange={(v) => set({ regime_casamento: v })}>
-                      <SelectTrigger className={cls("regime_casamento")}><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <Select
+                      value={form.regime_casamento}
+                      onValueChange={(v) => set({ regime_casamento: v })}
+                    >
+                      <SelectTrigger className={cls("regime_casamento")}>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
 
                       <SelectContent>
-                        {REGIMES.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
+                        {REGIMES.map((o) => (
+                          <SelectItem key={o.v} value={o.v}>
+                            {o.l}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Campo>
@@ -217,7 +229,10 @@ export function DialogVendedor({
                   />
                 </Campo>
                 <Campo label="Profissão">
-                  <Input value={form.profissao} onChange={(e) => set({ profissao: e.target.value })} />
+                  <Input
+                    value={form.profissao}
+                    onChange={(e) => set({ profissao: e.target.value })}
+                  />
                 </Campo>
                 <Campo label="Empresa">
                   <Input value={form.empresa} onChange={(e) => set({ empresa: e.target.value })} />
@@ -264,7 +279,10 @@ export function DialogVendedor({
                 />
               </Campo>
               <Campo label="Número">
-                <Input value={form.numero_documento} onChange={(e) => set({ numero_documento: e.target.value })} />
+                <Input
+                  value={form.numero_documento}
+                  onChange={(e) => set({ numero_documento: e.target.value })}
+                />
               </Campo>
               <Campo label="Órgão expedidor">
                 <Combobox
@@ -307,10 +325,16 @@ export function DialogVendedor({
               <Input value={form.agencia} onChange={(e) => set({ agencia: e.target.value })} />
             </Campo>
             <Campo label="Conta corrente">
-              <Input value={form.conta_corrente} onChange={(e) => set({ conta_corrente: e.target.value })} />
+              <Input
+                value={form.conta_corrente}
+                onChange={(e) => set({ conta_corrente: e.target.value })}
+              />
             </Campo>
             <Campo label="Dígito">
-              <Input value={form.digito_conta} onChange={(e) => set({ digito_conta: e.target.value })} />
+              <Input
+                value={form.digito_conta}
+                onChange={(e) => set({ digito_conta: e.target.value })}
+              />
             </Campo>
           </Secao>
 
@@ -326,13 +350,22 @@ export function DialogVendedor({
                 />
               </Campo>
               <Campo label="Agência">
-                <Input value={form.conjuge_agencia} onChange={(e) => set({ conjuge_agencia: e.target.value })} />
+                <Input
+                  value={form.conjuge_agencia}
+                  onChange={(e) => set({ conjuge_agencia: e.target.value })}
+                />
               </Campo>
               <Campo label="Conta corrente">
-                <Input value={form.conjuge_conta_corrente} onChange={(e) => set({ conjuge_conta_corrente: e.target.value })} />
+                <Input
+                  value={form.conjuge_conta_corrente}
+                  onChange={(e) => set({ conjuge_conta_corrente: e.target.value })}
+                />
               </Campo>
               <Campo label="Dígito">
-                <Input value={form.conjuge_digito_conta} onChange={(e) => set({ conjuge_digito_conta: e.target.value })} />
+                <Input
+                  value={form.conjuge_digito_conta}
+                  onChange={(e) => set({ conjuge_digito_conta: e.target.value })}
+                />
               </Campo>
             </Secao>
           )}
@@ -357,13 +390,19 @@ export function DialogVendedor({
               </div>
             </Campo>
             <Campo label="Logradouro" full>
-              <Input value={form.logradouro} onChange={(e) => set({ logradouro: e.target.value })} />
+              <Input
+                value={form.logradouro}
+                onChange={(e) => set({ logradouro: e.target.value })}
+              />
             </Campo>
             <Campo label="Número">
               <Input value={form.numero} onChange={(e) => set({ numero: e.target.value })} />
             </Campo>
             <Campo label="Complemento">
-              <Input value={form.complemento} onChange={(e) => set({ complemento: e.target.value })} />
+              <Input
+                value={form.complemento}
+                onChange={(e) => set({ complemento: e.target.value })}
+              />
             </Campo>
             <Campo label="Bairro">
               <Input value={form.bairro} onChange={(e) => set({ bairro: e.target.value })} />
@@ -384,11 +423,17 @@ export function DialogVendedor({
 
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 text-sm">
-              <Switch checked={form.utiliza_fgts} onCheckedChange={(v) => set({ utiliza_fgts: v })} />
+              <Switch
+                checked={form.utiliza_fgts}
+                onCheckedChange={(v) => set({ utiliza_fgts: v })}
+              />
               Utiliza FGTS
             </label>
             <label className="flex items-center gap-2 text-sm">
-              <Switch checked={form.fg_autorizacao_dados} onCheckedChange={(v) => set({ fg_autorizacao_dados: v })} />
+              <Switch
+                checked={form.fg_autorizacao_dados}
+                onCheckedChange={(v) => set({ fg_autorizacao_dados: v })}
+              />
               Autoriza uso de dados
             </label>
           </div>

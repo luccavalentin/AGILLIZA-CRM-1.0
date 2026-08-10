@@ -35,13 +35,7 @@ type Props = {
   setPagina: (v: number) => void;
 };
 
-function FilterField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
       <label className="text-[11px] font-medium text-muted-foreground">{label}</label>
@@ -175,8 +169,7 @@ export function FiltrosClientes({
                 const val = v as Escopo;
                 setEscopo(val);
                 setPagina(1);
-                if (typeof window !== "undefined")
-                  localStorage.setItem("clientes:escopo", val);
+                if (typeof window !== "undefined") localStorage.setItem("clientes:escopo", val);
               }}
             >
               <TabsList className="h-10 rounded-xl">

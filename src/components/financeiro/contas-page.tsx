@@ -43,7 +43,9 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
   const [ate, setAte] = useState("");
 
   const [baixarConta, setBaixarConta] = useState<ContaItem | null>(null);
-  const [estorno, setEstorno] = useState<{ id: string; acao: "estornar" | "cancelar" } | null>(null);
+  const [estorno, setEstorno] = useState<{ id: string; acao: "estornar" | "cancelar" } | null>(
+    null,
+  );
   const [detalheId, setDetalheId] = useState<string | null>(null);
   const [editarId, setEditarId] = useState<string | null>(null);
   const [excluirAlvo, setExcluirAlvo] = useState<{ id: string; numero: string } | null>(null);
@@ -74,7 +76,6 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
     }
   }
 
-
   async function handleExcluirSelecionadas() {
     if (!selecionados.length) return;
     setExcluindoLote(true);
@@ -92,7 +93,6 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
       setExcluindoLote(false);
     }
   }
-
 
   const { data: cfg } = useQuery({ queryKey: ["fin-configs"], queryFn: () => listarConfigs() });
   const { data, isLoading } = useQuery({
@@ -173,7 +173,6 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
         }
       />
 
-
       <ContasFiltros
         tipo={tipo}
         status={status}
@@ -201,9 +200,7 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
 
       {selecionados.length > 0 && (
         <div className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-card/95 px-4 py-3 shadow-lg backdrop-blur">
-          <span className="text-sm font-medium">
-            {selecionados.length} conta(s) selecionada(s)
-          </span>
+          <span className="text-sm font-medium">{selecionados.length} conta(s) selecionada(s)</span>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => setSelecionados([])}>
               <X className="mr-1.5 size-4" /> Limpar
@@ -247,7 +244,6 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
           setDetalheId(id);
         }}
       />
-
 
       <BaixarDialog
         tipo={tipo}

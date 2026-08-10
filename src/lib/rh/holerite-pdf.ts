@@ -14,8 +14,18 @@ import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand
 import { formatBRL } from "@/lib/simulacao/format";
 
 const MESES_LONGOS = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
 ];
 
 export interface HoleriteInput {
@@ -93,11 +103,11 @@ function campo(
 
 export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: string } {
   const P: PdfPalette = getPdfPalette();
-  const doc = new jsPDF({ 
-    orientation: "portrait", 
-    unit: "pt", 
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
     format: "a4",
-    compress: true
+    compress: true,
   });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -211,19 +221,39 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
       }),
     );
   } else {
-    proventos.push({ codigo: "001", desc: "Salário base", ref: "30 dias", valor: input.salario_base });
+    proventos.push({
+      codigo: "001",
+      desc: "Salário base",
+      ref: "30 dias",
+      valor: input.salario_base,
+    });
     if ((d.beneficios_valor ?? 0) > 0) {
-      proventos.push({ codigo: "070", desc: "Benefícios (provento)", ref: "", valor: d.beneficios_valor ?? 0 });
+      proventos.push({
+        codigo: "070",
+        desc: "Benefícios (provento)",
+        ref: "",
+        valor: d.beneficios_valor ?? 0,
+      });
     }
     if ((d.proventos_avulsos ?? 0) > 0) {
       (input.ajustes ?? [])
         .filter((a) => a.tipo === "provento")
         .forEach((a, i) =>
-          proventos.push({ codigo: String(90 + i).padStart(3, "0"), desc: a.descricao, ref: "avulso", valor: a.valor }),
+          proventos.push({
+            codigo: String(90 + i).padStart(3, "0"),
+            desc: a.descricao,
+            ref: "avulso",
+            valor: a.valor,
+          }),
         );
     }
     if ((d.inss ?? 0) > 0) {
-      descontos.push({ codigo: "110", desc: "I.N.S.S.", ref: "tab. progressiva", valor: d.inss ?? 0 });
+      descontos.push({
+        codigo: "110",
+        desc: "I.N.S.S.",
+        ref: "tab. progressiva",
+        valor: d.inss ?? 0,
+      });
     }
     if ((d.irrf ?? 0) > 0) {
       descontos.push({
@@ -234,19 +264,39 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
       });
     }
     if ((d.beneficios_desconto ?? 0) > 0) {
-      descontos.push({ codigo: "120", desc: "Benefícios (desconto)", ref: "", valor: d.beneficios_desconto ?? 0 });
+      descontos.push({
+        codigo: "120",
+        desc: "Benefícios (desconto)",
+        ref: "",
+        valor: d.beneficios_desconto ?? 0,
+      });
     }
     if ((d.descontos_lancados ?? 0) > 0) {
-      descontos.push({ codigo: "190", desc: "Descontos lançados", ref: "", valor: d.descontos_lancados ?? 0 });
+      descontos.push({
+        codigo: "190",
+        desc: "Descontos lançados",
+        ref: "",
+        valor: d.descontos_lancados ?? 0,
+      });
     }
     if ((d.adiantamentos ?? 0) > 0) {
-      descontos.push({ codigo: "140", desc: "Adiantamento salarial", ref: "", valor: d.adiantamentos ?? 0 });
+      descontos.push({
+        codigo: "140",
+        desc: "Adiantamento salarial",
+        ref: "",
+        valor: d.adiantamentos ?? 0,
+      });
     }
     if ((d.descontos_avulsos ?? 0) > 0) {
       (input.ajustes ?? [])
         .filter((a) => a.tipo === "desconto")
         .forEach((a, i) =>
-          descontos.push({ codigo: String(191 + i), desc: a.descricao, ref: "avulso", valor: a.valor }),
+          descontos.push({
+            codigo: String(191 + i),
+            desc: a.descricao,
+            ref: "avulso",
+            valor: a.valor,
+          }),
         );
     }
   }
@@ -357,7 +407,10 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
     { l: "Base FGTS", v: formatBRL(baseInss) },
     { l: "FGTS do mês", v: formatBRL(fgts) },
     { l: "Base IRRF", v: formatBRL(baseIrrf) },
-    { l: "Faixa IRRF", v: (d.dependentes_ir ?? 0) > 0 ? `${d.dependentes_ir} dep.` : "tab. mensal" },
+    {
+      l: "Faixa IRRF",
+      v: (d.dependentes_ir ?? 0) > 0 ? `${d.dependentes_ir} dep.` : "tab. mensal",
+    },
   ];
   const bw = W / bases.length;
   bases.forEach((b, i) => {
@@ -388,11 +441,7 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
   doc.setFontSize(7.5);
   doc.setTextColor(P.cinza);
   doc.text("Assinatura do funcionário", M + 16, assinY + 11);
-  doc.text(
-    `Data: ____/____/${input.competencia.ano}`,
-    M + 16,
-    assinY + 24,
-  );
+  doc.text(`Data: ____/____/${input.competencia.ano}`, M + 16, assinY + 24);
   doc.text(`${empregador} — Assinatura do empregador`, M + W * 0.58, assinY + 11);
 
   // ---------------------------------------------------------------- rodapé
@@ -410,7 +459,10 @@ export function gerarHoleritePdf(input: HoleriteInput): { blob: Blob; filename: 
 
   const blob = doc.output("blob");
   const mm = String(input.competencia.mes).padStart(2, "0");
-  const safeNome = input.funcionario.nome.replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_").slice(0, 40);
+  const safeNome = input.funcionario.nome
+    .replace(/[^\w\s.-]/g, "")
+    .replace(/\s+/g, "_")
+    .slice(0, 40);
   const filename = `Holerite_${input.competencia.ano}-${mm}_${safeNome}.pdf`;
   return { blob, filename };
 }

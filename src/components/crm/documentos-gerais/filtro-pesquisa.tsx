@@ -72,7 +72,10 @@ export function FiltroPesquisa({
         <Command
           filter={(itemValue, search) => {
             const normalize = (s: string) =>
-              s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+              s
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase();
             return normalize(itemValue).includes(normalize(search)) ? 1 : 0;
           }}
         >
@@ -88,7 +91,9 @@ export function FiltroPesquisa({
                 }}
                 className="py-2.5"
               >
-                <Check className={cn("size-4", value === todosValue ? "opacity-100" : "opacity-0")} />
+                <Check
+                  className={cn("size-4", value === todosValue ? "opacity-100" : "opacity-0")}
+                />
                 <span className="truncate font-medium">{todosLabel}</span>
               </CommandItem>
               {itens.map((item) => {
@@ -103,7 +108,9 @@ export function FiltroPesquisa({
                     }}
                     className="py-2.5"
                   >
-                    <Check className={cn("size-4", value === item.id ? "opacity-100" : "opacity-0")} />
+                    <Check
+                      className={cn("size-4", value === item.id ? "opacity-100" : "opacity-0")}
+                    />
                     <span className="truncate">{nome}</span>
                   </CommandItem>
                 );

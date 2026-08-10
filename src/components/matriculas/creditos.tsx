@@ -68,7 +68,9 @@ export function Creditos({
             {lista.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="tabular-nums">
-                  {new Date(c.data + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                  {new Date(c.data + "T00:00:00").toLocaleDateString("pt-BR", {
+                    timeZone: "America/Sao_Paulo",
+                  })}
                 </TableCell>
                 <TableCell>{c.descricao ?? "Compra de crédito"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(c.valor)}</TableCell>

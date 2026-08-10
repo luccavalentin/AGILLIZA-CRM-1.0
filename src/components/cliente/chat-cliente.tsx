@@ -22,7 +22,6 @@ import {
   clienteEditarMensagem,
   clienteExcluirMensagem,
   clienteExcluirConversa,
-
   clienteEnviarMensagemAnexo,
   clienteMarcarLida,
   type AtendenteCliente,
@@ -73,7 +72,8 @@ export function horaCurta(iso: string) {
     d.getDate() === hoje.getDate() &&
     d.getMonth() === hoje.getMonth() &&
     d.getFullYear() === hoje.getFullYear();
-  return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
+  return d.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     ...(mesmoDia ? {} : { day: "2-digit", month: "2-digit" }),
     hour: "2-digit",
     minute: "2-digit",
@@ -81,7 +81,11 @@ export function horaCurta(iso: string) {
 }
 
 function horaMin(iso: string) {
-  return new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",   hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function rotuloDia(iso: string) {
@@ -95,7 +99,12 @@ function rotuloDia(iso: string) {
     a.getFullYear() === b.getFullYear();
   if (igual(d, hoje)) return "Hoje";
   if (igual(d, ontem)) return "Ontem";
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   day: "2-digit", month: "long", year: "numeric" });
+  return d.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function chaveDia(iso: string) {
@@ -107,7 +116,8 @@ function chaveDia(iso: string) {
  * (cabeçalho + paddings + rodapé), garantindo que somente a lista de mensagens
  * role — a "janela solta" e o compositor fica sempre visível.
  */
-const ALTURA_PADRAO = "h-[calc(100dvh-10.5rem)] min-h-[24rem] sm:h-[calc(100dvh-13rem)] sm:min-h-[420px]";
+const ALTURA_PADRAO =
+  "h-[calc(100dvh-10.5rem)] min-h-[24rem] sm:h-[calc(100dvh-13rem)] sm:min-h-[420px]";
 
 export function ChatCliente({ altura = ALTURA_PADRAO }: { altura?: string }) {
   const [atendenteSel, setAtendenteSel] = useState<AtendenteCliente | null>(null);
@@ -120,8 +130,6 @@ export function ChatCliente({ altura = ALTURA_PADRAO }: { altura?: string }) {
     // já cuida de sinalizar novas mensagens, e refetch em background gasta
     // bateria e cota do Supabase à toa.
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
-
-
   });
 
   // Seleção automática quando há apenas um atendente.
@@ -160,7 +168,6 @@ export function ChatCliente({ altura = ALTURA_PADRAO }: { altura?: string }) {
       />
     );
   }
-
 
   return (
     <ThreadChat
@@ -238,9 +245,7 @@ function ListaAtendentes({
                     <p
                       className={cn(
                         "truncate text-xs",
-                        a.nao_lidas > 0
-                          ? "font-medium text-foreground"
-                          : "text-muted-foreground",
+                        a.nao_lidas > 0 ? "font-medium text-foreground" : "text-muted-foreground",
                       )}
                     >
                       {a.ultima_mensagem || "Iniciar conversa"}
@@ -266,7 +271,6 @@ function ListaAtendentes({
               </button>
             </div>
           ))
-
         )}
       </div>
     </div>
@@ -304,16 +308,16 @@ export function ThreadChat({
     // Sem polling em background — quando a aba volta ao foco o refetch
     // automático de `refetchOnWindowFocus` sincroniza as mensagens.
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 2500),
-
   });
-
 
   const { peerTyping, notifyTyping, notifyStop } = useChatTyping(atendenteId, "cliente");
   const { peerOnline } = useChatPresence(atendenteId, "cliente");
 
-  const [respondendo, setRespondendo] = useState<{ id: string; autor: string; texto: string } | null>(
-    null,
-  );
+  const [respondendo, setRespondendo] = useState<{
+    id: string;
+    autor: string;
+    texto: string;
+  } | null>(null);
   const [editando, setEditando] = useState<{ id: string; original: string } | null>(null);
 
   const editarMsg = useMutation({
@@ -348,15 +352,11 @@ export function ThreadChat({
     onError: (e: any) => toast.error(e?.message ?? "Não foi possível excluir a conversa."),
   });
 
-
   const reagir = useMutation({
-    mutationFn: (p: { mensagem_id: string; emoji: string }) =>
-      clienteReagirMensagem({ data: p }),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["cliente", "mensagens", atendenteId] }),
+    mutationFn: (p: { mensagem_id: string; emoji: string }) => clienteReagirMensagem({ data: p }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cliente", "mensagens", atendenteId] }),
     onError: () => toast.error("Não foi possível registrar a reação."),
   });
-
 
   const enviar = useMutation({
     mutationFn: (mensagem: string) =>
@@ -406,7 +406,6 @@ export function ThreadChat({
     }
     enviar.mutate(v);
   }
-
 
   function selecionar(file: File | undefined) {
     if (!file) return;
@@ -471,7 +470,9 @@ export function ThreadChat({
           ) : null}
           <div className="relative shrink-0">
             <Avatar className="h-11 w-11">
-              {atendente.foto_url ? <AvatarImage src={atendente.foto_url} alt={atendente.nome} /> : null}
+              {atendente.foto_url ? (
+                <AvatarImage src={atendente.foto_url} alt={atendente.nome} />
+              ) : null}
               <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
                 {iniciais(atendente.nome)}
               </AvatarFallback>
@@ -515,15 +516,30 @@ export function ThreadChat({
           </div>
           {headerExtras ?? (
             <div className="hidden items-center gap-1.5 sm:flex">
-              <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Buscar mensagem">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-full"
+                aria-label="Buscar mensagem"
+              >
                 <Search className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Ligar">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-full"
+                aria-label="Ligar"
+              >
                 <Phone className="h-4 w-4" />
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Mais opções">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-full"
+                    aria-label="Mais opções"
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -544,7 +560,6 @@ export function ThreadChat({
               </DropdownMenu>
             </div>
           )}
-
         </div>
       )}
 
@@ -567,8 +582,7 @@ export function ThreadChat({
             const soAnexo = temAnexo && (!m.mensagem || m.mensagem === m.anexo_nome);
             const anterior = lista[i - 1];
             const novoDia = !anterior || chaveDia(anterior.criada_em) !== chaveDia(m.criada_em);
-            const agrupado =
-              !novoDia && anterior && anterior.remetente_tipo === m.remetente_tipo;
+            const agrupado = !novoDia && anterior && anterior.remetente_tipo === m.remetente_tipo;
             return (
               <div key={m.id}>
                 {novoDia && (
@@ -590,9 +604,7 @@ export function ThreadChat({
                       className={cn("h-7 w-7 shrink-0", agrupado && "invisible")}
                       aria-hidden={agrupado}
                     >
-                      {atendente.foto_url ? (
-                        <AvatarImage src={atendente.foto_url} alt="" />
-                      ) : null}
+                      {atendente.foto_url ? <AvatarImage src={atendente.foto_url} alt="" /> : null}
                       <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
                         {iniciais(atendente.nome)}
                       </AvatarFallback>
@@ -635,7 +647,10 @@ export function ThreadChat({
                             <button
                               type="button"
                               onClick={() =>
-                                setVisualizando({ url: m.anexo_url!, nome: m.anexo_nome ?? "Anexo" })
+                                setVisualizando({
+                                  url: m.anexo_url!,
+                                  nome: m.anexo_nome ?? "Anexo",
+                                })
                               }
                               className="block"
                             >
@@ -746,7 +761,6 @@ export function ThreadChat({
                             Excluir
                           </button>
                         ) : null}
-
                       </div>
                     ) : null}
                     <span className="mt-0.5 px-1 text-[10px] text-muted-foreground">
@@ -797,8 +811,6 @@ export function ThreadChat({
         </div>
       ) : null}
 
-
-
       {editando ? (
         <div className="flex shrink-0 items-start gap-2 border-t border-border/60 bg-amber-500/10 px-3 py-2 text-xs">
           <div className="min-w-0 flex-1 border-l-2 border-amber-500 pl-2">
@@ -837,7 +849,6 @@ export function ThreadChat({
           </button>
         </div>
       ) : null}
-
 
       <form
         className="flex shrink-0 items-end gap-1.5 border-t border-border/60 bg-background/95 p-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:p-3"

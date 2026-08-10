@@ -26,17 +26,24 @@ interface Props {
  * aviso COMPLETO em um diálogo legível (com opção de copiar). Evita que o
  * motivo real da recusa fique cortado nas tabelas e cartões.
  */
-export function ErroBancoDetalhe({ mensagem, rendaEstimada, nomeBanco, linhas = 2, className }: Props) {
+export function ErroBancoDetalhe({
+  mensagem,
+  rendaEstimada,
+  nomeBanco,
+  linhas = 2,
+  className,
+}: Props) {
   const [aberto, setAberto] = useState(false);
   if (!mensagem) return null;
 
   const clamp = linhas === 1 ? "line-clamp-1" : linhas === 3 ? "line-clamp-3" : "line-clamp-2";
 
-  const formatBRL = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+  const formatBRL = (v: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   const lowerMsg = mensagem.toLowerCase();
   const isRendaErro = lowerMsg.includes("renda");
-  const displayMsg = isRendaErro 
+  const displayMsg = isRendaErro
     ? `Recusado — renda abaixo da exigida por esta instituição`
     : mensagem;
 
@@ -57,10 +64,11 @@ export function ErroBancoDetalhe({ mensagem, rendaEstimada, nomeBanco, linhas = 
       >
         {displayMsg}
         {isRendaErro && rendaEstimada && (
-          <span className="block font-normal text-muted-foreground">Estimado: {formatBRL(rendaEstimada)}</span>
+          <span className="block font-normal text-muted-foreground">
+            Estimado: {formatBRL(rendaEstimada)}
+          </span>
         )}
       </button>
-
 
       <Dialog open={aberto} onOpenChange={setAberto}>
         <DialogContent className="max-w-lg">
@@ -76,7 +84,9 @@ export function ErroBancoDetalhe({ mensagem, rendaEstimada, nomeBanco, linhas = 
 
           <div className="brand-scroll max-h-[50vh] overflow-y-auto rounded-lg border border-destructive/30 bg-destructive/5 p-4">
             <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
-              {isRendaErro ? "A renda informada não atingiu o mínimo exigido pelo banco para esta operação." : mensagem}
+              {isRendaErro
+                ? "A renda informada não atingiu o mínimo exigido pelo banco para esta operação."
+                : mensagem}
             </p>
             {isRendaErro && rendaEstimada && (
               <p className="mt-3 font-semibold text-destructive">
@@ -89,7 +99,6 @@ export function ErroBancoDetalhe({ mensagem, rendaEstimada, nomeBanco, linhas = 
               </p>
             )}
           </div>
-
 
           <div className="flex justify-end">
             <Button

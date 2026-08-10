@@ -42,7 +42,6 @@ export function CamposParticipante({
   mostrarIdentificacaoExtra: boolean;
   idBanco?: number;
 }) {
-
   const pf = f.tipo_pessoa === "F";
   const err = (k: string) => erros.has(k);
   const cls = (k: string) => (err(k) ? CLASSE_ERRO : undefined);
@@ -52,19 +51,47 @@ export function CamposParticipante({
       <Secao titulo="Identificação">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {mostrarIdentificacaoExtra && (
-            <SelSelect label="Situação" value={f.tipo_situacao} options={TIPO_SITUACAO} onChange={(v) => set({ tipo_situacao: v })} />
+            <SelSelect
+              label="Situação"
+              value={f.tipo_situacao}
+              options={TIPO_SITUACAO}
+              onChange={(v) => set({ tipo_situacao: v })}
+            />
           )}
           {mostrarQualificacao && (
-            <SelSelect label="Qualificação" value={f.tipo_qualificacao} options={TIPO_QUALIFICACAO} onChange={(v) => set({ tipo_qualificacao: v })} />
+            <SelSelect
+              label="Qualificação"
+              value={f.tipo_qualificacao}
+              options={TIPO_QUALIFICACAO}
+              onChange={(v) => set({ tipo_qualificacao: v })}
+            />
           )}
           {mostrarIdentificacaoExtra && (
-            <SelSelect label="Tipo de pessoa" value={f.tipo_pessoa} options={TIPO_PESSOA} onChange={(v) => set({ tipo_pessoa: v })} />
+            <SelSelect
+              label="Tipo de pessoa"
+              value={f.tipo_pessoa}
+              options={TIPO_PESSOA}
+              onChange={(v) => set({ tipo_pessoa: v })}
+            />
           )}
-          <Campo label={pf ? "Nome completo" : "Razão social"} className="sm:col-span-2" obrigatorio erro={err("nome")}>
-            <Input value={f.nome} onChange={(e) => set({ nome: e.target.value })} className={cls("nome")} />
+          <Campo
+            label={pf ? "Nome completo" : "Razão social"}
+            className="sm:col-span-2"
+            obrigatorio
+            erro={err("nome")}
+          >
+            <Input
+              value={f.nome}
+              onChange={(e) => set({ nome: e.target.value })}
+              className={cls("nome")}
+            />
           </Campo>
           <Campo label="CPF/CNPJ" obrigatorio erro={err("cpf_cnpj")}>
-            <Input value={f.cpf_cnpj} onChange={(e) => set({ cpf_cnpj: maskCpfCnpj(e.target.value) })} className={cls("cpf_cnpj")} />
+            <Input
+              value={f.cpf_cnpj}
+              onChange={(e) => set({ cpf_cnpj: maskCpfCnpj(e.target.value) })}
+              className={cls("cpf_cnpj")}
+            />
           </Campo>
         </div>
       </Secao>
@@ -74,17 +101,46 @@ export function CamposParticipante({
         <Secao titulo="Dados pessoais">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Campo label="Data de nascimento" obrigatorio erro={err("data_nascimento")}>
-              <DateInput value={f.data_nascimento} onChange={(v) => set({ data_nascimento: v })} className={cls("data_nascimento")} />
+              <DateInput
+                value={f.data_nascimento}
+                onChange={(v) => set({ data_nascimento: v })}
+                className={cls("data_nascimento")}
+              />
             </Campo>
             <Campo label="Nome da mãe" obrigatorio erro={err("nome_mae")}>
-              <Input value={f.nome_mae} onChange={(e) => set({ nome_mae: e.target.value })} className={cls("nome_mae")} />
+              <Input
+                value={f.nome_mae}
+                onChange={(e) => set({ nome_mae: e.target.value })}
+                className={cls("nome_mae")}
+              />
             </Campo>
-            <SelSelect label="Sexo" value={f.tipo_sexo} options={TIPO_SEXO} onChange={(v) => set({ tipo_sexo: v })} obrigatorio erro={err("tipo_sexo")} />
+            <SelSelect
+              label="Sexo"
+              value={f.tipo_sexo}
+              options={TIPO_SEXO}
+              onChange={(v) => set({ tipo_sexo: v })}
+              obrigatorio
+              erro={err("tipo_sexo")}
+            />
             {mostrarEstadoCivil && (
-              <SelSelect label="Estado civil" value={f.estado_civil} options={TIPO_ESTADO_CIVIL} onChange={(v) => set({ estado_civil: v })} obrigatorio erro={err("estado_civil")} />
+              <SelSelect
+                label="Estado civil"
+                value={f.estado_civil}
+                options={TIPO_ESTADO_CIVIL}
+                onChange={(v) => set({ estado_civil: v })}
+                obrigatorio
+                erro={err("estado_civil")}
+              />
             )}
             {mostrarEstadoCivil && ESTADO_CIVIL_COM_REGIME.has(f.estado_civil) && (
-              <SelSelect label="Regime de casamento (recomendado)" value={f.regime_casamento} options={TIPO_REGIME_CASAMENTO} onChange={(v) => set({ regime_casamento: v })} className="sm:col-span-2" erro={err("regime_casamento")} />
+              <SelSelect
+                label="Regime de casamento (recomendado)"
+                value={f.regime_casamento}
+                options={TIPO_REGIME_CASAMENTO}
+                onChange={(v) => set({ regime_casamento: v })}
+                className="sm:col-span-2"
+                erro={err("regime_casamento")}
+              />
             )}
           </div>
         </Secao>
@@ -93,14 +149,35 @@ export function CamposParticipante({
       {/* Documento */}
       <Secao titulo="Documento de identidade">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <SelSelect label="Tipo de documento" value={f.tipo_documento_identidade} options={TIPO_DOCUMENTO_IDENTIDADE} onChange={(v) => set({ tipo_documento_identidade: v })} obrigatorio erro={err("tipo_documento_identidade")} />
+          <SelSelect
+            label="Tipo de documento"
+            value={f.tipo_documento_identidade}
+            options={TIPO_DOCUMENTO_IDENTIDADE}
+            onChange={(v) => set({ tipo_documento_identidade: v })}
+            obrigatorio
+            erro={err("tipo_documento_identidade")}
+          />
           <Campo label="Número do documento" obrigatorio erro={err("numero_documento")}>
-            <Input value={f.numero_documento} onChange={(e) => set({ numero_documento: e.target.value })} className={cls("numero_documento")} />
+            <Input
+              value={f.numero_documento}
+              onChange={(e) => set({ numero_documento: e.target.value })}
+              className={cls("numero_documento")}
+            />
           </Campo>
           <Campo label="Órgão expedidor" obrigatorio erro={err("orgao_expedidor")}>
-            <Input value={f.orgao_expedidor} onChange={(e) => set({ orgao_expedidor: e.target.value })} className={cls("orgao_expedidor")} />
+            <Input
+              value={f.orgao_expedidor}
+              onChange={(e) => set({ orgao_expedidor: e.target.value })}
+              className={cls("orgao_expedidor")}
+            />
           </Campo>
-          <SelUf label="UF de expedição" value={f.uf_expedicao} onChange={(v) => set({ uf_expedicao: v })} obrigatorio erro={err("uf_expedicao")} />
+          <SelUf
+            label="UF de expedição"
+            value={f.uf_expedicao}
+            onChange={(v) => set({ uf_expedicao: v })}
+            obrigatorio
+            erro={err("uf_expedicao")}
+          />
           <Campo label="Data de expedição">
             <DateInput value={f.data_expedicao} onChange={(v) => set({ data_expedicao: v })} />
           </Campo>
@@ -111,13 +188,21 @@ export function CamposParticipante({
       <Secao titulo="Profissional e renda">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Campo label="Profissão" obrigatorio erro={err("profissao")}>
-            <Input value={f.profissao} onChange={(e) => set({ profissao: e.target.value })} className={cls("profissao")} />
+            <Input
+              value={f.profissao}
+              onChange={(e) => set({ profissao: e.target.value })}
+              className={cls("profissao")}
+            />
           </Campo>
           <Campo label="Empresa">
             <Input value={f.empresa} onChange={(e) => set({ empresa: e.target.value })} />
           </Campo>
           <Campo label="Renda" obrigatorio erro={err("renda")}>
-            <CurrencyInput value={f.renda} onChange={(v) => set({ renda: v })} className={cls("renda")} />
+            <CurrencyInput
+              value={f.renda}
+              onChange={(v) => set({ renda: v })}
+              className={cls("renda")}
+            />
           </Campo>
         </div>
       </Secao>
@@ -126,10 +211,20 @@ export function CamposParticipante({
       <Secao titulo="Contato">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Campo label="E-mail" obrigatorio erro={err("email")}>
-            <Input type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} className={cls("email")} />
+            <Input
+              type="email"
+              value={f.email}
+              onChange={(e) => set({ email: e.target.value })}
+              className={cls("email")}
+            />
           </Campo>
           <Campo label="Celular" obrigatorio erro={err("celular")}>
-            <Input value={f.celular} onChange={(e) => set({ celular: maskCelular(e.target.value) })} placeholder="(00) 00000-0000" className={cls("celular")} />
+            <Input
+              value={f.celular}
+              onChange={(e) => set({ celular: maskCelular(e.target.value) })}
+              placeholder="(00) 00000-0000"
+              className={cls("celular")}
+            />
           </Campo>
         </div>
       </Secao>
@@ -155,21 +250,43 @@ export function CamposParticipante({
             </div>
           </Campo>
           <Campo label="Logradouro" obrigatorio erro={err("logradouro")}>
-            <Input value={f.logradouro} onChange={(e) => set({ logradouro: e.target.value })} className={cls("logradouro")} />
+            <Input
+              value={f.logradouro}
+              onChange={(e) => set({ logradouro: e.target.value })}
+              className={cls("logradouro")}
+            />
           </Campo>
           <Campo label="Número" obrigatorio erro={err("numero_logradouro")}>
-            <Input value={f.numero_logradouro} onChange={(e) => set({ numero_logradouro: e.target.value })} className={cls("numero_logradouro")} />
+            <Input
+              value={f.numero_logradouro}
+              onChange={(e) => set({ numero_logradouro: e.target.value })}
+              className={cls("numero_logradouro")}
+            />
           </Campo>
           <Campo label="Complemento">
             <Input value={f.complemento} onChange={(e) => set({ complemento: e.target.value })} />
           </Campo>
           <Campo label="Bairro" obrigatorio erro={err("bairro")}>
-            <Input value={f.bairro} onChange={(e) => set({ bairro: e.target.value })} className={cls("bairro")} />
+            <Input
+              value={f.bairro}
+              onChange={(e) => set({ bairro: e.target.value })}
+              className={cls("bairro")}
+            />
           </Campo>
           <Campo label="Município" obrigatorio erro={err("municipio")}>
-            <Input value={f.municipio} onChange={(e) => set({ municipio: e.target.value })} className={cls("municipio")} />
+            <Input
+              value={f.municipio}
+              onChange={(e) => set({ municipio: e.target.value })}
+              className={cls("municipio")}
+            />
           </Campo>
-          <SelUf label="UF" value={f.uf} onChange={(v) => set({ uf: v })} obrigatorio erro={err("uf")} />
+          <SelUf
+            label="UF"
+            value={f.uf}
+            onChange={(v) => set({ uf: v })}
+            obrigatorio
+            erro={err("uf")}
+          />
         </div>
       </Secao>
 

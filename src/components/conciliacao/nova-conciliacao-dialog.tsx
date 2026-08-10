@@ -83,8 +83,8 @@ export function NovaConciliacaoDialog({
         <DialogHeader>
           <DialogTitle>Novo comparativo de dados</DialogTitle>
           <DialogDescription>
-            Envie o relatório oficial do banco. O sistema apenas compara — nenhuma
-            proposta é criada ou alterada.
+            Envie o relatório oficial do banco. O sistema apenas compara — nenhuma proposta é criada
+            ou alterada.
           </DialogDescription>
         </DialogHeader>
 
@@ -141,11 +141,7 @@ export function NovaConciliacaoDialog({
             onClick={enviar}
             disabled={busy || !arquivo || !banco?.disponivel || !/^\d{4}-\d{2}$/.test(periodo)}
           >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4" />
-            )}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             Conciliar
           </Button>
         </DialogFooter>

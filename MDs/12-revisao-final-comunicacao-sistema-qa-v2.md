@@ -15,23 +15,27 @@ O agente executa, corrige o que quebrou (sem introduzir features novas), e emite
 Para cada item, o agente: (i) confirma existência, (ii) roda leitura/escrita real via `supabase--read_query`/`supabase--insert` ou navegação Playwright, (iii) marca ✔/✖.
 
 ### A.1 Fundação → todas
+
 - `has_role(uuid, app_role)` `SECURITY DEFINER` presente e usada em toda policy RLS.
 - Toda tabela de negócio tem `correspondente_id` + policy restringindo ao ecossistema.
 - Trigger `handle_new_user_profile` cria profiles/user_roles e para correspondente-raiz define `correspondente_id = profiles.id`.
 - Todo GRANT presente (authenticated, service_role; anon só onde há policy pública).
 
 ### A.2 Shell (02) ↔ demais
+
 - Layout `_authenticated` renderiza `<Outlet />`.
 - Menu filtrado em tempo real (testar 3 papéis).
 - `notificacoes` gravada por 04 (retorno banco), 05 (mudança status), 06 (comissão), 07 (SLA), 09 (mensagem cliente), 10 (auditoria crítica).
 
 ### A.3 CRM (03) ↔ Simulações/Propostas/App Cliente
+
 - "Puxar do CRM" existe em Simulação (04) e Proposta (05); importa `cliente_id` + snapshot + docs.
 - Simulação `simulada` → botão "Promover a Proposta" chama `criarProposta` (05).
 - `contrato_emitido` → CRM cliente → etapa final (verificar `cliente_pipeline`).
 - Habilitar Portal do Cliente → login em `/portal` OK; revogar → falha imediata.
 
 ### A.4 Simulações (04) ↔ Propostas (05) ↔ Financeiro (06)
+
 - `propostas.simulacao_id` nullable (proposta manual).
 - Trigger `on_proposta_contrato_emitido` gera CR + CP + `comissoes_usuario`.
 - Cron `/api/public/sync-propostas` atualiza status via polling.
@@ -39,11 +43,13 @@ Para cada item, o agente: (i) confirma existência, (ii) roda leitura/escrita re
 - Santander HE usa rota Somahome (`idOperacao=6`).
 
 ### A.5 Tarefas/Demandas (07) e Relatórios (08)
+
 - SLA calculado com horas úteis + feriados; escalonamento no 100%.
 - Relatórios (`runReport`) respeitam `correspondente_id` — testar cross-tenant.
 - Central de Chats agrega clientes + DMs + demandas em `/operacional/chats`.
 
 ### A.6 App Cliente (09), RH (11) e Admin (10)
+
 - Login cliente CPF/CNPJ+data com RLS ao próprio cliente_id.
 - `/admin/bancos` armazena só nome do secret; testes de conectividade OK antes de ativar.
 - Portal do Parceiro unificado: `acesso_tipo='portal_parceiro'` logando em `/parceiro` navega para `/parceiro-inicio` no shell interno; rotas antigas redirecionam.
@@ -51,6 +57,7 @@ Para cada item, o agente: (i) confirma existência, (ii) roda leitura/escrita re
 - Auditoria recebe eventos das etapas 01–11.
 
 ### A.7 Comunicação **PROIBIDA** (checar ausência)
+
 - `rg -n "twilio|sendgrid|resend|postmark|nodemailer|whatsapp|zenvia|infobip|web push|firebase" src/` → 0 hits.
 - `rg -n "ai.gateway.lovable.dev|@lovable/|lovable-ai-" src/` → 0 hits.
 - `rg -i "HomeFin|Lovable|Supabase" src/` filtrado (excluindo `.env`, `integrations/`, comentários, nomes de tabela) → 0 hits em texto renderizado.
@@ -59,17 +66,20 @@ Para cada item, o agente: (i) confirma existência, (ii) roda leitura/escrita re
 ## 3. Parte B — Sistema
 
 ### B.1 Build e tipos
+
 - `bunx tsgo` — 0 erros.
 - Build de produção conclui.
 - Zero `any` novo em `src/integrations/homefin/` (100% gerado do swagger).
 
 ### B.2 Banco e RLS
+
 - `supabase--linter` — sem warning novo.
 - Toda tabela pública com RLS.
 - Nenhuma tabela sensível concede SELECT a `anon`.
 - `banco_credenciais`, `admin_audit_logs`, `financial_*`, `cliente_auditoria` NÃO retornam nada como `authenticated` de outro ecossistema.
 
 ### B.3 Segurança avançada (2.0)
+
 - Nenhum secret em código-fonte (`rg -n "sk_|xoxb-|SECRET|PRIVATE_KEY" src/`).
 - `supabaseAdmin` só importado dentro de handler (`await import(...)`); nunca em rota/cliente.
 - Webhooks `/api/public/*` validam assinatura (o único hoje é `sync-propostas` com `CRON_SECRET`).
@@ -83,12 +93,14 @@ Para cada item, o agente: (i) confirma existência, (ii) roda leitura/escrita re
 - Detecção de anomalia (login IP novo, N ações admin em 5min, export massivo) → notifica correspondente.
 
 ### B.4 Marca branca e design
+
 - Nenhuma logo/ícone gerado por IA. Assets vindos de `Logos e a API/` copiados para `src/assets/brand/`.
 - Tokens semânticos em `src/styles.css`; sem `text-white`/`bg-black`/`bg-[#...]` nos componentes.
 - Fonte Inter Variable local, sem `<link>` remoto em CSS.
 - `<title>`, `og:*`, `twitter:*` reais em cada rota — nunca "Lovable App".
 
 ### B.5 Performance mínima
+
 - Toda listagem tem `LIMIT` + paginação.
 - Toda subscription realtime dentro de `useEffect` com cleanup `supabase.removeChannel`.
 - Painel geral <1s com 10k propostas.
@@ -101,6 +113,7 @@ Para cada item, o agente: (i) confirma existência, (ii) roda leitura/escrita re
 Rodar Playwright contra `http://localhost:8080` reproduzindo `11-v2`. Salvar screenshots em `/tmp/browser/qa/`.
 
 ### C.1 Golden Path (cadastro → contrato)
+
 1. `/auth` aba Criar conta → correspondente.
 2. `/admin/bancos` → Bradesco ativo.
 3. `/admin/pessoas` → convidar 1 gestor + 1 corretor (com toggle Portal do Parceiro).
@@ -112,22 +125,27 @@ Rodar Playwright contra `http://localhost:8080` reproduzindo `11-v2`. Salvar scr
 9. Login corretor em `/parceiro` → aterrissa em `/parceiro-inicio` e vê só o próprio cliente.
 
 ### C.2 Proposta manual sem simulação
+
 - Criar em `/operacional/propostas/nova` modo B → `simulacao_id` NULL, fluxo completo funcional.
 
 ### C.3 Isolamento entre correspondentes
+
 - Segundo correspondente-raiz → nenhum dado do primeiro visível em nenhum módulo.
 
 ### C.4 Cenários negativos
+
 - `/admin/bancos` autenticado como analista → 403.
 - `SELECT * FROM banco_credenciais` como publishable → 0 linhas.
 - Corretor tentando ver comissão de outro → 403 + audit log.
 
 ### C.5 RH e Financeiro (2.0)
+
 - Cadastrar funcionário → CP gerado no dia 5 (idempotente).
 - Holerite calcula INSS/IRRF 2025 corretamente.
 - PDF ficha funcionário sai portrait com marca d'água.
 
 ### C.6 Chat e notificação (2.0)
+
 - Enviar msg em `/crm/chat` → cliente recebe realtime; badge no sino sobe.
 - Chat minimizado pisca ao receber msg em background.
 - `{numero_proposta}` substituído em template do operador.

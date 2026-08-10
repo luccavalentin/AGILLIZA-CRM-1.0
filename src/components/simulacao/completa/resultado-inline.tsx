@@ -3,14 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import {
-  ExternalLink,
-  RefreshCw,
-  X,
-  Download,
-  Send,
-  Loader2,
-} from "lucide-react";
+import { ExternalLink, RefreshCw, X, Download, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
@@ -29,10 +22,7 @@ import { BancoLogo } from "@/components/bancos/banco-logo";
 import { BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
 import { ToneBadge } from "@/components/crm/tone-badge";
-import {
-  obterSimulacao,
-  enviarSimulacaoBanco,
-} from "@/lib/simulacao/simulacoes.functions";
+import { obterSimulacao, enviarSimulacaoBanco } from "@/lib/simulacao/simulacoes.functions";
 // Import já realizado no topo
 import { formatBRL, formatPercent, formatTaxa } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
@@ -57,19 +47,16 @@ interface Props {
   isSecundaria?: boolean;
 }
 
-
-
-
 export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }: Props) {
   const router = useRouter();
   const qc = useQueryClient();
   const [reenviandoBanco, setReenviandoBanco] = useState<string | null>(null);
   const [criandoBanco, setCriandoBanco] = useState<string | null>(null);
-  const { 
-    enviar: handleEnviarHook, 
-    busy: enviandoBanco, 
+  const {
+    enviar: handleEnviarHook,
+    busy: enviandoBanco,
     busyBancoId,
-    iniciarStatus: iniciarStatusEnvio
+    iniciarStatus: iniciarStatusEnvio,
   } = useEnviarProposta();
 
   const enviarPropostaFn = useServerFn(enviarPropostaHomeFin);
@@ -137,24 +124,24 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
 
   async function enviarAprovacao(bancoId: string) {
     if (criandoBanco) return;
-    
+
     // 1. Inicia feedback visual imediato no hook (Etapa 1: Criando)
     iniciarStatusEnvio(bancoId);
     setCriandoBanco(bancoId);
-    
+
     try {
       // 2. Chama o hook que agora sabe gerenciar a criação e status
       const res = await handleEnviarHook({
         bancoId,
         criarPropostaFn: async () => {
           const { proposta_id } = await criarProposta({
-            data: { 
-              simulacao_id: simulacaoId, 
-              banco_id: bancoId 
+            data: {
+              simulacao_id: simulacaoId,
+              banco_id: bancoId,
             },
           });
           return { proposta_id };
-        }
+        },
       });
 
       if (res?.proposta_id) {
@@ -172,7 +159,6 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
     }
   }
 
-
   if (isLoading || !data) {
     return (
       <Card className="border-primary/20 bg-primary/[0.02] p-6">
@@ -184,7 +170,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
   }
 
   const s = data.simulacao as any;
-  const bancos = ((data.bancos as any[]) ?? []);
+  const bancos = (data.bancos as any[]) ?? [];
   const bancosComTaxa = bancos
     .filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
     .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0));
@@ -208,8 +194,8 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
               {formatBRL(s.valor_financiamento)}
             </span>
             {" · "}
-            Ajuste o prazo no formulário acima e clique em <em>Gerar Simulação</em> para
-            comparar outro prazo.
+            Ajuste o prazo no formulário acima e clique em <em>Gerar Simulação</em> para comparar
+            outro prazo.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -242,9 +228,15 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
         <Tabs defaultValue="bancos">
           <div className="overflow-x-auto">
             <TabsList className="w-max">
-              <TabsTrigger value="bancos" className="shrink-0">Comparativo</TabsTrigger>
-              <TabsTrigger value="dados" className="shrink-0">Dados enviados</TabsTrigger>
-              <TabsTrigger value="historico" className="shrink-0">Histórico</TabsTrigger>
+              <TabsTrigger value="bancos" className="shrink-0">
+                Comparativo
+              </TabsTrigger>
+              <TabsTrigger value="dados" className="shrink-0">
+                Dados enviados
+              </TabsTrigger>
+              <TabsTrigger value="historico" className="shrink-0">
+                Histórico
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -271,9 +263,9 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                     />
                   )}
                   {isSecundaria ? (
-                    <ResumoCelula 
-                      rotulo="Comparativo de Taxas" 
-                      valor="Perfil Secundário" 
+                    <ResumoCelula
+                      rotulo="Comparativo de Taxas"
+                      valor="Perfil Secundário"
                       detalhe="Teste de CPF Invertido"
                       destaque
                     />
@@ -309,9 +301,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                             >
                               {b.nome_banco}
                             </span>
-                            {b.id === melhorId && (
-                              <ToneBadge tone="success">Melhor taxa</ToneBadge>
-                            )}
+                            {b.id === melhorId && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
                           </div>
                           <div className="mt-1">
                             <BancoStatusBadge status={b.status_banco} />
@@ -321,33 +311,34 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
 
                       {b.status_banco === "erro" && b.mensagem_banco && (
                         <div className="mt-2">
-                          <ErroBancoDetalhe 
-                            mensagem={b.mensagem_banco} 
+                          <ErroBancoDetalhe
+                            mensagem={b.mensagem_banco}
                             rendaEstimada={rendaMinimaDoBanco(b)}
-                            nomeBanco={b.nome_banco} 
+                            nomeBanco={b.nome_banco}
                           />
                         </div>
                       )}
-
 
                       <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         <MobileStat rotulo="Parcela" valor={formatBRL(b.valor_parcela)} />
                         <MobileStat
                           rotulo="Taxa a.a."
+                          valor={b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—"}
+                        />
+                        <MobileStat
+                          rotulo="Prazo"
                           valor={
-                            b.taxa_juros_ano != null
-                              ? formatTaxa(b.taxa_juros_ano)
-                              : "—"
+                            b.prazo_pagamento_max != null
+                              ? `${b.prazo_pagamento_max}m`
+                              : s.prazo != null
+                                ? `${s.prazo}m`
+                                : "—"
                           }
                         />
-                        <MobileStat rotulo="Prazo" valor={b.prazo_pagamento_max != null ? `${b.prazo_pagamento_max}m` : s.prazo != null ? `${s.prazo}m` : "—"} />
+                        <MobileStat rotulo="Total fin. (banco)" valor={totalBancoTexto(b)} />
                         <MobileStat
-                          rotulo="Total fin. (banco)"
-                          valor={totalBancoTexto(b)}
-                        />
-                        <MobileStat 
-                          rotulo="IOF (banco)" 
-                          valor={b.valor_iof != null ? formatBRL(b.valor_iof) : "—"} 
+                          rotulo="IOF (banco)"
+                          valor={b.valor_iof != null ? formatBRL(b.valor_iof) : "—"}
                         />
 
                         <MobileStat
@@ -364,7 +355,8 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                             variant="outline"
                             onClick={async () => {
                               try {
-                                const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+                                const { baixarSimulacaoDetalhadaPDF } =
+                                  await import("@/lib/simulacao/simulacao-pdf");
                                 baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos: [b] });
                               } catch (e) {
                                 console.error(e);
@@ -390,11 +382,23 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                           <Button
                             size="sm"
                             className="bg-gradient-to-b from-primary to-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
-                            disabled={b.status_banco !== "simulada" || criandoBanco !== null || enviandoBanco}
+                            disabled={
+                              b.status_banco !== "simulada" ||
+                              criandoBanco !== null ||
+                              enviandoBanco
+                            }
                             onClick={() => enviarAprovacao(b.banco_id)}
                           >
-                            {criandoBanco === b.banco_id || (enviandoBanco && busyBancoId === b.banco_id) ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
-                            {criandoBanco === b.banco_id || (enviandoBanco && busyBancoId === b.banco_id) ? "Enviando…" : "Enviar Aprovação"}
+                            {criandoBanco === b.banco_id ||
+                            (enviandoBanco && busyBancoId === b.banco_id) ? (
+                              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Send className="mr-1 h-4 w-4" />
+                            )}
+                            {criandoBanco === b.banco_id ||
+                            (enviandoBanco && busyBancoId === b.banco_id)
+                              ? "Enviando…"
+                              : "Enviar Aprovação"}
                           </Button>
                         )}
                       </div>
@@ -407,15 +411,31 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                   <Table className="w-full table-auto text-xs">
                     <TableHeader>
                       <TableRow className="border-border/60 bg-muted/50 hover:bg-muted/50">
-                        <TableHead className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Banco</TableHead>
-                        <TableHead className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Situação</TableHead>
-                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Parcela</TableHead>
-                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Taxa a.a.</TableHead>
-                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Prazo</TableHead>
-                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Total fin. (banco)</TableHead>
-                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">IOF (banco)</TableHead>
+                        <TableHead className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Banco
+                        </TableHead>
+                        <TableHead className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Situação
+                        </TableHead>
+                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Parcela
+                        </TableHead>
+                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Taxa a.a.
+                        </TableHead>
+                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Prazo
+                        </TableHead>
+                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Total fin. (banco)
+                        </TableHead>
+                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          IOF (banco)
+                        </TableHead>
 
-                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Renda est.</TableHead>
+                        <TableHead className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Renda est.
+                        </TableHead>
                         <TableHead className="px-2 py-2"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -432,25 +452,29 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                           <TableCell className="px-2 py-2 text-xs font-semibold">
                             <div className="flex items-center gap-1.5">
                               <BancoLogo nome={b.nome_banco} size="sm" />
-                              <span className="truncate" style={{ color: corDoBanco(b.nome_banco) }}>
+                              <span
+                                className="truncate"
+                                style={{ color: corDoBanco(b.nome_banco) }}
+                              >
                                 {b.nome_banco}
                               </span>
                               {b.id === melhorId && (
-                                <ToneBadge tone="success" className="hidden xl:inline-flex">Melhor</ToneBadge>
+                                <ToneBadge tone="success" className="hidden xl:inline-flex">
+                                  Melhor
+                                </ToneBadge>
                               )}
                             </div>
                             {b.status_banco === "erro" && b.mensagem_banco && (
                               <div className="mt-1">
-                                <ErroBancoDetalhe 
-                                  mensagem={b.mensagem_banco} 
+                                <ErroBancoDetalhe
+                                  mensagem={b.mensagem_banco}
                                   rendaEstimada={rendaMinimaDoBanco(b)}
-                                  nomeBanco={b.nome_banco} 
-                                  linhas={1} 
-                                  className="text-[10px]" 
+                                  nomeBanco={b.nome_banco}
+                                  linhas={1}
+                                  className="text-[10px]"
                                 />
                               </div>
                             )}
-
                           </TableCell>
                           <TableCell className="px-2 py-2">
                             <BancoStatusBadge status={b.status_banco} />
@@ -462,7 +486,8 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                             {b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—"}
                           </TableCell>
                           <TableCell className="px-2 py-2 text-right tabular-nums whitespace-nowrap">
-                            {b.prazo_pagamento_max ?? s.prazo ?? "—"}{b.prazo_pagamento_max || s.prazo ? "m" : ""}
+                            {b.prazo_pagamento_max ?? s.prazo ?? "—"}
+                            {b.prazo_pagamento_max || s.prazo ? "m" : ""}
                           </TableCell>
                           <TableCell className="px-2 py-2 text-right font-semibold tabular-nums whitespace-nowrap">
                             {totalBancoTexto(b)}
@@ -486,7 +511,8 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                                   aria-label="Baixar PDF deste banco"
                                   onClick={async () => {
                                     try {
-                                      const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
+                                      const { baixarSimulacaoDetalhadaPDF } =
+                                        await import("@/lib/simulacao/simulacao-pdf");
                                       baixarSimulacaoDetalhadaPDF({ simulacao: s, bancos: [b] });
                                     } catch (e) {
                                       console.error(e);
@@ -502,7 +528,9 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                                   size="icon"
                                   variant="secondary"
                                   className="h-8 w-8"
-                                  title={reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
+                                  title={
+                                    reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"
+                                  }
                                   aria-label="Reenviar"
                                   disabled={reenviandoBanco !== null}
                                   onClick={() => reenviarBanco(b.banco_id)}
@@ -513,7 +541,9 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                                 <Button
                                   size="icon"
                                   className="h-8 w-8 bg-gradient-to-b from-primary to-primary/90 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md hover:brightness-105 active:translate-y-0 active:scale-[0.98]"
-                                  title={criandoBanco === b.banco_id ? "Enviando…" : "Enviar aprovação"}
+                                  title={
+                                    criandoBanco === b.banco_id ? "Enviando…" : "Enviar aprovação"
+                                  }
                                   aria-label="Enviar aprovação"
                                   disabled={b.status_banco !== "simulada" || criandoBanco !== null}
                                   onClick={() => enviarAprovacao(b.banco_id)}
@@ -532,10 +562,10 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
             )}
             {bancos.length > 0 && (
               <p className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
-                <strong className="font-medium text-foreground">Importante:</strong> Isto é
-                apenas uma simulação. A efetivação do resultado apresentado está condicionada
-                à análise de sua proposta de financiamento. A taxa de juros apresentada na
-                simulação é apenas para referência.
+                <strong className="font-medium text-foreground">Importante:</strong> Isto é apenas
+                uma simulação. A efetivação do resultado apresentado está condicionada à análise de
+                sua proposta de financiamento. A taxa de juros apresentada na simulação é apenas
+                para referência.
               </p>
             )}
           </TabsContent>
@@ -575,8 +605,13 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                         )}
                       </div>
                       <time className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        {dt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}{" · "}
-                        {dt.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",   hour: "2-digit", minute: "2-digit" })}
+                        {dt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                        {" · "}
+                        {dt.toLocaleTimeString("pt-BR", {
+                          timeZone: "America/Sao_Paulo",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </time>
                     </li>
                   );
@@ -602,15 +637,8 @@ function ResumoCelula({
   destaque?: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "relative bg-card p-3.5 transition-colors",
-        destaque && "bg-primary/5",
-      )}
-    >
-      {destaque && (
-        <span className="absolute inset-y-0 left-0 w-0.5 bg-primary" aria-hidden />
-      )}
+    <div className={cn("relative bg-card p-3.5 transition-colors", destaque && "bg-primary/5")}>
+      {destaque && <span className="absolute inset-y-0 left-0 w-0.5 bg-primary" aria-hidden />}
       <dt className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
         {rotulo}
       </dt>

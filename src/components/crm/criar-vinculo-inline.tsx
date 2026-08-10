@@ -52,7 +52,11 @@ export function CriarVinculoInline({
   const [email, setEmail] = useState("");
   const [comLogin, setComLogin] = useState(false);
   const [nivelId, setNivelId] = useState("");
-  const [credenciais, setCredenciais] = useState<{ email: string; senha: string; idCriado: string } | null>(null);
+  const [credenciais, setCredenciais] = useState<{
+    email: string;
+    senha: string;
+    idCriado: string;
+  } | null>(null);
 
   const { data: niveis } = useQuery({
     queryKey: ["niveis-acesso"],
@@ -69,9 +73,7 @@ export function CriarVinculoInline({
     const lista = niveis ?? [];
     if (lista.length === 0) return "";
     // 1) casamento direto pelo papel do nível com o tipo da pessoa.
-    const porPapel = lista.find(
-      (n) => (n as { papel?: string }).papel === tipoPessoa,
-    );
+    const porPapel = lista.find((n) => (n as { papel?: string }).papel === tipoPessoa);
     if (porPapel) return porPapel.id;
     // 2) fallback por portal (parceiros) ou sistema.
     const querParceiro = tipoPessoa === "imobiliaria" || tipoPessoa === "corretor";
@@ -105,7 +107,11 @@ export function CriarVinculoInline({
       if (comLogin && res.senha_temporaria) {
         // Não exibe a senha em toast (pode ser perdida): abre modal dedicado
         // que persiste até o admin copiar e confirmar.
-        setCredenciais({ email: res.email || email.trim(), senha: res.senha_temporaria, idCriado: res.id });
+        setCredenciais({
+          email: res.email || email.trim(),
+          senha: res.senha_temporaria,
+          idCriado: res.id,
+        });
       } else {
         toast.success("Cadastro criado e vinculado.");
         onCriado(res.id);
@@ -135,8 +141,8 @@ export function CriarVinculoInline({
         <DialogHeader>
           <DialogTitle>Novo cadastro — {rotuloTipo}</DialogTitle>
           <DialogDescription>
-            Cadastre rapidamente sem sair da proposta. Ao salvar, o cadastro já fica
-            vinculado e você continua o fluxo.
+            Cadastre rapidamente sem sair da proposta. Ao salvar, o cadastro já fica vinculado e
+            você continua o fluxo.
           </DialogDescription>
         </DialogHeader>
 

@@ -44,7 +44,7 @@ export function UploadAvatar({ currentUrl, onUploadComplete, userId }: UploadAva
       setImageToCrop(reader.result as string);
     });
     reader.readAsDataURL(file);
-    
+
     // Reset input
     e.target.value = "";
   }
@@ -93,19 +93,27 @@ export function UploadAvatar({ currentUrl, onUploadComplete, userId }: UploadAva
     <div className="flex flex-col items-center gap-3">
       <div className="group relative h-32 w-32 overflow-hidden rounded-full border-4 border-background bg-muted shadow-xl ring-2 ring-primary/10 transition-all hover:ring-primary/30">
         {currentUrl ? (
-          <img src={currentUrl} alt="Avatar" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+          <img
+            src={currentUrl}
+            alt="Avatar"
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover transition-transform group-hover:scale-110"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-primary/5 text-primary/20">
             <User className="h-16 w-16" />
           </div>
         )}
-        
-        <label 
-          htmlFor="avatar-upload" 
+
+        <label
+          htmlFor="avatar-upload"
           className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
         >
           <Upload className="h-8 w-8 text-white" />
-          <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white">Upload</span>
+          <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white">
+            Upload
+          </span>
           <input
             id="avatar-upload"
             type="file"
@@ -128,7 +136,7 @@ export function UploadAvatar({ currentUrl, onUploadComplete, userId }: UploadAva
           </Button>
         )}
       </div>
-      
+
       <p className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-tighter">
         <Move className="h-3 w-3" />
         Arraste para ajustar o melhor ângulo
@@ -139,7 +147,7 @@ export function UploadAvatar({ currentUrl, onUploadComplete, userId }: UploadAva
           <DialogHeader>
             <DialogTitle>Ajustar Foto de Perfil</DialogTitle>
           </DialogHeader>
-          
+
           <div className="relative mt-4 h-[300px] w-full overflow-hidden rounded-lg bg-black">
             {imageToCrop && (
               <Cropper
@@ -155,7 +163,7 @@ export function UploadAvatar({ currentUrl, onUploadComplete, userId }: UploadAva
               />
             )}
           </div>
-          
+
           <div className="mt-4 space-y-4">
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium">Zoom</span>

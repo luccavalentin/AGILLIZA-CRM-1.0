@@ -79,14 +79,15 @@ export async function cancelarPropostaHomefinImpl({
     await supabase.from("proposta_historico").insert({
       proposta_id: propostaId,
       tipo_evento: "cancelada",
-      descricao: "Cancelamento local concluído. A oportunidade bancária permanece ativa para outros usos vinculados.",
+      descricao:
+        "Cancelamento local concluído. A oportunidade bancária permanece ativa para outros usos vinculados.",
       status_novo: "cancelada",
     });
     return;
   }
 
   try {
-    // Requisito: Oportunidade compartilhada. Não cancelar a OPORTUNIDADE (tipoSituacao: C) 
+    // Requisito: Oportunidade compartilhada. Não cancelar a OPORTUNIDADE (tipoSituacao: C)
     // se houver outros registros. Já verificado acima.
     await chamarIntegracao<any>(
       `/oportunidade/${idOp}`,
@@ -198,4 +199,3 @@ export async function cancelarOportunidadeHomefinGenerico({
     throw error;
   }
 }
-

@@ -52,9 +52,8 @@ export function VinculosSection({
       </CardHeader>
       <CardContent className="space-y-5">
         <p className="text-sm text-muted-foreground">
-          Escolha os usuários responsáveis pelo atendimento deste cliente por tipo. Cada tipo
-          aceita mais de um usuário e nenhum é obrigatório. Você poderá ajustar depois na ficha
-          do cliente.
+          Escolha os usuários responsáveis pelo atendimento deste cliente por tipo. Cada tipo aceita
+          mais de um usuário e nenhum é obrigatório. Você poderá ajustar depois na ficha do cliente.
         </p>
         {TIPOS_VINCULO.map((tipo) => {
           const desteTipo = vinculos.filter((x) => x.tipo_vinculo === tipo.valor);

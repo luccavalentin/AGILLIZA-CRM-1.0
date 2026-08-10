@@ -319,8 +319,7 @@ function Pagina() {
                     <span
                       className="grid size-10 place-items-center rounded-full text-[color:var(--op-accent)]"
                       style={{
-                        background:
-                          "color-mix(in oklab, var(--op-accent) 12%, transparent)",
+                        background: "color-mix(in oklab, var(--op-accent) 12%, transparent)",
                       }}
                     >
                       <Icone className="size-5" />

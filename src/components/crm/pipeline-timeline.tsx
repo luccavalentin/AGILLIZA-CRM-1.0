@@ -34,8 +34,8 @@ export function PipelineTimeline({
   if (total > 0 && atualIdx < 0) {
     return (
       <p className="text-sm text-destructive">
-        A etapa atual do cliente não existe mais na esteira. Reconfigure a esteira ou mova o
-        cliente para uma etapa válida.
+        A etapa atual do cliente não existe mais na esteira. Reconfigure a esteira ou mova o cliente
+        para uma etapa válida.
       </p>
     );
   }
@@ -173,7 +173,6 @@ export function PipelineTimeline({
               </button>
             );
           }
-
 
           return (
             <div key={s.codigo} className={wrapperClasses}>

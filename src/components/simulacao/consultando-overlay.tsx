@@ -117,9 +117,7 @@ export function ConsultandoOverlay({
           </div>
 
           <div className="space-y-1">
-            <p className="text-base font-semibold tracking-tight text-card-foreground">
-              {titulo}
-            </p>
+            <p className="text-base font-semibold tracking-tight text-card-foreground">{titulo}</p>
             <p className="text-sm text-muted-foreground">
               {legenda ??
                 (temProgresso
@@ -127,7 +125,6 @@ export function ConsultandoOverlay({
                   : "Consultando os bancos parceiros…")}
             </p>
           </div>
-
 
           {/* Indicadores por banco */}
           {temProgresso && (
@@ -140,11 +137,7 @@ export function ConsultandoOverlay({
                     key={i}
                     className={[
                       "h-1.5 flex-1 rounded-full transition-colors duration-500",
-                      feito
-                        ? "bg-primary"
-                        : ativo
-                          ? "animate-pulse bg-primary/50"
-                          : "bg-muted",
+                      feito ? "bg-primary" : ativo ? "animate-pulse bg-primary/50" : "bg-muted",
                     ].join(" ")}
                   />
                 );

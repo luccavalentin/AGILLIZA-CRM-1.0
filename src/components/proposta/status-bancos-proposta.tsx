@@ -23,7 +23,10 @@ export const STATUS_BANCO: Record<string, { label: string; tone: Tone }> = {
 };
 
 /** Rótulo + tom para um status_banco cru. */
-export function statusBancoConfig(status: string | null | undefined): { label: string; tone: Tone } {
+export function statusBancoConfig(status: string | null | undefined): {
+  label: string;
+  tone: Tone;
+} {
   return STATUS_BANCO[status ?? ""] ?? { label: status ?? "—", tone: "muted" };
 }
 
@@ -50,8 +53,7 @@ export function bancoJaEnviado(b: {
   // que exista um número técnico (ex.: codigoSimulacaoBanco) na linha.
   if (String(b.status_banco ?? "") === "erro") return false;
   return (
-    Boolean(b.numero_proposta_banco) ||
-    STATUS_BANCO_JA_ENVIADO.has(String(b.status_banco ?? ""))
+    Boolean(b.numero_proposta_banco) || STATUS_BANCO_JA_ENVIADO.has(String(b.status_banco ?? ""))
   );
 }
 
@@ -105,7 +107,7 @@ export function StatusBancosProposta({
         const cor = corDoBanco(b.nome_banco);
         const bruto = String(b.status_banco ?? "");
         const efetivo = desfecho && !STATUS_BANCO_TERMINAL.has(bruto) ? desfecho : bruto;
-        
+
         // Regra crítica: só exibir "Enviada ao banco" se houver protocolo real.
         // Caso contrário, tratamos como aguardando ou falha.
         let cfg = STATUS_BANCO[efetivo] ?? {
@@ -115,11 +117,11 @@ export function StatusBancosProposta({
 
         const temProtocolo = Boolean((b as any).numero_proposta_banco);
         if (temProtocolo) {
-           cfg = { label: "Enviado p/ aprovação de crédito", tone: "info" };
+          cfg = { label: "Enviado p/ aprovação de crédito", tone: "info" };
         } else if (efetivo === "enviada" && !temProtocolo) {
-           cfg = STATUS_BANCO["aguardando"];
+          cfg = STATUS_BANCO["aguardando"];
         } else if (efetivo === "erro" && !temProtocolo) {
-           cfg = STATUS_BANCO["erro"];
+          cfg = STATUS_BANCO["erro"];
         }
 
         return (

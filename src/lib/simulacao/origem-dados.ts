@@ -69,4 +69,3 @@ export function totalFinanciadoBanco(banco: any): number | null {
   }
   return null;
 }
-

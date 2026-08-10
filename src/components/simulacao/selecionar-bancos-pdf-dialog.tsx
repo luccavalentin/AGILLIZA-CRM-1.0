@@ -66,7 +66,8 @@ export function SelecionarBancosPdfDialog({
     [bancosExibidos, selecionados],
   );
 
-  const todosMarcados = (bancosExibidos ?? []).length > 0 && escolhidos.length === (bancosExibidos ?? []).length;
+  const todosMarcados =
+    (bancosExibidos ?? []).length > 0 && escolhidos.length === (bancosExibidos ?? []).length;
 
   function alternarTodos() {
     const novo: Record<string, boolean> = {};
@@ -130,13 +131,15 @@ export function SelecionarBancosPdfDialog({
                 <label className="flex flex-1 cursor-pointer items-center gap-3">
                   <Checkbox
                     checked={!!selecionados[key]}
-                    onCheckedChange={(v) =>
-                      setSelecionados((prev) => ({ ...prev, [key]: !!v }))
-                    }
+                    onCheckedChange={(v) => setSelecionados((prev) => ({ ...prev, [key]: !!v }))}
                   />
                   <span className="flex flex-1 flex-wrap items-center gap-2 text-sm text-foreground">
                     <span>{b.nome_banco ?? "—"}</span>
-                    {sistema !== "—" ? <Badge variant="outline" className="text-[10px]">{sistema}</Badge> : null}
+                    {sistema !== "—" ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        {sistema}
+                      </Badge>
+                    ) : null}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {b.valor_parcela != null ? formatBRL(b.valor_parcela) : "—"}

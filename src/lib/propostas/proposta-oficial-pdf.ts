@@ -8,10 +8,7 @@ import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
 import { getPdfPalette, type PdfPalette } from "@/lib/relatorios/pdf-theme";
 import { ORDEM_STATUS, type PropostaStatus } from "@/lib/propostas/state-machine";
 import { nomeDescritivo } from "@/lib/simulacao/simulacao-pdf";
-import {
-  TIPOS_DOCUMENTO_POR_CATEGORIA,
-  type CategoriaDocumento,
-} from "@/lib/crm/documento-tipos";
+import { TIPOS_DOCUMENTO_POR_CATEGORIA, type CategoriaDocumento } from "@/lib/crm/documento-tipos";
 
 /**
  * PDF **oficial da proposta** — focado na proposta em si (cadastro dos
@@ -183,7 +180,9 @@ function drawTituloProposta(doc: jsPDF, pageW: number, proposta: any, y: number)
   doc.setTextColor(P.cinza);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.text(`Emitida em ${dataTxt(proposta?.created_at)}`, pageW - MARGIN, y + 8, { align: "right" });
+  doc.text(`Emitida em ${dataTxt(proposta?.created_at)}`, pageW - MARGIN, y + 8, {
+    align: "right",
+  });
   return y + 16;
 }
 
@@ -240,7 +239,12 @@ function drawResumoFinanceiro(
   doc.text(nomeBanco, cursorX, topY + logoH / 2 + 4);
 
   // Badge de status à direita da faixa
-  drawStatusBadge(doc, pageW - MARGIN - 14 - doc.getTextWidth(tituloStatus(proposta?.status)) - 16, topY + 3, proposta?.status);
+  drawStatusBadge(
+    doc,
+    pageW - MARGIN - 14 - doc.getTextWidth(tituloStatus(proposta?.status)) - 16,
+    topY + 3,
+    proposta?.status,
+  );
 
   // Grid inferior com 5 métricas essenciais
   const detalhe = banco ? extrairDetalheBanco(banco) : null;
@@ -249,11 +253,17 @@ function drawResumoFinanceiro(
     (Array.isArray(detalhe?.parcelas) && detalhe!.parcelas[0]?.parcela) ??
     banco?.valor_parcela ??
     null;
-  const sistema = normalizarSistemaAmortizacao(detalhe?.sistemaAmortizacao, proposta?.sistema_amortizacao);
+  const sistema = normalizarSistemaAmortizacao(
+    detalhe?.sistemaAmortizacao,
+    proposta?.sistema_amortizacao,
+  );
   const prazo = detalhe?.prazoMeses ?? proposta?.prazo ?? banco?.prazo_meses ?? null;
   const taxa = detalhe?.taxaJurosAno ?? banco?.taxa_juros_ano ?? null;
   const financiamento =
-    detalhe?.financiamentoTotal ?? detalhe?.valorFinanciamento ?? proposta?.valor_financiamento ?? null;
+    detalhe?.financiamentoTotal ??
+    detalhe?.valorFinanciamento ??
+    proposta?.valor_financiamento ??
+    null;
 
   const metricas: { label: string; valor: string }[] = [
     { label: "PARCELA INICIAL", valor: brl(parcela as number | null) },
@@ -295,17 +305,18 @@ function drawImovel(doc: jsPDF, pageW: number, proposta: any, y: number): number
   doc.text("Imóvel financiado", MARGIN, y);
   y += 8;
 
-  const endereco = [
-    proposta?.endereco_imovel,
-    proposta?.numero_imovel && `nº ${proposta.numero_imovel}`,
-    proposta?.complemento_imovel,
-    proposta?.bairro_imovel,
-    (proposta?.cidade_imovel || proposta?.municipio_imovel) &&
-      `${proposta.cidade_imovel ?? proposta.municipio_imovel}${proposta?.uf ? ` / ${proposta.uf}` : ""}`,
-    proposta?.cep_imovel && `CEP ${proposta.cep_imovel}`,
-  ]
-    .filter(Boolean)
-    .join(", ") || "—";
+  const endereco =
+    [
+      proposta?.endereco_imovel,
+      proposta?.numero_imovel && `nº ${proposta.numero_imovel}`,
+      proposta?.complemento_imovel,
+      proposta?.bairro_imovel,
+      (proposta?.cidade_imovel || proposta?.municipio_imovel) &&
+        `${proposta.cidade_imovel ?? proposta.municipio_imovel}${proposta?.uf ? ` / ${proposta.uf}` : ""}`,
+      proposta?.cep_imovel && `CEP ${proposta.cep_imovel}`,
+    ]
+      .filter(Boolean)
+      .join(", ") || "—";
 
   const itens: { label: string; valor: string }[] = [
     { label: "Tipo", valor: up(proposta?.tipo_imovel) },
@@ -429,7 +440,11 @@ function drawEtapas(doc: jsPDF, pageW: number, proposta: any, y: number): number
     doc.setTextColor(recusada ? "#991B1B" : P.texto);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.text(recusada ? "Proposta com crédito recusado pelo banco." : "Proposta cancelada.", MARGIN + 10, y + 14);
+    doc.text(
+      recusada ? "Proposta com crédito recusado pelo banco." : "Proposta cancelada.",
+      MARGIN + 10,
+      y + 14,
+    );
     return y + 30;
   }
 
@@ -488,7 +503,11 @@ function tabelaProponentes(doc: jsPDF, pageW: number, envolvidos: any[], y: numb
   return (doc as any).lastAutoTable.finalY + 14;
 }
 
-function statusDocLabel(v: string | null | undefined): { label: string; fill: string; text: string } {
+function statusDocLabel(v: string | null | undefined): {
+  label: string;
+  fill: string;
+  text: string;
+} {
   const s = String(v ?? "").toLowerCase();
   if (["aprovado", "aceito", "validado"].includes(s))
     return { label: "Aprovado", fill: "#DCFCE7", text: "#166534" };
@@ -571,7 +590,8 @@ function docCasaComTipo(doc: any, tipoEsperado: string, categoria: CategoriaDocu
         // além do match textual, respeita categoria/parte se informada.
         const parte = slug(doc?.parte ?? "");
         if (!parte) return true;
-        if (categoria === "comprador" && (parte.includes("comprador") || parte.startsWith("c"))) return true;
+        if (categoria === "comprador" && (parte.includes("comprador") || parte.startsWith("c")))
+          return true;
         if (categoria === "conjuge" && parte.includes("conjuge")) return true;
         if (categoria === "vendedor" && parte.includes("vendedor")) return true;
         if (categoria === "imovel" && parte.includes("imovel")) return true;
@@ -679,9 +699,7 @@ function tabelaDocumentos(
   autoTable(doc, {
     startY: y,
     head: [["Documento", "Parte", "Obrigatório", "Situação", "Enviado em"]],
-    body: corpo.length
-      ? corpo
-      : [["—", "Nenhum item de checklist aplicável.", "—", "—", "—"]],
+    body: corpo.length ? corpo : [["—", "Nenhum item de checklist aplicável.", "—", "—", "—"]],
     margin: { left: MARGIN, right: MARGIN },
     styles: {
       font: "helvetica",
@@ -715,7 +733,6 @@ function tabelaDocumentos(
   return (doc as any).lastAutoTable.finalY + 14;
 }
 
-
 /* -------------------------------------------------------------------------- */
 /* API                                                                         */
 /* -------------------------------------------------------------------------- */
@@ -728,16 +745,16 @@ export function baixarPropostaOficialPDF(input: Input) {
   void input?.followups;
 
   P = getPdfPalette();
-  const doc = new jsPDF({ 
-    unit: "pt", 
-    format: "a4", 
+  const doc = new jsPDF({
+    unit: "pt",
+    format: "a4",
     orientation: "portrait",
-    compress: true
+    compress: true,
   });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
-  const safe = <T,>(fn: () => T, fallback: T): T => {
+  const safe = <T>(fn: () => T, fallback: T): T => {
     try {
       return fn();
     } catch (err) {

@@ -36,9 +36,7 @@ export function MultiSelect({
   emptyText?: string;
 }) {
   const toggle = (value: string) =>
-    onChange(
-      selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value],
-    );
+    onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
 
   const activeOne = selected.length === 1 ? options.find((o) => o.value === selected[0]) : null;
   const label =
@@ -96,7 +94,9 @@ export function MultiSelect({
                     >
                       {active && <Check className="h-3 w-3" />}
                     </div>
-                    {o.icon ? <span className="mr-2 flex shrink-0 items-center">{o.icon}</span> : null}
+                    {o.icon ? (
+                      <span className="mr-2 flex shrink-0 items-center">{o.icon}</span>
+                    ) : null}
                     <span className="truncate">{o.label}</span>
                   </CommandItem>
                 );

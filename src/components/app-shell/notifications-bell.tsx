@@ -22,7 +22,8 @@ import { categoriaDeTipo, tipoAtivo, tipoComSom } from "@/lib/notification-prefs
 
 function formatarData(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  
+  return d.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -69,8 +70,6 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
       if (tipoAtivo(cat) && tipoComSom(cat)) playNotificationSound();
     }
   }, [data?.itens]);
-
-
 
   // Subscription realtime: revalida a lista a cada novo evento.
   // Eventos em rajada (ex.: várias notificações criadas de uma vez) são

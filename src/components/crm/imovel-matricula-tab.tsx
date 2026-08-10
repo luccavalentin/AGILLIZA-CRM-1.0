@@ -17,8 +17,33 @@ import {
 import { salvarImovelIq } from "@/lib/crm/clientes.functions";
 
 const UFS = [
-  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS",
-  "MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
 ];
 
 /** Aceita boolean ou texto ("Sim"/"Não") vindo da leitura por IA. */
@@ -33,7 +58,6 @@ function ehVerdadeiro(v: unknown): boolean {
   if (!t) return false;
   return !/^(nao|n|false|0|nenhum|nenhuma|inexistente|sem)\b/.test(t);
 }
-
 
 /**
  * Estrutura dos "Dados da matrícula" do imóvel — campos avaliados pelos
@@ -146,7 +170,6 @@ const AVERBACOES_CHECKS: Array<[keyof MatriculaDados, string]> = [
   ["edificacao_regularizada", "Edificação regularizada"],
 ];
 
-
 export function MatriculaTab({
   clienteId,
   cliente,
@@ -193,8 +216,8 @@ export function MatriculaTab({
           Dados da matrícula do imóvel
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Informações analisadas pelos bancos na matrícula para financiamento imobiliário
-          (compra e venda). Todos os campos são opcionais.
+          Informações analisadas pelos bancos na matrícula para financiamento imobiliário (compra e
+          venda). Todos os campos são opcionais.
         </p>
       </div>
 
@@ -354,7 +377,6 @@ export function MatriculaTab({
           </div>
         </div>
       </section>
-
 
       {/* Fiscal */}
       <section className="space-y-3">
@@ -544,7 +566,6 @@ export function MatriculaTab({
           </div>
         </div>
       </section>
-
 
       {/* Certidões */}
       <section className="space-y-3">

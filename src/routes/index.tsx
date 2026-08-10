@@ -107,7 +107,6 @@ function Landing() {
         </div>
       </main>
 
-
       <footer className="py-6 text-center text-xs text-primary-foreground">
         © {new Date().getFullYear()} Agilliza — Crédito Imobiliário. Todos os direitos reservados.
       </footer>

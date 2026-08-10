@@ -75,9 +75,13 @@ export function CrmPageTransition({
   // Aplica a `direction` como sufixo semântico às variantes de slide.
   const resolvedVariant = useMemo<CrmTransitionVariant>(() => {
     if (!direction) return variant;
-    if (variant === "slide-right" || variant === "slide-left" ||
-        variant === "slide-up" || variant === "slide-down") {
-      return (`slide-${direction}` as CrmTransitionVariant);
+    if (
+      variant === "slide-right" ||
+      variant === "slide-left" ||
+      variant === "slide-up" ||
+      variant === "slide-down"
+    ) {
+      return `slide-${direction}` as CrmTransitionVariant;
     }
     return variant;
   }, [variant, direction]);

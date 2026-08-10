@@ -69,7 +69,10 @@ function Pagina() {
       setHasApiKey(q.data.has_api_key);
       setApiKey("");
       if (q.data.status === "erro") {
-        setTeste({ ok: false, message: "Última verificação falhou. Revise a chave da API e a URL base." });
+        setTeste({
+          ok: false,
+          message: "Última verificação falhou. Revise a chave da API e a URL base.",
+        });
       } else {
         setTeste(null);
       }
@@ -199,7 +202,8 @@ function Pagina() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Ao trocar o provedor, o modelo e o endpoint sugeridos são preenchidos automaticamente.
+                Ao trocar o provedor, o modelo e o endpoint sugeridos são preenchidos
+                automaticamente.
               </p>
             </div>
 
@@ -265,11 +269,14 @@ function Pagina() {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder={
-                hasApiKey ? "•••••••••••••••• (chave já cadastrada — deixe em branco para manter)" : "Cole aqui a chave da API"
+                hasApiKey
+                  ? "•••••••••••••••• (chave já cadastrada — deixe em branco para manter)"
+                  : "Cole aqui a chave da API"
               }
             />
             <p className="text-xs text-muted-foreground">
-              A chave é armazenada apenas no servidor e nunca é exibida novamente. Deixe em branco para manter a chave atual.
+              A chave é armazenada apenas no servidor e nunca é exibida novamente. Deixe em branco
+              para manter a chave atual.
             </p>
           </div>
 
@@ -319,7 +326,6 @@ function Pagina() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }

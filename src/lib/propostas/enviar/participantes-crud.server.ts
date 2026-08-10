@@ -117,7 +117,6 @@ export async function adicionarParticipanteImpl({
     throw new Error("Este CPF/CNPJ já está cadastrado nesta proposta.");
   }
 
-
   const payload = {
     tipoSituacao: participante.tipoSituacao ?? "A",
     tipoQualificacao: participante.tipoQualificacao ?? "CO",

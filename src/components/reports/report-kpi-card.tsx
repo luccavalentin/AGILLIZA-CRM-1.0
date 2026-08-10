@@ -20,13 +20,7 @@ const toneTint: Record<NonNullable<ReportKpi["tone"]>, string> = {
 };
 
 /** KPI executivo de relatório: acento lateral de tom + valor monoespaçado, com elevação ao hover. */
-export function ReportKpiCard({
-  kpi,
-  onClick,
-}: {
-  kpi: ReportKpi;
-  onClick?: () => void;
-}) {
+export function ReportKpiCard({ kpi, onClick }: { kpi: ReportKpi; onClick?: () => void }) {
   const tone = kpi.tone ?? "neutral";
   const clickable = typeof onClick === "function";
   const conteudo = (
@@ -73,7 +67,6 @@ export function ReportKpiCard({
     </div>
   );
 }
-
 
 /** Moldura padrão de gráfico. */
 export function ChartCard({

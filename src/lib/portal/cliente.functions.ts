@@ -78,7 +78,6 @@ export interface MensagemCliente {
   reacoes: ReacaoCliente[];
 }
 
-
 export interface NotificacaoCliente {
   id: string;
   tipo: string;
@@ -442,7 +441,6 @@ async function resolverAnexos(
         citacao: m.citacao ?? null,
         reacoes: (m.reacoes as ReacaoCliente[] | null) ?? [],
       } as MensagemCliente;
-
     }),
   );
 }
@@ -554,7 +552,8 @@ export const clienteEditarMensagem = createServerFn({ method: "POST" })
       _texto: data.mensagem,
     } as any);
     if (error) throw new Error("Não foi possível editar a mensagem.");
-    if (!(r as any)?.ok) throw new Error((r as any)?.error ?? "Não foi possível editar a mensagem.");
+    if (!(r as any)?.ok)
+      throw new Error((r as any)?.error ?? "Não foi possível editar a mensagem.");
     return { ok: true };
   });
 
@@ -569,16 +568,15 @@ export const clienteExcluirMensagem = createServerFn({ method: "POST" })
       _mensagem_id: data.mensagem_id,
     } as any);
     if (error) throw new Error("Não foi possível excluir a mensagem.");
-    if (!(r as any)?.ok) throw new Error((r as any)?.error ?? "Não foi possível excluir a mensagem.");
+    if (!(r as any)?.ok)
+      throw new Error((r as any)?.error ?? "Não foi possível excluir a mensagem.");
     return { ok: true };
   });
 
 /** Oculta (exclui da lista do cliente) uma conversa inteira. */
 export const clienteExcluirConversa = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    z
-      .object({ atendente_id: z.string().uuid(), ocultar: z.boolean().optional() })
-      .parse(d),
+    z.object({ atendente_id: z.string().uuid(), ocultar: z.boolean().optional() }).parse(d),
   )
   .handler(async ({ data }): Promise<{ ok: boolean }> => {
     const sess = requireClienteSession();
@@ -589,11 +587,10 @@ export const clienteExcluirConversa = createServerFn({ method: "POST" })
       _ocultar: data.ocultar ?? true,
     } as any);
     if (error) throw new Error("Não foi possível excluir a conversa.");
-    if (!(r as any)?.ok) throw new Error((r as any)?.error ?? "Não foi possível excluir a conversa.");
+    if (!(r as any)?.ok)
+      throw new Error((r as any)?.error ?? "Não foi possível excluir a conversa.");
     return { ok: true };
   });
-
-
 
 // Enviar mensagem com anexo (foto/documento) — upload em base64
 const enviarAnexoSchema = z.object({

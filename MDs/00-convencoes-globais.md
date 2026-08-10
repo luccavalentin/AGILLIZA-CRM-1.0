@@ -1,15 +1,19 @@
 # 00 — Convenções Globais (colar no topo de TODA etapa)
 
 ## Produto
+
 Sistema web + PWA para correspondente bancário de financiamento imobiliário e home equity. Integra com a **API do provedor de integração bancária** (agregador que roteia para Bradesco, Santander, Itaú, Caixa, Inter etc.). Usuários internos operam simulações, propostas, contratos, financeiro e comissões. Clientes acompanham o processo em um app próprio (PWA) autenticado por CPF+data de nascimento (PF) ou CNPJ+data de abertura (PJ) — **sem envio de código, sem SMS, sem e-mail, sem WhatsApp**.
 
 ## Marca branca / Nomenclatura (regra dura — vale em TODA etapa)
+
 O sistema é **marca branca do correspondente Agilliza**. **NUNCA** exibir ao usuário — em nenhuma tela, texto, tooltip, label, título de página, mensagem de erro, PDF, e-mail, notificação, `<title>`, `meta description`, `alt`, badge, log visível ao usuário ou nome de arquivo baixado — os termos:
+
 - "HomeFin", "Homefin", "home fin" (ou qualquer variação do nome do provedor de integração bancária);
 - "Lovable", "lovable.dev", "AI Gateway" ou qualquer marca da plataforma de build;
 - nomes de fornecedores de infra (Supabase, Cloudflare, Vercel etc.).
 
 **Uso permitido apenas em contexto interno técnico**, invisível ao usuário final:
+
 - Nomes de tabelas/colunas do Postgres já existentes (`homefin_bancos`, `homefin_id_oportunidade`, `proposta_logs_homefin` etc.) — renomear é caro e não gera valor, ficam como estão.
 - Variáveis de ambiente (`HOMEFIN_BASE_URL`, `HOMEFIN_SECRET_ID`, `HOMEFIN_SECRET_KEY`).
 - Nomes de server functions (`enviarHomeFin`, `reenviarHomeFin` etc.).
@@ -30,6 +34,7 @@ O sistema é **marca branca do correspondente Agilliza**. **NUNCA** exibir ao us
 Antes de finalizar qualquer tela ou PDF, o agente **deve fazer uma varredura final** por `homefin|lovable` (case-insensitive) no que será renderizado ao usuário e substituir por termo neutro. Falha aqui é bloqueio de DoD.
 
 ## Assets do projeto (obrigatório usar — NÃO gerar substitutos)
+
 Todos os arquivos oficiais da marca **Agilliza** e a documentação completa da **API de integração bancária** já estão versionados na pasta `Logos e a API/` na raiz do projeto. É **proibido** gerar logos com IA, inventar endpoints, ou "supor" contratos de API — sempre consultar estes arquivos.
 
 - **`Logos e a API/Logo PNG/`** — 20 variações da logo Agilliza em PNG (com transparência). Usar em headers, sidebar, tela de login, splash do PWA, favicon e ícones do manifest. Copiar para `src/assets/brand/` no início do projeto e importar via ES6 (`import logo from '@/assets/brand/agilliza-logo-1.png'`).
@@ -45,23 +50,23 @@ Todos os arquivos oficiais da marca **Agilliza** e a documentação completa da 
 **Regra dura**: antes de implementar qualquer chamada à integração bancária, o prompt precisa ter lido o swagger (`4 - swagger-output 29012026.json`) e o PDF de documentação. Antes de colocar qualquer marca visual na tela, o prompt precisa apontar para um arquivo específico de `Logos e a API/Logo PNG/` ou `Logo Vetor/`. **Não usar placeholder, não usar texto "Agilliza" estilizado no lugar da logo, não gerar ícones alternativos com IA.**
 
 ## Bancos parceiros — padrão de habilitação
+
 A tabela `bancos_parceiros` deve ser **semeada por migration** com os 5 bancos abaixo. O flag `ativo` controla se o banco aparece nos seletores de Simulação e Proposta e se o botão "Enviar ao banco" fica habilitado. A tela `/admin/bancos` permite ligar/desligar cada um sem código.
 
-| Banco | Código | `ativo` (default seed) | Observação |
-|---|---|---|---|
-| Bradesco | `bradesco` | **true** | Ativo desde o dia 1 (Simulação + Proposta) |
-| Santander | `santander` | **true** | Ativo desde o dia 1 (Simulação + Proposta) |
-| Itaú | `itau` | **true** | Ativo desde o dia 1 (Simulação + Proposta) |
-| Inter | `inter` | **false** | Pré-cadastrado, aguardando homologação — habilitar futuramente em Configurações → Bancos |
-| Caixa | `caixa` | **false** | Pré-cadastrado, aguardando homologação — habilitar futuramente em Configurações → Bancos |
+| Banco     | Código      | `ativo` (default seed) | Observação                                                                               |
+| --------- | ----------- | ---------------------- | ---------------------------------------------------------------------------------------- |
+| Bradesco  | `bradesco`  | **true**               | Ativo desde o dia 1 (Simulação + Proposta)                                               |
+| Santander | `santander` | **true**               | Ativo desde o dia 1 (Simulação + Proposta)                                               |
+| Itaú      | `itau`      | **true**               | Ativo desde o dia 1 (Simulação + Proposta)                                               |
+| Inter     | `inter`     | **false**              | Pré-cadastrado, aguardando homologação — habilitar futuramente em Configurações → Bancos |
+| Caixa     | `caixa`     | **false**              | Pré-cadastrado, aguardando homologação — habilitar futuramente em Configurações → Bancos |
 
 - Seletores de banco na UI (multi-select da Simulação, tabela de bancos da Proposta, filtros de relatórios) usam a view `vw_bancos_ativos` (`SELECT * FROM bancos_parceiros WHERE ativo=true ORDER BY ordem, nome`).
 - A tela `/admin/bancos` mostra os 5 sempre; bancos com `ativo=false` aparecem em cinza com badge "Aguardando homologação" e toggle para ativar. Ao ativar, exigir preenchimento de: `codigo_agencia_padrao`, `codigo_parceiro`, `credenciais` (secrets do banco) e um checklist "Testes de conectividade OK".
 - Default de envio da Simulação (`flag_padrao=true`): Bradesco, Santander, Itaú.
 
-
-
 ## Stack obrigatória
+
 - TanStack Start v1 (React 19 + Vite 7 + SSR em Cloudflare Workers).
 - Roteamento por arquivo em `src/routes/`. `createServerFn` para lógica servidor. `src/routes/api/public/*` só para webhooks.
 - Supabase (Postgres + Auth + Storage + Realtime). RLS **sempre ligado** em toda tabela de negócio.
@@ -69,6 +74,7 @@ A tabela `bancos_parceiros` deve ser **semeada por migration** com os 5 bancos a
 - TanStack Query no shell do router (loader → `ensureQueryData`, componente → `useSuspenseQuery`).
 
 ## Independência de plataforma (obrigatório)
+
 - **Zero dependência de Lovable Cloud, Lovable AI Gateway ou qualquer serviço proprietário da Lovable.** O sistema roda em Cloudflare Workers + Supabase + APIs externas contratadas pelo próprio cliente.
 - **Todas as chaves são fornecidas pelo dono do sistema** e cadastradas como secrets no ambiente (`process.env.*`): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `HOMEFIN_BASE_URL`, `HOMEFIN_SECRET_ID`, `HOMEFIN_SECRET_KEY`, `GEMINI_API_KEY` (ou `OPENAI_API_KEY` — o que o cliente usar), `CLIENTE_APP_SESSION_SECRET`.
 - **Chamadas a IA** (Scan IA, sugestões) devem ir **direto** para o endpoint oficial do provedor (Google Gemini `https://generativelanguage.googleapis.com`, OpenAI `https://api.openai.com`, etc.) via `fetch` dentro de `createServerFn`. **Nunca** usar `https://ai.gateway.lovable.dev`, `@lovable/*`, `lovable-ai-*` ou qualquer SDK da Lovable.
@@ -76,7 +82,9 @@ A tabela `bancos_parceiros` deve ser **semeada por migration** com os 5 bancos a
 - Se algum prompt de etapa mencionar "AI Gateway", "Lovable Cloud", "connector Lovable": **ignore** e substitua por chamada direta com chave do cliente.
 
 ## Integrações externas — lista fechada
+
 As ÚNICAS integrações externas do projeto são:
+
 1. **Supabase** (Auth, Postgres, Storage, Realtime) — infra própria do cliente.
 2. **HomeFin API** (roteia para os bancos) — via `HOMEFIN_*` secrets.
 3. **Provedor de IA** escolhido pelo cliente (Gemini OU OpenAI) — para Scan IA e sugestões, chamada direta ao endpoint oficial.
@@ -84,6 +92,7 @@ As ÚNICAS integrações externas do projeto são:
 **NÃO existe e não deve ser proposto**: Twilio, Brevo, Resend, SendGrid, Mailgun, WhatsApp Business, Meta Cloud API, SMTP, Web Push, provedor de telefonia, chatbot externo, connector Lovable, Zapier, Make, n8n. Qualquer prompt que peça envio de e-mail, SMS, WhatsApp ou push por parte do sistema está errado — ignore essa parte, mantenha apenas notificação **in-app** (registro em tabela + realtime Supabase para o sino).
 
 ## Princípios não negociáveis
+
 1. **Segurança em camadas**: RLS + `SECURITY DEFINER` para agregações + validação server-side em `createServerFn`. Nunca confiar no cliente.
 2. **Papéis em tabela separada** (`user_roles`), nunca em `profiles`. Verificar com `has_role(uid, role)`.
 3. **Segredos** só no servidor (`process.env.*` dentro do `.handler()`). Nunca no bundle client.
@@ -106,18 +115,22 @@ As ÚNICAS integrações externas do projeto são:
     - Testes automatizados (Vitest/Playwright) criam seus próprios dados via factory dentro do teste e limpam ao final — nunca dependem de "dados de demonstração" no banco.
 
 ## Nomenclatura (fixa, não mudar)
+
 - **Papéis (`app_role`)**: `admin` (suporte da plataforma, não aparece na UI comercial), `correspondente` (dono do ecossistema), `gestor`, `comercial`, `analista`, `imobiliaria`, `corretor`, `cliente`. Detalhe do ecossistema em `01-fundacao-auth-permissoes.md`.
 - **Menu principal (raiz)**: Visão Geral, CRM, Operacional, Documentos, Financeiro, Relatórios, Administração.
 - **Portais**: interno (`/`), cliente (`/cliente/*`), parceiro (`/parceiro/*`).
 - **Prefixos de numeração**: `SIM-######`, `PRO-######`, `DEM-######`, `TAR-######`, `CP-######`, `PC-######`.
 
 ## Aparência (obrigatório em TODA etapa que produza UI)
+
 - Este arquivo NÃO define cores. Toda decisão de cor, tom de status, tipografia, raio, sombra, modo claro/escuro e paleta de gráfico está em **`00b-tons-cores-design-tokens.md`** — colar junto deste em toda etapa de UI.
 - Regra que vale para todo prompt de tela: **sem cor crua** no `.tsx` (`text-white`, `bg-black`, `bg-[#...]` são proibidos). Sempre `bg-primary`, `text-muted-foreground`, `border-input` etc.
 - Sistema tem **modo claro (padrão) e modo escuro completos**; toggle no topbar; a UI precisa ficar legível nos dois modos.
 
 ## Responsividade (obrigatória em TODA tela, sem exceção)
+
 Todo componente construído nesse sistema é **responsivo por padrão**. Não existe tela "só desktop" nem "só mobile". Regras que valem para todos os prompts:
+
 - **Mobile-first**: escreva o layout partindo de 375×667 e adicione breakpoints subindo (`sm:`, `md:`, `lg:`, `xl:`). Testar visualmente em 375, 414, 768, 1024, 1280 e 1440.
 - **Grid fluido**: cards em `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`. Tabelas grandes viram cards empilhados abaixo de `md`, ou ganham `overflow-x-auto` com coluna de identificação `sticky left-0`.
 - **Sidebar/menu**: fixo em `lg+`, colapsa em drawer (`Sheet` do shadcn) em `< lg`. Topbar tem botão hamburguer visível apenas em `< lg`.
@@ -130,7 +143,9 @@ Todo componente construído nesse sistema é **responsivo por padrão**. Não ex
 - **Nada de overflow horizontal**. Se aparece scroll horizontal em qualquer viewport ≥ 320px, é bug.
 
 ## PWA (todo portal do sistema)
+
 Todos os três portais (interno `/`, cliente `/cliente/*`, parceiro `/parceiro/*`) são **PWAs instaláveis**.
+
 - **Manifest** por portal: `public/manifest.webmanifest` (interno), `public/manifest-cliente.webmanifest`, `public/manifest-parceiro.webmanifest`. Cada um com `name`, `short_name`, `theme_color` (do design token), `background_color`, `display: "standalone"`, ícones 192/512 (maskable e any), `start_url` e `scope` do portal.
 - **Ícones** gerados a partir do logo Agilliza, em `public/icons/`. Apple touch icon + favicons multi-tamanho.
 - **Service worker** de app-shell **só onde o usuário pediu offline** — hoje o único portal com modo offline é o **App Cliente** (ver `09-app-cliente-pwa.md`). Portais internos são manifest-only. Nunca registrar SW em preview Lovable, iframe, dev, `?sw=off`, hostnames `id-preview--*`, `preview--*`, `*.lovableproject.com`, `*.lovableproject-dev.com`, `*.beta.lovable.dev`.
@@ -139,6 +154,7 @@ Todos os três portais (interno `/`, cliente `/cliente/*`, parceiro `/parceiro/*
 - Push notifications: **fora de escopo** (ver seção de integrações). Notificação = registro em tabela + realtime + sino in-app.
 
 ## Organização de código (componentes reutilizáveis)
+
 - **Responsabilidade única**: cada arquivo `.tsx` faz uma coisa. Componente com > 300 linhas é sinal de que precisa quebrar.
 - **Pasta por domínio**: `src/components/crm/`, `src/components/simulacoes/`, `src/components/financeiro/` etc. Nada de `src/components/utils/` catch-all.
 - **Compostos reutilizáveis** (ficam em `src/components/common/`): `PageHeader`, `EmptyState`, `DataTable`, `StatusBadge`/`ToneBadge`, `ConfirmDialog`, `FormField`, `MoneyInput`, `DocInput` (CPF/CNPJ), `PhoneInput`, `DateRangePicker`, `PeriodoFiltro`, `EscopoTabs`, `QuickAction`. Toda tela do sistema consome esses blocos — proibido reimplementar o mesmo padrão em cada rota.
@@ -150,6 +166,7 @@ Todos os três portais (interno `/`, cliente `/cliente/*`, parceiro `/parceiro/*
 - **Props**: tipadas com `type` local ao arquivo; nada de `any`. Booleans com prefixo (`isLoading`, `hasError`, `canEdit`).
 
 ## Tratamento de erros (obrigatório em TODA feature)
+
 - **Server function**: todo `.handler()` envolve trabalho em `try/catch`. Ao falhar, loga server-side com `console.error('[modulo/funcao]', err)` e devolve `throw new Error("Mensagem amigável em pt-BR")` — nunca vazar mensagem crua do Postgres ou do HomeFin ao usuário.
 - **Zod duplo**: validação client (no submit) + validação server (`.inputValidator(schema.parse)`). Mensagens em pt-BR: `"CPF inválido"`, `"Renda deve ser maior que zero"`.
 - **Client**: `useMutation` com `onError: (err) => toast.error(err.message)` e `onSuccess: () => toast.success("...")`. Botão fica `disabled` durante `isPending`.
@@ -161,6 +178,7 @@ Todos os três portais (interno `/`, cliente `/cliente/*`, parceiro `/parceiro/*
 - Proibido `alert()`, `confirm()` nativos. Sempre `toast` (sonner) e `ConfirmDialog`.
 
 ## Performance
+
 - **Loader + Suspense**: dado inicial vem por `context.queryClient.ensureQueryData(queryOptions)` e componente lê com `useSuspenseQuery`. Nunca `useEffect + fetch` para dado inicial.
 - **Paginação** sempre. Nunca listar > 50 linhas de uma vez. Padrão: 25 por página, cursor ou offset conforme volume.
 - **Índices**: toda coluna usada em `WHERE`, `ORDER BY`, `JOIN` ou filtro de RLS tem índice. Criar na mesma migração que cria a tabela.
@@ -173,6 +191,7 @@ Todos os três portais (interno `/`, cliente `/cliente/*`, parceiro `/parceiro/*
 - **Cache**: `staleTime` explícito por query (KPI 30s, listagens 10s, dado quase estático 5min).
 
 ## Documentação (obrigatória)
+
 - **Cada `.functions.ts` público** começa com bloco JSDoc explicando papel, parâmetros de entrada (Zod), retorno, quem pode chamar (role) e efeitos colaterais (auditoria, e-mail, chamada externa).
 - **Cada componente comum** (`src/components/common/*`) tem JSDoc em cima do `export`: descrição em uma linha, exemplo de uso.
 - **Cada tabela nova** tem `COMMENT ON TABLE` e `COMMENT ON COLUMN` na migração para as colunas não óbvias.
@@ -181,6 +200,7 @@ Todos os três portais (interno `/`, cliente `/cliente/*`, parceiro `/parceiro/*
 - **Comentários no código** explicam **por quê**, não **o que**. Regra de negócio não trivial (fórmula de comissão, cálculo de SLA, filtro de escopo) vem comentada com referência ao prompt de origem (`// ver 06-financeiro-comissoes.md §3`).
 
 ## UX/UI (nível moderno, acessível)
+
 - **shadcn/ui** como base — não reinventar componente que já existe (Dialog, Sheet, Popover, Combobox, DataTable via TanStack Table).
 - **Acessibilidade WCAG AA**:
   - Todo botão-ícone tem `aria-label`.
@@ -199,6 +219,7 @@ Todos os três portais (interno `/`, cliente `/cliente/*`, parceiro `/parceiro/*
 - **Modo escuro** testado tela a tela — nenhum contraste quebrado, nenhuma sombra invisível.
 
 ## Padrões de código
+
 - Server function: `createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(zod).handler(async ({ data, context }) => ...)`.
 - Nunca chamar server function protegida em loader de rota pública. Só em `_authenticated/*`.
 - Nunca importar `client.server.ts` em `.functions.ts` no top-level. Fazer `await import(...)` dentro do handler, após checar role.
@@ -209,6 +230,7 @@ Todos os três portais (interno `/`, cliente `/cliente/*`, parceiro `/parceiro/*
 - Lint + typecheck limpos antes de dar etapa por encerrada.
 
 ## Definition of Done (aplica-se a cada etapa)
+
 - Migração roda limpa em base vazia, com `GRANT`s corretos e `COMMENT`s explicativos.
 - RLS testada com usuário de cada papel (não vê dado alheio).
 - Formulário validado com Zod no cliente **e** no servidor, mensagens em pt-BR.

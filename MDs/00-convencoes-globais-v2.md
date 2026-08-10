@@ -7,6 +7,7 @@
 Sistema web + PWA para o correspondente bancário Agilliza operar Financiamento Imobiliário e Home Equity de ponta a ponta. Integra com a **Integração Bancária** (agregador que roteia para Bradesco, Santander e Itaú por padrão; Inter e Caixa pré-cadastrados aguardando homologação). Três portais coexistem no mesmo repositório: interno (`/*`), do cliente (`/cliente/*`) e do parceiro (`/parceiro/*` — unificado com o interno, ver §6). Todos os três são **PWAs instaláveis**.
 
 Módulos ativos (em produção hoje):
+
 1. **CRM** — clientes PF/PJ, esteira 12 etapas, documentos por pastas, chat com cliente, chat entre operadores, parceiros, painel, scan IA (Gemini/OpenAI).
 2. **Operacional** — Simulações (rápida local + completa via Integração Bancária), Propostas (com timeline por banco), Tarefas + Kanban + Calendário, Demandas + Kanban + Chat da demanda, Central de Chats (estilo Teams/WhatsApp).
 3. **Financeiro** — Contas a Pagar, Contas a Receber, Comissões (banco→correspondente), Repasses/Comissões por Usuário (correspondente→time), Fluxo de Caixa, categorias/CC/formas de pagamento.
@@ -19,6 +20,7 @@ Módulos ativos (em produção hoje):
 ## 2. Marca branca — regra dura (versão 2.0)
 
 O sistema é marca branca do correspondente Agilliza. **NUNCA** exibir na UI, PDF, e-mail renderizado, `<title>`, `og:*`, alt, notificação, badge, toast, nome de arquivo baixado ou log visível ao usuário:
+
 - "HomeFin", "Homefin", "home fin" ou qualquer variação;
 - "Lovable", "lovable.dev", "AI Gateway", "Lovable Cloud";
 - nomes de fornecedores de infra (Supabase, Cloudflare, Vercel, etc.).
@@ -27,13 +29,13 @@ Permitido apenas em contexto técnico interno invisível ao usuário: nomes de t
 
 Substituições canônicas na UI (idênticas à v1.0, mantidas):
 
-| Onde antes aparecia | Usar na UI |
-|---|---|
-| "HomeFin" | "Integração Bancária" / "Provedor de Integração" |
-| "Enviar para HomeFin" | "Enviar ao banco" |
-| "Logs HomeFin" | "Logs de Integração" |
-| "Callback HomeFin" | "Callback de Integração" |
-| "Oportunidade HomeFin" | "Oportunidade" |
+| Onde antes aparecia    | Usar na UI                                       |
+| ---------------------- | ------------------------------------------------ |
+| "HomeFin"              | "Integração Bancária" / "Provedor de Integração" |
+| "Enviar para HomeFin"  | "Enviar ao banco"                                |
+| "Logs HomeFin"         | "Logs de Integração"                             |
+| "Callback HomeFin"     | "Callback de Integração"                         |
+| "Oportunidade HomeFin" | "Oportunidade"                                   |
 
 **DoD**: antes de fechar qualquer tela ou PDF, o agente roda `rg -i "homefin|lovable" ` no que será renderizado e substitui. Falha aqui é bloqueio.
 
@@ -51,13 +53,13 @@ Substituições canônicas na UI (idênticas à v1.0, mantidas):
 
 Toda listagem de banco na UI consome a view `vw_bancos_ativos`. Seed obrigatório em `bancos_parceiros`:
 
-| Banco | Código | `ativo` (seed) | `flag_padrao` | Observação |
-|---|---|---|---|---|
-| Bradesco | `bradesco` | true | true | Simulação + Proposta |
-| Santander | `santander` | true | true | Idem. Home Equity usa rota operacional `Somahome` (idOperacao=6) |
-| Itaú | `itau` | true | true | Home Equity **não** disponível (regra: HE não Itaú) |
-| Inter | `inter` | false | false | Aguardando homologação |
-| Caixa | `caixa` | false | false | Aguardando homologação |
+| Banco     | Código      | `ativo` (seed) | `flag_padrao` | Observação                                                       |
+| --------- | ----------- | -------------- | ------------- | ---------------------------------------------------------------- |
+| Bradesco  | `bradesco`  | true           | true          | Simulação + Proposta                                             |
+| Santander | `santander` | true           | true          | Idem. Home Equity usa rota operacional `Somahome` (idOperacao=6) |
+| Itaú      | `itau`      | true           | true          | Home Equity **não** disponível (regra: HE não Itaú)              |
+| Inter     | `inter`     | false          | false         | Aguardando homologação                                           |
+| Caixa     | `caixa`     | false          | false         | Aguardando homologação                                           |
 
 Assets oficiais dos bancos em `src/assets/brand/` (`bradesco.svg`, `santander.svg`, `itau.svg`) — usar `<BancoLogo>` e `<BancoChip>` de `src/components/bancos/`. **Proibido** gerar logo com IA.
 
@@ -77,6 +79,7 @@ Papéis fixos (`app_role`): `admin` (suporte técnico da plataforma, não aparec
 **Regra de ouro**: quem cria usuário é o correspondente (ou gestor autorizado). O papel `admin` só cadastra correspondente-raiz — no dia a dia comercial ele não aparece.
 
 **3 portas de entrada**:
+
 - `/auth` — correspondente (aba **Criar conta**) e usuários internos (aba **Entrar**).
 - `/portal` — cliente final (CPF/CNPJ + data). Sem signup. Cliente é ativado no CRM pelo correspondente/gestor (toggle "Habilitar acesso ao Portal do Cliente").
 - `/parceiro` — parceiro (imobiliária/corretor). Sem signup. Login exige `profiles.acesso_tipo='portal_parceiro'` — configurado em `/admin/pessoas`.

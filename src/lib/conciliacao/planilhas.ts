@@ -25,11 +25,7 @@ export interface LinhaPlanilha {
   data: string | null;
 }
 
-export type ResultadoComparativo =
-  | "igual"
-  | "divergente"
-  | "so_controle"
-  | "so_banco";
+export type ResultadoComparativo = "igual" | "divergente" | "so_controle" | "so_banco";
 
 export const RESULTADO_COMPARATIVO_LABEL: Record<ResultadoComparativo, string> = {
   igual: "Coincide",
@@ -128,8 +124,7 @@ async function registrosDoArquivo(buf: ArrayBuffer): Promise<Record<string, unkn
   // `xlsx` (~400 kB) só é baixado quando o usuário importa uma planilha.
   const XLSX = await import("xlsx");
   const head = new Uint8Array(buf.slice(0, 8));
-  const binario =
-    (head[0] === 0xd0 && head[1] === 0xcf) || (head[0] === 0x50 && head[1] === 0x4b);
+  const binario = (head[0] === 0xd0 && head[1] === 0xcf) || (head[0] === 0x50 && head[1] === 0x4b);
   if (!binario) {
     let texto = new TextDecoder("utf-8").decode(buf);
     if (texto.includes("\uFFFD")) texto = new TextDecoder("windows-1252").decode(buf);
@@ -163,7 +158,9 @@ export async function lerPlanilhaGenerica(
     .map((r) => ({
       arquivo: file.name,
       lado,
-      numeroProposta: mapa.numeroProposta ? String(r[mapa.numeroProposta] ?? "").trim() || null : null,
+      numeroProposta: mapa.numeroProposta
+        ? String(r[mapa.numeroProposta] ?? "").trim() || null
+        : null,
       cpf: mapa.cpf ? String(r[mapa.cpf] ?? "").trim() || null : null,
       nome: mapa.nome ? String(r[mapa.nome] ?? "").trim() || null : null,
       status: mapa.status ? String(r[mapa.status] ?? "").trim() || null : null,
@@ -202,14 +199,8 @@ export function cruzarPlanilhas(
     if (b) usados.add(k);
     const detalhes: string[] = [];
     if (b) {
-      if (
-        c.valor != null &&
-        b.valor != null &&
-        Math.abs(c.valor - b.valor) > TOLERANCIA
-      ) {
-        detalhes.push(
-          `Valor: controle ${c.valor.toFixed(2)} × banco ${b.valor.toFixed(2)}`,
-        );
+      if (c.valor != null && b.valor != null && Math.abs(c.valor - b.valor) > TOLERANCIA) {
+        detalhes.push(`Valor: controle ${c.valor.toFixed(2)} × banco ${b.valor.toFixed(2)}`);
       }
       const sc = normalizarNome(c.status);
       const sb = normalizarNome(b.status);
@@ -289,17 +280,14 @@ export function aplicarSistema(
       s.valor != null &&
       Math.abs(valorPlanilha - s.valor) > TOLERANCIA
     ) {
-      detalhes.push(
-        `Valor: planilha ${valorPlanilha.toFixed(2)} × sistema ${s.valor.toFixed(2)}`,
-      );
+      detalhes.push(`Valor: planilha ${valorPlanilha.toFixed(2)} × sistema ${s.valor.toFixed(2)}`);
     }
     return {
       ...i,
       sistema: s,
       situacaoSistema: "encontrada" as const,
       detalhes,
-      resultado:
-        i.resultado === "igual" && detalhes.length > 0 ? "divergente" : i.resultado,
+      resultado: i.resultado === "igual" && detalhes.length > 0 ? "divergente" : i.resultado,
     };
   });
 }
@@ -332,7 +320,8 @@ export const ETAPA_COMPARATIVO_LABEL: Record<EtapaComparativo, string> = {
 };
 
 export const ETAPA_COMPARATIVO_TONE: Record<EtapaComparativo, string> = {
-  contrato_emitido: "text-emerald-700 dark:text-emerald-300 border-emerald-500/40 bg-emerald-500/10",
+  contrato_emitido:
+    "text-emerald-700 dark:text-emerald-300 border-emerald-500/40 bg-emerald-500/10",
   aprovado: "text-emerald-600 dark:text-emerald-400 border-emerald-500/40 bg-emerald-500/10",
   pre_aprovado: "text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10",
   nao_aprovado: "text-red-600 dark:text-red-400 border-red-500/40 bg-red-500/10",
@@ -372,7 +361,11 @@ export function classificarEtapa(texto: unknown): EtapaComparativo | null {
   if (/(aprovad|deferid|apto|credito ok)/.test(t)) return "aprovado";
   if (/(document|dossie|pasta|checklist|anexo|pendente de envio|enviar doc)/.test(t))
     return "documentos";
-  if (/(analis|andamento|estudo|processament|em aberto|aguardand|enviad|cadastrad|digitad|simulac)/.test(t))
+  if (
+    /(analis|andamento|estudo|processament|em aberto|aguardand|enviad|cadastrad|digitad|simulac)/.test(
+      t,
+    )
+  )
     return "credito_analise";
   return "outros";
 }

@@ -53,7 +53,7 @@ export function validarCamposParticipante(sim: any, cliente: any): CampoFaltante
   // RELAXAMENTO DE VALIDAÇÃO: A HomeFin API é mais flexível para simulações do que para propostas.
   // Campos de dossiê (mãe, sexo, RG, endereço) NÃO bloqueiam a simulação.
   // Mantemos validarCamposParticipante apenas para fins de LOG ou AVISO se necessário.
-  
+
   if (!primeiro(cliente?.cep, cliente?.endereco_cep, sim?.cep_imovel)) {
     // CEP é opcional na simulação da Oportunidade, mas útil. Não bloqueia.
   }

@@ -60,9 +60,8 @@ export function AplicarCadastroDialog({
 
   const conflitosPendentes = useMemo(() => {
     if (!previa.data) return 0;
-    return previa.data.campos.filter(
-      (c) => c.aplicavel && c.conflito && !escolhas[c.campo_id],
-    ).length;
+    return previa.data.campos.filter((c) => c.aplicavel && c.conflito && !escolhas[c.campo_id])
+      .length;
   }, [previa.data, escolhas]);
 
   const aplicar = useMutation({
@@ -72,9 +71,7 @@ export function AplicarCadastroDialog({
           leitura_id: leituraId,
           decisoes: (previa.data?.campos ?? []).map((c) => ({
             campo_id: c.campo_id,
-            aplicar: c.conflito
-              ? escolhas[c.campo_id] === "substituir"
-              : !!marcados[c.campo_id],
+            aplicar: c.conflito ? escolhas[c.campo_id] === "substituir" : !!marcados[c.campo_id],
             escolha: c.conflito ? escolhas[c.campo_id] : undefined,
           })),
         },
@@ -129,8 +126,9 @@ export function AplicarCadastroDialog({
           <div className="space-y-3">
             <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
               <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
-              Aplicando em <strong className="text-foreground">{previa.data.cliente_nome ?? "—"}</strong>.
-              Campos de baixa confiança começam desmarcados e conflitos exigem escolha manual.
+              Aplicando em{" "}
+              <strong className="text-foreground">{previa.data.cliente_nome ?? "—"}</strong>. Campos
+              de baixa confiança começam desmarcados e conflitos exigem escolha manual.
             </div>
 
             {previa.data.campos.length === 0 ? (

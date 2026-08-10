@@ -8,15 +8,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  Archive,
-  ArchiveRestore,
-  MoreVertical,
-  Pencil,
-  Pin,
-  PinOff,
-  Trash2,
-} from "lucide-react";
+import { Archive, ArchiveRestore, MoreVertical, Pencil, Pin, PinOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -61,13 +53,7 @@ interface Props {
   apelidoAtual: string | null;
 }
 
-export function ItemAcoesMenu({
-  clienteId,
-  nome,
-  arquivado,
-  fixado,
-  apelidoAtual,
-}: Props) {
+export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual }: Props) {
   const qc = useQueryClient();
   const [openMenu, setOpenMenu] = useState(false);
   const [openRen, setOpenRen] = useState(false);
@@ -104,8 +90,7 @@ export function ItemAcoesMenu({
       toast.success(arquivado ? "Conversa desarquivada." : "Conversa arquivada.");
       invalidar();
     },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Falha ao arquivar."),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao arquivar."),
   });
 
   const mFixar = useMutation({
@@ -167,7 +152,6 @@ export function ItemAcoesMenu({
         <Trash2 className="size-4" />
       </Button>
       <DropdownMenu open={openMenu} onOpenChange={setOpenMenu}>
-
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
@@ -182,11 +166,7 @@ export function ItemAcoesMenu({
             <MoreVertical className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          onClick={(e) => e.stopPropagation()}
-          className="w-52"
-        >
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} className="w-52">
           <DropdownMenuLabel className="text-xs">Ações</DropdownMenuLabel>
           <DropdownMenuItem onSelect={() => mFixar.mutate()}>
             {fixado ? (
@@ -249,10 +229,7 @@ export function ItemAcoesMenu({
             <Button variant="ghost" onClick={() => setOpenRen(false)}>
               Cancelar
             </Button>
-            <Button
-              onClick={() => mRenomear.mutate()}
-              disabled={mRenomear.isPending}
-            >
+            <Button onClick={() => mRenomear.mutate()} disabled={mRenomear.isPending}>
               Salvar
             </Button>
           </DialogFooter>
@@ -264,8 +241,8 @@ export function ItemAcoesMenu({
           <AlertDialogHeader>
             <AlertDialogTitle>Remover esta conversa?</AlertDialogTitle>
             <AlertDialogDescription>
-              A conversa some da sua lista. O histórico permanece salvo e o
-              cliente e demais atendentes continuam vendo normalmente.
+              A conversa some da sua lista. O histórico permanece salvo e o cliente e demais
+              atendentes continuam vendo normalmente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

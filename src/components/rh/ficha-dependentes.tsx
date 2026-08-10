@@ -206,7 +206,10 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
               ))}
               {(!q.data || q.data.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="py-10 text-center text-sm text-muted-foreground"
+                  >
                     Nenhum dependente cadastrado.
                   </TableCell>
                 </TableRow>
@@ -284,9 +287,7 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={form.salario_familia}
-                    onCheckedChange={(v) =>
-                      setForm((p) => ({ ...p, salario_familia: v === true }))
-                    }
+                    onCheckedChange={(v) => setForm((p) => ({ ...p, salario_familia: v === true }))}
                   />
                   Salário-família
                 </label>

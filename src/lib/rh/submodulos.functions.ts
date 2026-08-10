@@ -21,12 +21,7 @@ export type OcorrenciaTipo =
   | "elogio"
   | "outro";
 
-export type FeriasStatus =
-  | "planejada"
-  | "aprovada"
-  | "em_curso"
-  | "concluida"
-  | "cancelada";
+export type FeriasStatus = "planejada" | "aprovada" | "em_curso" | "concluida" | "cancelada";
 
 export type LancamentoStatus = "previsto" | "recebido" | "descontado" | "pago" | "cancelado";
 
@@ -341,10 +336,7 @@ export const excluirOcorrencia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("rh_ocorrencias")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("rh_ocorrencias").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -424,13 +416,7 @@ export const salvarFerias = createServerFn({ method: "POST" })
         dias_gozados: z.number().min(1).max(30).default(30),
         abono_dias: z.number().min(0).max(10).default(0),
         adiantar_13o: z.boolean().default(false),
-        status: z.enum([
-          "planejada",
-          "aprovada",
-          "em_curso",
-          "concluida",
-          "cancelada",
-        ]),
+        status: z.enum(["planejada", "aprovada", "em_curso", "concluida", "cancelada"]),
         observacoes: z.string().optional().nullable(),
       })
       .parse(data),
@@ -797,9 +783,7 @@ const lancamentoInput = z.object({
   competencia_mes: z.number().min(1).max(12),
   competencia_ano: z.number().min(2020).max(2100),
   descricao: z.string().optional().nullable(),
-  status: z
-    .enum(["previsto", "recebido", "descontado", "pago", "cancelado"])
-    .default("previsto"),
+  status: z.enum(["previsto", "recebido", "descontado", "pago", "cancelado"]).default("previsto"),
 });
 
 export const listarAdiantamentos = createServerFn({ method: "GET" })
@@ -871,9 +855,7 @@ async function sincronizarAdiantamentoFinanceiro(
     await supabase.from("financial_payables").update(payload).eq("id", existente.id);
     return;
   }
-  await supabase
-    .from("financial_payables")
-    .insert({ ...payload, criador_id: userId });
+  await supabase.from("financial_payables").insert({ ...payload, criador_id: userId });
 }
 
 export const registrarAdiantamento = createServerFn({ method: "POST" })
@@ -920,7 +902,6 @@ export const registrarAdiantamento = createServerFn({ method: "POST" })
       /* silencioso: o adiantamento já foi salvo */
     }
     return { id: id! };
-
   });
 
 // ============================================================
@@ -939,9 +920,7 @@ export const listarDescontos = createServerFn({ method: "GET" })
       .default({})
       .parse(data ?? {}),
   )
-  .handler(async ({ data, context }) =>
-    listarLancamentos(context.supabase, "rh_descontos", data),
-  );
+  .handler(async ({ data, context }) => listarLancamentos(context.supabase, "rh_descontos", data));
 
 export const registrarDesconto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1047,7 +1026,10 @@ export const anexarHolerite = createServerFn({ method: "POST" })
         arquivo_path: z.string().min(1),
         arquivo_nome: z.string().min(1),
         valor_liquido: z.number().optional().nullable(),
-        entrada: z.record(z.union([z.string(), z.number(), z.boolean()])).optional().nullable(),
+        entrada: z
+          .record(z.union([z.string(), z.number(), z.boolean()]))
+          .optional()
+          .nullable(),
       })
       .parse(data),
   )
@@ -1080,10 +1062,7 @@ export const excluirHolerite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("rh_holerites")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("rh_holerites").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

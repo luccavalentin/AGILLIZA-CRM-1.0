@@ -89,24 +89,31 @@ export interface PanelDados {
   porTipoSimulacao?: PanelDistribuicao;
   clientesPorEtapa?: PanelDistribuicao;
   topOperadores?: PanelDistribuicao;
-  financeiroResumo?: { titulo: string; itens: { label: string; valor: string; tone?: "brand" | "success" | "warning" | "danger" | "neutral" }[] };
+  financeiroResumo?: {
+    titulo: string;
+    itens: {
+      label: string;
+      valor: string;
+      tone?: "brand" | "success" | "warning" | "danger" | "neutral";
+    }[];
+  };
   volumePorBanco?: PanelDistribuicao;
 }
 
-const brl = (v: number) => (v || 0).toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
+const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const brlCompacto = (v: number) => {
   const n = v || 0;
   // Mantém uma casa decimal em milhares/milhões para não distorcer o valor
   // real (ex.: R$ 615.300 vira "R$ 615,3 mil", não "R$ 615 mil").
   if (Math.abs(n) >= 1_000_000)
-    return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", {  minimumFractionDigits: 1, maximumFractionDigits: 2 })} mi`;
+    return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} mi`;
   if (Math.abs(n) >= 1_000)
-    return `R$ ${(n / 1_000).toLocaleString("pt-BR", {  maximumFractionDigits: 1 })} mil`;
+    return `R$ ${(n / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
   return brl(n);
 };
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
 const pct = (v: number) =>
-  `${Math.min(100, Math.max(0, v || 0)).toLocaleString("pt-BR", {  maximumFractionDigits: 1 })}%`;
+  `${Math.min(100, Math.max(0, v || 0)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
 function topItens(map: Map<string, number>, limite = 8) {
   return [...map.entries()]
@@ -163,7 +170,10 @@ function construirBuckets(deISO: string, ateISO: string) {
   const rotulo = (chave: string) => {
     if (porMes) {
       const [y, m] = chave.split("-");
-      return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   month: "short" });
+      return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        month: "short",
+      });
     }
     const [, m, d] = chave.split("-");
     return `${d}/${m}`;
@@ -178,7 +188,10 @@ function construirBuckets(deISO: string, ateISO: string) {
   return { chaves, rotulo, chaveDaData, porMes };
 }
 
-function contarPorBucket(rows: { created_at?: string | null }[], buckets: ReturnType<typeof construirBuckets>) {
+function contarPorBucket(
+  rows: { created_at?: string | null }[],
+  buckets: ReturnType<typeof construirBuckets>,
+) {
   const m = new Map<string, number>();
   for (const r of rows) {
     const k = buckets.chaveDaData(r.created_at);
@@ -215,7 +228,8 @@ async function carregarContratosCliente(
   );
   if (cliRes.error) throw new Error(cliRes.error.message);
   const cliRowsAll = (cliRes.data ?? []) as any[];
-  if (!cliRowsAll.length) return { rows: [] as { contrato_emitido_em: string; valor: number }[], volume: 0, count: 0 };
+  if (!cliRowsAll.length)
+    return { rows: [] as { contrato_emitido_em: string; valor: number }[], volume: 0, count: 0 };
 
   // Um contrato só é considerado "emitido" quando existe uma proposta com
   // status contrato_emitido/registrado vinculada ao cliente. Isso evita que
@@ -225,7 +239,10 @@ async function carregarContratosCliente(
   const propRes = await supabase
     .from("propostas")
     .select("cliente_id,status")
-    .in("cliente_id", cliRowsAll.map((c) => c.id))
+    .in(
+      "cliente_id",
+      cliRowsAll.map((c) => c.id),
+    )
     .in("status", contratoStatus as any)
     .is("deleted_at", null)
     .limit(5000);
@@ -234,7 +251,8 @@ async function carregarContratosCliente(
     (propRes.data ?? []).map((p: any) => p.cliente_id),
   );
   const cliRows = cliRowsAll.filter((c) => clientesComContratoReal.has(c.id));
-  if (!cliRows.length) return { rows: [] as { contrato_emitido_em: string; valor: number }[], volume: 0, count: 0 };
+  if (!cliRows.length)
+    return { rows: [] as { contrato_emitido_em: string; valor: number }[], volume: 0, count: 0 };
 
   const semValor = cliRows.filter((c) => !c.imovel_valor).map((c) => c.id);
   const simMap = new Map<string, number>();
@@ -258,7 +276,6 @@ async function carregarContratosCliente(
   const volume = rows.reduce((s, r) => s + r.valor, 0);
   return { rows, volume, count: rows.length };
 }
-
 
 /** Calcula o período imediatamente anterior de igual duração. */
 function intervaloAnterior(deISO: string, ateISO: string) {
@@ -352,9 +369,6 @@ function mkDelta(cur: number, prev: number, bom = true): PanelDelta | undefined 
   return { pct: Math.abs(diff), dir, bom };
 }
 
-
-
-
 export const getPanelDados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: z.infer<typeof schema>) => schema.parse(d))
@@ -363,13 +377,12 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const f = data as unknown as ReportFiltros;
     const { de, ate } = resolverIntervalo(f);
     const deIni = inicioDiaBR(de);
-  const ateFim = fimDiaBR(ate);
+    const ateFim = fimDiaBR(ate);
     const buckets = construirBuckets(de, ate);
 
     // Um contrato entra no período pela data de emissão (contrato_emitido_em),
     // não pela data de criação da proposta (que pode ser de meses antes).
-    const dentroPeriodo = (iso?: string | null) =>
-      !!iso && dataBR(iso) >= de && dataBR(iso) <= ate;
+    const dentroPeriodo = (iso?: string | null) => !!iso && dataBR(iso) >= de && dataBR(iso) <= ate;
 
     // Filtro por usuário: quando um responsável específico é escolhido, ele
     // prevalece sobre o escopo (mesmo em "geral"). Sem responsável, mantém a
@@ -387,87 +400,86 @@ export const getPanelDados = createServerFn({ method: "POST" })
     });
 
     if (data.modulo === "visao-geral") {
-      const [sims, props, contratosInfo, ant, clientesRes, demRes, tkRes, recRes, payRes, pipeRes] = await Promise.all([
-        escopoEq(
+      const [sims, props, contratosInfo, ant, clientesRes, demRes, tkRes, recRes, payRes, pipeRes] =
+        await Promise.all([
+          escopoEq(
+            supabase
+              .from("simulacoes")
+              .select(
+                "id,status,tipo_simulacao,valor_financiamento,created_at,usuario_responsavel_id",
+              )
+              .is("deleted_at", null)
+              .gte("created_at", deIni)
+              .lte("created_at", ateFim)
+              .limit(5000),
+            "usuario_responsavel_id",
+            "usuario_criador_id",
+            "@cli:cliente_id",
+          ),
+          escopoEq(
+            supabase
+              .from("propostas")
+              .select(
+                "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em,usuario_responsavel_id",
+              )
+              .is("deleted_at", null)
+              .or(
+                `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
+              )
+              .limit(5000),
+            "usuario_responsavel_id",
+            "usuario_criador_id",
+            "@cli:cliente_id",
+          ),
+          carregarContratosCliente(supabase, escopoEq, de, ate),
+          carregarAnterior(supabase, escopoEq, de, ate),
+          escopoEq(
+            supabase
+              .from("clientes")
+              .select("id,created_at,contrato_emitido_em,responsavel_id")
+              .is("deleted_at", null)
+              .gte("created_at", deIni)
+              .lte("created_at", ateFim)
+              .limit(5000),
+            "responsavel_id",
+            "criador_id",
+            "@cli:id",
+          ),
+          escopoEq(
+            supabase.from("demandas").select("status,prazo_sla").limit(5000),
+            "responsavel_id",
+            "criador_id",
+            "@cli:cliente_id",
+          ),
+          escopoEq(
+            supabase.from("tasks").select("status,prazo").limit(5000),
+            "responsavel_id",
+            "criador_id",
+            "@cli:cliente_id",
+          ),
+          escopoEq(
+            supabase
+              .from("financial_receivables")
+              .select("valor,valor_pago,status,vencimento,tipo,criador_id")
+              .in("status", ["aberta", "parcial"] as any)
+              .limit(5000),
+            "criador_id",
+          ),
+          escopoEq(
+            supabase
+              .from("financial_payables")
+              .select("valor,valor_pago,status,vencimento,criador_id")
+              .in("status", ["aberta", "parcial"] as any)
+              .limit(5000),
+            "criador_id",
+          ),
           supabase
-            .from("simulacoes")
-            .select("id,status,tipo_simulacao,valor_financiamento,created_at,usuario_responsavel_id")
-            .is("deleted_at", null)
-            .gte("created_at", deIni)
-            .lte("created_at", ateFim)
-            .limit(5000),
-          "usuario_responsavel_id",
-          "usuario_criador_id",
-          "@cli:cliente_id",
-        ),
-        escopoEq(
-          supabase
-            .from("propostas")
+            .from("cliente_pipeline")
             .select(
-              "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em,usuario_responsavel_id",
-            )
-            .is("deleted_at", null)
-            .or(
-              `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
+              "cliente_id,pipeline_stages(codigo,nome,ordem),clientes!inner(responsavel_id,criador_id)",
             )
             .limit(5000),
-          "usuario_responsavel_id",
-          "usuario_criador_id",
-          "@cli:cliente_id",
-        ),
-        carregarContratosCliente(supabase, escopoEq, de, ate),
-        carregarAnterior(supabase, escopoEq, de, ate),
-        escopoEq(
-          supabase
-            .from("clientes")
-            .select("id,created_at,contrato_emitido_em,responsavel_id")
-            .is("deleted_at", null)
-            .gte("created_at", deIni)
-            .lte("created_at", ateFim)
-            .limit(5000),
-          "responsavel_id",
-          "criador_id",
-          "@cli:id",
-        ),
-        escopoEq(
-          supabase
-            .from("demandas")
-            .select("status,prazo_sla")
-            .limit(5000),
-          "responsavel_id",
-          "criador_id",
-          "@cli:cliente_id",
-        ),
-        escopoEq(
-          supabase
-            .from("tasks")
-            .select("status,prazo")
-            .limit(5000),
-          "responsavel_id",
-          "criador_id",
-          "@cli:cliente_id",
-        ),
-        escopoEq(
-          supabase
-            .from("financial_receivables")
-            .select("valor,valor_pago,status,vencimento,tipo,criador_id")
-            .in("status", ["aberta", "parcial"] as any)
-            .limit(5000),
-          "criador_id",
-        ),
-        escopoEq(
-          supabase
-            .from("financial_payables")
-            .select("valor,valor_pago,status,vencimento,criador_id")
-            .in("status", ["aberta", "parcial"] as any)
-            .limit(5000),
-          "criador_id",
-        ),
-        supabase
-          .from("cliente_pipeline")
-          .select("cliente_id,pipeline_stages(codigo,nome,ordem),clientes!inner(responsavel_id,criador_id)")
-          .limit(5000),
-      ]);
+        ]);
       if (sims.error) throw new Error(sims.error.message);
       if (props.error) throw new Error(props.error.message);
       // Erros das demais tabelas são logados; a falta de dado zera o card, mas
@@ -482,9 +494,6 @@ export const getPanelDados = createServerFn({ method: "POST" })
       ] as const) {
         if (res.error) console.error(`[panel:visao-geral] erro em ${nome}: ${res.error.message}`);
       }
-
-
-
 
       const simRows = (sims.data ?? []) as any[];
       const simCount = simRows.length;
@@ -522,7 +531,6 @@ export const getPanelDados = createServerFn({ method: "POST" })
       const taxa = enviadas.length ? (aprovadasCount / enviadas.length) * 100 : 0;
       const conversao = simCount ? (contratosCount / simCount) * 100 : 0;
 
-
       const bancoMap = new Map<string, number>();
       enviadas.forEach((p) =>
         bancoMap.set(p.nome_banco ?? "—", (bancoMap.get(p.nome_banco ?? "—") ?? 0) + 1),
@@ -536,9 +544,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
       // Distribuição (donut) — status das propostas enviadas
       const statusMap = new Map<string, number>();
-      enviadas.forEach((p) =>
-        statusMap.set(p.status, (statusMap.get(p.status) ?? 0) + 1),
-      );
+      enviadas.forEach((p) => statusMap.set(p.status, (statusMap.get(p.status) ?? 0) + 1));
       const distDados = [...statusMap.entries()]
         .sort((a, b) => b[1] - a[1])
         .map(([s, v]) => ({ label: rotularStatus(s, PROP_LABEL), valor: v }));
@@ -566,9 +572,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
         valor2: contratoBucket.get(k) ?? 0,
       }));
 
-      const recusadasCount = enviadas.filter(
-        (p) => p.status === "credito_recusado",
-      ).length;
+      const recusadasCount = enviadas.filter((p) => p.status === "credito_recusado").length;
 
       // === Extras: visão geral do sistema ===
       const clientesRows = (clientesRes.data ?? []) as any[];
@@ -589,13 +593,22 @@ export const getPanelDados = createServerFn({ method: "POST" })
       const aReceber = somaAberto(recRows);
       const aPagar = somaAberto(payRows);
       const comissoesPrevistas = somaAberto(
-        recRows.filter((r) => String(r.tipo ?? "").toLowerCase().includes("comiss")),
+        recRows.filter((r) =>
+          String(r.tipo ?? "")
+            .toLowerCase()
+            .includes("comiss"),
+        ),
       );
 
       // Simulações por tipo
       const tipoSimMap = new Map<string, number>();
       simRows.forEach((s) => {
-        const t = s.tipo_simulacao === "completa" ? "Completa" : s.tipo_simulacao === "rapida" ? "Rápida" : "Outra";
+        const t =
+          s.tipo_simulacao === "completa"
+            ? "Completa"
+            : s.tipo_simulacao === "rapida"
+              ? "Rápida"
+              : "Outra";
         tipoSimMap.set(t, (tipoSimMap.get(t) ?? 0) + 1);
       });
       const porTipoSimulacao = tipoSimMap.size
@@ -692,8 +705,19 @@ export const getPanelDados = createServerFn({ method: "POST" })
 
       return {
         heros: [
-          { label: "Simulações", valor: int(simCount), hint: brlCompacto(volumeSimulado), tone: "neutral", delta: mkDelta(simCount, ant.simCount) },
-          { label: "Propostas enviadas", valor: int(enviadas.length), tone: "brand", delta: mkDelta(enviadas.length, ant.enviadas) },
+          {
+            label: "Simulações",
+            valor: int(simCount),
+            hint: brlCompacto(volumeSimulado),
+            tone: "neutral",
+            delta: mkDelta(simCount, ant.simCount),
+          },
+          {
+            label: "Propostas enviadas",
+            valor: int(enviadas.length),
+            tone: "brand",
+            delta: mkDelta(enviadas.length, ant.enviadas),
+          },
           {
             label: "Aprovadas",
             valor: int(aprovadasCount),
@@ -708,7 +732,13 @@ export const getPanelDados = createServerFn({ method: "POST" })
             tone: recusadasCount ? "danger" : "neutral",
             delta: mkDelta(recusadasCount, ant.recusadas, false),
           },
-          { label: "Contratos emitidos", valor: int(contratosCount), hint: brlCompacto(volume), tone: "success", delta: mkDelta(contratosCount, ant.contratos) },
+          {
+            label: "Contratos emitidos",
+            valor: int(contratosCount),
+            hint: brlCompacto(volume),
+            tone: "success",
+            delta: mkDelta(contratosCount, ant.contratos),
+          },
         ],
         minis: [
           { label: "Volume contratado", valor: brlCompacto(volume), tone: "success" },
@@ -718,16 +748,25 @@ export const getPanelDados = createServerFn({ method: "POST" })
           {
             label: "Em análise",
             valor: int(
-              enviadas.filter((p) => ["enviada_banco", "em_analise_credito"].includes(p.status)).length,
+              enviadas.filter((p) => ["enviada_banco", "em_analise_credito"].includes(p.status))
+                .length,
             ),
             tone: "warning",
           },
           { label: "Rascunhos", valor: int(rows.length - enviadas.length), tone: "neutral" },
           { label: "Clientes novos", valor: int(clientesNovos), tone: "brand" },
           { label: "Demandas abertas", valor: int(demAbertas.length), tone: "warning" },
-          { label: "SLA vencido", valor: int(demVencidas.length), tone: demVencidas.length ? "danger" : "neutral" },
+          {
+            label: "SLA vencido",
+            valor: int(demVencidas.length),
+            tone: demVencidas.length ? "danger" : "neutral",
+          },
           { label: "Tarefas abertas", valor: int(tkAbertas.length), tone: "neutral" },
-          { label: "Tarefas atrasadas", valor: int(tkAtrasadas.length), tone: tkAtrasadas.length ? "danger" : "neutral" },
+          {
+            label: "Tarefas atrasadas",
+            valor: int(tkAtrasadas.length),
+            tone: tkAtrasadas.length ? "danger" : "neutral",
+          },
           { label: "Volume aprovado", valor: brlCompacto(volumeAprovado), tone: "brand" },
         ],
         evolucao: {
@@ -776,19 +815,44 @@ export const getPanelDados = createServerFn({ method: "POST" })
                 itens: [
                   { label: "A receber", valor: brlCompacto(aReceber), tone: "success" },
                   { label: "A pagar", valor: brlCompacto(aPagar), tone: "warning" },
-                  { label: "Repasses previstos", valor: brlCompacto(comissoesPrevistas), tone: "brand" },
+                  {
+                    label: "Repasses previstos",
+                    valor: brlCompacto(comissoesPrevistas),
+                    tone: "brand",
+                  },
                 ],
               }
             : undefined,
         alertas: [
           ...(simErro
-            ? [{ tone: "danger" as const, titulo: "Simulações com erro", descricao: "Requerem revisão antes de avançar", contador: simErro }]
+            ? [
+                {
+                  tone: "danger" as const,
+                  titulo: "Simulações com erro",
+                  descricao: "Requerem revisão antes de avançar",
+                  contador: simErro,
+                },
+              ]
             : []),
           ...(demVencidas.length
-            ? [{ tone: "danger" as const, titulo: "Demandas com SLA vencido", descricao: "Requerem ação imediata", contador: demVencidas.length }]
+            ? [
+                {
+                  tone: "danger" as const,
+                  titulo: "Demandas com SLA vencido",
+                  descricao: "Requerem ação imediata",
+                  contador: demVencidas.length,
+                },
+              ]
             : []),
           ...(tkAtrasadas.length
-            ? [{ tone: "warning" as const, titulo: "Tarefas atrasadas", descricao: "Prazo ultrapassado", contador: tkAtrasadas.length }]
+            ? [
+                {
+                  tone: "warning" as const,
+                  titulo: "Tarefas atrasadas",
+                  descricao: "Prazo ultrapassado",
+                  contador: tkAtrasadas.length,
+                },
+              ]
             : []),
         ],
       };
@@ -890,19 +954,14 @@ export const getPanelDados = createServerFn({ method: "POST" })
     const recusadas = propRows.filter((p) => p.status === "credito_recusado").length;
     const rascunhos = propRows.length - enviadas.length;
     // Volume simulado: apenas simulações efetivamente simuladas (com retorno).
-    const volumeSimulado = simConcluidasRows.reduce(
-      (s, r) => s + (r.valor_financiamento ?? 0),
-      0,
-    );
+    const volumeSimulado = simConcluidasRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
     const ticket = contratos ? volumeContratos / contratos : 0;
     // Conversão simulação → proposta: apenas simulações do período que geraram
     // proposta enviada (dedup por simulacao_id). Evita contar propostas avulsas
     // ou de períodos anteriores, o que gerava taxas > 100% (clampadas em 100%).
     const simIdsNoPeriodo = new Set(simRows.map((s: any) => s.id).filter(Boolean));
     const simIdsPromovidas = new Set(
-      enviadas
-        .map((p: any) => p.simulacao_id)
-        .filter((id: any) => id && simIdsNoPeriodo.has(id)),
+      enviadas.map((p: any) => p.simulacao_id).filter((id: any) => id && simIdsNoPeriodo.has(id)),
     );
     const convSimProp = simRows.length ? (simIdsPromovidas.size / simRows.length) * 100 : 0;
     const convPropContrato = enviadas.length ? (contratos / enviadas.length) * 100 : 0;
@@ -1020,9 +1079,17 @@ export const getPanelDados = createServerFn({ method: "POST" })
           tone: slaEmDia >= 90 ? "success" : slaEmDia >= 70 ? "warning" : "danger",
         },
         { label: "Demandas abertas", valor: int(demAbertas.length), tone: "warning" },
-        { label: "SLA vencido", valor: int(demVencidas.length), tone: demVencidas.length ? "danger" : "neutral" },
+        {
+          label: "SLA vencido",
+          valor: int(demVencidas.length),
+          tone: demVencidas.length ? "danger" : "neutral",
+        },
         { label: "Tarefas abertas", valor: int(tkAbertas.length), tone: "neutral" },
-        { label: "Tarefas atrasadas", valor: int(tkAtrasadas.length), tone: tkAtrasadas.length ? "danger" : "neutral" },
+        {
+          label: "Tarefas atrasadas",
+          valor: int(tkAtrasadas.length),
+          tone: tkAtrasadas.length ? "danger" : "neutral",
+        },
         { label: "Conclusão de tarefas", valor: pct(taxaConclusaoTarefas), tone: "success" },
       ],
       evolucao: {
@@ -1080,7 +1147,11 @@ export interface PanelDrilldown {
   subtitulo?: string;
   valor?: string;
   descricao?: string;
-  formula?: { label: string; valor: string; tone?: "brand" | "success" | "warning" | "danger" | "neutral" }[];
+  formula?: {
+    label: string;
+    valor: string;
+    tone?: "brand" | "success" | "warning" | "danger" | "neutral";
+  }[];
   itens: PanelDrilldownItem[];
   total?: string;
   linkAbrir?: string;
@@ -1153,10 +1224,7 @@ async function carregarVariaveisDrilldown(supabase: any, de: string, ate: string
   const simConcluidasRows = simRows.filter((s) =>
     ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
   );
-  const volumeSimulado = simConcluidasRows.reduce(
-    (s, r) => s + (r.valor_financiamento ?? 0),
-    0,
-  );
+  const volumeSimulado = simConcluidasRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
 
   return { simRows, volumeSimulado };
 }
@@ -1169,7 +1237,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
     const f = data as unknown as ReportFiltros;
     const { de, ate } = resolverIntervalo(f);
     const deIni = inicioDiaBR(de);
-  const ateFim = fimDiaBR(ate);
+    const ateFim = fimDiaBR(ate);
     const partnerClienteIds =
       data.escopo === "minha" && !data.responsavel
         ? await listarClienteIdsParceiroDoUsuario(supabase, userId)
@@ -1181,12 +1249,10 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
       partnerClienteIds,
     });
 
-    const dentroPeriodo = (iso?: string | null) =>
-      !!iso && dataBR(iso) >= de && dataBR(iso) <= ate;
+    const dentroPeriodo = (iso?: string | null) => !!iso && dataBR(iso) >= de && dataBR(iso) <= ate;
 
     const { simRows, volumeSimulado } = await carregarVariaveisDrilldown(supabase, de, ate);
     const chave = normLabel(data.metrica);
-
 
     // O detalhamento precisa refletir integralmente o contador do card.
     const LIMITE = 5000;
@@ -1251,12 +1317,14 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
       const ids = cliRows.map((c) => c.id);
       const propRes = await supabase
         .from("propostas")
-        .select("id,cliente_id,status,nome_banco,valor_financiamento_aprovado,valor_financiamento,numero_proposta")
+        .select(
+          "id,cliente_id,status,nome_banco,valor_financiamento_aprovado,valor_financiamento,numero_proposta",
+        )
         .in("cliente_id", ids)
         .in("status", Array.from(CONTRATO_STATUS) as any)
         .is("deleted_at", null);
       const propByCli = new Map<string, any>();
-      for (const p of ((propRes.data ?? []) as any[])) {
+      for (const p of (propRes.data ?? []) as any[]) {
         if (!propByCli.has(p.cliente_id)) propByCli.set(p.cliente_id, p);
       }
       return cliRows
@@ -1289,7 +1357,9 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         valor: brlCompacto(soma),
         descricao: `${int(rows.length)} simulações somam ${brlCompacto(soma)} em crédito simulado.`,
         itens: rows
-          .sort((a, b) => (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0))
+          .sort(
+            (a, b) => (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0),
+          )
           .map(itemSimulacao),
         total: brlCompacto(soma),
         linkAbrir: "/operacional/simulacoes",
@@ -1342,8 +1412,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
     if (chave === "em analise") {
       const rows = (await propostasNoPeriodo()).filter(
         (p) =>
-          dentroPeriodo(p.created_at) &&
-          ["enviada_banco", "em_analise_credito"].includes(p.status),
+          dentroPeriodo(p.created_at) && ["enviada_banco", "em_analise_credito"].includes(p.status),
       );
       return {
         titulo: "Em análise no banco",
@@ -1375,14 +1444,20 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         (s, { cliente, prop }) =>
           s +
           (Number(
-            cliente.imovel_valor ?? prop.valor_financiamento_aprovado ?? prop.valor_financiamento ?? 0,
+            cliente.imovel_valor ??
+              prop.valor_financiamento_aprovado ??
+              prop.valor_financiamento ??
+              0,
           ) || 0),
         0,
       );
       const linhas: PanelDrilldownItem[] = detalhes.map(({ cliente, prop }) => {
         const valorNum =
           Number(
-            cliente.imovel_valor ?? prop.valor_financiamento_aprovado ?? prop.valor_financiamento ?? 0,
+            cliente.imovel_valor ??
+              prop.valor_financiamento_aprovado ??
+              prop.valor_financiamento ??
+              0,
           ) || 0;
         return {
           label: cliente.nome ?? "Cliente",
@@ -1436,7 +1511,10 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         (s, { cliente, prop }) =>
           s +
           (Number(
-            cliente.imovel_valor ?? prop.valor_financiamento_aprovado ?? prop.valor_financiamento ?? 0,
+            cliente.imovel_valor ??
+              prop.valor_financiamento_aprovado ??
+              prop.valor_financiamento ??
+              0,
           ) || 0),
         0,
       );
@@ -1454,7 +1532,10 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         itens: detalhes.map(({ cliente, prop }) => {
           const valorNum =
             Number(
-              cliente.imovel_valor ?? prop.valor_financiamento_aprovado ?? prop.valor_financiamento ?? 0,
+              cliente.imovel_valor ??
+                prop.valor_financiamento_aprovado ??
+                prop.valor_financiamento ??
+                0,
             ) || 0;
           return {
             label: cliente.nome ?? "Cliente",
@@ -1480,9 +1561,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         propostasNoPeriodo(),
         contratosDetalhados(),
       ]);
-      const enviadas = props.filter(
-        (p) => dentroPeriodo(p.created_at) && p.status !== "rascunho",
-      );
+      const enviadas = props.filter((p) => dentroPeriodo(p.created_at) && p.status !== "rascunho");
       const aprovadas = props.filter(
         (p) => dentroPeriodo(p.created_at) && foiAprovada(p.status),
       ).length;
@@ -1501,9 +1580,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
       } else if (chave === "conversao sim>proposta") {
         const simIds = new Set(sims.map((s: any) => s.id).filter(Boolean));
         const promovidas = new Set(
-          enviadas
-            .map((p: any) => p.simulacao_id)
-            .filter((id: any) => id && simIds.has(id)),
+          enviadas.map((p: any) => p.simulacao_id).filter((id: any) => id && simIds.has(id)),
         );
         num = promovidas.size;
         den = sims.length;
@@ -1745,7 +1822,11 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
     }
 
     // Aliases vindos de gráficos/funil
-    if (chave === "aprovacoes" || chave === "aprovacoes de credito" || chave === "credito aprovado") {
+    if (
+      chave === "aprovacoes" ||
+      chave === "aprovacoes de credito" ||
+      chave === "credito aprovado"
+    ) {
       const rows = (await propostasNoPeriodo()).filter(
         (p) => dentroPeriodo(p.created_at) && foiAprovada(p.status),
       );
@@ -1760,18 +1841,16 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
 
     // Evolução do período: propostas enviadas + contratos emitidos
     if (chave === "evolucao do periodo" || chave === "evolucao") {
-      const [props, contratos] = await Promise.all([
-        propostasNoPeriodo(),
-        contratosDetalhados(),
-      ]);
-      const enviadas = props.filter(
-        (p) => dentroPeriodo(p.created_at) && p.status !== "rascunho",
-      );
+      const [props, contratos] = await Promise.all([propostasNoPeriodo(), contratosDetalhados()]);
+      const enviadas = props.filter((p) => dentroPeriodo(p.created_at) && p.status !== "rascunho");
       const itensProp = enviadas.map(itemProposta);
       const itensCon: PanelDrilldownItem[] = contratos.map(({ cliente, prop }) => {
         const valorNum =
           Number(
-            cliente.imovel_valor ?? prop.valor_financiamento_aprovado ?? prop.valor_financiamento ?? 0,
+            cliente.imovel_valor ??
+              prop.valor_financiamento_aprovado ??
+              prop.valor_financiamento ??
+              0,
           ) || 0;
         return {
           label: cliente.nome ?? "Cliente",
@@ -1805,12 +1884,8 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         propostasNoPeriodo(),
         contratosDetalhados(),
       ]);
-      const enviadas = props.filter(
-        (p) => dentroPeriodo(p.created_at) && p.status !== "rascunho",
-      );
-      const aprovadas = props.filter(
-        (p) => dentroPeriodo(p.created_at) && foiAprovada(p.status),
-      );
+      const enviadas = props.filter((p) => dentroPeriodo(p.created_at) && p.status !== "rascunho");
+      const aprovadas = props.filter((p) => dentroPeriodo(p.created_at) && foiAprovada(p.status));
       return {
         titulo: "Funil de conversão",
         subtitulo: "Da simulação ao contrato",
@@ -1861,9 +1936,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
     // Clique em um banco específico do ranking → filtra propostas daquele banco
     {
       const props = await propostasNoPeriodo();
-      const enviadas = props.filter(
-        (p) => dentroPeriodo(p.created_at) && p.status !== "rascunho",
-      );
+      const enviadas = props.filter((p) => dentroPeriodo(p.created_at) && p.status !== "rascunho");
       const norm = (s: any) => normLabel(String(s ?? ""));
       const doBanco = enviadas.filter((p) => norm(p.nome_banco) === chave);
       if (doBanco.length) {
@@ -1991,4 +2064,3 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
       itens: [],
     };
   });
-

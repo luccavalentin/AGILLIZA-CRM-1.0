@@ -91,7 +91,10 @@ function parseMarkdown(md: string): Bloco[] {
     }
 
     // Tabela markdown
-    if (l.startsWith("|") && linhas[i + 1]?.trim().replace(/[^|:\- ]/g, "") === linhas[i + 1]?.trim()) {
+    if (
+      l.startsWith("|") &&
+      linhas[i + 1]?.trim().replace(/[^|:\- ]/g, "") === linhas[i + 1]?.trim()
+    ) {
       const celulas = (linha: string) =>
         linha
           .trim()
@@ -211,10 +214,7 @@ function texto(
   doc.setFont("helvetica", opts.estilo ?? "normal");
   doc.setFontSize(tam);
   doc.setTextColor(opts.cor ?? ctx.P.texto);
-  const linhas = doc.splitTextToSize(
-    conteudo,
-    (opts.largura ?? ctx.util) - recuo,
-  ) as string[];
+  const linhas = doc.splitTextToSize(conteudo, (opts.largura ?? ctx.util) - recuo) as string[];
   for (const l of linhas) {
     garantir(ctx, lh + 2);
     doc.setFont("helvetica", opts.estilo ?? "normal");
@@ -382,12 +382,9 @@ function capa(
   doc.setTextColor("#FFFFFF");
   doc.setFontSize(8.5);
   doc.text("Agilliza · Crédito Imobiliário", MARGEM, pageH - 44);
-  doc.text(
-    `Emitido em ${new Date().toLocaleDateString("pt-BR")}`,
-    pageW - MARGEM,
-    pageH - 44,
-    { align: "right" },
-  );
+  doc.text(`Emitido em ${new Date().toLocaleDateString("pt-BR")}`, pageW - MARGEM, pageH - 44, {
+    align: "right",
+  });
 }
 
 function rodapes(ctx: Ctx, legenda: string) {
@@ -408,10 +405,10 @@ function rodapes(ctx: Ctx, legenda: string) {
 }
 
 function criarCtx(titulo: string): Ctx {
-  const doc = new jsPDF({ 
-    unit: "pt", 
+  const doc = new jsPDF({
+    unit: "pt",
     format: "a4",
-    compress: true
+    compress: true,
   });
   return {
     doc,
@@ -443,16 +440,8 @@ function fichaTecnica(ctx: Ctx, item: ItemBase) {
   doc.setFontSize(9.5);
   doc.setTextColor(P.texto);
   doc.text(rotuloCategoria(item.categoria), MARGEM + 16, ctx.y + 16);
-  doc.text(
-    new Date(item.updated_at).toLocaleDateString("pt-BR"),
-    MARGEM + 190,
-    ctx.y + 16,
-  );
-  doc.text(
-    item.correspondente_id === null ? "Global" : "Correspondente",
-    MARGEM + 340,
-    ctx.y + 16,
-  );
+  doc.text(new Date(item.updated_at).toLocaleDateString("pt-BR"), MARGEM + 190, ctx.y + 16);
+  doc.text(item.correspondente_id === null ? "Global" : "Correspondente", MARGEM + 340, ctx.y + 16);
   ctx.y += alt + 18;
 
   if (item.tags.length) {
@@ -472,9 +461,7 @@ export function gerarVerbetePDF(item: ItemBase, filename?: string) {
     chapeu: `Biblioteca de conhecimento · ${rotuloCategoria(item.categoria)}`,
     titulo: item.titulo,
     subtitulo:
-      item.tags.length > 0
-        ? item.tags.join(" · ")
-        : "Referência técnica de crédito imobiliário",
+      item.tags.length > 0 ? item.tags.join(" · ") : "Referência técnica de crédito imobiliário",
     meta: [
       `Atualizado em ${new Date(item.updated_at).toLocaleDateString("pt-BR")}`,
       item.correspondente_id === null
@@ -523,9 +510,7 @@ export function gerarCompendioPDF(
     titulo,
     subtitulo:
       opts.subtitulo ??
-      (opts.filtro
-        ? `Seleção sobre “${opts.filtro}”`
-        : "Verbetes curados pela equipe Agilliza"),
+      (opts.filtro ? `Seleção sobre “${opts.filtro}”` : "Verbetes curados pela equipe Agilliza"),
     meta: [
       `${itens.length} verbete${itens.length === 1 ? "" : "s"} · ${categorias.length} categoria${categorias.length === 1 ? "" : "s"}`,
       "Consultor IA — conhecimento fundamentado",

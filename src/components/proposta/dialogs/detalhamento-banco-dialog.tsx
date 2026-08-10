@@ -87,18 +87,14 @@ export function DetalhamentoBancoDialog({
           <p className="text-muted-foreground">{info?.mensagem}</p>
           {banco?.mensagem_banco && (
             <div className="rounded-md border border-border bg-muted/40 p-3">
-              <p className="mb-1 text-xs font-medium text-muted-foreground">
-                Retorno do banco
-              </p>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Retorno do banco</p>
               <p className="whitespace-pre-wrap text-foreground">{banco.mensagem_banco}</p>
             </div>
           )}
           {(() => {
             const nb = numeroBancoParaExibir(banco?.numero_proposta_banco);
             return nb ? (
-              <p className="text-xs text-muted-foreground">
-                Nº oficial da proposta no banco: {nb}
-              </p>
+              <p className="text-xs text-muted-foreground">Nº oficial da proposta no banco: {nb}</p>
             ) : null;
           })()}
         </div>

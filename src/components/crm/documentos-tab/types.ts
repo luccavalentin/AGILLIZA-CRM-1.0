@@ -1,7 +1,4 @@
-import {
-  SLUG_CATEGORIAS,
-  type DocumentoPasta,
-} from "@/lib/crm/documento-pastas.functions";
+import { SLUG_CATEGORIAS, type DocumentoPasta } from "@/lib/crm/documento-pastas.functions";
 
 export type Categoria =
   | "comprador"
@@ -20,10 +17,7 @@ export const CATEGORIA_LABEL: Record<Categoria, string> = {
   outros: "Outros",
 };
 
-export const statusTone: Record<
-  string,
-  "success" | "warning" | "danger" | "muted" | "info"
-> = {
+export const statusTone: Record<string, "success" | "warning" | "danger" | "muted" | "info"> = {
   aprovado: "success",
   recebido: "info",
   pendente: "warning",

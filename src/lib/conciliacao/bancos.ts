@@ -187,7 +187,11 @@ export function situacaoInternaDeTextoBanco(texto: unknown): string | null {
   if (/(condicion|aprovad[ao] com|pendencia|ressalva|restri)/.test(t)) return "condicionado";
   if (/(assinad|emitid|contratad|formaliz|liberad|registrad|aprovad|deferid)/.test(t))
     return "aprovado";
-  if (/(analis|andamento|estudo|avaliac|processament|em aberto|aguardand|enviad|cadastrad|digitad)/.test(t))
+  if (
+    /(analis|andamento|estudo|avaliac|processament|em aberto|aguardand|enviad|cadastrad|digitad)/.test(
+      t,
+    )
+  )
     return "em_analise";
   return null;
 }
@@ -203,10 +207,7 @@ export const SITUACAO_LABEL: Record<string, string> = {
 };
 
 /** Constrói uma linha canônica a partir de um objeto {cabeçalho: valor}. */
-export function montarLinha(
-  mapping: BancoMapping,
-  registro: Record<string, unknown>,
-): LinhaBanco {
+export function montarLinha(mapping: BancoMapping, registro: Record<string, unknown>): LinhaBanco {
   const indice = new Map<string, unknown>();
   for (const [k, v] of Object.entries(registro)) indice.set(chaveCabecalho(k), v);
 

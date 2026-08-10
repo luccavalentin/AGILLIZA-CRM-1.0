@@ -3,7 +3,11 @@
  * ter qualquer tamanho; apenas a versão otimizada é enviada e exibida.
  */
 export async function otimizarImagem(file: File, limite = 1280): Promise<File> {
-  if (!file.type.startsWith("image/") || file.type === "image/svg+xml" || file.type === "image/gif") {
+  if (
+    !file.type.startsWith("image/") ||
+    file.type === "image/svg+xml" ||
+    file.type === "image/gif"
+  ) {
     return file;
   }
 

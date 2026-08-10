@@ -64,7 +64,11 @@ export function Stepper({
                 <div
                   className={cn(
                     "h-0.5 flex-1",
-                    i === MACRO_STAGES.length - 1 ? "opacity-0" : feito ? "bg-primary" : "bg-border",
+                    i === MACRO_STAGES.length - 1
+                      ? "opacity-0"
+                      : feito
+                        ? "bg-primary"
+                        : "bg-border",
                   )}
                 />
               </div>

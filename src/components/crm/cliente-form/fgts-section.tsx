@@ -48,7 +48,6 @@ export function FgtsSection({
             (destaque ? "border-destructive ring-1 ring-destructive/40" : "border-border")
           }
         >
-
           <Checkbox
             id="fg_autorizacao_dados"
             checked={v.fg_autorizacao_dados}

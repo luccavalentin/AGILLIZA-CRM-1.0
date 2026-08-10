@@ -11,7 +11,10 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes_/novo")({
   head: () => ({ meta: [{ title: "Novo cliente — Agilliza" }] }),
-  validateSearch: z.object({ proposta: z.string().uuid().optional(), enviar: z.coerce.number().optional() }),
+  validateSearch: z.object({
+    proposta: z.string().uuid().optional(),
+    enviar: z.coerce.number().optional(),
+  }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
   component: Pagina,
 });
@@ -55,7 +58,10 @@ function Pagina() {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <Button asChild variant="ghost" size="icon" className="shrink-0">
-            <Link to={proposta ? "/operacional/propostas/$id" : "/crm/clientes"} params={proposta ? { id: proposta } : undefined as never}>
+            <Link
+              to={proposta ? "/operacional/propostas/$id" : "/crm/clientes"}
+              params={proposta ? { id: proposta } : (undefined as never)}
+            >
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
@@ -74,7 +80,6 @@ function Pagina() {
           <UserPlus className="size-5" />
         </div>
       </div>
-
 
       <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="order-last space-y-4 lg:order-first lg:sticky lg:top-6 lg:self-start">
@@ -114,7 +119,6 @@ function Pagina() {
             />
           )}
         </div>
-
       </div>
     </div>
   );

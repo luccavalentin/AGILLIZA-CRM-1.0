@@ -46,10 +46,7 @@ const STATUS: Record<LancamentoStatus, { label: string; tone: string }> = {
   cancelado: { label: "Cancelado", tone: "bg-destructive/15 text-destructive" },
 };
 
-const MESES = [
-  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-  "Jul", "Ago", "Set", "Out", "Nov", "Dez",
-];
+const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 export function LancamentosPage({
   titulo,
@@ -155,7 +152,10 @@ export function LancamentosPage({
                     value={form.valor || ""}
                     onFocus={(e) => e.currentTarget.select()}
                     onChange={(e) =>
-                      setForm((p) => ({ ...p, valor: e.target.value === "" ? 0 : Number(e.target.value) }))
+                      setForm((p) => ({
+                        ...p,
+                        valor: e.target.value === "" ? 0 : Number(e.target.value),
+                      }))
                     }
                   />
                 </div>
@@ -165,10 +165,14 @@ export function LancamentosPage({
                     value={form.status}
                     onValueChange={(v) => setForm((p) => ({ ...p, status: v as LancamentoStatus }))}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {(Object.keys(STATUS) as LancamentoStatus[]).map((s) => (
-                        <SelectItem key={s} value={s}>{STATUS[s].label}</SelectItem>
+                        <SelectItem key={s} value={s}>
+                          {STATUS[s].label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -179,7 +183,9 @@ export function LancamentosPage({
                     value={String(form.competencia_mes)}
                     onValueChange={(v) => setForm((p) => ({ ...p, competencia_mes: Number(v) }))}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {MESES.map((m, i) => (
                         <SelectItem key={m} value={String(i + 1)}>
@@ -207,7 +213,9 @@ export function LancamentosPage({
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
               <Button
                 onClick={() => salvar.mutate()}
                 disabled={salvar.isPending || !form.funcionario_id || form.valor <= 0}
@@ -224,10 +232,14 @@ export function LancamentosPage({
           <div className="space-y-1.5">
             <Label>Mês</Label>
             <Select value={String(filtroMes)} onValueChange={(v) => setFiltroMes(Number(v))}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {MESES.map((m, i) => (
-                  <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+                  <SelectItem key={m} value={String(i + 1)}>
+                    {m}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -270,7 +282,10 @@ export function LancamentosPage({
                 ))}
                 {(!q.data || q.data.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="py-10 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum lançamento na competência.
                     </TableCell>
                   </TableRow>

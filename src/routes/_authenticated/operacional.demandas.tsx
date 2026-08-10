@@ -60,7 +60,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
-
 export const Route = createFileRoute("/_authenticated/operacional/demandas")({
   head: () => ({ meta: [{ title: "Demandas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.demandas"),
@@ -143,7 +142,11 @@ function Pagina() {
   });
   const meuId = sessao?.profile?.id ?? null;
 
-  const { data: itens, isLoading, refetch } = useQuery({
+  const {
+    data: itens,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["demandas", "lista", escopo],
     queryFn: () => listarDemandas({ data: { escopo } }),
   });
@@ -162,7 +165,6 @@ function Pagina() {
       setExcluindo(false);
     }
   }
-
 
   const tiposDisponiveis = useMemo(() => {
     const set = new Set<string>();
@@ -249,10 +251,31 @@ function Pagina() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <OpStat label="Ativas" value={kpis.abertas} icon={<Inbox className="h-4 w-4" />} accent="var(--primary)" />
-        <OpStat label="Aguardando" value={kpis.aguardando} icon={<Hourglass className="h-4 w-4" />} accent="var(--warning)" />
-        <OpStat label="Vencidas" value={kpis.vencidas} icon={<Flame className="h-4 w-4" />} accent="var(--destructive)" alerta={kpis.vencidas > 0} />
-        <OpStat label="Não lidas" value={kpis.naoLidas} icon={<Bell className="h-4 w-4" />} accent="var(--info)" />
+        <OpStat
+          label="Ativas"
+          value={kpis.abertas}
+          icon={<Inbox className="h-4 w-4" />}
+          accent="var(--primary)"
+        />
+        <OpStat
+          label="Aguardando"
+          value={kpis.aguardando}
+          icon={<Hourglass className="h-4 w-4" />}
+          accent="var(--warning)"
+        />
+        <OpStat
+          label="Vencidas"
+          value={kpis.vencidas}
+          icon={<Flame className="h-4 w-4" />}
+          accent="var(--destructive)"
+          alerta={kpis.vencidas > 0}
+        />
+        <OpStat
+          label="Não lidas"
+          value={kpis.naoLidas}
+          icon={<Bell className="h-4 w-4" />}
+          accent="var(--info)"
+        />
       </div>
 
       {/* Filtros */}
@@ -352,8 +375,7 @@ function Pagina() {
         {filtrados.map((d) => {
           const cfg = statusDemanda(d.status as DemandaStatus);
           const souCriador = Boolean(meuId && d.criador_id === meuId);
-          const abrir = () =>
-            navigate({ to: "/operacional/demandas/$id", params: { id: d.id } });
+          const abrir = () => navigate({ to: "/operacional/demandas/$id", params: { id: d.id } });
           return (
             <div
               key={d.id}
@@ -369,10 +391,7 @@ function Pagina() {
               className="group relative flex w-full cursor-pointer items-start gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <span
-                className={cn(
-                  "absolute inset-y-0 left-0 w-1 rounded-r-full",
-                  TONE_BAR[cfg.tone],
-                )}
+                className={cn("absolute inset-y-0 left-0 w-1 rounded-r-full", TONE_BAR[cfg.tone])}
               />
               <div className="min-w-0 flex-1 pl-2">
                 <div className="flex flex-wrap items-center gap-2">
@@ -392,9 +411,7 @@ function Pagina() {
                     </span>
                   )}
                 </div>
-                <p className="mt-1.5 truncate text-sm font-semibold text-foreground">
-                  {d.titulo}
-                </p>
+                <p className="mt-1.5 truncate text-sm font-semibold text-foreground">{d.titulo}</p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   {d.nome_cliente && (
                     <span className="inline-flex items-center gap-1.5 truncate">
@@ -487,8 +504,8 @@ function Pagina() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir demanda?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Toda a conversa, anexos e histórico
-              serão removidos permanentemente.
+              Esta ação não pode ser desfeita. Toda a conversa, anexos e histórico serão removidos
+              permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -519,7 +536,6 @@ function Pagina() {
           onOpenChangeOverride={(open) => !open && setEditandoDemanda(null)}
         />
       )}
-
     </div>
   );
 }
@@ -531,4 +547,3 @@ function tipoLabel(slug: string): string {
     .map((s) => (s ? s[0].toUpperCase() + s.slice(1) : s))
     .join(" ");
 }
-

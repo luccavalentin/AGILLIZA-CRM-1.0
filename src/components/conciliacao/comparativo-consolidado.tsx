@@ -17,11 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { abaResumo } from "@/lib/conciliacao/xlsx-tipos";
-import {
-  baixarXlsx,
-  gerarPdfComparativo,
-  type ModoSaida,
-} from "@/lib/conciliacao/exportar-lazy";
+import { baixarXlsx, gerarPdfComparativo, type ModoSaida } from "@/lib/conciliacao/exportar-lazy";
 import { listarItensConciliacao } from "@/lib/conciliacao/conciliacao.functions";
 import { SITUACAO_LABEL } from "@/lib/conciliacao/bancos";
 import {

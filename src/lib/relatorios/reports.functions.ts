@@ -37,9 +37,9 @@ const filtrosSchema = z.object({
   }),
 });
 
-const brl = (v: number) => (v || 0).toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
+const brl = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const int = (v: number) => (v || 0).toLocaleString("pt-BR");
-const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", {  maximumFractionDigits: 1 })}%`;
+const pct = (v: number) => `${(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
 /** Rótulos oficiais dos status de proposta (espelha components/propostas/status.ts). */
 const STATUS_PROPOSTA_LABEL: Record<string, string> = {
@@ -103,11 +103,7 @@ const opcoes = (m: Record<string, string>) =>
 
 /** Opções de status do filtro por código de relatório. */
 /** Status ocultos no filtro (transientes/técnicos). Simulação (rascunho) fica visível. */
-const STATUS_PROPOSTA_OCULTOS = new Set([
-  "enviada_banco",
-  "registrado",
-  "erro_envio",
-]);
+const STATUS_PROPOSTA_OCULTOS = new Set(["enviada_banco", "registrado", "erro_envio"]);
 function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }[] | undefined {
   const filtrarPropostas = () =>
     opcoes(STATUS_PROPOSTA_LABEL).filter((o) => !STATUS_PROPOSTA_OCULTOS.has(o.value));
@@ -136,8 +132,6 @@ function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }
       return undefined;
   }
 }
-
-
 
 async function temPii(supabase: any, userId: string): Promise<boolean> {
   const { data: tudo } = await supabase.rpc("has_any_role", {
@@ -196,8 +190,8 @@ function aplicarFiltrosPessoa(query: any, filtros: ReportFiltros, cols: string, 
   return query;
 }
 
-
-const statusEhFiltroSimulacao = (status?: string) => status === "rascunho" || status === "simulacao";
+const statusEhFiltroSimulacao = (status?: string) =>
+  status === "rascunho" || status === "simulacao";
 
 function serieMensal(rows: { data: string; valor?: number }[]): ChartSerie[] {
   const map = new Map<string, { valor: number; count: number }>();
@@ -320,8 +314,7 @@ export const runReport = createServerFn({ method: "POST" })
         const arr = Array.isArray(p.tipos_pessoa) ? p.tipos_pessoa.filter(Boolean) : [];
         return arr.length > 0 ? arr : [p.tipo_pessoa].filter(Boolean);
       };
-      const porTipo = (slug: string) =>
-        linhas.filter((p) => tiposDe(p).includes(slug)).map(opt);
+      const porTipo = (slug: string) => linhas.filter((p) => tiposDe(p).includes(slug)).map(opt);
       return {
         todos: linhas.map(opt),
         // "usuario" = Analista; "comercial" = Comercial Agilliza (ver tipos_pessoa).
@@ -331,7 +324,6 @@ export const runReport = createServerFn({ method: "POST" })
         imobiliarias: porTipo("imobiliaria"),
       };
     }
-
 
     async function comparativoMensalPropostas(): Promise<ComparativoMensal | undefined> {
       const hojeStr = new Date().toLocaleDateString("en-CA");
@@ -422,13 +414,7 @@ export const runReport = createServerFn({ method: "POST" })
         .order(dateCol, { ascending: false })
         .limit(5000);
       // Ignora registros soft-deleted em tabelas que suportam exclusão lógica.
-      const TEM_SOFT_DELETE = new Set([
-        "simulacoes",
-        "propostas",
-        "clientes",
-        "tasks",
-        "demandas",
-      ]);
+      const TEM_SOFT_DELETE = new Set(["simulacoes", "propostas", "clientes", "tasks", "demandas"]);
       if (TEM_SOFT_DELETE.has(table)) q = q.is("deleted_at", null);
       q = aplicarEscopo(q, filtros, userId, colResp);
       if (filtros.responsavel && colResp) q = q.eq(colResp, filtros.responsavel);
@@ -448,10 +434,18 @@ export const runReport = createServerFn({ method: "POST" })
       if (filtros.status && statusCol) q = q.eq(statusCol, filtros.status);
       const { data: rows, error } = await q;
       if (error) throw new Error(error.message);
-      const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
+      const buscaLc = [filtros.busca, filtros.cliente]
+        .filter(Boolean)
+        .join(" ")
+        .trim()
+        .toLowerCase();
       if (!buscaLc) return (rows ?? []) as any[];
       return ((rows ?? []) as any[]).filter((r) =>
-        Object.values(r).some((v) => String(v ?? "").toLowerCase().includes(buscaLc)),
+        Object.values(r).some((v) =>
+          String(v ?? "")
+            .toLowerCase()
+            .includes(buscaLc),
+        ),
       );
     }
 
@@ -504,7 +498,8 @@ export const runReport = createServerFn({ method: "POST" })
         "created_at",
       ].join(",");
       const sims = await fetchAll("simulacoes", cols, "created_at", "usuario_responsavel_id", {
-        statusCol: opts?.rascunhoComoModulo && statusEhFiltroSimulacao(filtros.status) ? false : undefined,
+        statusCol:
+          opts?.rascunhoComoModulo && statusEhFiltroSimulacao(filtros.status) ? false : undefined,
       });
       if (!sims.length) return sims;
 
@@ -520,7 +515,8 @@ export const runReport = createServerFn({ method: "POST" })
           .select("simulacao_id")
           .limit(1);
         if (bancoError) throw new Error(bancoError.message);
-        if (bancoTeste === null) throw new Error("Não foi possível carregar bancos das simulações.");
+        if (bancoTeste === null)
+          throw new Error("Não foi possível carregar bancos das simulações.");
       }
       const porSim = new Map<string, any[]>();
       ((bancosRows ?? []) as any[]).forEach((b) => {
@@ -534,7 +530,11 @@ export const runReport = createServerFn({ method: "POST" })
       const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco]
         .filter(Boolean)
         .map((b) => String(b).trim().toLowerCase()) as string[];
-      const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
+      const buscaLc = [filtros.busca, filtros.cliente]
+        .filter(Boolean)
+        .join(" ")
+        .trim()
+        .toLowerCase();
       return sims
         .map((s) => {
           const bancos = porSim.get(s.id) ?? [];
@@ -557,13 +557,7 @@ export const runReport = createServerFn({ method: "POST" })
 
         .filter((s) => {
           if (!buscaLc) return true;
-          const alvo = [
-            s.numero_simulacao,
-            s.nome_cliente,
-            s.produto,
-            s.status,
-            s.bancos_label,
-          ]
+          const alvo = [s.numero_simulacao, s.nome_cliente, s.produto, s.status, s.bancos_label]
             .map((v) => String(v ?? ""))
             .join(" ")
             .toLowerCase();
@@ -595,8 +589,8 @@ export const runReport = createServerFn({ method: "POST" })
       sims.forEach((s) => {
         const val = s.valor_financiamento ?? 0;
         const statusLabel = cfg?.statusComoModulo
-          ? STATUS_SIMULACAO_LABEL[s.status] ?? s.status
-          : STATUS_SIMULACAO_LABEL[s.status] ?? s.status;
+          ? (STATUS_SIMULACAO_LABEL[s.status] ?? s.status)
+          : (STATUS_SIMULACAO_LABEL[s.status] ?? s.status);
         statusMap.set(statusLabel, (statusMap.get(statusLabel) ?? 0) + 1);
         somaValorStatus.set(statusLabel, (somaValorStatus.get(statusLabel) ?? 0) + val);
 
@@ -614,13 +608,54 @@ export const runReport = createServerFn({ method: "POST" })
         descricao: cfg?.descricao ?? "Volume, tipo e conversão de simulações.",
         modulo: cfg?.modulo ?? "Simulações",
         kpis: [
-          { label: "Total", valor: int(sims.length), tone: "neutral", filters: [{ key: "status", values: [...statusMap.keys()] }] },
-          { label: "Rápidas", valor: int(rapidas), tone: "neutral", filters: [{ key: "tipo", values: ["simplificada"] }] },
-          { label: "Completas", valor: int(completas), tone: "brand", filters: [{ key: "tipo", values: ["completa"] }] },
-          { label: "Com erro", valor: int(erro), tone: "danger", filters: [{ key: "status", values: [STATUS_SIMULACAO_LABEL["erro_banco"] ?? "erro_banco"] }] },
-          { label: "Volume simulado", valor: brl(volumeSimulado), tone: "success", filters: [{ key: "status", values: ["Simulada", "Parcialmente simulada", "Promovida"] }] },
-          { label: "Conversão sim→prop", valor: pct(conv), tone: "success", filters: [{ key: "status", values: ["Promovida"] }] },
-          { label: "Ticket médio", valor: brl(ticket), tone: "brand", filters: [{ key: "status", values: ["Simulada", "Parcialmente simulada", "Promovida"] }] },
+          {
+            label: "Total",
+            valor: int(sims.length),
+            tone: "neutral",
+            filters: [{ key: "status", values: [...statusMap.keys()] }],
+          },
+          {
+            label: "Rápidas",
+            valor: int(rapidas),
+            tone: "neutral",
+            filters: [{ key: "tipo", values: ["simplificada"] }],
+          },
+          {
+            label: "Completas",
+            valor: int(completas),
+            tone: "brand",
+            filters: [{ key: "tipo", values: ["completa"] }],
+          },
+          {
+            label: "Com erro",
+            valor: int(erro),
+            tone: "danger",
+            filters: [
+              { key: "status", values: [STATUS_SIMULACAO_LABEL["erro_banco"] ?? "erro_banco"] },
+            ],
+          },
+          {
+            label: "Volume simulado",
+            valor: brl(volumeSimulado),
+            tone: "success",
+            filters: [
+              { key: "status", values: ["Simulada", "Parcialmente simulada", "Promovida"] },
+            ],
+          },
+          {
+            label: "Conversão sim→prop",
+            valor: pct(conv),
+            tone: "success",
+            filters: [{ key: "status", values: ["Promovida"] }],
+          },
+          {
+            label: "Ticket médio",
+            valor: brl(ticket),
+            tone: "brand",
+            filters: [
+              { key: "status", values: ["Simulada", "Parcialmente simulada", "Promovida"] },
+            ],
+          },
         ],
         charts: [
           { titulo: "Distribuição por status", tipo: "barh", dados: topN(statusMap, 8) },
@@ -629,7 +664,9 @@ export const runReport = createServerFn({ method: "POST" })
           {
             titulo: "Evolução mensal",
             tipo: "line",
-            dados: serieMensal(sims.map((s) => ({ data: s.created_at, valor: s.valor_financiamento ?? 0 }))),
+            dados: serieMensal(
+              sims.map((s) => ({ data: s.created_at, valor: s.valor_financiamento ?? 0 })),
+            ),
           },
         ],
         columns: [
@@ -714,10 +751,38 @@ export const runReport = createServerFn({ method: "POST" })
         kpis: [
           { label: "Clientes", valor: int(cls.length), tone: "brand" },
           { label: "Simulações", valor: int(sims.length), tone: "neutral" },
-          { label: "Propostas", valor: int(enviadas.length), tone: "neutral", filters: [{ key: "status", values: Array.from(new Set(enviadas.map(p => p.status))) }] },
-          { label: "Aprovadas", valor: int(aprovadas.length), tone: "success", filters: [{ key: "status", values: Array.from(new Set(aprovadas.map(p => p.status))) }] },
-          { label: "Contratos", valor: int(contratos.length), tone: "success", filters: [{ key: "status", values: Array.from(new Set(contratos.map(p => p.status))) }] },
-          { label: "Volume contratado", valor: brl(volume), tone: "brand", filters: [{ key: "status", values: Array.from(new Set(contratos.map(p => p.status))) }] },
+          {
+            label: "Propostas",
+            valor: int(enviadas.length),
+            tone: "neutral",
+            filters: [
+              { key: "status", values: Array.from(new Set(enviadas.map((p) => p.status))) },
+            ],
+          },
+          {
+            label: "Aprovadas",
+            valor: int(aprovadas.length),
+            tone: "success",
+            filters: [
+              { key: "status", values: Array.from(new Set(aprovadas.map((p) => p.status))) },
+            ],
+          },
+          {
+            label: "Contratos",
+            valor: int(contratos.length),
+            tone: "success",
+            filters: [
+              { key: "status", values: Array.from(new Set(contratos.map((p) => p.status))) },
+            ],
+          },
+          {
+            label: "Volume contratado",
+            valor: brl(volume),
+            tone: "brand",
+            filters: [
+              { key: "status", values: Array.from(new Set(contratos.map((p) => p.status))) },
+            ],
+          },
         ],
         charts: [
           { titulo: "Funil de conversão", tipo: "funnel", dados: funil },
@@ -759,7 +824,12 @@ export const runReport = createServerFn({ method: "POST" })
           { statusCol: statusEhFiltroSimulacao(filtros.status) ? false : undefined },
         ),
         fetchSimulacoesRelatorio({ rascunhoComoModulo: true }),
-        fetchAll("comissoes", "valor_bruto,usuario_responsavel_id", "created_at", "usuario_responsavel_id"),
+        fetchAll(
+          "comissoes",
+          "valor_bruto,usuario_responsavel_id",
+          "created_at",
+          "usuario_responsavel_id",
+        ),
         fetchAll("contas", "valor_previsto,usuario_id", "data_vencimento", "usuario_id"),
         listarOpcoesOperacionais(),
       ]);
@@ -769,7 +839,9 @@ export const runReport = createServerFn({ method: "POST" })
       const aprovadas = propsFiltradas.filter((p) =>
         ["credito_aprovado", "contrato_emitido", "registrado"].includes(p.status),
       );
-      const contratos = propsFiltradas.filter((p) => ["contrato_emitido", "registrado"].includes(p.status));
+      const contratos = propsFiltradas.filter((p) =>
+        ["contrato_emitido", "registrado"].includes(p.status),
+      );
       const valor = contratos.reduce(
         (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
         0,
@@ -783,21 +855,43 @@ export const runReport = createServerFn({ method: "POST" })
       const bancoLider = topN(bancoMap, 1)[0]?.label ?? "—";
       // ranking por usuário
       const respIds = [
-        ...new Set(
-          [...enviadas, ...sims].map((p) => p.usuario_responsavel_id).filter(Boolean),
-        ),
+        ...new Set([...enviadas, ...sims].map((p) => p.usuario_responsavel_id).filter(Boolean)),
       ];
       const nomes = await nomesUsuarios(respIds);
-      const userMap = new Map<string, { sims: number; props: number; contratos: number; valor: number; comissao: number; repasse: number }>();
+      const userMap = new Map<
+        string,
+        {
+          sims: number;
+          props: number;
+          contratos: number;
+          valor: number;
+          comissao: number;
+          repasse: number;
+        }
+      >();
       sims.forEach((s) => {
         const k = s.usuario_responsavel_id ?? "—";
-        const cur = userMap.get(k) ?? { sims: 0, props: 0, contratos: 0, valor: 0, comissao: 0, repasse: 0 };
+        const cur = userMap.get(k) ?? {
+          sims: 0,
+          props: 0,
+          contratos: 0,
+          valor: 0,
+          comissao: 0,
+          repasse: 0,
+        };
         cur.sims += 1;
         userMap.set(k, cur);
       });
       enviadas.forEach((p) => {
         const k = p.usuario_responsavel_id ?? "—";
-        const cur = userMap.get(k) ?? { sims: 0, props: 0, contratos: 0, valor: 0, comissao: 0, repasse: 0 };
+        const cur = userMap.get(k) ?? {
+          sims: 0,
+          props: 0,
+          contratos: 0,
+          valor: 0,
+          comissao: 0,
+          repasse: 0,
+        };
         cur.props += 1;
         if (["contrato_emitido", "registrado"].includes(p.status)) {
           cur.contratos += 1;
@@ -807,13 +901,27 @@ export const runReport = createServerFn({ method: "POST" })
       });
       coms.forEach((c: any) => {
         const k = c.usuario_responsavel_id ?? "—";
-        const cur = userMap.get(k) ?? { sims: 0, props: 0, contratos: 0, valor: 0, comissao: 0, repasse: 0 };
+        const cur = userMap.get(k) ?? {
+          sims: 0,
+          props: 0,
+          contratos: 0,
+          valor: 0,
+          comissao: 0,
+          repasse: 0,
+        };
         cur.comissao += c.valor_bruto ?? 0;
         userMap.set(k, cur);
       });
       repasses.forEach((r: any) => {
         const k = r.usuario_id ?? "—";
-        const cur = userMap.get(k) ?? { sims: 0, props: 0, contratos: 0, valor: 0, comissao: 0, repasse: 0 };
+        const cur = userMap.get(k) ?? {
+          sims: 0,
+          props: 0,
+          contratos: 0,
+          valor: 0,
+          comissao: 0,
+          repasse: 0,
+        };
         cur.repasse += r.valor_previsto ?? 0;
         userMap.set(k, cur);
       });
@@ -825,14 +933,54 @@ export const runReport = createServerFn({ method: "POST" })
         descricao: "Desempenho de produção e resumo de ganhos por período e responsável.",
         modulo: "Comercial",
         kpis: [
-          { label: "Simulações", valor: int(sims.length), tone: "neutral", filters: [{ key: "resp", values: [...nomes.values()] }] },
-          { label: "Propostas", valor: int(enviadas.length), tone: "neutral", filters: [{ key: "resp", values: [...nomes.values()] }] },
-          { label: "Taxa de aprovação", valor: pct(taxa), tone: "success", filters: [{ key: "resp", values: [...nomes.values()] }] },
-          { label: "Ticket médio", valor: brl(ticket), tone: "brand", filters: [{ key: "resp", values: [...nomes.values()] }] },
-          { label: "Volume contratado", valor: brl(valor), tone: "success", filters: [{ key: "resp", values: [...nomes.values()] }] },
-          { label: "Contratos", valor: int(contratos.length), tone: "success", filters: [{ key: "resp", values: [...nomes.values()] }] },
-          { label: "Total Comissões", valor: brl(totalComissao), tone: "brand", filters: [{ key: "resp", values: [...nomes.values()] }] },
-          { label: "Prev. Repasses", valor: brl(totalRepasse), tone: "neutral", filters: [{ key: "resp", values: [...nomes.values()] }] },
+          {
+            label: "Simulações",
+            valor: int(sims.length),
+            tone: "neutral",
+            filters: [{ key: "resp", values: [...nomes.values()] }],
+          },
+          {
+            label: "Propostas",
+            valor: int(enviadas.length),
+            tone: "neutral",
+            filters: [{ key: "resp", values: [...nomes.values()] }],
+          },
+          {
+            label: "Taxa de aprovação",
+            valor: pct(taxa),
+            tone: "success",
+            filters: [{ key: "resp", values: [...nomes.values()] }],
+          },
+          {
+            label: "Ticket médio",
+            valor: brl(ticket),
+            tone: "brand",
+            filters: [{ key: "resp", values: [...nomes.values()] }],
+          },
+          {
+            label: "Volume contratado",
+            valor: brl(valor),
+            tone: "success",
+            filters: [{ key: "resp", values: [...nomes.values()] }],
+          },
+          {
+            label: "Contratos",
+            valor: int(contratos.length),
+            tone: "success",
+            filters: [{ key: "resp", values: [...nomes.values()] }],
+          },
+          {
+            label: "Total Comissões",
+            valor: brl(totalComissao),
+            tone: "brand",
+            filters: [{ key: "resp", values: [...nomes.values()] }],
+          },
+          {
+            label: "Prev. Repasses",
+            valor: brl(totalRepasse),
+            tone: "neutral",
+            filters: [{ key: "resp", values: [...nomes.values()] }],
+          },
           { label: "Banco líder", valor: bancoLider, tone: "neutral" },
         ],
         charts: [
@@ -851,7 +999,13 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "sims", label: "Simulações", align: "right", footer: "sum", format: "int" },
           { key: "props", label: "Propostas", align: "right", footer: "sum", format: "int" },
           { key: "contratos", label: "Contratos", align: "right", footer: "sum", format: "int" },
-          { key: "valor", label: "Volume Contratado", align: "right", footer: "sum", format: "brl" },
+          {
+            key: "valor",
+            label: "Volume Contratado",
+            align: "right",
+            footer: "sum",
+            format: "brl",
+          },
           { key: "comissao", label: "Comissões", align: "right", footer: "sum", format: "brl" },
           { key: "repasse", label: "Repasses", align: "right", footer: "sum", format: "brl" },
         ],
@@ -936,7 +1090,11 @@ export const runReport = createServerFn({ method: "POST" })
         if (filtros.produto) q = q.eq("produto", filtros.produto);
         if (filtros.status && !statusSimulacao) q = q.eq("status", filtros.status);
         // Banco é filtrado após enriquecer com proposta_bancos; aqui removemos só o filtro de banco.
-        const filtrosSemBanco = { ...filtros, banco: undefined, bancos: undefined } as ReportFiltros;
+        const filtrosSemBanco = {
+          ...filtros,
+          banco: undefined,
+          bancos: undefined,
+        } as ReportFiltros;
         q = aplicarFiltrosPessoa(q, filtrosSemBanco, cols, "usuario_responsavel_id");
         const { data: rowsRaw, error } = await q;
         if (error) throw new Error(error.message);
@@ -946,7 +1104,9 @@ export const runReport = createServerFn({ method: "POST" })
         const ids = propsBase.map((p) => p.id).filter(Boolean);
         const { data: bancosRows, error: bancosError } = await supabase
           .from("proposta_bancos")
-          .select("proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela")
+          .select(
+            "proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela",
+          )
           .in("proposta_id", ids)
           .limit(20000);
         if (bancosError) throw new Error(bancosError.message);
@@ -963,8 +1123,13 @@ export const runReport = createServerFn({ method: "POST" })
         const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco]
           .filter(Boolean)
           .map((b) => String(b).trim().toLowerCase()) as string[];
-        const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
-        const valorProposta = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
+        const buscaLc = [filtros.busca, filtros.cliente]
+          .filter(Boolean)
+          .join(" ")
+          .trim()
+          .toLowerCase();
+        const valorProposta = (p: any) =>
+          p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
 
         return propsBase
           .map((p) => {
@@ -1074,7 +1239,9 @@ export const runReport = createServerFn({ method: "POST" })
         if (propIds.length) {
           const { data: bancosRows, error: bancosError } = await supabase
             .from("proposta_bancos")
-            .select("proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela")
+            .select(
+              "proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela",
+            )
             .in("proposta_id", propIds)
             .limit(20000);
           if (bancosError) throw new Error(bancosError.message);
@@ -1114,8 +1281,13 @@ export const runReport = createServerFn({ method: "POST" })
         }
 
         const bancosFiltro = [...(filtros.bancos ?? []), filtros.banco].filter(Boolean) as string[];
-        const buscaLc = [filtros.busca, filtros.cliente].filter(Boolean).join(" ").trim().toLowerCase();
-        const valorContrato = (p: any) => p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
+        const buscaLc = [filtros.busca, filtros.cliente]
+          .filter(Boolean)
+          .join(" ")
+          .trim()
+          .toLowerCase();
+        const valorContrato = (p: any) =>
+          p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0;
         const naoVazio = (a?: string[]) => Array.isArray(a) && a.length > 0;
         const contemPessoa = (ids: string[] | undefined, ...vals: unknown[]) =>
           !naoVazio(ids) || vals.some((v) => typeof v === "string" && ids!.includes(v));
@@ -1130,12 +1302,18 @@ export const runReport = createServerFn({ method: "POST" })
               cliente_id: c.id,
               nome_cliente: prop?.nome_cliente ?? c.nome ?? "—",
               cpf_cnpj: prop?.cpf_cnpj ?? c.documento ?? null,
-              status: prop?.status && statusContrato.includes(prop.status) ? prop.status : "contrato_emitido",
+              status:
+                prop?.status && statusContrato.includes(prop.status)
+                  ? prop.status
+                  : "contrato_emitido",
               usuario_responsavel_id: prop?.usuario_responsavel_id ?? c.responsavel_id,
               contrato_emitido_em: c.contrato_emitido_em,
               created_at: prop?.created_at ?? c.contrato_emitido_em,
               valor_financiamento_aprovado:
-                prop?.valor_financiamento_aprovado ?? prop?.valor_financiamento ?? c.imovel_valor ?? 0,
+                prop?.valor_financiamento_aprovado ??
+                prop?.valor_financiamento ??
+                c.imovel_valor ??
+                0,
             };
           })
           .filter((p) => !filtros.status || p.status === filtros.status)
@@ -1147,7 +1325,12 @@ export const runReport = createServerFn({ method: "POST" })
           })
           .filter((p) => contemPessoa(filtros.analistas, p.analista_id, p.usuario_responsavel_id))
           .filter((p) => contemPessoa(filtros.comerciais, p.comercial_id))
-          .filter((p) => contemPessoa([...(filtros.corretores ?? []), ...(filtros.imobiliarias ?? [])], p.parceiro_id))
+          .filter((p) =>
+            contemPessoa(
+              [...(filtros.corretores ?? []), ...(filtros.imobiliarias ?? [])],
+              p.parceiro_id,
+            ),
+          )
           .filter((p) => filtros.valorMin == null || valorContrato(p) >= filtros.valorMin!)
           .filter((p) => filtros.valorMax == null || valorContrato(p) <= filtros.valorMax!)
           .filter((p) => {
@@ -1202,10 +1385,15 @@ export const runReport = createServerFn({ method: "POST" })
       // guarda apenas um `parceiro_id`, então enriquecemos com todos os vínculos do
       // cadastro do cliente para popular ambas as colunas quando existirem.
       const clienteIdsAll = new Set<string>();
-      for (const s of simulacoesFiltradas) if (s.cliente_id) clienteIdsAll.add(String(s.cliente_id));
+      for (const s of simulacoesFiltradas)
+        if (s.cliente_id) clienteIdsAll.add(String(s.cliente_id));
       for (const p of propostasFiltradas) if (p.cliente_id) clienteIdsAll.add(String(p.cliente_id));
-      for (const p of contratosOperacionais) if (p.cliente_id) clienteIdsAll.add(String(p.cliente_id));
-      const vinculosPorCliente = new Map<string, { imobiliaria_id?: string; corretor_id?: string }>();
+      for (const p of contratosOperacionais)
+        if (p.cliente_id) clienteIdsAll.add(String(p.cliente_id));
+      const vinculosPorCliente = new Map<
+        string,
+        { imobiliaria_id?: string; corretor_id?: string }
+      >();
       if (clienteIdsAll.size > 0) {
         for (let inicio = 0; ; inicio += 1000) {
           const { data: lote } = await supabase
@@ -1213,12 +1401,18 @@ export const runReport = createServerFn({ method: "POST" })
             .select("cliente_id, parceiro_id, tipo_vinculo")
             .in("cliente_id", [...clienteIdsAll])
             .range(inicio, inicio + 999);
-          const rows = (lote ?? []) as { cliente_id: string; parceiro_id: string | null; tipo_vinculo: string }[];
+          const rows = (lote ?? []) as {
+            cliente_id: string;
+            parceiro_id: string | null;
+            tipo_vinculo: string;
+          }[];
           for (const v of rows) {
             if (!v.parceiro_id) continue;
             const atual = vinculosPorCliente.get(v.cliente_id) ?? {};
-            if (v.tipo_vinculo === "imobiliaria" && !atual.imobiliaria_id) atual.imobiliaria_id = v.parceiro_id;
-            if (v.tipo_vinculo === "corretor" && !atual.corretor_id) atual.corretor_id = v.parceiro_id;
+            if (v.tipo_vinculo === "imobiliaria" && !atual.imobiliaria_id)
+              atual.imobiliaria_id = v.parceiro_id;
+            if (v.tipo_vinculo === "corretor" && !atual.corretor_id)
+              atual.corretor_id = v.parceiro_id;
             vinculosPorCliente.set(v.cliente_id, atual);
             parceiroIds.add(v.parceiro_id);
           }
@@ -1231,13 +1425,17 @@ export const runReport = createServerFn({ method: "POST" })
         perfisUsuarios([...parceiroIds]),
       ]);
       const nomeAnalista = (p: any) =>
-        p.analista_nome || nomes.get(p.analista_id) || nomes.get(p.usuario_responsavel_id) || "Não atribuído";
+        p.analista_nome ||
+        nomes.get(p.analista_id) ||
+        nomes.get(p.usuario_responsavel_id) ||
+        "Não atribuído";
       const nomeComercial = (p: any) =>
         p.consultor_nome || nomes.get(p.comercial_id) || "Não atribuído";
       const perfilParceiro = (p: any) => (p.parceiro_id ? parceiros.get(p.parceiro_id) : null);
       const nomeParceiro = (p: any) =>
         perfilParceiro(p)?.nome || p.parceiro_nome || nomes.get(p.parceiro_id) || "Não atribuído";
-      const vincDe = (p: any) => (p.cliente_id ? vinculosPorCliente.get(String(p.cliente_id)) : null);
+      const vincDe = (p: any) =>
+        p.cliente_id ? vinculosPorCliente.get(String(p.cliente_id)) : null;
       const nomeImobiliaria = (p: any) => {
         const vinc = vincDe(p);
         if (vinc?.imobiliaria_id) return parceiros.get(vinc.imobiliaria_id)?.nome ?? "—";
@@ -1269,9 +1467,15 @@ export const runReport = createServerFn({ method: "POST" })
       const contrato = statusContrato;
 
       const dentro = (iso?: string) => !!iso && dataBR(iso) >= de && dataBR(iso) <= ate;
-      const andamento = propostasFiltradas.filter((p) => emAndamento.includes(p.status) && dentro(p.created_at));
-      const aprovadas = propostasFiltradas.filter((p) => aprovado.includes(p.status) && dentro(p.created_at));
-      const recusadas = propostasFiltradas.filter((p) => p.status === "credito_recusado" && dentro(p.created_at));
+      const andamento = propostasFiltradas.filter(
+        (p) => emAndamento.includes(p.status) && dentro(p.created_at),
+      );
+      const aprovadas = propostasFiltradas.filter(
+        (p) => aprovado.includes(p.status) && dentro(p.created_at),
+      );
+      const recusadas = propostasFiltradas.filter(
+        (p) => p.status === "credito_recusado" && dentro(p.created_at),
+      );
       const contratos = contratosOperacionais;
 
       // Helper: agrupamento simples por 1 dimensão -> {chave, qtd, valor}
@@ -1408,12 +1612,20 @@ export const runReport = createServerFn({ method: "POST" })
           {
             titulo: "Por Imobiliária",
             columns: colsBreak("Imobiliária"),
-            rows: breakdown(rows.filter((p) => perfilParceiro(p)?.tipo === "imobiliaria"), nomeImobiliaria, valFn),
+            rows: breakdown(
+              rows.filter((p) => perfilParceiro(p)?.tipo === "imobiliaria"),
+              nomeImobiliaria,
+              valFn,
+            ),
           },
           {
             titulo: "Por Corretor",
             columns: colsBreak("Corretor"),
-            rows: breakdown(rows.filter((p) => perfilParceiro(p)?.tipo === "corretor"), nomeCorretor, valFn),
+            rows: breakdown(
+              rows.filter((p) => perfilParceiro(p)?.tipo === "corretor"),
+              nomeCorretor,
+              valFn,
+            ),
           },
         ];
       };
@@ -1426,11 +1638,13 @@ export const runReport = createServerFn({ method: "POST" })
           bancoGeralMap.set(b || "—", (bancoGeralMap.get(b || "—") ?? 0) + 1),
         ),
       );
-      propostasFiltradas.filter((p) => !contrato.includes(p.status)).forEach((p) =>
-        (p.nomes_bancos?.length ? p.nomes_bancos : [p.nome_banco ?? "—"]).forEach((b: string) =>
-          bancoGeralMap.set(b || "—", (bancoGeralMap.get(b || "—") ?? 0) + 1),
-        ),
-      );
+      propostasFiltradas
+        .filter((p) => !contrato.includes(p.status))
+        .forEach((p) =>
+          (p.nomes_bancos?.length ? p.nomes_bancos : [p.nome_banco ?? "—"]).forEach((b: string) =>
+            bancoGeralMap.set(b || "—", (bancoGeralMap.get(b || "—") ?? 0) + 1),
+          ),
+        );
       contratos.forEach((p) =>
         (p.nomes_bancos?.length ? p.nomes_bancos : [p.nome_banco ?? "—"]).forEach((b: string) =>
           bancoGeralMap.set(b || "—", (bancoGeralMap.get(b || "—") ?? 0) + 1),
@@ -1446,8 +1660,20 @@ export const runReport = createServerFn({ method: "POST" })
               titulo: "Por data",
               columns: [
                 { key: "k", label: "Data", format: "date" as const },
-                { key: "qtd", label: "Qtd", align: "right" as const, footer: "sum" as const, format: "int" as const },
-                { key: "valor", label: "Valor", align: "right" as const, footer: "sum" as const, format: "brl" as const },
+                {
+                  key: "qtd",
+                  label: "Qtd",
+                  align: "right" as const,
+                  footer: "sum" as const,
+                  format: "int" as const,
+                },
+                {
+                  key: "valor",
+                  label: "Valor",
+                  align: "right" as const,
+                  footer: "sum" as const,
+                  format: "brl" as const,
+                },
               ],
               rows: (() => {
                 const porData = new Map<string, { qtd: number; valor: number }>();
@@ -1593,18 +1819,57 @@ export const runReport = createServerFn({ method: "POST" })
 
       return {
         titulo: "Relatório gerencial de operações",
-        descricao:
-          "Visão consolidada por banco, tipo, analistas, imobiliária e fase.",
+        descricao: "Visão consolidada por banco, tipo, analistas, imobiliária e fase.",
         modulo: "Gerencial",
         kpis: [
-          { label: "Simulações", valor: int(simulacoesFiltradas.length), tone: "neutral", filters: [{ key: "grupo", values: ["simulacao"] }] },
-          { label: "Volume simulado", valor: brl(totalSim), tone: "brand", filters: [{ key: "grupo", values: ["simulacao"] }] },
-          { label: "Propostas", valor: int(propostasFiltradas.length), tone: "neutral", filters: [{ key: "grupo", values: ["andamento", "aprovada", "recusada", "contrato"] }] },
-          { label: "Em andamento", valor: int(andamento.length), tone: "neutral", filters: [{ key: "grupo", values: ["andamento"] }] },
-          { label: "Aprovadas", valor: int(aprovadas.length), tone: "success", filters: [{ key: "grupo", values: ["aprovada"] }] },
-          { label: "Crédito recusado", valor: int(recusadas.length), tone: "danger", filters: [{ key: "grupo", values: ["recusada"] }] },
-          { label: "Contratos emitidos", valor: int(contratos.length), tone: "success", filters: [{ key: "grupo", values: ["contrato"] }] },
-          { label: "Valor contratado", valor: brl(totalContr), tone: "brand", filters: [{ key: "grupo", values: ["contrato"] }] },
+          {
+            label: "Simulações",
+            valor: int(simulacoesFiltradas.length),
+            tone: "neutral",
+            filters: [{ key: "grupo", values: ["simulacao"] }],
+          },
+          {
+            label: "Volume simulado",
+            valor: brl(totalSim),
+            tone: "brand",
+            filters: [{ key: "grupo", values: ["simulacao"] }],
+          },
+          {
+            label: "Propostas",
+            valor: int(propostasFiltradas.length),
+            tone: "neutral",
+            filters: [{ key: "grupo", values: ["andamento", "aprovada", "recusada", "contrato"] }],
+          },
+          {
+            label: "Em andamento",
+            valor: int(andamento.length),
+            tone: "neutral",
+            filters: [{ key: "grupo", values: ["andamento"] }],
+          },
+          {
+            label: "Aprovadas",
+            valor: int(aprovadas.length),
+            tone: "success",
+            filters: [{ key: "grupo", values: ["aprovada"] }],
+          },
+          {
+            label: "Crédito recusado",
+            valor: int(recusadas.length),
+            tone: "danger",
+            filters: [{ key: "grupo", values: ["recusada"] }],
+          },
+          {
+            label: "Contratos emitidos",
+            valor: int(contratos.length),
+            tone: "success",
+            filters: [{ key: "grupo", values: ["contrato"] }],
+          },
+          {
+            label: "Valor contratado",
+            valor: brl(totalContr),
+            tone: "brand",
+            filters: [{ key: "grupo", values: ["contrato"] }],
+          },
         ],
 
         charts: [
@@ -1652,7 +1917,11 @@ export const runReport = createServerFn({ method: "POST" })
           { key: "created_at", label: "Criada em", format: "date" },
         ],
         rows: [
-          ...simulacoesFiltradas.map((s) => ({ ...s, __origem: "Simulação", __grupo: "simulacao" })),
+          ...simulacoesFiltradas.map((s) => ({
+            ...s,
+            __origem: "Simulação",
+            __grupo: "simulacao",
+          })),
           ...propostasFiltradas
             .filter((p) => !contrato.includes(p.status))
             .map((p) => ({
@@ -1680,7 +1949,7 @@ export const runReport = createServerFn({ method: "POST" })
             produto: PRODUTO_LABEL(p.produto),
             status:
               p.__origem === "Simulação"
-                ? STATUS_SIMULACAO_LABEL[p.status] ?? p.status
+                ? (STATUS_SIMULACAO_LABEL[p.status] ?? p.status)
                 : rotuloStatus(p.status),
             analista: nomeAnalista(p),
             comercial: nomeComercial(p),
@@ -1786,7 +2055,8 @@ export const runReport = createServerFn({ method: "POST" })
       const TITULO_GRUPO: Record<string, { titulo: string; descricao: string }> = {
         enviadas: {
           titulo: "Relatório de propostas enviadas",
-          descricao: "Propostas enviadas ao banco (em análise, documentação, engenharia, jurídico).",
+          descricao:
+            "Propostas enviadas ao banco (em análise, documentação, engenharia, jurídico).",
         },
         aprovadas: {
           titulo: "Relatório de propostas aprovadas",
@@ -1837,15 +2107,39 @@ export const runReport = createServerFn({ method: "POST" })
       return {
         titulo: tituloGrupo?.titulo ?? "Relatório de propostas",
         descricao:
-          tituloGrupo?.descricao ??
-          "Status, bancos, produtos e volumes das propostas no período.",
+          tituloGrupo?.descricao ?? "Status, bancos, produtos e volumes das propostas no período.",
         modulo: "Propostas",
         kpis: [
-          { label: "Total", valor: int(props.length), tone: "neutral", filters: [{ key: "status", values: [...statusMap.keys()] }] },
-          { label: "Em análise", valor: int(emAnalise.length), tone: "warning", filters: [{ key: "status", values: Array.from(STATUS_ENVIADAS).map(rotuloStatus) }] },
-          { label: "Contratos", valor: int(contratos.length), tone: "success", filters: [{ key: "status", values: Array.from(STATUS_APROVADAS).map(rotuloStatus) }] },
-          { label: "Taxa de aprovação", valor: pct(taxaAprov), tone: "success", filters: [{ key: "status", values: Array.from(STATUS_APROVADAS).map(rotuloStatus) }] },
-          { label: "Ticket médio", valor: brl(ticket), tone: "brand", filters: [{ key: "status", values: Array.from(STATUS_APROVADAS).map(rotuloStatus) }] },
+          {
+            label: "Total",
+            valor: int(props.length),
+            tone: "neutral",
+            filters: [{ key: "status", values: [...statusMap.keys()] }],
+          },
+          {
+            label: "Em análise",
+            valor: int(emAnalise.length),
+            tone: "warning",
+            filters: [{ key: "status", values: Array.from(STATUS_ENVIADAS).map(rotuloStatus) }],
+          },
+          {
+            label: "Contratos",
+            valor: int(contratos.length),
+            tone: "success",
+            filters: [{ key: "status", values: Array.from(STATUS_APROVADAS).map(rotuloStatus) }],
+          },
+          {
+            label: "Taxa de aprovação",
+            valor: pct(taxaAprov),
+            tone: "success",
+            filters: [{ key: "status", values: Array.from(STATUS_APROVADAS).map(rotuloStatus) }],
+          },
+          {
+            label: "Ticket médio",
+            valor: brl(ticket),
+            tone: "brand",
+            filters: [{ key: "status", values: Array.from(STATUS_APROVADAS).map(rotuloStatus) }],
+          },
           {
             label: "Volume contratado",
             valor: brl(volumeContratado),
@@ -1926,10 +2220,30 @@ export const runReport = createServerFn({ method: "POST" })
         descricao: "Base de clientes cadastrados no período.",
         modulo: "CRM",
         kpis: [
-          { label: "Novos", valor: int(novos), tone: "brand", filters: [{ key: "ativo", values: ["Sim", "Não"] }] },
-          { label: "Ativos", valor: int(ativos), tone: "success", filters: [{ key: "ativo", values: ["Sim"] }] },
-          { label: "App habilitado", valor: int(appOn), tone: "neutral", filters: [{ key: "app", values: ["Habilitado"] }] },
-          { label: "Sem responsável", valor: int(semResp), tone: "warning", filters: [{ key: "ativo", values: ["Sim", "Não"] }] },
+          {
+            label: "Novos",
+            valor: int(novos),
+            tone: "brand",
+            filters: [{ key: "ativo", values: ["Sim", "Não"] }],
+          },
+          {
+            label: "Ativos",
+            valor: int(ativos),
+            tone: "success",
+            filters: [{ key: "ativo", values: ["Sim"] }],
+          },
+          {
+            label: "App habilitado",
+            valor: int(appOn),
+            tone: "neutral",
+            filters: [{ key: "app", values: ["Habilitado"] }],
+          },
+          {
+            label: "Sem responsável",
+            valor: int(semResp),
+            tone: "warning",
+            filters: [{ key: "ativo", values: ["Sim", "Não"] }],
+          },
         ],
         charts: [
           { titulo: "Tipo de pessoa", tipo: "barh", dados: topN(pfPj, 4) },
@@ -1981,10 +2295,44 @@ export const runReport = createServerFn({ method: "POST" })
         descricao: "Volume, SLA e conclusão de demandas.",
         modulo: "Operacional",
         kpis: [
-          { label: "Total", valor: int(dem.length), tone: "neutral", filters: [{ key: "status", values: [...statusMap.keys()] }] },
-          { label: "Abertas", valor: int(abertas), tone: "warning", filters: [{ key: "status", values: Array.from(statusMap.keys()).filter(s => !["concluida", "cancelada"].includes(s)) }] },
-          { label: "Concluídas", valor: int(concluidas), tone: "success", filters: [{ key: "status", values: ["concluida"] }] },
-          { label: "SLA vencido", valor: int(slaVencido), tone: "danger", filters: [{ key: "status", values: Array.from(statusMap.keys()).filter(s => !["concluida", "cancelada"].includes(s)) }] },
+          {
+            label: "Total",
+            valor: int(dem.length),
+            tone: "neutral",
+            filters: [{ key: "status", values: [...statusMap.keys()] }],
+          },
+          {
+            label: "Abertas",
+            valor: int(abertas),
+            tone: "warning",
+            filters: [
+              {
+                key: "status",
+                values: Array.from(statusMap.keys()).filter(
+                  (s) => !["concluida", "cancelada"].includes(s),
+                ),
+              },
+            ],
+          },
+          {
+            label: "Concluídas",
+            valor: int(concluidas),
+            tone: "success",
+            filters: [{ key: "status", values: ["concluida"] }],
+          },
+          {
+            label: "SLA vencido",
+            valor: int(slaVencido),
+            tone: "danger",
+            filters: [
+              {
+                key: "status",
+                values: Array.from(statusMap.keys()).filter(
+                  (s) => !["concluida", "cancelada"].includes(s),
+                ),
+              },
+            ],
+          },
         ],
         charts: [{ titulo: "Distribuição por status", tipo: "barh", dados: topN(statusMap, 6) }],
         columns: [
@@ -2025,10 +2373,44 @@ export const runReport = createServerFn({ method: "POST" })
         descricao: "Execução e prazos das tarefas no período.",
         modulo: "Operacional",
         kpis: [
-          { label: "Total", valor: int(tk.length), tone: "neutral", filters: [{ key: "status", values: [...statusMap.keys()] }] },
-          { label: "Abertas", valor: int(abertas), tone: "warning", filters: [{ key: "status", values: Array.from(statusMap.keys()).filter(s => !["concluida", "cancelada"].includes(s)) }] },
-          { label: "Concluídas", valor: int(concluidas), tone: "success", filters: [{ key: "status", values: ["concluida"] }] },
-          { label: "Atrasadas", valor: int(atrasadas), tone: "danger", filters: [{ key: "status", values: Array.from(statusMap.keys()).filter(s => !["concluida", "cancelada"].includes(s)) }] },
+          {
+            label: "Total",
+            valor: int(tk.length),
+            tone: "neutral",
+            filters: [{ key: "status", values: [...statusMap.keys()] }],
+          },
+          {
+            label: "Abertas",
+            valor: int(abertas),
+            tone: "warning",
+            filters: [
+              {
+                key: "status",
+                values: Array.from(statusMap.keys()).filter(
+                  (s) => !["concluida", "cancelada"].includes(s),
+                ),
+              },
+            ],
+          },
+          {
+            label: "Concluídas",
+            valor: int(concluidas),
+            tone: "success",
+            filters: [{ key: "status", values: ["concluida"] }],
+          },
+          {
+            label: "Atrasadas",
+            valor: int(atrasadas),
+            tone: "danger",
+            filters: [
+              {
+                key: "status",
+                values: Array.from(statusMap.keys()).filter(
+                  (s) => !["concluida", "cancelada"].includes(s),
+                ),
+              },
+            ],
+          },
         ],
         charts: [{ titulo: "Distribuição por status", tipo: "barh", dados: topN(statusMap, 6) }],
         columns: [
@@ -2176,13 +2558,64 @@ export const runReport = createServerFn({ method: "POST" })
           "Visão consolidada da operação por data: simulações, aprovações, tarefas e demandas.",
         modulo: "Operacional",
         kpis: [
-          { label: "Simulações", valor: int(sims.length), hint: `${int(simuladas)} simuladas`, tone: "brand", filters: [{ key: "modulo", values: ["Simulação"] }] },
-          { label: "Aprovações", valor: int(aprovadas.length), hint: `Taxa ${pct(taxaAprov)}`, tone: "success", filters: [{ key: "modulo", values: ["Proposta"] }, { key: "status", values: ["Crédito aprovado", "Contrato emitido", "Registrado"] }] },
-          { label: "Volume aprovado", valor: brl(volumeAprovado), tone: "success", filters: [{ key: "modulo", values: ["Proposta"] }, { key: "status", values: ["Crédito aprovado", "Contrato emitido", "Registrado"] }] },
-          { label: "Tarefas", valor: int(tarefas.length), hint: `${int(tarefasAbertas)} abertas · ${int(tarefasAtrasadas)} atrasadas`, tone: tarefasAtrasadas > 0 ? "danger" : "neutral", filters: [{ key: "modulo", values: ["Tarefa"] }] },
-          { label: "Tarefas concluídas", valor: int(tarefasConcluidas), tone: "success", filters: [{ key: "modulo", values: ["Tarefa"] }, { key: "status", values: ["concluida", "Concluída"] }] },
-          { label: "Demandas", valor: int(demandas.length), hint: `${int(demandasAbertas)} abertas · ${int(demandasSlaVencido)} SLA vencido`, tone: demandasSlaVencido > 0 ? "danger" : "neutral", filters: [{ key: "modulo", values: ["Demanda"] }] },
-          { label: "Demandas concluídas", valor: int(demandasConcluidas), tone: "success", filters: [{ key: "modulo", values: ["Demanda"] }, { key: "status", values: ["concluida", "Concluída"] }] },
+          {
+            label: "Simulações",
+            valor: int(sims.length),
+            hint: `${int(simuladas)} simuladas`,
+            tone: "brand",
+            filters: [{ key: "modulo", values: ["Simulação"] }],
+          },
+          {
+            label: "Aprovações",
+            valor: int(aprovadas.length),
+            hint: `Taxa ${pct(taxaAprov)}`,
+            tone: "success",
+            filters: [
+              { key: "modulo", values: ["Proposta"] },
+              { key: "status", values: ["Crédito aprovado", "Contrato emitido", "Registrado"] },
+            ],
+          },
+          {
+            label: "Volume aprovado",
+            valor: brl(volumeAprovado),
+            tone: "success",
+            filters: [
+              { key: "modulo", values: ["Proposta"] },
+              { key: "status", values: ["Crédito aprovado", "Contrato emitido", "Registrado"] },
+            ],
+          },
+          {
+            label: "Tarefas",
+            valor: int(tarefas.length),
+            hint: `${int(tarefasAbertas)} abertas · ${int(tarefasAtrasadas)} atrasadas`,
+            tone: tarefasAtrasadas > 0 ? "danger" : "neutral",
+            filters: [{ key: "modulo", values: ["Tarefa"] }],
+          },
+          {
+            label: "Tarefas concluídas",
+            valor: int(tarefasConcluidas),
+            tone: "success",
+            filters: [
+              { key: "modulo", values: ["Tarefa"] },
+              { key: "status", values: ["concluida", "Concluída"] },
+            ],
+          },
+          {
+            label: "Demandas",
+            valor: int(demandas.length),
+            hint: `${int(demandasAbertas)} abertas · ${int(demandasSlaVencido)} SLA vencido`,
+            tone: demandasSlaVencido > 0 ? "danger" : "neutral",
+            filters: [{ key: "modulo", values: ["Demanda"] }],
+          },
+          {
+            label: "Demandas concluídas",
+            valor: int(demandasConcluidas),
+            tone: "success",
+            filters: [
+              { key: "modulo", values: ["Demanda"] },
+              { key: "status", values: ["concluida", "Concluída"] },
+            ],
+          },
         ],
         charts: [
           { titulo: "Distribuição por módulo", tipo: "barh", dados: topN(modMap, 4) },
@@ -2226,14 +2659,18 @@ export const runReport = createServerFn({ method: "POST" })
         ).then((r: any) => r.data ?? []),
         (supabase as any)
           .from("comissoes")
-          .select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,nome_banco,created_at")
+          .select(
+            "valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,nome_banco,created_at",
+          )
           .gte("created_at", deIni)
           .lte("created_at", ateFim)
           .limit(5000)
           .then((r: any) => r.data ?? []),
         (supabase as any)
           .from("comissoes_usuario")
-          .select("valor_comissao,valor_base,percentual,status,usuario_id,tipo_vinculo,banco_nome,numero_proposta,created_at")
+          .select(
+            "valor_comissao,valor_base,percentual,status,usuario_id,tipo_vinculo,banco_nome,numero_proposta,created_at",
+          )
           .gte("created_at", deIni)
           .lte("created_at", ateFim)
           .limit(5000)
@@ -2259,9 +2696,7 @@ export const runReport = createServerFn({ method: "POST" })
       const cobertura = aPagar > 0 ? (aReceber / aPagar) * 100 : 0;
       const inadimplencia =
         aReceber > 0
-          ? (somaValor(
-              recAbertas.filter((r: any) => r.vencimento && r.vencimento < hojeStr),
-            ) /
+          ? (somaValor(recAbertas.filter((r: any) => r.vencimento && r.vencimento < hojeStr)) /
               aReceber) *
             100
           : 0;
@@ -2358,10 +2793,7 @@ export const runReport = createServerFn({ method: "POST" })
       // Comissões por usuário (analistas, corretores, imobiliária, comercial etc.)
       const comPagas = comUsr.filter((c: any) => c.status === "paga");
       const comAPagar = comUsr.filter((c: any) => c.status === "a_pagar");
-      const comTotal = comUsr.reduce(
-        (s: number, c: any) => s + (Number(c.valor_comissao) || 0),
-        0,
-      );
+      const comTotal = comUsr.reduce((s: number, c: any) => s + (Number(c.valor_comissao) || 0), 0);
       const comPagoValor = comPagas.reduce(
         (s: number, c: any) => s + (Number(c.valor_comissao) || 0),
         0,
@@ -2435,14 +2867,20 @@ export const runReport = createServerFn({ method: "POST" })
             valor: brl(aReceber),
             tone: "success",
             hint: `${recAbertas.length} lançamento(s) em aberto`,
-            filters: [{ key: "tipo", values: ["Receber"] }, { key: "status", values: ["Aberta", "Parcial"] }],
+            filters: [
+              { key: "tipo", values: ["Receber"] },
+              { key: "status", values: ["Aberta", "Parcial"] },
+            ],
           },
           {
             label: "A pagar",
             valor: brl(aPagar),
             tone: "warning",
             hint: `${pagAbertas.length} lançamento(s) em aberto`,
-            filters: [{ key: "tipo", values: ["Pagar"] }, { key: "status", values: ["Aberta", "Parcial"] }],
+            filters: [
+              { key: "tipo", values: ["Pagar"] },
+              { key: "status", values: ["Aberta", "Parcial"] },
+            ],
           },
           {
             label: "Saldo previsto",
@@ -2556,7 +2994,8 @@ export const runReport = createServerFn({ method: "POST" })
             ? [
                 {
                   titulo: "Comissões por usuário",
-                  descricao: "Comissões geradas para corretores, imobiliária, analistas e comercial.",
+                  descricao:
+                    "Comissões geradas para corretores, imobiliária, analistas e comercial.",
                   tabelas: [
                     {
                       titulo: "Total por usuário",

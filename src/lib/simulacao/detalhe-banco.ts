@@ -320,9 +320,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     num(r.valorFinanciamentoBanco) ??
     num(r.valorFinanciamentoSimulacao);
   const financiamentoTotalRaw =
-    num(desc.valorTotalFinanciamento) ??
-    num(r.valorTotalFinanciamento) ??
-    valorFin;
+    num(desc.valorTotalFinanciamento) ?? num(r.valorTotalFinanciamento) ?? valorFin;
   const despesasApi =
     num(r.valorDespesasFinanciadas) ??
     num(desc.valorDespesasFinanciadas) ??
@@ -334,10 +332,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   // Prioriza o valor explícito devolvido pelo banco (valorDespesasFinanciadas);
   // só recorre à derivação (total − base) quando a API não trouxe o campo.
   const despesasFinanciadas =
-    despesasApi != null && despesasApi > 0
-      ? despesasApi
-      : (despesasDerivada ?? despesasApi);
-
+    despesasApi != null && despesasApi > 0 ? despesasApi : (despesasDerivada ?? despesasApi);
 
   const valorImovel = num(desc.propertyPrice) ?? num(r.valorImovel);
   // Entrada = valor do imóvel − financiamento base (quando o banco não devolve).
@@ -347,7 +342,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
       ? Math.max(0, Math.round((valorImovel - financiamentoBase) * 100) / 100)
       : null;
   const valorEntrada =
-    entradaApi != null && entradaApi > 0 ? entradaApi : entradaDerivada ?? entradaApi;
+    entradaApi != null && entradaApi > 0 ? entradaApi : (entradaDerivada ?? entradaApi);
 
   return {
     taxaJurosAno: taxaAno,
@@ -364,7 +359,10 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     fgts: num(desc.fgtsAmount) ?? num(r.valorFgts),
     prazoMeses: prazo,
     sistemaAmortizacao:
-      desc.amortizationType ?? r.codigoSistemaAmortizacaoBanco ?? r.codigoSistemaAmortizacaoSimulacao ?? null,
+      desc.amortizationType ??
+      r.codigoSistemaAmortizacaoBanco ??
+      r.codigoSistemaAmortizacaoSimulacao ??
+      null,
     indexador: r.codigoIndexadorBanco ?? desc.indexer ?? null,
     tipoParcela:
       r.codigoIndexadorBanco || desc.indexer
@@ -373,8 +371,10 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     // Preferir a parcela real informada pelo banco (Bradesco devolve
     // valorPrimeiraPrestacaoComSeguroTac / valorUltimaPrestacao) sobre a
     // estimativa local.
-    primeiraParcela: primeiraParcelaApi ?? (parcelas.length ? parcelas[0].parcela : num(r.valorParcelaBanco)),
-    ultimaParcela: ultimaParcelaApi ?? (parcelas.length ? parcelas[parcelas.length - 1].parcela : null),
+    primeiraParcela:
+      primeiraParcelaApi ?? (parcelas.length ? parcelas[0].parcela : num(r.valorParcelaBanco)),
+    ultimaParcela:
+      ultimaParcelaApi ?? (parcelas.length ? parcelas[parcelas.length - 1].parcela : null),
     somatorioParcelas: somatorio,
     seguroMensal,
     taxaAdminMensal,

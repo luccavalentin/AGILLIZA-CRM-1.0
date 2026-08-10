@@ -33,11 +33,8 @@ export function ClienteSecao({
   onSalvoComprador?: () => void;
   idBanco?: number;
 }) {
-
-
   const getCli = useServerFn(getCliente);
   const getEnd = useServerFn(getEndereco);
-
 
   const { data: det, isLoading } = useQuery({
     queryKey: ["cliente", clienteId],
@@ -79,7 +76,6 @@ export function ClienteSecao({
     );
   }
 
-
   if (isLoading || !det) {
     return (
       <div className="flex items-center justify-center rounded-lg border border-border bg-card p-10 text-sm text-muted-foreground">
@@ -103,10 +99,7 @@ export function ClienteSecao({
       onSalvoEmbutido={onSalvoComprador}
       destacarObrigatorios={destacarObrigatorios}
       idBanco={idBanco}
-
       portalAtivo={c.portal_acesso_ativo}
-
-
       enderecoInicial={endereco as any}
       inicial={{
         id: c.id,

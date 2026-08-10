@@ -34,7 +34,13 @@ import {
   limparFluxoCaixa,
 } from "@/lib/financeiro/financeiro.functions";
 
-import { PanelHeader, SectionTitle, HeroMetric, MiniMetric, PanelCard } from "@/components/common/dashboard";
+import {
+  PanelHeader,
+  SectionTitle,
+  HeroMetric,
+  MiniMetric,
+  PanelCard,
+} from "@/components/common/dashboard";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +49,6 @@ import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
-
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -144,7 +149,10 @@ function FiltroPeriodo({
       <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:items-center">
         <CalendarRange className="hidden size-4 shrink-0 text-muted-foreground sm:block" />
         <div className="min-w-0 space-y-1">
-          <Label htmlFor="fluxo-de" className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <Label
+            htmlFor="fluxo-de"
+            className="text-[10px] uppercase tracking-wide text-muted-foreground"
+          >
             De
           </Label>
           <Input
@@ -156,7 +164,10 @@ function FiltroPeriodo({
           />
         </div>
         <div className="min-w-0 space-y-1">
-          <Label htmlFor="fluxo-ate" className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <Label
+            htmlFor="fluxo-ate"
+            className="text-[10px] uppercase tracking-wide text-muted-foreground"
+          >
             Até
           </Label>
           <Input
@@ -169,7 +180,11 @@ function FiltroPeriodo({
         </div>
       </div>
       <div className="flex items-center gap-1.5">
-        <Button size="sm" className="h-9 flex-1 sm:flex-none" onClick={() => onAplicar(rascDe, rascAte)}>
+        <Button
+          size="sm"
+          className="h-9 flex-1 sm:flex-none"
+          onClick={() => onAplicar(rascDe, rascAte)}
+        >
           Aplicar
         </Button>
         <Button
@@ -203,7 +218,12 @@ function DetalheFluxoDialog({
   onClose: () => void;
   titulo: string;
   descricao?: string;
-  linhas: { rotulo: string; sub?: string; valor: number; details?: { tipo: "pagar" | "receber"; id: string }[] }[];
+  linhas: {
+    rotulo: string;
+    sub?: string;
+    valor: number;
+    details?: { tipo: "pagar" | "receber"; id: string }[];
+  }[];
   queryClient: any;
 }) {
   const total = linhas.reduce((s, l) => s + l.valor, 0);
@@ -223,7 +243,9 @@ function DetalheFluxoDialog({
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground">{l.rotulo}</p>
-                    {l.sub ? <p className="truncate text-xs text-muted-foreground">{l.sub}</p> : null}
+                    {l.sub ? (
+                      <p className="truncate text-xs text-muted-foreground">{l.sub}</p>
+                    ) : null}
                   </div>
                   <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-foreground">
                     {formatBRL(l.valor)}
@@ -239,7 +261,9 @@ function DetalheFluxoDialog({
                           className="h-7 text-[10px] font-medium"
                           asChild
                         >
-                          <a href={`/financeiro/contas-a-${d.tipo === "pagar" ? "pagar" : "receber"}?id=${d.id}`}>
+                          <a
+                            href={`/financeiro/contas-a-${d.tipo === "pagar" ? "pagar" : "receber"}?id=${d.id}`}
+                          >
                             Ver/Editar {d.tipo === "pagar" ? "Saída" : "Entrada"}
                           </a>
                         </Button>
@@ -248,12 +272,19 @@ function DetalheFluxoDialog({
                           size="sm"
                           className="h-7 px-2 text-destructive hover:bg-destructive/10"
                           onClick={async () => {
-                            if (confirm(`Deseja excluir esta ${d.tipo === "pagar" ? "saída" : "entrada"}?`)) {
+                            if (
+                              confirm(
+                                `Deseja excluir esta ${d.tipo === "pagar" ? "saída" : "entrada"}?`,
+                              )
+                            ) {
                               try {
-                                const { excluirConta } = await import("@/lib/financeiro/financeiro.functions");
+                                const { excluirConta } =
+                                  await import("@/lib/financeiro/financeiro.functions");
                                 await excluirConta({ data: { tipo: d.tipo, id: d.id } });
                                 toast.success("Excluído com sucesso!");
-                                queryClient.invalidateQueries({ queryKey: ["fin-fluxo-analitico"] });
+                                queryClient.invalidateQueries({
+                                  queryKey: ["fin-fluxo-analitico"],
+                                });
                                 // O modal fechará ou atualizará sozinho conforme o estado da query
                               } catch (err: any) {
                                 toast.error(err.message);
@@ -282,14 +313,11 @@ function DetalheFluxoDialog({
   );
 }
 
-
-
 function Pagina() {
   const [gran, setGran] = useState<"dia" | "semana" | "mes">("mes");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const queryClient = useQueryClient();
-
 
   const { data, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ["fin-fluxo-analitico", gran, de, ate],
@@ -300,7 +328,11 @@ function Pagina() {
   });
 
   const atualizado = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",   hour: "2-digit", minute: "2-digit" })
+    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : undefined;
 
   const r = data?.resumo;
@@ -320,10 +352,12 @@ function Pagina() {
         rotulo: p.label,
         sub: `Entradas ${formatBRL(p.entradaReal)} · Saídas ${formatBRL(p.saidaReal)}`,
         valor: Number(p.entradaReal) - Number(p.saidaReal),
-        details: p.movimentacoesRealizadas?.map((m: any) => ({
-          tipo: m.tipo === "saida" ? "pagar" : "receber",
-          id: m.ref_id
-        })).filter((m: any) => !!m.id)
+        details: p.movimentacoesRealizadas
+          ?.map((m: any) => ({
+            tipo: m.tipo === "saida" ? "pagar" : "receber",
+            id: m.ref_id,
+          }))
+          .filter((m: any) => !!m.id),
       })),
     },
     resultadoProj: {
@@ -333,22 +367,26 @@ function Pagina() {
         rotulo: p.label,
         sub: `A receber ${formatBRL(p.entradaProj)} · A pagar ${formatBRL(p.saidaProj)}`,
         valor: Number(p.entradaProj) - Number(p.saidaProj),
-        details: p.movimentacoesProjetadas?.map((m: any) => ({
-          tipo: m.tipo === "saida" ? "pagar" : "receber",
-          id: m.ref_id
-        })).filter((m: any) => !!m.id)
+        details: p.movimentacoesProjetadas
+          ?.map((m: any) => ({
+            tipo: m.tipo === "saida" ? "pagar" : "receber",
+            id: m.ref_id,
+          }))
+          .filter((m: any) => !!m.id),
       })),
     },
     saldoFinalProj: {
       titulo: "Saldo acumulado projetado",
       descricao: "Realizado somado à projeção, período a período.",
-      linhas: pontos.map((p: any) => ({ 
-        rotulo: p.label, 
+      linhas: pontos.map((p: any) => ({
+        rotulo: p.label,
         valor: Number(p.saldoAcum),
-        details: p.movimentacoesProjetadas?.map((m: any) => ({
-          tipo: m.tipo === "saida" ? "pagar" : "receber",
-          id: m.ref_id
-        })).filter((m: any) => !!m.id)
+        details: p.movimentacoesProjetadas
+          ?.map((m: any) => ({
+            tipo: m.tipo === "saida" ? "pagar" : "receber",
+            id: m.ref_id,
+          }))
+          .filter((m: any) => !!m.id),
       })),
     },
     coberturaPct: {
@@ -358,28 +396,30 @@ function Pagina() {
         rotulo: p.label,
         sub: `A receber ${formatBRL(p.entradaProj)} · A pagar ${formatBRL(p.saidaProj)}`,
         valor: Number(p.entradaProj) - Number(p.saidaProj),
-        details: p.movimentacoesProjetadas?.map((m: any) => ({
-          tipo: m.tipo === "saida" ? "pagar" : "receber",
-          id: m.ref_id
-        })).filter((m: any) => !!m.id)
+        details: p.movimentacoesProjetadas
+          ?.map((m: any) => ({
+            tipo: m.tipo === "saida" ? "pagar" : "receber",
+            id: m.ref_id,
+          }))
+          .filter((m: any) => !!m.id),
       })),
     },
     entradasProj: {
       titulo: "Entradas em aberto",
       descricao: "Contas a receber por origem.",
-      linhas: (data?.entradasPorCategoria ?? []).map((c: any) => ({ 
-        rotulo: c.nome, 
+      linhas: (data?.entradasPorCategoria ?? []).map((c: any) => ({
+        rotulo: c.nome,
         valor: c.valor,
-        details: c.ids?.map((id: string) => ({ tipo: "receber", id }))
+        details: c.ids?.map((id: string) => ({ tipo: "receber", id })),
       })),
     },
     saidasProj: {
       titulo: "Saídas em aberto",
       descricao: "Contas a pagar por categoria.",
-      linhas: (data?.saidasPorCategoria ?? []).map((c: any) => ({ 
-        rotulo: c.nome, 
+      linhas: (data?.saidasPorCategoria ?? []).map((c: any) => ({
+        rotulo: c.nome,
         valor: c.valor,
-        details: c.ids?.map((id: string) => ({ tipo: "pagar", id }))
+        details: c.ids?.map((id: string) => ({ tipo: "pagar", id })),
       })),
     },
     melhor: {
@@ -398,7 +438,6 @@ function Pagina() {
     },
   };
   const det = detalhe ? DETALHES[detalhe] : null;
-
 
   return (
     <div className="mx-auto w-full max-w-none space-y-6 min-h-screen">
@@ -447,10 +486,33 @@ function Pagina() {
             ]}
             columns={[
               { key: "label", label: "Período" },
-              { key: "entrada", label: "Entradas", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-              { key: "saida", label: "Saídas", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-              { key: "resultado", label: "Resultado", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-              { key: "saldoAcum", label: "Saldo acumulado", align: "right" as const, format: "brl" as const },
+              {
+                key: "entrada",
+                label: "Entradas",
+                align: "right" as const,
+                format: "brl" as const,
+                footer: "sum" as const,
+              },
+              {
+                key: "saida",
+                label: "Saídas",
+                align: "right" as const,
+                format: "brl" as const,
+                footer: "sum" as const,
+              },
+              {
+                key: "resultado",
+                label: "Resultado",
+                align: "right" as const,
+                format: "brl" as const,
+                footer: "sum" as const,
+              },
+              {
+                key: "saldoAcum",
+                label: "Saldo acumulado",
+                align: "right" as const,
+                format: "brl" as const,
+              },
             ]}
             rows={(pontos ?? []).map((p: any) => ({
               label: p.label,
@@ -477,216 +539,219 @@ function Pagina() {
       </div>
 
       <div className="p-4 sm:p-5 md:space-y-8 md:p-8">
+        {(de || ate) && (
+          <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">
+              <CalendarRange className="size-3.5" />
+              Período: {de ? formatarData(de) : "início"} até {ate ? formatarData(ate) : "hoje"}
+            </span>
+          </p>
+        )}
 
-      {(de || ate) && (
-        <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">
-            <CalendarRange className="size-3.5" />
-            Período: {de ? formatarData(de) : "início"} até {ate ? formatarData(ate) : "hoje"}
-          </span>
-        </p>
-      )}
-
-      {vazio ? (
-        <div className="rounded-2xl border border-border/50 bg-card p-12">
-          <SectionTitle>Sem movimentações</SectionTitle>
-          <div className="flex min-h-[200px] flex-col items-center justify-center space-y-2 text-center">
-            <p className="text-sm text-muted-foreground">
-              Não há lançamentos realizados nem contas em aberto para projetar.
-            </p>
-          </div>
-        </div>
-
-      ) : (
-        <>
-          <SectionTitle>Posição de caixa</SectionTitle>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <HeroMetric
-              label="Saldo realizado"
-              valor={formatBRL(r?.saldoRealizado ?? 0)}
-              hint="Caixa efetivo acumulado"
-              tone={(r?.saldoRealizado ?? 0) >= 0 ? "success" : "danger"}
-              icon={Wallet}
-              onDetails={() => setDetalhe("saldoRealizado")}
-            />
-            <HeroMetric
-              label="Resultado projetado"
-              valor={formatBRL(r?.resultadoProj ?? 0)}
-              hint="Entradas − saídas em aberto"
-              tone={(r?.resultadoProj ?? 0) >= 0 ? "brand" : "warning"}
-              icon={Scale}
-              onDetails={() => setDetalhe("resultadoProj")}
-            />
-            <HeroMetric
-              label="Saldo final projetado"
-              valor={formatBRL(r?.saldoFinalProj ?? 0)}
-              hint="Realizado + projeção"
-              tone={(r?.saldoFinalProj ?? 0) >= 0 ? "success" : "danger"}
-              icon={TrendingUp}
-              onDetails={() => setDetalhe("saldoFinalProj")}
-            />
-            <HeroMetric
-              label="Cobertura de saídas"
-              valor={`${(r?.coberturaPct ?? 0).toFixed(0)}%`}
-              hint="A receber ÷ a pagar (aberto)"
-              tone={(r?.coberturaPct ?? 0) >= 100 ? "success" : "warning"}
-              icon={Gauge}
-              onDetails={() => setDetalhe("coberturaPct")}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <MiniMetric
-              label="Entradas em aberto"
-              valor={formatBRL(r?.totalEntradaProj ?? 0)}
-              tone="success"
-              onDetails={() => setDetalhe("entradasProj")}
-            />
-            <MiniMetric
-              label="Saídas em aberto"
-              valor={formatBRL(r?.totalSaidaProj ?? 0)}
-              tone="danger"
-              onDetails={() => setDetalhe("saidasProj")}
-            />
-            <MiniMetric
-              label="Melhor período"
-              valor={r?.melhorPeriodo ? formatBRL(r.melhorPeriodo.valor) : "—"}
-              tone="success"
-              onDetails={() => setDetalhe("melhor")}
-            />
-            <MiniMetric
-              label="Pior período"
-              valor={r?.piorPeriodo ? formatBRL(r.piorPeriodo.valor) : "—"}
-              tone="danger"
-              onDetails={() => setDetalhe("pior")}
-            />
-          </div>
-
-          <DetalheFluxoDialog
-            aberto={!!det}
-            onClose={() => setDetalhe(null)}
-            titulo={det?.titulo ?? ""}
-            descricao={det?.descricao}
-            linhas={det?.linhas ?? []}
-            queryClient={queryClient}
-          />
-
-
-
-          <SectionTitle>Evolução do caixa</SectionTitle>
-          <PanelCard
-            titulo="Entradas, saídas e saldo acumulado"
-            subtitulo="Barras = entradas/saídas por período · área = saldo projetado acumulado"
-          >
-            <FluxoLegenda />
-            <div className="h-[260px] w-full sm:h-[320px] lg:h-[380px]">
-              {isLoading ? (
-                <div className="h-full w-full animate-pulse rounded-xl bg-muted/50" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    data={pontos}
-                    margin={{ top: 12, right: 12, left: 0, bottom: 0 }}
-                    barGap={6}
-                  >
-                    <defs>
-                      <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.32} />
-                        <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.02} />
-                      </linearGradient>
-                      <linearGradient id="gEntrada" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.95} />
-                        <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0.45} />
-                      </linearGradient>
-                      <linearGradient id="gSaida" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--chart-5)" stopOpacity={0.95} />
-                        <stop offset="100%" stopColor="var(--chart-5)" stopOpacity={0.45} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="4 6"
-                      stroke="hsl(var(--border))"
-                      strokeOpacity={0.6}
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={10}
-                      minTickGap={12}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={58}
-                      tickMargin={8}
-                      tickFormatter={(v) => formatCurto(Number(v))}
-                    />
-                    <Tooltip
-                      content={<FluxoTooltip />}
-                      cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.35, radius: 8 }}
-                    />
-                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
-                    <Area
-                      type="monotone"
-                      dataKey="saldoAcum"
-                      name="Saldo acumulado"
-                      stroke="var(--chart-1)"
-                      strokeWidth={2.5}
-                      fill="url(#gSaldo)"
-                      activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(var(--card))" }}
-                      dot={false}
-                    />
-                    <Bar
-                      dataKey="entrada"
-                      name="Entradas"
-                      fill="url(#gEntrada)"
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={28}
-                    />
-                    <Bar
-                      dataKey="saida"
-                      name="Saídas"
-                      fill="url(#gSaida)"
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={28}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="resultado"
-                      name="Resultado líquido"
-                      stroke="var(--chart-2)"
-                      strokeWidth={2}
-                      strokeDasharray="5 4"
-                      dot={false}
-                      activeDot={{ r: 4 }}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              )}
+        {vazio ? (
+          <div className="rounded-2xl border border-border/50 bg-card p-12">
+            <SectionTitle>Sem movimentações</SectionTitle>
+            <div className="flex min-h-[200px] flex-col items-center justify-center space-y-2 text-center">
+              <p className="text-sm text-muted-foreground">
+                Não há lançamentos realizados nem contas em aberto para projetar.
+              </p>
             </div>
-          </PanelCard>
-
-
-          <SectionTitle>Composição em aberto</SectionTitle>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <PanelCard titulo="Entradas por origem" subtitulo="A receber em aberto" abrirTo="/financeiro/contas-a-receber">
-              <DistribList itens={data?.entradasPorCategoria ?? []} tone="success" />
-            </PanelCard>
-            <PanelCard titulo="Saídas por categoria" subtitulo="A pagar em aberto" abrirTo="/financeiro/contas-a-pagar">
-              <DistribList itens={data?.saidasPorCategoria ?? []} tone="danger" />
-            </PanelCard>
           </div>
+        ) : (
+          <>
+            <SectionTitle>Posição de caixa</SectionTitle>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <HeroMetric
+                label="Saldo realizado"
+                valor={formatBRL(r?.saldoRealizado ?? 0)}
+                hint="Caixa efetivo acumulado"
+                tone={(r?.saldoRealizado ?? 0) >= 0 ? "success" : "danger"}
+                icon={Wallet}
+                onDetails={() => setDetalhe("saldoRealizado")}
+              />
+              <HeroMetric
+                label="Resultado projetado"
+                valor={formatBRL(r?.resultadoProj ?? 0)}
+                hint="Entradas − saídas em aberto"
+                tone={(r?.resultadoProj ?? 0) >= 0 ? "brand" : "warning"}
+                icon={Scale}
+                onDetails={() => setDetalhe("resultadoProj")}
+              />
+              <HeroMetric
+                label="Saldo final projetado"
+                valor={formatBRL(r?.saldoFinalProj ?? 0)}
+                hint="Realizado + projeção"
+                tone={(r?.saldoFinalProj ?? 0) >= 0 ? "success" : "danger"}
+                icon={TrendingUp}
+                onDetails={() => setDetalhe("saldoFinalProj")}
+              />
+              <HeroMetric
+                label="Cobertura de saídas"
+                valor={`${(r?.coberturaPct ?? 0).toFixed(0)}%`}
+                hint="A receber ÷ a pagar (aberto)"
+                tone={(r?.coberturaPct ?? 0) >= 100 ? "success" : "warning"}
+                icon={Gauge}
+                onDetails={() => setDetalhe("coberturaPct")}
+              />
+            </div>
 
-          <SectionTitle>Próximos vencimentos</SectionTitle>
-          <PanelCard titulo="Agenda de caixa" subtitulo="Contas a vencer, ordenadas por data">
-            <ProximosVencimentos itens={data?.proximosVencimentos ?? []} />
-          </PanelCard>
-        </>
-      )}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <MiniMetric
+                label="Entradas em aberto"
+                valor={formatBRL(r?.totalEntradaProj ?? 0)}
+                tone="success"
+                onDetails={() => setDetalhe("entradasProj")}
+              />
+              <MiniMetric
+                label="Saídas em aberto"
+                valor={formatBRL(r?.totalSaidaProj ?? 0)}
+                tone="danger"
+                onDetails={() => setDetalhe("saidasProj")}
+              />
+              <MiniMetric
+                label="Melhor período"
+                valor={r?.melhorPeriodo ? formatBRL(r.melhorPeriodo.valor) : "—"}
+                tone="success"
+                onDetails={() => setDetalhe("melhor")}
+              />
+              <MiniMetric
+                label="Pior período"
+                valor={r?.piorPeriodo ? formatBRL(r.piorPeriodo.valor) : "—"}
+                tone="danger"
+                onDetails={() => setDetalhe("pior")}
+              />
+            </div>
+
+            <DetalheFluxoDialog
+              aberto={!!det}
+              onClose={() => setDetalhe(null)}
+              titulo={det?.titulo ?? ""}
+              descricao={det?.descricao}
+              linhas={det?.linhas ?? []}
+              queryClient={queryClient}
+            />
+
+            <SectionTitle>Evolução do caixa</SectionTitle>
+            <PanelCard
+              titulo="Entradas, saídas e saldo acumulado"
+              subtitulo="Barras = entradas/saídas por período · área = saldo projetado acumulado"
+            >
+              <FluxoLegenda />
+              <div className="h-[260px] w-full sm:h-[320px] lg:h-[380px]">
+                {isLoading ? (
+                  <div className="h-full w-full animate-pulse rounded-xl bg-muted/50" />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={pontos}
+                      margin={{ top: 12, right: 12, left: 0, bottom: 0 }}
+                      barGap={6}
+                    >
+                      <defs>
+                        <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.32} />
+                          <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.02} />
+                        </linearGradient>
+                        <linearGradient id="gEntrada" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.95} />
+                          <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0.45} />
+                        </linearGradient>
+                        <linearGradient id="gSaida" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--chart-5)" stopOpacity={0.95} />
+                          <stop offset="100%" stopColor="var(--chart-5)" stopOpacity={0.45} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="4 6"
+                        stroke="hsl(var(--border))"
+                        strokeOpacity={0.6}
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={10}
+                        minTickGap={12}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        tickLine={false}
+                        axisLine={false}
+                        width={58}
+                        tickMargin={8}
+                        tickFormatter={(v) => formatCurto(Number(v))}
+                      />
+                      <Tooltip
+                        content={<FluxoTooltip />}
+                        cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.35, radius: 8 }}
+                      />
+                      <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
+                      <Area
+                        type="monotone"
+                        dataKey="saldoAcum"
+                        name="Saldo acumulado"
+                        stroke="var(--chart-1)"
+                        strokeWidth={2.5}
+                        fill="url(#gSaldo)"
+                        activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(var(--card))" }}
+                        dot={false}
+                      />
+                      <Bar
+                        dataKey="entrada"
+                        name="Entradas"
+                        fill="url(#gEntrada)"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={28}
+                      />
+                      <Bar
+                        dataKey="saida"
+                        name="Saídas"
+                        fill="url(#gSaida)"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={28}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="resultado"
+                        name="Resultado líquido"
+                        stroke="var(--chart-2)"
+                        strokeWidth={2}
+                        strokeDasharray="5 4"
+                        dot={false}
+                        activeDot={{ r: 4 }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </PanelCard>
+
+            <SectionTitle>Composição em aberto</SectionTitle>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <PanelCard
+                titulo="Entradas por origem"
+                subtitulo="A receber em aberto"
+                abrirTo="/financeiro/contas-a-receber"
+              >
+                <DistribList itens={data?.entradasPorCategoria ?? []} tone="success" />
+              </PanelCard>
+              <PanelCard
+                titulo="Saídas por categoria"
+                subtitulo="A pagar em aberto"
+                abrirTo="/financeiro/contas-a-pagar"
+              >
+                <DistribList itens={data?.saidasPorCategoria ?? []} tone="danger" />
+              </PanelCard>
+            </div>
+
+            <SectionTitle>Próximos vencimentos</SectionTitle>
+            <PanelCard titulo="Agenda de caixa" subtitulo="Contas a vencer, ordenadas por data">
+              <ProximosVencimentos itens={data?.proximosVencimentos ?? []} />
+            </PanelCard>
+          </>
+        )}
       </div>
     </div>
   );
@@ -733,7 +798,9 @@ function DistribList({
 
 function ProximosVencimentos({ itens }: { itens: FluxoAnalitico["proximosVencimentos"] }) {
   if (itens.length === 0)
-    return <p className="py-6 text-center text-sm text-muted-foreground">Sem vencimentos futuros.</p>;
+    return (
+      <p className="py-6 text-center text-sm text-muted-foreground">Sem vencimentos futuros.</p>
+    );
   return (
     <ul className="divide-y divide-border">
       {itens.map((i, idx) => {
@@ -748,7 +815,11 @@ function ProximosVencimentos({ itens }: { itens: FluxoAnalitico["proximosVencime
                   : "bg-destructive/10 text-destructive ring-destructive/20",
               )}
             >
-              {receber ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+              {receber ? (
+                <ArrowUpRight className="h-4 w-4" />
+              ) : (
+                <ArrowDownRight className="h-4 w-4" />
+              )}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-foreground">{i.descricao}</p>

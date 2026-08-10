@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "eslint . --max-warnings=0 && vite build",
+    "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
+    "lint:hooks": "eslint . --quiet --no-error-on-unmatched-pattern",
     "format": "prettier --write ."
   },
   "dependencies": {

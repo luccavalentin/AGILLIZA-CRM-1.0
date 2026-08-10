@@ -16,7 +16,11 @@ import { toast } from "sonner";
 interface EncaminharSimulacaoDialogProps {
   aberto: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (dados: { email: string; whatsapp: string; canal: "email" | "whatsapp" | "pdf" }) => void;
+  onConfirm: (dados: {
+    email: string;
+    whatsapp: string;
+    canal: "email" | "whatsapp" | "pdf";
+  }) => void;
   clienteNome: string;
   clienteEmail: string;
   clienteWhatsapp: string;
@@ -66,7 +70,8 @@ export function EncaminharSimulacaoDialog({
             {isPdf ? "Baixar PDF para Compartilhar" : "Encaminhar Simulação"}
           </DialogTitle>
           <DialogDescription>
-            Confirme os dados de contato para encaminhar a simulação de <strong>{clienteNome}</strong>.
+            Confirme os dados de contato para encaminhar a simulação de{" "}
+            <strong>{clienteNome}</strong>.
           </DialogDescription>
         </DialogHeader>
 
@@ -74,7 +79,9 @@ export function EncaminharSimulacaoDialog({
           {!isPdf ? (
             <>
               <div className="grid gap-2">
-                <Label htmlFor="email" className={canal === "email" ? "font-bold" : ""}>E-mail de destino</Label>
+                <Label htmlFor="email" className={canal === "email" ? "font-bold" : ""}>
+                  E-mail de destino
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -85,7 +92,9 @@ export function EncaminharSimulacaoDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="whatsapp" className={isWhatsapp ? "font-bold" : ""}>WhatsApp (com DDD)</Label>
+                <Label htmlFor="whatsapp" className={isWhatsapp ? "font-bold" : ""}>
+                  WhatsApp (com DDD)
+                </Label>
                 <Input
                   id="whatsapp"
                   placeholder="11999999999"
@@ -97,7 +106,8 @@ export function EncaminharSimulacaoDialog({
             </>
           ) : (
             <div className="py-2 text-sm text-muted-foreground">
-              A simulação será gerada em formato PDF oficial com layout profissional pronto para compartilhamento.
+              A simulação será gerada em formato PDF oficial com layout profissional pronto para
+              compartilhamento.
             </div>
           )}
         </div>
@@ -106,9 +116,15 @@ export function EncaminharSimulacaoDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirm}
-            className={isWhatsapp ? "bg-[#25D366] hover:bg-[#20ba5a] text-white" : isPdf ? "bg-primary" : "bg-[#EA4335] hover:bg-[#d93025] text-white"}
+            className={
+              isWhatsapp
+                ? "bg-[#25D366] hover:bg-[#20ba5a] text-white"
+                : isPdf
+                  ? "bg-primary"
+                  : "bg-[#EA4335] hover:bg-[#d93025] text-white"
+            }
           >
             {isPdf ? (
               <>

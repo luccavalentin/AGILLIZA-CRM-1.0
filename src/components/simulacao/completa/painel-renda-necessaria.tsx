@@ -5,7 +5,11 @@
  */
 import { Wallet, CheckCircle2, AlertTriangle } from "lucide-react";
 import { formatBRL } from "@/lib/simulacao/format";
-import { avaliarRendaMinima, rendaMinimaSugerida, calcularMaximoFinanciável } from "@/lib/simulacao/renda";
+import {
+  avaliarRendaMinima,
+  rendaMinimaSugerida,
+  calcularMaximoFinanciável,
+} from "@/lib/simulacao/renda";
 import { cn } from "@/lib/utils";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
@@ -59,9 +63,7 @@ function Linha({
         </span>
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">Renda familiar necessária</p>
-          <p className="text-xs text-muted-foreground">
-            Base de qualificação: {teto}
-          </p>
+          <p className="text-xs text-muted-foreground">Base de qualificação: {teto}</p>
         </div>
       </div>
       <div className="flex items-center gap-3 text-right">
@@ -73,7 +75,9 @@ function Linha({
             <p
               className={cn(
                 "flex items-center justify-end gap-1 text-xs",
-                insuficiente ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400",
+                insuficiente
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-emerald-600 dark:text-emerald-400",
               )}
             >
               {insuficiente ? (
@@ -115,7 +119,7 @@ export function PainelRendaNecessaria({ ctx }: { ctx: any }) {
   });
 
   const insuficiente = sugerida.suficiente === false;
-  
+
   // Cálculo Inverso (Parte 2)
   const maxFinan = calcularMaximoFinanciável({
     renda_declarada: rendaConsiderada,
@@ -127,30 +131,41 @@ export function PainelRendaNecessaria({ ctx }: { ctx: any }) {
 
   return (
     <div className="space-y-3">
-      <div className={cn(
-        "rounded-xl border p-4 sm:p-5 transition-all duration-300",
-        insuficiente 
-          ? "border-amber-500/50 bg-amber-500/[0.03] shadow-inner" 
-          : "border-primary/20 bg-gradient-to-br from-primary/[0.03] via-card to-card"
-      )}>
+      <div
+        className={cn(
+          "rounded-xl border p-4 sm:p-5 transition-all duration-300",
+          insuficiente
+            ? "border-amber-500/50 bg-amber-500/[0.03] shadow-inner"
+            : "border-primary/20 bg-gradient-to-br from-primary/[0.03] via-card to-card",
+        )}
+      >
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className={cn(
+            <span
+              className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-lg ring-1 ring-inset",
-                insuficiente ? "bg-amber-500/10 text-amber-600 ring-amber-500/20" : "bg-primary/10 text-primary ring-primary/20"
-            )}>
+                insuficiente
+                  ? "bg-amber-500/10 text-amber-600 ring-amber-500/20"
+                  : "bg-primary/10 text-primary ring-primary/20",
+              )}
+            >
               <Wallet className="h-5 w-5" />
             </span>
             <div>
               <h3 className="text-sm font-bold text-foreground">Renda mínima sugerida</h3>
               <p className="text-[11px] text-muted-foreground">
-                Renda estimada necessária: SAC / PRICE. Cada instituição aplica regra própria — a simulação será enviada a todos os bancos selecionados.
+                Renda estimada necessária: SAC / PRICE. Cada instituição aplica regra própria — a
+                simulação será enviada a todos os bancos selecionados.
               </p>
-
             </div>
           </div>
           <div className="text-right">
-            <p className={cn("text-xl font-black tabular-nums", insuficiente ? "text-amber-600" : "text-primary")}>
+            <p
+              className={cn(
+                "text-xl font-black tabular-nums",
+                insuficiente ? "text-amber-600" : "text-primary",
+              )}
+            >
               {formatBRL(sugerida.rendaMinima)}
             </p>
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -164,10 +179,14 @@ export function PainelRendaNecessaria({ ctx }: { ctx: any }) {
             <div className="flex gap-2.5">
               <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
               <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-amber-700">Renda insuficiente para o financiamento atual</p>
+                <p className="text-xs font-semibold text-amber-700">
+                  Renda insuficiente para o financiamento atual
+                </p>
                 <p className="text-[11px] leading-relaxed text-amber-600/90">
-                  A renda declarada de <span className="font-bold">{formatBRL(rendaConsiderada)}</span> está abaixo do piso sugerido.
-                  Com esta renda, o valor máximo financiável estimado é de <span className="font-bold text-foreground">{formatBRL(maxFinan)}</span>.
+                  A renda declarada de{" "}
+                  <span className="font-bold">{formatBRL(rendaConsiderada)}</span> está abaixo do
+                  piso sugerido. Com esta renda, o valor máximo financiável estimado é de{" "}
+                  <span className="font-bold text-foreground">{formatBRL(maxFinan)}</span>.
                 </p>
               </div>
             </div>

@@ -37,7 +37,6 @@ export function taxaAnoDeBanco(
   return TAXA_PADRAO_ANO[codigo_banco] ?? 0.1299;
 }
 
-
 export interface EntradaCalculo {
   valor_financiamento: number;
   prazo_meses: number;
@@ -71,7 +70,7 @@ export function calcularSimulacao({
   const pv = Math.max(0, valor_financiamento);
 
   const cetAno = taxa_ano * 1.05; // Estimativa simples para CET na rápida
-  const fatorRenda = sistema === "P" ? 0.25 : 0.30;
+  const fatorRenda = sistema === "P" ? 0.25 : 0.3;
   const rendaMin = (pv * i) / (1 - Math.pow(1 + i, -n)) / fatorRenda;
 
   if (sistema === "P") {
@@ -86,7 +85,7 @@ export function calcularSimulacao({
       total_pago: total,
       total_juros: total - pv,
       taxa_mes: i,
-      renda_minima: Math.max(rendaMin, parcela / 0.30),
+      renda_minima: Math.max(rendaMin, parcela / 0.3),
       cet_ano: cetAno,
     };
   }
@@ -112,7 +111,7 @@ export function calcularSimulacao({
     total_pago: total,
     total_juros: total - pv,
     taxa_mes: i,
-    renda_minima: Math.max(rendaMin, primeira / 0.30),
+    renda_minima: Math.max(rendaMin, primeira / 0.3),
     cet_ano: cetAno,
   };
 }
@@ -131,7 +130,7 @@ export function compararBancosRapido(
     // ITAÚ (341) não tem PRICE. Se o sistema for PRICE, ignoramos o Itaú.
     // Se for AMBOS, simulamos apenas o SAC para o Itaú.
     const isItau = String(b.codigo_banco) === "341";
-    
+
     let sistemasParaEsteBanco: SistemaAmortizacao[];
     if (base.sistema === "AMBOS") {
       sistemasParaEsteBanco = isItau ? ["S"] : ["S", "P"];
@@ -145,7 +144,10 @@ export function compararBancosRapido(
 
       resultados.push({
         ...b,
-        nome_banco: base.sistema === "AMBOS" ? `${b.nome_banco} (${s === "S" ? "SAC" : "PRICE"})` : b.nome_banco,
+        nome_banco:
+          base.sistema === "AMBOS"
+            ? `${b.nome_banco} (${s === "S" ? "SAC" : "PRICE"})`
+            : b.nome_banco,
         resultado: calcularSimulacao({
           valor_financiamento: base.valor_financiamento,
           prazo_meses: base.prazo_meses,

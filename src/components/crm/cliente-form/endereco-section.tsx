@@ -103,7 +103,6 @@ export function EnderecoSection({
             </SelectContent>
           </Select>
         </div>
-
       </CardContent>
     </Card>
   );

@@ -7,10 +7,7 @@ import { Calculator, Eye, Undo2, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
-import {
-  AcoesSimulacao,
-  ProdutoBadge,
-} from "@/components/simulacao/lista-detalhe";
+import { AcoesSimulacao, ProdutoBadge } from "@/components/simulacao/lista-detalhe";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { formatDataHoraBR, type HandlersLinha } from "./tipos";
@@ -55,9 +52,7 @@ export function CartoesSimulacoes({
           </Button>
         </div>
       )}
-      {itens
-        .map((s) => {
-
+      {itens.map((s) => {
         const bancoPrincipal = s.bancos?.[0]?.nome_banco ?? null;
         const corBanco = corDoBanco(bancoPrincipal);
         return (
@@ -130,15 +125,12 @@ export function CartoesSimulacoes({
                       onBaixarComparativo={() => handlers.onBaixarComparativo(s.id)}
                       onBaixarDetalhada={() => handlers.onBaixarDetalhada(s.id)}
                       onDuplicar={() => handlers.onDuplicar(s.id)}
-                        onEnviarProposta={() =>
-                          handlers.onEnviarProposta(s.id, s.numero_simulacao)
-                        }
-                        onExcluir={() => handlers.onExcluir(s.id)}
-                        onEncaminhar={(id, canal) => handlers.onEncaminhar(s.id, canal)}
-                        onDestravar={() => handlers.onDestravar(s.id)}
-                        numero={s.numero_simulacao}
-
-                      />
+                      onEnviarProposta={() => handlers.onEnviarProposta(s.id, s.numero_simulacao)}
+                      onExcluir={() => handlers.onExcluir(s.id)}
+                      onEncaminhar={(id, canal) => handlers.onEncaminhar(s.id, canal)}
+                      onDestravar={() => handlers.onDestravar(s.id)}
+                      numero={s.numero_simulacao}
+                    />
                   </>
                 )}
               </div>

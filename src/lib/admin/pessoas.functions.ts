@@ -79,7 +79,9 @@ export const listarPessoas = createServerFn({ method: "GET" })
 
     const { data: pessoas, error } = await supabase
       .from("profiles")
-      .select("id, nome, avatar_url, foto_url, email, telefone, acesso_tipo, tipo_pessoa, tipos_pessoa, login_habilitado, ativo, bloqueado_em, nivel_acesso_id")
+      .select(
+        "id, nome, avatar_url, foto_url, email, telefone, acesso_tipo, tipo_pessoa, tipos_pessoa, login_habilitado, ativo, bloqueado_em, nivel_acesso_id",
+      )
       .eq("correspondente_id", correspondenteId)
       .order("created_at", { ascending: true });
 
@@ -187,21 +189,16 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     }
     if (!autorizado) throw new Error("Você não tem permissão para gerenciar pessoas.");
 
-
     const comLogin = data.com_login;
     // Tipos de pessoa (múltiplos): o primeiro é o "primário".
     const tiposList = (
-      data.tipos_pessoa && data.tipos_pessoa.length > 0
-        ? data.tipos_pessoa
-        : [data.tipo_pessoa]
+      data.tipos_pessoa && data.tipos_pessoa.length > 0 ? data.tipos_pessoa : [data.tipo_pessoa]
     ).filter(Boolean);
     const tipoPrimario = tiposList[0] ?? "usuario";
     // Com login: senha provisória = o próprio e-mail (trocada no 1º acesso).
     // Sem login: e-mail sintético + senha aleatória; a conta fica banida no Auth.
     const emailReal = comLogin ? (data.email ?? "").trim() : "";
-    const emailAuth = comLogin
-      ? emailReal
-      : `semlogin+${crypto.randomUUID()}@parceiro.local`;
+    const emailAuth = comLogin ? emailReal : `semlogin+${crypto.randomUUID()}@parceiro.local`;
     const senha = comLogin ? emailReal : gerarSenhaTemporaria();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -285,8 +282,11 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       );
     }
 
-    return { id: created.user.id, email: comLogin ? emailReal : "", senha_temporaria: comLogin ? senha : "" };
-
+    return {
+      id: created.user.id,
+      email: comLogin ? emailReal : "",
+      senha_temporaria: comLogin ? senha : "",
+    };
   });
 
 /** Carrega o perfil alvo garantindo que pertence ao mesmo ecossistema do solicitante. */
@@ -305,17 +305,16 @@ async function carregarAlvo(supabase: any, userId: string, alvoId: string) {
 
   const { data: alvo } = await supabase
     .from("profiles")
-    .select("id, nome, email, telefone, acesso_tipo, ativo, bloqueado_em, nivel_acesso_id, correspondente_id")
+    .select(
+      "id, nome, email, telefone, acesso_tipo, ativo, bloqueado_em, nivel_acesso_id, correspondente_id",
+    )
     .eq("id", alvoId)
     .maybeSingle();
   if (!alvo || alvo.correspondente_id !== correspondenteId) {
     throw new Error("Pessoa não encontrada no seu ecossistema.");
   }
 
-  const { data: roles } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", alvoId);
+  const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", alvoId);
   const papeis = (roles ?? []).map((r: { role: AppRole }) => r.role) as AppRole[];
   if (papeis.some((p) => PAPEIS_PROIBIDOS.includes(p))) {
     throw new Error("Este cadastro não pode ser gerenciado.");
@@ -376,9 +375,7 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
         acesso_tipo: acessoTipo,
         avatar_url: data.avatar_url,
         foto_url: data.avatar_url,
-        ...(tiposList.length > 0
-          ? { tipo_pessoa: tiposList[0], tipos_pessoa: tiposList }
-          : {}),
+        ...(tiposList.length > 0 ? { tipo_pessoa: tiposList[0], tipos_pessoa: tiposList } : {}),
       } as never)
       .eq("id", data.id);
     if (upErr) throw new Error("Não foi possível atualizar a pessoa.");
@@ -415,9 +412,7 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
 export const habilitarLoginPessoa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z
-      .object({ id: z.string().uuid(), email: z.string().email("E-mail inválido.") })
-      .parse(data),
+    z.object({ id: z.string().uuid(), email: z.string().email("E-mail inválido.") }).parse(data),
   )
   .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
     const { supabase, userId } = context;

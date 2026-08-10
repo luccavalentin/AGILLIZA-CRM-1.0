@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { OpHero } from "@/components/operacional/ui";
 
-
 import slide1Asset from "@/assets/modelos/slide-1.png.asset.json";
 import slide2Asset from "@/assets/modelos/slide-2.png.asset.json";
 import slide3Asset from "@/assets/modelos/slide-3.png.asset.json";
@@ -21,7 +20,8 @@ const MODELOS_PPT = [
   {
     id: "layout-cinematico",
     titulo: "Layout Agilliza Cinemático",
-    descricao: "Design de alto impacto visual com transições suaves e estética cinematográfica. Focado na paleta de cores oficial Agilliza.",
+    descricao:
+      "Design de alto impacto visual com transições suaves e estética cinematográfica. Focado na paleta de cores oficial Agilliza.",
     url: pptCinematico.url,
     cor: "#000F9F",
     slides: [slide1Asset.url, slide2Asset.url, slide3Asset.url, slide4Asset.url],
@@ -30,7 +30,8 @@ const MODELOS_PPT = [
   {
     id: "layout-minimal",
     titulo: "Layout Minimal Premium",
-    descricao: "Sofisticação e clareza. Design limpo que valoriza o conteúdo e a autoridade da marca Agilliza.",
+    descricao:
+      "Sofisticação e clareza. Design limpo que valoriza o conteúdo e a autoridade da marca Agilliza.",
     url: pptMinimal.url,
     cor: "#00074A",
     slides: [slide2Asset.url, slide1Asset.url, slide3Asset.url, slide4Asset.url],
@@ -39,7 +40,8 @@ const MODELOS_PPT = [
   {
     id: "layout-variacoes",
     titulo: "Layout Multi-Variações",
-    descricao: "Versatilidade total com múltiplos grids e opções de composição. Ideal para apresentações extensas.",
+    descricao:
+      "Versatilidade total com múltiplos grids e opções de composição. Ideal para apresentações extensas.",
     url: pptVariacoes.url,
     cor: "#F5333F",
     slides: [slide3Asset.url, slide4Asset.url, slide1Asset.url, slide2Asset.url],
@@ -48,7 +50,8 @@ const MODELOS_PPT = [
   {
     id: "layout-alternativo",
     titulo: "Layout Agilliza Alternativo",
-    descricao: "Abordagem dinâmica e moderna com elementos geométricos assimétricos e tons institucionais.",
+    descricao:
+      "Abordagem dinâmica e moderna com elementos geométricos assimétricos e tons institucionais.",
     url: pptAlternativo.url,
     cor: "#D4AF37",
     slides: [slide4Asset.url, slide3Asset.url, slide2Asset.url, slide1Asset.url],
@@ -111,22 +114,24 @@ export function PowerPointModelosView() {
                 "shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 hover:shadow-md",
                 selecionado === modelo.id
                   ? "border-primary ring-2 ring-primary/20"
-                  : "border-border/60 hover:border-primary/40"
+                  : "border-border/60 hover:border-primary/40",
               )}
             >
-              <img 
-                src={modelo.slides[0]} 
+              <img
+                src={modelo.slides[0]}
                 alt={modelo.titulo}
                 className={cn(
                   "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105",
-                  selecionado !== modelo.id && "grayscale-[0.4] group-hover:grayscale-0"
+                  selecionado !== modelo.id && "grayscale-[0.4] group-hover:grayscale-0",
                 )}
               />
-              
-              <div className={cn(
-                "absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity",
-                selecionado === modelo.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              )}>
+
+              <div
+                className={cn(
+                  "absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity",
+                  selecionado === modelo.id ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                )}
+              >
                 <div className="p-2 rounded-full bg-primary text-white shadow-lg scale-110">
                   <Check className="h-4 w-4" />
                 </div>
@@ -142,8 +147,8 @@ export function PowerPointModelosView() {
           {/* Main Slide Preview */}
           <div className="absolute inset-0 p-8 flex flex-col items-center justify-center">
             <div className="relative w-full max-w-3xl aspect-video rounded-lg overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.02] transition-transform duration-500">
-              <img 
-                src={modeloAtual.slides[0]} 
+              <img
+                src={modeloAtual.slides[0]}
                 alt={modeloAtual.titulo}
                 className="w-full h-full object-cover"
               />
@@ -155,21 +160,21 @@ export function PowerPointModelosView() {
             <div className="mt-8 flex flex-col items-center space-y-4">
               <h2 className="text-2xl font-bold text-white tracking-tight">{modeloAtual.titulo}</h2>
               <p className="text-slate-400 text-sm max-w-md text-center">{modeloAtual.descricao}</p>
-              
+
               <div className="flex gap-4 pt-4">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-white text-slate-900 hover:bg-slate-200 gap-2 font-semibold shadow-lg shadow-white/10"
                   onClick={() => baixar(modeloAtual.url, modeloAtual.titulo)}
                 >
                   <Play className="h-4 w-4 fill-current" />
                   Iniciar Download
                 </Button>
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   variant="outline"
                   className="border-white/20 text-white hover:bg-white/10 gap-2 backdrop-blur-sm"
-                  onClick={() => window.open(modeloAtual.slides[0], '_blank')}
+                  onClick={() => window.open(modeloAtual.slides[0], "_blank")}
                 >
                   <Eye className="h-4 w-4" />
                   Abrir Pré-visualização
@@ -177,12 +182,19 @@ export function PowerPointModelosView() {
               </div>
             </div>
           </div>
-          
+
           {/* Slide Thumbnails Overlay */}
           <div className="absolute bottom-6 left-6 right-6 flex gap-4 opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none">
             {modeloAtual.slides.slice(1, 5).map((slide, i) => (
-              <div key={i} className="flex-1 aspect-video rounded border border-white/20 overflow-hidden shadow-lg bg-slate-800">
-                <img src={slide} alt={`Slide ${i + 2}`} className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" />
+              <div
+                key={i}
+                className="flex-1 aspect-video rounded border border-white/20 overflow-hidden shadow-lg bg-slate-800"
+              >
+                <img
+                  src={slide}
+                  alt={`Slide ${i + 2}`}
+                  className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all"
+                />
               </div>
             ))}
           </div>
@@ -221,7 +233,9 @@ export function PowerPointModelosView() {
             </div>
 
             <div className="space-y-3">
-              <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Recursos Inclusos:</h4>
+              <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                Recursos Inclusos:
+              </h4>
               <ul className="grid grid-cols-1 gap-2">
                 {[
                   "Design exclusivo Agilliza",
@@ -229,7 +243,7 @@ export function PowerPointModelosView() {
                   "Gráficos 100% editáveis",
                   "Iconografia personalizada",
                   "Layouts mestre padronizados",
-                  "Fontes seguras incorporadas"
+                  "Fontes seguras incorporadas",
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-center gap-2 text-xs text-muted-foreground">
                     <div className="h-1 w-1 rounded-full bg-primary" />
@@ -238,9 +252,9 @@ export function PowerPointModelosView() {
                 ))}
               </ul>
             </div>
-            
+
             <div className="pt-4 space-y-3">
-              <Button 
+              <Button
                 className="w-full h-11 shadow-md shadow-primary/20 font-bold"
                 onClick={() => baixar(modeloAtual.url, modeloAtual.titulo)}
               >
@@ -260,14 +274,14 @@ export function PowerPointModelosView() {
 
 function FileType({ className }: { className?: string }) {
   return (
-    <svg 
-      className={className} 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
       strokeLinejoin="round"
     >
       <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
@@ -281,14 +295,14 @@ function FileType({ className }: { className?: string }) {
 
 function Download({ className }: { className?: string }) {
   return (
-    <svg 
-      className={className} 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
       strokeLinejoin="round"
     >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

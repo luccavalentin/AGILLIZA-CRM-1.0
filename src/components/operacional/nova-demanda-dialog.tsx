@@ -269,7 +269,10 @@ export function NovaDemandaDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Prioridade</Label>
-              <Select value={prioridade} onValueChange={(v) => setPrioridade(v as "p1" | "p2" | "p3")}>
+              <Select
+                value={prioridade}
+                onValueChange={(v) => setPrioridade(v as "p1" | "p2" | "p3")}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

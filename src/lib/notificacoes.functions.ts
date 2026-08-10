@@ -35,7 +35,6 @@ export const listarNotificacoes = createServerFn({ method: "GET" })
     };
   });
 
-
 /** Lista todas as notificações do usuário (para a central de notificações). */
 export const listarTodasNotificacoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

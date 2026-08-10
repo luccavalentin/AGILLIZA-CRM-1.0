@@ -46,7 +46,7 @@ import {
 } from "@/lib/admin/comissoes.functions";
 
 const brl = (n: number) =>
-  n.toLocaleString("pt-BR", {  style: "currency", currency: "BRL", minimumFractionDigits: 2 });
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 
 function produtoLabel(v: string | null) {
   return PRODUTOS_COMISSAO.find((p) => p.v === v)?.l ?? v ?? "Todos";
@@ -310,7 +310,12 @@ export function SecaoRegrasComissao() {
                   step={1000}
                   placeholder="0"
                   value={form.faixa_min || ""}
-                  onChange={(e) => setForm((f) => ({ ...f, faixa_min: e.target.value === "" ? 0 : Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      faixa_min: e.target.value === "" ? 0 : Number(e.target.value),
+                    }))
+                  }
                 />
               </div>
               <div className="space-y-1.5">
@@ -347,11 +352,16 @@ export function SecaoRegrasComissao() {
                   step={0.1}
                   placeholder="0"
                   value={form.valor || ""}
-                  onChange={(e) => setForm((f) => ({ ...f, tipo: "percentual", valor: e.target.value === "" ? 0 : Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      tipo: "percentual",
+                      valor: e.target.value === "" ? 0 : Number(e.target.value),
+                    }))
+                  }
                 />
               </div>
             </div>
-
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">

@@ -24,9 +24,7 @@ export function TrilhaNavegacao({
       {pasta ? (
         <button
           className="flex shrink-0 items-center gap-1 self-start rounded-lg border border-border/60 bg-muted/50 px-2.5 py-1 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          onClick={() =>
-            onNavegar(trilha.length >= 2 ? trilha[trilha.length - 2].id : null)
-          }
+          onClick={() => onNavegar(trilha.length >= 2 ? trilha[trilha.length - 2].id : null)}
         >
           <ChevronLeft className="h-4 w-4" /> <span className="whitespace-nowrap">Voltar</span>
         </button>

@@ -148,13 +148,7 @@ export const CAMPOS_POR_TIPO: Record<TipoDocumentoScan, string[]> = {
     "termo_certidao",
     "observacoes_certidao",
   ],
-  certidao_nascimento: [
-    "nome_completo",
-    "data_nascimento",
-    "nome_mae",
-    "nome_pai",
-    "naturalidade",
-  ],
+  certidao_nascimento: ["nome_completo", "data_nascimento", "nome_mae", "nome_pai", "naturalidade"],
   matricula_imovel: [
     "numero_matricula",
     "cartorio",
@@ -223,7 +217,6 @@ export const CAMPOS_POR_TIPO: Record<TipoDocumentoScan, string[]> = {
     "ultimo_registro",
     "historico_atos",
   ],
-
 
   iptu: ["valor_imovel", "endereco_imovel", "cep_imovel", "inscricao_imobiliaria"],
   extrato_bancario: ["nome_completo", "banco_conta", "agencia", "conta_corrente"],
@@ -348,7 +341,6 @@ export const CAMPO_LABEL: Record<string, string> = {
   construcao_averbada: "Construção averbada",
   edificacao_regularizada: "Edificação regularizada",
   historico_atos: "Histórico de atos (R. / AV.)",
-
 
   valor_imovel: "Valor do imóvel",
   banco_conta: "Banco",
@@ -621,7 +613,6 @@ export function converterValor(
   }
   if (destino.tipo === "nenhum") return { ok: false, motivo: "Campo sem destino no cadastro." };
 
-
   switch (destino.formato) {
     case "numero": {
       const n = normalizarNumero(bruto);
@@ -637,7 +628,9 @@ export function converterValor(
     }
     case "estado_civil": {
       const e = normalizarEstadoCivil(bruto);
-      return e === null ? { ok: false, motivo: "Estado civil não reconhecido." } : { ok: true, valor: e };
+      return e === null
+        ? { ok: false, motivo: "Estado civil não reconhecido." }
+        : { ok: true, valor: e };
     }
     case "regime_casamento": {
       const r = normalizarRegimeCasamento(bruto);
@@ -667,7 +660,10 @@ export const CONFIANCA_LABEL: Record<"alta" | "media" | "revisar", string> = {
  * e o valor extraído: ignora pontuação, acentos, espaços e caixa. Ex.: o CPF
  * "429.914.268-37" é o MESMO valor de "42991426837" — não é conflito.
  */
-export function valoresEquivalentes(a: string | null | undefined, b: string | null | undefined): boolean {
+export function valoresEquivalentes(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
   const norm = (v: string | null | undefined) => {
     const t = String(v ?? "")
       .normalize("NFD")
@@ -679,7 +675,10 @@ export function valoresEquivalentes(a: string | null | undefined, b: string | nu
     // Valores essencialmente numéricos (documentos, telefones, CEP, datas):
     // compara apenas os dígitos.
     if (digitos.length >= 6 && t.replace(/[^a-z]/g, "").length === 0) return digitos;
-    return t.replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+    return t
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   };
   return norm(a) === norm(b);
 }

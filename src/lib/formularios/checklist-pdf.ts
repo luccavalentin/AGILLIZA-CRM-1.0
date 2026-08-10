@@ -4,12 +4,16 @@ import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand
 import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
 import { CHECKLISTS_BANCOS } from "@/lib/formularios/checklists.functions";
 
-export async function gerarChecklistBancoPDF(bancoId: string, clienteNome?: string, docsCustom?: (string | { nome: string, obrigatorio: boolean })[]) {
+export async function gerarChecklistBancoPDF(
+  bancoId: string,
+  clienteNome?: string,
+  docsCustom?: (string | { nome: string; obrigatorio: boolean })[],
+) {
   const doc = new jsPDF({
     orientation: "p",
     unit: "mm",
     format: "a4",
-    compress: true
+    compress: true,
   });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -18,13 +22,13 @@ export async function gerarChecklistBancoPDF(bancoId: string, clienteNome?: stri
   const checklistRaw = docsCustom ? { docs: docsCustom } : CHECKLISTS_BANCOS[bancoId];
   if (!checklistRaw) throw new Error("Checklist não encontrado para este banco.");
 
-  const docsProcessados = checklistRaw.docs.map(item => {
-    if (typeof item === 'string') return { nome: item, obrigatorio: true };
+  const docsProcessados = checklistRaw.docs.map((item) => {
+    if (typeof item === "string") return { nome: item, obrigatorio: true };
     return item;
   });
 
   const bancoBrand = resolveBancoBrand(bancoId);
-  
+
   // Cores da Agilliza
   const AGILLIZA_NAVY = "#0F172A";
   const AGILLIZA_CORAL = "#F97316";
@@ -32,7 +36,7 @@ export async function gerarChecklistBancoPDF(bancoId: string, clienteNome?: stri
   // Header Agilliza (Azul Marinho)
   doc.setFillColor(AGILLIZA_NAVY);
   doc.rect(0, 0, pageW, 40, "F");
-  
+
   // Linha Coral (Agilliza)
   doc.setFillColor(AGILLIZA_CORAL);
   doc.rect(0, 40, pageW, 2, "F");
@@ -62,14 +66,20 @@ export async function gerarChecklistBancoPDF(bancoId: string, clienteNome?: stri
       const textWidth = doc.getTextWidth(tituloTexto);
       // Alinhamento vertical da logo com o texto (baseline do texto é y, altura da logo é bLogoH)
       // O offset de -bLogoH + 1.5 geralmente coloca a logo centralizada visualmente com letras maiúsculas
-      doc.addImage(bancoBrand.logo, "PNG", MARGIN + textWidth + 8, y - bLogoH + 1.5, bLogoW, bLogoH);
+      doc.addImage(
+        bancoBrand.logo,
+        "PNG",
+        MARGIN + textWidth + 8,
+        y - bLogoH + 1.5,
+        bLogoW,
+        bLogoH,
+      );
     } catch (e) {}
   }
-  
+
   y += 12;
 
   // Removida a frase: "Relação de documentos necessários para análise de crédito imobiliário."
-
 
   // Dados do Cliente
   if (clienteNome) {
@@ -85,30 +95,26 @@ export async function gerarChecklistBancoPDF(bancoId: string, clienteNome?: stri
     startY: y,
     margin: { left: MARGIN, right: MARGIN },
     head: [["", "Documento Necessário", "Obrigatório"]],
-    body: docsProcessados.map(item => [
-      "[  ]", 
-      item.nome,
-      item.obrigatorio ? "Sim" : "Não"
-    ]),
+    body: docsProcessados.map((item) => ["[  ]", item.nome, item.obrigatorio ? "Sim" : "Não"]),
     theme: "striped",
     headStyles: {
       fillColor: AGILLIZA_NAVY,
       textColor: "#FFFFFF",
       fontSize: 10,
-      fontStyle: "bold"
+      fontStyle: "bold",
     },
     bodyStyles: {
       fontSize: 9,
       cellPadding: 5,
-      textColor: "#334155"
+      textColor: "#334155",
     },
     columnStyles: {
       0: { cellWidth: 15, halign: "center" },
-      2: { cellWidth: 30, halign: "center" }
+      2: { cellWidth: 30, halign: "center" },
     },
     alternateRowStyles: {
-      fillColor: "#F8FAFC"
-    }
+      fillColor: "#F8FAFC",
+    },
   });
 
   // Download

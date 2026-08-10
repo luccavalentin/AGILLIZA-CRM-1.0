@@ -89,9 +89,7 @@ export function ListaDesktop({
                   <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/15">
                     <Users className="size-7" />
                   </div>
-                  <p className="text-sm font-semibold text-foreground">
-                    Nenhum cliente encontrado
-                  </p>
+                  <p className="text-sm font-semibold text-foreground">Nenhum cliente encontrado</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Cadastre o primeiro cliente para começar.
                   </p>
@@ -202,10 +200,7 @@ export function ListaDesktop({
                     </ToneBadge>
                   </TableCell>
 
-                  <TableCell
-                    className="px-4 text-right"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <TableCell className="px-4 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       <ConfirmDelete
                         titulo="Excluir cliente"

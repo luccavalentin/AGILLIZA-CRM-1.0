@@ -19,16 +19,14 @@
  * parcela inicial PRICE (equivalente a ~30% sobre o pico projetado da parcela).
  */
 
-
-
 import { extrairDetalheBanco } from "./detalhe-banco";
 import { calcularSimulacao, type SistemaAmortizacao } from "./simulacao-rapida";
 
-/** 
- * Margem de segurança aplicada sobre o maior valor de renda encontrado 
+/**
+ * Margem de segurança aplicada sobre o maior valor de renda encontrado
  * para absorver diferenças de encargos entre instituições.
  */
-export const MARGEM_SEGURANCA_RENDA = 0.00; // Margem removida conforme Princípio #1
+export const MARGEM_SEGURANCA_RENDA = 0.0; // Margem removida conforme Princípio #1
 
 /** Percentual máximo da renda que pode ser comprometido com a parcela. */
 export const COMPROMETIMENTO_MAX = 0.3;
@@ -47,7 +45,6 @@ export const COMPROMETIMENTO_MAX_PRICE = 0.15;
 export const TAXA_MIP_MES = 0.00028; // ~0,028% do saldo devedor/mês
 export const TAXA_DFI_MES = 0.0001; // ~0,010% do valor do imóvel/mês
 export const TAXA_ADMIN_MES = 25; // R$/mês
-
 
 export interface AvaliacaoRenda {
   /** Primeira (maior) parcela estimada. */
@@ -130,7 +127,7 @@ export function parcelaExigidaPeloBanco(banco: BancoRendaApi): number | null {
  *   SAC   → parcela / 30%
  *   PRICE → parcela / 15%  (regra padrão para todas as IFs que ofertam PRICE)
  *
- * Em PRICE a renda devolvida pela API do banco é frequentemente calculada 
+ * Em PRICE a renda devolvida pela API do banco é frequentemente calculada
  * em SAC pela HomeFin; sempre recomputamos com o teto de 15% sobre a parcela.
  */
 export function rendaMinimaDoBanco(banco: BancoRendaApi): number | null {
@@ -140,7 +137,7 @@ export function rendaMinimaDoBanco(banco: BancoRendaApi): number | null {
 
   const raw = unwrapApiResponse(banco.raw_response);
   const detalhe = extrairDetalheBanco(raw ?? banco.raw_response);
-  
+
   // Extração da renda mínima da mensagem de recusa (Problema 1c)
   let rendaMensagemRecusa: number | null = null;
   const msg = String(banco.raw_response?.mensagem_banco ?? raw?.mensagem_banco ?? "").toLowerCase();
@@ -148,15 +145,15 @@ export function rendaMinimaDoBanco(banco: BancoRendaApi): number | null {
     // Tenta encontrar um valor numérico na mensagem (ex: "exigência de 15.000")
     const match = msg.match(/(\d{1,3}(\.\d{3})*(,\d{2})?)/);
     if (match) {
-        const valStr = match[0].replace(/\./g, "").replace(",", ".");
-        const val = parseFloat(valStr);
-        if (val > 1000) rendaMensagemRecusa = val;
+      const valStr = match[0].replace(/\./g, "").replace(",", ".");
+      const val = parseFloat(valStr);
+      if (val > 1000) rendaMensagemRecusa = val;
     }
   }
 
   // Problema 1b: prefere Math.max(apiRenda, estimativa local baseada na parcela do banco)
   let apiRenda = numeroPositivo(detalhe?.rendaMinimaExigida) ?? rendaMensagemRecusa;
-  
+
   if (!parcela && !apiRenda) return null;
 
   let rendaMinima = 0;
@@ -206,7 +203,6 @@ export function rendaMinimaPelosBancos(
   };
 }
 
-
 /** Renda mínima a partir de uma parcela conhecida. */
 export function rendaMinimaParaParcela(
   primeiraParcela: number,
@@ -247,12 +243,7 @@ export function avaliarRendaMinima(params: {
         ? (valor_imovel as number)
         : 0;
 
-  if (
-    !Number.isFinite(base) ||
-    base <= 0 ||
-    !Number.isFinite(prazo_meses) ||
-    prazo_meses <= 0
-  ) {
+  if (!Number.isFinite(base) || base <= 0 || !Number.isFinite(prazo_meses) || prazo_meses <= 0) {
     return null;
   }
 
@@ -282,7 +273,9 @@ export function avaliarRendaMinima(params: {
   if (sistema === "P") {
     const sac = avaliarRendaMinima({ ...params, sistema: "S" });
     if (sac && rendaMinima < sac.rendaMinima) {
-      console.error(`[renda] Bug de cálculo: PRICE (${rendaMinima}) exigindo menos que SAC (${sac.rendaMinima}) para base ${base}`);
+      console.error(
+        `[renda] Bug de cálculo: PRICE (${rendaMinima}) exigindo menos que SAC (${sac.rendaMinima}) para base ${base}`,
+      );
       rendaMinima = sac.rendaMinima + 100; // Força superioridade
     }
   }
@@ -310,7 +303,14 @@ export function rendaMinimaSugerida(params: {
   bancos_simulados?: BancoRendaApi[];
   renda_informada?: number | null;
 }): AvaliacaoRenda & { detalhe_fonte: string } {
-  const { valor_imovel, valor_financiamento, prazo_meses, taxa_ano, bancos_simulados, renda_informada } = params;
+  const {
+    valor_imovel,
+    valor_financiamento,
+    prazo_meses,
+    taxa_ano,
+    bancos_simulados,
+    renda_informada,
+  } = params;
 
   const fontes: (AvaliacaoRenda & { detalhe_fonte: string })[] = [];
 
@@ -324,26 +324,29 @@ export function rendaMinimaSugerida(params: {
 
   // 3 e 4. Retornos da API e Mensagens de recusa
   if (bancos_simulados && bancos_simulados.length > 0) {
-    bancos_simulados.forEach(b => {
+    bancos_simulados.forEach((b) => {
       const rendaBco = rendaMinimaDoBanco(b);
       if (rendaBco) {
         fontes.push({
           primeiraParcela: parcelaExigidaPeloBanco(b) ?? 0,
           rendaMinima: rendaBco,
-          comprometimento: renda_informada ? (parcelaExigidaPeloBanco(b) ?? 0) / renda_informada : null,
+          comprometimento: renda_informada
+            ? (parcelaExigidaPeloBanco(b) ?? 0) / renda_informada
+            : null,
           suficiente: renda_informada ? renda_informada >= rendaBco : null,
           bancoNome: b.nome_banco,
           fonte: "api_banco",
-          detalhe_fonte: `Exigência do banco: ${b.nome_banco}`
+          detalhe_fonte: `Exigência do banco: ${b.nome_banco}`,
         });
       }
     });
   }
 
   // Encontra a maior renda entre todas as fontes
-  const vencedora = fontes.length > 0 
-    ? fontes.sort((a, b) => b.rendaMinima - a.rendaMinima)[0]
-    : { primeiraParcela: 0, rendaMinima: 0, detalhe_fonte: "Indefinida", suficiente: null };
+  const vencedora =
+    fontes.length > 0
+      ? fontes.sort((a, b) => b.rendaMinima - a.rendaMinima)[0]
+      : { primeiraParcela: 0, rendaMinima: 0, detalhe_fonte: "Indefinida", suficiente: null };
 
   const rendaFinal = Math.ceil(vencedora.rendaMinima / 100) * 100;
 
@@ -369,7 +372,7 @@ export function calcularMaximoFinanciável(params: {
 }): number {
   const { renda_declarada, prazo_meses, taxa_ano, sistema, valor_imovel } = params;
   const tetoComprometimento = sistema === "P" ? COMPROMETIMENTO_MAX_PRICE : COMPROMETIMENTO_MAX;
-  
+
   // Parcela máxima permitida para a renda informada
   const parcelaMax = renda_declarada * tetoComprometimento;
 
@@ -377,25 +380,26 @@ export function calcularMaximoFinanciável(params: {
   // parcela_seca = parcela_max - MIP - DFI - taxa_admin
   // seguroMIP = saldo_devedor * TAXA_MIP_MES (aproximadamente valor_financiamento * TAXA_MIP_MES)
   // seguroDFI = valor_imovel * TAXA_DFI_MES
-  
+
   const seguroDFI = valor_imovel * TAXA_DFI_MES;
   const parcelaDisponivelParaFinanc = parcelaMax - seguroDFI - TAXA_ADMIN_MES;
-  
+
   if (parcelaDisponivelParaFinanc <= 0) return 0;
 
-  // Agora precisamos resolver: 
+  // Agora precisamos resolver:
   // SAC: parcela_seca = (finan / prazo) + (finan * taxa_mes)
   // finan = parcela_seca / ( (1/prazo) + taxa_mes + TAXA_MIP_MES )
-  
-  const taxaMes = Math.pow(1 + taxa_ano, 1/12) - 1;
-  
+
+  const taxaMes = Math.pow(1 + taxa_ano, 1 / 12) - 1;
+
   let finanMax = 0;
   if (sistema === "S") {
-    finanMax = parcelaDisponivelParaFinanc / ((1 / prazo_meses) + taxaMes + TAXA_MIP_MES);
+    finanMax = parcelaDisponivelParaFinanc / (1 / prazo_meses + taxaMes + TAXA_MIP_MES);
   } else {
     // PRICE: parcela_seca = finan * [ (i * (1+i)^n) / ((1+i)^n - 1) ] + finan * TAXA_MIP_MES
     // finan = parcela_seca / ( fator_price + TAXA_MIP_MES )
-    const fator = (taxaMes * Math.pow(1 + taxaMes, prazo_meses)) / (Math.pow(1 + taxaMes, prazo_meses) - 1);
+    const fator =
+      (taxaMes * Math.pow(1 + taxaMes, prazo_meses)) / (Math.pow(1 + taxaMes, prazo_meses) - 1);
     finanMax = parcelaDisponivelParaFinanc / (fator + TAXA_MIP_MES);
   }
 
@@ -406,7 +410,10 @@ export function calcularMaximoFinanciável(params: {
  * Calcula os limites de LTV garantindo invariância (financiamento + entrada = total).
  * Resolve bugs de arredondamento em ponto flutuante binário operando em centavos (inteiros).
  */
-export function limitesLtv(valorImovel: number, ltvMax: number): {
+export function limitesLtv(
+  valorImovel: number,
+  ltvMax: number,
+): {
   financiamentoMaximo: number;
   entradaMinima: number;
 } {
@@ -415,7 +422,7 @@ export function limitesLtv(valorImovel: number, ltvMax: number): {
 
   // Calcula o financiamento máximo em centavos arredondando uma única vez
   const finMaxCentavos = Math.round(imovelCentavos * ltvMax);
-  
+
   // A entrada é a diferença exata dos centavos
   const entradaMinCentavos = imovelCentavos - finMaxCentavos;
 
@@ -424,4 +431,3 @@ export function limitesLtv(valorImovel: number, ltvMax: number): {
     entradaMinima: entradaMinCentavos / 100,
   };
 }
-

@@ -14,9 +14,13 @@ import { EmptyReport } from "@/components/reports/empty-report";
 import { MonthlyComparison } from "@/components/reports/monthly-comparison";
 import { runReport } from "@/lib/relatorios/reports.functions";
 import { resolverDrillGrafico } from "@/lib/relatorios/chart-drill";
-import { ESCOPO_LABEL, PERIODO_LABEL, type ReportFiltros, type ReportKpi } from "@/lib/relatorios/shared";
+import {
+  ESCOPO_LABEL,
+  PERIODO_LABEL,
+  type ReportFiltros,
+  type ReportKpi,
+} from "@/lib/relatorios/shared";
 import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
-
 
 /** Página completa de relatório reutilizada por todas as rotas de /relatorios/*. */
 export function GenericReportPage({
@@ -38,7 +42,6 @@ export function GenericReportPage({
   comFiltroStatus?: boolean;
   typeSelector?: import("react").ReactNode;
 }) {
-
   const run = useServerFn(runReport);
   const { data, isLoading, isError } = useQuery({
     queryKey: ["report", codigo, filtros],
@@ -76,7 +79,6 @@ export function GenericReportPage({
     valor: number;
     rows: import("@/lib/relatorios/shared").ReportRow[];
   } | null>(null);
-
 
   const metaArr = [
     `Período: ${PERIODO_LABEL[filtros.periodo]}`,
@@ -116,7 +118,6 @@ export function GenericReportPage({
       titulo={data?.titulo ?? "Relatório"}
       typeSelector={typeSelector}
       metaChips={metaArr}
-
       scopeSelector={
         <VisionSelector
           escopo={filtros.escopo}
@@ -189,7 +190,6 @@ export function GenericReportPage({
             </div>
           </ReportSection>
 
-
           <ReportSection titulo={`Detalhamento — ${data.rows.length} registros`}>
             <DrilldownTable columns={data.columns} rows={data.rows} />
           </ReportSection>
@@ -212,7 +212,6 @@ export function GenericReportPage({
                         });
                       }}
                     />
-
                   </ChartCard>
                 ))}
               </div>
@@ -259,30 +258,30 @@ export function GenericReportPage({
           </DialogHeader>
           <ScrollArea className="min-h-0 flex-1">
             <div className="p-4 sm:p-6">
-            {graficoAberto && (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Valor no gráfico:{" "}
-                  <span className="font-semibold text-foreground">
-                    {graficoAberto.valor.toLocaleString("pt-BR")}
-                  </span>
-                  {graficoAberto.rows.length > 0 && (
-                    <>
-                      {" · "}
-                      {graficoAberto.rows.length.toLocaleString("pt-BR")} registros
-                    </>
-                  )}
-                </p>
-                {data && graficoAberto.rows.length > 0 ? (
-                  <DrilldownTable columns={data.columns} rows={graficoAberto.rows} />
-                ) : (
+              {graficoAberto && (
+                <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Este indicador é calculado a partir de várias etapas e não possui
-                    registros diretamente vinculados ao rótulo selecionado.
+                    Valor no gráfico:{" "}
+                    <span className="font-semibold text-foreground">
+                      {graficoAberto.valor.toLocaleString("pt-BR")}
+                    </span>
+                    {graficoAberto.rows.length > 0 && (
+                      <>
+                        {" · "}
+                        {graficoAberto.rows.length.toLocaleString("pt-BR")} registros
+                      </>
+                    )}
                   </p>
-                )}
-              </div>
-            )}
+                  {data && graficoAberto.rows.length > 0 ? (
+                    <DrilldownTable columns={data.columns} rows={graficoAberto.rows} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Este indicador é calculado a partir de várias etapas e não possui registros
+                      diretamente vinculados ao rótulo selecionado.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </ScrollArea>
         </DialogContent>
@@ -292,19 +291,17 @@ export function GenericReportPage({
         <DialogContent className="flex max-h-[90vh] max-w-6xl flex-col overflow-hidden p-0">
           <DialogHeader className="shrink-0 border-b p-4 sm:px-6">
             <DialogTitle>
-              {kpiAberto?.titulo ?? kpiAberto?.label} — {linhasKpi.length.toLocaleString("pt-BR")} registros
+              {kpiAberto?.titulo ?? kpiAberto?.label} — {linhasKpi.length.toLocaleString("pt-BR")}{" "}
+              registros
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="min-h-0 flex-1">
             <div className="p-4 sm:p-6">
-            {data && kpiAberto && (
-              <DrilldownTable columns={data.columns} rows={linhasKpi} />
-            )}
+              {data && kpiAberto && <DrilldownTable columns={data.columns} rows={linhasKpi} />}
             </div>
           </ScrollArea>
         </DialogContent>
       </Dialog>
     </ReportShell>
   );
-
 }

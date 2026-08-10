@@ -120,12 +120,14 @@ function Pagina() {
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {([
-            ["pendente", "Aguardando"],
-            ["aprovada", "Aprovadas"],
-            ["recusada", "Recusadas"],
-            ["todas", "Todas"],
-          ] as const).map(([v, l]) => (
+          {(
+            [
+              ["pendente", "Aguardando"],
+              ["aprovada", "Aprovadas"],
+              ["recusada", "Recusadas"],
+              ["todas", "Todas"],
+            ] as const
+          ).map(([v, l]) => (
             <Button
               key={v}
               variant={aba === v ? "default" : "outline"}
@@ -168,9 +170,13 @@ function Pagina() {
             ) : (
               filtradas.map((c) => (
                 <TableRow key={c.id}>
-                  <TableCell className="tabular-nums text-muted-foreground">{c.numero ?? "—"}</TableCell>
+                  <TableCell className="tabular-nums text-muted-foreground">
+                    {c.numero ?? "—"}
+                  </TableCell>
                   <TableCell className="font-medium text-foreground">{c.descricao}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.solicitante_nome ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {c.solicitante_nome ?? "—"}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{c.categoria ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{brl(c.valor)}</TableCell>
                   <TableCell>
@@ -202,9 +208,7 @@ function Pagina() {
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">
-                        {c.aprovado_em
-                          ? new Date(c.aprovado_em).toLocaleDateString("pt-BR")
-                          : "—"}
+                        {c.aprovado_em ? new Date(c.aprovado_em).toLocaleDateString("pt-BR") : "—"}
                       </span>
                     )}
                   </TableCell>
@@ -218,16 +222,15 @@ function Pagina() {
       <Dialog open={dialogo !== null} onOpenChange={(o) => !o && setDialogo(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {dialogo?.aprovar ? "Aprovar pedido" : "Recusar pedido"}
-            </DialogTitle>
+            <DialogTitle>{dialogo?.aprovar ? "Aprovar pedido" : "Recusar pedido"}</DialogTitle>
           </DialogHeader>
           {dialogo && (
             <div className="space-y-4">
               <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
                 <p className="font-medium">{dialogo.compra.descricao}</p>
                 <p className="text-muted-foreground">
-                  Solicitado por {dialogo.compra.solicitante_nome ?? "—"} · {brl(dialogo.compra.valor)}
+                  Solicitado por {dialogo.compra.solicitante_nome ?? "—"} ·{" "}
+                  {brl(dialogo.compra.valor)}
                 </p>
               </div>
               <div className="space-y-1.5">

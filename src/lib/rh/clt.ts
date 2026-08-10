@@ -6,7 +6,7 @@
 
 // INSS 2025 — progressivo, teto de contribuição R$ 8.157,41
 const INSS_FAIXAS: Array<{ ate: number; aliquota: number }> = [
-  { ate: 1518.00, aliquota: 0.075 },
+  { ate: 1518.0, aliquota: 0.075 },
   { ate: 2793.88, aliquota: 0.09 },
   { ate: 4190.83, aliquota: 0.12 },
   { ate: 8157.41, aliquota: 0.14 },
@@ -15,7 +15,7 @@ const INSS_TETO_BASE = 8157.41;
 
 // IRRF 2025 — a partir de maio/2025
 const IRRF_TABELA: Array<{ ate: number; aliquota: number; deducao: number }> = [
-  { ate: 2428.80, aliquota: 0, deducao: 0 },
+  { ate: 2428.8, aliquota: 0, deducao: 0 },
   { ate: 2826.65, aliquota: 0.075, deducao: 182.16 },
   { ate: 3751.05, aliquota: 0.15, deducao: 394.16 },
   { ate: 4664.68, aliquota: 0.225, deducao: 675.49 },
@@ -64,11 +64,7 @@ export function calcularIRRF(baseIRRF: number): { valor: number; aliquotaEfetiva
  * @param dependentesIR quantidade de dependentes para IR
  * @param pensao pensão alimentícia (deduz da base IRRF)
  */
-export function calcularCLT(
-  bruto: number,
-  dependentesIR = 0,
-  pensao = 0,
-): CalculoCLT {
+export function calcularCLT(bruto: number, dependentesIR = 0, pensao = 0): CalculoCLT {
   const { valor: inss, aliquotaEfetiva: aliqInss } = calcularINSS(bruto);
   const baseIRRF = Math.max(0, bruto - inss - dependentesIR * IRRF_DEP - pensao);
   const { valor: irrf, aliquotaEfetiva: aliqIrrf } = calcularIRRF(baseIRRF);

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { carregarReacoes, type ReacaoAgrupada } from "@/lib/chat-core/reacoes.functions";
 
-
 export interface ChatMensagem {
   id: string;
   remetente_tipo: string;
@@ -25,7 +24,6 @@ export interface ChatMensagem {
   /** Reações agrupadas por emoji (Fase 6). */
   reacoes: ReacaoAgrupada[];
 }
-
 
 const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
 
@@ -78,14 +76,12 @@ async function resolverAnexosChat<T extends { anexo_url: string | null }>(
     }
   }
 
-
   return lista.map((m) => {
     let anexoUrl: string | null = m.anexo_url ?? null;
     let anexoNome: string | null = null;
     if (anexoUrl && !/^https?:\/\//i.test(anexoUrl)) {
       const partes = anexoUrl.split("/");
-      anexoNome =
-        partes[partes.length - 1]?.replace(/^\d+-[0-9a-f-]+\./i, "arquivo.") ?? null;
+      anexoNome = partes[partes.length - 1]?.replace(/^\d+-[0-9a-f-]+\./i, "arquivo.") ?? null;
       anexoUrl = mapa.get(anexoUrl) ?? null;
     }
     return {
@@ -137,8 +133,7 @@ export const listarConversasCliente = createServerFn({ method: "GET" })
   .handler(async ({ data, context }): Promise<ConversaCliente[]> => {
     const { supabase, userId } = context;
 
-    const colunas =
-      "cliente_id, atendente_id, mensagem, remetente_tipo, lida_em, criada_em";
+    const colunas = "cliente_id, atendente_id, mensagem, remetente_tipo, lida_em, criada_em";
 
     // Busca TODAS as threads visíveis pela RLS (mesmo correspondente). O
     // filtro final por escopo de dados do cliente é aplicado mais abaixo, de
@@ -151,8 +146,6 @@ export const listarConversasCliente = createServerFn({ method: "GET" })
       .limit(3000);
     if (error) throw new Error(error.message);
     const rows: any[] = r ?? [];
-
-
 
     // Agrupa por thread (cliente + atendente).
     const agrupado = new Map<
@@ -252,9 +245,7 @@ export const listarConversasCliente = createServerFn({ method: "GET" })
         porCliente.set(c.cliente_id, { ...c, nao_lidas: naoLidas });
       }
     }
-    return Array.from(porCliente.values()).sort((a, b) =>
-      a.ultima_em < b.ultima_em ? 1 : -1,
-    );
+    return Array.from(porCliente.values()).sort((a, b) => (a.ultima_em < b.ultima_em ? 1 : -1));
   });
 
 export interface ClienteApp {
@@ -278,9 +269,7 @@ export const buscarClientesApp = createServerFn({ method: "GET" })
     const { supabase } = context;
     let query = supabase
       .from("clientes")
-      .select(
-        "id, nome, documento, cliente_pipeline(pipeline_stages(nome))",
-      )
+      .select("id, nome, documento, cliente_pipeline(pipeline_stages(nome))")
       .eq("portal_acesso_ativo", true)
       .order("nome", { ascending: true })
       .limit(50);
@@ -344,7 +333,6 @@ export const listarChatCliente = createServerFn({ method: "GET" })
       atendente = permitido ? data.atendente_id : userId;
     }
 
-
     const { data: rows, error } = await supabase
       .from("cliente_app_mensagens")
       .select(
@@ -355,10 +343,10 @@ export const listarChatCliente = createServerFn({ method: "GET" })
       .order("criada_em", { ascending: true })
       .limit(500);
     if (error) throw new Error(error.message);
-    const lista = (rows ?? []) as (Omit<
+    const lista = (rows ?? []) as Omit<
       ChatMensagem,
       "remetente_nome" | "anexo_nome" | "anexo_is_imagem" | "citacao"
-    >)[];
+    >[];
 
     // Nome completo dos membros da equipe que enviaram mensagens
     const idsTime = Array.from(
@@ -389,8 +377,7 @@ export const listarChatCliente = createServerFn({ method: "GET" })
     const porId = new Map<string, (typeof lista)[number]>();
     for (const m of lista) porId.set(m.id, m);
     function autorDe(m: (typeof lista)[number]): string {
-      if (m.remetente_tipo === "time")
-        return nomes.get(m.remetente_id ?? "") || "Atendente";
+      if (m.remetente_tipo === "time") return nomes.get(m.remetente_id ?? "") || "Atendente";
       return nomeCliente;
     }
 
@@ -406,22 +393,17 @@ export const listarChatCliente = createServerFn({ method: "GET" })
       return {
         ...m,
         remetente_nome:
-          m.remetente_tipo === "time"
-            ? (nomes.get(m.remetente_id ?? "") ?? null)
-            : nomeCliente,
+          m.remetente_tipo === "time" ? (nomes.get(m.remetente_id ?? "") ?? null) : nomeCliente,
         citacao: alvo
           ? {
               autor: autorDe(alvo),
-              texto: alvo.excluida_em
-                ? "Mensagem excluída"
-                : (alvo.mensagem?.trim() || "Anexo"),
+              texto: alvo.excluida_em ? "Mensagem excluída" : alvo.mensagem?.trim() || "Anexo",
             }
           : null,
         reacoes: reacoes.get(m.id) ?? [],
       };
     });
   });
-
 
 /** Envia uma mensagem ao cliente como time e notifica o cliente no App. */
 export const responderChatCliente = createServerFn({ method: "POST" })
@@ -509,9 +491,7 @@ export const responderChatCliente = createServerFn({ method: "POST" })
 export const editarChatCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string; mensagem: string }) =>
-    z
-      .object({ id: z.string().uuid(), mensagem: z.string().trim().min(1).max(4000) })
-      .parse(d),
+    z.object({ id: z.string().uuid(), mensagem: z.string().trim().min(1).max(4000) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -667,10 +647,7 @@ export const obterContextoChatCliente = createServerFn({ method: "GET" })
     // a simulação mais recente e, por fim, o número do cliente — assim a
     // mensagem sempre traz uma referência.
     const numeroProposta =
-      (proposta as any)?.numero_proposta ??
-      simNumero ??
-      (cliente as any)?.numero_cliente ??
-      null;
+      (proposta as any)?.numero_proposta ?? simNumero ?? (cliente as any)?.numero_cliente ?? null;
 
     return {
       cliente_id: data.cliente_id,
@@ -678,8 +655,7 @@ export const obterContextoChatCliente = createServerFn({ method: "GET" })
       numero_proposta: numeroProposta,
       status_proposta: (proposta as any)?.status ?? null,
       nome_banco: (proposta as any)?.nome_banco ?? simBanco ?? null,
-      etapa_nome:
-        (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
+      etapa_nome: (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
     };
   });
 
@@ -736,10 +712,8 @@ export const obterPainelChatCliente = createServerFn({ method: "GET" })
       documento: (cliente as any)?.documento ?? null,
       celular: (cliente as any)?.telefone_celular ?? null,
       email: (cliente as any)?.email ?? null,
-      etapa_nome:
-        (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
-      etapa_codigo:
-        (cliente as any)?.cliente_pipeline?.pipeline_stages?.codigo ?? null,
+      etapa_nome: (cliente as any)?.cliente_pipeline?.pipeline_stages?.nome ?? null,
+      etapa_codigo: (cliente as any)?.cliente_pipeline?.pipeline_stages?.codigo ?? null,
       ativo:
         Boolean((cliente as any)?.ativo ?? true) &&
         Boolean((cliente as any)?.portal_acesso_ativo ?? false),
@@ -757,7 +731,6 @@ export const obterPainelChatCliente = createServerFn({ method: "GET" })
     };
   });
 
-
 export interface ParticipanteChat {
   usuario_id: string;
   nome: string;
@@ -767,9 +740,7 @@ export interface ParticipanteChat {
 export const listarParticipantesChat = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { cliente_id: string; atendente_id: string }) =>
-    z
-      .object({ cliente_id: z.string().uuid(), atendente_id: z.string().uuid() })
-      .parse(d),
+    z.object({ cliente_id: z.string().uuid(), atendente_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<ParticipanteChat[]> => {
     const { supabase } = context;
@@ -781,10 +752,7 @@ export const listarParticipantesChat = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     const ids = (rows ?? []).map((r: any) => r.usuario_id);
     if (ids.length === 0) return [];
-    const { data: perfis } = await supabase
-      .from("profiles")
-      .select("id, nome")
-      .in("id", ids);
+    const { data: perfis } = await supabase.from("profiles").select("id, nome").in("id", ids);
     const nomes = new Map<string, string>();
     for (const p of perfis ?? []) nomes.set(p.id, p.nome ?? "");
     return ids.map((id: string) => ({
@@ -871,4 +839,3 @@ export const removerParticipanteChat = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
-

@@ -89,7 +89,11 @@ export function EbookFaqButton({ pergunta, resposta }: Props) {
                     {ebook.categoria.replace(/_/g, " ")}
                   </Badge>
                   {ebook.tags.map((t) => (
-                    <Badge key={t} variant="outline" className="rounded-full text-[11px] font-normal">
+                    <Badge
+                      key={t}
+                      variant="outline"
+                      className="rounded-full text-[11px] font-normal"
+                    >
                       {t}
                     </Badge>
                   ))}
@@ -111,7 +115,9 @@ export function EbookFaqButton({ pergunta, resposta }: Props) {
                     {ebook.secoes.map((s) => (
                       <li key={s.titulo}>
                         {s.titulo}
-                        {s.tabela ? <span className="ml-1 text-[11px] text-primary">· tabela</span> : null}
+                        {s.tabela ? (
+                          <span className="ml-1 text-[11px] text-primary">· tabela</span>
+                        ) : null}
                       </li>
                     ))}
                   </ol>

@@ -137,10 +137,7 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
         {/* 10. Sexo */}
         <div className="space-y-1.5">
           <Label>Sexo</Label>
-          <Select
-            value={v.conjuge_sexo || undefined}
-            onValueChange={(x) => set("conjuge_sexo", x)}
-          >
+          <Select value={v.conjuge_sexo || undefined} onValueChange={(x) => set("conjuge_sexo", x)}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
@@ -222,7 +219,6 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
           </div>
         </div>
       </CardContent>
-
     </Card>
   );
 }

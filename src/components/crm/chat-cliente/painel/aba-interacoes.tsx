@@ -47,10 +47,7 @@ export function AbaInteracoes({ clienteId }: { clienteId: string }) {
   return (
     <div className="space-y-3">
       {lista.map((i) => (
-        <div
-          key={i.id}
-          className="rounded-xl border border-border/60 bg-background p-3 shadow-sm"
-        >
+        <div key={i.id} className="rounded-xl border border-border/60 bg-background p-3 shadow-sm">
           <div className="mb-1 flex items-center justify-between gap-2">
             <Badge
               variant="secondary"

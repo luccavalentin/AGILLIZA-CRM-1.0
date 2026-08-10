@@ -53,7 +53,7 @@ export function BradescoRetornoTimer({
     <div
       className={cn(
         "flex flex-col items-center justify-center space-y-4 rounded-xl border border-primary/20 bg-gradient-to-b from-card to-muted/30 p-8 text-center shadow-lg transition-all duration-500",
-        className
+        className,
       )}
     >
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/80">

@@ -107,13 +107,17 @@ export function EditarPessoaDialog({
               <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
                 {nome || "Editar pessoa"}
               </DialogTitle>
-              <span className="text-sm font-medium text-muted-foreground">{pessoa.email || "Sem e-mail cadastrado"}</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                {pessoa.email || "Sem e-mail cadastrado"}
+              </span>
             </div>
           </div>
         </DialogHeader>
         <div className="max-h-[70vh] space-y-5 overflow-y-auto px-1 py-4">
           <div className="rounded-xl border border-primary/10 bg-primary/5 p-4 text-center">
-            <Label className="mb-3 block text-xs font-semibold uppercase tracking-wider text-primary">Alterar foto de perfil</Label>
+            <Label className="mb-3 block text-xs font-semibold uppercase tracking-wider text-primary">
+              Alterar foto de perfil
+            </Label>
             <UploadAvatar
               currentUrl={avatarUrl}
               onUploadComplete={setAvatarUrl}
@@ -169,13 +173,7 @@ export function EditarPessoaDialog({
           <div className="space-y-2">
             <Label htmlFor="ep-email">E-mail</Label>
             <div className="flex gap-2">
-              <Input
-                id="ep-email"
-                type="email"
-                value={pessoa?.email ?? ""}
-                readOnly
-                disabled
-              />
+              <Input id="ep-email" type="email" value={pessoa?.email ?? ""} readOnly disabled />
               <Button
                 type="button"
                 variant="outline"
@@ -185,15 +183,18 @@ export function EditarPessoaDialog({
                   if (targetEmail && targetEmail !== pessoa?.email) {
                     try {
                       // Usar client para atualizar e-mail via auth admin (necessita chave admin no client, ou API)
-                      const { data: adminAuth, error: adminErr } = await supabase.auth.admin.updateUserById(
-                        pessoa!.id,
-                        { email: targetEmail }
-                      );
+                      const { data: adminAuth, error: adminErr } =
+                        await supabase.auth.admin.updateUserById(pessoa!.id, {
+                          email: targetEmail,
+                        });
                       if (adminErr) throw adminErr;
-                      
+
                       // O e-mail de autenticação mudou, agora precisamos atualizar nosso profile
-                      await supabase.from("profiles").update({ email: targetEmail }).eq("id", pessoa!.id);
-                      
+                      await supabase
+                        .from("profiles")
+                        .update({ email: targetEmail })
+                        .eq("id", pessoa!.id);
+
                       toast.success("E-mail atualizado. O usuário deve confirmar o link enviado.");
                       onClose();
                     } catch (e: any) {
@@ -207,10 +208,12 @@ export function EditarPessoaDialog({
             </div>
           </div>
           <div className="space-y-2 pb-2">
-            <Label htmlFor="ep-tel" className="text-sm font-semibold">Telefone</Label>
-            <Input 
-              id="ep-tel" 
-              value={telefone} 
+            <Label htmlFor="ep-tel" className="text-sm font-semibold">
+              Telefone
+            </Label>
+            <Input
+              id="ep-tel"
+              value={telefone}
               onChange={(e) => setTelefone(e.target.value)}
               placeholder="(00) 00000-0000"
               className="rounded-lg"
@@ -218,7 +221,9 @@ export function EditarPessoaDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button onClick={() => mAtualizar.mutate()} disabled={mAtualizar.isPending}>
             {mAtualizar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar alterações

@@ -31,17 +31,13 @@ export interface VinculoEtiqueta {
   chat_id: string;
 }
 
-async function correspondenteDoUsuario(
-  supabase: any,
-  userId: string,
-): Promise<string> {
+async function correspondenteDoUsuario(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase
     .from("profiles")
     .select("correspondente_id")
     .eq("id", userId)
     .single();
-  if (error || !data?.correspondente_id)
-    throw new Error("Correspondente não encontrado.");
+  if (error || !data?.correspondente_id) throw new Error("Correspondente não encontrado.");
   return data.correspondente_id as string;
 }
 
@@ -87,9 +83,8 @@ async function upsertEstado(
 
 export const arquivarConversa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: { chat_tipo: ChatTipo; chat_id: string; arquivar: boolean }) =>
-      alvoSchema.extend({ arquivar: z.boolean() }).parse(d),
+  .inputValidator((d: { chat_tipo: ChatTipo; chat_id: string; arquivar: boolean }) =>
+    alvoSchema.extend({ arquivar: z.boolean() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await upsertEstado(context.supabase, context.userId, data.chat_tipo, data.chat_id, {
@@ -100,9 +95,8 @@ export const arquivarConversa = createServerFn({ method: "POST" })
 
 export const ocultarConversa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: { chat_tipo: ChatTipo; chat_id: string; ocultar: boolean }) =>
-      alvoSchema.extend({ ocultar: z.boolean() }).parse(d),
+  .inputValidator((d: { chat_tipo: ChatTipo; chat_id: string; ocultar: boolean }) =>
+    alvoSchema.extend({ ocultar: z.boolean() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await upsertEstado(context.supabase, context.userId, data.chat_tipo, data.chat_id, {
@@ -113,9 +107,8 @@ export const ocultarConversa = createServerFn({ method: "POST" })
 
 export const fixarConversa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: { chat_tipo: ChatTipo; chat_id: string; fixar: boolean }) =>
-      alvoSchema.extend({ fixar: z.boolean() }).parse(d),
+  .inputValidator((d: { chat_tipo: ChatTipo; chat_id: string; fixar: boolean }) =>
+    alvoSchema.extend({ fixar: z.boolean() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await upsertEstado(context.supabase, context.userId, data.chat_tipo, data.chat_id, {
@@ -126,11 +119,8 @@ export const fixarConversa = createServerFn({ method: "POST" })
 
 export const renomearConversa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: { chat_tipo: ChatTipo; chat_id: string; apelido: string | null }) =>
-      alvoSchema
-        .extend({ apelido: z.string().trim().max(80).nullable() })
-        .parse(d),
+  .inputValidator((d: { chat_tipo: ChatTipo; chat_id: string; apelido: string | null }) =>
+    alvoSchema.extend({ apelido: z.string().trim().max(80).nullable() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await upsertEstado(context.supabase, context.userId, data.chat_tipo, data.chat_id, {
@@ -179,20 +169,12 @@ export const criarEtiqueta = createServerFn({ method: "POST" })
 
 export const excluirEtiqueta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) =>
-    z.object({ id: z.string().uuid() }).parse(d),
-  )
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     await supabase.from("chat_etiqueta_vinculos").delete().eq("etiqueta_id", data.id);
-    await supabase
-      .from("crm_chat_cliente_etiquetas")
-      .delete()
-      .eq("etiqueta_id", data.id);
-    const { error } = await supabase
-      .from("crm_chat_etiquetas")
-      .delete()
-      .eq("id", data.id);
+    await supabase.from("crm_chat_cliente_etiquetas").delete().eq("etiqueta_id", data.id);
+    const { error } = await supabase.from("crm_chat_etiquetas").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -210,15 +192,14 @@ export const listarVinculosEtiqueta = createServerFn({ method: "GET" })
 
 export const definirEtiquetasConversa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: { chat_tipo: ChatTipo; chat_id: string; etiqueta_ids: string[] }) =>
-      z
-        .object({
-          chat_tipo: chatTipoFullSchema,
-          chat_id: z.string().uuid(),
-          etiqueta_ids: z.array(z.string().uuid()).max(30),
-        })
-        .parse(d),
+  .inputValidator((d: { chat_tipo: ChatTipo; chat_id: string; etiqueta_ids: string[] }) =>
+    z
+      .object({
+        chat_tipo: chatTipoFullSchema,
+        chat_id: z.string().uuid(),
+        etiqueta_ids: z.array(z.string().uuid()).max(30),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -231,10 +212,7 @@ export const definirEtiquetasConversa = createServerFn({ method: "POST" })
       .eq("chat_id", data.chat_id);
 
     if (data.chat_tipo === "cliente") {
-      await supabase
-        .from("crm_chat_cliente_etiquetas")
-        .delete()
-        .eq("cliente_id", data.chat_id);
+      await supabase.from("crm_chat_cliente_etiquetas").delete().eq("cliente_id", data.chat_id);
     }
 
     if (data.etiqueta_ids.length > 0) {
@@ -245,9 +223,7 @@ export const definirEtiquetasConversa = createServerFn({ method: "POST" })
         correspondente_id: corr,
         aplicado_por: userId,
       }));
-      const { error } = await supabase
-        .from("chat_etiqueta_vinculos")
-        .insert(linhas);
+      const { error } = await supabase.from("chat_etiqueta_vinculos").insert(linhas);
       if (error) throw new Error(error.message);
 
       if (data.chat_tipo === "cliente") {

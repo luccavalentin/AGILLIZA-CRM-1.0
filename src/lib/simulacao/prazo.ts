@@ -69,7 +69,10 @@ export function idadeEmMesesCorridos(
  * ao término (idade corrida) e o limite absoluto de 420 meses. Retorna `null`
  * quando não há data de nascimento válida (sem restrição por idade).
  */
-export function prazoMaximoPorIdade(dataNascimento: string, hoje: Date = new Date()): number | null {
+export function prazoMaximoPorIdade(
+  dataNascimento: string,
+  hoje: Date = new Date(),
+): number | null {
   const idade = idadeEmMesesCorridos(dataNascimento, hoje);
   if (idade == null) return null;
   const porIdade = IDADE_MAX_TERMINO_MESES - idade;

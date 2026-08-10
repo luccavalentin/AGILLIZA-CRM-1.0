@@ -8,18 +8,16 @@ const MINUSCULAS = new Set(["de", "da", "do", "das", "dos", "e", "di", "du"]);
 
 function titulo(s: string | null | undefined): string {
   if (!s || !s.trim()) return "—";
-  return s
-    .toLowerCase()
-    .replace(/\S+/g, (palavra, offset: number) => {
-      if (offset !== 0 && MINUSCULAS.has(palavra)) return palavra;
-      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
-    });
+  return s.toLowerCase().replace(/\S+/g, (palavra, offset: number) => {
+    if (offset !== 0 && MINUSCULAS.has(palavra)) return palavra;
+    return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+  });
 }
 
 function brl(n: number | null | undefined): string {
   return n == null || n === ("" as any)
     ? "—"
-    : Number(n).toLocaleString("pt-BR", {  style: "currency", currency: "BRL" });
+    : Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function fmtData(v: string | null | undefined): string {
@@ -52,10 +50,7 @@ function enderecoLinha(e: Record<string, any> | null | undefined): string | null
   if (!e) return null;
   const linha1 = [e.logradouro, e.numero].filter(Boolean).join(", ");
   const linha2 = [e.complemento, e.bairro].filter(Boolean).join(" · ");
-  const linha3 = [
-    [e.cidade, e.uf].filter(Boolean).join(" / "),
-    e.cep ? `CEP ${e.cep}` : null,
-  ]
+  const linha3 = [[e.cidade, e.uf].filter(Boolean).join(" / "), e.cep ? `CEP ${e.cep}` : null]
     .filter(Boolean)
     .join(" · ");
   const tudo = [linha1, linha2, linha3].filter(Boolean).join(" — ");
@@ -116,7 +111,10 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
           ["Nome", val(c.nome)],
           [docLabel(c.tipo_pessoa), val(c.documento)],
           ["RG / Doc. secundário", val(c.documento_secundario || c.numero_documento)],
-          ["Órgão expedidor", val([c.orgao_expedidor, c.uf_expedicao].filter(Boolean).join("/") || null)],
+          [
+            "Órgão expedidor",
+            val([c.orgao_expedidor, c.uf_expedicao].filter(Boolean).join("/") || null),
+          ],
           ["Data de nascimento", fmtData(c.data_nascimento)],
           ["Sexo", val(c.sexo)],
           ["Estado civil", val(c.estado_civil)],
@@ -157,7 +155,10 @@ export function imprimirFichaPDF(clienteNome: string, data: FichaConsolidada): v
           ["Nome", val(c.nome)],
           ["CPF", val(c.documento)],
           ["RG / Doc.", val(c.numero_documento)],
-          ["Órgão expedidor", val([c.orgao_expedidor, c.uf_expedicao].filter(Boolean).join("/") || null)],
+          [
+            "Órgão expedidor",
+            val([c.orgao_expedidor, c.uf_expedicao].filter(Boolean).join("/") || null),
+          ],
           ["Data de nascimento", fmtData(c.data_nascimento)],
           ["Sexo", val(c.sexo)],
           ["Nacionalidade", val(c.nacionalidade)],

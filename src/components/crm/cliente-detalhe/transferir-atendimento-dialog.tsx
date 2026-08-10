@@ -90,8 +90,8 @@ export function TransferirAtendimentoDialog({
         <DialogHeader>
           <DialogTitle>Transferir atendimento</DialogTitle>
           <DialogDescription>
-            Escolha para qual pessoa da equipe (correspondente, gestor, analista,
-            comercial ou parceiro) este cliente será atribuído.
+            Escolha para qual pessoa da equipe (correspondente, gestor, analista, comercial ou
+            parceiro) este cliente será atribuído.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">

@@ -111,7 +111,6 @@ export function AppShell({
           </div>
         </aside>
 
-
         {/* Drawer mobile */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent
@@ -134,7 +133,6 @@ export function AppShell({
                 }}
               />
             </div>
-
           </SheetContent>
         </Sheet>
 
@@ -167,13 +165,7 @@ export function AppShell({
 }
 
 /** Botão "Sair" fixo no rodapé da sidebar. */
-function SidebarSignOut({
-  collapsed,
-  onSignOut,
-}: {
-  collapsed: boolean;
-  onSignOut: () => void;
-}) {
+function SidebarSignOut({ collapsed, onSignOut }: { collapsed: boolean; onSignOut: () => void }) {
   if (collapsed) {
     return (
       <Tooltip>

@@ -40,9 +40,14 @@ export function abrirChatFlutuante(
   info?: ChatClienteInfo,
   opts?: { minimized?: boolean },
 ) {
-  const existingIndex = estado.findIndex(c => c.kind === "cliente" && c.clienteId === clienteId);
-  const newItem: FloatingChatState = { kind: "cliente", clienteId, info, minimized: opts?.minimized };
-  
+  const existingIndex = estado.findIndex((c) => c.kind === "cliente" && c.clienteId === clienteId);
+  const newItem: FloatingChatState = {
+    kind: "cliente",
+    clienteId,
+    info,
+    minimized: opts?.minimized,
+  };
+
   if (existingIndex !== -1) {
     estado[existingIndex] = newItem;
   } else {
@@ -57,8 +62,13 @@ export function abrirDemandaChatFlutuante(
   info?: Extract<FloatingChatState, { kind: "demanda" }>["info"],
   opts?: { minimized?: boolean },
 ) {
-  const existingIndex = estado.findIndex(c => c.kind === "demanda" && c.demandaId === demandaId);
-  const newItem: FloatingChatState = { kind: "demanda", demandaId, info, minimized: opts?.minimized };
+  const existingIndex = estado.findIndex((c) => c.kind === "demanda" && c.demandaId === demandaId);
+  const newItem: FloatingChatState = {
+    kind: "demanda",
+    demandaId,
+    info,
+    minimized: opts?.minimized,
+  };
 
   if (existingIndex !== -1) {
     estado[existingIndex] = newItem;
@@ -74,7 +84,7 @@ export function abrirDmFlutuante(
   info?: Extract<FloatingChatState, { kind: "dm" }>["info"],
   opts?: { minimized?: boolean },
 ) {
-  const existingIndex = estado.findIndex(c => c.kind === "dm" && c.conversaId === conversaId);
+  const existingIndex = estado.findIndex((c) => c.kind === "dm" && c.conversaId === conversaId);
   const newItem: FloatingChatState = { kind: "dm", conversaId, info, minimized: opts?.minimized };
 
   if (existingIndex !== -1) {
@@ -87,7 +97,7 @@ export function abrirDmFlutuante(
 
 /** Fecha a janela flutuante global. */
 export function fecharChatFlutuante(kind: string, id: string) {
-  estado = estado.filter(c => {
+  estado = estado.filter((c) => {
     if (c.kind === "cliente" && kind === "cliente") return c.clienteId !== id;
     if (c.kind === "demanda" && kind === "demanda") return c.demandaId !== id;
     if (c.kind === "dm" && kind === "dm") return c.conversaId !== id;

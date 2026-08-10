@@ -23,7 +23,9 @@ export function soDigitosStr(v?: string | null): string | undefined {
  * alfanuméricos. Preservamos letras porque alguns tipos (ex.: RNE) as usam.
  */
 export function sanitizarNumeroDocumento(v: unknown): string | undefined {
-  const s = String(v ?? "").replace(/[^0-9A-Za-z]/g, "").trim();
+  const s = String(v ?? "")
+    .replace(/[^0-9A-Za-z]/g, "")
+    .trim();
   return s.length ? s : undefined;
 }
 
@@ -49,4 +51,3 @@ export function normalizarTexto(v: unknown): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
 }
-

@@ -29,9 +29,7 @@ export function AbaPapeis({
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="truncate text-sm font-medium text-foreground">
-                  {n.nome}
-                </span>
+                <span className="truncate text-sm font-medium text-foreground">{n.nome}</span>
                 {n.is_padrao ? (
                   <Badge variant="secondary" className="shrink-0 gap-1 text-[10px]">
                     <Lock className="h-3 w-3" /> Padrão

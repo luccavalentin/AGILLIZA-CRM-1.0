@@ -1,6 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, FileText, Send, Home, User, Users, Landmark, ShieldCheck, X, AlertTriangle } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  Send,
+  Home,
+  User,
+  Users,
+  Landmark,
+  ShieldCheck,
+  X,
+  AlertTriangle,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SecaoCabecalho } from "@/components/simulacao/secao-cabecalho";
@@ -49,7 +60,25 @@ export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/co
 function Pagina() {
   const { duplicar, origem: origemFluxo } = Route.useSearch();
   const ctx = useSimulacaoCompleta({ duplicar, modoProposta: origemFluxo === "proposta" });
-  const { router, modoProposta, f, erros, enviando, concluidos, mostraConjuge, confirmRenda, setConfirmRenda, enviar, executarEnvio, simulacaoResultadoId, simulacaoResultadoIdPrice, simulacaoResultadoIdSecundario, fecharResultadoInline, fecharResultadoInlinePrice, fecharResultadoInlineSecundario } = ctx;
+  const {
+    router,
+    modoProposta,
+    f,
+    erros,
+    enviando,
+    concluidos,
+    mostraConjuge,
+    confirmRenda,
+    setConfirmRenda,
+    enviar,
+    executarEnvio,
+    simulacaoResultadoId,
+    simulacaoResultadoIdPrice,
+    simulacaoResultadoIdSecundario,
+    fecharResultadoInline,
+    fecharResultadoInlinePrice,
+    fecharResultadoInlineSecundario,
+  } = ctx;
   const resultadoRef = useRef<HTMLDivElement>(null);
 
   const [popupAberto, setPopupAberto] = useState(false);
@@ -220,16 +249,15 @@ function Pagina() {
 
           {/* Ação sempre disponível no final do formulário */}
           <div className="flex justify-end pt-1">
-            <Button 
-              className="h-11 w-full gap-2 sm:w-auto sm:px-8" 
-              onClick={enviar} 
-               disabled={enviando}
+            <Button
+              className="h-11 w-full gap-2 sm:w-auto sm:px-8"
+              onClick={enviar}
+              disabled={enviando}
             >
-              <Send className="h-4 w-4" /> {modoProposta ? "Gerar Proposta e Enviar ao Banco" : "Gerar Simulação"}
+              <Send className="h-4 w-4" />{" "}
+              {modoProposta ? "Gerar Proposta e Enviar ao Banco" : "Gerar Simulação"}
             </Button>
           </div>
-
-
         </div>
 
         {/* Coluna lateral — resumo fixo (apenas em telas grandes) */}
@@ -278,69 +306,67 @@ function Pagina() {
                 </div>
               </div>
 
-              <Button 
-                className="h-11 w-full gap-2" 
-                onClick={enviar} 
-                disabled={enviando}
-              >
+              <Button className="h-11 w-full gap-2" onClick={enviar} disabled={enviando}>
                 <Send className="h-4 w-4" /> {modoProposta ? "Gerar Proposta" : "Gerar Simulação"}
               </Button>
-
             </div>
           </Card>
         </aside>
       </div>
 
-      {(simulacaoResultadoId || simulacaoResultadoIdPrice || simulacaoResultadoIdSecundario) && !modoProposta && (
-        <div ref={resultadoRef} className="scroll-mt-4 space-y-4">
-          <div className="flex flex-col gap-6">
-            {/* Bloco do Titular Principal */}
-            {simulacaoResultadoId && simulacaoResultadoIdPrice ? (
-              <ResultadoInlineAmbos
-                simulacaoIdSac={simulacaoResultadoId}
-                simulacaoIdPrice={simulacaoResultadoIdPrice}
-                onFechar={() => {
-                  fecharResultadoInline();
-                  fecharResultadoInlinePrice();
-                }}
-              />
-            ) : simulacaoResultadoId ? (
-              <ResultadoInlineCompleta
-                simulacaoId={simulacaoResultadoId}
-                onFechar={fecharResultadoInline}
-              />
-            ) : simulacaoResultadoIdPrice ? (
-              <ResultadoInlineCompleta
-                simulacaoId={simulacaoResultadoIdPrice}
-                onFechar={fecharResultadoInlinePrice}
-              />
-            ) : null}
-
-            {/* Tabela Comparativa (Problema 4) */}
-            {simulacaoResultadoId && simulacaoResultadoIdSecundario && (
-              <TabelaComparativaCPFs 
-                simulacaoIdA={simulacaoResultadoId}
-                simulacaoIdB={simulacaoResultadoIdSecundario}
-              />
-            )}
-
-            {/* Bloco da Simulação Secundária (Exibe apenas se não houver o titular principal, caso contrário a tabela acima cobre) */}
-            {simulacaoResultadoIdSecundario && !simulacaoResultadoId && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-border/60 pb-2">
-                  <Landmark className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-foreground">Simulação Secundária (Cônjuge como titular)</h3>
-                </div>
-                <ResultadoInlineCompleta
-                  simulacaoId={simulacaoResultadoIdSecundario}
-                  onFechar={fecharResultadoInlineSecundario}
-                  isSecundaria
+      {(simulacaoResultadoId || simulacaoResultadoIdPrice || simulacaoResultadoIdSecundario) &&
+        !modoProposta && (
+          <div ref={resultadoRef} className="scroll-mt-4 space-y-4">
+            <div className="flex flex-col gap-6">
+              {/* Bloco do Titular Principal */}
+              {simulacaoResultadoId && simulacaoResultadoIdPrice ? (
+                <ResultadoInlineAmbos
+                  simulacaoIdSac={simulacaoResultadoId}
+                  simulacaoIdPrice={simulacaoResultadoIdPrice}
+                  onFechar={() => {
+                    fecharResultadoInline();
+                    fecharResultadoInlinePrice();
+                  }}
                 />
-              </div>
-            )}
+              ) : simulacaoResultadoId ? (
+                <ResultadoInlineCompleta
+                  simulacaoId={simulacaoResultadoId}
+                  onFechar={fecharResultadoInline}
+                />
+              ) : simulacaoResultadoIdPrice ? (
+                <ResultadoInlineCompleta
+                  simulacaoId={simulacaoResultadoIdPrice}
+                  onFechar={fecharResultadoInlinePrice}
+                />
+              ) : null}
+
+              {/* Tabela Comparativa (Problema 4) */}
+              {simulacaoResultadoId && simulacaoResultadoIdSecundario && (
+                <TabelaComparativaCPFs
+                  simulacaoIdA={simulacaoResultadoId}
+                  simulacaoIdB={simulacaoResultadoIdSecundario}
+                />
+              )}
+
+              {/* Bloco da Simulação Secundária (Exibe apenas se não houver o titular principal, caso contrário a tabela acima cobre) */}
+              {simulacaoResultadoIdSecundario && !simulacaoResultadoId && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b border-border/60 pb-2">
+                    <Landmark className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-foreground">
+                      Simulação Secundária (Cônjuge como titular)
+                    </h3>
+                  </div>
+                  <ResultadoInlineCompleta
+                    simulacaoId={simulacaoResultadoIdSecundario}
+                    onFechar={fecharResultadoInlineSecundario}
+                    isSecundaria
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <ConsultandoOverlay aberto={enviando} total={totalBancosResumo} concluidos={concluidos} />
 
@@ -353,48 +379,53 @@ function Pagina() {
         onEnviarTodos={ctx.enviarTodosBancos}
       />
 
-
-
-
-
       {/* O bloqueio preventivo foi removido. A renda mínima agora é apenas informativa no painel de resultados. */}
 
       {/* Popup de Comparação de Taxas (Dual CPF) */}
-      <ComparativoTaxasDialog 
-        aberto={popupAberto} 
-        onClose={() => setPopupAberto(false)} 
+      <ComparativoTaxasDialog
+        aberto={popupAberto}
+        onClose={() => setPopupAberto(false)}
         idTitular={simulacaoResultadoId}
         idSecundario={simulacaoResultadoIdSecundario}
       />
-
     </div>
   );
 }
 
-function ComparativoTaxasDialog({ aberto, onClose, idTitular, idSecundario }: { aberto: boolean; onClose: () => void; idTitular: string | null; idSecundario: string | null }) {
+function ComparativoTaxasDialog({
+  aberto,
+  onClose,
+  idTitular,
+  idSecundario,
+}: {
+  aberto: boolean;
+  onClose: () => void;
+  idTitular: string | null;
+  idSecundario: string | null;
+}) {
   const { data: titular } = useQuery({
     queryKey: ["simulacao", idTitular],
     queryFn: () => obterSimulacao({ data: { id: idTitular! } }),
-    enabled: aberto && !!idTitular
+    enabled: aberto && !!idTitular,
   });
 
   const { data: secundario } = useQuery({
     queryKey: ["simulacao", idSecundario],
     queryFn: () => obterSimulacao({ data: { id: idSecundario! } }),
-    enabled: aberto && !!idSecundario
+    enabled: aberto && !!idSecundario,
   });
 
   const getMelhorTaxa = (sim: any) => {
     const bancos = (sim?.bancos as any[]) ?? [];
     const taxas = bancos
-      .filter(b => b.status_banco === "simulada" && b.taxa_juros_ano)
-      .map(b => b.taxa_juros_ano);
+      .filter((b) => b.status_banco === "simulada" && b.taxa_juros_ano)
+      .map((b) => b.taxa_juros_ano);
     return taxas.length > 0 ? Math.min(...taxas) : null;
   };
 
   const taxaTitular = getMelhorTaxa(titular);
   const taxaConjuge = getMelhorTaxa(secundario);
-  
+
   const nomeTitular = titular?.simulacao?.nome_cliente?.split(" ")[0] ?? "Titular";
   const nomeConjuge = secundario?.simulacao?.nome_cliente?.split(" ")[0] ?? "Cônjuge";
 
@@ -428,32 +459,32 @@ function ComparativoTaxasDialog({ aberto, onClose, idTitular, idSecundario }: { 
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <TaxaCard 
-                nome={nomeTitular} 
-                taxa={taxaTitular} 
-                isWinner={taxaTitular != null && taxaConjuge != null && taxaTitular <= taxaConjuge} 
+              <TaxaCard
+                nome={nomeTitular}
+                taxa={taxaTitular}
+                isWinner={taxaTitular != null && taxaConjuge != null && taxaTitular <= taxaConjuge}
               />
-              <TaxaCard 
-                nome={nomeConjuge} 
-                taxa={taxaConjuge} 
-                isWinner={taxaTitular != null && taxaConjuge != null && taxaConjuge < taxaTitular} 
+              <TaxaCard
+                nome={nomeConjuge}
+                taxa={taxaConjuge}
+                isWinner={taxaTitular != null && taxaConjuge != null && taxaConjuge < taxaTitular}
               />
             </div>
-            
+
             <div className="mt-8 flex flex-col items-center gap-4">
               <div className="rounded-xl border border-border bg-muted/30 px-6 py-4 text-center">
                 <p className="text-sm font-semibold text-foreground">
-                  {taxaTitular && taxaConjuge 
-                    ? taxaTitular <= taxaConjuge 
-                      ? (taxaTitular === taxaConjuge 
-                          ? `Ambos perfis apresentaram taxas iguais (${formatTaxa(taxaTitular)} a.a.).`
-                          : `O perfil de ${nomeTitular} apresentou as condições mais vantajosas para o financiamento.`)
+                  {taxaTitular && taxaConjuge
+                    ? taxaTitular <= taxaConjuge
+                      ? taxaTitular === taxaConjuge
+                        ? `Ambos perfis apresentaram taxas iguais (${formatTaxa(taxaTitular)} a.a.).`
+                        : `O perfil de ${nomeTitular} apresentou as condições mais vantajosas para o financiamento.`
                       : `O perfil de ${nomeConjuge} apresentou as condições mais vantajosas para o financiamento.`
                     : "Aguardando processamento final dos retornos bancários..."}
                 </p>
               </div>
 
-              <Button 
+              <Button
                 onClick={onClose}
                 className="h-12 w-full rounded-xl bg-primary px-8 font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 active:scale-95 sm:w-auto"
               >
@@ -467,14 +498,22 @@ function ComparativoTaxasDialog({ aberto, onClose, idTitular, idSecundario }: { 
   );
 }
 
-function TaxaCard({ nome, taxa, isWinner }: { nome: string; taxa: number | null; isWinner: boolean }) {
+function TaxaCard({
+  nome,
+  taxa,
+  isWinner,
+}: {
+  nome: string;
+  taxa: number | null;
+  isWinner: boolean;
+}) {
   return (
-    <div className={cn(
-      "relative overflow-hidden rounded-xl border p-6 transition-all duration-300",
-      isWinner 
-        ? "border-primary/50 bg-primary/5 shadow-md" 
-        : "border-border bg-card shadow-sm"
-    )}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-xl border p-6 transition-all duration-300",
+        isWinner ? "border-primary/50 bg-primary/5 shadow-md" : "border-border bg-card shadow-sm",
+      )}
+    >
       {isWinner && (
         <div className="absolute right-4 top-4">
           <div className="flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
@@ -482,29 +521,31 @@ function TaxaCard({ nome, taxa, isWinner }: { nome: string; taxa: number | null;
           </div>
         </div>
       )}
-      
+
       <div className="space-y-1">
         <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
           PERFIL {nome}
         </span>
         <div className="flex items-baseline gap-1">
-          <span className={cn(
-            "text-4xl font-black tabular-nums tracking-tighter",
-            isWinner ? "text-primary" : "text-foreground"
-          )}>
+          <span
+            className={cn(
+              "text-4xl font-black tabular-nums tracking-tighter",
+              isWinner ? "text-primary" : "text-foreground",
+            )}
+          >
             {taxa ? formatTaxa(taxa) : "—"}
           </span>
           {taxa && <span className="text-sm font-bold text-muted-foreground">a.a.</span>}
         </div>
       </div>
-      
+
       <div className="mt-4 flex items-center gap-2">
-        <div className={cn(
-          "h-1.5 flex-1 rounded-full",
-          isWinner ? "bg-primary/20" : "bg-muted"
-        )}>
-          <div 
-            className={cn("h-full rounded-full transition-all duration-1000", isWinner ? "w-full bg-primary" : "w-1/2 bg-muted-foreground/30")}
+        <div className={cn("h-1.5 flex-1 rounded-full", isWinner ? "bg-primary/20" : "bg-muted")}>
+          <div
+            className={cn(
+              "h-full rounded-full transition-all duration-1000",
+              isWinner ? "w-full bg-primary" : "w-1/2 bg-muted-foreground/30",
+            )}
           />
         </div>
       </div>

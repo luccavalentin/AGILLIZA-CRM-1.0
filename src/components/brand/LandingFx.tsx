@@ -136,13 +136,11 @@ export function LandingFx({ className }: { className?: string }) {
         return;
       }
 
-
       for (const o of orbs) {
         // Campo de fluxo: soma de senos para deriva orgânica (movimento amplo).
         const t = reduce ? 0 : time * o.speed;
 
-        const fx =
-          o.x + Math.sin(t + o.phase) * 0.14 + Math.cos(t * 0.6 + o.phase * 1.3) * 0.09;
+        const fx = o.x + Math.sin(t + o.phase) * 0.14 + Math.cos(t * 0.6 + o.phase * 1.3) * 0.09;
         const fy =
           o.y + Math.cos(t * 0.9 + o.phase) * 0.14 + Math.sin(t * 0.5 + o.phase * 0.7) * 0.09;
 
@@ -176,8 +174,6 @@ export function LandingFx({ className }: { className?: string }) {
         ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
         ctx.fill();
       }
-
-
 
       // Ondas concêntricas onde o mouse passou.
       ctx.globalCompositeOperation = "screen";

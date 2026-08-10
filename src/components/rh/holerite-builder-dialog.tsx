@@ -31,17 +31,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { FuncionarioPicker } from "@/components/rh/funcionario-picker";
 import { YearPicker } from "@/components/rh/year-picker";
 import { obterFuncionario } from "@/lib/rh/funcionarios.functions";
 import { anexarHolerite } from "@/lib/rh/submodulos.functions";
 import { gerarHoleritePdf } from "@/lib/rh/pdf-lazy";
-import {
-  calcularHolerite,
-  ENTRADA_PADRAO,
-  type HoleriteEntrada,
-} from "@/lib/rh/holerite-calc";
+import { calcularHolerite, ENTRADA_PADRAO, type HoleriteEntrada } from "@/lib/rh/holerite-calc";
 import { formatBRL } from "@/lib/financeiro/format";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -105,7 +106,6 @@ export function HoleriteBuilderDialog({
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
 }) {
-
   const qc = useQueryClient();
   const hoje = new Date();
   const fnFunc = useServerFn(obterFuncionario);
@@ -154,7 +154,6 @@ export function HoleriteBuilderDialog({
     mutationFn: async () => {
       if (!funcionarioId || !func) throw new Error("Selecione o funcionário.");
       // Campos não preenchidos são tratados como zero: o PDF sempre é gerado.
-
 
       const { blob, filename } = await gerarHoleritePdf({
         competencia: { mes, ano },
@@ -279,15 +278,18 @@ export function HoleriteBuilderDialog({
                   ) : (
                     <FuncionarioPicker value={funcionarioId} onChange={setFuncionarioId} />
                   )}
-
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Mês</Label>
                   <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {MESES.map((m, i) => (
-                        <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+                        <SelectItem key={m} value={String(i + 1)}>
+                          {m}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -309,25 +311,61 @@ export function HoleriteBuilderDialog({
               )}
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <CampoNum label="Salário base" sufixo="R$" value={e.salario_base} onChange={(v) => set("salario_base", v)} />
-                <CampoNum label="Jornada mensal" sufixo="h" passo="1" value={e.jornada_mensal} onChange={(v) => set("jornada_mensal", v)} />
-                <CampoNum label="Dias trabalhados" sufixo="/30" passo="1" value={e.dias_trabalhados} onChange={(v) => set("dias_trabalhados", v)} />
+                <CampoNum
+                  label="Salário base"
+                  sufixo="R$"
+                  value={e.salario_base}
+                  onChange={(v) => set("salario_base", v)}
+                />
+                <CampoNum
+                  label="Jornada mensal"
+                  sufixo="h"
+                  passo="1"
+                  value={e.jornada_mensal}
+                  onChange={(v) => set("jornada_mensal", v)}
+                />
+                <CampoNum
+                  label="Dias trabalhados"
+                  sufixo="/30"
+                  passo="1"
+                  value={e.dias_trabalhados}
+                  onChange={(v) => set("dias_trabalhados", v)}
+                />
               </div>
 
               <Accordion type="multiple" defaultValue={["extras", "descontos"]} className="w-full">
                 <AccordionItem value="extras">
-                  <AccordionTrigger className="text-sm">Horas extras, adicionais e variáveis</AccordionTrigger>
+                  <AccordionTrigger className="text-sm">
+                    Horas extras, adicionais e variáveis
+                  </AccordionTrigger>
                   <AccordionContent className="grid gap-3 sm:grid-cols-3">
-                    <CampoNum label="Horas extras 50%" sufixo="h" value={e.horas_extras_50} onChange={(v) => set("horas_extras_50", v)} />
-                    <CampoNum label="Horas extras 100%" sufixo="h" value={e.horas_extras_100} onChange={(v) => set("horas_extras_100", v)} />
-                    <CampoNum label="Horas noturnas" sufixo="h" value={e.horas_noturnas} onChange={(v) => set("horas_noturnas", v)} />
+                    <CampoNum
+                      label="Horas extras 50%"
+                      sufixo="h"
+                      value={e.horas_extras_50}
+                      onChange={(v) => set("horas_extras_50", v)}
+                    />
+                    <CampoNum
+                      label="Horas extras 100%"
+                      sufixo="h"
+                      value={e.horas_extras_100}
+                      onChange={(v) => set("horas_extras_100", v)}
+                    />
+                    <CampoNum
+                      label="Horas noturnas"
+                      sufixo="h"
+                      value={e.horas_noturnas}
+                      onChange={(v) => set("horas_noturnas", v)}
+                    />
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">Insalubridade</Label>
                       <Select
                         value={String(e.insalubridade_pct)}
                         onValueChange={(v) => set("insalubridade_pct", Number(v))}
                       >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="0">Não possui</SelectItem>
                           <SelectItem value="10">Grau mínimo (10%)</SelectItem>
@@ -341,28 +379,70 @@ export function HoleriteBuilderDialog({
                         <p className="text-sm text-foreground">Periculosidade (30%)</p>
                         <p className="text-xs text-muted-foreground">Sobre o salário base</p>
                       </div>
-                      <Switch checked={e.periculosidade} onCheckedChange={(v) => set("periculosidade", v)} />
+                      <Switch
+                        checked={e.periculosidade}
+                        onCheckedChange={(v) => set("periculosidade", v)}
+                      />
                     </div>
-                    <CampoNum label="Comissões" sufixo="R$" value={e.comissoes} onChange={(v) => set("comissoes", v)} />
-                    <CampoNum label="Bonificação / prêmio" sufixo="R$" value={e.bonificacoes} onChange={(v) => set("bonificacoes", v)} />
-                    <CampoNum label="Férias + 1/3" sufixo="R$" value={e.ferias_valor} onChange={(v) => set("ferias_valor", v)} />
-                    <CampoNum label="13º salário" sufixo="R$" value={e.decimo_terceiro} onChange={(v) => set("decimo_terceiro", v)} />
+                    <CampoNum
+                      label="Comissões"
+                      sufixo="R$"
+                      value={e.comissoes}
+                      onChange={(v) => set("comissoes", v)}
+                    />
+                    <CampoNum
+                      label="Bonificação / prêmio"
+                      sufixo="R$"
+                      value={e.bonificacoes}
+                      onChange={(v) => set("bonificacoes", v)}
+                    />
+                    <CampoNum
+                      label="Férias + 1/3"
+                      sufixo="R$"
+                      value={e.ferias_valor}
+                      onChange={(v) => set("ferias_valor", v)}
+                    />
+                    <CampoNum
+                      label="13º salário"
+                      sufixo="R$"
+                      value={e.decimo_terceiro}
+                      onChange={(v) => set("decimo_terceiro", v)}
+                    />
                     <div className="space-y-1.5 sm:col-span-2">
-                      <Label className="text-xs text-muted-foreground">Descrição de outros proventos</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        Descrição de outros proventos
+                      </Label>
                       <Input
                         value={e.outros_proventos_desc}
                         onChange={(ev) => set("outros_proventos_desc", ev.target.value)}
                       />
                     </div>
-                    <CampoNum label="Outros proventos" sufixo="R$" value={e.outros_proventos} onChange={(v) => set("outros_proventos", v)} />
+                    <CampoNum
+                      label="Outros proventos"
+                      sufixo="R$"
+                      value={e.outros_proventos}
+                      onChange={(v) => set("outros_proventos", v)}
+                    />
                   </AccordionContent>
                 </AccordionItem>
 
                 <AccordionItem value="faltas">
                   <AccordionTrigger className="text-sm">Faltas e ausências</AccordionTrigger>
                   <AccordionContent className="grid gap-3 sm:grid-cols-3">
-                    <CampoNum label="Faltas injustificadas" sufixo="dias" passo="1" value={e.faltas_dias} onChange={(v) => set("faltas_dias", v)} />
-                    <CampoNum label="DSR perdidos" sufixo="dias" passo="1" value={e.dsr_perdidos} onChange={(v) => set("dsr_perdidos", v)} />
+                    <CampoNum
+                      label="Faltas injustificadas"
+                      sufixo="dias"
+                      passo="1"
+                      value={e.faltas_dias}
+                      onChange={(v) => set("faltas_dias", v)}
+                    />
+                    <CampoNum
+                      label="DSR perdidos"
+                      sufixo="dias"
+                      passo="1"
+                      value={e.dsr_perdidos}
+                      onChange={(v) => set("dsr_perdidos", v)}
+                    />
                   </AccordionContent>
                 </AccordionItem>
 
@@ -372,52 +452,127 @@ export function HoleriteBuilderDialog({
                     <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2 sm:col-span-2">
                       <div>
                         <p className="text-sm text-foreground">Descontar vale-transporte</p>
-                        <p className="text-xs text-muted-foreground">Limitado a 6% do salário base</p>
+                        <p className="text-xs text-muted-foreground">
+                          Limitado a 6% do salário base
+                        </p>
                       </div>
-                      <Switch checked={e.desconta_vt} onCheckedChange={(v) => set("desconta_vt", v)} />
+                      <Switch
+                        checked={e.desconta_vt}
+                        onCheckedChange={(v) => set("desconta_vt", v)}
+                      />
                     </div>
-                    <CampoNum label="Custo das passagens" sufixo="R$" value={e.vt_valor_passagens} onChange={(v) => set("vt_valor_passagens", v)} />
+                    <CampoNum
+                      label="Custo das passagens"
+                      sufixo="R$"
+                      value={e.vt_valor_passagens}
+                      onChange={(v) => set("vt_valor_passagens", v)}
+                    />
 
                     <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2 sm:col-span-2">
                       <div>
                         <p className="text-sm text-foreground">Descontar vale-refeição</p>
                         <p className="text-xs text-muted-foreground">Coparticipação do empregado</p>
                       </div>
-                      <Switch checked={e.desconta_vr} onCheckedChange={(v) => set("desconta_vr", v)} />
+                      <Switch
+                        checked={e.desconta_vr}
+                        onCheckedChange={(v) => set("desconta_vr", v)}
+                      />
                     </div>
-                    <CampoNum label="Desconto VR" sufixo="R$" value={e.vr_desconto} onChange={(v) => set("vr_desconto", v)} />
+                    <CampoNum
+                      label="Desconto VR"
+                      sufixo="R$"
+                      value={e.vr_desconto}
+                      onChange={(v) => set("vr_desconto", v)}
+                    />
 
                     <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2 sm:col-span-2">
                       <div>
                         <p className="text-sm text-foreground">Descontar vale-alimentação</p>
                         <p className="text-xs text-muted-foreground">Coparticipação do empregado</p>
                       </div>
-                      <Switch checked={e.desconta_va} onCheckedChange={(v) => set("desconta_va", v)} />
+                      <Switch
+                        checked={e.desconta_va}
+                        onCheckedChange={(v) => set("desconta_va", v)}
+                      />
                     </div>
-                    <CampoNum label="Desconto VA" sufixo="R$" value={e.va_desconto} onChange={(v) => set("va_desconto", v)} />
+                    <CampoNum
+                      label="Desconto VA"
+                      sufixo="R$"
+                      value={e.va_desconto}
+                      onChange={(v) => set("va_desconto", v)}
+                    />
 
-                    <CampoNum label="Plano de saúde" sufixo="R$" value={e.plano_saude} onChange={(v) => set("plano_saude", v)} />
-                    <CampoNum label="Plano odontológico" sufixo="R$" value={e.plano_odonto} onChange={(v) => set("plano_odonto", v)} />
-                    <CampoNum label="Adiantamento salarial" sufixo="R$" value={e.adiantamento} onChange={(v) => set("adiantamento", v)} />
-                    <CampoNum label="Empréstimo consignado" sufixo="R$" value={e.emprestimo_consignado} onChange={(v) => set("emprestimo_consignado", v)} />
-                    <CampoNum label="Contribuição sindical" sufixo="R$" value={e.contribuicao_sindical} onChange={(v) => set("contribuicao_sindical", v)} />
-                    <CampoNum label="Pensão alimentícia" sufixo="R$" value={e.pensao_alimenticia} onChange={(v) => set("pensao_alimenticia", v)} />
+                    <CampoNum
+                      label="Plano de saúde"
+                      sufixo="R$"
+                      value={e.plano_saude}
+                      onChange={(v) => set("plano_saude", v)}
+                    />
+                    <CampoNum
+                      label="Plano odontológico"
+                      sufixo="R$"
+                      value={e.plano_odonto}
+                      onChange={(v) => set("plano_odonto", v)}
+                    />
+                    <CampoNum
+                      label="Adiantamento salarial"
+                      sufixo="R$"
+                      value={e.adiantamento}
+                      onChange={(v) => set("adiantamento", v)}
+                    />
+                    <CampoNum
+                      label="Empréstimo consignado"
+                      sufixo="R$"
+                      value={e.emprestimo_consignado}
+                      onChange={(v) => set("emprestimo_consignado", v)}
+                    />
+                    <CampoNum
+                      label="Contribuição sindical"
+                      sufixo="R$"
+                      value={e.contribuicao_sindical}
+                      onChange={(v) => set("contribuicao_sindical", v)}
+                    />
+                    <CampoNum
+                      label="Pensão alimentícia"
+                      sufixo="R$"
+                      value={e.pensao_alimenticia}
+                      onChange={(v) => set("pensao_alimenticia", v)}
+                    />
                     <div className="space-y-1.5 sm:col-span-2">
-                      <Label className="text-xs text-muted-foreground">Descrição de outros descontos</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        Descrição de outros descontos
+                      </Label>
                       <Input
                         value={e.outros_descontos_desc}
                         onChange={(ev) => set("outros_descontos_desc", ev.target.value)}
                       />
                     </div>
-                    <CampoNum label="Outros descontos" sufixo="R$" value={e.outros_descontos} onChange={(v) => set("outros_descontos", v)} />
+                    <CampoNum
+                      label="Outros descontos"
+                      sufixo="R$"
+                      value={e.outros_descontos}
+                      onChange={(v) => set("outros_descontos", v)}
+                    />
                   </AccordionContent>
                 </AccordionItem>
 
                 <AccordionItem value="familia">
-                  <AccordionTrigger className="text-sm">Dependentes e salário-família</AccordionTrigger>
+                  <AccordionTrigger className="text-sm">
+                    Dependentes e salário-família
+                  </AccordionTrigger>
                   <AccordionContent className="grid gap-3 sm:grid-cols-3">
-                    <CampoNum label="Dependentes IRRF" passo="1" value={e.dependentes_ir} onChange={(v) => set("dependentes_ir", v)} />
-                    <CampoNum label="Filhos p/ salário-família" passo="1" value={e.filhos_salario_familia} onChange={(v) => set("filhos_salario_familia", v)} />
+                    <CampoNum
+                      label="Dependentes IRRF"
+                      passo="1"
+                      value={e.dependentes_ir}
+                      onChange={(v) => set("dependentes_ir", v)}
+                    />
+                    <CampoNum
+                      label="Filhos p/ salário-família"
+                      passo="1"
+                      value={e.filhos_salario_familia}
+                      onChange={(v) => set("filhos_salario_familia", v)}
+                    />
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -464,15 +619,39 @@ export function HoleriteBuilderDialog({
                 </div>
 
                 <div className="rounded-lg bg-primary px-3 py-3 text-primary-foreground">
-                  <p className="text-[10px] uppercase tracking-wide opacity-80">Líquido a receber</p>
+                  <p className="text-[10px] uppercase tracking-wide opacity-80">
+                    Líquido a receber
+                  </p>
                   <p className="text-xl font-semibold tabular-nums">{formatBRL(calc.liquido)}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
-                  <div>Base INSS<br /><span className="tabular-nums text-foreground">{formatBRL(calc.base_inss)}</span></div>
-                  <div>Base IRRF<br /><span className="tabular-nums text-foreground">{formatBRL(calc.base_irrf)}</span></div>
-                  <div>FGTS do mês<br /><span className="tabular-nums text-foreground">{formatBRL(calc.fgts)}</span></div>
-                  <div>Valor hora<br /><span className="tabular-nums text-foreground">{formatBRL(calc.valor_hora)}</span></div>
+                  <div>
+                    Base INSS
+                    <br />
+                    <span className="tabular-nums text-foreground">
+                      {formatBRL(calc.base_inss)}
+                    </span>
+                  </div>
+                  <div>
+                    Base IRRF
+                    <br />
+                    <span className="tabular-nums text-foreground">
+                      {formatBRL(calc.base_irrf)}
+                    </span>
+                  </div>
+                  <div>
+                    FGTS do mês
+                    <br />
+                    <span className="tabular-nums text-foreground">{formatBRL(calc.fgts)}</span>
+                  </div>
+                  <div>
+                    Valor hora
+                    <br />
+                    <span className="tabular-nums text-foreground">
+                      {formatBRL(calc.valor_hora)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </ScrollArea>
@@ -480,7 +659,9 @@ export function HoleriteBuilderDialog({
         </div>
 
         <DialogFooter className="border-t border-border px-6 py-3">
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
           <Button onClick={() => gerar.mutate()} disabled={gerar.isPending || !funcionarioId}>
             {gerar.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -49,7 +49,11 @@ function tempoRelativo(iso: string) {
   if (h < 24) return `${h} h`;
   const dias = Math.floor(h / 24);
   if (dias < 7) return `${dias} d`;
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",   day: "2-digit", month: "short" });
+  return d.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "short",
+  });
 }
 
 type EventoFeed = {
@@ -229,12 +233,7 @@ export function ChatClienteInstagram({
       </aside>
 
       {/* Conversa */}
-      <div
-        className={cn(
-          "relative min-h-0",
-          mobileView === "lista" ? "hidden lg:block" : "block",
-        )}
-      >
+      <div className={cn("relative min-h-0", mobileView === "lista" ? "hidden lg:block" : "block")}>
         <button
           type="button"
           onClick={() => setMobileView("lista")}
@@ -252,15 +251,9 @@ export function ChatClienteInstagram({
  * Envolve a conversa com o botão "Soltar chat" — abre a conversa na janela
  * flutuante global (mesmo comportamento do chat do correspondente).
  */
-function ConversaComSoltar({
-  clienteId,
-  info,
-}: {
-  clienteId: string;
-  info?: ChatClienteInfo;
-}) {
+function ConversaComSoltar({ clienteId, info }: { clienteId: string; info?: ChatClienteInfo }) {
   const janelas = useFloatingChats();
-  const estaFlutuando = janelas.some(c => c.kind === "cliente" && c.clienteId === clienteId);
+  const estaFlutuando = janelas.some((c) => c.kind === "cliente" && c.clienteId === clienteId);
 
   if (estaFlutuando) {
     return (

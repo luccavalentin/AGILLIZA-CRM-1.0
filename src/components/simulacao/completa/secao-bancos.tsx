@@ -8,15 +8,12 @@ import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-complet
 type Banco = NonNullable<SimulacaoCompletaCtx["bancos"]>[number];
 
 export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
-  const { f, erros, bancos, aceitaPrice, aceitaBancoNaOperacao, restricaoEspecial, toggleBanco } = ctx;
+  const { f, erros, bancos, aceitaPrice, aceitaBancoNaOperacao, restricaoEspecial, toggleBanco } =
+    ctx;
 
   const modoAmbos = f.sistema_amortizacao === "B";
 
-  function renderCards(
-    lista: Banco[],
-    selecionados: string[],
-    filtroSistema: "S" | "P" | null,
-  ) {
+  function renderCards(lista: Banco[], selecionados: string[], filtroSistema: "S" | "P" | null) {
     return (
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {lista.map((b) => {
@@ -32,9 +29,7 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               disabled={bloqueado}
               aria-pressed={selecionado}
               onClick={() =>
-                modoAmbos && filtroSistema
-                  ? toggleBanco(b.id, filtroSistema)
-                  : toggleBanco(b.id)
+                modoAmbos && filtroSistema ? toggleBanco(b.id, filtroSistema) : toggleBanco(b.id)
               }
               style={selecionado ? { borderColor: cor } : undefined}
               className={cn(

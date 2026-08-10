@@ -27,7 +27,11 @@ const borda = (rgb = LINHA) => ({
 });
 
 function nomeAba(label: string, usados: Set<string>): string {
-  let base = label.replace(/[:\\/?*[\]]/g, " ").slice(0, 31).trim() || "Dados";
+  let base =
+    label
+      .replace(/[:\\/?*[\]]/g, " ")
+      .slice(0, 31)
+      .trim() || "Dados";
   let nome = base;
   let i = 2;
   while (usados.has(nome.toLowerCase())) {
@@ -50,7 +54,9 @@ function estilizar(ws: XLSX.WorkSheet, r: number, c: number, s: Estilo, valor?: 
 
 /** Garante que a matriz de dimensões (!ref) cubra até (r,c). */
 function expandirRef(ws: XLSX.WorkSheet, r: number, c: number) {
-  const atual = ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : { s: { r: 0, c: 0 }, e: { r: 0, c: 0 } };
+  const atual = ws["!ref"]
+    ? XLSX.utils.decode_range(ws["!ref"])
+    : { s: { r: 0, c: 0 }, e: { r: 0, c: 0 } };
   atual.e.r = Math.max(atual.e.r, r);
   atual.e.c = Math.max(atual.e.c, c);
   ws["!ref"] = XLSX.utils.encode_range(atual);
@@ -122,7 +128,12 @@ export function exportarBackupXLSX(dados: BackupCompleto) {
   const wsResumo: XLSX.WorkSheet = {};
   wsResumo["!ref"] = "A1:B1";
   wsResumo["!cols"] = [{ wch: 42 }, { wch: 18 }];
-  let r = cabecalhoMarca(wsResumo, 2, "Backup Completo do Sistema", `Agilliza · Gerado em ${dataStr}`);
+  let r = cabecalhoMarca(
+    wsResumo,
+    2,
+    "Backup Completo do Sistema",
+    `Agilliza · Gerado em ${dataStr}`,
+  );
 
   // Cabeçalho da tabela de resumo
   const cabResumo = ["Módulo", "Registros"];
@@ -134,7 +145,11 @@ export function exportarBackupXLSX(dados: BackupCompleto) {
       {
         font: { bold: true, sz: 11, color: { rgb: BRANCO } },
         fill: { patternType: "solid", fgColor: { rgb: AZUL_ESCURO } },
-        alignment: { horizontal: c === 0 ? "left" : "center", vertical: "center", indent: c === 0 ? 1 : 0 },
+        alignment: {
+          horizontal: c === 0 ? "left" : "center",
+          vertical: "center",
+          indent: c === 0 ? 1 : 0,
+        },
         border: borda(AZUL_ESCURO),
       },
       t,
@@ -257,7 +272,11 @@ export function exportarBackupXLSX(dados: BackupCompleto) {
           {
             font: { sz: 9.5, color: { rgb: TINTA } },
             fill: { patternType: "solid", fgColor: { rgb: zebra ? ZEBRA : BRANCO } },
-            alignment: { horizontal: typeof v === "number" ? "right" : "left", vertical: "center", indent: 1 },
+            alignment: {
+              horizontal: typeof v === "number" ? "right" : "left",
+              vertical: "center",
+              indent: 1,
+            },
             border: borda(),
           },
           v,

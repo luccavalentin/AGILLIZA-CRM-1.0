@@ -38,10 +38,7 @@ import {
   type StatusFuncionario,
   type TipoContrato,
 } from "@/lib/rh/funcionarios.functions";
-import {
-  listarCargos,
-  listarDepartamentos,
-} from "@/lib/rh/cargos-departamentos.functions";
+import { listarCargos, listarDepartamentos } from "@/lib/rh/cargos-departamentos.functions";
 import { OPCOES_UF } from "@/components/crm/cliente-form/constants";
 import { mascararCep, apenasDigitosCep, consultarCep } from "@/lib/cep";
 import {
@@ -56,18 +53,69 @@ import { InputAutocomplete } from "@/components/ui/input-autocomplete";
 import { FuncionarioFoto } from "@/components/rh/funcionario-foto";
 
 const OPCOES_ORGAO_EMISSOR = [
-  "SSP", "SSP/SP", "SSP/RJ", "SSP/MG", "SSP/RS", "SSP/PR", "SSP/SC", "SSP/BA",
-  "SSP/PE", "SSP/CE", "SSP/GO", "SSP/DF", "SSP/ES", "SSP/PA", "SSP/AM",
-  "DETRAN", "PC", "PM", "IFP", "IIRGD", "IGP", "PTC", "CNIG", "MRE", "MJ",
-  "OAB", "CRM", "CREA", "CRC", "CRO", "CRP", "CRF", "COREN",
+  "SSP",
+  "SSP/SP",
+  "SSP/RJ",
+  "SSP/MG",
+  "SSP/RS",
+  "SSP/PR",
+  "SSP/SC",
+  "SSP/BA",
+  "SSP/PE",
+  "SSP/CE",
+  "SSP/GO",
+  "SSP/DF",
+  "SSP/ES",
+  "SSP/PA",
+  "SSP/AM",
+  "DETRAN",
+  "PC",
+  "PM",
+  "IFP",
+  "IIRGD",
+  "IGP",
+  "PTC",
+  "CNIG",
+  "MRE",
+  "MJ",
+  "OAB",
+  "CRM",
+  "CREA",
+  "CRC",
+  "CRO",
+  "CRP",
+  "CRF",
+  "COREN",
 ];
 
 const OPCOES_NACIONALIDADE = [
-  "Brasileira", "Portuguesa", "Argentina", "Uruguaia", "Paraguaia", "Chilena",
-  "Boliviana", "Peruana", "Colombiana", "Venezuelana", "Equatoriana",
-  "Espanhola", "Italiana", "Francesa", "Alemã", "Inglesa", "Americana",
-  "Canadense", "Mexicana", "Japonesa", "Chinesa", "Coreana", "Angolana",
-  "Moçambicana", "Cabo-verdiana", "Haitiana", "Outra",
+  "Brasileira",
+  "Portuguesa",
+  "Argentina",
+  "Uruguaia",
+  "Paraguaia",
+  "Chilena",
+  "Boliviana",
+  "Peruana",
+  "Colombiana",
+  "Venezuelana",
+  "Equatoriana",
+  "Espanhola",
+  "Italiana",
+  "Francesa",
+  "Alemã",
+  "Inglesa",
+  "Americana",
+  "Canadense",
+  "Mexicana",
+  "Japonesa",
+  "Chinesa",
+  "Coreana",
+  "Angolana",
+  "Moçambicana",
+  "Cabo-verdiana",
+  "Haitiana",
+  "Outra",
 ];
 
 const OPCOES_ESTADO_CIVIL = [
@@ -78,7 +126,6 @@ const OPCOES_ESTADO_CIVIL = [
   { v: "viuvo", l: "Viúvo(a)" },
   { v: "uniao_estavel", l: "União estável" },
 ];
-
 
 const STATUS_LABEL: Record<StatusFuncionario, string> = {
   ativo: "Ativo",
@@ -245,8 +292,7 @@ export function FuncionarioForm({
     if (!validarCPF(f.cpf)) req.add("cpf");
     if (!f.data_admissao) req.add("data_admissao");
     if (f.email_pessoal && !validarEmail(f.email_pessoal)) req.add("email_pessoal");
-    if (f.email_corporativo && !validarEmail(f.email_corporativo))
-      req.add("email_corporativo");
+    if (f.email_corporativo && !validarEmail(f.email_corporativo)) req.add("email_corporativo");
     if (f.telefone && !validarTelefone(f.telefone)) req.add("telefone");
     setErros(req);
     if (req.size > 0) {
@@ -294,25 +340,29 @@ export function FuncionarioForm({
               fotoPath={(inicial as any).foto_url ?? null}
             />
           )}
-        <div className="min-w-0">
-          <button
-            onClick={() => navigate({ to: "/rh/funcionarios" })}
-            className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Voltar
-          </button>
-          <h1 className="truncate text-lg font-semibold text-foreground sm:text-xl md:text-2xl">
-            {inicial ? `Editar · ${inicial.nome}` : "Novo funcionário"}
-          </h1>
-          {inicial?.numero && (
-            <p className="text-xs text-muted-foreground">Nº {inicial.numero}</p>
-          )}
-        </div>
+          <div className="min-w-0">
+            <button
+              onClick={() => navigate({ to: "/rh/funcionarios" })}
+              className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+            </button>
+            <h1 className="truncate text-lg font-semibold text-foreground sm:text-xl md:text-2xl">
+              {inicial ? `Editar · ${inicial.nome}` : "Novo funcionário"}
+            </h1>
+            {inicial?.numero && (
+              <p className="text-xs text-muted-foreground">Nº {inicial.numero}</p>
+            )}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {acoes}
           <Button onClick={salvar} disabled={mut.isPending}>
-          {mut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {mut.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
             Salvar
           </Button>
         </div>
@@ -362,10 +412,7 @@ export function FuncionarioForm({
                       }}
                     >
                       <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          !f.user_id ? "opacity-100" : "opacity-0",
-                        )}
+                        className={cn("mr-2 h-4 w-4", !f.user_id ? "opacity-100" : "opacity-0")}
                       />
                       <span className="text-muted-foreground">Nenhum (sem vínculo)</span>
                     </CommandItem>
@@ -384,8 +431,10 @@ export function FuncionarioForm({
                               // Pré-cadastro: preenche automaticamente campos vazios com dados do usuário.
                               if (!prev.nome && u.nome) next.nome = u.nome;
                               if (!prev.cpf && u.documento) next.cpf = mascararCPF(u.documento);
-                              if (!prev.telefone && u.telefone) next.telefone = mascararTelefone(u.telefone);
-                              if (!prev.email_corporativo && u.email) next.email_corporativo = u.email;
+                              if (!prev.telefone && u.telefone)
+                                next.telefone = mascararTelefone(u.telefone);
+                              if (!prev.email_corporativo && u.email)
+                                next.email_corporativo = u.email;
                               return next;
                             });
                             toast.success("Dados do usuário aplicados aos campos vazios.");
@@ -414,8 +463,8 @@ export function FuncionarioForm({
             </PopoverContent>
           </Popover>
           <p className="text-xs text-muted-foreground">
-            Associa a ficha do funcionário a uma conta de acesso. Cada usuário só pode ser
-            vinculado a um funcionário ativo.
+            Associa a ficha do funcionário a uma conta de acesso. Cada usuário só pode ser vinculado
+            a um funcionário ativo.
           </p>
         </CardContent>
       </Card>
@@ -425,10 +474,18 @@ export function FuncionarioForm({
             Em telas pequenas rola horizontalmente; a partir de lg quebra em linhas. */}
         <div className="sticky top-0 z-20 -mx-3 bg-background/85 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
           <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-border/60 bg-muted/50 p-1 [scrollbar-width:none] lg:flex-wrap lg:overflow-visible [&::-webkit-scrollbar]:hidden">
-            <TabsTrigger value="pessoal" className={ABA_CLASS}>Dados pessoais</TabsTrigger>
-            <TabsTrigger value="endereco" className={ABA_CLASS}>Endereço</TabsTrigger>
-            <TabsTrigger value="profissional" className={ABA_CLASS}>Profissional</TabsTrigger>
-            <TabsTrigger value="bancario" className={ABA_CLASS}>Bancário</TabsTrigger>
+            <TabsTrigger value="pessoal" className={ABA_CLASS}>
+              Dados pessoais
+            </TabsTrigger>
+            <TabsTrigger value="endereco" className={ABA_CLASS}>
+              Endereço
+            </TabsTrigger>
+            <TabsTrigger value="profissional" className={ABA_CLASS}>
+              Profissional
+            </TabsTrigger>
+            <TabsTrigger value="bancario" className={ABA_CLASS}>
+              Bancário
+            </TabsTrigger>
             {abasExtras}
           </TabsList>
         </div>
@@ -451,7 +508,10 @@ export function FuncionarioForm({
               </div>
               <div className="space-y-1.5">
                 <Label>Nome social</Label>
-                <Input value={f.nome_social ?? ""} onChange={(e) => set("nome_social", e.target.value)} />
+                <Input
+                  value={f.nome_social ?? ""}
+                  onChange={(e) => set("nome_social", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>
@@ -491,7 +551,9 @@ export function FuncionarioForm({
               <div className="space-y-1.5">
                 <Label>Sexo</Label>
                 <Select value={f.sexo ?? ""} onValueChange={(v) => set("sexo", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="M">Masculino</SelectItem>
                     <SelectItem value="F">Feminino</SelectItem>
@@ -500,14 +562,15 @@ export function FuncionarioForm({
               </div>
               <div className="space-y-1.5">
                 <Label>Estado civil</Label>
-                <Select
-                  value={f.estado_civil ?? ""}
-                  onValueChange={(v) => set("estado_civil", v)}
-                >
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={f.estado_civil ?? ""} onValueChange={(v) => set("estado_civil", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
                     {OPCOES_ESTADO_CIVIL.map((o) => (
-                      <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>
+                      <SelectItem key={o.v} value={o.v}>
+                        {o.l}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -523,7 +586,10 @@ export function FuncionarioForm({
               </div>
               <div className="space-y-1.5">
                 <Label>Naturalidade</Label>
-                <Input value={f.naturalidade ?? ""} onChange={(e) => set("naturalidade", e.target.value)} />
+                <Input
+                  value={f.naturalidade ?? ""}
+                  onChange={(e) => set("naturalidade", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Nome da mãe</Label>
@@ -587,15 +653,24 @@ export function FuncionarioForm({
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <Label>Logradouro</Label>
-                <Input value={f.logradouro ?? ""} onChange={(e) => set("logradouro", e.target.value)} />
+                <Input
+                  value={f.logradouro ?? ""}
+                  onChange={(e) => set("logradouro", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Número</Label>
-                <Input value={f.numero_endereco ?? ""} onChange={(e) => set("numero_endereco", e.target.value)} />
+                <Input
+                  value={f.numero_endereco ?? ""}
+                  onChange={(e) => set("numero_endereco", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Complemento</Label>
-                <Input value={f.complemento ?? ""} onChange={(e) => set("complemento", e.target.value)} />
+                <Input
+                  value={f.complemento ?? ""}
+                  onChange={(e) => set("complemento", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Bairro</Label>
@@ -608,9 +683,15 @@ export function FuncionarioForm({
               <div className="space-y-1.5">
                 <Label>UF</Label>
                 <Select value={f.uf ?? ""} onValueChange={(v) => set("uf", v)}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="—" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {OPCOES_UF.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                    {OPCOES_UF.map((uf) => (
+                      <SelectItem key={uf} value={uf}>
+                        {uf}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -630,10 +711,14 @@ export function FuncionarioForm({
                   value={f.status}
                   onValueChange={(v) => set("status", v as StatusFuncionario)}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {(Object.keys(STATUS_LABEL) as StatusFuncionario[]).map((s) => (
-                      <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
+                      <SelectItem key={s} value={s}>
+                        {STATUS_LABEL[s]}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -644,24 +729,29 @@ export function FuncionarioForm({
                   value={f.tipo_contrato}
                   onValueChange={(v) => set("tipo_contrato", v as TipoContrato)}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {(Object.keys(CONTRATO_LABEL) as TipoContrato[]).map((t) => (
-                      <SelectItem key={t} value={t}>{CONTRATO_LABEL[t]}</SelectItem>
+                      <SelectItem key={t} value={t}>
+                        {CONTRATO_LABEL[t]}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Cargo</Label>
-                <Select
-                  value={f.cargo_id ?? ""}
-                  onValueChange={(v) => set("cargo_id", v || null)}
-                >
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <Select value={f.cargo_id ?? ""} onValueChange={(v) => set("cargo_id", v || null)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="—" />
+                  </SelectTrigger>
                   <SelectContent>
                     {(cargos.data ?? []).map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nome}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -672,10 +762,14 @@ export function FuncionarioForm({
                   value={f.departamento_id ?? ""}
                   onValueChange={(v) => set("departamento_id", v || null)}
                 >
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="—" />
+                  </SelectTrigger>
                   <SelectContent>
                     {(deptos.data ?? []).map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.nome}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -701,15 +795,24 @@ export function FuncionarioForm({
               </div>
               <div className="space-y-1.5">
                 <Label>Matrícula interna</Label>
-                <Input value={f.matricula ?? ""} onChange={(e) => set("matricula", e.target.value)} />
+                <Input
+                  value={f.matricula ?? ""}
+                  onChange={(e) => set("matricula", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>CTPS nº</Label>
-                <Input value={f.ctps_numero ?? ""} onChange={(e) => set("ctps_numero", e.target.value)} />
+                <Input
+                  value={f.ctps_numero ?? ""}
+                  onChange={(e) => set("ctps_numero", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>CTPS série</Label>
-                <Input value={f.ctps_serie ?? ""} onChange={(e) => set("ctps_serie", e.target.value)} />
+                <Input
+                  value={f.ctps_serie ?? ""}
+                  onChange={(e) => set("ctps_serie", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>PIS</Label>
@@ -721,12 +824,17 @@ export function FuncionarioForm({
                   type="number"
                   step="0.5"
                   value={f.jornada_horas_semanais ?? ""}
-                  onChange={(e) => set("jornada_horas_semanais", e.target.value ? Number(e.target.value) : null)}
+                  onChange={(e) =>
+                    set("jornada_horas_semanais", e.target.value ? Number(e.target.value) : null)
+                  }
                 />
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <Label>Descrição da jornada</Label>
-                <Input value={f.jornada_descricao ?? ""} onChange={(e) => set("jornada_descricao", e.target.value)} />
+                <Input
+                  value={f.jornada_descricao ?? ""}
+                  onChange={(e) => set("jornada_descricao", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>E-mail corporativo</Label>
@@ -756,8 +864,6 @@ export function FuncionarioForm({
                   onChange={(e) => set("salario_desde", e.target.value)}
                 />
               </div>
-
-
 
               <div className="space-y-1.5 md:col-span-3">
                 <Label>Observações</Label>
@@ -821,7 +927,6 @@ export function FuncionarioForm({
               </div>
             </CardContent>
           </Card>
-
         </TabsContent>
 
         <TabsContent value="bancario" className="mt-4">
@@ -832,15 +937,24 @@ export function FuncionarioForm({
             <CardContent className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>Banco</Label>
-                <Input value={f.banco_nome ?? ""} onChange={(e) => set("banco_nome", e.target.value)} />
+                <Input
+                  value={f.banco_nome ?? ""}
+                  onChange={(e) => set("banco_nome", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Agência</Label>
-                <Input value={f.banco_agencia ?? ""} onChange={(e) => set("banco_agencia", e.target.value)} />
+                <Input
+                  value={f.banco_agencia ?? ""}
+                  onChange={(e) => set("banco_agencia", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Conta</Label>
-                <Input value={f.banco_conta ?? ""} onChange={(e) => set("banco_conta", e.target.value)} />
+                <Input
+                  value={f.banco_conta ?? ""}
+                  onChange={(e) => set("banco_conta", e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Tipo de conta</Label>
@@ -848,7 +962,9 @@ export function FuncionarioForm({
                   value={f.banco_tipo_conta ?? "corrente"}
                   onValueChange={(v) => set("banco_tipo_conta", v)}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="corrente">Corrente</SelectItem>
                     <SelectItem value="poupanca">Poupança</SelectItem>
@@ -858,7 +974,10 @@ export function FuncionarioForm({
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <Label>Chave Pix</Label>
-                <Input value={f.banco_pix ?? ""} onChange={(e) => set("banco_pix", e.target.value)} />
+                <Input
+                  value={f.banco_pix ?? ""}
+                  onChange={(e) => set("banco_pix", e.target.value)}
+                />
               </div>
             </CardContent>
           </Card>

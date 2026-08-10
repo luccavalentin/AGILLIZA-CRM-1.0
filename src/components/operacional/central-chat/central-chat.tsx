@@ -10,10 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import {
-  listarThreadsCentral,
-  type ThreadKind,
-} from "@/lib/chats/central.functions";
+import { listarThreadsCentral, type ThreadKind } from "@/lib/chats/central.functions";
 import {
   listarEstadoChatDoUsuario,
   listarEtiquetas,
@@ -145,7 +142,10 @@ export function CentralChatPage() {
           </p>
         </div>
         {totalNaoLidas > 0 && (
-          <Badge variant="secondary" className="rounded-full bg-primary/10 font-semibold text-primary">
+          <Badge
+            variant="secondary"
+            className="rounded-full bg-primary/10 font-semibold text-primary"
+          >
             {totalNaoLidas}
           </Badge>
         )}
@@ -181,11 +181,32 @@ export function CentralChatPage() {
             </div>
             <Tabs value={aba} onValueChange={(v) => setAba(v as any)}>
               <TabsList className="flex h-9 w-full items-center gap-1 rounded-full bg-muted/50 p-1">
-                <TabsTrigger value="todos" className="flex-1 rounded-full text-[11.5px] font-semibold">Tudo</TabsTrigger>
-                <TabsTrigger value="dm" className="flex-1 rounded-full text-[11.5px] font-semibold">Diretas</TabsTrigger>
-                <TabsTrigger value="cliente" className="flex-1 rounded-full text-[11.5px] font-semibold">Clientes</TabsTrigger>
-                <TabsTrigger value="demanda" className="flex-1 rounded-full text-[11.5px] font-semibold">Demandas</TabsTrigger>
-                <TabsTrigger value="arquivadas" className="shrink-0 gap-1 rounded-full px-2" aria-label="Arquivadas">
+                <TabsTrigger
+                  value="todos"
+                  className="flex-1 rounded-full text-[11.5px] font-semibold"
+                >
+                  Tudo
+                </TabsTrigger>
+                <TabsTrigger value="dm" className="flex-1 rounded-full text-[11.5px] font-semibold">
+                  Diretas
+                </TabsTrigger>
+                <TabsTrigger
+                  value="cliente"
+                  className="flex-1 rounded-full text-[11.5px] font-semibold"
+                >
+                  Clientes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="demanda"
+                  className="flex-1 rounded-full text-[11.5px] font-semibold"
+                >
+                  Demandas
+                </TabsTrigger>
+                <TabsTrigger
+                  value="arquivadas"
+                  className="shrink-0 gap-1 rounded-full px-2"
+                  aria-label="Arquivadas"
+                >
                   <Archive className="size-3.5" />
                   {totalArquivadas > 0 && <span className="text-[10px]">{totalArquivadas}</span>}
                 </TabsTrigger>

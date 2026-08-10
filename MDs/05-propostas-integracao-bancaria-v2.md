@@ -5,10 +5,12 @@
 ## 1. Produto do módulo
 
 **Tabelas**:
+
 - `propostas` (82 col.) — `numero_proposta PRO-######`, `simulacao_id` nullable (permite manual), `banco_id`, `status` (máquina de estados abaixo), `homefin_id_oportunidade`, snapshot cliente/imóvel/operação.
 - `proposta_bancos` (26 col.), `proposta_documentos` (27 col.), `proposta_envolvidos` (41 col.), `proposta_followups` (10 col.), `proposta_historico`, `proposta_logs_homefin`, `proposta_pdfs`.
 
 **Server fns** em `src/lib/propostas/`:
+
 - `propostas.functions.ts`: `criarProposta({simulacao_id?, banco_id, cliente_id?})`, `atualizarProposta`, `cancelarProposta`, `promoverSimulacaoAProposta`, `duplicarProposta`.
 - `enviar.server.ts`: `enviarPropostaBanco`, `reenviarProposta`, `sincronizarProposta` (polling GET /oportunidade).
 - `proposta-pdf.ts`, `proposta-oficial-pdf.ts`.
@@ -19,6 +21,7 @@
 ## 2. Máquina de estados (2.0 — consolidada)
 
 Status ativos:
+
 - `rascunho` → `enviada_banco` | `erro_envio` | `cancelada`
 - `erro_envio` → `enviada_banco` | `cancelada`
 - `enviada_banco` → `em_analise_credito` | `credito_aprovado` | `credito_recusado` | `erro_envio` | `cancelada`
@@ -27,9 +30,9 @@ Status ativos:
 - `aguardando_documentos` → `engenharia_vistoria` | `cancelada`
 - `engenharia_vistoria` → `analise_juridica` | `cancelada`
 - `analise_juridica` → `contrato_emitido` | `cancelada`
-- `contrato_emitido` → *(terminal)*
-- `credito_recusado` → *(terminal, encerra fluxo)*
-- `cancelada` → *(terminal)*
+- `contrato_emitido` → _(terminal)_
+- `credito_recusado` → _(terminal, encerra fluxo)_
+- `cancelada` → _(terminal)_
 
 Status legados (`checklist_documentacao`, `cadastro_complementar`, `dossie_completo`, `formularios`, `envio_documentos_banco`, `vistoria_agendamento`, `vistoria_concluida`, `emissao_contrato`, `registrado`) mantidos por compat, mas encaminham para o fluxo simplificado; **não aparecem na UI**.
 
@@ -40,11 +43,13 @@ Status legados (`checklist_documentacao`, `cadastro_complementar`, `dossie_compl
 ## 3. Telas
 
 ### `/operacional/propostas` — lista
+
 Colunas: número, cliente, banco (logo + chip), valor, status (`ToneBadge`), SLA countdown, criada em, responsável, ações. Filtros: status, banco, período, responsável, produto, faixa de valor. Soft-delete ignorado por padrão.
 
 ### `/operacional/propostas/nova` e `/enviar` — **Nova Oportunidade**
 
 Dois modos explícitos (RadioGroup no topo):
+
 - **A) Converter simulação existente** (default): combobox busca simulações com `simulacao_bancos.status='simulada'` que ainda não viraram proposta. Pré-preenche tudo, incluindo bancos.
 - **B) Cadastrar manualmente**: form em branco, com sub-atalho **"Puxar do CRM"** dentro do bloco Cliente.
 
@@ -55,6 +60,7 @@ Bloco Bancos: uma linha por banco ativo, colunas: Banco (logo), Simular? (toggle
 ### `/operacional/propostas/$id` — ficha (**Oportunidade**)
 
 **Header**:
+
 - Título "Oportunidade {codigo_oportunidade_banco || numero_proposta}" + ícone de temperatura/urgência (SLA).
 - Subtítulo: "{Operação} · {Situação} há {N} dias".
 - KPIs à direita: Banco Escolhido, Inclusão, R$ Financiado, Emissão Prevista, Situação.
@@ -62,6 +68,7 @@ Bloco Bancos: uma linha por banco ativo, colunas: Banco (logo), Simular? (toggle
 **Timeline da proposta** (`src/components/proposta/`): 6 etapas visuais (Simulação → Crédito → Engenharia → Análise Jurídica → Contrato Emitido → Registro). Estados: concluída (preenchido primary), atual (ring + pulse), futura (muted), bifurcada em `credito_recusado`. **Sem cadeados** (v2).
 
 **Tabs** (ordem exata, componente `Tabs` shadcn):
+
 1. **RESUMO** — visão executiva readonly + tabela Bancos/Simulações vinculadas com toolbar (Colunas, Filtros, Exportar, Selecionar Banco, Editar, Novo Banco/Simulação, Incluir Proposta Via API). Modal "Novo Banco/Simulação" no padrão 2 colunas (Dados / Resultado + Dados da Resposta do Banco).
 2. **COMPRADORES** — participantes tipo "CO"; modal Puxar do CRM / Cadastro manual; sync com API.
 3. **VENDEDORES** — participantes tipo "VD"; mesma UX.

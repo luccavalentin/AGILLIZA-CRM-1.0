@@ -40,7 +40,6 @@ export function useAdaptadorDemanda({
   const reagirFn = useServerFn(reagirMensagem);
   const sessaoFn = useServerFn(getMinhaSessao);
 
-
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
     queryFn: () => sessaoFn(),
@@ -119,19 +118,16 @@ export function useAdaptadorDemanda({
         ],
       },
 
-
       // Papel único por usuário — permite múltiplos participantes digitando.
       typing: { id: demandaId, myRole: meuId ?? "eu" },
 
       uploadAnexo: async (file: File) => {
         const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
         const path = `${demandaId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-        const { error } = await supabase.storage
-          .from("demanda-anexos")
-          .upload(path, file, {
-            contentType: file.type || undefined,
-            upsert: false,
-          });
+        const { error } = await supabase.storage.from("demanda-anexos").upload(path, file, {
+          contentType: file.type || undefined,
+          upsert: false,
+        });
         if (error) throw error;
         return path;
       },
@@ -151,7 +147,6 @@ export function useAdaptadorDemanda({
       editarFn,
       excluirFn,
       reagirFn,
-
     ],
   );
 }

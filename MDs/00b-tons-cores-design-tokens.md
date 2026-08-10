@@ -12,7 +12,7 @@
 4. **Sem gradiente decorativo.** As duas únicas exceções permitidas:
    - Sidebar em modo escuro (`#000A6E → #00052E`, do topo para o rodapé).
    - Barra fina de progresso do SLA (`success → warning → alert`).
-   Nada de `bg-gradient-to-r` em botão, hero, KPI ou card.
+     Nada de `bg-gradient-to-r` em botão, hero, KPI ou card.
 5. **Contraste AA sempre.** Todo par texto/fundo passa em WCAG AA (4.5:1 em corpo, 3:1 em títulos ≥18pt/bold). O verificador do design de tokens roda no CI (`bun run check:contrast`).
 
 ---
@@ -21,25 +21,25 @@
 
 Cores-base fixas, iguais em light e dark. O que muda entre os modos é **onde** cada cor aparece (superfície vs. texto vs. borda).
 
-| Nome           | Hex        | OKLCH aproximado           | Papel                                                        |
-| -------------- | ---------- | -------------------------- | ------------------------------------------------------------ |
-| Azul Profundo  | `#000F9F`  | `oklch(0.30 0.24 265)`     | Marca / ação primária / foco / série 1                       |
-| Azul Escuro    | `#000A70`  | `oklch(0.24 0.22 265)`     | Hover/pressed da primária + topo da sidebar (dark)           |
-| Azul Noite     | `#00052E`  | `oklch(0.14 0.11 265)`     | Fim do gradiente da sidebar (dark) / superfície escura mais funda |
-| Azul Névoa     | `#EEF0FF`  | `oklch(0.96 0.03 265)`     | Fundo suave (chip info, hover leve, seleção)                 |
-| Vermelho Alerta| `#F5333F`  | `oklch(0.62 0.24 25)`      | Erro / destrutivo / SLA estourado / badge crítico            |
-| Vermelho Escuro| `#B21F29`  | `oklch(0.47 0.22 25)`      | Hover do destrutivo                                          |
-| Verde Sucesso  | `#10A37F`  | `oklch(0.66 0.14 165)`     | Aprovado / pago / ativo / contrato emitido                   |
-| Âmbar Atenção  | `#EAB308`  | `oklch(0.78 0.16 85)`      | Pendente / SLA em risco / vencimento próximo                 |
-| Cinza Grafite  | `#0B0B0F`  | `oklch(0.14 0.01 260)`     | Texto principal em modo claro                                |
-| Cinza Névoa    | `#F7F8FA`  | `oklch(0.98 0.005 260)`    | Fundo secundário claro (zebra, skeleton)                     |
-| Cinza Médio    | `#6B7280`  | `oklch(0.55 0.02 260)`     | Texto secundário / placeholder                               |
-| Cinza Linha    | `#E5E7EB`  | `oklch(0.91 0.01 260)`     | Bordas em modo claro                                         |
-| Papel          | `#FFFFFF`  | `oklch(1 0 0)`             | Superfície de card em modo claro                             |
-| Grafite Sup.   | `#12131A`  | `oklch(0.18 0.01 260)`     | Fundo geral em modo escuro                                   |
-| Grafite Card   | `#191A22`  | `oklch(0.22 0.01 260)`     | Superfície de card em modo escuro                            |
-| Grafite Linha  | `#2A2C38`  | `oklch(0.30 0.01 260)`     | Bordas em modo escuro                                        |
-| Nuvem          | `#E6E8F0`  | `oklch(0.92 0.02 265)`     | Texto principal em modo escuro                               |
+| Nome            | Hex       | OKLCH aproximado        | Papel                                                             |
+| --------------- | --------- | ----------------------- | ----------------------------------------------------------------- |
+| Azul Profundo   | `#000F9F` | `oklch(0.30 0.24 265)`  | Marca / ação primária / foco / série 1                            |
+| Azul Escuro     | `#000A70` | `oklch(0.24 0.22 265)`  | Hover/pressed da primária + topo da sidebar (dark)                |
+| Azul Noite      | `#00052E` | `oklch(0.14 0.11 265)`  | Fim do gradiente da sidebar (dark) / superfície escura mais funda |
+| Azul Névoa      | `#EEF0FF` | `oklch(0.96 0.03 265)`  | Fundo suave (chip info, hover leve, seleção)                      |
+| Vermelho Alerta | `#F5333F` | `oklch(0.62 0.24 25)`   | Erro / destrutivo / SLA estourado / badge crítico                 |
+| Vermelho Escuro | `#B21F29` | `oklch(0.47 0.22 25)`   | Hover do destrutivo                                               |
+| Verde Sucesso   | `#10A37F` | `oklch(0.66 0.14 165)`  | Aprovado / pago / ativo / contrato emitido                        |
+| Âmbar Atenção   | `#EAB308` | `oklch(0.78 0.16 85)`   | Pendente / SLA em risco / vencimento próximo                      |
+| Cinza Grafite   | `#0B0B0F` | `oklch(0.14 0.01 260)`  | Texto principal em modo claro                                     |
+| Cinza Névoa     | `#F7F8FA` | `oklch(0.98 0.005 260)` | Fundo secundário claro (zebra, skeleton)                          |
+| Cinza Médio     | `#6B7280` | `oklch(0.55 0.02 260)`  | Texto secundário / placeholder                                    |
+| Cinza Linha     | `#E5E7EB` | `oklch(0.91 0.01 260)`  | Bordas em modo claro                                              |
+| Papel           | `#FFFFFF` | `oklch(1 0 0)`          | Superfície de card em modo claro                                  |
+| Grafite Sup.    | `#12131A` | `oklch(0.18 0.01 260)`  | Fundo geral em modo escuro                                        |
+| Grafite Card    | `#191A22` | `oklch(0.22 0.01 260)`  | Superfície de card em modo escuro                                 |
+| Grafite Linha   | `#2A2C38` | `oklch(0.30 0.01 260)`  | Bordas em modo escuro                                             |
+| Nuvem           | `#E6E8F0` | `oklch(0.92 0.02 265)`  | Texto principal em modo escuro                                    |
 
 > Todo hex acima vai também para `--brand-*` no root do `styles.css`, para uso em PDFs, e-mails renderizados server-side (Etapa 05) e Recharts. Nada de reabrir Adobe Illustrator para tirar cor nova.
 
@@ -49,46 +49,46 @@ Cores-base fixas, iguais em light e dark. O que muda entre os modos é **onde** 
 
 Definir em `src/styles.css` dentro de `@theme inline` (mapear para as CSS vars declaradas em `:root`):
 
-| Token (classe Tailwind)       | Valor (light)              | Onde aparece                                                    |
-| ----------------------------- | -------------------------- | --------------------------------------------------------------- |
-| `background` / `bg-background`| `#FFFFFF`                  | Fundo geral da aplicação                                        |
-| `foreground` / `text-foreground` | `#0B0B0F`               | Texto principal                                                 |
-| `card` / `bg-card`            | `#FFFFFF`                  | Fundo do card                                                   |
-| `card-foreground`             | `#0B0B0F`                  | Texto dentro do card                                            |
-| `popover` / `bg-popover`      | `#FFFFFF`                  | Popover, dropdown, tooltip                                      |
-| `popover-foreground`          | `#0B0B0F`                  | Texto do popover                                                |
-| `primary` / `bg-primary`      | `#000F9F`                  | Botão primário, link, item ativo, foco                          |
-| `primary-foreground`          | `#FFFFFF`                  | Texto sobre `primary`                                           |
-| `secondary` / `bg-secondary`  | `#F1F2F7`                  | Botão secundário, chip neutro                                   |
-| `secondary-foreground`        | `#0B0B0F`                  | Texto do secundário                                             |
-| `muted` / `bg-muted`          | `#F7F8FA`                  | Fundo de zebra, skeleton, painel lateral leve                   |
-| `muted-foreground`            | `#6B7280`                  | Label auxiliar, placeholder, texto de apoio                     |
-| `accent` / `bg-accent`        | `#EEF0FF`                  | Hover suave, chip informativo, badge "novo"                     |
-| `accent-foreground`           | `#000F9F`                  | Texto sobre `accent`                                            |
-| `destructive` / `bg-destructive` | `#F5333F`               | Botão destrutivo (excluir, cancelar, estornar, revogar acesso)  |
-| `destructive-foreground`      | `#FFFFFF`                  | Texto sobre `destructive`                                       |
-| `success` / `bg-success`      | `#10A37F`                  | Badge/pill/KPI de sucesso                                       |
-| `success-foreground`          | `#FFFFFF`                  | Texto sobre `success`                                           |
-| `warning` / `bg-warning`      | `#EAB308`                  | Badge/pill/KPI de atenção                                       |
-| `warning-foreground`          | `#1A1400`                  | Texto sobre `warning` (marrom escuro para contraste)            |
-| `border`                      | `#E5E7EB`                  | Borda de card, divisor, tabela                                  |
-| `input`                       | `#E5E7EB`                  | Borda de input em repouso                                       |
-| `ring`                        | `#000F9F`                  | Anel de foco (2px, com offset 2px)                              |
-| `sidebar`                     | `#FFFFFF`                  | Fundo da sidebar em modo claro                                  |
-| `sidebar-foreground`          | `#0B0B0F`                  | Texto/ícone da sidebar em modo claro                            |
-| `sidebar-accent`              | `#EEF0FF`                  | Item ativo da sidebar (light)                                   |
-| `sidebar-accent-foreground`   | `#000F9F`                  | Texto do item ativo (light)                                     |
-| `sidebar-border`              | `#E5E7EB`                  | Divisor de grupos na sidebar                                    |
+| Token (classe Tailwind)          | Valor (light) | Onde aparece                                                   |
+| -------------------------------- | ------------- | -------------------------------------------------------------- |
+| `background` / `bg-background`   | `#FFFFFF`     | Fundo geral da aplicação                                       |
+| `foreground` / `text-foreground` | `#0B0B0F`     | Texto principal                                                |
+| `card` / `bg-card`               | `#FFFFFF`     | Fundo do card                                                  |
+| `card-foreground`                | `#0B0B0F`     | Texto dentro do card                                           |
+| `popover` / `bg-popover`         | `#FFFFFF`     | Popover, dropdown, tooltip                                     |
+| `popover-foreground`             | `#0B0B0F`     | Texto do popover                                               |
+| `primary` / `bg-primary`         | `#000F9F`     | Botão primário, link, item ativo, foco                         |
+| `primary-foreground`             | `#FFFFFF`     | Texto sobre `primary`                                          |
+| `secondary` / `bg-secondary`     | `#F1F2F7`     | Botão secundário, chip neutro                                  |
+| `secondary-foreground`           | `#0B0B0F`     | Texto do secundário                                            |
+| `muted` / `bg-muted`             | `#F7F8FA`     | Fundo de zebra, skeleton, painel lateral leve                  |
+| `muted-foreground`               | `#6B7280`     | Label auxiliar, placeholder, texto de apoio                    |
+| `accent` / `bg-accent`           | `#EEF0FF`     | Hover suave, chip informativo, badge "novo"                    |
+| `accent-foreground`              | `#000F9F`     | Texto sobre `accent`                                           |
+| `destructive` / `bg-destructive` | `#F5333F`     | Botão destrutivo (excluir, cancelar, estornar, revogar acesso) |
+| `destructive-foreground`         | `#FFFFFF`     | Texto sobre `destructive`                                      |
+| `success` / `bg-success`         | `#10A37F`     | Badge/pill/KPI de sucesso                                      |
+| `success-foreground`             | `#FFFFFF`     | Texto sobre `success`                                          |
+| `warning` / `bg-warning`         | `#EAB308`     | Badge/pill/KPI de atenção                                      |
+| `warning-foreground`             | `#1A1400`     | Texto sobre `warning` (marrom escuro para contraste)           |
+| `border`                         | `#E5E7EB`     | Borda de card, divisor, tabela                                 |
+| `input`                          | `#E5E7EB`     | Borda de input em repouso                                      |
+| `ring`                           | `#000F9F`     | Anel de foco (2px, com offset 2px)                             |
+| `sidebar`                        | `#FFFFFF`     | Fundo da sidebar em modo claro                                 |
+| `sidebar-foreground`             | `#0B0B0F`     | Texto/ícone da sidebar em modo claro                           |
+| `sidebar-accent`                 | `#EEF0FF`     | Item ativo da sidebar (light)                                  |
+| `sidebar-accent-foreground`      | `#000F9F`     | Texto do item ativo (light)                                    |
+| `sidebar-border`                 | `#E5E7EB`     | Divisor de grupos na sidebar                                   |
 
 Série de gráficos (Recharts) — mesma ordem em light e dark:
 
-| Var          | Hex        | Uso                                     |
-| ------------ | ---------- | --------------------------------------- |
-| `--chart-1`  | `#000F9F`  | Série principal (comercial, receita)    |
-| `--chart-2`  | `#4B56D1`  | Série de apoio (comparativo, período)   |
-| `--chart-3`  | `#10A37F`  | Positivo (aprovado, pago)               |
-| `--chart-4`  | `#EAB308`  | Atenção (pendente, SLA em risco)        |
-| `--chart-5`  | `#F5333F`  | Negativo (recusa, cancelamento)         |
+| Var         | Hex       | Uso                                   |
+| ----------- | --------- | ------------------------------------- |
+| `--chart-1` | `#000F9F` | Série principal (comercial, receita)  |
+| `--chart-2` | `#4B56D1` | Série de apoio (comparativo, período) |
+| `--chart-3` | `#10A37F` | Positivo (aprovado, pago)             |
+| `--chart-4` | `#EAB308` | Atenção (pendente, SLA em risco)      |
+| `--chart-5` | `#F5333F` | Negativo (recusa, cancelamento)       |
 
 Séries extras (>5) repetem `chart-1..5` com 70% de opacidade. Nunca inventar cor nova no componente.
 
@@ -98,36 +98,36 @@ Séries extras (>5) repetem `chart-1..5` com 70% de opacidade. Nunca inventar co
 
 O modo escuro **não é simplesmente "inverter"**. É uma paleta redesenhada para manter a mesma identidade de marca em fundo grafite. O usuário troca no topbar; o `<html>` recebe `class="dark"`.
 
-| Token (classe Tailwind)       | Valor (dark)               | Como fica visualmente                                         |
-| ----------------------------- | -------------------------- | ------------------------------------------------------------- |
-| `background`                  | `#12131A`                  | Fundo geral escuro (grafite)                                  |
-| `foreground`                  | `#E6E8F0`                  | Texto principal (branco frio)                                 |
-| `card`                        | `#191A22`                  | Cartão levemente elevado (~3% mais claro que o fundo)         |
-| `card-foreground`             | `#E6E8F0`                  | Texto do card                                                 |
-| `popover`                     | `#1F2130`                  | Popover, dropdown, tooltip                                    |
-| `popover-foreground`          | `#E6E8F0`                  | Texto do popover                                              |
-| `primary`                     | `#4B56D1`                  | Botão primário **um pouco mais claro** para contrastar no escuro (mantém a família azul Agilliza) |
-| `primary-foreground`          | `#FFFFFF`                  | Texto sobre `primary`                                         |
-| `secondary`                   | `#242637`                  | Botão secundário / chip neutro no escuro                      |
-| `secondary-foreground`        | `#E6E8F0`                  | Texto do secundário                                           |
-| `muted`                       | `#1C1E29`                  | Zebra de tabela, skeleton                                     |
-| `muted-foreground`            | `#8C90A6`                  | Label auxiliar, placeholder                                   |
-| `accent`                      | `#1F2657`                  | Hover suave, chip informativo (azul-marinho profundo)         |
-| `accent-foreground`           | `#C7CEFF`                  | Texto sobre `accent` (azul-névoa)                             |
-| `destructive`                 | `#F5333F`                  | Vermelho segue o mesmo — alerta não muda                      |
-| `destructive-foreground`      | `#FFFFFF`                  | Texto sobre destructive                                       |
-| `success`                     | `#22C79A`                  | Um pouco mais claro que no light, para não sumir              |
-| `success-foreground`          | `#02241B`                  | Texto sobre success                                           |
-| `warning`                     | `#F5C044`                  | Um pouco mais claro                                           |
-| `warning-foreground`          | `#1A1400`                  | Texto sobre warning                                           |
-| `border`                      | `#2A2C38`                  | Borda de card, divisor                                        |
-| `input`                       | `#2A2C38`                  | Borda de input em repouso                                     |
-| `ring`                        | `#4B56D1`                  | Anel de foco (2px)                                            |
-| `sidebar`                     | `linear-gradient(180deg, #000A70 0%, #00052E 100%)` | Sidebar em azul-marinho profundo, gradiente vertical |
-| `sidebar-foreground`          | `#EEF0FF`                  | Texto/ícone da sidebar                                        |
-| `sidebar-accent`              | `#001A9E`                  | Item ativo da sidebar (dark)                                  |
-| `sidebar-accent-foreground`   | `#FFFFFF`                  | Texto do item ativo                                           |
-| `sidebar-border`              | `rgba(255,255,255,0.08)`   | Divisor de grupos na sidebar                                  |
+| Token (classe Tailwind)     | Valor (dark)                                        | Como fica visualmente                                                                             |
+| --------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `background`                | `#12131A`                                           | Fundo geral escuro (grafite)                                                                      |
+| `foreground`                | `#E6E8F0`                                           | Texto principal (branco frio)                                                                     |
+| `card`                      | `#191A22`                                           | Cartão levemente elevado (~3% mais claro que o fundo)                                             |
+| `card-foreground`           | `#E6E8F0`                                           | Texto do card                                                                                     |
+| `popover`                   | `#1F2130`                                           | Popover, dropdown, tooltip                                                                        |
+| `popover-foreground`        | `#E6E8F0`                                           | Texto do popover                                                                                  |
+| `primary`                   | `#4B56D1`                                           | Botão primário **um pouco mais claro** para contrastar no escuro (mantém a família azul Agilliza) |
+| `primary-foreground`        | `#FFFFFF`                                           | Texto sobre `primary`                                                                             |
+| `secondary`                 | `#242637`                                           | Botão secundário / chip neutro no escuro                                                          |
+| `secondary-foreground`      | `#E6E8F0`                                           | Texto do secundário                                                                               |
+| `muted`                     | `#1C1E29`                                           | Zebra de tabela, skeleton                                                                         |
+| `muted-foreground`          | `#8C90A6`                                           | Label auxiliar, placeholder                                                                       |
+| `accent`                    | `#1F2657`                                           | Hover suave, chip informativo (azul-marinho profundo)                                             |
+| `accent-foreground`         | `#C7CEFF`                                           | Texto sobre `accent` (azul-névoa)                                                                 |
+| `destructive`               | `#F5333F`                                           | Vermelho segue o mesmo — alerta não muda                                                          |
+| `destructive-foreground`    | `#FFFFFF`                                           | Texto sobre destructive                                                                           |
+| `success`                   | `#22C79A`                                           | Um pouco mais claro que no light, para não sumir                                                  |
+| `success-foreground`        | `#02241B`                                           | Texto sobre success                                                                               |
+| `warning`                   | `#F5C044`                                           | Um pouco mais claro                                                                               |
+| `warning-foreground`        | `#1A1400`                                           | Texto sobre warning                                                                               |
+| `border`                    | `#2A2C38`                                           | Borda de card, divisor                                                                            |
+| `input`                     | `#2A2C38`                                           | Borda de input em repouso                                                                         |
+| `ring`                      | `#4B56D1`                                           | Anel de foco (2px)                                                                                |
+| `sidebar`                   | `linear-gradient(180deg, #000A70 0%, #00052E 100%)` | Sidebar em azul-marinho profundo, gradiente vertical                                              |
+| `sidebar-foreground`        | `#EEF0FF`                                           | Texto/ícone da sidebar                                                                            |
+| `sidebar-accent`            | `#001A9E`                                           | Item ativo da sidebar (dark)                                                                      |
+| `sidebar-accent-foreground` | `#FFFFFF`                                           | Texto do item ativo                                                                               |
+| `sidebar-border`            | `rgba(255,255,255,0.08)`                            | Divisor de grupos na sidebar                                                                      |
 
 > Regra de "elevação": a cada nível acima do fundo, subir ~3% de luminosidade (`background` → `card` → `popover` → `overlay do dialog`). Nunca deixar dois níveis empilhados na mesma cor — o usuário perde o senso de camada.
 
@@ -137,13 +137,13 @@ O modo escuro **não é simplesmente "inverter"**. É uma paleta redesenhada par
 
 Uma **única** tabela cobre todo status do sistema — cliente, simulação, proposta, tarefa, demanda, financeiro, portal. Nunca criar cor de status ad-hoc no componente. Se surgir um status novo, adicionar ao mapa (`CLIENTE_STATUS`, `DOC_STATUS_MAP`, `PORTAL_STATUS`, `PROPOSTA_STATUS`, `SIM_STATUS`) e reutilizar um dos 5 tons abaixo.
 
-| Tone       | Fundo (light) | Texto (light)  | Fundo (dark)         | Texto (dark)   | Quando usar                                                 |
-| ---------- | ------------- | -------------- | -------------------- | -------------- | ----------------------------------------------------------- |
-| `success`  | `#DCFCE7`     | `#046C4E`      | `rgba(34,199,154,.15)` | `#4ADE9F`   | aprovado, pago, ativo, contrato emitido, doc ok             |
-| `warning`  | `#FEF3C7`     | `#7A4E0B`      | `rgba(245,192,68,.18)` | `#FBBF24`   | pendente, aguardando doc, SLA 50–99%, vencimento próximo    |
-| `danger`   | `#FEE2E2`     | `#B21F29`      | `rgba(245,51,63,.18)`  | `#FCA5A5`   | recusado, cancelado, atrasado, SLA estourado, bloqueado     |
-| `info`     | `#EEF0FF`     | `#000F9F`      | `rgba(75,86,209,.20)`  | `#C7CEFF`   | em análise, em simulação, novo, informativo                 |
-| `muted`    | `#F1F2F7`     | `#6B7280`      | `#242637`              | `#8C90A6`   | rascunho, arquivado, desconhecido, sem valor                |
+| Tone      | Fundo (light) | Texto (light) | Fundo (dark)           | Texto (dark) | Quando usar                                              |
+| --------- | ------------- | ------------- | ---------------------- | ------------ | -------------------------------------------------------- |
+| `success` | `#DCFCE7`     | `#046C4E`     | `rgba(34,199,154,.15)` | `#4ADE9F`    | aprovado, pago, ativo, contrato emitido, doc ok          |
+| `warning` | `#FEF3C7`     | `#7A4E0B`     | `rgba(245,192,68,.18)` | `#FBBF24`    | pendente, aguardando doc, SLA 50–99%, vencimento próximo |
+| `danger`  | `#FEE2E2`     | `#B21F29`     | `rgba(245,51,63,.18)`  | `#FCA5A5`    | recusado, cancelado, atrasado, SLA estourado, bloqueado  |
+| `info`    | `#EEF0FF`     | `#000F9F`     | `rgba(75,86,209,.20)`  | `#C7CEFF`    | em análise, em simulação, novo, informativo              |
+| `muted`   | `#F1F2F7`     | `#6B7280`     | `#242637`              | `#8C90A6`    | rascunho, arquivado, desconhecido, sem valor             |
 
 Em kanban (propostas/tarefas/demandas), a **coluna** recebe apenas uma barra fina de 3px no topo, na cor do tone. O fundo do card do kanban continua `card` — nunca pintar o card inteiro na cor do status.
 

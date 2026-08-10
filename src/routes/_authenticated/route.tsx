@@ -113,7 +113,6 @@ function InternalLayout() {
     }));
   }, [navFiltrada, pastasQuery.data]);
 
-
   useEffect(() => {
     if (!sessaoQuery.isLoading && !permsQuery.isLoading) {
       setCarregamentoTravado(false);

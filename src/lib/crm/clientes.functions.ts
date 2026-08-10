@@ -157,8 +157,6 @@ export const listarClientes = createServerFn({ method: "GET" })
         }),
       );
 
-      
-
       return { itens, total: count ?? itens.length, podePii };
     },
   );
@@ -193,10 +191,9 @@ export const estatisticasClientes = createServerFn({ method: "GET" })
       }
       let q = supabase
         .from("clientes")
-        .select(
-          "id, portal_acesso_ativo, cliente_pipeline(pipeline_stages(codigo, ordem))",
-          { count: "exact" },
-        )
+        .select("id, portal_acesso_ativo, cliente_pipeline(pipeline_stages(codigo, ordem))", {
+          count: "exact",
+        })
         .eq("ativo", true);
       if (orMinhas) q = q.or(orMinhas);
       const { data: rows, count } = await q.limit(10000);
@@ -231,8 +228,6 @@ export const listarEtapasPipeline = createServerFn({ method: "GET" })
     if (error) throw error;
     return (data ?? []).map((r: any) => ({ codigo: r.codigo, nome: r.nome }));
   });
-
-
 
 const clienteInputSchema = z.object({
   tipo_pessoa: z.enum(["PF", "PJ"]),
@@ -298,7 +293,6 @@ const clienteInputSchema = z.object({
   conjuge_digito_conta: z.string().optional().nullable(),
 });
 
-
 export type ClienteInput = z.infer<typeof clienteInputSchema>;
 
 /** Cria cliente no ecossistema do usuário; entra automaticamente em cadastro_basico via trigger. */
@@ -324,7 +318,6 @@ export const criarCliente = createServerFn({ method: "POST" })
     });
     if (!podeCriar) throw new Error("Você não tem permissão para cadastrar clientes.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
 
     // Campos comuns entre criação e atualização.
     const campos = {
@@ -629,9 +622,17 @@ export const getCliente = createServerFn({ method: "GET" })
     // Cadastros antigos (gravados em CAIXA ALTA) são exibidos já no padrão do sistema.
     const c2 = cliente as any;
     for (const campo of [
-      "nome", "mae", "pai", "nacionalidade", "profissao", "empresa",
-      "conjuge_nome", "conjuge_nome_mae", "conjuge_nacionalidade",
-      "conjuge_profissao", "conjuge_empresa",
+      "nome",
+      "mae",
+      "pai",
+      "nacionalidade",
+      "profissao",
+      "empresa",
+      "conjuge_nome",
+      "conjuge_nome_mae",
+      "conjuge_nacionalidade",
+      "conjuge_profissao",
+      "conjuge_empresa",
     ]) {
       if (typeof c2[campo] === "string" && c2[campo]) c2[campo] = toTitleCase(c2[campo]);
     }
@@ -670,7 +671,6 @@ export interface PainelStage {
     analista_nome: string | null;
   }[];
 }
-
 
 /** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
 export const listarPainel = createServerFn({ method: "GET" })
@@ -724,10 +724,7 @@ export const listarPainel = createServerFn({ method: "GET" })
       .is("deleted_at", null)
       .is("contrato_arquivado_em", null);
     if (soMinhas) {
-      const partes: string[] = [
-        `responsavel_id.eq.${userId}`,
-        `criador_id.eq.${userId}`,
-      ];
+      const partes: string[] = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
       if (idsPorParceria.size > 0) {
         partes.push(`id.in.(${Array.from(idsPorParceria).join(",")})`);
       }
@@ -740,8 +737,7 @@ export const listarPainel = createServerFn({ method: "GET" })
       if (!desde && !ate) return true;
       // Usa a última atualização da esteira; sem histórico, cai para created_at
       // do cliente para não ocultar cadastros recém-criados no filtro por período.
-      const atualizado =
-        r.cliente_pipeline?.ultima_atualizacao_em ?? r.created_at ?? null;
+      const atualizado = r.cliente_pipeline?.ultima_atualizacao_em ?? r.created_at ?? null;
       if (!atualizado) return false;
       const t = new Date(atualizado).getTime();
       if (desde && t < desde) return false;
@@ -749,8 +745,7 @@ export const listarPainel = createServerFn({ method: "GET" })
       return true;
     });
 
-    const cmpDesc = (a: string | null, b: string | null) =>
-      (b ?? "").localeCompare(a ?? "");
+    const cmpDesc = (a: string | null, b: string | null) => (b ?? "").localeCompare(a ?? "");
 
     return stages.map((s) => ({
       codigo: s.codigo,
@@ -795,7 +790,6 @@ export const listarPainel = createServerFn({ method: "GET" })
         }),
     }));
   });
-
 
 export const getPipelineStages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -972,7 +966,10 @@ export const salvarVendedor = createServerFn({ method: "POST" })
       payload[k] = norm(v as string | null | undefined);
     }
     if (id) {
-      const { error } = await supabase.from("cliente_vendedores").update(payload as any).eq("id", id);
+      const { error } = await supabase
+        .from("cliente_vendedores")
+        .update(payload as any)
+        .eq("id", id);
       if (error) throw error;
       return { ok: true, id };
     }
@@ -989,10 +986,7 @@ export const removerVendedor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase
-      .from("cliente_vendedores")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("cliente_vendedores").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
   });
@@ -1071,7 +1065,14 @@ export const anexarDocumento = createServerFn({ method: "POST" })
     z
       .object({
         cliente_id: z.string().uuid(),
-        categoria: z.enum(["comprador", "conjuge", "vendedor", "vendedor_conjuge", "imovel", "outros"]),
+        categoria: z.enum([
+          "comprador",
+          "conjuge",
+          "vendedor",
+          "vendedor_conjuge",
+          "imovel",
+          "outros",
+        ]),
         pasta_id: z.string().uuid().optional().nullable(),
         tipo_documento: z.string().min(1),
         nome_arquivo: z.string().min(1),
@@ -1203,9 +1204,7 @@ export const revisarDocumento = createServerFn({ method: "POST" })
     await supabase.from("cliente_historico").insert({
       cliente_id: (antes as any).cliente_id,
       tipo: "documento",
-      descricao: data.observacao
-        ? `${descricaoHist} — ${data.observacao}`
-        : descricaoHist,
+      descricao: data.observacao ? `${descricaoHist} — ${data.observacao}` : descricaoHist,
       ator_id: userId,
     });
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
@@ -1476,7 +1475,6 @@ export async function recuarEsteiraSeOrfao(
   });
 }
 
-
 /**
  * Remove, direto do painel, o vínculo de simulação/aprovação de um cliente que
  * aparece numa etapa avançada apontando para registros já excluídos. Apaga as
@@ -1526,7 +1524,6 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
       .is("deleted_at", null);
     if (eSim) throw eSim;
 
-
     const { error } = await context.supabase.rpc("cliente_pipeline_definir", {
       _cliente_id: data.cliente_id,
       _codigo_destino: "cadastro_completo",
@@ -1535,11 +1532,6 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
-
-
-
-
-
 
 /**
  * Define as datas de vistoria (agendamento e/ou conclusão) da operação do
@@ -1682,7 +1674,6 @@ export const excluirCliente = createServerFn({ method: "POST" })
       .eq("correspondente_id", correspondenteId);
     if (error) throw error;
 
-
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
@@ -1725,14 +1716,10 @@ export const definirAcessoPortal = createServerFn({ method: "POST" })
     if (data.ativo) {
       const doc = String(cli?.documento ?? "").replace(/\D/g, "");
       if (!doc) {
-        throw new Error(
-          "Cadastre o CPF/CNPJ do cliente antes de habilitar o acesso ao portal.",
-        );
+        throw new Error("Cadastre o CPF/CNPJ do cliente antes de habilitar o acesso ao portal.");
       }
       if (cli?.tipo_pessoa === "PF" && !cli?.data_nascimento) {
-        throw new Error(
-          "Informe a data de nascimento do cliente antes de habilitar o portal.",
-        );
+        throw new Error("Informe a data de nascimento do cliente antes de habilitar o portal.");
       }
       const { createHash } = await import("node:crypto");
       const documento_hash = createHash("sha256").update(doc).digest("hex");
@@ -1873,7 +1860,6 @@ export const listarParceirosDisponiveis = createServerFn({ method: "GET" })
     },
   );
 
-
 /** Cria um vínculo de atendimento entre o cliente e um usuário/parceiro. */
 export const vincularParceiro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1882,9 +1868,7 @@ export const vincularParceiro = createServerFn({ method: "POST" })
       .object({
         cliente_id: z.string().uuid(),
         parceiro_id: z.string().uuid(),
-        tipo_vinculo: z
-          .enum(["imobiliaria", "corretor", "comercial_agilliza"])
-          .default("corretor"),
+        tipo_vinculo: z.enum(["imobiliaria", "corretor", "comercial_agilliza"]).default("corretor"),
       })
       .parse(d),
   )
@@ -1899,7 +1883,8 @@ export const vincularParceiro = createServerFn({ method: "POST" })
       correspondente_id: corr,
     });
     if (error) {
-      if ((error as any).code === "23505") throw new Error("Este usuário já está vinculado neste tipo.");
+      if ((error as any).code === "23505")
+        throw new Error("Este usuário já está vinculado neste tipo.");
       throw error;
     }
     return { ok: true };
@@ -1991,7 +1976,6 @@ export const getClienteNegocios = createServerFn({ method: "GET" })
     };
   });
 
-
 /** Dados do cadastro usados para pré-marcar o checklist de documentação. */
 export const getChecklistDados = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -2034,7 +2018,10 @@ export const salvarChecklist = createServerFn({ method: "POST" })
     }
     const patch: Record<string, unknown> = { documentos_checklist: data.checklist };
     if (typeof data.utiliza_fgts === "boolean") patch.utiliza_fgts = data.utiliza_fgts;
-    const { error } = await supabase.from("clientes").update(patch as never).eq("id", data.cliente_id);
+    const { error } = await supabase
+      .from("clientes")
+      .update(patch as never)
+      .eq("id", data.cliente_id);
     if (error) throw error;
     return { ok: true };
   });
@@ -2264,12 +2251,14 @@ export const transferirAtendimento = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => transferirSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: boolean }> => {
     const { supabase } = context;
-    const { error } = await supabase.rpc("crm_transferir_atendimento" as any, {
-      _cliente_id: data.cliente_id,
-      _novo_responsavel: data.novo_responsavel_id,
-      _observacao: data.observacao ?? null,
-    } as any);
+    const { error } = await supabase.rpc(
+      "crm_transferir_atendimento" as any,
+      {
+        _cliente_id: data.cliente_id,
+        _novo_responsavel: data.novo_responsavel_id,
+        _observacao: data.observacao ?? null,
+      } as any,
+    );
     if (error) throw new Error(error.message ?? "Falha ao transferir.");
     return { ok: true };
   });
-

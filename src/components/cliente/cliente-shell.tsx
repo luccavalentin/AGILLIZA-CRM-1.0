@@ -28,14 +28,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/app-shell/theme-toggle";
-import {
-  clienteListarNotificacoes,
-  clienteListarAtendentes,
-} from "@/lib/portal/cliente.functions";
+import { clienteListarNotificacoes, clienteListarAtendentes } from "@/lib/portal/cliente.functions";
 import { ClienteChatWatcher } from "@/components/cliente/cliente-chat-watcher";
 import { ClienteChatFlutuante } from "@/components/cliente/cliente-chat-flutuante";
 import { cn } from "@/lib/utils";
-
 
 const STORAGE_KEY = "agilliza-cliente-sidebar-collapsed";
 
@@ -79,7 +75,6 @@ function useChatNaoLidas() {
   });
   return (data ?? []).reduce((acc, a) => acc + (a.nao_lidas ?? 0), 0);
 }
-
 
 export interface ClienteShellUser {
   nome: string;
@@ -127,7 +122,6 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
                       : "text-sidebar-primary hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
                     piscando && "animate-pulse",
                   )}
-
                 >
                   {active && (
                     <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-sidebar-primary" />
@@ -200,7 +194,6 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
   );
 }
 
-
 function NotificacoesBell() {
   const { data: notificacoes } = useQuery({
     queryKey: ["cliente", "notificacoes"],
@@ -212,7 +205,12 @@ function NotificacoesBell() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Notificações" className="relative rounded-full">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Notificações"
+          className="relative rounded-full"
+        >
           <Bell className="h-5 w-5" />
           {naoLidas > 0 && (
             <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
@@ -283,7 +281,6 @@ export function ClienteShell({
     <TooltipProvider delayDuration={200}>
       <ClienteChatWatcher />
       <div className="flex min-h-[100dvh] w-full bg-muted/40">
-
         {/* Sidebar desktop */}
         <aside
           className={cn(
@@ -354,7 +351,11 @@ export function ClienteShell({
               aria-pressed={isCollapsed}
               onClick={toggleCollapse}
             >
-              {isCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+              {isCollapsed ? (
+                <PanelLeft className="h-5 w-5" />
+              ) : (
+                <PanelLeftClose className="h-5 w-5" />
+              )}
             </Button>
 
             <Link to="/cliente/visao-geral" aria-label="Ir para o início" className="lg:hidden">
@@ -367,7 +368,12 @@ export function ClienteShell({
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full" aria-label="Menu da conta">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full"
+                    aria-label="Menu da conta"
+                  >
                     <Avatar className="h-8 w-8">
                       {user.foto_url ? <AvatarImage src={user.foto_url} alt={user.nome} /> : null}
                       <AvatarFallback className="bg-primary text-xs text-primary-foreground">
@@ -411,19 +417,12 @@ export function ClienteShell({
         </div>
       </div>
       <ClienteChatFlutuante />
-
     </TooltipProvider>
   );
 }
 
 /** Botão "Sair" fixo no rodapé da sidebar do portal do cliente. */
-function SidebarSignOut({
-  collapsed,
-  onSignOut,
-}: {
-  collapsed: boolean;
-  onSignOut: () => void;
-}) {
+function SidebarSignOut({ collapsed, onSignOut }: { collapsed: boolean; onSignOut: () => void }) {
   if (collapsed) {
     return (
       <Tooltip>

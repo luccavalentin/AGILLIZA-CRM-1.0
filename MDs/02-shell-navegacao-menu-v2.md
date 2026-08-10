@@ -5,6 +5,7 @@
 ## 1. Objetivo
 
 Casca visual comum a todo o portal interno e ao portal do parceiro (mesmo shell, nav filtrada). Composto por:
+
 - Sidebar esquerda (256px expandida / 56px colapsada).
 - Topbar (64px) com busca global, sino de notificações, toggle de tema, menu da conta.
 - Área principal com `<Outlet />`.
@@ -15,24 +16,36 @@ O App do Cliente tem shell próprio (mobile-first, ver Etapa 09).
 ## 2. Componente `AppShell` (`src/components/app-shell/app-shell.tsx`)
 
 Props principais:
+
 - `nav: NavGroup[]` — vem de `nav-config.ts`, filtrada por `filterNavByPermissions(nav, permsSet)`.
 - `user` — `{ nome, email, foto_url, acesso_tipo, correspondente_id }`.
 - `notificationsSlot` — Popover do sino.
 - `onSignOut` — chama `supabase.auth.signOut()` + `queryClient.clear()` + `navigate('/auth', { replace: true })`.
 
 Estado local:
+
 - `mobileOpen` (Sheet)
 - `desktopCollapsed` (persiste em `localStorage['agilliza-sidebar-collapsed']` via `useEffect` — nunca em SSR)
 
 ## 3. `nav-config.ts` (estado atual, 2.0)
 
 Tipagem:
+
 ```ts
-type NavItem = { label: string; icon: LucideIcon; to?: Route; hash?: string; children?: NavItem[]; badge?: string | number; perm: { modulo: string; acao?: string } | null };
+type NavItem = {
+  label: string;
+  icon: LucideIcon;
+  to?: Route;
+  hash?: string;
+  children?: NavItem[];
+  badge?: string | number;
+  perm: { modulo: string; acao?: string } | null;
+};
 type NavGroup = { id: string; label: string; items: NavItem[] };
 ```
 
 **Grupos ativos** (ordem):
+
 1. **Visão Geral** — `/dashboard`, `/visao-geral/painel`.
 2. **CRM** — Clientes, Chat, Painel, Documentos gerais, Parceiros, Scan IA.
 3. **Operacional** — Simulações (Lista/Nova/Completa), Propostas (Lista/Nova/Kanban), Tarefas (Lista/Kanban/Calendário), Demandas (Lista/Kanban), **Central de Chats**.
@@ -54,6 +67,7 @@ type NavGroup = { id: string; label: string; items: NavItem[] };
 ## 5. Topbar
 
 Elementos:
+
 - **Hambúrguer** (mobile), **botão colapsar** (desktop).
 - **Search global (⌘K)** — `Command` do shadcn + `useServerFn(globalSearch)` — busca em clientes, simulações, propostas, tarefas, demandas, funcionários. Debounced 250ms via `useDebouncedValue`.
 - **Sino de notificações** — badge de count. Popover mostra 10 últimas de `notificacoes` do usuário; item não lido em `bg-accent` + ponto azul; "Ver todas" → `/conta/notificacoes`.
@@ -76,6 +90,7 @@ Elementos:
 ## 7. Chat piscando (2.0)
 
 Quando o operador tem chat minimizado (CRM chat, chat do cliente, chat de demanda, Central de Chats) e chega mensagem:
+
 - Componente `FloatingChatHost` (`src/components/shared/`) mantém badge de count por chat.
 - Ícone/aba minimizada recebe classe `chat-blink` (keyframes em `styles.css`, alterna `text-primary ↔ text-destructive` a cada 800ms).
 - Som toca via `useIncomingChatSound` respeitando toggle em `/conta/perfil`.
@@ -83,6 +98,7 @@ Quando o operador tem chat minimizado (CRM chat, chat do cliente, chat de demand
 ## 8. Painéis de monitoramento
 
 Todo `/*/painel` (Visão Geral, CRM, Operacional, Financeiro, RH) segue **1 painel = 1 foco**:
+
 - Máximo 4 KPIs hero + 6 mini + 1 gráfico principal + 1 lista/ranking + alertas.
 - Componentes canônicos em `src/components/common/dashboard.tsx` (`PanelHeader`, `PanelToolbar`, `HeroMetric`, `MiniMetric`, `PanelCard`, `MetricList`, `AlertRow`, `SectionTitle`).
 - Realtime com invalidação estreita da queryKey.
@@ -92,6 +108,7 @@ Todo `/*/painel` (Visão Geral, CRM, Operacional, Financeiro, RH) segue **1 pain
 ## 9. Rotas do shell
 
 `src/routes/_authenticated/route.tsx` é **integração-managed** (Supabase). Regras:
+
 - `ssr: false` (o session vive em localStorage no browser).
 - `beforeLoad` chama `supabase.auth.getUser()` e redireciona para `/auth` se sem sessão.
 - Não recriar layout, não adicionar segundo gate. Middleware bearer já registrado em `src/start.ts`.

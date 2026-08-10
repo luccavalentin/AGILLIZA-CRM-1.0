@@ -22,6 +22,7 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 ## 4. Blocos
 
 ### A — Segurança e Auth
+
 - A1: login errado → mensagem genérica; contador; 5 fails → bloqueio 15min.
 - A2: perfil `ativo=false` → não entra.
 - A3: sessão expira → redirect `/auth`.
@@ -33,6 +34,7 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - A9: **reprompt de senha** obrigatório em ação crítica admin (2.0).
 
 ### B — Permissões e escopo
+
 - B1: correspondente desmarca `financeiro:view` para analista → analista NÃO vê o item.
 - B2: analista URL direta `/financeiro/painel` → 403.
 - B3: corretor escopo `proprios` em `crm.clientes` → só seus + vinculados via `cliente_parceiros`.
@@ -42,6 +44,7 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - B7: parceiro `portal_parceiro` logado em `/auth` → recusa + redirect `/parceiro`.
 
 ### C — Fluxo comercial (Simulação → Proposta → Contrato)
+
 - C1: simulação COMPLETA com 3 bancos + cônjuge + LGPD/SCR.
 - C2: envio → `homefin_auth_cache` populado; 3 linhas em `simulacao_bancos` `aguardando`.
 - C3: retorno real da sandbox → status `simulada`; ordenadas por menor parcela.
@@ -59,6 +62,7 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - C15: reenvio isolado por banco funciona (Santander HE Somahome).
 
 ### D — Integração Bancária (campo a campo)
+
 - D1: payload `POST /oportunidade` — obrigatórios presentes; CPF/celular só dígitos; data ISO.
 - D2: bancos `flagSimulacao='S'`.
 - D3: simulação por banco `fgAutorizacaoDados=true`.
@@ -71,12 +75,14 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - D10: Santander HE Somahome (`idOperacao=6`, `idBanco=96`) usa endereço completo + Mãe/Sexo/Profissão.
 
 ### E — CRM e Esteira
+
 - E1..E7: mesmos do v1 (criar cliente → cadastro_basico; endereço → cadastro_completo; simulação → simulacao; retorno → aprovacao; enviar → banco_remessa_1; contrato → contrato_emitido; nunca retrocede).
 - E8: Portal do Cliente habilitado → login em `/portal` OK; revogado → falha imediatamente.
 - E9: chat CRM 3 colunas: etiqueta cria/aplica; filtro funciona; SLA vencido → badge.
 - E10: Scan IA gera leitura + auditoria + campos com confiança.
 
 ### F — App Cliente
+
 - F1: `validarAcessoCliente` documento inexistente → resposta genérica.
 - F2: rate-limit — 5 fails/15min soft; 10 → 24h hard.
 - F3: login OK → cookie selado; sem `cliente_id` no body.
@@ -89,6 +95,7 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - F10: chat piscando + som ao receber msg em background.
 
 ### G — Portal do Parceiro Unificado (2.0)
+
 - G1: corretor logado usa shell interno; nav reduzida (Clientes/Simulações/Propostas/Comissões/Documentos/Chat).
 - G2: `/admin/*` → 403.
 - G3: só vê clientes vinculados via `cliente_parceiros`.
@@ -96,6 +103,7 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - G5: rotas antigas `/parceiro/clientes` etc. redirecionam para rotas internas.
 
 ### H — Mobile / A11y
+
 - H1: 375px — TODOS os Select do sistema abrem/tocam.
 - H2: form simulação completa navegável mobile.
 - H3: Kanban usável em tablet.
@@ -104,6 +112,7 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - H6: sem overflow horizontal em ≥320px.
 
 ### I — Financeiro
+
 - I1: cálculo comissão bate com `comissao_regras`.
 - I2: baixa parcial → `parcial`.
 - I3: estorno cria nova linha + motivo obrigatório.
@@ -113,6 +122,7 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - I7: papel `financeiro` acessa módulo completo.
 
 ### J — Relatórios (2.0)
+
 - J1: painel geral carrega <1s.
 - J2: filtros persistem via query string.
 - J3: XLSX e PDF (portrait/landscape) abrem sem quebra; PII mascarada se sem permissão.
@@ -123,6 +133,7 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - J8: constructor de personalizados salva/carrega.
 
 ### K — RH (2.0 — novo)
+
 - K1: cadastrar funcionário com CEP → auto-preenche endereço via ViaCEP.
 - K2: vincular a usuário do sistema → auto-preenche nome/CPF/e-mail.
 - K3: dia de pagamento + toggle "Gerar CP automático" → CP criado com `origem_ref` idempotente.
@@ -133,12 +144,14 @@ Validar segurança, permissões, fluxo comercial completo, integração bancári
 - K8: férias vencendo/vencidas geram alerta.
 
 ### L — Chats (2.0 — novo)
+
 - L1: Central de Chats (`/operacional/chats`) mostra clientes + DMs + demandas.
 - L2: som + piscar em chat minimizado (respeitando pref usuário).
 - L3: `{numero_proposta}` substituído nos templates do chat CRM.
 - L4: chat da demanda tem indicador digitando + realtime + threading.
 
 ### M — Qualidade técnica
+
 - M1: `bun run build:dev` OK sem warning.
 - M2: `tsgo` sem erro.
 - M3: zero `console.log` em produção.

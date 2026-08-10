@@ -35,7 +35,17 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas_/nov
 
 function Pagina() {
   const ctx = useSimulacaoCompleta({ modoProposta: true });
-  const { router, f, enviando, concluidos, mostraConjuge, confirmRenda, setConfirmRenda, enviar, executarEnvio } = ctx;
+  const {
+    router,
+    f,
+    enviando,
+    concluidos,
+    mostraConjuge,
+    confirmRenda,
+    setConfirmRenda,
+    enviar,
+    executarEnvio,
+  } = ctx;
 
   const resumoEtapas = [
     { label: "Titular", ok: !!f.nome_cliente },
@@ -130,7 +140,11 @@ function Pagina() {
           </Card>
 
           <div className="flex justify-end pt-1">
-            <Button className="h-11 w-full gap-2 sm:w-auto sm:px-8" onClick={enviar} disabled={enviando}>
+            <Button
+              className="h-11 w-full gap-2 sm:w-auto sm:px-8"
+              onClick={enviar}
+              disabled={enviando}
+            >
               <Send className="h-4 w-4" /> Gerar Proposta e Enviar ao Banco
             </Button>
           </div>
@@ -201,7 +215,6 @@ function Pagina() {
         }
       />
 
-
       <AlertDialog open={!!confirmRenda} onOpenChange={(o) => !o && setConfirmRenda(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -223,9 +236,8 @@ function Pagina() {
             <AlertDialogCancel>Revisar dados</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                  setConfirmRenda(null);
-                  void enviar();
-
+                setConfirmRenda(null);
+                void enviar();
               }}
             >
               Enviar mesmo assim

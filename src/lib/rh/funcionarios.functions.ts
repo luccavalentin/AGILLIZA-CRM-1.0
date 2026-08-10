@@ -3,20 +3,9 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /** Status possível de um funcionário. */
-export type StatusFuncionario =
-  | "ativo"
-  | "experiencia"
-  | "afastado"
-  | "ferias"
-  | "desligado";
+export type StatusFuncionario = "ativo" | "experiencia" | "afastado" | "ferias" | "desligado";
 
-export type TipoContrato =
-  | "clt"
-  | "pj"
-  | "estagio"
-  | "autonomo"
-  | "temporario"
-  | "aprendiz";
+export type TipoContrato = "clt" | "pj" | "estagio" | "autonomo" | "temporario" | "aprendiz";
 
 export interface FuncionarioLista {
   id: string;
@@ -86,9 +75,15 @@ export interface Funcionario extends FuncionarioLista {
 
 const funcionarioSchema = z.object({
   id: z.string().uuid().optional(),
-  nome: z.string().min(2, "Informe o nome completo.").transform((v) => v.trim()),
+  nome: z
+    .string()
+    .min(2, "Informe o nome completo.")
+    .transform((v) => v.trim()),
   nome_social: z.string().optional().nullable(),
-  cpf: z.string().min(11, "CPF inválido.").transform((v) => v.replace(/\D/g, "")),
+  cpf: z
+    .string()
+    .min(11, "CPF inválido.")
+    .transform((v) => v.replace(/\D/g, "")),
   rg: z.string().optional().nullable(),
   rg_orgao: z.string().optional().nullable(),
   rg_uf: z.string().optional().nullable(),
@@ -114,7 +109,9 @@ const funcionarioSchema = z.object({
   departamento_id: z.string().uuid().optional().nullable(),
   gestor_id: z.string().uuid().optional().nullable(),
   tipo_contrato: z.enum(["clt", "pj", "estagio", "autonomo", "temporario", "aprendiz"]),
-  status: z.enum(["ativo", "experiencia", "afastado", "ferias", "desligado"]).default("experiencia"),
+  status: z
+    .enum(["ativo", "experiencia", "afastado", "ferias", "desligado"])
+    .default("experiencia"),
   matricula: z.string().optional().nullable(),
   ctps_numero: z.string().optional().nullable(),
   ctps_serie: z.string().optional().nullable(),
@@ -196,7 +193,9 @@ export const listarFuncionarios = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     // Nome do gestor via segunda consulta pontual.
-    const gestorIds = Array.from(new Set((rows ?? []).map((r: any) => r.gestor_id).filter(Boolean)));
+    const gestorIds = Array.from(
+      new Set((rows ?? []).map((r: any) => r.gestor_id).filter(Boolean)),
+    );
     const nomeGestor = new Map<string, string>();
     if (gestorIds.length > 0) {
       const { data: gs } = await supabase.from("profiles").select("id, nome").in("id", gestorIds);
@@ -232,9 +231,7 @@ export const obterFuncionario = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: row, error } = await supabase
       .from("rh_funcionarios")
-      .select(
-        `*, rh_cargos(nome), rh_departamentos(nome)`,
-      )
+      .select(`*, rh_cargos(nome), rh_departamentos(nome)`)
       .eq("id", data.id)
       .is("deletado_em", null)
       .maybeSingle();
@@ -348,7 +345,6 @@ export const atualizarFuncionario = createServerFn({ method: "POST" })
       );
     }
 
-
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
       supabase,
@@ -366,11 +362,13 @@ export const atualizarFuncionario = createServerFn({ method: "POST" })
 export const desligarFuncionario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({
-      id: z.string().uuid(),
-      data_demissao: z.string().min(10),
-      motivo_demissao: z.string().optional(),
-    }).parse(data),
+    z
+      .object({
+        id: z.string().uuid(),
+        data_demissao: z.string().min(10),
+        motivo_demissao: z.string().optional(),
+      })
+      .parse(data),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
@@ -471,7 +469,6 @@ export const excluirFuncionario = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
-
 
 // ------------ Dependentes ------------------------------------------------
 
@@ -609,7 +606,10 @@ export interface UsuarioVinculavel {
 export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ funcionario_id: z.string().uuid().optional() }).default({}).parse(data ?? {}),
+    z
+      .object({ funcionario_id: z.string().uuid().optional() })
+      .default({})
+      .parse(data ?? {}),
   )
   .handler(async ({ data, context }): Promise<UsuarioVinculavel[]> => {
     const { supabase, userId } = context;
@@ -645,14 +645,11 @@ export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
     }));
   });
 
-
 /** Atualiza apenas a foto do funcionário (upload imediato na ficha). */
 export const salvarFotoFuncionario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z
-      .object({ id: z.string().uuid(), foto_url: z.string().nullable() })
-      .parse(data),
+    z.object({ id: z.string().uuid(), foto_url: z.string().nullable() }).parse(data),
   )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase

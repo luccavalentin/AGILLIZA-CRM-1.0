@@ -56,8 +56,7 @@ export function ChatSoundSetting() {
               Tocar som ao receber mensagens
             </Label>
             <p className="text-xs text-muted-foreground">
-              Um alerta sonoro toca quando você recebe uma nova mensagem no
-              chat, em qualquer tela.
+              Um alerta sonoro toca quando você recebe uma nova mensagem no chat, em qualquer tela.
             </p>
           </div>
           <Switch id="chat-som" checked={ativo} onCheckedChange={alternar} />
@@ -97,12 +96,8 @@ export function ChatSoundSetting() {
                       )}
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium">
-                        {opt.nome}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {opt.descricao}
-                      </span>
+                      <span className="block text-sm font-medium">{opt.nome}</span>
+                      <span className="block text-xs text-muted-foreground">{opt.descricao}</span>
                     </span>
                   </button>
                 );
@@ -114,12 +109,7 @@ export function ChatSoundSetting() {
           </div>
         )}
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => previewChatSound()}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => previewChatSound()}>
           <Play className="mr-2 h-3.5 w-3.5" /> Ouvir o som selecionado
         </Button>
       </CardContent>

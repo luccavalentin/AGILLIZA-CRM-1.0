@@ -51,19 +51,19 @@ const AlertDialogContent = React.forwardRef<
         draggable={false}
         className="pointer-events-none absolute -right-5 -top-6 h-28 w-auto rotate-12 select-none opacity-[0.06] dark:opacity-[0.10] z-0"
       />
-      <div className="flex flex-col flex-1 min-h-0 relative z-1">
-        {children}
-      </div>
+      <div className="flex flex-col flex-1 min-h-0 relative z-1">{children}</div>
     </AlertDialogPrimitive.Content>
   </AlertDialogPortal>
 ));
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
 
 const AlertDialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-2 p-6 pb-4 text-center sm:text-left shrink-0", className)} {...props} />
+  <div
+    className={cn("flex flex-col space-y-2 p-6 pb-4 text-center sm:text-left shrink-0", className)}
+    {...props}
+  />
 );
 AlertDialogHeader.displayName = "AlertDialogHeader";
-
 
 const AlertDialogIcon = ({
   className,
@@ -92,12 +92,14 @@ AlertDialogIcon.displayName = "AlertDialogIcon";
 
 const AlertDialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 pt-4 border-t border-border/40 shrink-0", className)}
+    className={cn(
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 pt-4 border-t border-border/40 shrink-0",
+      className,
+    )}
     {...props}
   />
 );
 AlertDialogFooter.displayName = "AlertDialogFooter";
-
 
 const AlertDialogTitle = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Title>,

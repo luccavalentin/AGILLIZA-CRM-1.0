@@ -45,9 +45,7 @@ export function FunilBancoTimeline({
   const reprovado = statusProposta === "credito_recusado";
 
   // Localiza a etapa de decisão (Crédito). Fallback: primeira etapa após Simulação.
-  const idxSimulacao = lista.findIndex((e) =>
-    (e.nome ?? "").toLowerCase().includes("simula"),
-  );
+  const idxSimulacao = lista.findIndex((e) => (e.nome ?? "").toLowerCase().includes("simula"));
   const idxCreditoNativo = lista.findIndex((e) => {
     const n = (e.nome ?? "").toLowerCase();
     return n.includes("crédit") || n.includes("credit") || n.includes("análise de");
@@ -64,12 +62,8 @@ export function FunilBancoTimeline({
   const posBifurcacaoAlcancada = temPosBifurcacao
     ? lista.slice(idxBifurcacao + 1).some((e) => e.ativa || e.concluida)
     : false;
-  const aprovado =
-    !reprovado && (posBifurcacaoAlcancada || (etapaBifurcacao?.concluida ?? false));
+  const aprovado = !reprovado && (posBifurcacaoAlcancada || (etapaBifurcacao?.concluida ?? false));
   const decisaoPendente = !reprovado && !aprovado;
-
-
-
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -131,7 +125,8 @@ export function FunilBancoTimeline({
                     "relative z-10 mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border-[3px] border-card shadow-sm",
                     morta && "bg-muted text-muted-foreground/60",
                     !morta && e.concluida && "bg-emerald-500 text-white",
-                    !morta && emAndamento &&
+                    !morta &&
+                      emAndamento &&
                       "bg-primary text-primary-foreground ring-4 ring-primary/15",
                     !morta && pendente && "bg-muted text-muted-foreground/70",
                   )}
@@ -169,7 +164,10 @@ export function FunilBancoTimeline({
                     </span>
                     {emAndamento && !morta && (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">
-                        <span className="size-1.5 rounded-full bg-primary animate-pulse" aria-hidden />
+                        <span
+                          className="size-1.5 rounded-full bg-primary animate-pulse"
+                          aria-hidden
+                        />
                         Em processamento
                       </span>
                     )}
@@ -221,20 +219,16 @@ export function FunilBancoTimeline({
                         label="Reprovado"
                         state={reprovado ? "ativo" : decisaoPendente ? "aguardando" : "descartado"}
                         caption="Encerra o fluxo"
-                        banco={reprovado ? bancoReprovado ?? null : null}
+                        banco={reprovado ? (bancoReprovado ?? null) : null}
                       />
                     </div>
                   )}
-
                 </div>
               </li>
             );
           })}
         </ol>
       </div>
-
-
-
     </div>
   );
 }
@@ -256,16 +250,18 @@ function DecisionCard({
   const descartado = state === "descartado";
   const aguardando = state === "aguardando";
 
-  const statusLabel = ativo ? "Decisão registrada" : aguardando ? "Aguardando decisão" : "Não ocorreu";
+  const statusLabel = ativo
+    ? "Decisão registrada"
+    : aguardando
+      ? "Aguardando decisão"
+      : "Não ocorreu";
 
   return (
     <div
       className={cn(
         "group relative flex-1 overflow-hidden rounded-lg border px-2.5 py-2 transition-all",
-        tone === "success" && ativo &&
-          "border-emerald-500/70 bg-emerald-500/[0.05] shadow-sm",
-        tone === "danger" && ativo &&
-          "border-rose-500/70 bg-rose-500/[0.05] shadow-sm",
+        tone === "success" && ativo && "border-emerald-500/70 bg-emerald-500/[0.05] shadow-sm",
+        tone === "danger" && ativo && "border-rose-500/70 bg-rose-500/[0.05] shadow-sm",
         aguardando && tone === "success" && "border-emerald-500/20 bg-emerald-500/[0.02]",
         aguardando && tone === "danger" && "border-rose-500/20 bg-rose-500/[0.02]",
         descartado && "border-dashed border-border/60 bg-transparent opacity-70",
@@ -288,7 +284,9 @@ function DecisionCard({
             "grid size-5 shrink-0 place-items-center rounded-full",
             tone === "success" && ativo && "bg-emerald-500 text-white",
             tone === "danger" && ativo && "bg-rose-500 text-white",
-            !ativo && tone === "success" && "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400",
+            !ativo &&
+              tone === "success" &&
+              "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400",
             !ativo && tone === "danger" && "bg-rose-500/12 text-rose-600 dark:text-rose-400",
             descartado && "bg-muted text-muted-foreground",
           )}
@@ -356,7 +354,6 @@ function DecisionCard({
   );
 }
 
-
 function parseDate(v: string): Date | null {
   const d = new Date(v.includes("T") ? v : v.replace(" ", "T"));
   return isNaN(d.getTime()) ? null : d;
@@ -365,7 +362,8 @@ function parseDate(v: string): Date | null {
 function formatarDataHora(v: string): string {
   const d = parseDate(v);
   if (!d) return v;
-  return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
+  return d.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -373,6 +371,3 @@ function formatarDataHora(v: string): string {
     minute: "2-digit",
   });
 }
-
-
-

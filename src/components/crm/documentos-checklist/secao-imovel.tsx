@@ -53,9 +53,7 @@ export function SecaoImovel({
         )}
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
-              Contato da vistoria — Nome
-            </Label>
+            <Label className="text-xs text-muted-foreground">Contato da vistoria — Nome</Label>
             <Input
               value={check["i_vistoria_nome"] ?? ""}
               onChange={(e) => setCheck((p) => ({ ...p, i_vistoria_nome: e.target.value }))}
@@ -63,9 +61,7 @@ export function SecaoImovel({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
-              Contato da vistoria — Telefone
-            </Label>
+            <Label className="text-xs text-muted-foreground">Contato da vistoria — Telefone</Label>
             <Input
               value={check["i_vistoria_tel"] ?? ""}
               onChange={(e) => setCheck((p) => ({ ...p, i_vistoria_tel: e.target.value }))}
@@ -73,9 +69,7 @@ export function SecaoImovel({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
-              Quantidade de vagas do imóvel
-            </Label>
+            <Label className="text-xs text-muted-foreground">Quantidade de vagas do imóvel</Label>
             <Input
               inputMode="numeric"
               value={check["i_vagas"] ?? ""}
@@ -85,10 +79,7 @@ export function SecaoImovel({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">IQ?</Label>
-            <Select
-              value={check["i_iq"] ?? ""}
-              onValueChange={(v) => setManual("i_iq", v)}
-            >
+            <Select value={check["i_iq"] ?? ""} onValueChange={(v) => setManual("i_iq", v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>

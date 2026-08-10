@@ -58,9 +58,7 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     // Comercial / Imobiliária / Corretor / Analista por tipo_pessoa OU por
     // papel em user_roles. Cada dropdown lista todos os usuários daquele tipo,
     // mesmo sem clientes vinculados.
-    let perfisQuery = supabase
-      .from("profiles")
-      .select("id, nome, tipo_pessoa, correspondente_id");
+    let perfisQuery = supabase.from("profiles").select("id, nome, tipo_pessoa, correspondente_id");
     if (corr) perfisQuery = perfisQuery.eq("correspondente_id", corr);
     const { data: perfis } = await perfisQuery.limit(2000);
 
@@ -93,9 +91,15 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     }
 
     const comerciais = Array.from(comerciaisMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
-    const imobiliariasBase = Array.from(imobsBaseMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
-    const corretoresBase = Array.from(corretoresBaseMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
-    const analistasBase = Array.from(analistasBaseMap, ([id, nome]) => ({ id, nome })).sort(ordenarNome);
+    const imobiliariasBase = Array.from(imobsBaseMap, ([id, nome]) => ({ id, nome })).sort(
+      ordenarNome,
+    );
+    const corretoresBase = Array.from(corretoresBaseMap, ([id, nome]) => ({ id, nome })).sort(
+      ordenarNome,
+    );
+    const analistasBase = Array.from(analistasBaseMap, ([id, nome]) => ({ id, nome })).sort(
+      ordenarNome,
+    );
 
     // Clientes acessíveis (RLS aplica o escopo do usuário).
     let clientesQuery = supabase
@@ -186,12 +190,12 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     const clientesResp: DGCliente[] = listaClientes.map((c: any) => {
       const imobId = imobPorCliente.get(c.id) ?? null;
       const corrId = corrPorCliente.get(c.id) ?? null;
-      const imobNome = imobId ? nomesParceiros.get(imobId) ?? "—" : null;
-      const corrNome = corrId ? nomesParceiros.get(corrId) ?? "—" : null;
+      const imobNome = imobId ? (nomesParceiros.get(imobId) ?? "—") : null;
+      const corrNome = corrId ? (nomesParceiros.get(corrId) ?? "—") : null;
       const comId = comercialPorCliente.get(c.id) ?? null;
-      const comNome = comId ? nomesParceiros.get(comId) ?? "—" : null;
+      const comNome = comId ? (nomesParceiros.get(comId) ?? "—") : null;
       const anaId = c.criador_id ?? null;
-      const anaNome = anaId ? nomesParceiros.get(anaId) ?? "—" : null;
+      const anaNome = anaId ? (nomesParceiros.get(anaId) ?? "—") : null;
       return {
         cliente_id: c.id,
         nome: c.nome,
@@ -208,7 +212,6 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
         analista_nome: anaNome,
       };
     });
-
 
     // Amplia a lista de analistas para incluir TODO criador de cliente,
     // mesmo que o perfil não esteja tipado como analista/role=analista.
@@ -230,10 +233,8 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       corretores: corretoresBase,
       comerciais,
       analistas: analistasBaseFinal,
-
     };
   });
-
 
 export interface FichaConsolidada {
   meta: Record<string, any>;

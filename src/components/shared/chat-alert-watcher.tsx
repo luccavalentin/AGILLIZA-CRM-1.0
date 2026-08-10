@@ -62,15 +62,11 @@ export function ChatAlertWatcher({ meuId }: Props) {
             corpo: "Você recebeu uma mensagem no chat do cliente.",
             skipSound: false, // Requisito: deve emitir som
           });
-          
-          // Som explícito para garantir que toca em todo chat aberto
-          import("@/lib/chat-sound").then(m => m.playChatSound());
 
-          abrirChatFlutuante(
-            row.cliente_id,
-            { nome },
-            { minimized: true },
-          );
+          // Som explícito para garantir que toca em todo chat aberto
+          import("@/lib/chat-sound").then((m) => m.playChatSound());
+
+          abrirChatFlutuante(row.cliente_id, { nome }, { minimized: true });
         },
       )
       .subscribe();
@@ -97,9 +93,9 @@ export function ChatAlertWatcher({ meuId }: Props) {
 
           const [{ data: dem }, { data: autor }] = await Promise.all([
             supabase
-            .from("demandas")
+              .from("demandas")
               .select("numero, titulo")
-            .eq("id", row.demanda_id)
+              .eq("id", row.demanda_id)
               .maybeSingle(),
             row.autor_id
               ? supabase
@@ -118,8 +114,8 @@ export function ChatAlertWatcher({ meuId }: Props) {
             corpo: interlocutorNome ?? titulo ?? undefined,
             skipSound: false,
           });
-          
-          import("@/lib/chat-sound").then(m => m.playChatSound());
+
+          import("@/lib/chat-sound").then((m) => m.playChatSound());
 
           abrirDemandaChatFlutuante(
             row.demanda_id,
@@ -161,11 +157,7 @@ export function ChatAlertWatcher({ meuId }: Props) {
           }
 
           const { data: autor } = row.autor_id
-            ? await supabase
-                .from("profiles")
-                .select("nome")
-                .eq("id", row.autor_id)
-                .maybeSingle()
+            ? await supabase.from("profiles").select("nome").eq("id", row.autor_id).maybeSingle()
             : { data: null };
           const nome = (autor?.nome as string | null) ?? "Colega";
           signalIncomingChat(row.id, {
@@ -173,8 +165,8 @@ export function ChatAlertWatcher({ meuId }: Props) {
             corpo: "Você recebeu uma mensagem direta.",
             skipSound: false,
           });
-          
-          import("@/lib/chat-sound").then(m => m.playChatSound());
+
+          import("@/lib/chat-sound").then((m) => m.playChatSound());
           abrirDmFlutuante(row.conversa_id, { nome }, { minimized: true });
         },
       )

@@ -36,19 +36,32 @@ import {
   enviarPropostaHomeFin,
 } from "@/lib/propostas/propostas.functions";
 import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
-import { SITUACAO_BANCO_LABEL, type SituacaoBanco } from "@/components/proposta/situacao-banco-labels";
+import {
+  SITUACAO_BANCO_LABEL,
+  type SituacaoBanco,
+} from "@/components/proposta/situacao-banco-labels";
 import type { PropostaStatus } from "@/lib/propostas/state-machine";
 import { formatBRL, formatTaxa } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 
-function MetricaBanco({ label, valor, subtitulo }: { label: string; valor: string; subtitulo?: string }) {
+function MetricaBanco({
+  label,
+  valor,
+  subtitulo,
+}: {
+  label: string;
+  valor: string;
+  subtitulo?: string;
+}) {
   return (
     <div className="rounded-md border border-border/60 bg-muted/30 px-2.5 py-2">
       <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
         {label}
       </div>
       <div className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{valor}</div>
-      {subtitulo && <div className="mt-1 text-[9px] text-destructive font-bold leading-tight">{subtitulo}</div>}
+      {subtitulo && (
+        <div className="mt-1 text-[9px] text-destructive font-bold leading-tight">{subtitulo}</div>
+      )}
     </div>
   );
 }
@@ -89,7 +102,7 @@ export function TabResumo({
   const houveEnvio = (bancos || []).some((b) => bancoJaEnviado(b));
   const bancosVisiveis = houveEnvio
     ? (bancos || []).filter((b) => bancoJaEnviado(b) || b.status_banco === "erro")
-    : (bancos || []);
+    : bancos || [];
   const podeEnviarBanco =
     Boolean(proposta.homefin_id_oportunidade) &&
     !["cancelada", "registrado", "credito_recusado", "contrato_emitido"].includes(status);
@@ -106,11 +119,11 @@ export function TabResumo({
   async function enviarBanco(pbId: string) {
     setEnviandoId(pbId);
     try {
-      const r = await handleEnviarHook({ 
-        propostaId: propostaId, 
+      const r = await handleEnviarHook({
+        propostaId: propostaId,
         bancoId: pbId,
         envolvidos: proposta?.envolvidos,
-        enviarFn: enviarPropostaFn
+        enviarFn: enviarPropostaFn,
       });
       if (r && r.bancos && r.bancos.length > 0) {
         setResultadoEnvio(r.bancos);
@@ -155,10 +168,7 @@ export function TabResumo({
           {bancosVisiveis.map((b) => (
             <div
               key={b.id}
-              className={cn(
-                "space-y-4 p-4 transition-colors",
-                b.selecionado && "bg-accent/30",
-              )}
+              className={cn("space-y-4 p-4 transition-colors", b.selecionado && "bg-accent/30")}
             >
               <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
                 <Checkbox
@@ -193,17 +203,28 @@ export function TabResumo({
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
-                <MetricaBanco label="R$ Financiamento" valor={formatBRL(b.valor_financiamento_max)} />
-                <MetricaBanco 
-                  label="Parcela" 
-                  valor={formatBRL(b.valor_parcela)} 
-                  subtitulo={(b.situacao_banco === 'recusado' || b.situacao_banco === 'nao_enviado') ? "Condições simuladas (não ofertadas)" : undefined}
+                <MetricaBanco
+                  label="R$ Financiamento"
+                  valor={formatBRL(b.valor_financiamento_max)}
+                />
+                <MetricaBanco
+                  label="Parcela"
+                  valor={formatBRL(b.valor_parcela)}
+                  subtitulo={
+                    b.situacao_banco === "recusado" || b.situacao_banco === "nao_enviado"
+                      ? "Condições simuladas (não ofertadas)"
+                      : undefined
+                  }
                 />
                 <MetricaBanco label="Prazo" valor={String(b.prazo_pagamento_max ?? "—")} />
                 <MetricaBanco
                   label="Taxa/ano"
                   valor={formatTaxa(b.taxa_juros_ano)}
-                  subtitulo={(b.situacao_banco === 'recusado' || b.situacao_banco === 'nao_enviado') ? "Condições simuladas (não ofertadas)" : undefined}
+                  subtitulo={
+                    b.situacao_banco === "recusado" || b.situacao_banco === "nao_enviado"
+                      ? "Condições simuladas (não ofertadas)"
+                      : undefined
+                  }
                 />
               </div>
 
@@ -282,7 +303,10 @@ export function TabResumo({
             <TableBody>
               {bancosVisiveis.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell
+                    colSpan={10}
+                    className="py-8 text-center text-sm text-muted-foreground"
+                  >
                     Nenhum banco vinculado.
                   </TableCell>
                 </TableRow>
@@ -300,7 +324,10 @@ export function TabResumo({
                   <TableCell className="font-medium">
                     <span className="flex items-center gap-2">
                       <BancoLogo nome={b.nome_banco} size="md" className="shrink-0" />
-                      <span className="whitespace-nowrap" style={{ color: corDoBanco(b.nome_banco) }}>
+                      <span
+                        className="whitespace-nowrap"
+                        style={{ color: corDoBanco(b.nome_banco) }}
+                      >
                         {b.nome_banco}
                       </span>
                     </span>
@@ -317,8 +344,10 @@ export function TabResumo({
                   <TableCell className="text-right tabular-nums">
                     <div className="flex flex-col items-end">
                       <span>{formatBRL(b.valor_parcela)}</span>
-                      {(b.situacao_banco === 'recusado' || b.situacao_banco === 'nao_enviado') && (
-                        <span className="text-[9px] text-destructive font-bold uppercase leading-tight">Simulada</span>
+                      {(b.situacao_banco === "recusado" || b.situacao_banco === "nao_enviado") && (
+                        <span className="text-[9px] text-destructive font-bold uppercase leading-tight">
+                          Simulada
+                        </span>
                       )}
                     </div>
                   </TableCell>
@@ -328,8 +357,10 @@ export function TabResumo({
                   <TableCell className="text-right tabular-nums">
                     <div className="flex flex-col items-end">
                       <span>{formatTaxa(b.taxa_juros_ano)}</span>
-                      {(b.situacao_banco === 'recusado' || b.situacao_banco === 'nao_enviado') && (
-                        <span className="text-[9px] text-destructive font-bold uppercase leading-tight">Simulada</span>
+                      {(b.situacao_banco === "recusado" || b.situacao_banco === "nao_enviado") && (
+                        <span className="text-[9px] text-destructive font-bold uppercase leading-tight">
+                          Simulada
+                        </span>
                       )}
                     </div>
                   </TableCell>
@@ -394,10 +425,7 @@ export function TabResumo({
         </div>
       </div>
 
-      <EnvioResultadoDialog
-        resultado={resultadoEnvio}
-        onClose={() => setResultadoEnvio(null)}
-      />
+      <EnvioResultadoDialog resultado={resultadoEnvio} onClose={() => setResultadoEnvio(null)} />
 
       <DetalhamentoBancoDialog banco={detalheBanco} onClose={() => setDetalheBanco(null)} />
     </div>

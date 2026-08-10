@@ -40,8 +40,7 @@ export function ChatConfigSheet({ className }: { className?: string }) {
             Configurações do chat
           </SheetTitle>
           <SheetDescription>
-            Ajuste o som das mensagens do chat. A preferência fica salva neste
-            dispositivo.
+            Ajuste o som das mensagens do chat. A preferência fica salva neste dispositivo.
           </SheetDescription>
         </SheetHeader>
         <ScrollArea className="flex-1">

@@ -37,7 +37,10 @@ interface Props {
   onDragEnd: () => void;
   clicavel: () => boolean;
   onAbrirCadastro: () => void;
-  onSalvarDataVistoria: (campo: "vistoria_agendada_em" | "vistoria_concluida_em", valor: string) => void;
+  onSalvarDataVistoria: (
+    campo: "vistoria_agendada_em" | "vistoria_concluida_em",
+    valor: string,
+  ) => void;
   onSalvarDataContrato: (valor: string) => void;
   onArquivarContrato: () => void;
   onLimparVinculo: () => void;
@@ -99,7 +102,10 @@ export function CardCliente({
           {c.nome.trim().charAt(0).toUpperCase() || "?"}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold leading-tight text-foreground" title={c.nome}>
+          <p
+            className="truncate text-sm font-semibold leading-tight text-foreground"
+            title={c.nome}
+          >
             {c.nome}
           </p>
           <p className="truncate font-mono text-[11px] tabular-nums text-muted-foreground">
@@ -235,7 +241,10 @@ export function CardCliente({
       )}
 
       {ehVistoria && (
-        <div className="mt-2.5 space-y-1.5 border-t border-border/60 pt-2.5" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="mt-2.5 space-y-1.5 border-t border-border/60 pt-2.5"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center gap-2">
             <CalendarClock className="size-3 shrink-0 text-muted-foreground" />
             <label className="w-14 shrink-0 text-[10px] font-medium text-muted-foreground">
@@ -263,7 +272,10 @@ export function CardCliente({
         </div>
       )}
       {ehContrato && (
-        <div className="mt-2.5 border-t border-border/60 pt-2.5" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="mt-2.5 border-t border-border/60 pt-2.5"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center gap-2">
             <CalendarCheck className="size-3 shrink-0 text-primary" />
             <label className="shrink-0 text-[10px] font-medium text-muted-foreground">

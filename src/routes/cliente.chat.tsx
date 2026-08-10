@@ -19,11 +19,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { ChatConfigSheet } from "@/components/shared/chat-config-sheet";
-import {
-  ThreadChat,
-  iniciais,
-  horaCurta,
-} from "@/components/cliente/chat-cliente";
+import { ThreadChat, iniciais, horaCurta } from "@/components/cliente/chat-cliente";
 import {
   clienteListarAtendentes,
   clienteObterVisaoGeral,
@@ -75,8 +71,7 @@ function ChatPage() {
       if (filtro === "arquivadas") return false;
       if (!q) return true;
       return (
-        a.nome.toLowerCase().includes(q) ||
-        (a.ultima_mensagem ?? "").toLowerCase().includes(q)
+        a.nome.toLowerCase().includes(q) || (a.ultima_mensagem ?? "").toLowerCase().includes(q)
       );
     });
   }, [atendentes, busca, filtro]);
@@ -106,7 +101,12 @@ function ChatPage() {
       >
         <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
           <p className="text-base font-semibold text-foreground">Conversas</p>
-          <Button variant="outline" size="icon" className="h-8 w-8 rounded-md" aria-label="Nova conversa">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-md"
+            aria-label="Nova conversa"
+          >
             <SquarePen className="h-4 w-4" />
           </Button>
         </div>
@@ -120,14 +120,25 @@ function ChatPage() {
               className="h-9 rounded-full bg-muted/40 pl-9"
             />
           </div>
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Filtros">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            aria-label="Filtros"
+          >
             <SlidersHorizontal className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-2.5">
-          <FiltroChip ativo={filtro === "todas"} onClick={() => setFiltro("todas")}>Todas</FiltroChip>
-          <FiltroChip ativo={filtro === "nao_lidas"} onClick={() => setFiltro("nao_lidas")}>Não lidas</FiltroChip>
-          <FiltroChip ativo={filtro === "arquivadas"} onClick={() => setFiltro("arquivadas")}>Arquivadas</FiltroChip>
+          <FiltroChip ativo={filtro === "todas"} onClick={() => setFiltro("todas")}>
+            Todas
+          </FiltroChip>
+          <FiltroChip ativo={filtro === "nao_lidas"} onClick={() => setFiltro("nao_lidas")}>
+            Não lidas
+          </FiltroChip>
+          <FiltroChip ativo={filtro === "arquivadas"} onClick={() => setFiltro("arquivadas")}>
+            Arquivadas
+          </FiltroChip>
         </div>
         <div className="flex-1 overflow-y-auto">
           {loadingAt ? (
@@ -160,13 +171,16 @@ function ChatPage() {
                     onClick={(e) => {
                       e.stopPropagation();
                       if (!window.confirm("Excluir esta conversa da sua lista?")) return;
-                      import("@/lib/portal/cliente.functions").then((m) =>
-                        m.clienteExcluirConversa({ data: { atendente_id: a.atendente_id } })
-                      ).then(() => {
-                        toast.success("Conversa excluída.");
-                        qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
-                        if (selId === a.atendente_id) setSelId(null);
-                      }).catch((err) => toast.error(err?.message ?? "Erro ao excluir."));
+                      import("@/lib/portal/cliente.functions")
+                        .then((m) =>
+                          m.clienteExcluirConversa({ data: { atendente_id: a.atendente_id } }),
+                        )
+                        .then(() => {
+                          toast.success("Conversa excluída.");
+                          qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
+                          if (selId === a.atendente_id) setSelId(null);
+                        })
+                        .catch((err) => toast.error(err?.message ?? "Erro ao excluir."));
                     }}
                     className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-100 shadow-sm backdrop-blur transition hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100"
                   >
@@ -178,7 +192,11 @@ function ChatPage() {
           )}
         </div>
         <div className="shrink-0 border-t border-border/60 p-3">
-          <Button variant="ghost" size="sm" className="w-full justify-between rounded-full bg-muted/40 hover:bg-muted">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-between rounded-full bg-muted/40 hover:bg-muted"
+          >
             Ver todas as conversas
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -262,9 +280,7 @@ function ItemConversa({
       onClick={onClick}
       className={cn(
         "relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
-        selecionado
-          ? "bg-primary/5"
-          : "hover:bg-muted/60",
+        selecionado ? "bg-primary/5" : "hover:bg-muted/60",
       )}
     >
       {selecionado ? (
@@ -283,7 +299,9 @@ function ItemConversa({
         <div className="flex items-center justify-between gap-2">
           <p className="truncate text-sm font-semibold text-foreground">{a.nome}</p>
           {a.ultima_em ? (
-            <span className="shrink-0 text-[11px] text-muted-foreground">{horaCurta(a.ultima_em)}</span>
+            <span className="shrink-0 text-[11px] text-muted-foreground">
+              {horaCurta(a.ultima_em)}
+            </span>
           ) : null}
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
@@ -308,21 +326,31 @@ function ItemConversa({
 
 function AcoesRapidas() {
   const responder = useMutation({
-    mutationFn: (p: { mensagem: string }) => 
-      import("@/lib/portal/cliente.functions").then(m => m.clienteEnviarMensagem({ data: { atendente_id: "", mensagem: p.mensagem } })),
-    onSuccess: () => toast.success("Solicitação enviada.")
+    mutationFn: (p: { mensagem: string }) =>
+      import("@/lib/portal/cliente.functions").then((m) =>
+        m.clienteEnviarMensagem({ data: { atendente_id: "", mensagem: p.mensagem } }),
+      ),
+    onSuccess: () => toast.success("Solicitação enviada."),
   });
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <BotaoAcao icon={Paperclip} label="Enviar documento" to="/cliente/acompanhar-minha-proposta" />
+      <BotaoAcao
+        icon={Paperclip}
+        label="Enviar documento"
+        to="/cliente/acompanhar-minha-proposta"
+      />
       <BotaoAcao icon={FileText} label="Ver proposta" to="/cliente/acompanhar-minha-proposta" />
       <BotaoAcao icon={UserRound} label="Falar com especialista" to="/cliente/chat" />
-      <Button 
-        variant="outline" 
-        size="sm" 
+      <Button
+        variant="outline"
+        size="sm"
         className="h-8 rounded-full border-border/70 bg-background text-xs font-medium"
-        onClick={() => responder.mutate({ mensagem: "Olá, tudo bem? Gostaria de um retorno referente à minha proposta." })}
+        onClick={() =>
+          responder.mutate({
+            mensagem: "Olá, tudo bem? Gostaria de um retorno referente à minha proposta.",
+          })
+        }
       >
         <Clock3 className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
         Solicitar retorno
@@ -341,7 +369,12 @@ function BotaoAcao({
   to: string;
 }) {
   return (
-    <Button asChild variant="outline" size="sm" className="h-8 rounded-full border-border/70 bg-background text-xs font-medium">
+    <Button
+      asChild
+      variant="outline"
+      size="sm"
+      className="h-8 rounded-full border-border/70 bg-background text-xs font-medium"
+    >
       <Link to={to}>
         <Icon className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
         {label}
@@ -382,7 +415,12 @@ function CardResumo({
               <p className="truncate text-[11px] text-muted-foreground">Especialista em crédito</p>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" aria-label="Mensagem">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                aria-label="Mensagem"
+              >
                 <MessageSquare className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -390,7 +428,10 @@ function CardResumo({
         </div>
         <div>
           <p className="text-muted-foreground">Etapa atual</p>
-          <Badge variant="secondary" className="mt-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/10">
+          <Badge
+            variant="secondary"
+            className="mt-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/10"
+          >
             {visao?.processo.etapa_atual ?? "Aguardando"}
           </Badge>
         </div>
@@ -427,7 +468,8 @@ function CardProgresso({
                 className={cn(
                   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-semibold",
                   done && "border-primary bg-primary text-primary-foreground",
-                  current && "border-primary bg-primary/10 text-primary shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_15%,transparent)]",
+                  current &&
+                    "border-primary bg-primary/10 text-primary shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_15%,transparent)]",
                   !done && !current && "border-border bg-card text-muted-foreground",
                 )}
               >
@@ -455,9 +497,16 @@ function CardProgresso({
 function CardDocumentos({
   docs,
 }: {
-  docs: Array<{ id: string; tipo_documento: string | null; nome_arquivo: string | null; status: string }>;
+  docs: Array<{
+    id: string;
+    tipo_documento: string | null;
+    nome_arquivo: string | null;
+    status: string;
+  }>;
 }) {
-  const compartilhados = docs.filter((d) => (d.status ?? "").toLowerCase() !== "pendente").slice(0, 4);
+  const compartilhados = docs
+    .filter((d) => (d.status ?? "").toLowerCase() !== "pendente")
+    .slice(0, 4);
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       <p className="text-sm font-semibold text-foreground">Documentos compartilhados</p>
@@ -478,14 +527,24 @@ function CardDocumentos({
                   {d.nome_arquivo ?? "Arquivo enviado"}
                 </p>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Baixar">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                aria-label="Baixar"
+              >
                 <Download className="h-4 w-4" />
               </Button>
             </li>
           ))
         )}
       </ul>
-      <Button asChild variant="ghost" size="sm" className="mt-3 w-full justify-between rounded-full bg-muted/40 hover:bg-muted">
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="mt-3 w-full justify-between rounded-full bg-muted/40 hover:bg-muted"
+      >
         <Link to="/cliente/acompanhar-minha-proposta">
           Ver todos os documentos
           <ChevronRight className="h-4 w-4" />

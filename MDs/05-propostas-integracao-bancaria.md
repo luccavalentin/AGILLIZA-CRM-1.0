@@ -5,22 +5,25 @@
 > Requer Etapa 04.
 
 ## Dependências e Produtos
+
 **Depende de:** 00, 00b, **01** (RLS), **02** (shell), **03** (clientes, documentos, pipeline, "Puxar do CRM"), **04** (`simulacoes`, `simulacao_bancos`, `logs_integracao`, seed bancos, cliente API HomeFin), **10** (credenciais bancárias em runtime).
 **Produz (consumido por 06, 07, 08, 09, 10):**
+
 - Tabelas: `propostas` (com `homefin_id_oportunidade`, `banco_id`, `simulacao_id` nullable p/ cadastro manual), `proposta_bancos` (vínculo N bancos), `proposta_documentos` (bucket `documentos-proposta`), `proposta_status_historico`.
 - Server fns: `criarProposta({simulacao_id?, banco_id, cliente_id?})` (aceita origem simulação OU cadastro manual sem simulação prévia), `enviarPropostaBanco`, `anexarDocumentoProposta`, `mudarStatusProposta`.
 - Evento `proposta.status = 'contrato_emitido'` — dispara trigger de comissão na **Etapa 06** e move card para etapa final do pipeline da **Etapa 03**.
 - Handler webhook `/api/public/webhook/homefin/proposta` — Etapa 10 monitora, Etapa 07 gera tarefas/demandas de pendência, Etapa 09 notifica o cliente.
 
-
 ## Fontes autoritativas da HomeFin (pasta `Logos e a API/APIS/`)
+
 Usar os mesmos arquivos da Etapa 04: swagger (`4 - swagger-output 29012026.json`), PDFs de documentação e fluxograma, e a coleção Postman (`5 - API Homefin.postman_collection.json`). **Todo endpoint de proposta, upload de documento e status deve corresponder exatamente ao swagger** — não inventar rotas, não presumir campos, não escrever tipos à mão. Cabeçalhos de PDFs de proposta/contrato usam a logo em `Logos e a API/Logo PNG/`.
 
-
 ## Objetivo do módulo
+
 Transformar uma simulação escolhida em **Proposta** formal enviada ao banco via HomeFin, coletar toda a documentação exigida, acompanhar o status através das etapas do banco (análise de crédito → aprovação → engenharia/vistoria → jurídico → contrato → assinatura), registrar follow-ups internos e externos, e finalizar com contrato emitido pronto para financeiro/comissão (Etapa 06).
 
 ## Fluxo lógico ponta a ponta
+
 1. Em uma simulação com `simulacao_bancos.status='simulada'`, usuário clica **“Promover a Proposta”** para o banco X.
 2. Server function `criarProposta({simulacao_id, banco_id})`:
    a. Cria linha em `propostas` (status `rascunho`) com `numero_proposta` (`PRO-######`), copiando snapshot da simulação + banco escolhido.
@@ -59,6 +62,7 @@ Título: **"Nova Oportunidade"**. A tela tem **dois modos de entrada explícitos
 Independente do modo, o formulário segue o **layout de 3 colunas padrão do sistema** (identidade Agilliza) + tabela de bancos embaixo + botão **"ENVIAR PROPOSTA"** (azul-marinho, canto inferior direito). Nenhum texto, tooltip ou rótulo pode citar o provedor de integração bancária.
 
 #### Coluna 1 — **DADOS DA OPERAÇÃO**
+
 - `Operação` — select alimentado pela view `vw_operacoes_ativas` (cache dos produtos do provedor de integração — Aquisição, Home Equity, Portabilidade, etc.). Placeholder "Escolha a Operação".
 - `Regional` — texto, default **"AGILLIZA CRED"** (readonly conforme sessão/parceiro).
 - `Parceiro` — texto, default **"AGILLIZA CRED"** (readonly conforme sessão/parceiro).
@@ -67,6 +71,7 @@ Independente do modo, o formulário segue o **layout de 3 colunas padrão do sis
 - `Analista` — texto livre (nome do analista de crédito interno).
 
 #### Coluna 2 — **INFORMAÇÕES DO CLIENTE**
+
 - `Nome` — texto.
 - `CPF/CNPJ` — máscara automática PF/PJ.
 - `Data de Nascimento` — date.
@@ -78,6 +83,7 @@ Independente do modo, o formulário segue o **layout de 3 colunas padrão do sis
 - `Haverá Composição de Renda?` — **toggle switch** (bool). Se true, revela sub-bloco de participantes na tab Participantes.
 
 #### Coluna 3 — **INFORMAÇÕES DO FINANCIAMENTO**
+
 - `Tipo do Imóvel` — select (Residencial, Comercial, Terreno, Rural). Placeholder "Selecione o Tipo do Imóvel".
 - `Utilização do Imóvel` — select (Moradia, Investimento, Uso Próprio Comercial). Placeholder "Selecione o Uso do Imóvel".
 - `Situação do Imóvel` — select (Novo, Usado, Em Construção, Na Planta). Placeholder "Selecione a situação do Imóvel".
@@ -89,6 +95,7 @@ Independente do modo, o formulário segue o **layout de 3 colunas padrão do sis
 - `Sistema de Amortização` — select (SAC, PRICE, SACRE). Placeholder "Selecione o Sistema de Amortização".
 
 #### Bloco inferior — **Bancos para envio simultâneo**
+
 Tabela com uma linha por banco parceiro (`bancos_parceiros` ativos). Colunas: `Banco` · `Simular?` (toggle) · `Número da Proposta` (opcional, se já existe) · `Agência` · `Conta Corrente` · `Digito`.
 
 - Se veio via **modo A**, os bancos da simulação já vêm com toggle **ligado**.
@@ -96,9 +103,11 @@ Tabela com uma linha por banco parceiro (`bancos_parceiros` ativos). Colunas: `B
 - Validação: pelo menos 1 banco com toggle ativo antes de enviar.
 
 #### Botão **"ENVIAR PROPOSTA"** (rodapé direito, `bg-primary` navy)
+
 Ao clicar: valida → dispara `enviarProposta` (uma chamada por banco ligado) → mostra `ConsultandoOverlay` → modal de resultado consolidado (idêntico ao já existente na tela de envio atual) com sucesso/erro por banco. Redireciona para a ficha da proposta principal.
 
 ##### Campos persistidos adicionais em `propostas`
+
 - `regional_nome`, `parceiro_nome`, `usuario_parceiro_id`, `consultor_nome`, `analista_nome`
 - `utiliza_fgts` (bool), `compoe_renda` (bool)
 - `financia_despesas_cartorarias` (bool)
@@ -109,11 +118,13 @@ Ao clicar: valida → dispara `enviarProposta` (uma chamada por banco ligado) �
 A ficha da proposta é a **tela central do módulo**. É a mesma UX que o operador espera de um sistema de correspondente bancário: header identificador + stepper do ciclo → tabs por assunto. Nenhum rótulo cita provedor externo.
 
 #### Header (linha 1) — identificação e KPIs
+
 - **Título grande**: `Oportunidade {codigo_oportunidade_banco || numero_proposta}` (ex.: "Oportunidade 0000018850") + ícone de temperatura/urgência (`🌡️` colorido conforme SLA).
 - **Subtítulo**: `{Operação} — {Situação} há {N} dias` (ex.: "Aquisição · Ativa há 1 dias").
 - **Faixa de KPIs à direita** (labels pequenos acima, valor em negrito): `Banco Escolhido` · `Inclusão` (data) · `R$ Financiado` · `Emissão Prevista` · `Situação` (badge colorido).
 
 #### Header (linha 2) — **Stepper de pipeline** (obrigatório, horizontal, componente `PipelineStepper`)
+
 Sequência fixa de 6 etapas (segue exatamente o modelo do banco):
 `Simulação` → `Crédito` → `Engenharia` → `Análise Jurídica` → `Contrato Emitido` → `Registro`.
 
@@ -122,6 +133,7 @@ Sequência fixa de 6 etapas (segue exatamente o modelo do banco):
 - Abaixo do stepper, texto vermelho pequeno: `Detalhe Status: {detalhe_status_atual}` (ex.: "Simulação Solicitada"). Vem do último `proposta_historico`.
 
 O mapeamento de `propostas.status` → etapa do stepper está em `src/components/propostas/pipeline-map.ts`:
+
 - `rascunho`, `enviada_banco` → Simulação
 - `em_analise_credito`, `credito_aprovado`, `credito_recusado`, `aguardando_documentos` → Crédito
 - `engenharia_vistoria` → Engenharia
@@ -130,12 +142,15 @@ O mapeamento de `propostas.status` → etapa do stepper está em `src/components
 - `registrado` → Registro
 
 #### Barra de tabs (obrigatória, na ordem exata, componente `Tabs` do shadcn com `variant='underline'`)
+
 `RESUMO` · `COMPRADORES` · `VENDEDORES` · `IQ` · `IMÓVEL` · `DOCUMENTOS` · `ATIVIDADES` · `FUP`.
 
 Tabs com setas laterais (`ChevronLeft`/`ChevronRight`) para overflow em mobile. Tab ativa: `border-b-2 border-primary text-primary font-semibold`, demais `text-muted-foreground uppercase tracking-wide text-xs`.
 
 ##### 1) **RESUMO** — visão executiva
+
 Grid de 3 colunas em desktop, campos readonly com aparência de input desabilitado (`bg-muted/40`):
+
 - **Operação**, **Regional**, **Parceiro**
 - **Usuário Parceiro**, **Consultor**, **Analista**
 
@@ -148,6 +163,7 @@ Abaixo, tabela **Bancos/Simulações vinculadas** com toolbar (`Colunas` · `Fil
 - `Novo Banco/Simulação` abre um **modal de Simulação no padrão do sistema** (2 colunas: `DADOS DA SIMULAÇÃO` à esquerda, `RESULTADO DA SIMULAÇÃO` à direita), com toggle "Financiar Despesas Cartorárias" e, no rodapé, um bloco `DADOS DA RESPOSTA DO BANCO` (readonly, preenchido após retorno da API). No caso do Bradesco, adicionar bloco final `AUTORIZAÇÃO` com toggle de consentimento SCR (obrigatório antes de enviar).
 
 ##### 2) **COMPRADORES** — participantes tipo "CO"
+
 Toolbar: `Colunas` · `Filtros` · `Exportar` · `Incluir Pessoa Física` · `Incluir Pessoa Jurídica` · `Editar` · `Excluir`.
 
 Tabela: `CPF/CNPJ` · `Nome` · `Tipo` (Pessoa Física / Pessoa Jurídica) · `Celular` · `Email`.
@@ -159,10 +175,13 @@ Tabela: `CPF/CNPJ` · `Nome` · `Tipo` (Pessoa Física / Pessoa Jurídica) · `C
 - Linha vazia mostra "Nenhum comprador cadastrado" centralizado.
 
 ##### 3) **VENDEDORES** — participantes tipo "VD"
+
 Mesma toolbar e tabela dos Compradores, também com os dois modos (CRM/manual). Usar quando o produto for Aquisição/Home Equity com vendedor identificado.
 
 ##### 4) **IQ** (Interveniente Quitante)
+
 Card único `DADOS DO INTERVENIENTE QUITANTE`:
+
 - `Nome` (input)
 - `Comentário sobre o Processo` (textarea 2000 chars com contador `{n}/2000` no canto inferior direito).
 - Botão **SALVAR** (`variant="default"`, canto inferior direito, `bg-primary`).
@@ -170,12 +189,14 @@ Card único `DADOS DO INTERVENIENTE QUITANTE`:
 Serve para casos de portabilidade / quitação de dívida anterior.
 
 ##### 5) **IMÓVEL** — grid 2 colunas
+
 - **Coluna esquerda — DADOS DO IMÓVEL**: `Tipo do Imóvel` (Casa/Apartamento/Terreno/Sala Comercial/Rural), `Utilização do Imóvel` (Residencial/Comercial), `CEP` (ViaCEP autofill), `Endereço`, `Número`, `Complemento`, `Bairro`, `Cidade`, `UF`.
 - **Coluna direita — DADOS DA AVALIAÇÃO**: `Nome Contato` (contato do imóvel para vistoria), `Telefone Contato`.
 
 Botão **"Puxar do cadastro do cliente"** no topo da coluna esquerda: abre lista de `cliente_imoveis` do comprador principal e importa endereço + tipo/utilização com um clique.
 
 ##### 6) **DOCUMENTOS** — checklist do banco
+
 Toolbar: `Colunas` · `Filtros` · `Exportar` · **`Adicionar Documento`** · `Indexar/Analisar Documento` · `Detalhes` · **`Enviar Para {Banco}`** · `Atualizar`.
 
 Tabela (colunas alinhadas ao contrato do provedor de integração, mas com rótulos neutros na UI):
@@ -189,6 +210,7 @@ Tabela (colunas alinhadas ao contrato do provedor de integração, mas com rótu
 - `Enviar Para {Banco}`: dispara `integrarDocumentos({ proposta_id })` — ver seção API.
 
 ##### 7) **ATIVIDADES** — máquina de estados operacional
+
 Toolbar: `Colunas` · `Filtros` · `Exportar` · `Incluir Atividade` · `Em Andamento` · `Concluída` · `Detalhes`.
 
 Tabela: `Etapa` · `Atividade` · `Situação` (badge) · `SLA (dias)` · `Início` (data/hora) · `Previsão de Conclusão` · `Conclusão`.
@@ -198,23 +220,30 @@ Cada atividade é uma linha do plano operacional (ex.: "Simulação Solicitada",
 Seed automático ao criar a proposta a partir de `sla_configuracoes` do banco escolhido.
 
 ##### 8) **FUP** (Follow-Up)
+
 Grid 2 colunas:
+
 - **Esquerda — INCLUIR COMENTÁRIO**: select `Tipo` (Interno/Externo), input `Título`, textarea `Comentário` (4000 chars com contador), botão **INCLUIR COMENTÁRIO** (`bg-primary`).
 - **Direita — HISTÓRICO DE COMENTÁRIOS**: timeline com botão `Ordem ↑/↓` (mais recente/mais antigo). Cada item: avatar, autor, tipo (chip), data, título negrito, corpo. Se `Externo`, dispara `POST /oportunidade/{id}/follow-up` na HomeFin.
 
 #### Botões de ação (topo direito da tela, acima do stepper)
+
 Enviar ao banco (rascunho); Reenviar (erro/aguardando doc); Solicitar alteração; Cancelar (motivo `.trim()` obrigatório); Baixar PDF; Duplicar.
 
 ### `/operacional/propostas/kanban`
+
 Colunas = status enum. Cards arrastáveis apenas entre transições permitidas (ver máquina de estados). Drag persiste via `moverStatusProposta({ id, novo_status, motivo? })`.
 
 ### `/operacional/propostas/minhas`, `/gerais`, `/consultar`
+
 Listagens (mesmas convenções da Etapa 04).
 
 ## Estrutura de dados
 
 ### `propostas` (67 colunas — usar as existentes)
+
 Grupos:
+
 - **Identidade**: `id`, `numero_proposta`, `status`, `simulacao_id`, `cliente_id`, `banco_id`, `nome_banco`, `produto`.
 - **Snapshot cliente/imóvel** (mesmos campos da simulação — dados congelados no momento da criação).
 - **HomeFin**: `homefin_id_oportunidade`, `homefin_id_simulacao`, `codigo_oportunidade_homefin`, `enviada_em`, `contrato_emitido_em`.
@@ -224,6 +253,7 @@ Grupos:
 - **Consentimento e auditoria**: `consentimento_lgpd`, `consentimento_scr`, `ip_consentimento`.
 
 ### `proposta_documentos`
+
 `proposta_id`, `simulacao_id?`, `homefin_id_oportunidade`, `homefin_id_simulacao`, `homefin_id_documento`, `nome_documento`, `tipo_documento` (RG/CPF/COMP_RENDA/IR/EXT_BANC/MATRICULA/IPTU/CERT_NASC/CERT_CAS/etc.), `parte` (comprador1, comprador2, vendedor, imóvel), `arquivo_url`, `storage_path`, `mime_type`, `tamanho_bytes`, `status` (pendente/enviado/aprovado/reprovado/expirado), `obrigatorio`, `versao`, `enviado_em`, `enviado_por`, `integrado_em`, `erro_integracao`, `request_payload`, `response_payload`.
 
 ### `proposta_envolvidos`, `proposta_followups`, `proposta_historico`, `proposta_logs_homefin`, `proposta_pdfs`
@@ -244,25 +274,31 @@ Transições feitas via `moverStatusProposta`. Máquina implementada no server; 
 ## API HomeFin — endpoints usados
 
 ### 1) `POST /oportunidade/{id}/incluir-proposta-integracao`
+
 Body: `CreateProposalRequest = { idSimulacao }`. Retorna `{ situacao }`.
 Regra: `idSimulacao` = `simulacao_bancos.homefin_id_simulacao_banco` do banco escolhido (não da `simulacoes.id` local).
 
 ### 2) `POST /documento/{id}/upload` (multipart/form-data)
+
 - Path `{id}` = `homefin_id_documento` obtido do checklist do banco (via domínio ou primeiro `POST` que retorna a lista).
 - Form fields: `file` (binary), `idOportunidade`, `idSimulacao`, `idParte` (comprador/vendedor), `tipoDocumento`.
 - Aceita PDF, JPG, PNG até 10 MB. Rejeita > 10 MB com erro amigável.
 - Resposta: `{ idDocumentoUpload }` — gravar em `proposta_documentos.homefin_id_documento` e marcar `status='enviado'`.
 
 ### 3) `POST /oportunidade/{id}/incluir-documentos-integracao`
+
 Body: `SendDocumentsRequest = { idSimulacao }`. Chama após ter feito upload de todos os obrigatórios. HomeFin retorna `SituacaoIntegracaoDocumento` por documento.
 
 ### 4) `POST /oportunidade/{id}/participante` e `PUT /oportunidade/{id}/participante/{idParticipante}`
+
 Payload `CreateParticipantRequest` — usar todos os campos (`tipoSituacao`, `nomeParticipante`, `tipoQualificacao` CO/VD, `tipoPessoa` F/J, `cpfCnpj`, `dataNascimento`, `nomeMae`, `tipoSexo`, `tipoEstadoCivil`, `tipoRegimeCasamento`, `tipoDocumentoIdentidade`, `numeroDocumento`, `dataExpedicao`, `orgaoExpedidor`, `ufExpedicao`, `nomeProfissao`, `nomeEmpresaProfissao`, `renda`, `idBanco`, `codigoAgencia`, `codigoContaCorrente`, `digitoContaCorrente`, `email`, `celular`, `cep`, `logradouro`, `numeroLogradouro`, `complementoLogradouro`, `bairro`, `municipio`, `uf`).
 
 ### 5) `GET /oportunidade/{id}` — polling
+
 A cada callback ou a cada 5 min (worker job), busca situação atualizada. Mapeia `Opportunity.tipoSituacao` (A/T/C) + campos `codigoOportunidadeBanco`, `valorFinanciamentoBanco`, `valorParcelaBanco`, `prazoPagamentoBanco`, `taxaJurosAnoBanco` para atualizar snapshot da proposta.
 
 ### 6) `POST /oportunidade/{id}/follow-up`
+
 Body `FollowUpRequest = { idOportunidade, tipoFup: 'I'|'E', titulo, comentario }`. Grava resposta em `proposta_followups`.
 
 ## Server functions (contratos)
@@ -285,6 +321,7 @@ gerarPdfProposta({ proposta_id })
 ```
 
 ## Regras de negócio críticas
+
 1. **Snapshot congelado**: ao criar proposta, copiar todos os dados da simulação. Editar simulação depois NÃO altera a proposta.
 2. **Documentos obrigatórios por banco**: cada banco tem checklist próprio; gravar `proposta_documentos` com `obrigatorio=true` para os do checklist. Bloquear envio se algum obrigatório está `pendente`.
 3. **Envio idempotente**: se `enviada_em IS NOT NULL`, botão vira “Reenviar” e usa `PUT` quando aplicável.
@@ -297,6 +334,7 @@ gerarPdfProposta({ proposta_id })
 10. **Duplicação de proposta**: só admin, para casos de reenvio total (nova PRO-###### mantendo cliente).
 
 ## Regras de UI
+
 - Barra de progresso topo mostrando `x/y documentos obrigatórios enviados`.
 - Badge de status colorido consistente com kanban.
 - Toast + entrada no histórico a cada mudança de status.
@@ -304,6 +342,7 @@ gerarPdfProposta({ proposta_id })
 - Ao subir doc >10MB, erro claro antes do upload.
 
 ## Definition of Done
+
 - Promover simulação → proposta → completar dados → subir docs → enviar → banco aprovar → contrato emitido: fluxo ponta a ponta.
 - Cancelamento propaga à HomeFin.
 - Documento >10MB rejeitado com mensagem clara.

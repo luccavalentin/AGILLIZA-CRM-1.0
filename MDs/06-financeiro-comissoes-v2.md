@@ -5,6 +5,7 @@
 ## 1. Escopo
 
 **Tabelas**:
+
 - `financial_payables` (31 col.) — Contas a Pagar, com `origem_tipo` e `origem_ref` (idempotência com folha/comissão).
 - `financial_receivables` (31 col.) — Contas a Receber.
 - `financial_payable_history` — timeline de eventos.
@@ -16,11 +17,13 @@
 - `financial_audit_logs`.
 
 **Server fns** em `src/lib/financeiro/`:
+
 - `financeiro.functions.ts`: CRUD `financial_payables/receivables`, `baixarConta`, `estornarConta`, `listarFluxoCaixa`.
 - `comissoes-usuario.functions.ts`: `configurarRepasse`, `inferirTipoVinculo`, `recalcularComissoesUsuario`.
 - `format.ts` — utilitários de formatação BR robustos (nunca crashar em NaN/null).
 
 **Trigger `on_proposta_contrato_emitido`** — cria automaticamente:
+
 1. `financial_receivables` (banco → correspondente) com base em `comissao_regras`.
 2. `financial_payables` (correspondente → parceiro) com split conforme `parceiro_detalhes.percentual`.
 3. `comissoes_usuario` para cada regra ativa em `comissao_regras_usuario` (com o usuário responsável + banco).
@@ -28,23 +31,29 @@
 ## 2. Rotas
 
 ### `/financeiro/painel`
+
 KPIs (`ReportKpiCard`): A receber hoje/30d, A pagar hoje/30d, Saldo projetado, Inadimplência (>10d vencido). Gráficos: receita vs. despesa 12 meses, receita por banco, despesa por categoria. Empty state real.
 
 ### `/financeiro/contas-a-pagar` e `/contas-a-receber`
+
 Tabela densa: número, descrição, favorecido/pagador, categoria, CC, vencimento, valor (`tabular-nums`), status, ações inline (baixar, editar, cancelar, ver detalhes). Filtros: status (aberta/parcial/paga/atrasada/cancelada/estornada), período, categoria, CC, favorecido. Botão "Nova conta" abre dialog com recorrência (mensal/anual). Drawer de detalhe com timeline em `financial_payable_history`.
 
 Componentes reutilizáveis extraídos em `src/components/financeiro/contas/`.
 
 ### `/financeiro/comissoes` (banco → correspondente)
+
 Lista automática. Colunas: proposta (PRO), banco, valor bruto, split parceiro, split interno, status (`a_receber`, `recebida`, `paga_parceiro`, `encerrada`). Botão "Recalcular" recomputa por `comissao_regras`.
 
 ### `/financeiro/comissoes-usuario` (repasses correspondente → time — **novo em 2.0**)
+
 Configuração de % por usuário/banco (ou como % sobre o split da comissão principal). Gatilhos disponíveis: **Contrato emitido** e **Manual** (removidos gatilhos não realizáveis). Usuários selecionáveis via `ComboSelect` (input+pesquisa); tipo de vínculo (Corretor/Comercial/Gestor etc.) é inferido automaticamente por `inferirTipoVinculo` do papel do usuário.
 
 ### `/financeiro/fluxo-de-caixa`
+
 Projeção diária/semanal/mensal com KPIs reconstruídos + gráfico consolidado. Compreende `financial_payables` + `financial_receivables` + comissões pendentes.
 
 ### `/financeiro/configuracoes`
+
 CRUD de categorias, centros de custo, formas de pagamento.
 
 ## 3. Bucket

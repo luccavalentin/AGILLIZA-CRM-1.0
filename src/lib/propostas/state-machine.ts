@@ -45,7 +45,13 @@ export const TRANSICOES: Record<PropostaStatus, PropostaStatus[]> = {
   rascunho: ["aguardando_envio", "enviada_banco", "erro_envio", "cancelada"],
   aguardando_envio: ["enviada_banco", "erro_envio", "cancelada"],
   erro_envio: ["aguardando_envio", "enviada_banco", "cancelada"],
-  enviada_banco: ["em_analise_credito", "credito_aprovado", "credito_recusado", "erro_envio", "cancelada"],
+  enviada_banco: [
+    "em_analise_credito",
+    "credito_aprovado",
+    "credito_recusado",
+    "erro_envio",
+    "cancelada",
+  ],
   em_analise_credito: ["credito_aprovado", "credito_recusado", "cancelada"],
   credito_aprovado: ["aguardando_documentos", "cancelada"],
   aguardando_documentos: ["engenharia_vistoria", "cancelada"],
@@ -87,10 +93,7 @@ export function transicaoPermitida(de: PropostaStatus, para: PropostaStatus): bo
 }
 
 /** Status que ainda aceitam edição dos dados da proposta. */
-export const STATUS_EDITAVEIS: PropostaStatus[] = [
-  "rascunho",
-  "aguardando_documentos",
-];
+export const STATUS_EDITAVEIS: PropostaStatus[] = ["rascunho", "aguardando_documentos"];
 
 export const STATUS_TERMINAIS: PropostaStatus[] = [
   "contrato_emitido",

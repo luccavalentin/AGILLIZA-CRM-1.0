@@ -46,7 +46,6 @@ function Pagina() {
         descricao="Gerencie a senha de acesso à sua conta."
       />
 
-
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
@@ -122,7 +121,6 @@ function Pagina() {
           </CardContent>
         </Card>
       </div>
-
     </div>
   );
 }

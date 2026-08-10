@@ -26,9 +26,8 @@ export async function enviarDocumentosBancoImpl({
   supabase,
   documentoIds,
 }: EnviarDocumentosArgs): Promise<EnviarDocumentosResultado> {
-  const { chamarIntegracao, enviarArquivoIntegracao, sanitizarMensagemErro } = await import(
-    "@/lib/simulacao/homefin.server"
-  );
+  const { chamarIntegracao, enviarArquivoIntegracao, sanitizarMensagemErro } =
+    await import("@/lib/simulacao/homefin.server");
 
   const { data: prop, error } = await supabase
     .from("propostas")
@@ -87,7 +86,10 @@ export async function enviarDocumentosBancoImpl({
   const clienteIds = Array.from(
     new Set([
       ...(prop.cliente_id ? [String(prop.cliente_id)] : []),
-      ...envolvidos.map((e) => e.cliente_id).filter(Boolean).map(String),
+      ...envolvidos
+        .map((e) => e.cliente_id)
+        .filter(Boolean)
+        .map(String),
     ]),
   );
   if (clienteIds.length === 0) {
@@ -110,7 +112,13 @@ export async function enviarDocumentosBancoImpl({
     const mime = String(d.mime_type ?? "").toLowerCase();
     const nome = String(d.nome_arquivo ?? "").toLowerCase();
     if (mime.includes("pdf") || nome.endsWith(".pdf")) return true;
-    if (mime.includes("jpeg") || mime.includes("jpg") || nome.endsWith(".jpg") || nome.endsWith(".jpeg")) return true;
+    if (
+      mime.includes("jpeg") ||
+      mime.includes("jpg") ||
+      nome.endsWith(".jpg") ||
+      nome.endsWith(".jpeg")
+    )
+      return true;
     if (mime.includes("png") || nome.endsWith(".png")) return true;
     return false;
   };
@@ -176,11 +184,7 @@ export async function enviarDocumentosBancoImpl({
     });
   };
 
-  const marcarDoc = async (
-    id: string,
-    situacao: "enviado" | "erro",
-    erro: string | null,
-  ) => {
+  const marcarDoc = async (id: string, situacao: "enviado" | "erro", erro: string | null) => {
     try {
       await supabase
         .from("cliente_documentos")
@@ -268,7 +272,6 @@ export async function enviarDocumentosBancoImpl({
     }
   }
 
-
   // 3) Finaliza a inclusão dos documentos enviados na integração do banco.
   if (sucesso.length > 0) {
     try {
@@ -297,8 +300,6 @@ export async function enviarDocumentosBancoImpl({
       }
     }
   }
-
-
 
   // Auditoria.
   try {

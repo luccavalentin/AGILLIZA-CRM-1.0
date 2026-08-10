@@ -40,12 +40,26 @@ function tomPilula(tipo: "fase" | "origem", texto: string): string {
   // fase / status
   if (t.includes("recus") || t.includes("cancel") || t.includes("desist"))
     return "bg-destructive/8 text-destructive ring-destructive/20";
-  if (t.includes("aprov") || t.includes("emitid") || t.includes("registrad") || t.includes("contrata"))
+  if (
+    t.includes("aprov") ||
+    t.includes("emitid") ||
+    t.includes("registrad") ||
+    t.includes("contrata")
+  )
     return "bg-success/10 text-success ring-success/25";
-  if (t.includes("análise") || t.includes("analise") || t.includes("aguard") || t.includes("engenh") || t.includes("juríd") || t.includes("juridic") || t.includes("document"))
+  if (
+    t.includes("análise") ||
+    t.includes("analise") ||
+    t.includes("aguard") ||
+    t.includes("engenh") ||
+    t.includes("juríd") ||
+    t.includes("juridic") ||
+    t.includes("document")
+  )
     return "bg-warning/10 text-warning ring-warning/25";
   if (t.includes("envi")) return "bg-primary/8 text-primary ring-primary/20";
-  if (t.includes("simul") || t.includes("rascunh")) return "bg-muted text-muted-foreground ring-border";
+  if (t.includes("simul") || t.includes("rascunh"))
+    return "bg-muted text-muted-foreground ring-border";
   return "bg-muted text-muted-foreground ring-border";
 }
 

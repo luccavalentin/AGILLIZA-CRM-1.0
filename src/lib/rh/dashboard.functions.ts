@@ -38,7 +38,9 @@ export const obterKpisRh = createServerFn({ method: "GET" })
 
     const { data: funcs } = await supabase
       .from("rh_funcionarios")
-      .select("id, status, salario_atual, data_admissao, data_demissao, departamento_id, rh_departamentos(nome)")
+      .select(
+        "id, status, salario_atual, data_admissao, data_demissao, departamento_id, rh_departamentos(nome)",
+      )
       .is("deletado_em", null);
 
     const rows = (funcs ?? []) as any[];
@@ -91,7 +93,9 @@ export const obterKpisRh = createServerFn({ method: "GET" })
       const [g, o] = await Promise.all([
         supabase
           .from("rh_ferias")
-          .select("funcionario_id, periodo_aquisitivo_inicio, dias_gozados, abono_dias, status, data_inicio")
+          .select(
+            "funcionario_id, periodo_aquisitivo_inicio, dias_gozados, abono_dias, status, data_inicio",
+          )
           .in("funcionario_id", ids)
           .limit(5000),
         supabase

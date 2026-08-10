@@ -1,8 +1,5 @@
 import { FloatingWindow } from "@/components/shared/pop-out-panel";
-import {
-  useFloatingChats,
-  fecharChatFlutuante,
-} from "@/components/shared/floating-chat-store";
+import { useFloatingChats, fecharChatFlutuante } from "@/components/shared/floating-chat-store";
 import { ConversaMenuAcoesLive } from "@/components/shared/conversa-menu-acoes";
 import { ChatClienteConversa } from "@/components/crm/chat-cliente-tab";
 import { DemandaChatConversa } from "@/components/operacional/demanda-chat";
@@ -54,14 +51,18 @@ export function FloatingChatHost() {
 
         const onClose = () => {
           if (flutuante.kind === "cliente") fecharChatFlutuante("cliente", flutuante.clienteId);
-          else if (flutuante.kind === "demanda") fecharChatFlutuante("demanda", flutuante.demandaId);
+          else if (flutuante.kind === "demanda")
+            fecharChatFlutuante("demanda", flutuante.demandaId);
           else fecharChatFlutuante("dm", flutuante.conversaId);
         };
 
         // Offset positions slightly if there are multiple windows
-        const offsetStyle = index > 0 ? {
-          transform: `translate(${index * 20}px, ${index * 20}px)`
-        } : undefined;
+        const offsetStyle =
+          index > 0
+            ? {
+                transform: `translate(${index * 20}px, ${index * 20}px)`,
+              }
+            : undefined;
 
         if (flutuante.kind === "demanda") {
           return (
@@ -82,10 +83,7 @@ export function FloatingChatHost() {
                   }
                 >
                   <div className="h-full min-h-[24rem]">
-                    <DemandaChatConversa
-                      demandaId={flutuante.demandaId}
-                      info={flutuante.info}
-                    />
+                    <DemandaChatConversa demandaId={flutuante.demandaId} info={flutuante.info} />
                   </div>
                 </ChatComMenu>
               </FloatingWindow>
@@ -128,10 +126,7 @@ export function FloatingChatHost() {
                 nomeReferencia={flutuante.info?.nome ?? null}
               >
                 <div className="h-full min-h-[24rem]">
-                  <ChatClienteConversa
-                    clienteId={flutuante.clienteId}
-                    info={flutuante.info}
-                  />
+                  <ChatClienteConversa clienteId={flutuante.clienteId} info={flutuante.info} />
                 </div>
               </ChatComMenu>
             </FloatingWindow>

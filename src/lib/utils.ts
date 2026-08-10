@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** 
+/**
  * Padroniza strings para Title Case (Somente a Primeira Maiúscula).
  * Ex: "JOÃO DA SILVA" -> "João da Silva"
  * Mantém partículas (de, da, do, dos, das, e) em minúsculo.

@@ -231,9 +231,7 @@ export function FichaDocumentos({ funcionarioId }: { funcionarioId: string }) {
                   <Label>Arquivo</Label>
                   <Input
                     type="file"
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, file: e.target.files?.[0] ?? null }))
-                    }
+                    onChange={(e) => setForm((p) => ({ ...p, file: e.target.files?.[0] ?? null }))}
                   />
                 </div>
               </div>
@@ -419,9 +417,7 @@ export function FichaOcorrencias({ funcionarioId }: { funcionarioId: string }) {
               <TableCell>{fmtDate(o.data_inicio)}</TableCell>
               <TableCell>{fmtDate(o.data_fim)}</TableCell>
               <TableCell>{o.dias ?? "—"}</TableCell>
-              <TableCell className="max-w-[320px] truncate">
-                {o.justificativa ?? "—"}
-              </TableCell>
+              <TableCell className="max-w-[320px] truncate">{o.justificativa ?? "—"}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -470,12 +466,10 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
       if (!form.file) throw new Error("Selecione o arquivo do holerite.");
       const cid = await correspondenteAtual();
       const path = `${cid}/holerites/${funcionarioId}/${form.ano}-${String(form.mes).padStart(2, "0")}.pdf`;
-      const { error } = await supabase.storage
-        .from("rh-documentos")
-        .upload(path, form.file, {
-          contentType: form.file.type || "application/pdf",
-          upsert: true,
-        });
+      const { error } = await supabase.storage.from("rh-documentos").upload(path, form.file, {
+        contentType: form.file.type || "application/pdf",
+        upsert: true,
+      });
       if (error) throw new Error(error.message);
       const liquido = Number(String(form.valor_liquido).replace(",", "."));
       await fnAnexar({
@@ -516,74 +510,72 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
       atalho={{ to: "/rh/holerites", label: "Ver todos" }}
       acao={
         <div className="flex flex-wrap gap-2">
-        <HoleriteBuilderDialog
-          trigger={
-            <Button size="sm">
-              <Calculator className="mr-2 h-3.5 w-3.5" /> Gerar holerite
-            </Button>
-          }
-        />
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline">
-              <Upload className="mr-2 h-3.5 w-3.5" /> Anexar holerite
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Anexar holerite</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Mês</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={12}
-                  value={form.mes || ""}
-                  onChange={(e) => setForm((p) => ({ ...p, mes: Number(e.target.value) }))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Ano</Label>
-                <Input
-                  type="number"
-                  min={2020}
-                  max={2100}
-                  value={form.ano || ""}
-                  onChange={(e) => setForm((p) => ({ ...p, ano: Number(e.target.value) }))}
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>Valor líquido (R$)</Label>
-                <Input
-                  inputMode="decimal"
-                  value={form.valor_liquido}
-                  onChange={(e) => setForm((p) => ({ ...p, valor_liquido: e.target.value }))}
-                  placeholder="Opcional"
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>Arquivo (PDF)</Label>
-                <Input
-                  type="file"
-                  accept="application/pdf,image/*"
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, file: e.target.files?.[0] ?? null }))
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>
-                Cancelar
+          <HoleriteBuilderDialog
+            trigger={
+              <Button size="sm">
+                <Calculator className="mr-2 h-3.5 w-3.5" /> Gerar holerite
               </Button>
-              <Button onClick={() => enviar.mutate()} disabled={enviar.isPending}>
-                Anexar
+            }
+          />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Upload className="mr-2 h-3.5 w-3.5" /> Anexar holerite
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Anexar holerite</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Mês</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={form.mes || ""}
+                    onChange={(e) => setForm((p) => ({ ...p, mes: Number(e.target.value) }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Ano</Label>
+                  <Input
+                    type="number"
+                    min={2020}
+                    max={2100}
+                    value={form.ano || ""}
+                    onChange={(e) => setForm((p) => ({ ...p, ano: Number(e.target.value) }))}
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Valor líquido (R$)</Label>
+                  <Input
+                    inputMode="decimal"
+                    value={form.valor_liquido}
+                    onChange={(e) => setForm((p) => ({ ...p, valor_liquido: e.target.value }))}
+                    placeholder="Opcional"
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Arquivo (PDF)</Label>
+                  <Input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    onChange={(e) => setForm((p) => ({ ...p, file: e.target.files?.[0] ?? null }))}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={() => enviar.mutate()} disabled={enviar.isPending}>
+                  Anexar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       }
     >
@@ -607,9 +599,7 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
                 {String(h.mes).padStart(2, "0")}/{h.ano}
               </TableCell>
               <TableCell className="max-w-[240px] truncate">{h.arquivo_nome}</TableCell>
-              <TableCell>
-                {h.valor_liquido !== null ? formatBRL(h.valor_liquido) : "—"}
-              </TableCell>
+              <TableCell>{h.valor_liquido !== null ? formatBRL(h.valor_liquido) : "—"}</TableCell>
               <TableCell className="text-right">
                 <Button
                   size="icon"
@@ -619,7 +609,12 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button size="icon" variant="ghost" title="Visualizar" onClick={() => abrir(h.arquivo_path)}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  title="Visualizar"
+                  onClick={() => abrir(h.arquivo_path)}
+                >
                   <Eye className="h-4 w-4" />
                 </Button>
                 <Button

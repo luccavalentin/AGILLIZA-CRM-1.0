@@ -45,8 +45,20 @@ export function ContasExport({
     { key: "contraparte", label: recebe ? "Pagador" : "Fornecedor" },
     { key: "categoria", label: "Categoria" },
     { key: "vencimento", label: "Vencimento", format: "date" as const },
-    { key: "valor", label: "Valor", align: "right" as const, format: "brl" as const, footer: "sum" as const },
-    { key: "pago", label: "Baixado", align: "right" as const, format: "brl" as const, footer: "sum" as const },
+    {
+      key: "valor",
+      label: "Valor",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
+    {
+      key: "pago",
+      label: "Baixado",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
     { key: "status", label: "Status" },
   ];
 
@@ -63,9 +75,22 @@ export function ContasExport({
 
   const kpis = resumo
     ? [
-        { label: "Total no período", valor: formatBRL(resumo.totalValor), hint: `${resumo.totalQtd} conta(s)`, tone: "brand" as const },
-        { label: recebe ? "A receber" : "A pagar", valor: formatBRL(resumo.abertoValor), tone: "warning" as const },
-        { label: recebe ? "Recebido" : "Pago", valor: formatBRL(resumo.pagoValor), tone: "success" as const },
+        {
+          label: "Total no período",
+          valor: formatBRL(resumo.totalValor),
+          hint: `${resumo.totalQtd} conta(s)`,
+          tone: "brand" as const,
+        },
+        {
+          label: recebe ? "A receber" : "A pagar",
+          valor: formatBRL(resumo.abertoValor),
+          tone: "warning" as const,
+        },
+        {
+          label: recebe ? "Recebido" : "Pago",
+          valor: formatBRL(resumo.pagoValor),
+          tone: "success" as const,
+        },
         { label: "Em atraso", valor: formatBRL(resumo.atrasadoValor), tone: "danger" as const },
       ]
     : [];

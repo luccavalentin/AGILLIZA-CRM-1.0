@@ -41,7 +41,6 @@ import { HistoricoTab } from "@/components/crm/cliente-detalhe/historico-tab";
 import { clienteParaFormInicial } from "@/components/crm/cliente-detalhe/form-mapper";
 import { AppClienteAcesso } from "@/components/crm/cliente-detalhe/app-cliente-acesso";
 
-
 export const Route = createFileRoute("/_authenticated/crm/clientes_/$id")({
   head: () => ({ meta: [{ title: "Cliente — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
@@ -200,12 +199,8 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="mensagens" className="mt-4">
-          <AppClienteAcesso
-            clienteId={id}
-            ativo={Boolean((c as any)?.portal_acesso_ativo)}
-          />
+          <AppClienteAcesso clienteId={id} ativo={Boolean((c as any)?.portal_acesso_ativo)} />
           <div className="h-[68dvh] max-h-[680px] min-h-[420px]">
-
             <ChatClienteInstagram
               clienteId={id}
               info={{

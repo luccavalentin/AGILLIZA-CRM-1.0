@@ -47,10 +47,7 @@ import {
 import { formatBRL } from "@/lib/financeiro/format";
 import { YearPicker } from "@/components/rh/year-picker";
 
-const MESES = [
-  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-  "Jul", "Ago", "Set", "Out", "Nov", "Dez",
-];
+const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 const STATUS_TONE: Record<StatusCompetencia, string> = {
   aberta: "bg-muted text-muted-foreground",
@@ -214,10 +211,14 @@ function Pagina() {
           <div className="space-y-1.5">
             <Label>Mês</Label>
             <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {MESES.map((m, i) => (
-                  <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+                  <SelectItem key={m} value={String(i + 1)}>
+                    {m}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -259,7 +260,9 @@ function Pagina() {
                   return (
                     <TableRow key={i.funcionario_id}>
                       <TableCell className="font-medium">{i.funcionario_nome}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{i.cargo ?? "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {i.cargo ?? "—"}
+                      </TableCell>
                       <TableCell className="text-right">{formatBRL(i.salario_base)}</TableCell>
                       <TableCell className="text-right text-emerald-600">
                         {formatBRL(i.detalhes.beneficios_valor)}
@@ -270,10 +273,14 @@ function Pagina() {
                       <TableCell className="text-right text-destructive">
                         -{formatBRL(i.detalhes.adiantamentos)}
                       </TableCell>
-                      <TableCell className={`text-right ${saldoAj > 0 ? "text-emerald-600" : saldoAj < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                      <TableCell
+                        className={`text-right ${saldoAj > 0 ? "text-emerald-600" : saldoAj < 0 ? "text-destructive" : "text-muted-foreground"}`}
+                      >
                         {saldoAj === 0 ? "—" : (saldoAj > 0 ? "+" : "") + formatBRL(saldoAj)}
                       </TableCell>
-                      <TableCell className="text-right font-semibold">{formatBRL(i.liquido)}</TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {formatBRL(i.liquido)}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="icon"
@@ -281,7 +288,12 @@ function Pagina() {
                           disabled={jaFechada}
                           onClick={() => {
                             setAjustesFunc(i);
-                            setAjusteForm({ tipo: "provento", descricao: "", valor: 0, id: undefined });
+                            setAjusteForm({
+                              tipo: "provento",
+                              descricao: "",
+                              valor: 0,
+                              id: undefined,
+                            });
                           }}
                           title="Ajustes avulsos"
                         >
@@ -293,7 +305,10 @@ function Pagina() {
                 })}
                 {(!previa.data || previa.data.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={9}
+                      className="py-10 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum funcionário ativo nesta competência.
                     </TableCell>
                   </TableRow>
@@ -302,14 +317,18 @@ function Pagina() {
               {previa.data && previa.data.length > 0 && (
                 <TableFooter>
                   <TableRow>
-                    <TableCell colSpan={2} className="font-semibold">Totais</TableCell>
+                    <TableCell colSpan={2} className="font-semibold">
+                      Totais
+                    </TableCell>
                     <TableCell colSpan={2} className="text-right">
                       Proventos: {formatBRL(totais.proventos)}
                     </TableCell>
                     <TableCell colSpan={3} className="text-right">
                       Descontos: {formatBRL(totais.descontos)}
                     </TableCell>
-                    <TableCell className="text-right font-bold">{formatBRL(totais.liquido)}</TableCell>
+                    <TableCell className="text-right font-bold">
+                      {formatBRL(totais.liquido)}
+                    </TableCell>
                     <TableCell />
                   </TableRow>
                 </TableFooter>
@@ -339,13 +358,17 @@ function Pagina() {
               <TableBody>
                 {(historico.data ?? []).map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium">{MESES[c.mes - 1]}/{c.ano}</TableCell>
+                    <TableCell className="font-medium">
+                      {MESES[c.mes - 1]}/{c.ano}
+                    </TableCell>
                     <TableCell>
                       <Badge className={STATUS_TONE[c.status]}>{c.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">{formatBRL(c.total_proventos)}</TableCell>
                     <TableCell className="text-right">{formatBRL(c.total_descontos)}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatBRL(c.total_liquido)}</TableCell>
+                    <TableCell className="text-right font-semibold">
+                      {formatBRL(c.total_liquido)}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {c.fechada_em ? new Date(c.fechada_em).toLocaleDateString("pt-BR") : "—"}
                     </TableCell>
@@ -353,7 +376,10 @@ function Pagina() {
                 ))}
                 {(!historico.data || historico.data.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="py-10 text-center text-sm text-muted-foreground"
+                    >
                       Nenhuma competência fechada ainda.
                     </TableCell>
                   </TableRow>
@@ -381,7 +407,9 @@ function Pagina() {
                   value={ajusteForm.tipo}
                   onValueChange={(v) => setAjusteForm((p) => ({ ...p, tipo: v as any }))}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="provento">Provento (+)</SelectItem>
                     <SelectItem value="desconto">Desconto (−)</SelectItem>
@@ -432,7 +460,13 @@ function Pagina() {
                   {(ajustes.data ?? []).map((a) => (
                     <TableRow key={a.id}>
                       <TableCell>
-                        <Badge className={a.tipo === "provento" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-destructive/15 text-destructive"}>
+                        <Badge
+                          className={
+                            a.tipo === "provento"
+                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                              : "bg-destructive/15 text-destructive"
+                          }
+                        >
                           {a.tipo === "provento" ? "Provento" : "Desconto"}
                         </Badge>
                       </TableCell>
@@ -468,7 +502,10 @@ function Pagina() {
                   ))}
                   {(!ajustes.data || ajustes.data.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                      <TableCell
+                        colSpan={4}
+                        className="py-6 text-center text-sm text-muted-foreground"
+                      >
                         Nenhum ajuste avulso nesta competência.
                       </TableCell>
                     </TableRow>
@@ -479,7 +516,9 @@ function Pagina() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAjustesFunc(null)}>Fechar</Button>
+            <Button variant="outline" onClick={() => setAjustesFunc(null)}>
+              Fechar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -502,11 +541,17 @@ function Pagina() {
             </div>
             <div className="space-y-1.5">
               <Label>Observações</Label>
-              <Textarea rows={2} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
+              <Textarea
+                rows={2}
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenFechar(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setOpenFechar(false)}>
+              Cancelar
+            </Button>
             <Button onClick={() => fechar.mutate()} disabled={fechar.isPending}>
               Fechar e gerar pagamentos
             </Button>

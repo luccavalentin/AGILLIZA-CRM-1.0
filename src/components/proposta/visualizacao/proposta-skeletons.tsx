@@ -1,7 +1,22 @@
 import * as React from "react";
-import { Loader2, FileText, ArrowLeft, RefreshCw, AlertCircle, Ban, Trash2, Clock, Check } from "lucide-react";
+import {
+  Loader2,
+  FileText,
+  ArrowLeft,
+  RefreshCw,
+  AlertCircle,
+  Ban,
+  Trash2,
+  Clock,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useRouter, Link } from "@tanstack/react-router";
 
 export function PropostaSkeleton() {
@@ -24,7 +39,11 @@ export function PropostaNaoEncontrada() {
         <h1 className="text-2xl font-bold text-foreground">Proposta não encontrada</h1>
       </div>
       <p className="text-muted-foreground">Não foi possível localizar os dados desta proposta.</p>
-      <Button variant="outline" onClick={() => router.navigate({ to: "/operacional/propostas" })} className="mt-4">
+      <Button
+        variant="outline"
+        onClick={() => router.navigate({ to: "/operacional/propostas" })}
+        className="mt-4"
+      >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Voltar para a lista
       </Button>
@@ -35,9 +54,12 @@ export function PropostaNaoEncontrada() {
 export function PropostaErro({ error, reset, id }: { error: any; reset: () => void; id: string }) {
   const router = useRouter();
   const e = error as any;
-  
+
   const isPermissionError = e?.message?.includes("permissão") || e?.status === 403;
-  const isNetworkError = e?.message?.includes("fetch") || e?.message?.includes("Network Error") || e?.name === "TypeError";
+  const isNetworkError =
+    e?.message?.includes("fetch") ||
+    e?.message?.includes("Network Error") ||
+    e?.name === "TypeError";
   const prop = e?.proposta || e?.data?.proposta;
   const isDeleted = prop?.deleted_at;
 
@@ -50,8 +72,14 @@ export function PropostaErro({ error, reset, id }: { error: any; reset: () => vo
           </div>
           <h1 className="text-2xl font-bold">Acesso Negado</h1>
         </div>
-        <p className="text-muted-foreground">Você não tem permissão para acessar o registro específico.</p>
-        <Button variant="outline" onClick={() => router.navigate({ to: "/operacional/propostas" })} className="mt-4">
+        <p className="text-muted-foreground">
+          Você não tem permissão para acessar o registro específico.
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => router.navigate({ to: "/operacional/propostas" })}
+          className="mt-4"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar para a lista
         </Button>
@@ -60,7 +88,7 @@ export function PropostaErro({ error, reset, id }: { error: any; reset: () => vo
   }
 
   if (isDeleted) {
-     return (
+    return (
       <div className="p-8 max-w-2xl mx-auto space-y-6 text-center">
         <div className="flex flex-col items-center gap-4 text-destructive">
           <div className="p-4 bg-destructive/10 rounded-full">
@@ -68,19 +96,26 @@ export function PropostaErro({ error, reset, id }: { error: any; reset: () => vo
           </div>
           <h1 className="text-2xl font-bold">Esta proposta foi excluída</h1>
         </div>
-        <p className="text-muted-foreground">Esta proposta não está mais disponível pois foi removida.</p>
+        <p className="text-muted-foreground">
+          Esta proposta não está mais disponível pois foi removida.
+        </p>
         <div className="flex gap-3 justify-center">
-            <Button variant="outline" onClick={() => router.navigate({ to: "/operacional/propostas" })}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para a lista
-            </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.navigate({ to: "/operacional/propostas" })}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para a lista
+          </Button>
         </div>
       </div>
     );
   }
 
   const title = isNetworkError ? "Falha de conexão" : "Erro ao carregar proposta";
-  const msg = isNetworkError ? "Não foi possível conectar ao servidor. Verifique sua internet." : (e?.message || "Ocorreu um erro inesperado ao tentar abrir esta proposta.");
+  const msg = isNetworkError
+    ? "Não foi possível conectar ao servidor. Verifique sua internet."
+    : e?.message || "Ocorreu um erro inesperado ao tentar abrir esta proposta.";
 
   return (
     <div className="p-8 max-w-3xl mx-auto space-y-6">
@@ -88,7 +123,7 @@ export function PropostaErro({ error, reset, id }: { error: any; reset: () => vo
         <AlertCircle className="h-8 w-8" />
         <h1 className="text-xl font-semibold">{title}</h1>
       </div>
-      
+
       <p className="text-muted-foreground">{msg}</p>
 
       <Accordion type="single" collapsible className="w-full border rounded-lg bg-muted/30">
@@ -98,13 +133,17 @@ export function PropostaErro({ error, reset, id }: { error: any; reset: () => vo
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <pre className="text-[10px] overflow-auto max-h-[300px] p-3 bg-black/5 rounded font-mono">
-              {JSON.stringify({
-                name: e?.name,
-                message: e?.message,
-                stack: e?.stack,
-                cause: e?.cause,
-                data: e?.data
-              }, null, 2)}
+              {JSON.stringify(
+                {
+                  name: e?.name,
+                  message: e?.message,
+                  stack: e?.stack,
+                  cause: e?.cause,
+                  data: e?.data,
+                },
+                null,
+                2,
+              )}
             </pre>
           </AccordionContent>
         </AccordionItem>
@@ -115,7 +154,11 @@ export function PropostaErro({ error, reset, id }: { error: any; reset: () => vo
           <RefreshCw className="mr-2 h-4 w-4" />
           Tentar novamente
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => router.navigate({ to: "/operacional/propostas" })}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.navigate({ to: "/operacional/propostas" })}
+        >
           Voltar
         </Button>
       </div>

@@ -34,7 +34,11 @@ export function RealtimeAuthSync() {
         // IMEDIATAMENTE e as mensagens filtradas por RLS não sejam perdidas.
         if (estado === "joined" || estado === "joining") {
           void ch.unsubscribe().then(() => {
-            try { ch.subscribe(); } catch { /* ignora */ }
+            try {
+              ch.subscribe();
+            } catch {
+              /* ignora */
+            }
           });
         }
       }
@@ -79,4 +83,3 @@ export function RealtimeAuthSync() {
 
   return null;
 }
-

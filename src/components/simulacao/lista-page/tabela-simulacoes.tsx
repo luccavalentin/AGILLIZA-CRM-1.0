@@ -18,10 +18,7 @@ import {
 } from "@/components/ui/table";
 import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
-import {
-  AcoesSimulacao,
-  ProdutoBadge,
-} from "@/components/simulacao/lista-detalhe";
+import { AcoesSimulacao, ProdutoBadge } from "@/components/simulacao/lista-detalhe";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { formatDataHoraBR, type HandlersLinha } from "./tipos";
@@ -62,17 +59,32 @@ export function TabelaSimulacoes({
                 />
               </TableHead>
             )}
-            <TableHead className="h-10 w-[100px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">Número</TableHead>
-            <TableHead className="h-10 min-w-[150px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">Cliente</TableHead>
-            <TableHead className="h-10 w-[70px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">Prod.</TableHead>
-            <TableHead className="h-10 min-w-[180px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">Bancos simulados</TableHead>
-            <TableHead className="h-10 w-[120px] text-right text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">Valor imóvel</TableHead>
-            <TableHead className="h-10 w-[80px] text-right text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">Prazo</TableHead>
-            <TableHead className="h-10 w-[110px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">Status</TableHead>
-            <TableHead className="h-10 w-[100px] text-right text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">Ações</TableHead>
+            <TableHead className="h-10 w-[100px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+              Número
+            </TableHead>
+            <TableHead className="h-10 min-w-[150px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+              Cliente
+            </TableHead>
+            <TableHead className="h-10 w-[70px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+              Prod.
+            </TableHead>
+            <TableHead className="h-10 min-w-[180px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+              Bancos simulados
+            </TableHead>
+            <TableHead className="h-10 w-[120px] text-right text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+              Valor imóvel
+            </TableHead>
+            <TableHead className="h-10 w-[80px] text-right text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+              Prazo
+            </TableHead>
+            <TableHead className="h-10 w-[110px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+              Status
+            </TableHead>
+            <TableHead className="h-10 w-[100px] text-right text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+              Ações
+            </TableHead>
           </TableRow>
         </TableHeader>
-
 
         <TableBody className="group/table">
           {isLoading &&
@@ -101,8 +113,7 @@ export function TabelaSimulacoes({
               </TableCell>
             </TableRow>
           )}
-          {itens
-            .map((s) => {
+          {itens.map((s) => {
             const corBanco = corDoBanco(s.bancos?.[0]?.nome_banco);
             return (
               <TableRow
@@ -139,7 +150,9 @@ export function TabelaSimulacoes({
                 </TableCell>
 
                 <TableCell className="py-3 px-2 font-medium text-foreground transition-colors group-hover/row:text-primary min-w-[150px]">
-                  <p className="truncate text-[13px] font-bold leading-tight">{s.nome_cliente ?? "—"}</p>
+                  <p className="truncate text-[13px] font-bold leading-tight">
+                    {s.nome_cliente ?? "—"}
+                  </p>
                   {escopo === "todas" && s.nome_responsavel && (
                     <span className="mt-1 flex items-center gap-1 text-[11px] font-medium text-muted-foreground leading-none">
                       <UserIcon className="h-3 w-3 shrink-0" />
@@ -169,7 +182,10 @@ export function TabelaSimulacoes({
                     <SimulacaoStatusBadge status={s.status} />
                   </div>
                 </TableCell>
-                <TableCell className="text-right py-3 px-2 w-[100px]" onClick={(e) => e.stopPropagation()}>
+                <TableCell
+                  className="text-right py-3 px-2 w-[100px]"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {verExcluidas ? (
                     <Button
                       size="sm"
@@ -187,14 +203,11 @@ export function TabelaSimulacoes({
                         onBaixarComparativo={() => handlers.onBaixarComparativo(s.id)}
                         onBaixarDetalhada={() => handlers.onBaixarDetalhada(s.id)}
                         onDuplicar={() => handlers.onDuplicar(s.id)}
-                        onEnviarProposta={() =>
-                          handlers.onEnviarProposta(s.id, s.numero_simulacao)
-                        }
+                        onEnviarProposta={() => handlers.onEnviarProposta(s.id, s.numero_simulacao)}
                         onExcluir={() => handlers.onExcluir(s.id)}
                         onEncaminhar={(id, canal) => handlers.onEncaminhar(s.id, canal)}
                         onDestravar={() => handlers.onDestravar(s.id)}
                         numero={s.numero_simulacao}
-
                       />
                     </div>
                   )}

@@ -76,7 +76,7 @@ export function ListaMobile({
               }
               className={cn(
                 "group/card relative cursor-pointer overflow-hidden rounded-2xl border-border/60 bg-card p-0 shadow-sm ring-1 ring-inset ring-[var(--banco-ring)] transition-all duration-300 ease-out hover:z-10 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_18px_40px_-12px_rgba(0,0,0,0.18),0_0_0_1px_var(--banco-ring)]",
-                p.deleted_at && "opacity-60 grayscale bg-muted/20"
+                p.deleted_at && "opacity-60 grayscale bg-muted/20",
               )}
               onClick={() =>
                 router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
@@ -135,7 +135,9 @@ export function ListaMobile({
                         Nº banco {nb}
                       </div>
                       <div className="mt-1 flex flex-col gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        <span>Interno <span className="tabular-nums">{p.numero_proposta}</span></span>
+                        <span>
+                          Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                        </span>
                         <span className="text-[9px] lowercase tracking-tight">
                           {formatDataHora(p.created_at)}
                         </span>

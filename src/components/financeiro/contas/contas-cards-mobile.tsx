@@ -24,7 +24,10 @@ export function ContasCardsMobile({
     <div className="space-y-3 md:hidden">
       {isLoading &&
         Array.from({ length: 3 }).map((_, i) => (
-          <div key={`mk-${i}`} className="h-24 animate-pulse rounded-xl border border-border bg-muted/50" />
+          <div
+            key={`mk-${i}`}
+            className="h-24 animate-pulse rounded-xl border border-border bg-muted/50"
+          />
         ))}
       {!isLoading && itens.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card py-12 text-center">
@@ -50,7 +53,7 @@ export function ContasCardsMobile({
                 conta={c}
                 tipo={tipo}
                 onDetalhe={() => acoes.onDetalhe(c.id)}
-                    onEditar={() => acoes.onEditar(c.id)}
+                onEditar={() => acoes.onEditar(c.id)}
                 onBaixar={() => acoes.onBaixar(c)}
                 onEstornar={() => acoes.onEstornar(c.id)}
                 onCancelar={() => acoes.onCancelar(c.id)}

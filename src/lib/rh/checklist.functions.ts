@@ -6,11 +6,19 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const CHECKLIST_CLT: Array<{ tipo: string; rotulo: string; obrigatorio: boolean }> = [
   { tipo: "rg", rotulo: "RG (frente e verso)", obrigatorio: true },
   { tipo: "cpf", rotulo: "CPF", obrigatorio: true },
-  { tipo: "comprovante_residencia", rotulo: "Comprovante de residência (últimos 90 dias)", obrigatorio: true },
+  {
+    tipo: "comprovante_residencia",
+    rotulo: "Comprovante de residência (últimos 90 dias)",
+    obrigatorio: true,
+  },
   { tipo: "ctps", rotulo: "CTPS (Carteira de Trabalho)", obrigatorio: true },
   { tipo: "titulo_eleitor", rotulo: "Título de eleitor", obrigatorio: true },
   { tipo: "pis_nis", rotulo: "PIS / PASEP / NIS", obrigatorio: true },
-  { tipo: "certidao_nascimento_casamento", rotulo: "Certidão de nascimento ou casamento", obrigatorio: true },
+  {
+    tipo: "certidao_nascimento_casamento",
+    rotulo: "Certidão de nascimento ou casamento",
+    obrigatorio: true,
+  },
   { tipo: "aso_admissional", rotulo: "ASO admissional (exame médico)", obrigatorio: true },
   { tipo: "foto_3x4", rotulo: "Foto 3x4", obrigatorio: true },
   { tipo: "dados_bancarios", rotulo: "Dados bancários / comprovante de conta", obrigatorio: true },
@@ -18,8 +26,16 @@ export const CHECKLIST_CLT: Array<{ tipo: string; rotulo: string; obrigatorio: b
   { tipo: "cnh", rotulo: "CNH (se aplicável ao cargo)", obrigatorio: false },
   { tipo: "escolaridade", rotulo: "Comprovante de escolaridade", obrigatorio: false },
   { tipo: "certidao_filhos", rotulo: "Certidão de nascimento dos filhos", obrigatorio: false },
-  { tipo: "cartao_vacinacao_filhos", rotulo: "Cartão de vacinação (filhos até 7 anos)", obrigatorio: false },
-  { tipo: "declaracao_dependentes_ir", rotulo: "Declaração de dependentes de IR", obrigatorio: false },
+  {
+    tipo: "cartao_vacinacao_filhos",
+    rotulo: "Cartão de vacinação (filhos até 7 anos)",
+    obrigatorio: false,
+  },
+  {
+    tipo: "declaracao_dependentes_ir",
+    rotulo: "Declaração de dependentes de IR",
+    obrigatorio: false,
+  },
   { tipo: "contrato_experiencia", rotulo: "Contrato de experiência assinado", obrigatorio: true },
   { tipo: "vale_transporte", rotulo: "Declaração de opção de vale-transporte", obrigatorio: false },
 ];
@@ -38,9 +54,7 @@ export interface ItemChecklist {
 /** Lista o checklist CLT, criando itens padrão se ainda não existirem. */
 export const listarChecklistCLT = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z.object({ funcionario_id: z.string().uuid() }).parse(data),
-  )
+  .inputValidator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<ItemChecklist[]> => {
     const { supabase } = context;
 
@@ -117,9 +131,7 @@ export const atualizarItemChecklist = createServerFn({ method: "POST" })
         .eq("id", existente.id);
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await supabase
-        .from("rh_documentos_checklist")
-        .insert(payload as never);
+      const { error } = await supabase.from("rh_documentos_checklist").insert(payload as never);
       if (error) throw new Error(error.message);
     }
     return { ok: true };

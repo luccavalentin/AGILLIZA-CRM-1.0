@@ -39,11 +39,7 @@ import { sanitizePath, formatBytes } from "./gerenciador/arquivo-utils";
 import { NoCard } from "./gerenciador/no-card";
 import { TrilhaNavegacao } from "./gerenciador/trilha-navegacao";
 import { MoverDialog } from "./gerenciador/mover-dialog";
-import {
-  ExcluirDialog,
-  NovaPastaDialog,
-  RenomearDialog,
-} from "./gerenciador/dialogos-arquivo";
+import { ExcluirDialog, NovaPastaDialog, RenomearDialog } from "./gerenciador/dialogos-arquivo";
 import {
   Dialog,
   DialogContent,
@@ -141,7 +137,7 @@ export function GerenciadorArquivos({
     return {
       pastas: lista.filter((n) => n.tipo === "pasta").length,
       arquivos: lista.filter((n) => n.tipo === "arquivo").length,
-      tamanho: lista.reduce((s, n) => s + (n.tipo === "arquivo" ? n.tamanho ?? 0 : 0), 0),
+      tamanho: lista.reduce((s, n) => s + (n.tipo === "arquivo" ? (n.tamanho ?? 0) : 0), 0),
     };
   }, [nos.data]);
 
@@ -434,46 +430,46 @@ export function GerenciadorArquivos({
           )}
         </div>
         <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setTermoGlobal("");
-            setBuscaGlobalAberta(true);
-          }}
-        >
-          <Search className="mr-2 h-4 w-4" /> Buscar em todos
-        </Button>
-        <div className="inline-flex rounded-lg border border-border/60 bg-card p-0.5 shadow-sm">
-          <button
-            type="button"
-            aria-label="Ver em grade"
-            aria-pressed={vista === "grade"}
-            onClick={() => setVista("grade")}
-            className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-              vista === "grade"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setTermoGlobal("");
+              setBuscaGlobalAberta(true);
+            }}
           >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="Ver em lista"
-            aria-pressed={vista === "lista"}
-            onClick={() => setVista("lista")}
-            className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-              vista === "lista"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <List className="h-4 w-4" />
-          </button>
-        </div>
+            <Search className="mr-2 h-4 w-4" /> Buscar em todos
+          </Button>
+          <div className="inline-flex rounded-lg border border-border/60 bg-card p-0.5 shadow-sm">
+            <button
+              type="button"
+              aria-label="Ver em grade"
+              aria-pressed={vista === "grade"}
+              onClick={() => setVista("grade")}
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                vista === "grade"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="Ver em lista"
+              aria-pressed={vista === "lista"}
+              onClick={() => setVista("lista")}
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                vista === "lista"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 

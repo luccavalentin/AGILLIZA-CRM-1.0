@@ -12,6 +12,7 @@
 Todos os 18 relatórios do sistema consomem a mesma engine + componentes.
 
 **Server fn `runReport(codigo, filtros, escopo)`** em `src/lib/relatorios/`:
+
 - Recebe `codigo` (ex.: `comerciais`, `simulacoes`, `propostas`, `financeiros`, `crm`, `clientes`, `demandas`, `tarefas`, `comissoes`, `app-cliente`, `operacional`, `consolidado`, `gerencial`, `rh`, `matriculas`, `personalizados`, `painel-geral`, `exportacoes`).
 - Recebe `filtros`: `{periodo:{de,ate}, escopo:'minha'|'equipe'|'geral', banco?, produto?, status?, responsavel?, cliente?, faixa_valor?, uf?, categoria?, cost_center?}` — todos serializados em query string para link compartilhável.
 - Retorna `{ kpis: KpiDef[], graficos: ChartDef[], ranking?: RankingDef, detalhamento: { colunas, linhas, totais } }`.
@@ -19,6 +20,7 @@ Todos os 18 relatórios do sistema consomem a mesma engine + componentes.
 - Cacheia views agregadas por 60s; invalida por evento (proposta mudou status → `queryClient.invalidateQueries(['relatorios'])`).
 
 Componentes canônicos (`src/components/reports/`):
+
 - `ReportShell` — cabeçalho executivo (eyebrow · título · descrição · meta com período/escopo/registros · botão Imprimir).
 - `ReportSection` — separador semântico.
 - `ReportFiltersBar` — Período (obrigatório) + Mais filtros (dropdown) + chips ativos + Limpar.
@@ -30,6 +32,7 @@ Componentes canônicos (`src/components/reports/`):
 - `ReportView` — página completa que combina tudo.
 
 Estrutura visual obrigatória:
+
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │ RELATÓRIOS · <MÓDULO>                                         │

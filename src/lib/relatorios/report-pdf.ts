@@ -17,7 +17,6 @@ function drawPageBackground(doc: jsPDF, pageW: number, pageH: number) {
 
 const HEADER_H = 84;
 
-
 /** Desenha o cabeçalho institucional (faixa azul + logo à esquerda + título) em cada página. */
 function drawHeader(doc: jsPDF, pageW: number, titulo: string, descricao: string) {
   drawBrandHeader(doc, pageW, HEADER_H, titulo, descricao);
@@ -79,8 +78,6 @@ export function drawBrandHeader(
   doc.text(descLinha, textoX, centroY + 13);
 }
 
-
-
 /** Desenha o rodapé institucional com paginação. */
 function drawFooter(doc: jsPDF, pageW: number, pageH: number, pageNum: number, total: number) {
   const y = pageH - 22;
@@ -117,18 +114,17 @@ export function exportPDF(
   modo: "download" | "print" = "download",
 ) {
   P = getPdfPalette();
-  const doc = new jsPDF({ 
-    orientation, 
-    unit: "pt", 
+  const doc = new jsPDF({
+    orientation,
+    unit: "pt",
     format: "a4",
-    compress: true // Otimização de tamanho global
+    compress: true, // Otimização de tamanho global
   });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   drawPageBackground(doc, pageW, pageH);
 
   let y = HEADER_H + 22;
-
 
   // Painel de informações do documento (Data, Cliente, CPF...) — legível e profissional.
   if (docInfo && docInfo.length) {
@@ -291,7 +287,8 @@ export function exportPDF(
 
   // Disclaimer opcional (ex.: simulações) logo abaixo da tabela.
   if (nota && nota.trim()) {
-    const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
+    const finalY =
+      (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
     let ny = finalY + 18;
     if (ny > pageH - 60) {
       doc.addPage();
@@ -324,7 +321,10 @@ export function exportPDF(
   }
 
   if (filename && filename.trim()) {
-    const limpo = filename.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
+    const limpo = filename
+      .replace(/[\\/:*?"<>|]+/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
     doc.save(`${limpo}.pdf`);
   } else {
     // Normaliza acentos (NFD) antes do slug para não perder letras (ex.: "operações" -> "operacoes").

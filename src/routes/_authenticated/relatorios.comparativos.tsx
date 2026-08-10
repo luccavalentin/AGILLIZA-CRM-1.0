@@ -207,7 +207,6 @@ function Pagina() {
             Novo comparativo
           </Button>
         </div>
-
       </header>
 
       <div className="flex flex-wrap items-end gap-3">

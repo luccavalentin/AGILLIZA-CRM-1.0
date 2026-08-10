@@ -127,9 +127,8 @@ export function ExcluirPastaDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir pasta?</AlertDialogTitle>
           <AlertDialogDescription>
-            A pasta "{alvo?.nome}"
-            {descricaoExtra ? ` ${descricaoExtra}` : ""} será removida. Os documentos
-            dentro dela serão movidos para "Outros". Esta ação não pode ser desfeita.
+            A pasta "{alvo?.nome}"{descricaoExtra ? ` ${descricaoExtra}` : ""} será removida. Os
+            documentos dentro dela serão movidos para "Outros". Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

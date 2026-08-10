@@ -123,7 +123,6 @@ export interface ReportKpi {
   titulo?: string;
 }
 
-
 export interface ChartSerie {
   label: string;
   valor: number;

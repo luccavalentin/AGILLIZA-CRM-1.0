@@ -43,13 +43,8 @@ export function usePipelineRealtime() {
       // O polling do banco atualiza `propostas.status` sem necessariamente mudar
       // a macro-etapa em `cliente_pipeline`, então ouvimos as duas tabelas para
       // que o painel reflita o banco em tempo real sem refetch manual.
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "propostas" },
-        invalidar,
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "propostas" }, invalidar)
       .subscribe();
-
 
     return () => {
       if (timer) clearTimeout(timer);

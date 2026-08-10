@@ -91,7 +91,9 @@ function Pagina() {
         const falhas = resultados.filter((r) => r.status === "rejected");
         if (falhas.length === 0) toast.success("Reenviado ao banco.");
         else if (falhas.length < resultados.length)
-          toast.warning(`Reenviado parcialmente (${falhas.length} de ${resultados.length} falharam).`);
+          toast.warning(
+            `Reenviado parcialmente (${falhas.length} de ${resultados.length} falharam).`,
+          );
         else toast.error("Falha ao reenviar aos bancos.");
       } else {
         await enviarSimulacaoBanco({ data: { simulacao_id: id } });
@@ -132,8 +134,7 @@ function Pagina() {
             ),
           );
           const falhas = resultados.filter((r) => r.status === "rejected").length;
-          if (falhas === 0)
-            toast.success("Titular invertido e simulação reenviada aos bancos.");
+          if (falhas === 0) toast.success("Titular invertido e simulação reenviada aos bancos.");
           else if (falhas < resultados.length)
             toast.warning(
               `Titular invertido. Reenvio parcial (${falhas} de ${resultados.length} falharam).`,
@@ -195,9 +196,9 @@ function Pagina() {
       // (useEnviarProposta), que ressincroniza o cadastro, valida os campos
       // obrigatórios e abre o formulário quando faltar algo.
       try {
-        await handleEnviarHook({ 
+        await handleEnviarHook({
           propostaId: proposta_id,
-          bancoId: bancoId ?? "todos" // Passa o ID do banco ou "todos" se não houver
+          bancoId: bancoId ?? "todos", // Passa o ID do banco ou "todos" se não houver
         });
       } catch {
         /* mensagem já exibida pelo gate */

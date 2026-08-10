@@ -159,14 +159,20 @@ export function ControleFeriasPanel({
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={9}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Calculando períodos aquisitivos…
                     </TableCell>
                   </TableRow>
                 )}
                 {!isLoading && itens.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={9}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum funcionário encontrado.
                     </TableCell>
                   </TableRow>

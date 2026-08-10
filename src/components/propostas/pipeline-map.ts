@@ -43,7 +43,6 @@ const MAPA: Record<PropostaStatus, StepperCodigo> = {
   registrado: "contrato",
 };
 
-
 export function etapaDoStatus(status: string): StepperCodigo {
   return MAPA[status as PropostaStatus] ?? "simulacao";
 }

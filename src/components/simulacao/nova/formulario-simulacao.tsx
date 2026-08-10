@@ -112,7 +112,9 @@ export function FormularioSimulacao({
           <Label>Sistema de amortização</Label>
           <Select
             value={w.sistema_amortizacao}
-            onValueChange={(v) => set("sistema_amortizacao", v as WizardState["sistema_amortizacao"])}
+            onValueChange={(v) =>
+              set("sistema_amortizacao", v as WizardState["sistema_amortizacao"])
+            }
           >
             <SelectTrigger>
               <SelectValue />
@@ -131,57 +133,88 @@ export function FormularioSimulacao({
         </div>
 
         <div className="space-y-1.5">
-          <Label>Tipo de imóvel <span className="text-destructive">*</span></Label>
+          <Label>
+            Tipo de imóvel <span className="text-destructive">*</span>
+          </Label>
           <Select value={w.tipo_imovel} onValueChange={(v) => set("tipo_imovel", v)}>
-            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
             <SelectContent>
               {TIPOS_IMOVEL.map((p) => (
-                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <Label>Uso do imóvel <span className="text-destructive">*</span></Label>
+          <Label>
+            Uso do imóvel <span className="text-destructive">*</span>
+          </Label>
           <Select value={w.uso_imovel} onValueChange={(v) => set("uso_imovel", v)}>
-            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
             <SelectContent>
               {USOS_IMOVEL.map((p) => (
-                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <Label>Situação do imóvel <span className="text-destructive">*</span></Label>
+          <Label>
+            Situação do imóvel <span className="text-destructive">*</span>
+          </Label>
           <Select value={w.situacao_imovel} onValueChange={(v) => set("situacao_imovel", v)}>
-            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
             <SelectContent>
               {SITUACOES_IMOVEL.map((p) => (
-                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <Label>UF <span className="text-destructive">*</span></Label>
+          <Label>
+            UF <span className="text-destructive">*</span>
+          </Label>
           <Select value={w.uf} onValueChange={(v) => set("uf", v)}>
-            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
             <SelectContent>
               {UFS.map((u) => (
-                <SelectItem key={u} value={u}>{u}</SelectItem>
+                <SelectItem key={u} value={u}>
+                  {u}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <Label>Utiliza FGTS? <span className="text-destructive">*</span></Label>
-          <Select value={w.utiliza_fgts} onValueChange={(v) => set("utiliza_fgts", v as WizardState["utiliza_fgts"])}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Label>
+            Utiliza FGTS? <span className="text-destructive">*</span>
+          </Label>
+          <Select
+            value={w.utiliza_fgts}
+            onValueChange={(v) => set("utiliza_fgts", v as WizardState["utiliza_fgts"])}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="S">Sim</SelectItem>
               <SelectItem value="N">Não</SelectItem>
@@ -231,8 +264,8 @@ export function FormularioSimulacao({
                     </span>
                   </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Informe a parcela desejada — o imóvel, a entrada e o financiamento são
-                    ajustados automaticamente respeitando o teto do banco ({pctFin}%).
+                    Informe a parcela desejada — o imóvel, a entrada e o financiamento são ajustados
+                    automaticamente respeitando o teto do banco ({pctFin}%).
                   </p>
                 </div>
               </div>
@@ -305,7 +338,8 @@ export function FormularioSimulacao({
             teto do banco ({pctFin}%).
             {w.fg_financiar_despesas && (w.valor_despesas_financiadas || 0) > 0 && (
               <>
-                {" "}Já inclui as despesas de{" "}
+                {" "}
+                Já inclui as despesas de{" "}
                 <span className="font-medium text-foreground">
                   {formatBRL(w.valor_despesas_financiadas)}
                 </span>{" "}
@@ -348,7 +382,11 @@ export function FormularioSimulacao({
           </p>
         </div>
 
-        <div id="campo-renda-familiar" ref={rendaRef} className="space-y-4 md:col-span-2 scroll-mt-24 pt-2">
+        <div
+          id="campo-renda-familiar"
+          ref={rendaRef}
+          className="space-y-4 md:col-span-2 scroll-mt-24 pt-2"
+        >
           {w.valor_financiamento > 0 && w.prazo_meses >= PRAZO_MIN && (
             <DicaRendaMinima
               valorFinanciamento={w.valor_financiamento}
@@ -356,12 +394,15 @@ export function FormularioSimulacao({
               prazoMeses={w.prazo_meses}
               taxaAno={melhorTaxaAno}
               sistema={w.sistema_amortizacao}
-              rendaInformada={w.sistema_amortizacao === "AMBOS" ? w.renda_familiar_price : w.renda_familiar}
+              rendaInformada={
+                w.sistema_amortizacao === "AMBOS" ? w.renda_familiar_price : w.renda_familiar
+              }
             />
           )}
           {!(w.valor_financiamento > 0 && w.prazo_meses >= PRAZO_MIN) && (
             <p className="text-xs text-muted-foreground text-center">
-              A renda mínima necessária será calculada automaticamente com base nos valores informados.
+              A renda mínima necessária será calculada automaticamente com base nos valores
+              informados.
             </p>
           )}
         </div>

@@ -1,14 +1,14 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
-import { 
-  ArrowLeft, 
-  AlertCircle, 
-  AlertTriangle, 
-  Clock, 
-  RefreshCw, 
-  Check, 
-  ChevronDown, 
-  Info 
+import {
+  ArrowLeft,
+  AlertCircle,
+  AlertTriangle,
+  Clock,
+  RefreshCw,
+  Check,
+  ChevronDown,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToneBadge } from "@/components/crm/tone-badge";
@@ -24,10 +24,10 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  SITUACAO_BANCO_LABEL, 
-  SITUACAO_BANCO_TONE, 
-  type SituacaoBanco 
+import {
+  SITUACAO_BANCO_LABEL,
+  SITUACAO_BANCO_TONE,
+  type SituacaoBanco,
 } from "@/components/proposta/situacao-banco-labels";
 import { formatBRL } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
@@ -61,16 +61,16 @@ const TAB_LABELS: Partial<Record<Tab, string>> = {
   FUP: "Follow-up",
 };
 
-import { 
-  LayoutDashboard, 
-  Users, 
-  Store, 
-  ClipboardList, 
-  Home, 
-  FolderOpen, 
-  Activity, 
-  Upload, 
-  MessageSquare 
+import {
+  LayoutDashboard,
+  Users,
+  Store,
+  ClipboardList,
+  Home,
+  FolderOpen,
+  Activity,
+  Upload,
+  MessageSquare,
 } from "lucide-react";
 
 const TAB_ICONS: Record<Tab, React.ComponentType<{ className?: string }>> = {
@@ -88,8 +88,8 @@ const TAB_ICONS: Record<Tab, React.ComponentType<{ className?: string }>> = {
 function formatarDataHora(iso: string): string {
   const d = new Date(iso?.includes("T") ? iso : iso?.replace(" ", "T"));
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString("pt-BR", { 
-    timeZone: "America/Sao_Paulo",  
+  return d.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -101,7 +101,9 @@ function formatarDataHora(iso: string): string {
 function Kpi({ label, valor }: { label: string; valor: React.ReactNode }) {
   return (
     <div className="p-5">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
       <div className="mt-1 text-base font-semibold text-foreground">{valor}</div>
     </div>
   );
@@ -138,11 +140,11 @@ export function PropostaView({
   setParticipanteModal,
   onSalvarParticipante,
   nomeConjugeExistente,
-  router
+  router,
 }: PropostaViewProps) {
   const [tab, setTab] = React.useState<Tab>("RESUMO");
   const [destacarObrigatorios, setDestacarObrigatorios] = React.useState(false);
-  
+
   const p = data.proposta;
   const status = p.status as PropostaStatus;
   const diasDesde = Math.max(
@@ -156,7 +158,12 @@ export function PropostaView({
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 md:p-6">
-      <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-foreground">
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="-ml-2 text-muted-foreground hover:text-foreground"
+      >
         <Link to="/operacional/propostas">
           <ArrowLeft className="mr-1 h-4 w-4" /> Voltar para propostas
         </Link>
@@ -177,16 +184,27 @@ export function PropostaView({
               {p.produto ?? "Operação"}
             </span>
             <h1 className="mt-2 truncate text-2xl font-semibold text-foreground">
-              {(() => { const nb = numeroBancoParaExibir(p.numero_proposta_banco); return nb ? `Proposta banco ${nb}` : `Proposta ${p.numero_proposta}`; })()}
+              {(() => {
+                const nb = numeroBancoParaExibir(p.numero_proposta_banco);
+                return nb ? `Proposta banco ${nb}` : `Proposta ${p.numero_proposta}`;
+              })()}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {numeroBancoParaExibir(p.numero_proposta_banco) && <span className="mr-2">Interno {p.numero_proposta} ·</span>}
-              {status === "cancelada"
-                ? "Proposta cancelada"
-                : `Ativa há ${diasDesde} dia(s)`}
+              {numeroBancoParaExibir(p.numero_proposta_banco) && (
+                <span className="mr-2">Interno {p.numero_proposta} ·</span>
+              )}
+              {status === "cancelada" ? "Proposta cancelada" : `Ativa há ${diasDesde} dia(s)`}
             </p>
           </div>
-          <AcoesTopo proposta={p} propostaId={id} bancos={data.bancos} envolvidos={data.envolvidos} documentos={data.documentos} followups={data.followups} onCadastroIncompleto={onCadastroIncompletoSemArgs} />
+          <AcoesTopo
+            proposta={p}
+            propostaId={id}
+            bancos={data.bancos}
+            envolvidos={data.envolvidos}
+            documentos={data.documentos}
+            followups={data.followups}
+            onCadastroIncompleto={onCadastroIncompletoSemArgs}
+          />
         </div>
 
         {/* KPIs */}
@@ -199,10 +217,7 @@ export function PropostaView({
               ) : p.nome_banco ? (
                 <span className="flex min-w-0 items-center gap-2">
                   <BancoLogo nome={p.nome_banco} size="lg" className="shrink-0" />
-                  <span
-                    className="truncate"
-                    style={{ color: corDoBanco(p.nome_banco) }}
-                  >
+                  <span className="truncate" style={{ color: corDoBanco(p.nome_banco) }}>
                     {p.nome_banco}
                   </span>
                 </span>
@@ -282,8 +297,8 @@ export function PropostaView({
                 b.status_banco === "erro"
                   ? "border-destructive/20 bg-destructive/5"
                   : b.status_banco === "recusada" && valorMax
-                  ? "border-warning/30 bg-warning/5"
-                  : "border-primary/20 bg-primary/5",
+                    ? "border-warning/30 bg-warning/5"
+                    : "border-primary/20 bg-primary/5",
               )}
             >
               <div className="flex items-start gap-3">
@@ -300,10 +315,12 @@ export function PropostaView({
                       Retorno do {b.nome_banco}
                     </p>
                     {b.status_banco === "recusada" && valorMax && (
-                       <span className="text-[10px] font-bold uppercase tracking-wider text-warning">Regra de limite</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-warning">
+                        Regra de limite
+                      </span>
                     )}
                   </div>
-                  
+
                   <p className="text-sm leading-relaxed text-muted-foreground">
                     {erroMsg || "O banco não informou o motivo detalhado."}
                   </p>
@@ -311,11 +328,12 @@ export function PropostaView({
                   {b.status_banco === "recusada" && valorMax && (
                     <div className="mt-2 space-y-2 border-t border-warning/20 pt-2">
                       <p className="text-xs font-medium text-warning-foreground">
-                        Diferença: <span className="font-bold">{formatBRL(diferenca)}</span> acima do limite deste banco.
+                        Diferença: <span className="font-bold">{formatBRL(diferenca)}</span> acima
+                        do limite deste banco.
                       </p>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className="h-8 gap-1.5 text-[11px] font-bold uppercase tracking-wider border-warning/50 text-warning-foreground hover:bg-warning/10"
                         onClick={async () => {
                           const { supabase } = await import("@/integrations/supabase/client");
@@ -328,22 +346,29 @@ export function PropostaView({
                               .eq("id", id);
                             if (updErr) throw updErr;
                             await handleEnviarHook({ propostaId: id, bancoId: b.banco_id });
-                            toast.success(`Proposta ajustada para ${formatBRL(valorMax)} e reenviada!`, { id: tid });
+                            toast.success(
+                              `Proposta ajustada para ${formatBRL(valorMax)} e reenviada!`,
+                              { id: tid },
+                            );
                           } catch (e: any) {
                             toast.error(e.message || "Falha ao ajustar e reenviar.", { id: tid });
                           }
                         }}
                       >
-                         Ajustar para {formatBRL(valorMax)} e reenviar
+                        Ajustar para {formatBRL(valorMax)} e reenviar
                       </Button>
                     </div>
                   )}
-                  
+
                   {(b.retorno_integracao || b.codigo_situacao_banco) && (
                     <div className="mt-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                          >
                             Detalhes técnicos <ChevronDown className="ml-1 h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -351,15 +376,16 @@ export function PropostaView({
                           <div className="p-3 text-[11px] font-mono leading-normal text-muted-foreground">
                             {b.codigo_situacao_banco && (
                               <div className="mb-2">
-                                <span className="font-bold text-foreground">Código banco:</span> {b.codigo_situacao_banco}
+                                <span className="font-bold text-foreground">Código banco:</span>{" "}
+                                {b.codigo_situacao_banco}
                               </div>
                             )}
                             {b.retorno_integracao && (
                               <div>
                                 <span className="font-bold text-foreground">Payload:</span>
                                 <pre className="mt-1 max-h-[200px] overflow-auto whitespace-pre-wrap rounded bg-muted/50 p-2 text-[10px]">
-                                  {typeof b.retorno_integracao === 'string' 
-                                    ? b.retorno_integracao 
+                                  {typeof b.retorno_integracao === "string"
+                                    ? b.retorno_integracao
                                     : JSON.stringify(b.retorno_integracao, null, 2)}
                                 </pre>
                               </div>
@@ -439,11 +465,26 @@ export function PropostaView({
       <div key={tab} className="animate-fade-in">
         <ErrorBoundaryAba nomeAba={tab}>
           {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
-          {tab === "COMPRADORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="comprador" destacarObrigatorios={destacarObrigatorios} onSalvoComprador={() => setTab("RESUMO")} idBanco={data.bancos?.[0]?.id_banco} />}
-          {tab === "VENDEDORES" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="vendedores" />}
+          {tab === "COMPRADORES" && (
+            <ClienteSecao
+              clienteId={p.cliente_id}
+              propostaId={id}
+              secao="comprador"
+              destacarObrigatorios={destacarObrigatorios}
+              onSalvoComprador={() => setTab("RESUMO")}
+              idBanco={data.bancos?.[0]?.id_banco}
+            />
+          )}
+          {tab === "VENDEDORES" && (
+            <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="vendedores" />
+          )}
           {tab === "IQ" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="iq" />}
-          {tab === "IMÓVEL" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="imovel" />}
-          {tab === "DOCUMENTOS" && <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="documentos" />}
+          {tab === "IMÓVEL" && (
+            <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="imovel" />
+          )}
+          {tab === "DOCUMENTOS" && (
+            <ClienteSecao clienteId={p.cliente_id} propostaId={id} secao="documentos" />
+          )}
           {tab === "ENVIAR_BANCO" && (
             <AbaEnviarBanco
               clienteId={p.cliente_id}
@@ -473,8 +514,12 @@ export function PropostaView({
           participanteModal && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive font-medium leading-relaxed">
               <AlertTriangle className="inline-block h-4 w-4 mr-1.5 align-text-bottom" />
-              Falta{faltantesEnvolvido(participanteModal).length === 1 ? "" : "m"} {faltantesEnvolvido(participanteModal).length} dado{faltantesEnvolvido(participanteModal).length === 1 ? "" : "s"} obrigatório{faltantesEnvolvido(participanteModal).length === 1 ? "" : "s"} de{" "}
-              {descreverParticipante(participanteModal)} para enviar ao banco. Preencha os campos destacados em vermelho.
+              Falta{faltantesEnvolvido(participanteModal).length === 1 ? "" : "m"}{" "}
+              {faltantesEnvolvido(participanteModal).length} dado
+              {faltantesEnvolvido(participanteModal).length === 1 ? "" : "s"} obrigatório
+              {faltantesEnvolvido(participanteModal).length === 1 ? "" : "s"} de{" "}
+              {descreverParticipante(participanteModal)} para enviar ao banco. Preencha os campos
+              destacados em vermelho.
             </div>
           )
         }

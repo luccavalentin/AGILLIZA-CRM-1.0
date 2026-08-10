@@ -33,9 +33,7 @@ export function AdminHero({
             )}
           </div>
         </div>
-        {acoes && (
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">{acoes}</div>
-        )}
+        {acoes && <div className="flex flex-wrap items-center gap-2 sm:justify-end">{acoes}</div>}
       </div>
     </div>
   );

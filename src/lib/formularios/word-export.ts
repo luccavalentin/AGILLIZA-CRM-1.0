@@ -1,19 +1,16 @@
-
-import { 
-  Document, 
-  Packer, 
-  Paragraph, 
-  TextRun, 
-  AlignmentType, 
-  Header, 
-  Footer, 
-  ImageRun, 
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+  Header,
+  Footer,
+  ImageRun,
   BorderStyle,
 } from "docx";
 import { saveAs } from "file-saver";
-import { 
-  getPapelTimbradoModelo, 
-} from "./papel-timbrado-modelos";
+import { getPapelTimbradoModelo } from "./papel-timbrado-modelos";
 import type { PapelTimbradoDados } from "./papel-timbrado-pdf";
 import { AGILLIZA_LOGO_DARK } from "@/lib/relatorios/brand-logo";
 
@@ -22,10 +19,10 @@ import { AGILLIZA_LOGO_DARK } from "@/lib/relatorios/brand-logo";
  */
 export async function gerarPapelTimbradoWord(dados: PapelTimbradoDados = {}) {
   const modelo = getPapelTimbradoModelo(dados.modelo);
-  
+
   // Converter logo base64 para Buffer
   const logoBase64 = AGILLIZA_LOGO_DARK.split(",")[1];
-  const logoBuffer = Uint8Array.from(atob(logoBase64), c => c.charCodeAt(0));
+  const logoBuffer = Uint8Array.from(atob(logoBase64), (c) => c.charCodeAt(0));
 
   const doc = new Document({
     sections: [
@@ -106,31 +103,36 @@ export async function gerarPapelTimbradoWord(dados: PapelTimbradoDados = {}) {
               }),
             ],
           }),
-          
-          ...(dados.destinatario ? dados.destinatario.split("\n").map(line => 
-            new Paragraph({
-              spacing: { after: 100 },
-              children: [new TextRun({ text: line, size: 22 })],
-            })
-          ) : []),
 
-          ...(dados.referencia ? [
-            new Paragraph({
-              spacing: { before: 200, after: 200 },
-              children: [
-                new TextRun({
-                  text: "Ref.: ",
-                  bold: true,
-                  color: modelo.destaqueTexto.replace("#", ""),
-                  size: 22,
+          ...(dados.destinatario
+            ? dados.destinatario.split("\n").map(
+                (line) =>
+                  new Paragraph({
+                    spacing: { after: 100 },
+                    children: [new TextRun({ text: line, size: 22 })],
+                  }),
+              )
+            : []),
+
+          ...(dados.referencia
+            ? [
+                new Paragraph({
+                  spacing: { before: 200, after: 200 },
+                  children: [
+                    new TextRun({
+                      text: "Ref.: ",
+                      bold: true,
+                      color: modelo.destaqueTexto.replace("#", ""),
+                      size: 22,
+                    }),
+                    new TextRun({
+                      text: dados.referencia,
+                      size: 22,
+                    }),
+                  ],
                 }),
-                new TextRun({
-                  text: dados.referencia,
-                  size: 22,
-                }),
-              ],
-            })
-          ] : []),
+              ]
+            : []),
 
           new Paragraph({
             spacing: { before: 200, after: 200 },
@@ -142,18 +144,21 @@ export async function gerarPapelTimbradoWord(dados: PapelTimbradoDados = {}) {
             ],
           }),
 
-          ...(dados.mensagem ? dados.mensagem.split(/\n{2,}/).map(par => 
-            new Paragraph({
-              alignment: AlignmentType.BOTH,
-              spacing: { before: 200, after: 200 },
-              children: [
-                new TextRun({
-                  text: par.replace(/\n/g, " "),
-                  size: 22,
-                }),
-              ],
-            })
-          ) : []),
+          ...(dados.mensagem
+            ? dados.mensagem.split(/\n{2,}/).map(
+                (par) =>
+                  new Paragraph({
+                    alignment: AlignmentType.BOTH,
+                    spacing: { before: 200, after: 200 },
+                    children: [
+                      new TextRun({
+                        text: par.replace(/\n/g, " "),
+                        size: 22,
+                      }),
+                    ],
+                  }),
+              )
+            : []),
 
           new Paragraph({
             spacing: { before: 400, after: 800 },

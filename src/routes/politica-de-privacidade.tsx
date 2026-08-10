@@ -55,15 +55,13 @@ function PoliticaPrivacidade() {
       </header>
 
       <main className="mx-auto w-full max-w-3xl flex-1 space-y-8 px-4 py-8">
-        <p className="text-sm text-muted-foreground">
-          Última atualização: {ATUALIZADO_EM}
-        </p>
+        <p className="text-sm text-muted-foreground">Última atualização: {ATUALIZADO_EM}</p>
 
         <Secao titulo="1. Controlador dos dados">
           <p>
             O controlador dos dados pessoais tratados nesta plataforma é{" "}
-            <strong className="text-foreground">{CONTROLADOR}</strong>, inscrito no CNPJ{" "}
-            {CNPJ}, com sede em {ENDERECO}.
+            <strong className="text-foreground">{CONTROLADOR}</strong>, inscrito no CNPJ {CNPJ}, com
+            sede em {ENDERECO}.
           </p>
         </Secao>
 

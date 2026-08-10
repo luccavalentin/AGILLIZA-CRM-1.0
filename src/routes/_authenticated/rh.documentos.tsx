@@ -87,11 +87,11 @@ function Pagina() {
 
   const salvar = useMutation({
     mutationFn: async () => {
-      if (!form.funcionario_id || !form.file) throw new Error("Selecione o funcionário e o arquivo.");
+      if (!form.funcionario_id || !form.file)
+        throw new Error("Selecione o funcionário e o arquivo.");
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("Sessão expirada.");
-      const cid =
-        funcs.data?.find((f) => f.id === form.funcionario_id)?.id ?? form.funcionario_id;
+      const cid = funcs.data?.find((f) => f.id === form.funcionario_id)?.id ?? form.funcionario_id;
       const cidReal = await supabase
         .from("profiles")
         .select("correspondente_id")
@@ -172,7 +172,10 @@ function Pagina() {
               </div>
               <div className="space-y-1.5">
                 <Label>Tipo</Label>
-                <Select value={form.tipo} onValueChange={(v) => setForm((p) => ({ ...p, tipo: v }))}>
+                <Select
+                  value={form.tipo}
+                  onValueChange={(v) => setForm((p) => ({ ...p, tipo: v }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -205,9 +208,7 @@ function Pagina() {
                 <Label>Arquivo</Label>
                 <Input
                   type="file"
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, file: e.target.files?.[0] ?? null }))
-                  }
+                  onChange={(e) => setForm((p) => ({ ...p, file: e.target.files?.[0] ?? null }))}
                 />
               </div>
             </div>
@@ -263,11 +264,7 @@ function Pagina() {
                         <Button size="icon" variant="ghost" onClick={() => abrir(d.arquivo_path)}>
                           <Download className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => excluir.mutate(d.id)}
-                        >
+                        <Button size="icon" variant="ghost" onClick={() => excluir.mutate(d.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -276,7 +273,10 @@ function Pagina() {
                 ))}
                 {(!docs.data || docs.data.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="py-10 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum documento cadastrado.
                     </TableCell>
                   </TableRow>

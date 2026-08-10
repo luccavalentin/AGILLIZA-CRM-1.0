@@ -157,7 +157,11 @@ export function ReportChartView({
 }) {
   const clique = onSelect
     ? (item: unknown) => {
-        const d = item as { label?: string; valor?: number; payload?: { label?: string; valor?: number } };
+        const d = item as {
+          label?: string;
+          valor?: number;
+          payload?: { label?: string; valor?: number };
+        };
         const label = d?.label ?? d?.payload?.label;
         const valor = Number(d?.valor ?? d?.payload?.valor ?? 0);
         if (label != null) onSelect(String(label), valor);
@@ -208,17 +212,12 @@ export function ReportChartView({
             style={cursor}
           >
             {chart.dados.map((d, i) => (
-              <Cell
-                key={i}
-                fill={colorByBank ? corDoBanco(d.label) : paleta[i % paleta.length]}
-              />
+              <Cell key={i} fill={colorByBank ? corDoBanco(d.label) : paleta[i % paleta.length]} />
             ))}
             <LabelList
               dataKey="valor"
               position="outside"
-              formatter={(v: number) =>
-                total ? `${Math.round((Number(v) / total) * 100)}%` : ""
-              }
+              formatter={(v: number) => (total ? `${Math.round((Number(v) / total) * 100)}%` : "")}
               style={{ fontSize: 11, fontWeight: 600, fill: "var(--foreground)" }}
             />
           </Pie>
@@ -238,10 +237,7 @@ export function ReportChartView({
         </PieChart>
       </ResponsiveContainer>
     );
-
   }
-
-
 
   if (chart.tipo === "line") {
     return (
@@ -305,7 +301,9 @@ export function ReportChartView({
 
   if (chart.tipo === "barh" || chart.tipo === "funnel") {
     if (isMobile) {
-      return <MobileBarList chart={chart} colorByBank={colorByBank} fmt={fmt} onSelect={onSelect} />;
+      return (
+        <MobileBarList chart={chart} colorByBank={colorByBank} fmt={fmt} onSelect={onSelect} />
+      );
     }
 
     const maxValor = Math.max(0, ...chart.dados.map((d) => Number(d.valor) || 0));

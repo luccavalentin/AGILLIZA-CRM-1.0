@@ -12,76 +12,76 @@
 
 ## 2. Paleta oficial (Manual da Marca Agilliza)
 
-| Nome | Hex | Papel |
-|---|---|---|
-| Azul Profundo | `#000F9F` | Marca / ação primária / foco / série 1 |
-| Azul Escuro | `#000A70` | Hover primário + topo sidebar dark |
-| Azul Noite | `#00052E` | Fim gradiente sidebar dark |
-| Azul Névoa | `#EEF0FF` | Chip info, hover leve, seleção |
-| Vermelho Alerta | `#F5333F` | Erro / destrutivo / SLA estourado |
-| Vermelho Escuro | `#B21F29` | Hover destructive |
-| Verde Sucesso | `#10A37F` | Aprovado / pago / ativo / contrato emitido |
-| Âmbar Atenção | `#EAB308` | Pendente / SLA em risco / vencimento próximo |
-| Cinza Grafite | `#0B0B0F` | Texto principal light |
-| Cinza Névoa | `#F7F8FA` | Fundo secundário light |
-| Cinza Médio | `#6B7280` | Texto secundário / placeholder |
-| Cinza Linha | `#E5E7EB` | Bordas light |
-| Papel | `#FFFFFF` | Card light |
-| Grafite Superficie | `#12131A` | Fundo geral dark |
-| Grafite Card | `#191A22` | Card dark |
-| Grafite Linha | `#2A2C38` | Bordas dark |
-| Nuvem | `#E6E8F0` | Texto principal dark |
+| Nome               | Hex       | Papel                                        |
+| ------------------ | --------- | -------------------------------------------- |
+| Azul Profundo      | `#000F9F` | Marca / ação primária / foco / série 1       |
+| Azul Escuro        | `#000A70` | Hover primário + topo sidebar dark           |
+| Azul Noite         | `#00052E` | Fim gradiente sidebar dark                   |
+| Azul Névoa         | `#EEF0FF` | Chip info, hover leve, seleção               |
+| Vermelho Alerta    | `#F5333F` | Erro / destrutivo / SLA estourado            |
+| Vermelho Escuro    | `#B21F29` | Hover destructive                            |
+| Verde Sucesso      | `#10A37F` | Aprovado / pago / ativo / contrato emitido   |
+| Âmbar Atenção      | `#EAB308` | Pendente / SLA em risco / vencimento próximo |
+| Cinza Grafite      | `#0B0B0F` | Texto principal light                        |
+| Cinza Névoa        | `#F7F8FA` | Fundo secundário light                       |
+| Cinza Médio        | `#6B7280` | Texto secundário / placeholder               |
+| Cinza Linha        | `#E5E7EB` | Bordas light                                 |
+| Papel              | `#FFFFFF` | Card light                                   |
+| Grafite Superficie | `#12131A` | Fundo geral dark                             |
+| Grafite Card       | `#191A22` | Card dark                                    |
+| Grafite Linha      | `#2A2C38` | Bordas dark                                  |
+| Nuvem              | `#E6E8F0` | Texto principal dark                         |
 
 ## 3. Tokens semânticos — LIGHT (padrão)
 
-| Classe | Valor | Uso |
-|---|---|---|
-| `bg-background` / `text-foreground` | `#FFFFFF` / `#0B0B0F` | Base |
-| `bg-card` / `text-card-foreground` | `#FFFFFF` / `#0B0B0F` | Cards |
-| `bg-popover` | `#FFFFFF` | Popover, dropdown, tooltip |
+| Classe                                   | Valor                 | Uso                             |
+| ---------------------------------------- | --------------------- | ------------------------------- |
+| `bg-background` / `text-foreground`      | `#FFFFFF` / `#0B0B0F` | Base                            |
+| `bg-card` / `text-card-foreground`       | `#FFFFFF` / `#0B0B0F` | Cards                           |
+| `bg-popover`                             | `#FFFFFF`             | Popover, dropdown, tooltip      |
 | `bg-primary` / `text-primary-foreground` | `#000F9F` / `#FFFFFF` | Ação primária, link, item ativo |
-| `bg-secondary` | `#F1F2F7` | Botão neutro |
-| `bg-muted` / `text-muted-foreground` | `#F7F8FA` / `#6B7280` | Zebra, skeleton, label auxiliar |
-| `bg-accent` / `text-accent-foreground` | `#EEF0FF` / `#000F9F` | Hover suave, chip info |
-| `bg-destructive` | `#F5333F` | Excluir, cancelar, estornar |
-| `bg-success` | `#10A37F` | Sucesso |
-| `bg-warning` / `text-warning-foreground` | `#EAB308` / `#1A1400` | Atenção |
-| `border` / `input` | `#E5E7EB` | Bordas |
-| `ring` | `#000F9F` | Foco 2px + offset 2px |
-| `bg-sidebar` / `text-sidebar-foreground` | `#FFFFFF` / `#0B0B0F` | Sidebar light |
-| `bg-sidebar-accent` | `#EEF0FF` | Item ativo sidebar light |
+| `bg-secondary`                           | `#F1F2F7`             | Botão neutro                    |
+| `bg-muted` / `text-muted-foreground`     | `#F7F8FA` / `#6B7280` | Zebra, skeleton, label auxiliar |
+| `bg-accent` / `text-accent-foreground`   | `#EEF0FF` / `#000F9F` | Hover suave, chip info          |
+| `bg-destructive`                         | `#F5333F`             | Excluir, cancelar, estornar     |
+| `bg-success`                             | `#10A37F`             | Sucesso                         |
+| `bg-warning` / `text-warning-foreground` | `#EAB308` / `#1A1400` | Atenção                         |
+| `border` / `input`                       | `#E5E7EB`             | Bordas                          |
+| `ring`                                   | `#000F9F`             | Foco 2px + offset 2px           |
+| `bg-sidebar` / `text-sidebar-foreground` | `#FFFFFF` / `#0B0B0F` | Sidebar light                   |
+| `bg-sidebar-accent`                      | `#EEF0FF`             | Item ativo sidebar light        |
 
 Série de gráficos (Recharts):
 
-| Var | Hex | Uso |
-|---|---|---|
-| `--chart-1` | `#000F9F` | Principal |
+| Var         | Hex       | Uso                 |
+| ----------- | --------- | ------------------- |
+| `--chart-1` | `#000F9F` | Principal           |
 | `--chart-2` | `#4B56D1` | Apoio / comparativo |
-| `--chart-3` | `#10A37F` | Positivo |
-| `--chart-4` | `#EAB308` | Atenção |
-| `--chart-5` | `#F5333F` | Negativo |
+| `--chart-3` | `#10A37F` | Positivo            |
+| `--chart-4` | `#EAB308` | Atenção             |
+| `--chart-5` | `#F5333F` | Negativo            |
 
 ## 4. Tokens semânticos — DARK (`.dark`)
 
-| Classe | Valor |
-|---|---|
-| `background` | `#12131A` |
-| `foreground` | `#E6E8F0` |
-| `card` | `#191A22` |
-| `popover` | `#1F2130` |
-| `primary` | `#4B56D1` (mais claro no dark) |
-| `secondary` | `#242637` |
-| `muted` / `muted-foreground` | `#1C1E29` / `#8C90A6` |
-| `accent` / `accent-foreground` | `#1F2657` / `#C7CEFF` |
-| `destructive` | `#F5333F` |
-| `success` | `#22C79A` |
-| `warning` | `#F5C044` |
-| `border` / `input` | `#2A2C38` |
-| `ring` | `#4B56D1` |
-| `sidebar` | `linear-gradient(180deg, #000A70 0%, #00052E 100%)` |
-| `sidebar-foreground` | `#EEF0FF` |
-| `sidebar-accent` | `#001A9E` |
-| `sidebar-border` | `rgba(255,255,255,0.08)` |
+| Classe                         | Valor                                               |
+| ------------------------------ | --------------------------------------------------- |
+| `background`                   | `#12131A`                                           |
+| `foreground`                   | `#E6E8F0`                                           |
+| `card`                         | `#191A22`                                           |
+| `popover`                      | `#1F2130`                                           |
+| `primary`                      | `#4B56D1` (mais claro no dark)                      |
+| `secondary`                    | `#242637`                                           |
+| `muted` / `muted-foreground`   | `#1C1E29` / `#8C90A6`                               |
+| `accent` / `accent-foreground` | `#1F2657` / `#C7CEFF`                               |
+| `destructive`                  | `#F5333F`                                           |
+| `success`                      | `#22C79A`                                           |
+| `warning`                      | `#F5C044`                                           |
+| `border` / `input`             | `#2A2C38`                                           |
+| `ring`                         | `#4B56D1`                                           |
+| `sidebar`                      | `linear-gradient(180deg, #000A70 0%, #00052E 100%)` |
+| `sidebar-foreground`           | `#EEF0FF`                                           |
+| `sidebar-accent`               | `#001A9E`                                           |
+| `sidebar-border`               | `rgba(255,255,255,0.08)`                            |
 
 **Elevação**: `background → card → popover → dialog-overlay`, +3% de luminosidade por nível.
 
@@ -89,13 +89,13 @@ Série de gráficos (Recharts):
 
 Uma única tabela cobre TODO status do sistema (cliente, simulação, proposta, tarefa, demanda, financeiro, RH, portal, matrícula):
 
-| Tone | Uso |
-|---|---|
-| `success` | aprovado, pago, ativo, contrato emitido, doc OK, férias gozadas |
+| Tone      | Uso                                                                      |
+| --------- | ------------------------------------------------------------------------ |
+| `success` | aprovado, pago, ativo, contrato emitido, doc OK, férias gozadas          |
 | `warning` | pendente, SLA 50–99%, vencimento próximo, aguardando doc, em experiência |
-| `danger` | recusado, cancelado, atrasado, SLA estourado, bloqueado, vencido dobro |
-| `info` | em análise, em simulação, novo, informativo |
-| `muted` | rascunho, arquivado, sem valor, encerrado |
+| `danger`  | recusado, cancelado, atrasado, SLA estourado, bloqueado, vencido dobro   |
+| `info`    | em análise, em simulação, novo, informativo                              |
+| `muted`   | rascunho, arquivado, sem valor, encerrado                                |
 
 Kanban: coluna recebe barra de 3px do tone no topo. Card em si continua `bg-card`.
 
@@ -149,6 +149,7 @@ Kanban: coluna recebe barra de 3px do tone no topo. Card em si continua `bg-card
 ## 10. Marca d'água em PDFs (2.0)
 
 Todo PDF exportado do sistema (relatórios, ficha do funcionário, holerite, proposta, simulação, calendário de tarefas) leva:
+
 - Cabeçalho azul `#000F9F` com logo Agilliza (`src/assets/brand/agilliza-*.png`).
 - Marca d'água diagonal cinza claro "AGILLIZA — CONFIDENCIAL" em todas as páginas (opacidade ~10%).
 - Rodapé: data de emissão + usuário emissor + numeração `pág X/N`.

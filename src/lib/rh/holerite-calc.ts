@@ -164,9 +164,7 @@ export function calcularHolerite(e: HoleriteEntrada): HoleriteResultado {
       valor: he100,
     });
   }
-  const adNoturno = r2(
-    num(e.horas_noturnas) * valorHora * (num(e.adicional_noturno_pct) / 100),
-  );
+  const adNoturno = r2(num(e.horas_noturnas) * valorHora * (num(e.adicional_noturno_pct) / 100));
   if (adNoturno > 0) {
     proventos.push({
       codigo: "020",
@@ -199,11 +197,21 @@ export function calcularHolerite(e: HoleriteEntrada): HoleriteResultado {
   }
   const bonif = r2(num(e.bonificacoes));
   if (bonif > 0) {
-    proventos.push({ codigo: "041", descricao: "Bonificação / prêmio", referencia: "—", valor: bonif });
+    proventos.push({
+      codigo: "041",
+      descricao: "Bonificação / prêmio",
+      referencia: "—",
+      valor: bonif,
+    });
   }
   const ferias = r2(num(e.ferias_valor));
   if (ferias > 0) {
-    proventos.push({ codigo: "050", descricao: "Férias + 1/3 constitucional", referencia: "—", valor: ferias });
+    proventos.push({
+      codigo: "050",
+      descricao: "Férias + 1/3 constitucional",
+      referencia: "—",
+      valor: ferias,
+    });
   }
   const decimo = r2(num(e.decimo_terceiro));
   if (decimo > 0) {
@@ -236,8 +244,17 @@ export function calcularHolerite(e: HoleriteEntrada): HoleriteResultado {
 
   // ---- Base de incidência ----------------------------------------------
   const baseIncidencia = r2(
-    salarioProporcional + he50 + he100 + adNoturno + insal + peric + comissoes +
-      bonif + ferias + decimo + outrosProv,
+    salarioProporcional +
+      he50 +
+      he100 +
+      adNoturno +
+      insal +
+      peric +
+      comissoes +
+      bonif +
+      ferias +
+      decimo +
+      outrosProv,
   );
 
   // ---- Descontos --------------------------------------------------------
@@ -272,9 +289,7 @@ export function calcularHolerite(e: HoleriteEntrada): HoleriteResultado {
   }
 
   const pensao = r2(num(e.pensao_alimenticia));
-  const baseIrrf = r2(
-    Math.max(0, baseInss - inss - num(e.dependentes_ir) * IRRF_DEP - pensao),
-  );
+  const baseIrrf = r2(Math.max(0, baseInss - inss - num(e.dependentes_ir) * IRRF_DEP - pensao));
   const { valor: irrf } = calcularIRRF(baseIrrf);
   if (irrf > 0) {
     descontos.push({
@@ -299,11 +314,21 @@ export function calcularHolerite(e: HoleriteEntrada): HoleriteResultado {
   }
   const vr = e.desconta_vr ? r2(num(e.vr_desconto)) : 0;
   if (vr > 0) {
-    descontos.push({ codigo: "121", descricao: "Vale-refeição", referencia: "coparticipação", valor: vr });
+    descontos.push({
+      codigo: "121",
+      descricao: "Vale-refeição",
+      referencia: "coparticipação",
+      valor: vr,
+    });
   }
   const va = e.desconta_va ? r2(num(e.va_desconto)) : 0;
   if (va > 0) {
-    descontos.push({ codigo: "122", descricao: "Vale-alimentação", referencia: "coparticipação", valor: va });
+    descontos.push({
+      codigo: "122",
+      descricao: "Vale-alimentação",
+      referencia: "coparticipação",
+      valor: va,
+    });
   }
   const saude = r2(num(e.plano_saude));
   if (saude > 0) {
@@ -311,22 +336,47 @@ export function calcularHolerite(e: HoleriteEntrada): HoleriteResultado {
   }
   const odonto = r2(num(e.plano_odonto));
   if (odonto > 0) {
-    descontos.push({ codigo: "131", descricao: "Plano odontológico", referencia: "—", valor: odonto });
+    descontos.push({
+      codigo: "131",
+      descricao: "Plano odontológico",
+      referencia: "—",
+      valor: odonto,
+    });
   }
   const adiant = r2(num(e.adiantamento));
   if (adiant > 0) {
-    descontos.push({ codigo: "140", descricao: "Adiantamento salarial", referencia: "—", valor: adiant });
+    descontos.push({
+      codigo: "140",
+      descricao: "Adiantamento salarial",
+      referencia: "—",
+      valor: adiant,
+    });
   }
   const consig = r2(num(e.emprestimo_consignado));
   if (consig > 0) {
-    descontos.push({ codigo: "141", descricao: "Empréstimo consignado", referencia: "—", valor: consig });
+    descontos.push({
+      codigo: "141",
+      descricao: "Empréstimo consignado",
+      referencia: "—",
+      valor: consig,
+    });
   }
   const sindical = r2(num(e.contribuicao_sindical));
   if (sindical > 0) {
-    descontos.push({ codigo: "150", descricao: "Contribuição sindical", referencia: "—", valor: sindical });
+    descontos.push({
+      codigo: "150",
+      descricao: "Contribuição sindical",
+      referencia: "—",
+      valor: sindical,
+    });
   }
   if (pensao > 0) {
-    descontos.push({ codigo: "151", descricao: "Pensão alimentícia", referencia: "—", valor: pensao });
+    descontos.push({
+      codigo: "151",
+      descricao: "Pensão alimentícia",
+      referencia: "—",
+      valor: pensao,
+    });
   }
   const outrosDesc = r2(num(e.outros_descontos));
   if (outrosDesc > 0) {
@@ -338,9 +388,7 @@ export function calcularHolerite(e: HoleriteEntrada): HoleriteResultado {
     });
   }
 
-  const total_proventos = r2(
-    proventos.reduce((s, l) => s + l.valor, 0),
-  );
+  const total_proventos = r2(proventos.reduce((s, l) => s + l.valor, 0));
   const total_descontos = r2(descontos.reduce((s, l) => s + l.valor, 0));
 
   return {

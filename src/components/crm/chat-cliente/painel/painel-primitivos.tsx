@@ -1,13 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { FileText } from "lucide-react";
 
-export function LinhaResumo({
-  rotulo,
-  valor,
-}: {
-  rotulo: string;
-  valor: React.ReactNode;
-}) {
+export function LinhaResumo({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1.5 text-sm">
       <span className="shrink-0 text-muted-foreground">{rotulo}</span>

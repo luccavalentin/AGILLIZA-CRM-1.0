@@ -116,11 +116,7 @@ export function baixarTarefasPDF(params: {
   }));
 
   const emitido = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-  const meta = [
-    `Escopo: ${escopo}`,
-    `Registros: ${total}`,
-    `Emitido em: ${emitido}`,
-  ];
+  const meta = [`Escopo: ${escopo}`, `Registros: ${total}`, `Emitido em: ${emitido}`];
 
   exportPDF(
     "Tarefas",
@@ -206,11 +202,7 @@ export function baixarDemandasPDF(params: {
   }));
 
   const emitido = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-  const meta = [
-    `Escopo: ${escopo}`,
-    `Registros: ${total}`,
-    `Emitido em: ${emitido}`,
-  ];
+  const meta = [`Escopo: ${escopo}`, `Registros: ${total}`, `Emitido em: ${emitido}`];
 
   exportPDF(
     "Demandas",

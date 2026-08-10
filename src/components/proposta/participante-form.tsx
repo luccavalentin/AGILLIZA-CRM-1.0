@@ -125,40 +125,40 @@ export function ParticipanteDialog({
     return () => clearTimeout(t);
   }, [open, focarPendencias]);
 
-
-
   // 1 & 2. CORREÇÃO: A seção de cônjuge só aparece para o TITULAR/comprador principal
   // e se não houver um cônjuge já cadastrado como participante independente.
   const ehConjuge = f.tipo_qualificacao === "CJ";
   const permiteConjuge = !ehConjuge && !nomeConjugeExistente;
-  const precisaConjuge = permiteConjuge && f.tipo_pessoa === "F" && ESTADO_CIVIL_COM_REGIME.has(f.estado_civil);
+  const precisaConjuge =
+    permiteConjuge && f.tipo_pessoa === "F" && ESTADO_CIVIL_COM_REGIME.has(f.estado_civil);
 
   const set = (patch: Partial<ParticipanteForm>) => setF((p) => ({ ...p, ...patch }));
   const setC = (patch: Partial<ParticipanteForm>) => setConjuge((p) => ({ ...p, ...patch }));
 
-  const conjugeTemDados = [
-    conjuge.nome,
-    conjuge.cpf_cnpj,
-    conjuge.data_nascimento,
-    conjuge.nome_mae,
-    conjuge.tipo_sexo,
-    conjuge.tipo_documento_identidade,
-    conjuge.numero_documento,
-    conjuge.orgao_expedidor,
-    conjuge.uf_expedicao,
-    conjuge.data_expedicao,
-    conjuge.profissao,
-    conjuge.empresa,
-    conjuge.email,
-    conjuge.celular,
-    conjuge.cep,
-    conjuge.logradouro,
-    conjuge.numero_logradouro,
-    conjuge.complemento,
-    conjuge.bairro,
-    conjuge.municipio,
-    conjuge.uf,
-  ].some((valor) => String(valor ?? "").trim().length > 0) || conjuge.renda > 0;
+  const conjugeTemDados =
+    [
+      conjuge.nome,
+      conjuge.cpf_cnpj,
+      conjuge.data_nascimento,
+      conjuge.nome_mae,
+      conjuge.tipo_sexo,
+      conjuge.tipo_documento_identidade,
+      conjuge.numero_documento,
+      conjuge.orgao_expedidor,
+      conjuge.uf_expedicao,
+      conjuge.data_expedicao,
+      conjuge.profissao,
+      conjuge.empresa,
+      conjuge.email,
+      conjuge.celular,
+      conjuge.cep,
+      conjuge.logradouro,
+      conjuge.numero_logradouro,
+      conjuge.complemento,
+      conjuge.bairro,
+      conjuge.municipio,
+      conjuge.uf,
+    ].some((valor) => String(valor ?? "").trim().length > 0) || conjuge.renda > 0;
 
   /** Cônjuge normalizado que será salvo junto com o titular (quando houver). */
   const conjugeParaSalvar: ParticipanteForm | null = useMemo(
@@ -186,7 +186,6 @@ export function ParticipanteDialog({
   }, [f, conjugeParaSalvar]);
 
   const podeEnviar = pendentesAgora.length === 0;
-
 
   async function buscarCep(
     cepRaw: string,
@@ -229,9 +228,7 @@ export function ParticipanteDialog({
     setErrosC(faltandoC);
 
     if (faltando.size > 0 || faltandoC.size > 0) {
-      toast.error(
-        `Não é possível salvar: faltam dados obrigatórios destacados em vermelho.`,
-      );
+      toast.error(`Não é possível salvar: faltam dados obrigatórios destacados em vermelho.`);
       return;
     }
 
@@ -243,7 +240,6 @@ export function ParticipanteDialog({
       setSalvandoInterno(false);
     }
   }
-
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -262,7 +258,10 @@ export function ParticipanteDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="brand-scroll scroll-shadow-bottom flex-1 space-y-5 overflow-y-auto px-6 py-4" ref={corpoRef}>
+        <div
+          className="brand-scroll scroll-shadow-bottom flex-1 space-y-5 overflow-y-auto px-6 py-4"
+          ref={corpoRef}
+        >
           {avisoTopo}
           <CamposParticipante
             f={f}
@@ -275,7 +274,6 @@ export function ParticipanteDialog({
             mostrarIdentificacaoExtra
             idBanco={idBanco}
           />
-
 
           {precisaConjuge && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 sm:p-4">
@@ -316,12 +314,18 @@ export function ParticipanteDialog({
               </p>
             ) : (
               <p className="text-[11px] font-medium text-muted-foreground">
-                Falta{pendentesAgora.length === 1 ? "" : "m"} {pendentesAgora.length} {pendentesAgora.length === 1 ? "dado obrigatório" : "dados obrigatórios"}: {pendentesAgora.join(", ")}
+                Falta{pendentesAgora.length === 1 ? "" : "m"} {pendentesAgora.length}{" "}
+                {pendentesAgora.length === 1 ? "dado obrigatório" : "dados obrigatórios"}:{" "}
+                {pendentesAgora.join(", ")}
               </p>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando || salvandoInterno}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={salvando || salvandoInterno}
+            >
               Cancelar
             </Button>
             <Button
@@ -345,8 +349,6 @@ export function ParticipanteDialog({
             </Button>
           </div>
         </DialogFooter>
-
-
       </DialogContent>
     </Dialog>
   );

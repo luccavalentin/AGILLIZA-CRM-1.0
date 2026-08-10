@@ -1,10 +1,4 @@
-import {
-  AlertTriangle,
-  ArrowDownCircle,
-  ArrowUpCircle,
-  CheckCircle2,
-  Wallet,
-} from "lucide-react";
+import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, CheckCircle2, Wallet } from "lucide-react";
 import { ReportKpiCard, type KpiTone } from "@/components/financeiro/kpi-card";
 import { formatBRL } from "@/lib/financeiro/format";
 import type { ContaTipo } from "@/lib/financeiro/financeiro.functions";
@@ -98,4 +92,3 @@ export function ContasKpis({
     </div>
   );
 }
-

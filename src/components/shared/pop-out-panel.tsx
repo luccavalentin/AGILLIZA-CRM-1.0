@@ -4,7 +4,6 @@ import { Maximize2, Minimize2, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatFlash, stopFlash } from "@/components/shared/chat-alert-store";
 
-
 interface PopOutPanelProps {
   /** Título exibido na barra da janela flutuante. */
   title: string;
@@ -238,12 +237,8 @@ export function FloatingWindow({
           </button>
         </div>
       </div>
-      {!minimized && (
-        <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
-      )}
+      {!minimized && <div className="min-h-0 flex-1 overflow-hidden">{children}</div>}
     </div>,
     document.body,
   );
 }
-
-

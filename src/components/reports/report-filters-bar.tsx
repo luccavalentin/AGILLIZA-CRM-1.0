@@ -41,10 +41,7 @@ export function VisionSelector({
   podeGeral: boolean;
 }) {
   // Escopo "Equipe" foi removido do produto — mantém apenas Minha e Geral.
-  const opts: Escopo[] = [
-    "minha",
-    ...(podeGeral ? (["geral"] as Escopo[]) : []),
-  ];
+  const opts: Escopo[] = ["minha", ...(podeGeral ? (["geral"] as Escopo[]) : [])];
   return (
     <div className="inline-flex rounded-lg border border-border bg-card p-0.5 shadow-[var(--shadow-card)]">
       {opts.map((o) => (
@@ -138,7 +135,6 @@ export function ReportFiltersBar({
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-
         <Select value={filtros.periodo} onValueChange={(v) => set({ periodo: v as Periodo })}>
           <SelectTrigger className="h-9 w-full">
             <SelectValue />
@@ -170,7 +166,6 @@ export function ReportFiltersBar({
             className="h-9 min-w-0 flex-1"
           />
         </div>
-
 
         {!!bancoOpts.length && (
           <MultiSelect
@@ -284,7 +279,6 @@ export function ReportFiltersBar({
             className="h-9 min-w-0 flex-1"
           />
         </div>
-
       </div>
 
       <div className="flex justify-end">
@@ -297,9 +291,6 @@ export function ReportFiltersBar({
           Aplicar filtros
         </Button>
       </div>
-
-
-
 
       {temAlgum && (
         <div className="flex flex-wrap gap-1.5">

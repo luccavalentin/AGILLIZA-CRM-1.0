@@ -92,12 +92,7 @@ export function FiltrosLista({
             onChange={(e) => setAte(e.target.value)}
             className="h-8 w-[44%] shrink-0 sm:w-28 xl:w-30 text-xs"
           />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 shrink-0 text-xs"
-            onClick={onLimpar}
-          >
+          <Button variant="ghost" size="sm" className="h-8 shrink-0 text-xs" onClick={onLimpar}>
             Limpar
           </Button>
           <Button

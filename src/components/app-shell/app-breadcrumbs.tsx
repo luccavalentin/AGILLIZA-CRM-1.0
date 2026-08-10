@@ -38,16 +38,12 @@ function derivarCrumbs(nav: NavGroup[], pathname: string): Crumb[] {
   return [{ label: "Início", to: "/" }];
 }
 
-
 export function AppBreadcrumbs({ nav }: { nav: NavGroup[] }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const crumbs = derivarCrumbs(nav, pathname);
 
   return (
-    <nav
-      aria-label="Trilha de navegação"
-      className="hidden items-center gap-0.5 text-sm md:flex"
-    >
+    <nav aria-label="Trilha de navegação" className="hidden items-center gap-0.5 text-sm md:flex">
       {crumbs.map((c, i) => {
         const ultimo = i === crumbs.length - 1;
         return (
@@ -79,4 +75,3 @@ export function AppBreadcrumbs({ nav }: { nav: NavGroup[] }) {
     </nav>
   );
 }
-

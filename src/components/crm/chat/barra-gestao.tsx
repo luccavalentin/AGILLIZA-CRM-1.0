@@ -21,11 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -34,11 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import {
-  getPipelineStages,
-  getClientePipeline,
-  moverEtapa,
-} from "@/lib/crm/clientes.functions";
+import { getPipelineStages, getClientePipeline, moverEtapa } from "@/lib/crm/clientes.functions";
 import {
   criarEtiquetaChat,
   definirArquivamentoConversa,
@@ -72,10 +64,7 @@ export function MaisAcoesGestao(props: {
           <ChevronDown className="size-4 opacity-70" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        className="w-[22rem] max-w-[calc(100vw-2rem)] p-0"
-      >
+      <PopoverContent align="end" className="w-[22rem] max-w-[calc(100vw-2rem)] p-0">
         <BarraGestao {...props} />
       </PopoverContent>
     </Popover>
@@ -133,11 +122,7 @@ function BarraGestao({
   useEffect(() => {
     if (meta) {
       setSlaHoras(String(meta.sla_atualizacao_horas));
-      setLembreteEm(
-        meta.lembrete_em
-          ? new Date(meta.lembrete_em).toISOString().slice(0, 16)
-          : "",
-      );
+      setLembreteEm(meta.lembrete_em ? new Date(meta.lembrete_em).toISOString().slice(0, 16) : "");
       setLembreteNota(meta.lembrete_nota ?? "");
     }
   }, [meta]);
@@ -156,8 +141,7 @@ function BarraGestao({
       qc.invalidateQueries({ queryKey: ["cliente-pipeline", clienteId] });
       qc.invalidateQueries({ queryKey: ["conversas-cliente"] });
     },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Não foi possível mover a etapa."),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível mover a etapa."),
   });
 
   const toggleTag = useMutation({
@@ -215,32 +199,24 @@ function BarraGestao({
       qc.invalidateQueries({ queryKey: ["chat-meta", clienteId] });
       qc.invalidateQueries({ queryKey: ["chat-overview"] });
     },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
   });
 
   const estaArquivada = meta?.arquivado ?? false;
   const alternarArquivo = useMutation({
-    mutationFn: () =>
-      arquivar({ data: { cliente_id: clienteId, arquivado: !estaArquivada } }),
+    mutationFn: () => arquivar({ data: { cliente_id: clienteId, arquivado: !estaArquivada } }),
     onSuccess: () => {
-      toast.success(
-        estaArquivada ? "Conversa desarquivada." : "Conversa arquivada.",
-      );
+      toast.success(estaArquivada ? "Conversa desarquivada." : "Conversa arquivada.");
       qc.invalidateQueries({ queryKey: ["chat-meta", clienteId] });
       qc.invalidateQueries({ queryKey: ["chat-overview"] });
       qc.invalidateQueries({ queryKey: ["chat-overview-cliente", clienteId] });
     },
-    onError: (e) =>
-      toast.error(
-        e instanceof Error ? e.message : "Não foi possível arquivar.",
-      ),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível arquivar."),
   });
 
   const aplicadas = etiquetas.filter((e) => tagsAplicadas.has(e.id));
 
-  const etapaAtual =
-    stages?.find((s) => s.codigo === atual?.codigo)?.nome ?? "Cadastro básico";
+  const etapaAtual = stages?.find((s) => s.codigo === atual?.codigo)?.nome ?? "Cadastro básico";
   const temLembrete = Boolean(lembreteEm);
   const contextoLinha = [documento, contexto].filter(Boolean).join(" · ");
 
@@ -256,13 +232,9 @@ function BarraGestao({
             <p className="text-[10px] font-semibold uppercase tracking-wide text-primary/80">
               Gestão da conversa
             </p>
-            <p className="truncate text-sm font-semibold leading-tight text-foreground">
-              {nome}
-            </p>
+            <p className="truncate text-sm font-semibold leading-tight text-foreground">{nome}</p>
             {contextoLinha && (
-              <p className="truncate text-xs text-muted-foreground">
-                {contextoLinha}
-              </p>
+              <p className="truncate text-xs text-muted-foreground">{contextoLinha}</p>
             )}
           </div>
           <Button
@@ -288,20 +260,14 @@ function BarraGestao({
         <div className="flex min-w-0 flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:px-4 xl:pt-0">
           <div className="flex items-center gap-1.5">
             <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Etiquetas
-            </span>
+            <span className="text-[11px] font-medium text-muted-foreground">Etiquetas</span>
           </div>
           <div className="flex flex-wrap items-center gap-1">
             {aplicadas.length === 0 ? (
               <span className="text-[11px] text-muted-foreground">Nenhuma</span>
             ) : (
               aplicadas.map((e) => (
-                <TagChip
-                  key={e.id}
-                  etiqueta={e}
-                  onRemove={() => toggleTag.mutate(e.id)}
-                />
+                <TagChip key={e.id} etiqueta={e} onRemove={() => toggleTag.mutate(e.id)} />
               ))
             )}
             <Popover>
@@ -331,9 +297,7 @@ function BarraGestao({
                           onClick={() => toggleTag.mutate(e.id)}
                           className={cn(
                             "flex flex-1 items-center gap-2 rounded-md border px-2 py-1 text-left text-xs transition-colors",
-                            on
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:bg-muted",
+                            on ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
                           )}
                         >
                           <span className={cn("chat-tag-dot", `chat-dot-${e.cor}`)} />
@@ -378,8 +342,7 @@ function BarraGestao({
                         className={cn(
                           "chat-tag-dot h-5 w-5 rounded-full ring-offset-1 transition",
                           `chat-dot-${c.id}`,
-                          novaCor === c.id &&
-                            "ring-2 ring-primary ring-offset-background",
+                          novaCor === c.id && "ring-2 ring-primary ring-offset-background",
                         )}
                       />
                     ))}
@@ -407,17 +370,11 @@ function BarraGestao({
         <div className="flex flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:px-4 xl:pt-0">
           <div className="flex items-center gap-1.5">
             <AlarmClock className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground">
-              SLA e lembrete
-            </span>
+            <span className="text-[11px] font-medium text-muted-foreground">SLA e lembrete</span>
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 justify-between gap-2 text-xs"
-              >
+              <Button variant="outline" size="sm" className="h-8 justify-between gap-2 text-xs">
                 <span className="flex items-center gap-1.5">
                   <Timer className="h-3.5 w-3.5 text-muted-foreground" />
                   {slaHoras}h
@@ -444,9 +401,7 @@ function BarraGestao({
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">
-                  Lembrete de follow-up
-                </label>
+                <label className="text-[11px] text-muted-foreground">Lembrete de follow-up</label>
                 <Input
                   type="datetime-local"
                   value={lembreteEm}

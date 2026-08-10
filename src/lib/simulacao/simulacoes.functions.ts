@@ -158,8 +158,6 @@ export const obterClienteCRM = createServerFn({ method: "GET" })
     return row ?? null;
   });
 
-
-
 /** ===== Verificação por e-mail (OTP) ===== */
 export const enviarOtpEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -253,392 +251,403 @@ const criarSchema = z.object({
 export const criarSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => criarSchema.parse(d))
-  .handler(async ({ data, context }): Promise<{ id: string; numero_simulacao: string; id_secundario?: string }> => {
-    const { supabase, userId } = context;
-    const dd = data.dados;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ id: string; numero_simulacao: string; id_secundario?: string }> => {
+      const { supabase, userId } = context;
+      const dd = data.dados;
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const limparDocumento = (v?: string | null) => (v ?? "").replace(/\D/g, "");
+      const limparDocumento = (v?: string | null) => (v ?? "").replace(/\D/g, "");
 
-
-
-
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("correspondente_id")
-      .eq("id", userId)
-      .maybeSingle();
-    
-    const correspondente_id = prof?.correspondente_id;
-    if (!correspondente_id) throw new Error("Correspondente não vinculado.");
-
-    const casado = dd.estado_civil === "CA" || dd.estado_civil === "UE";
-    const possuiConjugeMinimo = Boolean(dd.nome_conjuge) && 
-                                Boolean(dd.cpf_conjuge) && 
-                                Boolean(dd.data_nascimento_conjuge);
-    
-    const testarAmbos = data.modo === "completa" && casado && possuiConjugeMinimo;
-    let cliente_id = dd.cliente_id ?? null;
-    const clienteOrigemId = cliente_id;
-
-    const upsertClienteCRM = async (params: {
-      nome?: string | null;
-      documento?: string | null;
-      email?: string | null;
-      celular?: string | null;
-      dataNascimento?: string | null;
-      renda?: number | null;
-      estadoCivil?: string | null;
-      regimeCasamento?: string | null;
-      ufInteresse?: string | null;
-      utilizaFgts?: boolean | null;
-      conjugeNome?: string | null;
-      conjugeCpf?: string | null;
-      conjugeDataNascimento?: string | null;
-      conjugeEmail?: string | null;
-      conjugeCelular?: string | null;
-      conjugeRenda?: number | null;
-    }) => {
-      const nome = (params.nome ?? "").trim();
-      const documento = limparDocumento(params.documento);
-      if (!nome || !documento) return null;
-      const conjugeCpf = limparDocumento(params.conjugeCpf);
-      const campos = {
-        nome,
-        tipo_pessoa: documento.length > 11 ? "PJ" : "PF",
-        email: (params.email ?? "").trim().toLowerCase() || null,
-        telefone_celular: params.celular ?? null,
-        data_nascimento: params.dataNascimento || null,
-        estado_civil: mapEstadoCivilEnum(params.estadoCivil),
-        regime_casamento: params.regimeCasamento ?? null,
-        renda_total_declarada: params.renda ?? null,
-        uf_interesse: params.ufInteresse ?? null,
-        utiliza_fgts: params.utilizaFgts ?? false,
-        conjuge_nome: params.conjugeNome ?? null,
-        conjuge_cpf: conjugeCpf || null,
-        conjuge_data_nascimento: params.conjugeDataNascimento || null,
-        conjuge_email: params.conjugeEmail ?? null,
-        conjuge_celular: params.conjugeCelular ?? null,
-        conjuge_renda: params.conjugeRenda ?? null,
-      } as any;
-      const { data: existente, error: errBusca } = await supabaseAdmin
-        .from("clientes")
-        .select("id")
-        .eq("correspondente_id", correspondente_id)
-        .eq("documento", documento)
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("correspondente_id")
+        .eq("id", userId)
         .maybeSingle();
-      if (errBusca) throw new Error(`Falha ao localizar cliente no CRM: ${errBusca.message}`);
-      if (existente?.id) {
-        const { error: errUpd } = await supabaseAdmin
+
+      const correspondente_id = prof?.correspondente_id;
+      if (!correspondente_id) throw new Error("Correspondente não vinculado.");
+
+      const casado = dd.estado_civil === "CA" || dd.estado_civil === "UE";
+      const possuiConjugeMinimo =
+        Boolean(dd.nome_conjuge) && Boolean(dd.cpf_conjuge) && Boolean(dd.data_nascimento_conjuge);
+
+      const testarAmbos = data.modo === "completa" && casado && possuiConjugeMinimo;
+      let cliente_id = dd.cliente_id ?? null;
+      const clienteOrigemId = cliente_id;
+
+      const upsertClienteCRM = async (params: {
+        nome?: string | null;
+        documento?: string | null;
+        email?: string | null;
+        celular?: string | null;
+        dataNascimento?: string | null;
+        renda?: number | null;
+        estadoCivil?: string | null;
+        regimeCasamento?: string | null;
+        ufInteresse?: string | null;
+        utilizaFgts?: boolean | null;
+        conjugeNome?: string | null;
+        conjugeCpf?: string | null;
+        conjugeDataNascimento?: string | null;
+        conjugeEmail?: string | null;
+        conjugeCelular?: string | null;
+        conjugeRenda?: number | null;
+      }) => {
+        const nome = (params.nome ?? "").trim();
+        const documento = limparDocumento(params.documento);
+        if (!nome || !documento) return null;
+        const conjugeCpf = limparDocumento(params.conjugeCpf);
+        const campos = {
+          nome,
+          tipo_pessoa: documento.length > 11 ? "PJ" : "PF",
+          email: (params.email ?? "").trim().toLowerCase() || null,
+          telefone_celular: params.celular ?? null,
+          data_nascimento: params.dataNascimento || null,
+          estado_civil: mapEstadoCivilEnum(params.estadoCivil),
+          regime_casamento: params.regimeCasamento ?? null,
+          renda_total_declarada: params.renda ?? null,
+          uf_interesse: params.ufInteresse ?? null,
+          utiliza_fgts: params.utilizaFgts ?? false,
+          conjuge_nome: params.conjugeNome ?? null,
+          conjuge_cpf: conjugeCpf || null,
+          conjuge_data_nascimento: params.conjugeDataNascimento || null,
+          conjuge_email: params.conjugeEmail ?? null,
+          conjuge_celular: params.conjugeCelular ?? null,
+          conjuge_renda: params.conjugeRenda ?? null,
+        } as any;
+        const { data: existente, error: errBusca } = await supabaseAdmin
           .from("clientes")
-          .update(campos)
-          .eq("id", existente.id);
-        if (errUpd) throw new Error(`Falha ao atualizar cliente no CRM: ${errUpd.message}`);
-        return existente.id as string;
-      }
-      const { data: novo, error: errCli } = await supabaseAdmin
-        .from("clientes")
-        .insert({
-          correspondente_id,
-          numero_cliente: "",
-          documento,
-          origem: "direto",
-          criador_id: userId,
-          responsavel_id: userId,
-          ...campos,
-        })
-        .select("id")
-        .maybeSingle();
-      if (errCli) throw new Error(`Falha ao gravar cliente no CRM: ${errCli.message}`);
-      return (novo?.id as string | undefined) ?? null;
-    };
+          .select("id")
+          .eq("correspondente_id", correspondente_id)
+          .eq("documento", documento)
+          .maybeSingle();
+        if (errBusca) throw new Error(`Falha ao localizar cliente no CRM: ${errBusca.message}`);
+        if (existente?.id) {
+          const { error: errUpd } = await supabaseAdmin
+            .from("clientes")
+            .update(campos)
+            .eq("id", existente.id);
+          if (errUpd) throw new Error(`Falha ao atualizar cliente no CRM: ${errUpd.message}`);
+          return existente.id as string;
+        }
+        const { data: novo, error: errCli } = await supabaseAdmin
+          .from("clientes")
+          .insert({
+            correspondente_id,
+            numero_cliente: "",
+            documento,
+            origem: "direto",
+            criador_id: userId,
+            responsavel_id: userId,
+            ...campos,
+          })
+          .select("id")
+          .maybeSingle();
+        if (errCli) throw new Error(`Falha ao gravar cliente no CRM: ${errCli.message}`);
+        return (novo?.id as string | undefined) ?? null;
+      };
 
-    const replicarVinculos = async (origemId: string | null, alvos: Array<string | null>) => {
-      const destinoIds = Array.from(new Set(alvos.filter((v): v is string => Boolean(v && v !== origemId))));
-      if (!origemId || destinoIds.length === 0) return;
-      const { data: vinculos, error: errVinculos } = await supabaseAdmin
-        .from("cliente_parceiros")
-        .select("parceiro_id, tipo_vinculo")
-        .eq("cliente_id", origemId);
-      if (errVinculos) throw new Error(`Falha ao ler vínculos do cliente: ${errVinculos.message}`);
-      if (!vinculos?.length) return;
-      const rows = destinoIds.flatMap((cid) =>
-        vinculos.map((v: any) => ({
-          cliente_id: cid,
-          parceiro_id: v.parceiro_id,
-          tipo_vinculo: v.tipo_vinculo,
-          correspondente_id,
-        })),
-      );
-      const { error: errUpsert } = await supabaseAdmin
-        .from("cliente_parceiros")
-        .upsert(rows, {
+      const replicarVinculos = async (origemId: string | null, alvos: Array<string | null>) => {
+        const destinoIds = Array.from(
+          new Set(alvos.filter((v): v is string => Boolean(v && v !== origemId))),
+        );
+        if (!origemId || destinoIds.length === 0) return;
+        const { data: vinculos, error: errVinculos } = await supabaseAdmin
+          .from("cliente_parceiros")
+          .select("parceiro_id, tipo_vinculo")
+          .eq("cliente_id", origemId);
+        if (errVinculos)
+          throw new Error(`Falha ao ler vínculos do cliente: ${errVinculos.message}`);
+        if (!vinculos?.length) return;
+        const rows = destinoIds.flatMap((cid) =>
+          vinculos.map((v: any) => ({
+            cliente_id: cid,
+            parceiro_id: v.parceiro_id,
+            tipo_vinculo: v.tipo_vinculo,
+            correspondente_id,
+          })),
+        );
+        const { error: errUpsert } = await supabaseAdmin.from("cliente_parceiros").upsert(rows, {
           onConflict: "cliente_id,parceiro_id,tipo_vinculo",
           ignoreDuplicates: true,
         });
-      if (errUpsert) throw new Error(`Falha ao replicar vínculos do cliente: ${errUpsert.message}`);
-    };
-
-    const vincularConjugeAoTitular = async (titularId: string | null, conjugeId: string | null) => {
-      if (!titularId || !conjugeId || titularId === conjugeId) return;
-      
-      // Vincula o titular ao cônjuge com tipo_vinculo 'conjuge'
-      const { error: err1 } = await supabaseAdmin
-        .from("cliente_parceiros")
-        .upsert({
-          cliente_id: titularId,
-          parceiro_id: conjugeId,
-          tipo_vinculo: 'conjuge',
-          correspondente_id,
-        }, { onConflict: "cliente_id,parceiro_id,tipo_vinculo" });
-
-      // Vincula o cônjuge ao titular com tipo_vinculo 'conjuge'
-      const { error: err2 } = await supabaseAdmin
-        .from("cliente_parceiros")
-        .upsert({
-          cliente_id: conjugeId,
-          parceiro_id: titularId,
-          tipo_vinculo: 'conjuge',
-          correspondente_id,
-        }, { onConflict: "cliente_id,parceiro_id,tipo_vinculo" });
-
-      if (err1 || err2) {
-        console.error("Falha ao vincular cônjuges:", err1?.message || err2?.message);
-      }
-
-      // Além do vínculo mútuo, garante que ambos compartilhem os mesmos parceiros (imobiliárias, etc)
-      await replicarVinculos(titularId, [conjugeId]);
-    };
-
-    const titularId = await upsertClienteCRM({
-      nome: dd.nome_cliente,
-      documento: dd.cpf_cnpj,
-      email: dd.email,
-      celular: dd.celular,
-      dataNascimento: dd.data_nascimento,
-      renda: dd.renda_total,
-      estadoCivil: dd.estado_civil,
-      regimeCasamento: casado ? dd.regime_casamento : null,
-      ufInteresse: dd.uf,
-      utilizaFgts: dd.utiliza_fgts === "S",
-      conjugeNome: casado ? dd.nome_conjuge : null,
-      conjugeCpf: casado ? dd.cpf_conjuge : null,
-      conjugeDataNascimento: casado ? dd.data_nascimento_conjuge : null,
-      conjugeEmail: casado ? dd.email_conjuge : null,
-      conjugeCelular: casado ? dd.celular_conjuge : null,
-      conjugeRenda: casado ? dd.renda_conjuge : null,
-    });
-    if (titularId) cliente_id = titularId;
-
-    const conjugeId = casado
-      ? await upsertClienteCRM({
-          nome: dd.nome_conjuge,
-          documento: dd.cpf_conjuge,
-          email: dd.email_conjuge,
-          celular: dd.celular_conjuge,
-          dataNascimento: dd.data_nascimento_conjuge,
-          renda: dd.renda_conjuge,
-          estadoCivil: dd.estado_civil_conjuge || dd.estado_civil,
-          regimeCasamento: dd.regime_casamento,
-          ufInteresse: dd.uf,
-          utilizaFgts: false,
-          conjugeNome: dd.nome_cliente,
-          conjugeCpf: dd.cpf_cnpj,
-          conjugeDataNascimento: dd.data_nascimento,
-          conjugeEmail: dd.email,
-          conjugeCelular: dd.celular,
-          conjugeRenda: dd.renda_total,
-        })
-      : null;
-    await replicarVinculos(clienteOrigemId, [titularId, conjugeId]);
-    await vincularConjugeAoTitular(titularId, conjugeId);
-
-    const insert = {
-      correspondente_id,
-      tipo_simulacao: data.modo,
-      status: "rascunho" as const,
-      cliente_id,
-      cpf_cnpj: dd.cpf_cnpj ?? null,
-      nome_cliente: dd.nome_cliente ?? null,
-      email: dd.email ?? null,
-      celular: dd.celular ?? null,
-      data_nascimento: dd.data_nascimento || null,
-      renda_total: dd.renda_total ?? null,
-      estado_civil: dd.estado_civil ?? null,
-      possui_conjuge: dd.possui_conjuge ?? false,
-      compoe_renda: dd.compoe_renda ?? false,
-      compoe_renda_conjuge: dd.compoe_renda_conjuge ?? true,
-
-      nome_conjuge: dd.nome_conjuge ?? null,
-      cpf_conjuge: dd.cpf_conjuge ?? null,
-      data_nascimento_conjuge: dd.data_nascimento_conjuge || null,
-      email_conjuge: dd.email_conjuge ?? null,
-      celular_conjuge: dd.celular_conjuge ?? null,
-      renda_conjuge: dd.renda_conjuge ?? null,
-      estado_civil_conjuge: dd.estado_civil_conjuge ?? null,
-      regime_casamento: dd.regime_casamento ?? null,
-      produto: dd.produto ?? null,
-      id_operacao_homefin: dd.id_operacao_homefin ?? null,
-      agrupador_id: (dd as any).agrupador_id ?? null,
-      tipo_imovel: dd.tipo_imovel ?? null,
-      uso_imovel: dd.uso_imovel ?? null,
-      situacao_imovel: dd.situacao_imovel ?? null,
-      uf: dd.uf ?? null,
-      cep_imovel: dd.cep_imovel ?? null,
-      valor_imovel: dd.valor_imovel ?? null,
-      valor_entrada: dd.valor_entrada ?? null,
-      valor_financiamento: dd.valor_financiamento ?? null,
-      prazo: dd.prazo ?? null,
-      prazo_anos: dd.prazo_anos ?? null,
-      possui_imovel_escolhido: dd.possui_imovel_escolhido ?? null,
-      utiliza_fgts: dd.utiliza_fgts ?? null,
-      fg_financiar_despesas: dd.fg_financiar_despesas ?? false,
-      valor_despesas_financiadas: dd.fg_financiar_despesas
-        ? (dd.valor_despesas_financiadas ?? 0)
-        : 0,
-      sistema_amortizacao: dd.sistema_amortizacao ?? null,
-      email_verificado_em: dd.email_verificado_em || null,
-      email_verificado_por: dd.email_verificado_em ? "homefin_otp" : null,
-      consentimento_lgpd: dd.consentimento_lgpd ?? false,
-      consentimento_scr: dd.consentimento_scr ?? false,
-      usuario_criador_id: userId,
-      usuario_responsavel_id: userId,
-    };
-
-    // O insert é feito com o client admin usando o escopo já validado
-    // (correspondente_id do próprio usuário + usuario_criador_id = userId).
-    // Isso evita falhas de "row-level security policy" em cenários de borda
-    // (token renovado no envio, usuário sem permissão direta de escrita etc.),
-    // mantendo o mesmo padrão já usado para gravar o cliente no CRM acima.
-    const { data: sim, error } = await supabaseAdmin
-      .from("simulacoes")
-      .insert(insert as any)
-      .select("id, numero_simulacao")
-      .single();
-    if (error) throw new Error(error.message);
-
-    // Auditoria de alteração de renda (Problema 3)
-    if (dd.renda_total !== undefined && dd.renda_total_anterior !== undefined && dd.renda_total !== dd.renda_total_anterior) {
-      const { formatBRL } = await import("./format");
-      await supabaseAdmin.from("simulacao_historico").insert({
-        simulacao_id: sim.id,
-        tipo: "info",
-        descricao: `Ajuste manual de renda declarada: alterado de ${formatBRL(dd.renda_total_anterior ?? 0)} para ${formatBRL(dd.renda_total ?? 0)}.`,
-        ator_id: userId,
-      });
-    }
-
-    let id_secundario: string | undefined;
-
-    // O comparativo de CPF agora roda SEMPRE para casados com dados mínimos do cônjuge.
-    // A simulação secundária é criada apenas se o cônjuge tiver dados aptos a ser titular.
-    const conjugeAptoTitular =
-      !!dd.cpf_conjuge &&
-      !!dd.data_nascimento_conjuge &&
-      Number(dd.renda_conjuge ?? 0) > 0;
-
-    if (testarAmbos && !conjugeAptoTitular) {
-      await supabaseAdmin.from("simulacao_historico").insert({
-        simulacao_id: sim.id,
-        tipo: "info",
-        descricao: "Comparativo de CPF não executado: faltam nome, CPF, data de nascimento ou renda do cônjuge.",
-        ator_id: userId,
-      });
-    }
-
-    if (testarAmbos && conjugeAptoTitular) {
-      const rendaTotalSoma = (dd.renda_total ?? 0) + (dd.renda_conjuge ?? 0);
-      const insertInvertido = {
-        ...insert,
-        // Inverte titular ⇄ cônjuge
-        cliente_id: conjugeId || cliente_id,
-        cpf_cnpj: dd.cpf_conjuge || null,
-        nome_cliente: dd.nome_conjuge || null,
-        email: dd.email_conjuge || null,
-        celular: dd.celular_conjuge || null,
-        data_nascimento: dd.data_nascimento_conjuge || null,
-        renda_total: dd.renda_total ?? 0, // Ambos usam a mesma renda individual (ajustado para soma na integração)
-        estado_civil: dd.estado_civil_conjuge || dd.estado_civil,
-
-        nome_conjuge: dd.nome_cliente || null,
-        cpf_conjuge: dd.cpf_cnpj || null,
-        data_nascimento_conjuge: dd.data_nascimento || null,
-        email_conjuge: dd.email || null,
-        celular_conjuge: dd.celular || null,
-        renda_conjuge: dd.renda_total || null,
-        estado_civil_conjuge: dd.estado_civil ?? null,
-        
-        // Mantém vínculo via agrupador para que a UI saiba que são parte da mesma "comparação"
-        agrupador_id: insert.agrupador_id || sim.id,
+        if (errUpsert)
+          throw new Error(`Falha ao replicar vínculos do cliente: ${errUpsert.message}`);
       };
 
-      // Se composição de renda ativa, garante que ambos levem a MESMA renda somada
-      if (dd.compoe_renda) {
-        insert.renda_total = rendaTotalSoma;
-        // O cônjuge na simulação 1 mantém sua renda original para registro
-        insertInvertido.renda_total = rendaTotalSoma;
+      const vincularConjugeAoTitular = async (
+        titularId: string | null,
+        conjugeId: string | null,
+      ) => {
+        if (!titularId || !conjugeId || titularId === conjugeId) return;
+
+        // Vincula o titular ao cônjuge com tipo_vinculo 'conjuge'
+        const { error: err1 } = await supabaseAdmin.from("cliente_parceiros").upsert(
+          {
+            cliente_id: titularId,
+            parceiro_id: conjugeId,
+            tipo_vinculo: "conjuge",
+            correspondente_id,
+          },
+          { onConflict: "cliente_id,parceiro_id,tipo_vinculo" },
+        );
+
+        // Vincula o cônjuge ao titular com tipo_vinculo 'conjuge'
+        const { error: err2 } = await supabaseAdmin.from("cliente_parceiros").upsert(
+          {
+            cliente_id: conjugeId,
+            parceiro_id: titularId,
+            tipo_vinculo: "conjuge",
+            correspondente_id,
+          },
+          { onConflict: "cliente_id,parceiro_id,tipo_vinculo" },
+        );
+
+        if (err1 || err2) {
+          console.error("Falha ao vincular cônjuges:", err1?.message || err2?.message);
+        }
+
+        // Além do vínculo mútuo, garante que ambos compartilhem os mesmos parceiros (imobiliárias, etc)
+        await replicarVinculos(titularId, [conjugeId]);
+      };
+
+      const titularId = await upsertClienteCRM({
+        nome: dd.nome_cliente,
+        documento: dd.cpf_cnpj,
+        email: dd.email,
+        celular: dd.celular,
+        dataNascimento: dd.data_nascimento,
+        renda: dd.renda_total,
+        estadoCivil: dd.estado_civil,
+        regimeCasamento: casado ? dd.regime_casamento : null,
+        ufInteresse: dd.uf,
+        utilizaFgts: dd.utiliza_fgts === "S",
+        conjugeNome: casado ? dd.nome_conjuge : null,
+        conjugeCpf: casado ? dd.cpf_conjuge : null,
+        conjugeDataNascimento: casado ? dd.data_nascimento_conjuge : null,
+        conjugeEmail: casado ? dd.email_conjuge : null,
+        conjugeCelular: casado ? dd.celular_conjuge : null,
+        conjugeRenda: casado ? dd.renda_conjuge : null,
+      });
+      if (titularId) cliente_id = titularId;
+
+      const conjugeId = casado
+        ? await upsertClienteCRM({
+            nome: dd.nome_conjuge,
+            documento: dd.cpf_conjuge,
+            email: dd.email_conjuge,
+            celular: dd.celular_conjuge,
+            dataNascimento: dd.data_nascimento_conjuge,
+            renda: dd.renda_conjuge,
+            estadoCivil: dd.estado_civil_conjuge || dd.estado_civil,
+            regimeCasamento: dd.regime_casamento,
+            ufInteresse: dd.uf,
+            utilizaFgts: false,
+            conjugeNome: dd.nome_cliente,
+            conjugeCpf: dd.cpf_cnpj,
+            conjugeDataNascimento: dd.data_nascimento,
+            conjugeEmail: dd.email,
+            conjugeCelular: dd.celular,
+            conjugeRenda: dd.renda_total,
+          })
+        : null;
+      await replicarVinculos(clienteOrigemId, [titularId, conjugeId]);
+      await vincularConjugeAoTitular(titularId, conjugeId);
+
+      const insert = {
+        correspondente_id,
+        tipo_simulacao: data.modo,
+        status: "rascunho" as const,
+        cliente_id,
+        cpf_cnpj: dd.cpf_cnpj ?? null,
+        nome_cliente: dd.nome_cliente ?? null,
+        email: dd.email ?? null,
+        celular: dd.celular ?? null,
+        data_nascimento: dd.data_nascimento || null,
+        renda_total: dd.renda_total ?? null,
+        estado_civil: dd.estado_civil ?? null,
+        possui_conjuge: dd.possui_conjuge ?? false,
+        compoe_renda: dd.compoe_renda ?? false,
+        compoe_renda_conjuge: dd.compoe_renda_conjuge ?? true,
+
+        nome_conjuge: dd.nome_conjuge ?? null,
+        cpf_conjuge: dd.cpf_conjuge ?? null,
+        data_nascimento_conjuge: dd.data_nascimento_conjuge || null,
+        email_conjuge: dd.email_conjuge ?? null,
+        celular_conjuge: dd.celular_conjuge ?? null,
+        renda_conjuge: dd.renda_conjuge ?? null,
+        estado_civil_conjuge: dd.estado_civil_conjuge ?? null,
+        regime_casamento: dd.regime_casamento ?? null,
+        produto: dd.produto ?? null,
+        id_operacao_homefin: dd.id_operacao_homefin ?? null,
+        agrupador_id: (dd as any).agrupador_id ?? null,
+        tipo_imovel: dd.tipo_imovel ?? null,
+        uso_imovel: dd.uso_imovel ?? null,
+        situacao_imovel: dd.situacao_imovel ?? null,
+        uf: dd.uf ?? null,
+        cep_imovel: dd.cep_imovel ?? null,
+        valor_imovel: dd.valor_imovel ?? null,
+        valor_entrada: dd.valor_entrada ?? null,
+        valor_financiamento: dd.valor_financiamento ?? null,
+        prazo: dd.prazo ?? null,
+        prazo_anos: dd.prazo_anos ?? null,
+        possui_imovel_escolhido: dd.possui_imovel_escolhido ?? null,
+        utiliza_fgts: dd.utiliza_fgts ?? null,
+        fg_financiar_despesas: dd.fg_financiar_despesas ?? false,
+        valor_despesas_financiadas: dd.fg_financiar_despesas
+          ? (dd.valor_despesas_financiadas ?? 0)
+          : 0,
+        sistema_amortizacao: dd.sistema_amortizacao ?? null,
+        email_verificado_em: dd.email_verificado_em || null,
+        email_verificado_por: dd.email_verificado_em ? "homefin_otp" : null,
+        consentimento_lgpd: dd.consentimento_lgpd ?? false,
+        consentimento_scr: dd.consentimento_scr ?? false,
+        usuario_criador_id: userId,
+        usuario_responsavel_id: userId,
+      };
+
+      // O insert é feito com o client admin usando o escopo já validado
+      // (correspondente_id do próprio usuário + usuario_criador_id = userId).
+      // Isso evita falhas de "row-level security policy" em cenários de borda
+      // (token renovado no envio, usuário sem permissão direta de escrita etc.),
+      // mantendo o mesmo padrão já usado para gravar o cliente no CRM acima.
+      const { data: sim, error } = await supabaseAdmin
+        .from("simulacoes")
+        .insert(insert as any)
+        .select("id, numero_simulacao")
+        .single();
+      if (error) throw new Error(error.message);
+
+      // Auditoria de alteração de renda (Problema 3)
+      if (
+        dd.renda_total !== undefined &&
+        dd.renda_total_anterior !== undefined &&
+        dd.renda_total !== dd.renda_total_anterior
+      ) {
+        const { formatBRL } = await import("./format");
+        await supabaseAdmin.from("simulacao_historico").insert({
+          simulacao_id: sim.id,
+          tipo: "info",
+          descricao: `Ajuste manual de renda declarada: alterado de ${formatBRL(dd.renda_total_anterior ?? 0)} para ${formatBRL(dd.renda_total ?? 0)}.`,
+          ator_id: userId,
+        });
       }
 
-      const { data: simSec, error: errorSec } = await supabaseAdmin
-        .from("simulacoes")
-        .insert(insertInvertido as any)
-        .select("id")
-        .single();
-      
-      if (!errorSec && simSec) {
-        id_secundario = simSec.id;
-        // Replica os bancos selecionados para a simulação invertida
-        if (dd.bancos_ids && dd.bancos_ids.length > 0) {
-          const { data: bancosAtivos } = await supabase
-            .from("vw_bancos_ativos")
-            .select("id, codigo_banco, nome_banco, id_banco")
-            .in("id", dd.bancos_ids);
-          
-          if (bancosAtivos && bancosAtivos.length > 0) {
-            await supabaseAdmin.from("simulacao_bancos").insert(
-              bancosAtivos.map((b) => ({
-                simulacao_id: simSec.id,
-                banco_id: b.id,
-                codigo_banco: b.codigo_banco,
-                nome_banco: b.nome_banco,
-                homefin_id_banco: b.id_banco,
-                status_banco: "aguardando",
-              })),
-            );
+      let id_secundario: string | undefined;
+
+      // O comparativo de CPF agora roda SEMPRE para casados com dados mínimos do cônjuge.
+      // A simulação secundária é criada apenas se o cônjuge tiver dados aptos a ser titular.
+      const conjugeAptoTitular =
+        !!dd.cpf_conjuge && !!dd.data_nascimento_conjuge && Number(dd.renda_conjuge ?? 0) > 0;
+
+      if (testarAmbos && !conjugeAptoTitular) {
+        await supabaseAdmin.from("simulacao_historico").insert({
+          simulacao_id: sim.id,
+          tipo: "info",
+          descricao:
+            "Comparativo de CPF não executado: faltam nome, CPF, data de nascimento ou renda do cônjuge.",
+          ator_id: userId,
+        });
+      }
+
+      if (testarAmbos && conjugeAptoTitular) {
+        const rendaTotalSoma = (dd.renda_total ?? 0) + (dd.renda_conjuge ?? 0);
+        const insertInvertido = {
+          ...insert,
+          // Inverte titular ⇄ cônjuge
+          cliente_id: conjugeId || cliente_id,
+          cpf_cnpj: dd.cpf_conjuge || null,
+          nome_cliente: dd.nome_conjuge || null,
+          email: dd.email_conjuge || null,
+          celular: dd.celular_conjuge || null,
+          data_nascimento: dd.data_nascimento_conjuge || null,
+          renda_total: dd.renda_total ?? 0, // Ambos usam a mesma renda individual (ajustado para soma na integração)
+          estado_civil: dd.estado_civil_conjuge || dd.estado_civil,
+
+          nome_conjuge: dd.nome_cliente || null,
+          cpf_conjuge: dd.cpf_cnpj || null,
+          data_nascimento_conjuge: dd.data_nascimento || null,
+          email_conjuge: dd.email || null,
+          celular_conjuge: dd.celular || null,
+          renda_conjuge: dd.renda_total || null,
+          estado_civil_conjuge: dd.estado_civil ?? null,
+
+          // Mantém vínculo via agrupador para que a UI saiba que são parte da mesma "comparação"
+          agrupador_id: insert.agrupador_id || sim.id,
+        };
+
+        // Se composição de renda ativa, garante que ambos levem a MESMA renda somada
+        if (dd.compoe_renda) {
+          insert.renda_total = rendaTotalSoma;
+          // O cônjuge na simulação 1 mantém sua renda original para registro
+          insertInvertido.renda_total = rendaTotalSoma;
+        }
+
+        const { data: simSec, error: errorSec } = await supabaseAdmin
+          .from("simulacoes")
+          .insert(insertInvertido as any)
+          .select("id")
+          .single();
+
+        if (!errorSec && simSec) {
+          id_secundario = simSec.id;
+          // Replica os bancos selecionados para a simulação invertida
+          if (dd.bancos_ids && dd.bancos_ids.length > 0) {
+            const { data: bancosAtivos } = await supabase
+              .from("vw_bancos_ativos")
+              .select("id, codigo_banco, nome_banco, id_banco")
+              .in("id", dd.bancos_ids);
+
+            if (bancosAtivos && bancosAtivos.length > 0) {
+              await supabaseAdmin.from("simulacao_bancos").insert(
+                bancosAtivos.map((b) => ({
+                  simulacao_id: simSec.id,
+                  banco_id: b.id,
+                  codigo_banco: b.codigo_banco,
+                  nome_banco: b.nome_banco,
+                  homefin_id_banco: b.id_banco,
+                  status_banco: "aguardando",
+                })),
+              );
+            }
           }
         }
       }
-    }
 
-    // registra bancos selecionados
-    if (dd.bancos_ids && dd.bancos_ids.length > 0) {
-      const { data: bancos } = await supabase
-        .from("vw_bancos_ativos")
-        .select("id, codigo_banco, nome_banco, id_banco")
-        .in("id", dd.bancos_ids);
-      if (bancos && bancos.length > 0) {
-        await supabaseAdmin.from("simulacao_bancos").insert(
-          bancos.map((b) => ({
-            simulacao_id: sim.id,
-            banco_id: b.id,
-            codigo_banco: b.codigo_banco,
-            nome_banco: b.nome_banco,
-            homefin_id_banco: b.id_banco,
-            selecionado: true,
-          })),
-        );
+      // registra bancos selecionados
+      if (dd.bancos_ids && dd.bancos_ids.length > 0) {
+        const { data: bancos } = await supabase
+          .from("vw_bancos_ativos")
+          .select("id, codigo_banco, nome_banco, id_banco")
+          .in("id", dd.bancos_ids);
+        if (bancos && bancos.length > 0) {
+          await supabaseAdmin.from("simulacao_bancos").insert(
+            bancos.map((b) => ({
+              simulacao_id: sim.id,
+              banco_id: b.id,
+              codigo_banco: b.codigo_banco,
+              nome_banco: b.nome_banco,
+              homefin_id_banco: b.id_banco,
+              selecionado: true,
+            })),
+          );
+        }
       }
-    }
 
-    await supabaseAdmin.from("simulacao_historico").insert({
-      simulacao_id: sim.id,
-      tipo: "cadastro",
-      descricao: "Simulação criada",
-      ator_id: userId,
-    });
+      await supabaseAdmin.from("simulacao_historico").insert({
+        simulacao_id: sim.id,
+        tipo: "cadastro",
+        descricao: "Simulação criada",
+        ator_id: userId,
+      });
 
-    return { id: sim.id, numero_simulacao: sim.numero_simulacao, id_secundario };
-  });
+      return { id: sim.id, numero_simulacao: sim.numero_simulacao, id_secundario };
+    },
+  );
 
 /** ===== Obter simulação ===== */
 export const obterSimulacao = createServerFn({ method: "GET" })
@@ -710,13 +719,10 @@ export const obterSimulacao = createServerFn({ method: "GET" })
     // Se agrupado, expõe também qual sistema é o "principal" (esta simulação)
     // e sinaliza que é mista, para o front renderizar cabeçalhos SAC/PRICE.
     const simulacaoOut =
-      irmas.length > 1
-        ? { ...simulacao, sistema_amortizacao: "B" as const }
-        : simulacao;
+      irmas.length > 1 ? { ...simulacao, sistema_amortizacao: "B" as const } : simulacao;
 
     return { simulacao: simulacaoOut, bancos, historico: historicoComAutor };
   });
-
 
 /** ===== Listar simulações (paginado, escopo por RLS) ===== */
 const listarSchema = z.object({
@@ -734,148 +740,161 @@ const listarSchema = z.object({
 export const listarSimulacoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => listarSchema.parse(d))
-  .handler(async ({ data, context }): Promise<{ itens: SimulacaoListaItem[]; total: number; stats?: { volumeTotal: number; prazoMedio: number } }> => {
-    const { supabase, userId } = context;
-    const from = (data.pagina - 1) * data.porPagina;
-    const to = from + data.porPagina - 1;
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{
+      itens: SimulacaoListaItem[];
+      total: number;
+      stats?: { volumeTotal: number; prazoMedio: number };
+    }> => {
+      const { supabase, userId } = context;
+      const from = (data.pagina - 1) * data.porPagina;
+      const to = from + data.porPagina - 1;
 
-    // A listagem colapsa visualmente apenas na UI se necessário, mas o servidor
-    // agora busca sem o overFetch excessivo que causava duplicidade no offset.
-    // Para manter a integridade, buscamos o range exato.
+      // A listagem colapsa visualmente apenas na UI se necessário, mas o servidor
+      // agora busca sem o overFetch excessivo que causava duplicidade no offset.
+      // Para manter a integridade, buscamos o range exato.
 
-    // Para usuários com visibilidade restrita (RLS), o Supabase já aplica o filtro.
-    // Garantimos que o correspondente_id seja filtrado se não formos admin total.
-    const { data: me } = await supabase
-      .from("profiles")
-      .select("correspondente_id")
-      .eq("id", userId)
-      .maybeSingle();
-
-    let query = supabase
-      .from("simulacoes")
-      .select(
-        "id, numero_simulacao, nome_cliente, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id",
-        { count: "exact" }
-      );
-
-    if (me?.correspondente_id) {
-      query = query.eq("correspondente_id", me.correspondente_id);
-    }
-
-    if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
-    else query = query.is("deleted_at", null);
-
-    if (data.escopo === "minhas") {
-      const { data: vinc } = await supabase
-        .from("cliente_parceiros")
-        .select("cliente_id")
-        .eq("parceiro_id", userId);
-      const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
-      const partes = [
-        `usuario_criador_id.eq.${userId}`,
-        `usuario_responsavel_id.eq.${userId}`,
-      ];
-      if (ids.length) partes.push(`cliente_id.in.(${ids.join(",")})`);
-      query = query.or(partes.join(","));
-    }
-    if (data.responsavel) query = query.eq("usuario_criador_id", data.responsavel);
-    if (data.status) query = query.eq("status", data.status as any);
-    if (data.desde) query = query.gte("created_at", data.desde);
-    if (data.ate) query = query.lte("created_at", `${data.ate}T23:59:59.999-03:00`);
-    if (data.q) {
-      const digitos = data.q.replace(/\D/g, "");
-      const filtros = [`numero_simulacao.ilike.%${data.q}%`, `nome_cliente.ilike.%${data.q}%`];
-      if (digitos.length >= 3) filtros.push(`cpf_cnpj.ilike.%${digitos}%`);
-      query = query.or(filtros.join(","));
-    }
-
-    // Pega o count real com TODOS os filtros aplicados antes de paginar
-    const { count, error: errCount } = await query;
-    if (errCount) throw new Error(errCount.message);
-
-    const { data: rows, error: errRows } = await query
-      .order("created_at", { ascending: false })
-      .range(from, to);
-    
-    if (errRows) throw new Error(errRows.message);
-
-    // Para manter a paginação correta e previsível, a lista exibe cada registro
-    // de simulação como um item individual. O front-end pode agrupar visualmente
-    // se necessário, mas o servidor entrega a lista plana.
-    const paginadas = (rows ?? []).map(r => ({ ...r, _agrupadas_ids: [] as string[] }));
-    const total = count ?? 0;
-
-    // Carrega bancos de TODAS as simulações paginadas para consolidar a exibição.
-    const idsTodos = paginadas.map((r: any) => r.id);
-    const sistemaPorSimulacao = new Map(
-      paginadas.map((r: any) => [r.id, r.sistema_amortizacao ?? null]),
-    );
-    const bancosPorSim = new Map<string, SimulacaoBancoResumo[]>();
-    if (idsTodos.length) {
-      const { data: bancos } = await supabase
-        .from("simulacao_bancos")
-        .select("id, simulacao_id, banco_id, nome_banco, status_banco")
-        .in("simulacao_id", idsTodos)
-        .order("nome_banco", { ascending: true });
-      for (const b of bancos ?? []) {
-        const lista = bancosPorSim.get((b as any).simulacao_id) ?? [];
-        lista.push({
-          id: (b as any).id,
-          banco_id: (b as any).banco_id,
-          nome_banco: (b as any).nome_banco,
-          status_banco: (b as any).status_banco,
-          sistema_amortizacao: sistemaPorSimulacao.get((b as any).simulacao_id) ?? null,
-        });
-        bancosPorSim.set((b as any).simulacao_id, lista);
-      }
-    }
-
-    // Resolve nomes dos criadores + de quem excluiu.
-    const donoIds = Array.from(
-      new Set(paginadas.map((r: any) => r.usuario_criador_id).filter(Boolean)),
-    ) as string[];
-    const excluidorIds = Array.from(
-      new Set(paginadas.map((r: any) => r.deleted_by).filter(Boolean)),
-    ) as string[];
-    const perfilIds = Array.from(new Set([...donoIds, ...excluidorIds]));
-    const nomesPerfis = new Map<string, string>();
-    if (perfilIds.length) {
-      const { data: perfis } = await supabase
+      // Para usuários com visibilidade restrita (RLS), o Supabase já aplica o filtro.
+      // Garantimos que o correspondente_id seja filtrado se não formos admin total.
+      const { data: me } = await supabase
         .from("profiles")
-        .select("id, nome")
-        .in("id", perfilIds);
-      for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
-    }
+        .select("correspondente_id")
+        .eq("id", userId)
+        .maybeSingle();
 
-    const itens = paginadas.map((r: any) => {
-      const bancosPrincipal = bancosPorSim.get(r.id) ?? [];
-      const bancosExtras = (r._agrupadas_ids ?? []).flatMap((id: string) => bancosPorSim.get(id) ?? []);
-      return {
-        ...r,
-        responsavel_id: r.usuario_criador_id ?? null,
-        nome_responsavel: r.usuario_criador_id ? (nomesPerfis.get(r.usuario_criador_id) ?? null) : null,
-        nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
-        bancos: [...bancosPrincipal, ...bancosExtras],
-      };
-    }) as SimulacaoListaItem[];
-    // Carrega estatísticas totais (Volume e Prazo Médio) do banco de dados baseadas nos mesmos filtros,
-    // já que itens.reduce() só pega os itens da página atual (limit 50).
-    const { data: stats } = await query.select("valor_financiamento, prazo");
-    const totalVolume = (stats ?? []).reduce((acc, s) => acc + (Number(s.valor_financiamento) || 0), 0);
-    const validPrazos = (stats ?? []).map(s => Number(s.prazo)).filter(n => n > 0);
-    const totalPrazoMedio = validPrazos.length 
-      ? Math.round(validPrazos.reduce((a, b) => a + b, 0) / validPrazos.length) 
-      : 0;
+      let query = supabase
+        .from("simulacoes")
+        .select(
+          "id, numero_simulacao, nome_cliente, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id",
+          { count: "exact" },
+        );
 
-    return { 
-      itens, 
-      total, 
-      stats: {
-        volumeTotal: totalVolume,
-        prazoMedio: totalPrazoMedio
+      if (me?.correspondente_id) {
+        query = query.eq("correspondente_id", me.correspondente_id);
       }
-    };
-  });
+
+      if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
+      else query = query.is("deleted_at", null);
+
+      if (data.escopo === "minhas") {
+        const { data: vinc } = await supabase
+          .from("cliente_parceiros")
+          .select("cliente_id")
+          .eq("parceiro_id", userId);
+        const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
+        const partes = [`usuario_criador_id.eq.${userId}`, `usuario_responsavel_id.eq.${userId}`];
+        if (ids.length) partes.push(`cliente_id.in.(${ids.join(",")})`);
+        query = query.or(partes.join(","));
+      }
+      if (data.responsavel) query = query.eq("usuario_criador_id", data.responsavel);
+      if (data.status) query = query.eq("status", data.status as any);
+      if (data.desde) query = query.gte("created_at", data.desde);
+      if (data.ate) query = query.lte("created_at", `${data.ate}T23:59:59.999-03:00`);
+      if (data.q) {
+        const digitos = data.q.replace(/\D/g, "");
+        const filtros = [`numero_simulacao.ilike.%${data.q}%`, `nome_cliente.ilike.%${data.q}%`];
+        if (digitos.length >= 3) filtros.push(`cpf_cnpj.ilike.%${digitos}%`);
+        query = query.or(filtros.join(","));
+      }
+
+      // Pega o count real com TODOS os filtros aplicados antes de paginar
+      const { count, error: errCount } = await query;
+      if (errCount) throw new Error(errCount.message);
+
+      const { data: rows, error: errRows } = await query
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (errRows) throw new Error(errRows.message);
+
+      // Para manter a paginação correta e previsível, a lista exibe cada registro
+      // de simulação como um item individual. O front-end pode agrupar visualmente
+      // se necessário, mas o servidor entrega a lista plana.
+      const paginadas = (rows ?? []).map((r) => ({ ...r, _agrupadas_ids: [] as string[] }));
+      const total = count ?? 0;
+
+      // Carrega bancos de TODAS as simulações paginadas para consolidar a exibição.
+      const idsTodos = paginadas.map((r: any) => r.id);
+      const sistemaPorSimulacao = new Map(
+        paginadas.map((r: any) => [r.id, r.sistema_amortizacao ?? null]),
+      );
+      const bancosPorSim = new Map<string, SimulacaoBancoResumo[]>();
+      if (idsTodos.length) {
+        const { data: bancos } = await supabase
+          .from("simulacao_bancos")
+          .select("id, simulacao_id, banco_id, nome_banco, status_banco")
+          .in("simulacao_id", idsTodos)
+          .order("nome_banco", { ascending: true });
+        for (const b of bancos ?? []) {
+          const lista = bancosPorSim.get((b as any).simulacao_id) ?? [];
+          lista.push({
+            id: (b as any).id,
+            banco_id: (b as any).banco_id,
+            nome_banco: (b as any).nome_banco,
+            status_banco: (b as any).status_banco,
+            sistema_amortizacao: sistemaPorSimulacao.get((b as any).simulacao_id) ?? null,
+          });
+          bancosPorSim.set((b as any).simulacao_id, lista);
+        }
+      }
+
+      // Resolve nomes dos criadores + de quem excluiu.
+      const donoIds = Array.from(
+        new Set(paginadas.map((r: any) => r.usuario_criador_id).filter(Boolean)),
+      ) as string[];
+      const excluidorIds = Array.from(
+        new Set(paginadas.map((r: any) => r.deleted_by).filter(Boolean)),
+      ) as string[];
+      const perfilIds = Array.from(new Set([...donoIds, ...excluidorIds]));
+      const nomesPerfis = new Map<string, string>();
+      if (perfilIds.length) {
+        const { data: perfis } = await supabase
+          .from("profiles")
+          .select("id, nome")
+          .in("id", perfilIds);
+        for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
+      }
+
+      const itens = paginadas.map((r: any) => {
+        const bancosPrincipal = bancosPorSim.get(r.id) ?? [];
+        const bancosExtras = (r._agrupadas_ids ?? []).flatMap(
+          (id: string) => bancosPorSim.get(id) ?? [],
+        );
+        return {
+          ...r,
+          responsavel_id: r.usuario_criador_id ?? null,
+          nome_responsavel: r.usuario_criador_id
+            ? (nomesPerfis.get(r.usuario_criador_id) ?? null)
+            : null,
+          nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
+          bancos: [...bancosPrincipal, ...bancosExtras],
+        };
+      }) as SimulacaoListaItem[];
+      // Carrega estatísticas totais (Volume e Prazo Médio) do banco de dados baseadas nos mesmos filtros,
+      // já que itens.reduce() só pega os itens da página atual (limit 50).
+      const { data: stats } = await query.select("valor_financiamento, prazo");
+      const totalVolume = (stats ?? []).reduce(
+        (acc, s) => acc + (Number(s.valor_financiamento) || 0),
+        0,
+      );
+      const validPrazos = (stats ?? []).map((s) => Number(s.prazo)).filter((n) => n > 0);
+      const totalPrazoMedio = validPrazos.length
+        ? Math.round(validPrazos.reduce((a, b) => a + b, 0) / validPrazos.length)
+        : 0;
+
+      return {
+        itens,
+        total,
+        stats: {
+          volumeTotal: totalVolume,
+          prazoMedio: totalPrazoMedio,
+        },
+      };
+    },
+  );
 
 /** ===== Duplicar simulação =====
  * Cria uma nova simulação a partir de outra, isolando TODO estado
@@ -924,9 +943,23 @@ export const duplicarSimulacao = createServerFn({ method: "POST" })
       ...resto
     } = orig as any;
     // Descarta descartáveis (silencia eslint):
-    void _id; void _num; void _c; void _u; void _st; void _hop; void _coh;
-    void _uee; void _ue; void _agp; void _eve; void _evp; void _cip; void _cem;
-    void _da; void _db; void _dm;
+    void _id;
+    void _num;
+    void _c;
+    void _u;
+    void _st;
+    void _hop;
+    void _coh;
+    void _uee;
+    void _ue;
+    void _agp;
+    void _eve;
+    void _evp;
+    void _cip;
+    void _cem;
+    void _da;
+    void _db;
+    void _dm;
 
     const { data: nova, error: errNova } = await supabase
       .from("simulacoes")
@@ -960,15 +993,16 @@ export const duplicarSimulacao = createServerFn({ method: "POST" })
     return { id: nova.id, numero_simulacao: nova.numero_simulacao };
   });
 
-
 /** ===== Enviar à integração bancária ===== */
 export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      simulacao_id: z.string().uuid(),
-      banco_ids: z.array(z.string().uuid()).optional(),
-    }).parse(d)
+    z
+      .object({
+        simulacao_id: z.string().uuid(),
+        banco_ids: z.array(z.string().uuid()).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -1017,7 +1051,7 @@ export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
       }
     }
 
-    return resultados.find(r => r.id === data.simulacao_id);
+    return resultados.find((r) => r.id === data.simulacao_id);
   });
 
 export const reenviarSimulacaoBanco = enviarSimulacaoBanco;
@@ -1055,7 +1089,8 @@ export const excluirSimulacao = createServerFn({ method: "POST" })
     if (sim.homefin_id_oportunidade) {
       const cancelarNoBanco = (async () => {
         try {
-          const { cancelarOportunidadeHomefinGenerico } = await import("@/lib/propostas/enviar/lifecycle.server");
+          const { cancelarOportunidadeHomefinGenerico } =
+            await import("@/lib/propostas/enviar/lifecycle.server");
           await cancelarOportunidadeHomefinGenerico({
             idOportunidade: sim.homefin_id_oportunidade as string,
             simulacaoId: data.id,
@@ -1091,7 +1126,6 @@ export const excluirSimulacao = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
-
 
 /** Restaura uma simulação excluída logicamente. */
 export const restaurarSimulacao = createServerFn({ method: "POST" })
@@ -1133,9 +1167,7 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
     }
     const r = s as any;
     if (!r.nome_conjuge || !r.cpf_conjuge || !r.data_nascimento_conjuge) {
-      throw new Error(
-        "Preencha nome, CPF e data de nascimento do cônjuge antes de inverter.",
-      );
+      throw new Error("Preencha nome, CPF e data de nascimento do cônjuge antes de inverter.");
     }
     const { error } = await supabase
       .from("simulacoes")
@@ -1204,9 +1236,7 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
               renda_total_declarada: params.renda ?? 0,
               estado_civil: mapEstadoCivilEnum(params.estadoCivil) ?? "casado",
               conjuge_nome: params.conjugeNome || null,
-              conjuge_cpf: params.conjugeCpf
-                ? params.conjugeCpf.replace(/\D+/g, "")
-                : null,
+              conjuge_cpf: params.conjugeCpf ? params.conjugeCpf.replace(/\D+/g, "") : null,
               conjuge_data_nascimento: params.conjugeDataNascimento || null,
               conjuge_email: params.conjugeEmail || null,
               conjuge_celular: params.conjugeCelular || null,
@@ -1287,9 +1317,7 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
           // invertida — e as futuras propostas dela — continuem visíveis
           // para os mesmos envolvidos.
           const origemId = (r.cliente_id as string | null) ?? null;
-          const alvos = [novoTitularId, novoConjugeId].filter(
-            (v): v is string => Boolean(v),
-          );
+          const alvos = [novoTitularId, novoConjugeId].filter((v): v is string => Boolean(v));
           if (origemId && alvos.length) {
             const { data: vinculos } = await supabaseAdmin
               .from("cliente_parceiros")
@@ -1305,12 +1333,10 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
                 })),
               );
               if (rows.length) {
-                await supabaseAdmin
-                  .from("cliente_parceiros")
-                  .upsert(rows, {
-                    onConflict: "cliente_id,parceiro_id,tipo_vinculo",
-                    ignoreDuplicates: true,
-                  });
+                await supabaseAdmin.from("cliente_parceiros").upsert(rows, {
+                  onConflict: "cliente_id,parceiro_id,tipo_vinculo",
+                  ignoreDuplicates: true,
+                });
               }
             }
           }
@@ -1352,8 +1378,7 @@ export const destravarSimulacao = createServerFn({ method: "POST" })
         mensagem_banco: "Simulação destravada manualmente pelo consultor — tente reenviar.",
       })
       .eq("simulacao_id", data.id)
-      .eq('status_banco', 'aguardando' as any);
-
+      .eq("status_banco", "aguardando" as any);
 
     if (error) throw new Error(error.message);
 
@@ -1365,7 +1390,3 @@ export const destravarSimulacao = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
-
-
-
-

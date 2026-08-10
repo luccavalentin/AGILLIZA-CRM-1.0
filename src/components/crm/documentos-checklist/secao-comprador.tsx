@@ -35,17 +35,13 @@ export function SecaoComprador({
           <AdicionarItem onAdd={(l) => addCustom(l, "comprador")} />
         </div>
         <DocItem {...p} itemKey="c_doc_id" cat="comprador" label={T.comprador[0]} />
-        {casado && (
-          <DocItem {...p} itemKey="c_doc_id_conj" cat="conjuge" label={T.conjuge[0]} />
-        )}
+        {casado && <DocItem {...p} itemKey="c_doc_id_conj" cat="conjuge" label={T.conjuge[0]} />}
         <DocItem {...p} itemKey="c_comp_end" cat="comprador" label={T.comprador[1]} />
         <DocItem {...p} itemKey="c_cert_ec" cat="comprador" label={T.comprador[2]} />
         <div className="my-2 border-t border-border" />
         <AutoItem label="Profissão" ok={filled(cli?.profissao)} />
         <AutoItem label="Telefone do comprador" ok={filled(cli?.telefone_celular)} />
-        {casado && (
-          <AutoItem label="Telefone do cônjuge" ok={filled(cli?.conjuge_celular)} />
-        )}
+        {casado && <AutoItem label="Telefone do cônjuge" ok={filled(cli?.conjuge_celular)} />}
         <AutoItem label="E-mail do comprador" ok={filled(cli?.email)} />
         {casado && <AutoItem label="E-mail do cônjuge" ok={filled(cli?.conjuge_email)} />}
         <AutoItem

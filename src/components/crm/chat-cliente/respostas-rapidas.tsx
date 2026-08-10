@@ -122,9 +122,7 @@ export function RespostasRapidas({
               <MessageSquareText className="size-3.5" />
             </span>
             <div className="leading-tight">
-              <span className="block text-sm font-semibold text-foreground">
-                Respostas rápidas
-              </span>
+              <span className="block text-sm font-semibold text-foreground">Respostas rápidas</span>
               <span className="block text-[10px] text-muted-foreground">
                 Personalizadas com os dados da proposta
               </span>

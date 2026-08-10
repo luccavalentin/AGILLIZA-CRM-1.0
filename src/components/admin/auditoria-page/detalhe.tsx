@@ -49,9 +49,7 @@ export function DetalheAuditoria({
   registro: AuditoriaLinha | null;
   onClose: () => void;
 }) {
-  const mudancas = registro
-    ? diffPayload(registro.payload_anterior, registro.payload_novo)
-    : [];
+  const mudancas = registro ? diffPayload(registro.payload_anterior, registro.payload_novo) : [];
   const info = registro ? classificar(registro.acao) : null;
 
   return (
@@ -110,11 +108,7 @@ export function DetalheAuditoria({
                   )}
                   {registro.user_agent && (
                     <div className="sm:col-span-2">
-                      <LinhaDetalhe
-                        icon={Monitor}
-                        rotulo="Navegador"
-                        valor={registro.user_agent}
-                      />
+                      <LinhaDetalhe icon={Monitor} rotulo="Navegador" valor={registro.user_agent} />
                     </div>
                   )}
                 </div>

@@ -63,8 +63,7 @@ export function ExportButtons({
     try {
       const { exportPDF } = await import("@/lib/relatorios/report-pdf");
       // Auto-orienta: até 7 colunas cabem em retrato; acima disso, paisagem para não cortar.
-      const orient: "landscape" | "portrait" =
-        result.columns.length > 7 ? "landscape" : "portrait";
+      const orient: "landscape" | "portrait" = result.columns.length > 7 ? "landscape" : "portrait";
       exportPDF(
         result.titulo,
         result.descricao,
@@ -82,12 +81,10 @@ export function ExportButtons({
     } catch (e) {
       console.error("[exportPDF]", e);
       toast.error("Falha ao gerar PDF.");
-
     } finally {
       setBusy(false);
     }
   }
-
 
   async function onXLSX() {
     setBusy(true);

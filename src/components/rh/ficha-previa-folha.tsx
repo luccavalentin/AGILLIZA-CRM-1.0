@@ -64,12 +64,16 @@ export function FichaPreviaFolha({ funcionarioId }: { funcionarioId: string }) {
   const qAdi = useQuery({
     queryKey: ["rh-ficha-adi", funcionarioId, mes, ano],
     queryFn: () =>
-      fnAdi({ data: { funcionario_id: funcionarioId, competencia_mes: mes, competencia_ano: ano } }),
+      fnAdi({
+        data: { funcionario_id: funcionarioId, competencia_mes: mes, competencia_ano: ano },
+      }),
   });
   const qDes = useQuery({
     queryKey: ["rh-ficha-desc", funcionarioId, mes, ano],
     queryFn: () =>
-      fnDes({ data: { funcionario_id: funcionarioId, competencia_mes: mes, competencia_ano: ano } }),
+      fnDes({
+        data: { funcionario_id: funcionarioId, competencia_mes: mes, competencia_ano: ano },
+      }),
   });
   const qOco = useQuery({
     queryKey: ["rh-ficha-oco-mes", funcionarioId, mes, ano],
@@ -224,7 +228,10 @@ function Lista({
       ) : (
         <ul className="divide-y divide-border">
           {linhas.map((l, i) => (
-            <li key={`${l.descricao}-${i}`} className="flex items-center justify-between px-3 py-2 text-sm">
+            <li
+              key={`${l.descricao}-${i}`}
+              className="flex items-center justify-between px-3 py-2 text-sm"
+            >
               <span>
                 {l.descricao}
                 {l.referencia ? (

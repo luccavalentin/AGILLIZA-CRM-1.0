@@ -92,13 +92,11 @@ export function ListaDesktop({
           </TableRow>
         </TableHeader>
 
-
         <TableBody className="group/table">
           {isLoading &&
             Array.from({ length: 5 }).map((_, i) => (
               <TableRow key={i}>
                 <TableCell colSpan={colunas}>
-
                   <Skeleton className="h-8 w-full rounded-lg" />
                 </TableCell>
               </TableRow>
@@ -133,7 +131,8 @@ export function ListaDesktop({
                   }
                   className={cn(
                     "group/row relative cursor-pointer transition-all duration-300 ease-out hover:z-10 hover:scale-[1.005] hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco),0_12px_28px_-8px_rgba(0,0,0,0.12)]",
-                    p.deleted_at && "opacity-60 grayscale bg-muted/20 hover:grayscale-0 hover:opacity-100"
+                    p.deleted_at &&
+                      "opacity-60 grayscale bg-muted/20 hover:grayscale-0 hover:opacity-100",
                   )}
                   onClick={() =>
                     router.navigate({ to: "/operacional/propostas/$id", params: { id: p.id } })
@@ -149,7 +148,6 @@ export function ListaDesktop({
                     </TableCell>
                   )}
                   <TableCell className="relative">
-
                     <span className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 rounded-r-full bg-[var(--banco)] transition-transform duration-200 group-hover/row:scale-y-100" />
                     {(() => {
                       const nb = numeroBancoParaExibir(p.numero_proposta_banco);
@@ -159,7 +157,9 @@ export function ListaDesktop({
                             Nº banco {nb}
                           </div>
                           <div className="mt-1 flex flex-col gap-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                            <span>Interno <span className="tabular-nums">{p.numero_proposta}</span></span>
+                            <span>
+                              Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                            </span>
                             <span className="text-[10px] lowercase tracking-tight">
                               {formatDataHora(p.created_at)}
                             </span>

@@ -65,9 +65,7 @@ export const CAMPOS_OBRIGATORIOS_PARTICIPANTE: CampoObrigatorio[] = [
 ];
 
 /** Chaves obrigatórias (para marcar o asterisco na tela). */
-export const CHAVES_OBRIGATORIAS = new Set(
-  CAMPOS_OBRIGATORIOS_PARTICIPANTE.map((c) => c.chave),
-);
+export const CHAVES_OBRIGATORIAS = new Set(CAMPOS_OBRIGATORIOS_PARTICIPANTE.map((c) => c.chave));
 
 /** Rótulo por chave — reaproveitado nas mensagens de erro. */
 export const LABEL_POR_CHAVE: Record<string, string> = Object.fromEntries(
@@ -92,7 +90,7 @@ function vazio(valor: unknown): boolean {
  * `fg_autorizacao_dados` precisa ser `true` (é um aceite do titular).
  */
 export function faltantesEnvolvido(env: Record<string, any> = {}): CampoObrigatorio[] {
-  if (!env || typeof env !== 'object') return [];
+  if (!env || typeof env !== "object") return [];
   const pf = String(env?.tipo_pessoa ?? "F") === "F";
   return CAMPOS_OBRIGATORIOS_PARTICIPANTE.filter((c) => {
     if (c.apenasPF && !pf) return false;

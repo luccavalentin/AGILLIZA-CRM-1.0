@@ -41,7 +41,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-
 export const Route = createFileRoute("/_authenticated/operacional/tarefas")({
   head: () => ({ meta: [{ title: "Tarefas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.tarefas"),
@@ -52,7 +51,8 @@ type Tarefa = Awaited<ReturnType<typeof listarTarefas>>[number];
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo",  
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -118,10 +118,15 @@ function Pagina() {
 
   const stats = useMemo(() => {
     const agora = new Date();
-    const fimHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 23, 59, 59).getTime();
-    const abertasList = itens.filter(
-      (t) => t.status !== "concluida" && t.status !== "cancelada",
-    );
+    const fimHoje = new Date(
+      agora.getFullYear(),
+      agora.getMonth(),
+      agora.getDate(),
+      23,
+      59,
+      59,
+    ).getTime();
+    const abertasList = itens.filter((t) => t.status !== "concluida" && t.status !== "cancelada");
     const vencidas = itens.filter((t) => vencida(t.prazo, t.status)).length;
     const hoje = abertasList.filter(
       (t) => t.prazo && !vencida(t.prazo, t.status) && new Date(t.prazo).getTime() <= fimHoje,
@@ -137,7 +142,6 @@ function Pagina() {
       taxaConclusao: itens.length ? Math.round((concluidas / itens.length) * 100) : 0,
     };
   }, [itens]);
-
 
   const grupos = useMemo(() => {
     const peso: Record<string, number> = { p1: 0, p2: 1, p3: 2 };
@@ -157,7 +161,6 @@ function Pagina() {
       tarefas: ordenados.filter((t) => g.match(t.status)),
     }));
   }, [itens, prioridade, ordem]);
-
 
   async function handleExcluir(id: string) {
     try {
@@ -276,12 +279,15 @@ function Pagina() {
         />
       </div>
 
-
       <div className="flex flex-wrap items-center gap-2.5">
         <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
           <TabsList className="h-10 rounded-xl">
-            <TabsTrigger value="minhas" className="rounded-lg">Minhas</TabsTrigger>
-            <TabsTrigger value="todas" className="rounded-lg">Todas</TabsTrigger>
+            <TabsTrigger value="minhas" className="rounded-lg">
+              Minhas
+            </TabsTrigger>
+            <TabsTrigger value="todas" className="rounded-lg">
+              Todas
+            </TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="relative min-w-[200px] flex-1 sm:max-w-sm">
@@ -318,7 +324,6 @@ function Pagina() {
           </SelectContent>
         </Select>
       </div>
-
 
       {isLoading ? (
         <div className="space-y-2">
@@ -357,7 +362,6 @@ function Pagina() {
           onExcluir={handleExcluir}
         />
       )}
-
 
       <TarefaDrawer id={sel} onClose={() => setSel(null)} />
     </div>

@@ -202,9 +202,7 @@ function CalendarDayButton({
       variant="ghost"
       size="icon"
       title={
-        feriado
-          ? feriado.descricao + (feriado.facultativo ? " (facultativo)" : "")
-          : undefined
+        feriado ? feriado.descricao + (feriado.facultativo ? " (facultativo)" : "") : undefined
       }
       data-day={day.date.toLocaleDateString()}
       data-selected-single={

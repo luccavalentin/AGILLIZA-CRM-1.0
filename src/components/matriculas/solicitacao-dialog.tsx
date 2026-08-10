@@ -57,8 +57,7 @@ export function SolicitacaoDialog({
     return (rows ?? []).map((c: any) => ({
       value: c.id,
       label: c.nome,
-      description:
-        [c.documento, c.email].filter(Boolean).join(" · ") || undefined,
+      description: [c.documento, c.email].filter(Boolean).join(" · ") || undefined,
     }));
   }, []);
 

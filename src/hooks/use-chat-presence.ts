@@ -27,10 +27,7 @@ export function useChatPresence(
     });
 
     function recalcular() {
-      const estado = canal.presenceState() as Record<
-        string,
-        { papel?: string }[]
-      >;
+      const estado = canal.presenceState() as Record<string, { papel?: string }[]>;
       const outros = Object.values(estado)
         .flat()
         .some((m) => m?.papel && m.papel !== papel);

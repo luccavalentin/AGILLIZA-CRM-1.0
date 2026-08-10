@@ -17,17 +17,37 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { salvarImovelIq } from "@/lib/crm/clientes.functions";
-import {
-  TIPOS_IMOVEL,
-  USOS_IMOVEL,
-  SITUACOES_IMOVEL,
-} from "@/lib/simulacao/schemas";
+import { TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL } from "@/lib/simulacao/schemas";
 import { mascararCep, cepValido, consultarCep } from "@/lib/cep";
 
 const UFS = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
-  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
-  "SP", "SE", "TO",
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
 ];
 
 type Cliente = Record<string, any>;
@@ -95,7 +115,6 @@ function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cl
       setBuscandoCep(false);
     }
   }
-
 
   async function onSalvar() {
     setSalvando(true);

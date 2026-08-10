@@ -53,9 +53,7 @@ export function PermissoesResumo({ nivel }: { nivel: NivelAcesso | undefined }) 
   return (
     <div className="space-y-3">
       {grupos.map((grupo) => {
-        const mods = CATALOGO_MODULOS.filter(
-          (m) => m.grupo === grupo && porModulo.has(m.modulo),
-        );
+        const mods = CATALOGO_MODULOS.filter((m) => m.grupo === grupo && porModulo.has(m.modulo));
         if (mods.length === 0) return null;
         return (
           <div key={grupo} className="space-y-1.5">

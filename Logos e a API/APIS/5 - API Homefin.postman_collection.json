@@ -56,13 +56,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/token",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "token"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "token"]
             }
           },
           "response": []
@@ -79,12 +74,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/usuarios-parceiros",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "usuarios-parceiros"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios-parceiros"]
             }
           },
           "response": []
@@ -101,13 +92,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/dominios/operacoes",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "dominios",
-                "operacoes"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["dominios", "operacoes"]
             }
           },
           "response": []
@@ -119,13 +105,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/dominios/bancos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "dominios",
-                "bancos"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["dominios", "bancos"]
             }
           },
           "response": []
@@ -167,12 +148,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/oportunidade",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade"]
             }
           },
           "response": []
@@ -184,13 +161,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}"]
             }
           },
           "response": []
@@ -211,13 +183,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}"]
             }
           },
           "response": []
@@ -259,14 +226,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/simulacao",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}",
-                "simulacao"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}", "simulacao"]
             }
           },
           "response": []
@@ -287,15 +248,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/simulacao/{{idSimulacao}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}",
-                "simulacao",
-                "{{idSimulacao}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}", "simulacao", "{{idSimulacao}}"]
             }
           },
           "response": []
@@ -337,14 +291,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/participante",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}",
-                "participante"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}", "participante"]
             }
           },
           "response": []
@@ -365,15 +313,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/participante/{{idParticipante}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}",
-                "participante",
-                "{{idParticipante}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}", "participante", "{{idParticipante}}"]
             }
           },
           "response": []
@@ -385,15 +326,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/participante/{{idParticipante}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}",
-                "participante",
-                "{{idParticipante}}"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}", "participante", "{{idParticipante}}"]
             }
           },
           "response": []
@@ -419,14 +353,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/incluir-proposta-integracao",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}",
-                "incluir-proposta-integracao"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}", "incluir-proposta-integracao"]
             }
           },
           "response": []
@@ -453,14 +381,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/documento/{{idDocumento}}/upload",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documento",
-                "{{idDocumento}}",
-                "upload"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["documento", "{{idDocumento}}", "upload"]
             }
           },
           "response": []
@@ -481,14 +403,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/incluir-documentos-integracao",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}",
-                "incluir-documentos-integracao"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}", "incluir-documentos-integracao"]
             }
           },
           "response": []
@@ -514,14 +430,8 @@
             },
             "url": {
               "raw": "{{baseUrl}}/oportunidade/{{idOportunidade}}/follow-up",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "oportunidade",
-                "{{idOportunidade}}",
-                "follow-up"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["oportunidade", "{{idOportunidade}}", "follow-up"]
             }
           },
           "response": []

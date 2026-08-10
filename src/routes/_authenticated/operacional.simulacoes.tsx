@@ -2,12 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  Calculator,
-  ListChecks,
-  Building2,
-  Clock,
-} from "lucide-react";
+import { Calculator, ListChecks, Building2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
@@ -25,13 +20,8 @@ import { Button } from "@/components/ui/button";
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL } from "@/lib/simulacao/format";
 import { listarColegas } from "@/lib/operacional/shared.functions";
-import {
-  DetalheSimulacoes,
-  statusLabel,
-} from "@/components/simulacao/lista-detalhe";
-import {
-  EnviarPropostaDialog,
-} from "@/components/simulacao/enviar-proposta-dialog";
+import { DetalheSimulacoes, statusLabel } from "@/components/simulacao/lista-detalhe";
+import { EnviarPropostaDialog } from "@/components/simulacao/enviar-proposta-dialog";
 import { EncaminharSimulacaoDialog } from "@/components/simulacao/encaminhar-simulacao-dialog";
 import { baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
 import { KpiDetalheDialog } from "@/components/simulacao/kpi-detalhe-dialog";
@@ -40,8 +30,6 @@ import { TabelaSimulacoes } from "@/components/simulacao/lista-page/tabela-simul
 import { CartoesSimulacoes } from "@/components/simulacao/lista-page/cartoes-simulacoes";
 import type { HandlersLinha } from "@/components/simulacao/lista-page/tipos";
 import { BarraSelecao } from "@/components/shared/barra-selecao";
-
-
 
 /** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
@@ -52,9 +40,6 @@ function intervaloMesAtual(): { inicio: string; fim: string } {
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   return { inicio: iso(primeiro), fim: iso(ultimo) };
 }
-
-
-
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
   head: () => ({ meta: [{ title: "Simulações — Agilliza" }] }),
@@ -75,15 +60,13 @@ function Pagina() {
   const criar = useServerFn(criarProposta);
   const destravar = useServerFn(destravarSimulacao);
 
-
-
   const obter = useServerFn(obterSimulacao);
   const listarColegasFn = useServerFn(listarColegas);
   const padrao = useMemo(() => ({ inicio: "", fim: "" }), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
-  
+
   // Debounce manual para não sobrecarregar o servidor em cada tecla
   useMemo(() => {
     const timer = setTimeout(() => {
@@ -112,7 +95,13 @@ function Pagina() {
   const [envioCarregando, setEnvioCarregando] = useState(false);
   const [enviandoBancoId, setEnviandoBancoId] = useState<string | null>(null);
   const [propostasCriadas, setPropostasCriadas] = useState<
-    Array<{ simulacao_banco_id: string; banco_id: string; nome_banco: string; proposta_id: string; numero: string }>
+    Array<{
+      simulacao_banco_id: string;
+      banco_id: string;
+      nome_banco: string;
+      proposta_id: string;
+      numero: string;
+    }>
   >([]);
   const { enviar: handleEnviarHook, statusPorBanco, limparStatus } = useEnviarProposta();
 
@@ -125,7 +114,6 @@ function Pagina() {
     canal: "email" | "whatsapp" | "pdf";
   } | null>(null);
 
-
   const { data, isLoading } = useQuery({
     queryKey: ["simulacoes", escopo, busca, desde, ate, responsavel, verExcluidas],
     refetchOnWindowFocus: true,
@@ -136,10 +124,9 @@ function Pagina() {
         data: {
           escopo,
           q: busca || undefined,
-          desde: (desde && desde !== "") ? desde : undefined,
-          ate: (ate && ate !== "") ? ate : undefined,
-          responsavel:
-            escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
+          desde: desde && desde !== "" ? desde : undefined,
+          ate: ate && ate !== "" ? ate : undefined,
+          responsavel: escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
           pagina: 1,
           porPagina: 50,
           apenas_excluidas: verExcluidas,
@@ -200,10 +187,6 @@ function Pagina() {
     else toast.error("Não foi possível excluir as simulações selecionadas.");
   }
 
-
-
-
-
   function handleDuplicar(id: string) {
     router.navigate({
       to: "/operacional/simulacoes/completa",
@@ -246,7 +229,6 @@ function Pagina() {
       search: { duplicar: id },
     });
   }
-
 
   async function handleEnviarProposta(id: string, numero: string) {
     setEnvio({ id, numero, bancos: [] });
@@ -303,13 +285,14 @@ function Pagina() {
     if (!envio) return;
     // Dispara todos em paralelo no Hook, mas aqui na UI apenas iteramos
     // O Hook useEnviarProposta agora gerencia o estado individual.
-    await Promise.allSettled(bancos.map(b => enviarBancoIndividual(b)));
+    await Promise.allSettled(bancos.map((b) => enviarBancoIndividual(b)));
   }
-
 
   const itens = data?.itens ?? [];
   const kpiTotal = data?.total ?? itens.length;
-  const kpiValor = data?.stats?.volumeTotal ?? itens.reduce((acc, s) => acc + (Number(s.valor_financiamento) || 0), 0);
+  const kpiValor =
+    data?.stats?.volumeTotal ??
+    itens.reduce((acc, s) => acc + (Number(s.valor_financiamento) || 0), 0);
   const bancosUnicos = new Set<string>();
   itens.forEach((s) => {
     (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
@@ -318,11 +301,9 @@ function Pagina() {
   });
   const kpiBancos = bancosUnicos.size;
   const prazos = itens.map((s) => Number(s.prazo)).filter((n) => n > 0);
-  const kpiPrazo = data?.stats?.prazoMedio ?? (
-    prazos.length
-      ? Math.round(prazos.reduce((a, b) => a + b, 0) / prazos.length)
-      : 0
-  );
+  const kpiPrazo =
+    data?.stats?.prazoMedio ??
+    (prazos.length ? Math.round(prazos.reduce((a, b) => a + b, 0) / prazos.length) : 0);
 
   // Agregações para o detalhamento dos KPIs (o que cada card "guarda").
   const porStatus = itens.reduce<Record<string, number>>((acc, s) => {
@@ -381,8 +362,7 @@ function Pagina() {
           itens={itens
             .slice()
             .sort(
-              (a, b) =>
-                (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0),
+              (a, b) => (Number(b.valor_financiamento) || 0) - (Number(a.valor_financiamento) || 0),
             )}
           destaque="financiamento"
           onAbrir={irParaSimulacao}
@@ -419,9 +399,7 @@ function Pagina() {
             { rotulo: "Prazo médio", valor: kpiPrazo ? `${kpiPrazo} meses` : "—" },
             { rotulo: "Prazo máximo", valor: prazoMax ? `${prazoMax} meses` : "—" },
           ]}
-          itens={itens
-            .slice()
-            .sort((a, b) => (Number(b.prazo) || 0) - (Number(a.prazo) || 0))}
+          itens={itens.slice().sort((a, b) => (Number(b.prazo) || 0) - (Number(a.prazo) || 0))}
           destaque="prazo"
           onAbrir={irParaSimulacao}
         />
@@ -430,8 +408,7 @@ function Pagina() {
   ];
 
   const handlersLinha: HandlersLinha = {
-    onVer: (id) =>
-      router.navigate({ to: "/operacional/simulacoes/$id", params: { id } }),
+    onVer: (id) => router.navigate({ to: "/operacional/simulacoes/$id", params: { id } }),
     onEditar: handleEditar,
     onBaixarComparativo: handleBaixarComparativo,
     onBaixarDetalhada: handleBaixarDetalhada,
@@ -463,10 +440,14 @@ function Pagina() {
       } catch {
         toast.error("Não foi possível carregar os dados da simulação.");
       }
-    }
+    },
   };
 
-  const confirmarEncaminhamento = async (dados: { email: string; whatsapp: string; canal: "email" | "whatsapp" | "pdf" }) => {
+  const confirmarEncaminhamento = async (dados: {
+    email: string;
+    whatsapp: string;
+    canal: "email" | "whatsapp" | "pdf";
+  }) => {
     if (!encaminhamento) return;
     try {
       const simulacaoId = encaminhamento.id;
@@ -475,7 +456,7 @@ function Pagina() {
       const clienteNome = sim.nome_cliente || "Cliente";
       const valorFinanc = formatBRL(sim.valor_financiamento || 0);
       const numero = sim.numero_simulacao;
-      
+
       if (dados.canal === "pdf") {
         if (!resp.bancos?.length) {
           toast.error("Esta simulação não possui bancos para baixar.");
@@ -545,7 +526,6 @@ function Pagina() {
         </div>
       </div>
 
-
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-4">
         {isLoading
@@ -574,20 +554,22 @@ function Pagina() {
                   <k.icon className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-mono text-base font-semibold leading-tight tracking-tight tabular-nums text-foreground sm:text-xl">{k.valor}</p>
-                  <p className="mt-0.5 text-[10.5px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">{k.label}</p>
+                  <p className="font-mono text-base font-semibold leading-tight tracking-tight tabular-nums text-foreground sm:text-xl">
+                    {k.valor}
+                  </p>
+                  <p className="mt-0.5 text-[10.5px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">
+                    {k.label}
+                  </p>
                 </div>
                 <span className="ml-auto hidden shrink-0 text-[10px] font-medium text-primary/0 transition-colors group-hover:text-primary/70 sm:block">
                   ver detalhes
                 </span>
-
               </button>
             ))}
       </div>
 
       {/* Detalhe do KPI clicado */}
       <KpiDetalheDialog kpis={kpis} aberto={kpiAberto} onClose={() => setKpiAberto(null)} />
-
 
       {/* Barra de filtros */}
       <FiltrosLista
@@ -632,7 +614,6 @@ function Pagina() {
         rotulo="simulação(ões) selecionada(s)"
       />
 
-
       {/* Cartões (telas pequenas) */}
       <CartoesSimulacoes
         itens={data?.itens ?? []}
@@ -641,7 +622,6 @@ function Pagina() {
         verExcluidas={verExcluidas}
         handlers={handlersLinha}
       />
-
 
       {/* Enviar proposta: escolher UM banco por vez */}
       <EnviarPropostaDialog
@@ -675,6 +655,3 @@ function Pagina() {
     </div>
   );
 }
-
-
-

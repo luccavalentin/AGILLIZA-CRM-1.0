@@ -22,11 +22,11 @@ Isso é importante:
 
 ### Resumo dos presets de build
 
-| Ambiente | Preset do Nitro |
-|---|---|
-| Lovable / Cloudflare (padrão atual) | `cloudflare` |
-| Vercel | `vercel` |
-| VPS Hostinger (Node) | `node-server` |
+| Ambiente                            | Preset do Nitro |
+| ----------------------------------- | --------------- |
+| Lovable / Cloudflare (padrão atual) | `cloudflare`    |
+| Vercel                              | `vercel`        |
+| VPS Hostinger (Node)                | `node-server`   |
 
 ---
 
@@ -37,6 +37,7 @@ As variáveis abaixo precisam existir no ambiente de produção (na Vercel:
 se quiser testar deploys de branch).
 
 ### Públicas (client) — prefixo `VITE_`
+
 Vão para o bundle do navegador. São públicas por natureza.
 
 - `VITE_SUPABASE_URL`
@@ -44,6 +45,7 @@ Vão para o bundle do navegador. São públicas por natureza.
 - `VITE_SUPABASE_PROJECT_ID`
 
 ### Secretas (servidor) — **nunca** com prefixo `VITE_`
+
 Só ficam no servidor. Nunca exponha no front nem versione no repositório.
 
 - `SUPABASE_URL` — mesma URL do projeto Supabase (sem prefixo, uso server-side).
@@ -63,7 +65,6 @@ Só ficam no servidor. Nunca exponha no front nem versione no repositório.
 > **Regra de ouro:** segredos são lidos apenas dentro de server functions
 > (`createServerFn`) / server routes, via `process.env.*`. Nunca em código de
 > cliente.
-
 
 ---
 
@@ -91,11 +92,12 @@ O caminho mais simples: a hospedagem já está configurada para o preset
 2. Confira o título/descrição do site.
 3. Clique em **Update** para publicar. O sistema fica disponível em uma URL
    `*.lovable.app`.
-4. **Alterações de front-end** exigem clicar em *Update* para irem ao ar.
+4. **Alterações de front-end** exigem clicar em _Update_ para irem ao ar.
    **Alterações de back-end** (server functions, migrações) já sobem
    automaticamente.
 
 ### Domínio próprio
+
 Após a primeira publicação, vá em **Project Settings → Domains** para conectar
 um domínio personalizado.
 
@@ -141,7 +143,6 @@ um domínio personalizado.
    - **Realtime e server functions** passam a funcionar direto pela URL da
      Vercel assim que as variáveis acima estiverem preenchidas.
 
-
 ---
 
 ## 🟢 6. Opção C — Publicar em VPS Hostinger (Node)
@@ -149,6 +150,7 @@ um domínio personalizado.
 Para rodar em uma VPS Ubuntu com Node + Nginx + PM2.
 
 ### 6.1 Preparar o servidor
+
 ```bash
 sudo apt update && sudo apt upgrade -y
 # Node.js LTS
@@ -159,10 +161,12 @@ sudo npm install -g pm2
 ```
 
 ### 6.2 Ajustar o preset do Nitro para Node
+
 Em `vite.config.ts`, informe o alvo `node-server` para o Nitro. Isso faz o
 build gerar um servidor Node em `.output/server/index.mjs`.
 
 ### 6.3 Clonar, instalar e buildar
+
 ```bash
 git clone <URL_DO_SEU_REPO> app
 cd app
@@ -172,6 +176,7 @@ npm run build
 ```
 
 ### 6.4 Rodar com PM2
+
 ```bash
 # porta padrão do servidor gerado costuma ser 3000
 pm2 start .output/server/index.mjs --name sistema
@@ -180,7 +185,9 @@ pm2 startup   # habilita o boot automático
 ```
 
 ### 6.5 Nginx como proxy reverso
+
 Crie `/etc/nginx/sites-available/sistema`:
+
 ```nginx
 server {
     listen 80;
@@ -199,19 +206,23 @@ server {
     }
 }
 ```
+
 Ative e recarregue:
+
 ```bash
 sudo ln -s /etc/nginx/sites-available/sistema /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ### 6.6 HTTPS com Certbot
+
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d seu-dominio.com.br
 ```
 
 ### 6.7 Atualizações futuras
+
 ```bash
 cd app
 git pull
@@ -236,13 +247,13 @@ pm2 restart sistema
 
 ## 8. Problemas comuns
 
-| Sintoma | Causa provável | Solução |
-|---|---|---|
-| 404 ao dar F5 numa rota | preset de build errado / SSR não configurado | Confirmar o preset do Nitro do ambiente |
-| "No authorization header provided" | segredo ou middleware de auth ausente | Conferir variáveis e a sessão Supabase |
-| `process.env.X is undefined` | segredo não configurado no ambiente | Adicionar a variável no painel do provedor |
-| Login não redireciona | URL de produção fora das Redirect URLs | Ajustar em Supabase → Auth → URL Configuration |
-| Tela em branco após deploy | build falhou / variáveis públicas ausentes | Revisar log de build e `VITE_*` |
+| Sintoma                            | Causa provável                               | Solução                                        |
+| ---------------------------------- | -------------------------------------------- | ---------------------------------------------- |
+| 404 ao dar F5 numa rota            | preset de build errado / SSR não configurado | Confirmar o preset do Nitro do ambiente        |
+| "No authorization header provided" | segredo ou middleware de auth ausente        | Conferir variáveis e a sessão Supabase         |
+| `process.env.X is undefined`       | segredo não configurado no ambiente          | Adicionar a variável no painel do provedor     |
+| Login não redireciona              | URL de produção fora das Redirect URLs       | Ajustar em Supabase → Auth → URL Configuration |
+| Tela em branco após deploy         | build falhou / variáveis públicas ausentes   | Revisar log de build e `VITE_*`                |
 
 ---
 

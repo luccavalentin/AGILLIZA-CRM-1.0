@@ -7,10 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  CATALOGO_MODULOS,
-  type EscopoAlvo,
-} from "@/lib/admin/regras-modulos.functions";
+import { CATALOGO_MODULOS, type EscopoAlvo } from "@/lib/admin/regras-modulos.functions";
 import { PAPEIS_ALVO } from "./constants";
 
 export function DialogAlvos({
@@ -112,11 +109,7 @@ export function DialogAlvos({
                         alvo_id: u.id,
                       })}
                       onCheckedChange={(v) =>
-                        toggleAlvo(
-                          moduloAtivo,
-                          { alvo_tipo: "usuario", alvo_id: u.id },
-                          v === true,
-                        )
+                        toggleAlvo(moduloAtivo, { alvo_tipo: "usuario", alvo_id: u.id }, v === true)
                       }
                     />
                     <span className="truncate">

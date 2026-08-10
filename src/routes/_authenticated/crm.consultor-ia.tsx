@@ -201,8 +201,7 @@ function ConsultorIaPage() {
   });
 
   const enviarSugestao = useMutation({
-    mutationFn: (v: { pergunta: string; observacao?: string }) =>
-      sugerirConteudoBase({ data: v }),
+    mutationFn: (v: { pergunta: string; observacao?: string }) => sugerirConteudoBase({ data: v }),
     onSuccess: () => {
       setSugerindo(null);
       setObservacao("");
@@ -253,11 +252,14 @@ function ConsultorIaPage() {
           `,
         }}
       />
-      
+
       {/* Textura de grade sutil para ar tecnológico */}
-      <div 
-        className="pointer-events-none absolute inset-0 opacity-[0.03]" 
-        style={{ backgroundImage: 'radial-gradient(var(--primary) 1px, transparent 1px)', backgroundSize: '32px 32px' }} 
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: "radial-gradient(var(--primary) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+        }}
       />
 
       <header className="relative z-10 mx-auto w-full max-w-5xl py-4">
@@ -269,7 +271,7 @@ function ConsultorIaPage() {
               <div className="absolute -bottom-1 -right-1 size-5 rounded-full border-[3px] border-card bg-emerald-500 shadow-lg" />
             </div>
           </div>
-          
+
           <div className="space-y-1.5">
             <h1 className="bg-gradient-to-b from-primary to-brand-azul-noite bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
               Consultor IA
@@ -279,8 +281,8 @@ function ConsultorIaPage() {
             </p>
           </div>
 
-          <Button 
-            onClick={novaConversa} 
+          <Button
+            onClick={novaConversa}
             variant="outline"
             className="group/btn h-10 gap-2 rounded-full border-primary/15 bg-card px-6 text-sm font-semibold text-primary transition-all hover:border-primary/40 hover:bg-primary hover:text-white hover:shadow-[0_10px_20px_-10px_rgba(0,15,159,0.3)]"
           >
@@ -326,7 +328,9 @@ function ConsultorIaPage() {
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     }`}
                   >
-                    <MessageSquarePlus className={`size-4 shrink-0 ${ativa ? "text-primary" : "text-muted-foreground/40"}`} />
+                    <MessageSquarePlus
+                      className={`size-4 shrink-0 ${ativa ? "text-primary" : "text-muted-foreground/40"}`}
+                    />
                     <button
                       type="button"
                       className="min-w-0 flex-1 truncate text-left font-semibold"
@@ -340,7 +344,9 @@ function ConsultorIaPage() {
                       className={`transition-opacity ${ativa ? "opacity-80 hover:opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                       onClick={() => excluir.mutate(c.id)}
                     >
-                      <Trash2 className={`size-3.5 ${ativa ? "text-primary" : "text-muted-foreground/60 hover:text-destructive"}`} />
+                      <Trash2
+                        className={`size-3.5 ${ativa ? "text-primary" : "text-muted-foreground/60 hover:text-destructive"}`}
+                      />
                     </button>
                   </div>
                 );
@@ -359,12 +365,13 @@ function ConsultorIaPage() {
                     <Bot className="size-12 text-primary" />
                   </div>
                 </div>
-                
+
                 <h2 className="text-2xl font-extrabold tracking-tight text-brand-azul-noite sm:text-3xl">
                   Como posso potencializar seus negócios hoje?
                 </h2>
                 <p className="mt-4 text-base font-medium text-muted-foreground/70">
-                  Especialista em regras bancárias, FGTS, documentação e toda a jornada do crédito imobiliário Agilliza.
+                  Especialista em regras bancárias, FGTS, documentação e toda a jornada do crédito
+                  imobiliário Agilliza.
                 </p>
 
                 <div className="mt-14 grid w-full gap-5 sm:grid-cols-2">
@@ -472,7 +479,12 @@ function ConsultorIaPage() {
                       </Button>
                       <EbookFaqButton
                         pergunta={
-                          [...lista.slice(0, lista.findIndex((x) => x.id === m.id))]
+                          [
+                            ...lista.slice(
+                              0,
+                              lista.findIndex((x) => x.id === m.id),
+                            ),
+                          ]
                             .reverse()
                             .find((x) => x.papel === "usuario")?.conteudo ?? m.conteudo
                         }
@@ -494,7 +506,6 @@ function ConsultorIaPage() {
                           Sugerir conteúdo para a base
                         </Button>
                       ) : null}
-
                     </div>
                   </div>
                 </div>
@@ -544,7 +555,7 @@ function ConsultorIaPage() {
               <div className="relative group">
                 {/* Glow de foco no input */}
                 <div className="absolute -inset-1.5 rounded-[1.8rem] bg-primary/5 opacity-0 blur-xl transition duration-500 group-focus-within:opacity-100" />
-                
+
                 <div className="relative flex flex-col items-center gap-3 overflow-hidden rounded-[1.5rem] border border-primary/10 bg-card p-2 shadow-[0_10px_40px_-15px_rgba(0,15,159,0.08)] transition-all group-focus-within:border-primary/30 group-focus-within:shadow-[0_20px_50px_-15px_rgba(0,15,159,0.12)] sm:flex-row">
                   <Textarea
                     ref={inputRef}

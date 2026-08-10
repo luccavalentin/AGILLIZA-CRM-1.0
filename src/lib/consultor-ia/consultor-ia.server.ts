@@ -25,9 +25,43 @@ export interface TrechoBase {
 }
 
 const STOPWORDS = new Set([
-  "a","o","as","os","de","da","do","das","dos","e","em","um","uma","para","por","com","que",
-  "qual","quais","como","quando","onde","é","sao","são","no","na","nos","nas","ao","aos","se",
-  "sobre","meu","minha","the","of",
+  "a",
+  "o",
+  "as",
+  "os",
+  "de",
+  "da",
+  "do",
+  "das",
+  "dos",
+  "e",
+  "em",
+  "um",
+  "uma",
+  "para",
+  "por",
+  "com",
+  "que",
+  "qual",
+  "quais",
+  "como",
+  "quando",
+  "onde",
+  "é",
+  "sao",
+  "são",
+  "no",
+  "na",
+  "nos",
+  "nas",
+  "ao",
+  "aos",
+  "se",
+  "sobre",
+  "meu",
+  "minha",
+  "the",
+  "of",
 ]);
 
 function tokens(texto: string): string[] {
@@ -101,11 +135,7 @@ export async function prepararConsulta(
 ): Promise<Preparo> {
   // Perfil (correspondente) + base de conhecimento em paralelo.
   const [perfilRes, baseRes] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("correspondente_id, full_name")
-      .eq("id", userId)
-      .maybeSingle(),
+    supabase.from("profiles").select("correspondente_id, full_name").eq("id", userId).maybeSingle(),
     supabase
       .from("consultor_ia_base")
       .select("id, categoria, titulo, conteudo, tags")
@@ -173,7 +203,9 @@ export async function prepararConsulta(
   }
   const baseUrl = (
     (typeof cfgRow?.base_url === "string" && cfgRow.base_url) ||
-    (provedor === "openai" ? "https://api.openai.com/v1" : "https://generativelanguage.googleapis.com")
+    (provedor === "openai"
+      ? "https://api.openai.com/v1"
+      : "https://generativelanguage.googleapis.com")
   ).replace(/\/+$/, "");
 
   const trechos = selecionarTrechos((baseRes.data ?? []) as TrechoBase[], entrada.pergunta, 4);
@@ -190,7 +222,10 @@ export async function prepararConsulta(
   const ultimas = ((historicoRes.data ?? []) as any[]).reverse();
   const historicoTexto = ultimas.length
     ? ultimas
-        .map((m: any) => `${m.papel === "usuario" ? "Usuário" : "Consultor"}: ${m.conteudo.slice(0, 800)}`)
+        .map(
+          (m: any) =>
+            `${m.papel === "usuario" ? "Usuário" : "Consultor"}: ${m.conteudo.slice(0, 800)}`,
+        )
         .join("\n")
     : "(sem histórico)";
 
@@ -207,7 +242,6 @@ export async function prepararConsulta(
     `TRECHOS DE REFERÊNCIA (INTELIGÊNCIA AGILLIZA):\n${referencias}\n\n` +
     `HISTÓRICO DA CONSULTORIA:\n${historicoTexto}\n\n` +
     `DEMANDA DO ESPECIALISTA ${nomeUsuario.toUpperCase()}: ${entrada.pergunta}`;
-
 
   await gravaPergunta;
 
@@ -303,9 +337,7 @@ export async function* gerarTextoStream(p: Preparo): AsyncGenerator<string> {
         const pedaco =
           p.provedor === "openai"
             ? (json?.choices?.[0]?.delta?.content ?? "")
-            : (json?.candidates?.[0]?.content?.parts ?? [])
-                .map((x: any) => x?.text ?? "")
-                .join("");
+            : (json?.candidates?.[0]?.content?.parts ?? []).map((x: any) => x?.text ?? "").join("");
         if (pedaco) yield pedaco as string;
       } catch {
         // linha parcial — ignora

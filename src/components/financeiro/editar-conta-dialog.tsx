@@ -151,7 +151,8 @@ export function EditarContaDialog({
                   <SelectContent>
                     {(cfg?.categorias ?? [])
                       .filter(
-                        (c: any) => !c.tipo || c.tipo === (tipo === "pagar" ? "despesa" : "receita"),
+                        (c: any) =>
+                          !c.tipo || c.tipo === (tipo === "pagar" ? "despesa" : "receita"),
                       )
                       .map((c: any) => (
                         <SelectItem key={c.id} value={c.id}>

@@ -3,8 +3,17 @@ import autoTable from "jspdf-autotable";
 import { exportPDF, drawBrandHeader } from "@/lib/relatorios/report-pdf";
 import { formatBRL, formatPercent, formatTaxa } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
-import { extrairDetalheBanco, normalizarSistemaAmortizacao, calcularCET, type DetalheBanco } from "@/lib/simulacao/detalhe-banco";
-import { avaliarRendaMinima, rendaMinimaPelosBancos, rendaMinimaDoBanco } from "@/lib/simulacao/renda";
+import {
+  extrairDetalheBanco,
+  normalizarSistemaAmortizacao,
+  calcularCET,
+  type DetalheBanco,
+} from "@/lib/simulacao/detalhe-banco";
+import {
+  avaliarRendaMinima,
+  rendaMinimaPelosBancos,
+  rendaMinimaDoBanco,
+} from "@/lib/simulacao/renda";
 import { AGILLIZA_LOGO_LIGHT, AGILLIZA_LOGO_RATIO } from "@/lib/relatorios/brand-logo";
 import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
 
@@ -39,7 +48,6 @@ function drawPageBackground(doc: jsPDF, pageW: number, pageH: number) {
 const HEADER_H = 68;
 const MARGIN = 36;
 
-
 // ---------------------------------------------------------------------------
 // Helpers de formatação e nomes de arquivo
 // ---------------------------------------------------------------------------
@@ -71,7 +79,9 @@ function produtoLabel(s: any): string {
 export function gerarNomeArquivoPdf(b: any, s: any, d: DetalheBanco | null): string {
   const banco = (b?.nome_banco ?? "Banco").trim();
   const cv = Math.round(d?.valorImovel ?? s.valor_imovel ?? 0);
-  const finan = Math.round(d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0);
+  const finan = Math.round(
+    d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0,
+  );
   const prazo = d?.prazoMeses ?? s.prazo ?? 0;
   const sistema = sistemaDoBanco(b, s);
 
@@ -118,7 +128,16 @@ function drawClienteHeader(doc: jsPDF, pageW: number) {
   doc.setTextColor("#FFFFFF");
   doc.text(slogan, startX, midY + 3.5);
   try {
-    doc.addImage(AGILLIZA_LOGO_LIGHT, "PNG", startX + textW + gap, midY - logoH / 2, logoW, logoH, undefined, "FAST");
+    doc.addImage(
+      AGILLIZA_LOGO_LIGHT,
+      "PNG",
+      startX + textW + gap,
+      midY - logoH / 2,
+      logoW,
+      logoH,
+      undefined,
+      "FAST",
+    );
   } catch {
     /* fallback silencioso */
   }
@@ -174,7 +193,6 @@ function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number 
   const hasConjuge = Boolean(s.possui_conjuge) || Boolean(s.nome_conjuge);
   const boxH = hasConjuge ? 94 : 64;
 
-
   // Faixa de rótulo "DADOS DO PROPONENTE"
   doc.setFillColor(P.destaque);
   doc.roundedRect(MARGIN, y, w, 14, 4, 4, "F");
@@ -223,7 +241,7 @@ function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number 
     doc.setDrawColor(P.borda);
     doc.setLineWidth(0.3);
     doc.line(MARGIN + 10, cy - 8, MARGIN + w - 10, cy - 8);
-    
+
     const rotulosC = ["CÔNJUGE / COOBRIGADO", "DATA DE NASCIMENTO", "CPF"];
     const valoresC = [
       (s.nome_conjuge ?? "—").toString().toUpperCase(),
@@ -246,7 +264,6 @@ function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number 
 
   return y + boxH + 14;
 }
-
 
 /** Formata em BRL, mas devolve "—" quando o valor não veio da API (evita inventar R$ 0,00). */
 function brlOuTraco(v: number | null | undefined): string {
@@ -291,20 +308,33 @@ function drawInfoFinanciamento(
   const cols = opts?.cols ?? 3;
   const itens: { label: string; valor: string }[] = [
     { label: "Valor de compra e venda", valor: brlOuTraco(d?.valorImovel ?? s.valor_imovel) },
-    { label: "Despesas financiadas", valor: brlOuTraco(d?.despesasFinanciadas ?? s.valor_despesas_financiadas) },
+    {
+      label: "Despesas financiadas",
+      valor: brlOuTraco(d?.despesasFinanciadas ?? s.valor_despesas_financiadas),
+    },
     {
       label: "Valor de financiamento total",
-      valor: brlOuTraco((d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0) + (d?.despesasFinanciadas ?? s.valor_despesas_financiadas ?? 0)),
+      valor: brlOuTraco(
+        (d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0) +
+          (d?.despesasFinanciadas ?? s.valor_despesas_financiadas ?? 0),
+      ),
     },
-    { label: "Entrada", valor: brlOuTraco((() => {
-      const e = d?.valorEntrada ?? s.valor_entrada;
-      if (e != null && Number(e) > 0) return e;
-      const vi = Number(d?.valorImovel ?? s.valor_imovel ?? 0);
-      const vf = Number(d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0);
-      const df = Number(d?.despesasFinanciadas ?? s.valor_despesas_financiadas ?? 0);
-      const calc = vi - (vf - df);
-      return vi > 0 && vf > 0 && calc > 0 ? calc : null;
-    })()) },
+    {
+      label: "Entrada",
+      valor: brlOuTraco(
+        (() => {
+          const e = d?.valorEntrada ?? s.valor_entrada;
+          if (e != null && Number(e) > 0) return e;
+          const vi = Number(d?.valorImovel ?? s.valor_imovel ?? 0);
+          const vf = Number(
+            d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0,
+          );
+          const df = Number(d?.despesasFinanciadas ?? s.valor_despesas_financiadas ?? 0);
+          const calc = vi - (vf - df);
+          return vi > 0 && vf > 0 && calc > 0 ? calc : null;
+        })(),
+      ),
+    },
     { label: "Tipo da parcela", valor: d?.tipoParcela ?? d?.indexador ?? "—" },
     {
       label: "Prazo total",
@@ -314,7 +344,13 @@ function drawInfoFinanciamento(
       label: "Sistema de amortização",
       valor: sistemaDoBanco(b, s),
     },
-    { label: "Taxa efetiva anual", valor: b?.taxa_juros_ano != null ? `${Number(b.taxa_juros_ano).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% a.a.` : "—" },
+    {
+      label: "Taxa efetiva anual",
+      valor:
+        b?.taxa_juros_ano != null
+          ? `${Number(b.taxa_juros_ano).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% a.a.`
+          : "—",
+    },
     { label: "Taxa de juros mensal", valor: pctTxt(d?.taxaJurosMes, "a.m.") },
     {
       label: "CET (Custo Efetivo Total)",
@@ -341,8 +377,6 @@ function drawInfoFinanciamento(
       valor: brlOuTraco(d.tarifaAvaliacao),
     });
   }
-
-
 
   doc.setTextColor(P.destaque);
   doc.setFont("helvetica", "bold");
@@ -379,7 +413,6 @@ function drawInfoFinanciamento(
   const linhas = Math.ceil(itens.length / cols);
   return y + linhas * (cardH + gap) + 8;
 }
-
 
 /** Faixa com o nome do banco centralizado: fundo branco, borda e texto na cor institucional do banco, com sua logo. */
 function drawFaixaBanco(doc: jsPDF, pageW: number, nomeBanco: string, y: number): number {
@@ -440,9 +473,6 @@ function drawDisclaimerTopo(doc: jsPDF, pageW: number, y: number): number {
   return y + linhas.length * alturaLinha + 18;
 }
 
-
-
-
 // ---------------------------------------------------------------------------
 // Consolidado (comparativo entre bancos) — usado na listagem
 // ---------------------------------------------------------------------------
@@ -494,10 +524,10 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
     const rGap = 8;
     const rCardW = (leftW - rGap * 3) / 4;
     const rCardH = 40;
-    
+
     const resumoExtendido = [
       ...resumo,
-      { label: "Renda mínima necessária", valor: brlOuTraco(rendaMin) }
+      { label: "Renda mínima necessária", valor: brlOuTraco(rendaMin) },
     ];
 
     resumoExtendido.forEach((it, i) => {
@@ -529,18 +559,34 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
       formatBRL(p.saldoDevedor),
     ];
 
-    const somas = parcelas.reduce((acc, p) => ({
-      amort: acc.amort + (p.amortizacao || 0),
-      juros: acc.juros + (p.juros || 0),
-      parcela: acc.parcela + (p.parcela || 0),
-    }), { amort: 0, juros: 0, parcela: 0 });
+    const somas = parcelas.reduce(
+      (acc, p) => ({
+        amort: acc.amort + (p.amortizacao || 0),
+        juros: acc.juros + (p.juros || 0),
+        parcela: acc.parcela + (p.parcela || 0),
+      }),
+      { amort: 0, juros: 0, parcela: 0 },
+    );
 
     const rodapeSoma = [
-      { content: "TOTAIS", colSpan: 2, styles: { halign: "center" as const, fontStyle: "bold" as const } },
-      { content: formatBRL(somas.amort), styles: { halign: "right" as const, fontStyle: "bold" as const } },
-      { content: formatBRL(somas.juros), styles: { halign: "right" as const, fontStyle: "bold" as const } },
-      { content: formatBRL(somas.parcela), styles: { halign: "right" as const, fontStyle: "bold" as const } },
-      { content: "", styles: { halign: "right" as const } }
+      {
+        content: "TOTAIS",
+        colSpan: 2,
+        styles: { halign: "center" as const, fontStyle: "bold" as const },
+      },
+      {
+        content: formatBRL(somas.amort),
+        styles: { halign: "right" as const, fontStyle: "bold" as const },
+      },
+      {
+        content: formatBRL(somas.juros),
+        styles: { halign: "right" as const, fontStyle: "bold" as const },
+      },
+      {
+        content: formatBRL(somas.parcela),
+        styles: { halign: "right" as const, fontStyle: "bold" as const },
+      },
+      { content: "", styles: { halign: "right" as const } },
     ];
 
     const cabecalho = [["Parc.", "Data", "Amortização", "Juros", "Parcela", "Saldo devedor"]];
@@ -553,8 +599,18 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
         lineColor: P.borda,
         lineWidth: 0.25,
       },
-      headStyles: { fillColor: P.azul, textColor: P.headText, fontStyle: "bold" as const, fontSize: 7 },
-      footStyles: { fillColor: P.azul, textColor: P.headText, fontStyle: "bold" as const, fontSize: 7 },
+      headStyles: {
+        fillColor: P.azul,
+        textColor: P.headText,
+        fontStyle: "bold" as const,
+        fontSize: 7,
+      },
+      footStyles: {
+        fillColor: P.azul,
+        textColor: P.headText,
+        fontStyle: "bold" as const,
+        fontSize: 7,
+      },
       alternateRowStyles: { fillColor: P.card },
       columnStyles: {
         0: { halign: "right" as const },
@@ -579,9 +635,14 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
       doc.setFont("helvetica", "italic");
       doc.setFontSize(6.5);
       doc.setTextColor(P.cinza);
-      doc.text("Projeção a partir da taxa/sistema do banco (1ª/última reais).", rightX, blocoTop + 10, {
-        maxWidth: rightW,
-      });
+      doc.text(
+        "Projeção a partir da taxa/sistema do banco (1ª/última reais).",
+        rightX,
+        blocoTop + 10,
+        {
+          maxWidth: rightW,
+        },
+      );
     }
     const tblTop = blocoTop + (d?.parcelasEstimadas ? 18 : 8);
 
@@ -621,11 +682,16 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
         });
       }
 
-
       if (restante.length > 0) {
         doc.addPage("a4", "landscape");
         drawPageBackground(doc, pageW, pageH);
-        drawBrandHeader(doc, pageW, DETALHE_HEADER_H, `Plano de Pagamento — ${nomeBanco}`, subtitulo);
+        drawBrandHeader(
+          doc,
+          pageW,
+          DETALHE_HEADER_H,
+          `Plano de Pagamento — ${nomeBanco}`,
+          subtitulo,
+        );
         autoTable(doc, {
           startY: DETALHE_HEADER_H + 24,
           margin: { left: MARGIN, right: MARGIN, top: DETALHE_HEADER_H + 16, bottom: 40 },
@@ -637,7 +703,13 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
             if (hook.pageNumber > 1) drawPageBackground(doc, pageW, pageH);
           },
           didDrawPage: () => {
-            drawBrandHeader(doc, pageW, DETALHE_HEADER_H, `Plano de Pagamento — ${nomeBanco}`, subtitulo);
+            drawBrandHeader(
+              doc,
+              pageW,
+              DETALHE_HEADER_H,
+              `Plano de Pagamento — ${nomeBanco}`,
+              subtitulo,
+            );
           },
         });
       }
@@ -645,31 +717,21 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
   });
 }
 
-
-
-
-
 /** Gera e baixa um PDF institucional consolidado (dados + comparativo de bancos). */
 export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
   const { simulacao: s, bancos } = input;
 
   // Se for uma simulação completa com um único banco (e não for simulação rápida com AMBOS),
   // emite o extrato detalhado com parcelas.
-  const isRapida = (bancos ?? []).every(b => !b.raw_response?.simulacao);
+  const isRapida = (bancos ?? []).every((b) => !b.raw_response?.simulacao);
   if (!isRapida && (bancos ?? []).length === 1) {
     baixarSimulacaoDetalhadaPDF(input);
     return;
   }
 
-
   const produto = produtoLabel(s);
 
-
-  const meta = [
-    `Cliente: ${s.nome_cliente ?? "—"}`,
-    `Produto: ${produto}`,
-    `UF: ${s.uf ?? "—"}`,
-  ];
+  const meta = [`Cliente: ${s.nome_cliente ?? "—"}`, `Produto: ${produto}`, `UF: ${s.uf ?? "—"}`];
 
   const docInfo = [
     { label: "Data da simulação", value: dataTxt(s.created_at ?? new Date()) },
@@ -677,10 +739,10 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     { label: "CPF / CNPJ", value: s.cpf_cnpj ?? "—" },
   ];
 
-
-
   const sistemasBancos = Array.from(
-    new Set((bancos ?? []).map((b) => sistemaDoBanco(b, s)).filter((v) => v === "SAC" || v === "PRICE")),
+    new Set(
+      (bancos ?? []).map((b) => sistemaDoBanco(b, s)).filter((v) => v === "SAC" || v === "PRICE"),
+    ),
   );
   const isMista = s.sistema_amortizacao === "B" || sistemasBancos.length > 1;
   const sistemaKpi = isMista
@@ -691,15 +753,16 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
 
   const kpis: ReportKpi[] = [
     { label: "Valor do imóvel", valor: formatBRL(s.valor_imovel) },
-    { 
-      label: "Financiamento", 
-      valor: formatBRL((Number(s.valor_financiamento) || 0) + (Number(s.valor_despesas_financiadas) || 0)) 
+    {
+      label: "Financiamento",
+      valor: formatBRL(
+        (Number(s.valor_financiamento) || 0) + (Number(s.valor_despesas_financiadas) || 0),
+      ),
     },
     { label: "Entrada", valor: formatBRL(s.valor_entrada) },
     { label: "Prazo", valor: s.prazo ? `${s.prazo} meses` : "—" },
     { label: "Sistema", valor: sistemaKpi },
     { label: "Renda mínima necessária", valor: formatBRL(rendaNecessaria(s, bancos ?? [])) },
-
   ];
 
   const columns: ReportColumn[] = [
@@ -723,7 +786,14 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
       parcela: b.valor_parcela != null ? formatBRL(b.valor_parcela) : "—",
       taxa: b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—",
       cet: cet != null ? formatTaxa(cet) : "—",
-      renda: b.renda_minima != null ? formatBRL(b.renda_minima) : (rendaMinimaDoBanco(b) != null ? formatBRL(rendaMinimaDoBanco(b)!) : (d?.rendaMinimaExigida ? formatBRL(d.rendaMinimaExigida) : "—")),
+      renda:
+        b.renda_minima != null
+          ? formatBRL(b.renda_minima)
+          : rendaMinimaDoBanco(b) != null
+            ? formatBRL(rendaMinimaDoBanco(b)!)
+            : d?.rendaMinimaExigida
+              ? formatBRL(d.rendaMinimaExigida)
+              : "—",
       seguros: seguros > 0 ? formatBRL(seguros) : "—",
     };
   });
@@ -749,7 +819,6 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     "portrait",
     docInfo,
   );
-
 }
 
 // ---------------------------------------------------------------------------
@@ -788,11 +857,11 @@ export function baixarSimulacaoSimplificadaPDF({
   const lista = bancosParaExtrato(bancos);
 
   P = getPdfPalette();
-  const doc = new jsPDF({ 
-    orientation: "portrait", 
-    unit: "pt", 
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
     format: "a4",
-    compress: true
+    compress: true,
   });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -807,7 +876,12 @@ export function baixarSimulacaoSimplificadaPDF({
     y = drawTituloExtrato(doc, pageW, s, y, docLabel, dataLabel);
 
     const sistB = sistemaDoBanco(b, s);
-    y = drawFaixaBanco(doc, pageW, `${b?.nome_banco ?? "Banco"}${sistB !== "—" ? ` — ${sistB}` : ""}`, y);
+    y = drawFaixaBanco(
+      doc,
+      pageW,
+      `${b?.nome_banco ?? "Banco"}${sistB !== "—" ? ` — ${sistB}` : ""}`,
+      y,
+    );
     y = drawDadosCliente(doc, pageW, s, y);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
 
@@ -844,7 +918,6 @@ export function baixarSimulacaoSimplificadaPDF({
       doc.text(it.valor, x + 10, y + 32, { maxWidth: cardW - 16 });
     });
     y += cardH + 20;
-
   });
 
   const total = doc.getNumberOfPages();
@@ -871,11 +944,11 @@ function criarDocSimulacaoDetalhada({
 }: SimulacaoPdfInput) {
   const lista = bancosParaExtrato(bancos);
   P = getPdfPalette();
-  const doc = new jsPDF({ 
-    orientation: "portrait", 
-    unit: "pt", 
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
     format: "a4",
-    compress: true 
+    compress: true,
   });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -897,18 +970,34 @@ function criarDocSimulacaoDetalhada({
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
 
     const parcelas = d?.parcelas ?? [];
-    const somas = parcelas.reduce((acc, p) => ({
-      amort: acc.amort + (p.amortizacao || 0),
-      juros: acc.juros + (p.juros || 0),
-      parcela: acc.parcela + (p.parcela || 0),
-    }), { amort: 0, juros: 0, parcela: 0 });
+    const somas = parcelas.reduce(
+      (acc, p) => ({
+        amort: acc.amort + (p.amortizacao || 0),
+        juros: acc.juros + (p.juros || 0),
+        parcela: acc.parcela + (p.parcela || 0),
+      }),
+      { amort: 0, juros: 0, parcela: 0 },
+    );
 
     const rodapeSoma = [
-      { content: "TOTAIS", colSpan: 2, styles: { halign: "center" as const, fontStyle: "bold" as const } },
-      { content: formatBRL(somas.amort), styles: { halign: "right" as const, fontStyle: "bold" as const } },
-      { content: formatBRL(somas.juros), styles: { halign: "right" as const, fontStyle: "bold" as const } },
-      { content: formatBRL(somas.parcela), styles: { halign: "right" as const, fontStyle: "bold" as const } },
-      { content: "", styles: { halign: "right" as const } }
+      {
+        content: "TOTAIS",
+        colSpan: 2,
+        styles: { halign: "center" as const, fontStyle: "bold" as const },
+      },
+      {
+        content: formatBRL(somas.amort),
+        styles: { halign: "right" as const, fontStyle: "bold" as const },
+      },
+      {
+        content: formatBRL(somas.juros),
+        styles: { halign: "right" as const, fontStyle: "bold" as const },
+      },
+      {
+        content: formatBRL(somas.parcela),
+        styles: { halign: "right" as const, fontStyle: "bold" as const },
+      },
+      { content: "", styles: { halign: "right" as const } },
     ];
 
     doc.setTextColor(P.destaque);
@@ -928,7 +1017,6 @@ function criarDocSimulacaoDetalhada({
     }
     y += 8;
 
-
     if (parcelas.length === 0) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
@@ -937,16 +1025,7 @@ function criarDocSimulacaoDetalhada({
     } else {
       autoTable(doc, {
         startY: y,
-        head: [
-          [
-            "Parc.",
-            "Data",
-            "Amortização",
-            "Juros",
-            "Parcela",
-            "Saldo devedor",
-          ],
-        ],
+        head: [["Parc.", "Data", "Amortização", "Juros", "Parcela", "Saldo devedor"]],
         body: parcelas.map((p) => [
           String(p.numero),
           p.data ? dataTxt(p.data) : "—",
@@ -986,16 +1065,18 @@ function criarDocSimulacaoDetalhada({
     }
   });
 
-
-
   const total = doc.getNumberOfPages();
   for (let p = 1; p <= total; p++) {
     doc.setPage(p);
     drawFooter(doc, pageW, pageH, p, total);
   }
 
-  const pdfNome = sanitizarNomeArquivo(lista.length === 1 ? gerarNomeArquivoPdf(lista[0], s, extrairDetalheBanco(lista[0].raw_response)) : (filePrefix || nomeDescritivo(s, lista)));
-  
+  const pdfNome = sanitizarNomeArquivo(
+    lista.length === 1
+      ? gerarNomeArquivoPdf(lista[0], s, extrairDetalheBanco(lista[0].raw_response))
+      : filePrefix || nomeDescritivo(s, lista),
+  );
+
   return {
     doc,
     nome: pdfNome,
@@ -1009,7 +1090,7 @@ function criarDocSimulacaoDetalhada({
  */
 export async function baixarSimulacaoDetalhadaPDF(input: SimulacaoPdfInput): Promise<boolean> {
   if (!input.bancos || input.bancos.length === 0) return false;
-  
+
   // Se tem mais de um banco, baixa cada um individualmente (conforme pedido: "baixar SOMENTE a simulação")
   // O nome "ZipPDF" é legado, na verdade ele dispara múltiplos downloads individuais.
   if (input.bancos.length > 1) {
@@ -1098,13 +1179,15 @@ function abreviarValor(v: number | null | undefined): string {
 }
 
 /** Sistema de amortização em rótulo curto (SAC/PRICE) para o nome do arquivo.
-  * Usa exatamente a mesma fonte exibida no corpo do PDF. Em simulações mistas,
-  * `_sistema` precisa vencer a descrição textual do banco, pois alguns retornos
-  * vêm com descrição genérica contendo "SAC" mesmo quando a tabela processada
-  * foi PRICE. */
+ * Usa exatamente a mesma fonte exibida no corpo do PDF. Em simulações mistas,
+ * `_sistema` precisa vencer a descrição textual do banco, pois alguns retornos
+ * vêm com descrição genérica contendo "SAC" mesmo quando a tabela processada
+ * foi PRICE. */
 function tabelaLabel(s: any, bancos: any[]): string {
   const sistemas = Array.from(
-    new Set((bancos ?? []).map((b) => sistemaDoBanco(b, s)).filter((v) => v === "SAC" || v === "PRICE")),
+    new Set(
+      (bancos ?? []).map((b) => sistemaDoBanco(b, s)).filter((v) => v === "SAC" || v === "PRICE"),
+    ),
   );
   if (sistemas.length === 1) return sistemas[0];
   if (sistemas.length > 1) return "SAC+PRICE";
@@ -1114,7 +1197,6 @@ function tabelaLabel(s: any, bancos: any[]): string {
   if (real === "SAC" || real === "PRICE") return real;
   return "-";
 }
-
 
 /**
  * Renda familiar estimada: usa primeiro o retorno real dos bancos e, havendo
@@ -1149,7 +1231,6 @@ function rendaNecessaria(s: any, bancos: any[]): number | null {
   return av?.rendaMinima ?? null;
 }
 
-
 /**
  * Nome de arquivo descritivo pedido pela operação, ex.:
  * "Comparativos bancos Itau Tx 1.20, santander tx 2.0..."
@@ -1162,12 +1243,22 @@ export function nomeDescritivo(s: any, bancos: any[], rendaOverride?: number | n
       .map((b) => {
         const d = extrairDetalheBanco(b.raw_response);
         // Prioriza taxa mensal real do banco, se não houver calcula a partir da anual (usada na rápida)
-        const taxa = d?.taxaJurosMes ?? (b.taxa_juros_ano ? (Math.pow(1 + b.taxa_juros_ano / 100, 1 / 12) - 1) * 100 : 0);
-        const taxaStr = taxa > 0 ? ` Tx ${taxa.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "";
-        
+        const taxa =
+          d?.taxaJurosMes ??
+          (b.taxa_juros_ano ? (Math.pow(1 + b.taxa_juros_ano / 100, 1 / 12) - 1) * 100 : 0);
+        const taxaStr =
+          taxa > 0
+            ? ` Tx ${taxa.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            : "";
+
         const sistema = b._sistema || "SAC";
-        const suffix = sistema === "SAC e PRICE" ? " (S+P)" : (sistema === "SAC" || sistema === "PRICE" ? ` (${sistema})` : "");
-        
+        const suffix =
+          sistema === "SAC e PRICE"
+            ? " (S+P)"
+            : sistema === "SAC" || sistema === "PRICE"
+              ? ` (${sistema})`
+              : "";
+
         return `${b.nome_banco}${suffix}${taxaStr}`;
       })
       .join(", ");
@@ -1180,10 +1271,12 @@ export function nomeDescritivo(s: any, bancos: any[], rendaOverride?: number | n
   return gerarNomeArquivoPdf(bancos[0], s, d);
 }
 
-
 /** Remove caracteres inválidos de nome de arquivo, preservando espaços e vírgulas. */
 function sanitizarNomeArquivo(nome: string): string {
-  return nome.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
+  return nome
+    .replace(/[\\/:*?"<>|]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function nomeArquivoUnico(nome: string, usados: Set<string>): string {
@@ -1222,8 +1315,6 @@ function salvar(doc: jsPDF, s: any, _tipo: string, bancos: any[] = [], filePrefi
   baixarBlob(doc.output("blob"), `${nome}.pdf`);
   return doc;
 }
-
-
 
 // ---------------------------------------------------------------------------
 // Compatibilidade: detalhe de um único banco = extrato detalhado com 1 banco

@@ -38,7 +38,8 @@ export const Route = createFileRoute("/_authenticated/admin/notificacoes")({
 });
 
 function formatarData(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo",  
+  return new Date(iso).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -177,8 +178,8 @@ function Pagina() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Limpar notificações?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Todas as suas notificações serão excluídas permanentemente. Esta ação não pode
-                        ser desfeita.
+                        Todas as suas notificações serão excluídas permanentemente. Esta ação não
+                        pode ser desfeita.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

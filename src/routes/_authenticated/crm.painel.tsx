@@ -67,7 +67,9 @@ function Pagina() {
 
   // ---- Estado geral
   const [limpandoVinculo, setLimpandoVinculo] = useState<{ id: string; nome: string } | null>(null);
-  const [adicionarStage, setAdicionarStage] = useState<{ codigo: string; nome: string } | null>(null);
+  const [adicionarStage, setAdicionarStage] = useState<{ codigo: string; nome: string } | null>(
+    null,
+  );
   const [adicionarBusca, setAdicionarBusca] = useState("");
   const [adicionando, setAdicionando] = useState(false);
 
@@ -126,7 +128,6 @@ function Pagina() {
     }
   }
 
-
   function limparTodosFiltros() {
     setPeriodo("todos");
     setRespFiltro("todos");
@@ -152,8 +153,7 @@ function Pagina() {
   const queryKey = ["crm-painel", desde, ate, escopo];
   const { data, isLoading } = useQuery({
     queryKey,
-    queryFn: () =>
-      listar({ data: { desde: desde || undefined, ate: ate || undefined, escopo } }),
+    queryFn: () => listar({ data: { desde: desde || undefined, ate: ate || undefined, escopo } }),
     staleTime: 2 * 60_000,
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
@@ -189,7 +189,6 @@ function Pagina() {
       );
       return;
     }
-
 
     const anterior = qc.getQueryData<PainelStage[]>(queryKey);
     let clienteMovido: PainelStage["clientes"][number] | undefined;
@@ -234,9 +233,7 @@ function Pagina() {
         queryKey,
         anterior.map((s) => ({
           ...s,
-          clientes: s.clientes.map((c) =>
-            c.id === clienteId ? { ...c, [campo]: novoValor } : c,
-          ),
+          clientes: s.clientes.map((c) => (c.id === clienteId ? { ...c, [campo]: novoValor } : c)),
         })),
       );
     }
@@ -439,7 +436,6 @@ function Pagina() {
       (equipeInterna ?? [])
         .filter((m) => (m.papeis ?? []).includes("analista"))
         .forEach((m) => m.nome && set.add(m.nome));
-
     } else if (campo === "corretor_nome") {
       (parceirosCadastrados ?? [])
         .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "corretor")
@@ -520,73 +516,68 @@ function Pagina() {
           {dadosFiltrados.map((stage, idx) => {
             const readOnly = !etapaEhComercial(stage.codigo);
             return (
-            <Fragment key={stage.codigo}>
-              <ColunaEsteira
-                stage={stage}
-                ordem={idx + 1}
-                ehAlvoArrasto={alvo === stage.codigo && arrasto?.origem !== stage.codigo}
-                arrastando={arrasto?.origem === stage.codigo}
-                readOnly={readOnly}
-                onDragOver={(e) => {
-                  if (!arrasto) return;
-                  // Bloqueia highlight visual em colunas somente-leitura ou
-                  // quando o arrasto vem de uma etapa de outro território.
-                  if (readOnly || !etapaEhComercial(arrasto.origem)) return;
-                  e.preventDefault();
-                  if (alvo !== stage.codigo) setAlvo(stage.codigo);
-                }}
-                onDragLeave={(e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                    setAlvo((a) => (a === stage.codigo ? null : a));
+              <Fragment key={stage.codigo}>
+                <ColunaEsteira
+                  stage={stage}
+                  ordem={idx + 1}
+                  ehAlvoArrasto={alvo === stage.codigo && arrasto?.origem !== stage.codigo}
+                  arrastando={arrasto?.origem === stage.codigo}
+                  readOnly={readOnly}
+                  onDragOver={(e) => {
+                    if (!arrasto) return;
+                    // Bloqueia highlight visual em colunas somente-leitura ou
+                    // quando o arrasto vem de uma etapa de outro território.
+                    if (readOnly || !etapaEhComercial(arrasto.origem)) return;
+                    e.preventDefault();
+                    if (alvo !== stage.codigo) setAlvo(stage.codigo);
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      setAlvo((a) => (a === stage.codigo ? null : a));
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    moverPara(stage.codigo);
+                  }}
+                  onAbrirEtapa={() => setDialogStage(stage.codigo)}
+                  onAdicionarCliente={() =>
+                    setAdicionarStage({ codigo: stage.codigo, nome: stage.nome })
                   }
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  moverPara(stage.codigo);
-                }}
-                onAbrirEtapa={() => setDialogStage(stage.codigo)}
-                onAdicionarCliente={() =>
-                  setAdicionarStage({ codigo: stage.codigo, nome: stage.nome })
-                }
-                renderCard={(c) => (
-                  <CardCliente
-                    key={c.id}
-                    cliente={c}
-                    stageCodigo={stage.codigo}
-                    readOnly={readOnly}
-                    onDragStart={() => {
-                      arrastouRef.current = true;
-                      setArrasto({ clienteId: c.id, origem: stage.codigo });
-                    }}
-                    onDragEnd={() => {
-                      setArrasto(null);
-                      setAlvo(null);
-                      setTimeout(() => {
-                        arrastouRef.current = false;
-                      }, 0);
-                    }}
-                    clicavel={() => !arrastouRef.current}
-                    onAbrirCadastro={() =>
-                      navigate({ to: "/crm/clientes/$id", params: { id: c.id } })
-                    }
-                    onSalvarDataVistoria={(campo, valor) =>
-                      salvarDataVistoria(c.id, campo, valor)
-                    }
-                    onSalvarDataContrato={(valor) => salvarDataContrato(c.id, valor)}
-                    onArquivarContrato={() => arquivarContratoEmitido(c.id)}
-                    onLimparVinculo={() =>
-                      setLimpandoVinculo({ id: c.id, nome: c.nome })
-                    }
-                  />
-                )}
-              />
-              {stage.codigo === "contrato_emitido" && (
-                <PastaArquivados
-                  total={totalArquivados}
-                  onAbrir={() => setArquivoAberto(true)}
+                  renderCard={(c) => (
+                    <CardCliente
+                      key={c.id}
+                      cliente={c}
+                      stageCodigo={stage.codigo}
+                      readOnly={readOnly}
+                      onDragStart={() => {
+                        arrastouRef.current = true;
+                        setArrasto({ clienteId: c.id, origem: stage.codigo });
+                      }}
+                      onDragEnd={() => {
+                        setArrasto(null);
+                        setAlvo(null);
+                        setTimeout(() => {
+                          arrastouRef.current = false;
+                        }, 0);
+                      }}
+                      clicavel={() => !arrastouRef.current}
+                      onAbrirCadastro={() =>
+                        navigate({ to: "/crm/clientes/$id", params: { id: c.id } })
+                      }
+                      onSalvarDataVistoria={(campo, valor) =>
+                        salvarDataVistoria(c.id, campo, valor)
+                      }
+                      onSalvarDataContrato={(valor) => salvarDataContrato(c.id, valor)}
+                      onArquivarContrato={() => arquivarContratoEmitido(c.id)}
+                      onLimparVinculo={() => setLimpandoVinculo({ id: c.id, nome: c.nome })}
+                    />
+                  )}
                 />
-              )}
-            </Fragment>
+                {stage.codigo === "contrato_emitido" && (
+                  <PastaArquivados total={totalArquivados} onAbrir={() => setArquivoAberto(true)} />
+                )}
+              </Fragment>
             );
           })}
         </div>

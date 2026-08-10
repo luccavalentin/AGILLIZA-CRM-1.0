@@ -8,7 +8,13 @@ import type { ContaTipo } from "@/lib/financeiro/financeiro.functions";
  * usado no painel e no fluxo de caixa para manter tipografia, hierarquia
  * e chip de status consistentes em todo o módulo Financeiro.
  */
-export function ContasHeader({ tipo, extraActions }: { tipo: ContaTipo; extraActions?: React.ReactNode }) {
+export function ContasHeader({
+  tipo,
+  extraActions,
+}: {
+  tipo: ContaTipo;
+  extraActions?: React.ReactNode;
+}) {
   const recebe = tipo === "receber";
   return (
     <PanelHeader

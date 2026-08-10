@@ -36,7 +36,6 @@ const CATALOGO_PADRAO: Record<CategoriaCatalogo, Array<{ valor: string; label: s
   ],
 };
 
-
 export interface SlaConfig {
   id: string;
   tipo: string;
@@ -66,7 +65,10 @@ export const TIPOS_SLA = [
 async function correspondenteId(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.");
+  if (!data)
+    throw new Error(
+      "Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.",
+    );
   return data as string;
 }
 
@@ -267,10 +269,7 @@ export const excluirCatalogoItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("sla_catalogo_itens")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("sla_catalogo_itens").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

@@ -23,9 +23,7 @@ export function SecaoCabecalho({
         </span>
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold text-foreground">{titulo}</h2>
-          {descricao && (
-            <p className="truncate text-xs text-muted-foreground">{descricao}</p>
-          )}
+          {descricao && <p className="truncate text-xs text-muted-foreground">{descricao}</p>}
         </div>
       </div>
       {acao && <div className="shrink-0">{acao}</div>}

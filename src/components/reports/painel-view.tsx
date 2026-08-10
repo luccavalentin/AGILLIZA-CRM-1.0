@@ -85,7 +85,6 @@ function iconeParaMetrica(label: string): LucideIcon | undefined {
   return undefined;
 }
 
-
 /** Painel de monitoramento reutilizável (visão-geral / operacional). */
 export function PainelView({
   modulo,
@@ -169,14 +168,17 @@ export function PainelView({
   const abrirDetalhe = (metrica: string, valorAtual?: string) =>
     setDrilldown({ metrica, valorAtual, filtros: filtrosAtuais });
 
-
   // Une as tabelas específicas do painel às tabelas globais de métricas para
   // que os cards (inclusive ticket médio) reajam a qualquer alteração.
   const tabelasRealtime = Array.from(new Set([...realtimeTabelas, ...TABELAS_METRICAS]));
   useRealtimeInvalidate(`panel-${modulo}`, [["panel", modulo]], tabelasRealtime);
 
   const atualizado = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo",   hour: "2-digit", minute: "2-digit" })
+    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : undefined;
 
   return (
@@ -240,7 +242,6 @@ export function PainelView({
                 numberOfMonths={2}
               />
             )}
-
           </>
         }
       />
@@ -380,7 +381,6 @@ export function PainelView({
             </div>
           </div>
 
-
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="lg:col-span-1">
               <PanelCard
@@ -390,9 +390,7 @@ export function PainelView({
                 <MetricList
                   items={data.ranking.itens}
                   colorByBank={data.chart.porBanco}
-                  onItemClick={(label, valor) =>
-                    abrirDetalhe(label, valor.toLocaleString("pt-BR"))
-                  }
+                  onItemClick={(label, valor) => abrirDetalhe(label, valor.toLocaleString("pt-BR"))}
                 />
               </PanelCard>
             </div>
@@ -402,7 +400,8 @@ export function PainelView({
                 titulo="Atividades e alertas"
                 onOpen={
                   data.alertas.length > 0
-                    ? () => abrirDetalhe(data.alertas[0].titulo, data.alertas[0].contador?.toString())
+                    ? () =>
+                        abrirDetalhe(data.alertas[0].titulo, data.alertas[0].contador?.toString())
                     : undefined
                 }
               >
@@ -444,8 +443,7 @@ export function PainelView({
                   tabIndex={0}
                   onClick={() => abrirDetalhe(data.distribuicao!.titulo)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ")
-                      abrirDetalhe(data.distribuicao!.titulo);
+                    if (e.key === "Enter" || e.key === " ") abrirDetalhe(data.distribuicao!.titulo);
                   }}
                   aria-label={`Ver detalhamento de ${data.distribuicao.titulo}`}
                 >
@@ -523,7 +521,10 @@ export function PainelView({
                     }}
                     aria-label={`Ver detalhamento de ${data.clientesPorEtapa.titulo}`}
                     style={{
-                      height: Math.min(360, Math.max(180, data.clientesPorEtapa.dados.length * 40 + 44)),
+                      height: Math.min(
+                        360,
+                        Math.max(180, data.clientesPorEtapa.dados.length * 40 + 44),
+                      ),
                     }}
                   >
                     <ReportChartView
@@ -608,9 +609,7 @@ export function PainelView({
               )}
             </div>
           )}
-
         </>
-
       )}
 
       <PainelDrilldownDialog

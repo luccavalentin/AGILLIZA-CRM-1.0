@@ -83,9 +83,7 @@ export function VinculoTab({
 
       <div className="grid gap-4 md:grid-cols-3">
         {TIPOS_VINCULO.map((tipo) => {
-          const desteTipo = (vinculos.data ?? []).filter(
-            (v) => v.tipo_vinculo === tipo.valor,
-          );
+          const desteTipo = (vinculos.data ?? []).filter((v) => v.tipo_vinculo === tipo.valor);
           const jaVinculados = new Set(desteTipo.map((v) => v.parceiro_id));
           const tiposPessoa = TIPO_VINCULO_PESSOA[tipo.valor];
           const opcoes = (disponiveis.data ?? []).filter(
@@ -130,9 +128,7 @@ export function VinculoTab({
                     type="button"
                     size="icon"
                     disabled={!sel || adicionar.isPending}
-                    onClick={() =>
-                      adicionar.mutate({ parceiro_id: sel, tipo_vinculo: tipo.valor })
-                    }
+                    onClick={() => adicionar.mutate({ parceiro_id: sel, tipo_vinculo: tipo.valor })}
                   >
                     {adicionar.isPending ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -166,9 +162,7 @@ export function VinculoTab({
                         <ConfirmDelete
                           titulo="Remover vínculo"
                           descricao="O vínculo deste usuário com o cliente será removido."
-                          onConfirm={() =>
-                            remover.mutateAsync(v.id).then(() => undefined)
-                          }
+                          onConfirm={() => remover.mutateAsync(v.id).then(() => undefined)}
                         />
                       </div>
                     ))}

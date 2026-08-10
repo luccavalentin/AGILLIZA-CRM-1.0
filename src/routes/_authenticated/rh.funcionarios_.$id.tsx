@@ -83,8 +83,6 @@ function Pagina() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir funcionário."),
   });
 
-
-
   async function imprimirFicha() {
     if (!q.data) return;
     try {
@@ -122,17 +120,39 @@ function Pagina() {
 
   const abasExtras = (
     <>
-      <TabsTrigger value="historico" className={ABA_CLASS}>Histórico</TabsTrigger>
-      <TabsTrigger value="dependentes" className={ABA_CLASS}>Dependentes</TabsTrigger>
-      <TabsTrigger value="documentos" className={ABA_CLASS}>Documentos</TabsTrigger>
-      <TabsTrigger value="beneficios" className={ABA_CLASS}>Benefícios</TabsTrigger>
-      <TabsTrigger value="ferias" className={ABA_CLASS}>Férias</TabsTrigger>
-      <TabsTrigger value="ocorrencias" className={ABA_CLASS}>Ocorrências</TabsTrigger>
-      <TabsTrigger value="adiantamentos" className={ABA_CLASS}>Adiantamentos</TabsTrigger>
-      <TabsTrigger value="descontos" className={ABA_CLASS}>Descontos</TabsTrigger>
-      <TabsTrigger value="salarios" className={ABA_CLASS}>Alterações salariais</TabsTrigger>
-      <TabsTrigger value="previa" className={ABA_CLASS}>Prévia da folha</TabsTrigger>
-      <TabsTrigger value="holerites" className={ABA_CLASS}>Holerites</TabsTrigger>
+      <TabsTrigger value="historico" className={ABA_CLASS}>
+        Histórico
+      </TabsTrigger>
+      <TabsTrigger value="dependentes" className={ABA_CLASS}>
+        Dependentes
+      </TabsTrigger>
+      <TabsTrigger value="documentos" className={ABA_CLASS}>
+        Documentos
+      </TabsTrigger>
+      <TabsTrigger value="beneficios" className={ABA_CLASS}>
+        Benefícios
+      </TabsTrigger>
+      <TabsTrigger value="ferias" className={ABA_CLASS}>
+        Férias
+      </TabsTrigger>
+      <TabsTrigger value="ocorrencias" className={ABA_CLASS}>
+        Ocorrências
+      </TabsTrigger>
+      <TabsTrigger value="adiantamentos" className={ABA_CLASS}>
+        Adiantamentos
+      </TabsTrigger>
+      <TabsTrigger value="descontos" className={ABA_CLASS}>
+        Descontos
+      </TabsTrigger>
+      <TabsTrigger value="salarios" className={ABA_CLASS}>
+        Alterações salariais
+      </TabsTrigger>
+      <TabsTrigger value="previa" className={ABA_CLASS}>
+        Prévia da folha
+      </TabsTrigger>
+      <TabsTrigger value="holerites" className={ABA_CLASS}>
+        Holerites
+      </TabsTrigger>
     </>
   );
 
@@ -153,7 +173,9 @@ function Pagina() {
                 {hist.data!.map((h) => (
                   <li key={h.id} className="rounded-lg border border-border/60 bg-muted/30 p-3">
                     <p className="text-xs text-muted-foreground">
-                      {new Date(h.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                      {new Date(h.created_at).toLocaleString("pt-BR", {
+                        timeZone: "America/Sao_Paulo",
+                      })}
                       {h.ator_nome ? ` · ${h.ator_nome}` : ""}
                     </p>
                     <p className="font-medium text-foreground">
@@ -240,8 +262,8 @@ function Pagina() {
             <AlertDialogTitle>Excluir funcionário</AlertDialogTitle>
             <AlertDialogDescription>
               {q.data.nome} será excluído definitivamente, junto com documentos, dependentes,
-              férias, benefícios, holerites e lançamentos vinculados apenas a ele.
-              Esta ação não pode ser desfeita.
+              férias, benefícios, holerites e lançamentos vinculados apenas a ele. Esta ação não
+              pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -262,4 +284,3 @@ function Pagina() {
     </div>
   );
 }
-

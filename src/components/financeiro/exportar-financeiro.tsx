@@ -89,24 +89,27 @@ export function ExportarFinanceiro({
   }
 
   const gerarPDF = (modo: "download" | "print") =>
-    run(async () => {
-      const { exportPDF } = await import("@/lib/relatorios/report-pdf");
-      exportPDF(
-        titulo,
-        descricao,
-        metaFinal,
-        kpis,
-        columns,
-        rows,
-        nome,
-        undefined,
-        undefined,
-        undefined,
-        orientation,
-        undefined,
-        modo,
-      );
-    }, modo === "print" ? "Falha ao abrir a impressão." : "Falha ao gerar o PDF.");
+    run(
+      async () => {
+        const { exportPDF } = await import("@/lib/relatorios/report-pdf");
+        exportPDF(
+          titulo,
+          descricao,
+          metaFinal,
+          kpis,
+          columns,
+          rows,
+          nome,
+          undefined,
+          undefined,
+          undefined,
+          orientation,
+          undefined,
+          modo,
+        );
+      },
+      modo === "print" ? "Falha ao abrir a impressão." : "Falha ao gerar o PDF.",
+    );
 
   const gerarXLSX = () =>
     run(async () => {

@@ -2,12 +2,7 @@ import { AdminHero } from "@/components/admin/admin-hero";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Activity,
-  CalendarClock,
-  ShieldCheck,
-  Users,
-} from "lucide-react";
+import { Activity, CalendarClock, ShieldCheck, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
@@ -23,10 +18,7 @@ import {
 } from "@/components/admin/auditoria-page/helpers";
 import { Kpi } from "@/components/admin/auditoria-page/kpi";
 import { BarraFiltros } from "@/components/admin/auditoria-page/filtros";
-import {
-  TimelineAuditoria,
-  VazioAuditoria,
-} from "@/components/admin/auditoria-page/timeline";
+import { TimelineAuditoria, VazioAuditoria } from "@/components/admin/auditoria-page/timeline";
 import { DetalheAuditoria } from "@/components/admin/auditoria-page/detalhe";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria")({

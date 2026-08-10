@@ -5,6 +5,7 @@
 ## 1. Escopo
 
 **Tabelas**:
+
 - `cliente_portal_acessos(cliente_id UNIQUE, tipo_pessoa, documento_hash, data_referencia, ativo, habilitado_por/em, revogado_por/em)`.
 - `cliente_app_acessos(cliente_id, documento, tipo_acesso, sucesso, motivo_bloqueio, ip, user_agent, created_at)` — log/rate-limit.
 - `cliente_app_processos(id, cliente_id, proposta_id UNIQUE, etapa_atual, proxima_etapa, status_amigavel, descricao_status, banco, produto, ultima_atualizacao_em)`.
@@ -12,6 +13,7 @@
 - `cliente_app_notificacoes(cliente_id, tipo, titulo, corpo, link, lida)`.
 
 **Rotas** (`src/routes/cliente.*` — fora do `_authenticated` do Supabase):
+
 - `/cliente` (índice, redireciona `/cliente/visao-geral`).
 - `/cliente/visao-geral` — home com etapa atual, timeline 12, próximas ações, últimas mensagens, contato do responsável.
 - `/cliente/acompanhar-minha-proposta` — 4 tabs (Meu processo · Documentos · Mensagens · Propostas).
@@ -21,6 +23,7 @@
 - `/cliente-consentimento` — banner LGPD.
 
 **Server fns** em `src/lib/portal/`:
+
 - `session.server.ts`: `sealSession`, `unsealSession`, `requireClienteSession` (middleware).
 - `cliente.functions.ts`: `validarAcessoCliente`, `logoutCliente`, `clienteObterVisaoGeral`, `clienteObterProcesso`, `clienteEnviarMensagem`, `clienteMarcarLida`, `clienteUploadDocumento`, `clienteListarNotificacoes`, `clienteSolicitarExclusaoLGPD`.
 - `pwa-cliente.ts` — helpers PWA (registro SW, install prompt).
@@ -41,6 +44,7 @@ Erros sempre genéricos ("Dados não encontrados"). **Nunca revela** se document
 ## 3. Home `/cliente/visao-geral`
 
 Layout mobile-first:
+
 - Header `bg-primary text-primary-foreground` fixo no topo com nome do cliente + avatar + sino + botão sair.
 - Card grande **Etapa Atual** (`bg-card border rounded-lg p-6`): nome amigável, descrição, progresso `X/12`, SLA countdown.
 - Timeline visual 12 etapas com scroll horizontal em mobile; concluída `success` ✓, atual `primary` com pulse, próximas `muted`, futuras `muted-foreground border`. **Nunca** vermelho em "aguardando" — vermelho só quando algo foi recusado.
@@ -70,6 +74,7 @@ Layout mobile-first:
 ## 7. LGPD ("Meus dados")
 
 `/cliente/perfil` tem seção "Direitos LGPD":
+
 - **Baixar meus dados** — server fn gera JSON com `clientes` + `documentos` + `mensagens` + `historico_esteira` do próprio cliente, ZIP com PDFs adicionais.
 - **Solicitar exclusão** — abre demanda automática para DPO (papel `admin` + gestor) via `criarDemanda(tipo='lgpd_exclusao', cliente_id=...)`.
 - Consentimento em `cliente-consentimento` (banner primeiro acesso).

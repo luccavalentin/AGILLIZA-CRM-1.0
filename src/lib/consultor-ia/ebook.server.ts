@@ -95,7 +95,9 @@ export async function resolverConfigIa(supabase: any, userId: string): Promise<C
   if (!apiKey) throw new Error("Chave da API não cadastrada. Configure-a em Admin › APIs de IA.");
   const baseUrl = (
     (typeof cfgRow?.base_url === "string" && cfgRow.base_url) ||
-    (provedor === "openai" ? "https://api.openai.com/v1" : "https://generativelanguage.googleapis.com")
+    (provedor === "openai"
+      ? "https://api.openai.com/v1"
+      : "https://generativelanguage.googleapis.com")
   ).replace(/\/+$/, "");
 
   return { provedor, modelo, apiKey, baseUrl };
@@ -204,7 +206,9 @@ async function gerarJson(cfg: ConfigIa, prompt: string): Promise<any> {
   );
   if (!resp.ok) throw new Error(await mensagemErroIa(resp));
   const json: any = await resp.json();
-  const texto = (json?.candidates?.[0]?.content?.parts ?? []).map((x: any) => x?.text ?? "").join("");
+  const texto = (json?.candidates?.[0]?.content?.parts ?? [])
+    .map((x: any) => x?.text ?? "")
+    .join("");
   return extrairJson(texto);
 }
 
@@ -233,13 +237,16 @@ export function normalizarEbook(bruto: any, pergunta: string, trechos: TrechoBas
       const tab = s?.tabela;
       const colunas = lista(tab?.colunas);
       const linhas: string[][] = Array.isArray(tab?.linhas)
-        ? tab.linhas.map((l: any) => (Array.isArray(l) ? l.map((c: any) => txt(c)) : [])).filter((l: string[]) => l.length)
+        ? tab.linhas
+            .map((l: any) => (Array.isArray(l) ? l.map((c: any) => txt(c)) : []))
+            .filter((l: string[]) => l.length)
         : [];
       return {
         titulo: txt(s?.titulo, "Seção"),
         paragrafos: lista(s?.paragrafos),
         bullets: lista(s?.bullets),
-        tabela: colunas.length && linhas.length ? { titulo: txt(tab?.titulo), colunas, linhas } : null,
+        tabela:
+          colunas.length && linhas.length ? { titulo: txt(tab?.titulo), colunas, linhas } : null,
       };
     })
     .filter((s: EbookSecao) => s.paragrafos.length || s.bullets.length || s.tabela);
@@ -247,7 +254,9 @@ export function normalizarEbook(bruto: any, pergunta: string, trechos: TrechoBas
   const graficos: EbookGrafico[] = (Array.isArray(bruto?.graficos) ? bruto.graficos : [])
     .map((g: any) => ({
       titulo: txt(g?.titulo, "Gráfico"),
-      tipo: (["barras", "linha", "pizza"].includes(g?.tipo) ? g.tipo : "barras") as EbookGrafico["tipo"],
+      tipo: (["barras", "linha", "pizza"].includes(g?.tipo)
+        ? g.tipo
+        : "barras") as EbookGrafico["tipo"],
       unidade: txt(g?.unidade),
       nota: txt(g?.nota),
       series: (Array.isArray(g?.series) ? g.series : [])
@@ -272,7 +281,10 @@ export function normalizarEbook(bruto: any, pergunta: string, trechos: TrechoBas
       resultado: txt(e?.resultado),
     })),
     graficos,
-    perguntas_frequentes: (Array.isArray(bruto?.perguntas_frequentes) ? bruto.perguntas_frequentes : [])
+    perguntas_frequentes: (Array.isArray(bruto?.perguntas_frequentes)
+      ? bruto.perguntas_frequentes
+      : []
+    )
       .map((f: any) => ({ pergunta: txt(f?.pergunta), resposta: txt(f?.resposta) }))
       .filter((f: any) => f.pergunta && f.resposta),
     glossario: (Array.isArray(bruto?.glossario) ? bruto.glossario : [])
@@ -290,7 +302,8 @@ export function normalizarEbook(bruto: any, pergunta: string, trechos: TrechoBas
 export function ebookParaMarkdown(e: EbookFaq): string {
   const p: string[] = [];
   if (e.resumo_executivo) p.push(`## Resumo executivo\n\n${e.resumo_executivo}`);
-  if (e.pontos_chave.length) p.push(`## Pontos-chave\n\n${e.pontos_chave.map((x) => `- ${x}`).join("\n")}`);
+  if (e.pontos_chave.length)
+    p.push(`## Pontos-chave\n\n${e.pontos_chave.map((x) => `- ${x}`).join("\n")}`);
   for (const s of e.secoes) {
     const bloco = [`## ${s.titulo}`];
     if (s.paragrafos.length) bloco.push(s.paragrafos.join("\n\n"));
@@ -325,7 +338,9 @@ export function ebookParaMarkdown(e: EbookFaq): string {
     p.push(
       [
         `## ${g.titulo}`,
-        g.series.map((s) => `- ${s.rotulo}: ${s.valor}${g.unidade ? ` ${g.unidade}` : ""}`).join("\n"),
+        g.series
+          .map((s) => `- ${s.rotulo}: ${s.valor}${g.unidade ? ` ${g.unidade}` : ""}`)
+          .join("\n"),
         g.nota,
       ]
         .filter(Boolean)
@@ -338,9 +353,12 @@ export function ebookParaMarkdown(e: EbookFaq): string {
         e.perguntas_frequentes.map((f) => `**${f.pergunta}**\n\n${f.resposta}`).join("\n\n"),
     );
   }
-  if (e.checklist.length) p.push(`## Checklist\n\n${e.checklist.map((x) => `- [ ] ${x}`).join("\n")}`);
+  if (e.checklist.length)
+    p.push(`## Checklist\n\n${e.checklist.map((x) => `- [ ] ${x}`).join("\n")}`);
   if (e.glossario.length) {
-    p.push(`## Glossário\n\n${e.glossario.map((g) => `- **${g.termo}**: ${g.definicao}`).join("\n")}`);
+    p.push(
+      `## Glossário\n\n${e.glossario.map((g) => `- **${g.termo}**: ${g.definicao}`).join("\n")}`,
+    );
   }
   if (e.fontes_pesquisa.length) {
     p.push(

@@ -28,9 +28,7 @@ export function ChecklistsPersonalizados(props: ChecklistsCfgProps) {
   const [novoGrupo, setNovoGrupo] = useState("");
   const [criando, setCriando] = useState(false);
   const drag = useRef<
-    | { tipo: "grupo"; grupoId: string }
-    | { tipo: "item"; grupoId: string; itemId: string }
-    | null
+    { tipo: "grupo"; grupoId: string } | { tipo: "item"; grupoId: string; itemId: string } | null
   >(null);
   const [alvo, setAlvo] = useState<string | null>(null);
 
@@ -46,7 +44,8 @@ export function ChecklistsPersonalizados(props: ChecklistsCfgProps) {
         <div>
           <h3 className="text-base font-semibold text-foreground">Checklists personalizados</h3>
           <p className="text-xs text-muted-foreground">
-            Crie listas próprias para este cliente. Arraste para reordenar e mover itens entre listas.
+            Crie listas próprias para este cliente. Arraste para reordenar e mover itens entre
+            listas.
           </p>
         </div>
         {!criando ? (
@@ -131,10 +130,7 @@ export function ChecklistsPersonalizados(props: ChecklistsCfgProps) {
                     <GripVertical className="size-4" />
                   </button>
                   <div className="min-w-0 flex-1">
-                    <TituloGrupo
-                      titulo={g.titulo}
-                      onRename={(t) => props.renameGrupo(g.id, t)}
-                    />
+                    <TituloGrupo titulo={g.titulo} onRename={(t) => props.renameGrupo(g.id, t)} />
                     <div className="mt-1.5 flex items-center gap-2">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <div
@@ -300,7 +296,9 @@ function ItemGrupo({
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={`group flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors ${
-        destaque ? "border-primary/60 bg-primary/5" : "border-transparent hover:border-border/60 hover:bg-muted/40"
+        destaque
+          ? "border-primary/60 bg-primary/5"
+          : "border-transparent hover:border-border/60 hover:bg-muted/40"
       }`}
     >
       <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground/60 active:cursor-grabbing" />

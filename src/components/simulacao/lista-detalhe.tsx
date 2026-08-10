@@ -11,10 +11,7 @@ import {
   Unlock,
 } from "lucide-react";
 
-import { 
-  SiGmail, 
-  SiWhatsapp 
-} from "@icons-pack/react-simple-icons";
+import { SiGmail, SiWhatsapp } from "@icons-pack/react-simple-icons";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -189,7 +186,6 @@ export function AcoesSimulacao({
   numero: string;
 }) {
   return (
-
     <div className="flex items-center justify-end gap-1">
       <ConfirmDelete
         titulo="Excluir simulação"
@@ -237,9 +233,8 @@ export function AcoesSimulacao({
             </DropdownMenuItem>
           )}
 
-
           <DropdownMenuSeparator />
-          
+
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <Send className="mr-2 h-4 w-4" /> Encaminhar para...

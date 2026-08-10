@@ -35,11 +35,13 @@ Cada item da ficha tem: obrigatório?, status (`pendente|entregue|vencido`), val
 ## 4. Dia de pagamento → Contas a Pagar
 
 Na ficha, novo grupo **Pagamento**:
+
 - `dia_pagamento_salario` (1–31, padrão 5 — limite CLT art. 459)
 - `dia_pagamento_adiantamento` (opcional, padrão 20)
 - `gerar_contas_pagar_automatico` (bool)
 
 Server fn `gerarContasPagarSalarios(competencia)`:
+
 - Para cada funcionário ativo com `gerar_contas_pagar_automatico=true`, cria em `financial_payables` um lançamento com vencimento no próximo dia útil ≥ dia configurado, valor = salário líquido da prévia (ou bruto se ainda não fechada), categoria "Folha de pagamento", favorecido = funcionário.
 - Idempotente por `(funcionario_id, competencia)` via nova coluna `origem_ref`.
 - Botão manual na página **Prévia da folha** ("Gerar contas a pagar") + job mensal opcional.
@@ -49,6 +51,7 @@ Adiantamentos e descontos que já existem passam a virar linhas separadas em Con
 ## 5. Ficha completa em PDF (marca d'água Agilliza)
 
 Novo `src/lib/rh/ficha-funcionario-pdf.ts` (jsPDF, retrato):
+
 - Cabeçalho com logo Agilliza + dados do ecossistema (razão social, CNPJ).
 - Foto 3x4 do funcionário + dados pessoais, documentos, endereço, dados bancários.
 - Vínculo (cargo, departamento, gestor, admissão, salário atual, tipo de contrato).
@@ -67,6 +70,7 @@ Documentos usam o bucket `rh-documentos` já existente (path `funcionario/{id}/�
 ## Detalhes técnicos
 
 **Migração** (uma única):
+
 - `rh_funcionarios`: `dia_pagamento_salario int`, `dia_pagamento_adiantamento int`, `gerar_contas_pagar_automatico bool default false`.
 - `rh_documentos_checklist` (id, funcionario_id, tipo, obrigatorio, status, documento_id fk, validade, updated_at) + grants + RLS por correspondente.
 - `financial_payables`: `origem_tipo text`, `origem_ref text` (para idempotência da folha).
@@ -75,12 +79,14 @@ Documentos usam o bucket `rh-documentos` já existente (path `funcionario/{id}/�
 - Função `public.rh_semear_periodo_aquisitivo(func_id uuid)` em trigger AFTER INSERT.
 
 **Server fns** (`src/lib/rh/`):
+
 - `checklist.functions.ts`: listar/atualizar itens do checklist.
 - `ferias-auto.functions.ts`: recalcular dias de direito, listar períodos.
 - `folha-contas-pagar.functions.ts`: `gerarContasPagarSalarios`.
 - `ficha-pdf.functions.ts`: agrega dados para PDF.
 
 **UI**:
+
 - `ficha-tabs.tsx`: aba Documentos ganha checklist obrigatório no topo; aba Férias mostra períodos aquisitivos; nova aba **Pagamento** com dia + toggle contas a pagar.
 - `rh.funcionarios_.$id.tsx`: botão "Imprimir ficha".
 - `rh.previa-folha.tsx`: botão "Gerar contas a pagar do mês".

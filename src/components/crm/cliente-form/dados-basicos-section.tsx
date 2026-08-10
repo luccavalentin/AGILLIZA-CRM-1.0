@@ -44,7 +44,6 @@ export function DadosBasicosSection({
   erros?: Set<string>;
   idBanco?: number;
 }) {
-
   const cls = (k: string) => (erros?.has(k) ? CLASSE_ERRO : undefined);
   const clsBox = (k: string) => (erros?.has(k) ? "rounded-md ring-1 ring-destructive" : undefined);
 
@@ -109,7 +108,11 @@ export function DadosBasicosSection({
         {/* 2. Nome */}
         <div className="space-y-1.5">
           <Label>{v.tipo_pessoa === "PF" ? "Nome completo *" : "Razão social *"}</Label>
-          <Input value={v.nome} onChange={(e) => set("nome", e.target.value)} className={cls("nome")} />
+          <Input
+            value={v.nome}
+            onChange={(e) => set("nome", e.target.value)}
+            className={cls("nome")}
+          />
         </div>
 
         {/* 3. CPF */}
@@ -136,7 +139,6 @@ export function DadosBasicosSection({
             placeholder="Opcional"
           />
         </div>
-
 
         {/* 5. Data de nascimento */}
         <div className="space-y-1.5">
@@ -193,11 +195,14 @@ export function DadosBasicosSection({
           />
         </div>
 
-
         {/* 7. Nome da mãe */}
         <div className="space-y-1.5">
           <Label>Nome da mãe {v.tipo_pessoa === "PF" && "*"}</Label>
-          <Input value={v.mae} onChange={(e) => set("mae", e.target.value)} className={cls("mae")} />
+          <Input
+            value={v.mae}
+            onChange={(e) => set("mae", e.target.value)}
+            className={cls("mae")}
+          />
         </div>
 
         {/* 8. Nome do pai */}
@@ -278,10 +283,15 @@ export function DadosBasicosSection({
         {v.tipo_pessoa === "PF" &&
           (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
             <div className="space-y-1.5">
-              <Label>Regime de casamento {v.tipo_pessoa === "PF" && (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && idBanco === TIPO_BANCO_SANTANDER && "*"}</Label>
+              <Label>
+                Regime de casamento{" "}
+                {v.tipo_pessoa === "PF" &&
+                  (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") &&
+                  idBanco === TIPO_BANCO_SANTANDER &&
+                  "*"}
+              </Label>
               <Select value={v.regime_casamento} onValueChange={(x) => set("regime_casamento", x)}>
                 <SelectTrigger className={cls("regime_casamento")}>
-
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
@@ -298,7 +308,12 @@ export function DadosBasicosSection({
         {/* 13. Contato */}
         <div className="space-y-1.5">
           <Label>E-mail *</Label>
-          <Input type="email" value={v.email} onChange={(e) => set("email", e.target.value)} className={cls("email")} />
+          <Input
+            type="email"
+            value={v.email}
+            onChange={(e) => set("email", e.target.value)}
+            className={cls("email")}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Celular *</Label>
@@ -337,7 +352,6 @@ export function DadosBasicosSection({
             searchPlaceholder="Buscar UF…"
           />
         </div>
-
       </CardContent>
     </Card>
   );

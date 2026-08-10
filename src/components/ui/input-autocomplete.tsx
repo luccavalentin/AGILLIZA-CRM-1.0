@@ -1,8 +1,10 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 
-export interface InputAutocompleteProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof Input>, "onChange" | "value"> {
+export interface InputAutocompleteProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof Input>,
+  "onChange" | "value"
+> {
   value: string;
   onValueChange: (value: string) => void;
   /** Sugestões pré-cadastradas exibidas ao digitar/focar. */
@@ -30,9 +32,7 @@ export const InputAutocomplete = React.forwardRef<HTMLInputElement, InputAutocom
           id={id}
           list={listId}
           value={value}
-          onChange={(e) =>
-            onValueChange(transform ? transform(e.target.value) : e.target.value)
-          }
+          onChange={(e) => onValueChange(transform ? transform(e.target.value) : e.target.value)}
           autoComplete="off"
           {...props}
         />

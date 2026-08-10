@@ -139,7 +139,6 @@ export function DialogClientesEtapa({
   );
 }
 
-
 interface DialogArquivoProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -419,7 +418,15 @@ export function DialogAdicionarCliente({
   busca: string;
   termoDeb: string;
   buscando: boolean;
-  resultados: Array<{ id: string; nome: string; documento?: string | null; email?: string | null; telefone_celular?: string | null }> | undefined;
+  resultados:
+    | Array<{
+        id: string;
+        nome: string;
+        documento?: string | null;
+        email?: string | null;
+        telefone_celular?: string | null;
+      }>
+    | undefined;
   adicionando: boolean;
   onOpenChange: (o: boolean) => void;
   onBuscaChange: (v: string) => void;
@@ -546,9 +553,9 @@ export function AlertLimparVinculo({
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir vínculo de simulação/aprovação?</AlertDialogTitle>
           <AlertDialogDescription>
-            Isso remove por completo o vínculo de {info?.nome} com simulações e propostas
-            (inclusive registros já excluídos) e retorna o cliente para a etapa de cadastro. O
-            cadastro do cliente é mantido. Esta ação não pode ser desfeita.
+            Isso remove por completo o vínculo de {info?.nome} com simulações e propostas (inclusive
+            registros já excluídos) e retorna o cliente para a etapa de cadastro. O cadastro do
+            cliente é mantido. Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -14,11 +14,7 @@ type Papel = string;
  * @param papel      Quem está usando o hook ("time" ou "cliente").
  * @param enabled    Desliga o canal quando falso (ex.: janela minimizada).
  */
-export function useChatTyping(
-  clienteId: string | null | undefined,
-  papel: Papel,
-  enabled = true,
-) {
+export function useChatTyping(clienteId: string | null | undefined, papel: Papel, enabled = true) {
   const [peerTyping, setPeerTyping] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const enviadoRef = useRef(0);

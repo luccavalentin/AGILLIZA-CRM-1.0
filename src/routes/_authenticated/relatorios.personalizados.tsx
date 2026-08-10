@@ -184,7 +184,10 @@ function Pagina() {
         ) : (
           <div className="space-y-2">
             {salvos.map((s: any) => (
-              <Card key={s.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <Card
+                key={s.id}
+                className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{s.nome}</p>
                   <p className="truncate text-xs text-muted-foreground">

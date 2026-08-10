@@ -74,8 +74,6 @@ export function ClienteForm({
   onSalvoEmbutido?: () => void;
   idBanco?: number;
 }) {
-
-
   const navigate = useNavigate();
   const qc = useQueryClient();
   const criar = useServerFn(criarCliente);
@@ -86,7 +84,6 @@ export function ClienteForm({
   const vincular = useServerFn(vincularParceiro);
   const vincularProposta = useServerFn(vincularClienteAProposta);
   const { enviar: handleEnviarHook } = useEnviarProposta();
-
 
   const [v, setV] = useState<ClienteFormValues>(() => {
     const base = { ...emptyValues, ...inicial };
@@ -124,9 +121,9 @@ export function ClienteForm({
 
   // Vínculos de atendimento: usuários a vincular ao criar um novo cliente, por tipo.
   const novoCadastro = !v.id;
-  const [vinculos, setVinculos] = useState<Array<{ parceiro_id: string; tipo_vinculo: TipoVinculo }>>(
-    [],
-  );
+  const [vinculos, setVinculos] = useState<
+    Array<{ parceiro_id: string; tipo_vinculo: TipoVinculo }>
+  >([]);
   const [vinculoSel, setVinculoSel] = useState<Record<string, string>>({});
   const [criarTipo, setCriarTipo] = useState<TipoVinculo | null>(null);
   const parceiros = useQuery({
@@ -159,7 +156,6 @@ export function ClienteForm({
       qc.invalidateQueries({ queryKey: ["cliente", v.id] });
       qc.invalidateQueries({ queryKey: ["clientes"] });
       qc.invalidateQueries({ queryKey: ["clientes-stats"] });
-
     } catch (err: any) {
       setPortal(!ativo);
       toast.error(err?.message ?? "Não foi possível salvar o acesso.");
@@ -182,7 +178,6 @@ export function ClienteForm({
       return () => clearTimeout(t);
     }
   }, [destacarObrigatorios]);
-
 
   // Busca automática do endereço pelo CEP (ViaCEP) — apenas visual/preenchimento.
   async function buscarCep(cepRaw: string) {
@@ -247,8 +242,7 @@ export function ClienteForm({
     if (isNaN(renda) || renda < 0) return toast.error("Renda inválida.");
 
     // Estado civil e cônjuge só se aplicam a Pessoa Física.
-    const casado =
-      ehPF && (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel");
+    const casado = ehPF && (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel");
     // Cônjuge é opcional no cadastro: permite salvar mesmo sem os dados preenchidos.
     if (casado && v.conjuge_cpf && !validarCPF(v.conjuge_cpf)) {
       return toast.error("CPF do cônjuge inválido.");
@@ -268,7 +262,7 @@ export function ClienteForm({
     // em MAIÚSCULAS. E-mails (case-sensitive para autenticação/entrega) e
     // valores puramente numéricos/mascarados ficam de fora.
     const up = (s: string | null | undefined) =>
-      s ? s.trim().toLocaleUpperCase("pt-BR") : s ?? null;
+      s ? s.trim().toLocaleUpperCase("pt-BR") : (s ?? null);
     try {
       const payload = {
         tipo_pessoa: v.tipo_pessoa,
@@ -308,7 +302,9 @@ export function ClienteForm({
         conjuge_nome_mae: casado ? up(v.conjuge_nome_mae) || null : null,
         conjuge_sexo: casado ? v.conjuge_sexo || null : null,
         conjuge_nacionalidade: casado ? up(v.conjuge_nacionalidade) || null : null,
-        conjuge_tipo_documento_identidade: casado ? v.conjuge_tipo_documento_identidade || null : null,
+        conjuge_tipo_documento_identidade: casado
+          ? v.conjuge_tipo_documento_identidade || null
+          : null,
         conjuge_numero_documento: casado ? up(v.conjuge_numero_documento) || null : null,
         conjuge_orgao_expedidor: casado ? up(v.conjuge_orgao_expedidor) || null : null,
         conjuge_uf_expedicao: casado ? v.conjuge_uf_expedicao || null : null,
@@ -334,7 +330,11 @@ export function ClienteForm({
         for (const vinc of vinculos) {
           try {
             await vincular({
-              data: { cliente_id: id, parceiro_id: vinc.parceiro_id, tipo_vinculo: vinc.tipo_vinculo },
+              data: {
+                cliente_id: id,
+                parceiro_id: vinc.parceiro_id,
+                tipo_vinculo: vinc.tipo_vinculo,
+              },
             });
           } catch (e: any) {
             falhas.push(`${nomeParceiro(vinc.parceiro_id)}: ${e?.message ?? "falha ao vincular"}`);
@@ -343,7 +343,6 @@ export function ClienteForm({
         if (falhas.length) {
           toast.error(`Não foi possível gravar alguns vínculos:\n${falhas.join("\n")}`);
         }
-
       }
       if (id && (end.cep || end.logradouro)) {
         const endUp = Object.fromEntries(
@@ -360,12 +359,12 @@ export function ClienteForm({
           await vincularProposta({ data: { proposta_id: vincularPropostaId, cliente_id: id } });
           await qc.invalidateQueries({ queryKey: ["proposta", vincularPropostaId] });
           if (enviarBancoAposVincular) {
-            await handleEnviarHook({ 
+            await handleEnviarHook({
               propostaId: vincularPropostaId,
-              bancoId: "todos"
+              bancoId: "todos",
             });
             await qc.invalidateQueries({ queryKey: ["proposta", vincularPropostaId] });
-            
+
             navigate({ to: "/operacional/propostas/$id", params: { id: vincularPropostaId } });
             return;
           }
@@ -391,8 +390,6 @@ export function ClienteForm({
       await qc.invalidateQueries({ queryKey: ["clientes-stats"] });
       toast.success("Cliente salvo.");
       navigate({ to: "/crm/clientes/$id", params: { id: id! } });
-
-
     } catch (err: any) {
       toast.error(err?.message ?? "Falha ao salvar.");
     } finally {
@@ -471,7 +468,6 @@ export function ClienteForm({
     return () => clearTimeout(t);
   }, [destacarObrigatorios, erros.size]);
 
-
   return (
     <form ref={formRef} onSubmit={submit} className="space-y-6 form-cadastro-upper">
       {novoCadastro && (
@@ -530,7 +526,6 @@ export function ClienteForm({
       />
 
       <FgtsSection v={v} set={set} erros={erros} />
-
 
       <BancariosSection v={v} set={set} />
 

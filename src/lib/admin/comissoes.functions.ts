@@ -29,7 +29,10 @@ export const PRODUTOS_COMISSAO = [
 async function correspondenteId(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.");
+  if (!data)
+    throw new Error(
+      "Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.",
+    );
   return data as string;
 }
 
@@ -57,7 +60,10 @@ export const listarBancosParaComissao = createServerFn({ method: "GET" })
       .select("codigo_banco, nome_banco")
       .order("nome_banco", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((b: any) => ({ codigo: String(b.codigo_banco ?? ""), nome: b.nome_banco ?? "" }));
+    return (data ?? []).map((b: any) => ({
+      codigo: String(b.codigo_banco ?? ""),
+      nome: b.nome_banco ?? "",
+    }));
   });
 
 const regraSchema = z.object({

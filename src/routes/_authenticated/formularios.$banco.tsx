@@ -9,9 +9,11 @@ import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/formularios/$banco")({
   validateSearch: (search: Record<string, unknown>) => {
-    return z.object({
-      banco: z.string().optional(),
-    }).parse(search);
+    return z
+      .object({
+        banco: z.string().optional(),
+      })
+      .parse(search);
   },
   head: () => ({ meta: [{ title: "Formulários — Agilliza" }] }),
   component: Pagina,

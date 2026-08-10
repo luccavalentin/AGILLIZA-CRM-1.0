@@ -30,7 +30,10 @@ function numFmt(format?: ReportColumn["format"]): string | undefined {
 }
 
 /** Converte o valor bruto para o tipo que o Excel entende, mantendo célula numérica quando possível. */
-function excelValue(value: ReportCell, format?: ReportColumn["format"]): string | number | Date | null {
+function excelValue(
+  value: ReportCell,
+  format?: ReportColumn["format"],
+): string | number | Date | null {
   if (value === null || value === undefined || value === "") return null;
   if (format === "brl" || format === "int" || format === "pct") {
     const n = Number(value);
@@ -122,7 +125,8 @@ export async function exportXLSX(
       cell.font = { name: "Calibri", size: 10, color: { argb: "FF1F2937" } };
       cell.alignment = {
         vertical: "middle",
-        horizontal: c.format === "brl" || c.format === "int" || c.format === "pct" ? "right" : "left",
+        horizontal:
+          c.format === "brl" || c.format === "int" || c.format === "pct" ? "right" : "left",
         wrapText: false,
       };
       cell.border = {
@@ -144,9 +148,7 @@ export async function exportXLSX(
     if (i === 0) {
       cell.value = "TOTAIS";
     } else if (c.footer && c.footer !== "none") {
-      const nums = rows
-        .map((r) => Number(r[c.key]))
-        .filter((n) => Number.isFinite(n));
+      const nums = rows.map((r) => Number(r[c.key])).filter((n) => Number.isFinite(n));
       const soma = nums.reduce((s, n) => s + n, 0);
       const val =
         c.footer === "count"

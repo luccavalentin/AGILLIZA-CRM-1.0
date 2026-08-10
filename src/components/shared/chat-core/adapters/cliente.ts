@@ -48,7 +48,6 @@ export function useAdaptadorCliente({
   const criarTarefaFn = useServerFn(criarTarefa);
   const reagirFn = useServerFn(reagirMensagem);
 
-
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
     queryFn: () => sessaoFn(),
@@ -62,8 +61,7 @@ export function useAdaptadorCliente({
 
   const contextoResposta: ContextoResposta = useMemo(
     () => ({
-      primeiro_nome:
-        ctxCliente?.primeiro_nome ?? info?.nome?.trim().split(/\s+/)[0] ?? null,
+      primeiro_nome: ctxCliente?.primeiro_nome ?? info?.nome?.trim().split(/\s+/)[0] ?? null,
       numero_proposta: ctxCliente?.numero_proposta ?? null,
       nome_banco: ctxCliente?.nome_banco ?? null,
       etapa: ctxCliente?.etapa_nome ?? info?.contexto ?? null,
@@ -91,8 +89,7 @@ export function useAdaptadorCliente({
       mineTipo: "time",
       peerNomeCitacao: info?.nome?.trim() || "Cliente",
 
-      listar: () =>
-        listar({ data: { cliente_id: clienteId, atendente_id: atendenteId } }),
+      listar: () => listar({ data: { cliente_id: clienteId, atendente_id: atendenteId } }),
       responder: (p) =>
         responder({
           data: {
@@ -124,18 +121,15 @@ export function useAdaptadorCliente({
         ],
       },
 
-
       typing: { id: clienteId, myRole: "time" },
 
       uploadAnexo: async (file: File) => {
         const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
         const path = `${clienteId}/chat/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-        const { error } = await supabase.storage
-          .from("cliente-documentos")
-          .upload(path, file, {
-            contentType: file.type || undefined,
-            upsert: false,
-          });
+        const { error } = await supabase.storage.from("cliente-documentos").upload(path, file, {
+          contentType: file.type || undefined,
+          upsert: false,
+        });
         if (error) throw error;
         return path;
       },
@@ -168,7 +162,6 @@ export function useAdaptadorCliente({
       marcarLido,
       criarTarefaFn,
       reagirFn,
-
     ],
   );
 }

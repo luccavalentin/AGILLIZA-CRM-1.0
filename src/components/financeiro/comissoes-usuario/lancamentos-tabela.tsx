@@ -42,20 +42,15 @@ import {
 } from "@/lib/financeiro/comissoes-usuario.functions";
 import { RecalcularComissoesButton } from "./recalcular-button";
 import { ExportarFinanceiro } from "@/components/financeiro/exportar-financeiro";
-import {
-  ComissaoEditarDialog,
-  type ComissaoEditavel,
-} from "./comissao-editar-dialog";
+import { ComissaoEditarDialog, type ComissaoEditavel } from "./comissao-editar-dialog";
 
-const brl = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const statusBadge = (s: string) => {
   if (s === "paga") return <Badge className="bg-emerald-500/15 text-emerald-700">Paga</Badge>;
   if (s === "cancelada") return <Badge variant="outline">Cancelada</Badge>;
   return <Badge className="bg-amber-500/15 text-amber-700">A pagar</Badge>;
 };
-
 
 export function LancamentosComissoesUsuario({
   usuarioId,
@@ -85,7 +80,6 @@ export function LancamentosComissoesUsuario({
     queryKey: ["fin-com-usr-lanc", filtros],
     queryFn: () => listarComissoesUsuario({ data: filtros }),
   });
-
 
   const pagar = useMutation({
     mutationFn: (id: string) => marcarComissaoUsuarioPaga({ data: { id } }),
@@ -135,11 +129,8 @@ export function LancamentosComissoesUsuario({
   const totais = useMemo(() => {
     const list = rows ?? [];
     const somar = (st?: string) =>
-      list
-        .filter((r) => (st ? r.status === st : true))
-        .reduce((a, r) => a + r.valor_comissao, 0);
-    const contar = (st?: string) =>
-      list.filter((r) => (st ? r.status === st : true)).length;
+      list.filter((r) => (st ? r.status === st : true)).reduce((a, r) => a + r.valor_comissao, 0);
+    const contar = (st?: string) => list.filter((r) => (st ? r.status === st : true)).length;
     return {
       aPagar: somar("a_pagar"),
       paga: somar("paga"),
@@ -150,16 +141,27 @@ export function LancamentosComissoesUsuario({
     };
   }, [rows]);
 
-
   const exportColunas = [
     { key: "proposta", label: "Proposta" },
     { key: "cliente", label: "Cliente" },
     { key: "usuario", label: "Usuário" },
     { key: "vinculo", label: "Vínculo" },
     { key: "banco", label: "Banco" },
-    { key: "base", label: "Base", align: "right" as const, format: "brl" as const, footer: "sum" as const },
+    {
+      key: "base",
+      label: "Base",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
     { key: "percentual", label: "%", align: "right" as const, format: "pct" as const },
-    { key: "comissao", label: "Comissão", align: "right" as const, format: "brl" as const, footer: "sum" as const },
+    {
+      key: "comissao",
+      label: "Comissão",
+      align: "right" as const,
+      format: "brl" as const,
+      footer: "sum" as const,
+    },
     { key: "status", label: "Status" },
   ];
   const exportLinhas = (rows ?? []).map((r) => ({
@@ -205,9 +207,24 @@ export function LancamentosComissoesUsuario({
                 de || ate ? `Período: ${de || "início"} até ${ate || "hoje"}` : "Período: completo",
               ]}
               kpis={[
-                { label: "A pagar", valor: brl(totais.aPagar), hint: `${totais.qtdAPagar} lançamento(s)`, tone: "warning" as const },
-                { label: "Pago", valor: brl(totais.paga), hint: `${totais.qtdPaga} lançamento(s)`, tone: "success" as const },
-                { label: "Total", valor: brl(totais.total), hint: `${totais.qtdTotal} lançamento(s)`, tone: "brand" as const },
+                {
+                  label: "A pagar",
+                  valor: brl(totais.aPagar),
+                  hint: `${totais.qtdAPagar} lançamento(s)`,
+                  tone: "warning" as const,
+                },
+                {
+                  label: "Pago",
+                  valor: brl(totais.paga),
+                  hint: `${totais.qtdPaga} lançamento(s)`,
+                  tone: "success" as const,
+                },
+                {
+                  label: "Total",
+                  valor: brl(totais.total),
+                  hint: `${totais.qtdTotal} lançamento(s)`,
+                  tone: "brand" as const,
+                },
               ]}
               columns={exportColunas}
               rows={exportLinhas}
@@ -346,7 +363,6 @@ export function LancamentosComissoesUsuario({
           </div>
         )}
 
-
         {isLoading ? (
           <div className="flex items-center justify-center py-10 text-muted-foreground">
             <Loader2 className="mr-2 size-4 animate-spin" /> Carregando…
@@ -364,9 +380,7 @@ export function LancamentosComissoesUsuario({
                     <Checkbox
                       checked={!!rows.length && rows.every((r) => marcados.has(r.id))}
                       aria-label="Selecionar todos os lançamentos"
-                      onCheckedChange={(v) =>
-                        setSelecionados(v ? rows.map((r) => r.id) : [])
-                      }
+                      onCheckedChange={(v) => setSelecionados(v ? rows.map((r) => r.id) : [])}
                     />
                   </TableHead>
                   <TableHead>Proposta</TableHead>
@@ -402,9 +416,7 @@ export function LancamentosComissoesUsuario({
                     <TableCell className="font-medium">{r.numero_proposta ?? "—"}</TableCell>
                     <TableCell>{r.nome_cliente ?? "—"}</TableCell>
                     <TableCell>{r.usuario_nome ?? "—"}</TableCell>
-                    <TableCell className="capitalize">
-                      {r.tipo_vinculo.replace("_", " ")}
-                    </TableCell>
+                    <TableCell className="capitalize">{r.tipo_vinculo.replace("_", " ")}</TableCell>
                     <TableCell>
                       {r.banco_nome ? (
                         <span className="flex items-center gap-2">
@@ -469,10 +481,7 @@ export function LancamentosComissoesUsuario({
         )}
       </CardContent>
 
-      <ComissaoEditarDialog
-        lancamento={editando}
-        onOpenChange={(o) => !o && setEditando(null)}
-      />
+      <ComissaoEditarDialog lancamento={editando} onOpenChange={(o) => !o && setEditando(null)} />
     </Card>
   );
 }

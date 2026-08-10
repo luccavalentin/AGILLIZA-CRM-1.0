@@ -14,19 +14,20 @@ export function SecaoConsentimentos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             onCheckedChange={(c) => set("consentimento_lgpd", Boolean(c))}
           />
           <span>
-            Autorizo o tratamento dos meus dados pessoais conforme a LGPD para fins desta simulação e
-            proposta.
+            Autorizo o tratamento dos meus dados pessoais conforme a LGPD para fins desta simulação
+            e proposta.
           </span>
         </label>
         <Erro erros={erros} campo="consentimento_lgpd" />
-        
+
         <label className="flex items-start gap-2 text-sm">
           <Checkbox
             checked={f.consentimento_scr}
             onCheckedChange={(c) => set("consentimento_scr", Boolean(c))}
           />
           <span>
-            Autorizo a consulta ao SCR/Bacen e o compartilhamento de dados com os bancos selecionados.
+            Autorizo a consulta ao SCR/Bacen e o compartilhamento de dados com os bancos
+            selecionados.
           </span>
         </label>
         <Erro erros={erros} campo="consentimento_scr" />

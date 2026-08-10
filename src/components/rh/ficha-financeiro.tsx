@@ -47,7 +47,9 @@ import {
 import { formatBRL } from "@/lib/financeiro/format";
 
 function fmtDate(iso: string | null | undefined) {
-  return iso ? new Date(iso + (iso.length === 10 ? "T00:00:00" : "")).toLocaleDateString("pt-BR") : "—";
+  return iso
+    ? new Date(iso + (iso.length === 10 ? "T00:00:00" : "")).toLocaleDateString("pt-BR")
+    : "—";
 }
 
 function Vazio({ children }: { children: React.ReactNode }) {
@@ -207,7 +209,9 @@ function LancamentosTab({
                   value={form.status}
                   onValueChange={(v) => setForm((p) => ({ ...p, status: v as LancamentoStatus }))}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="previsto">Previsto</SelectItem>
                     <SelectItem value="recebido">Recebido</SelectItem>

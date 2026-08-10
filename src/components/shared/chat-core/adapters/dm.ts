@@ -17,12 +17,7 @@ const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
 /** Guarda o nome original do arquivo enviado para exibir na bolha. */
 const nomesAnexo = new Map<string, string>();
 
-import type {
-  ChatAdapter,
-  ChatClienteInfo,
-  ChatMensagem,
-  ContextoResposta,
-} from "../types";
+import type { ChatAdapter, ChatClienteInfo, ChatMensagem, ContextoResposta } from "../types";
 
 /**
  * Adaptador do chat de DMs 1:1 (tabelas `dm_conversas` / `dm_mensagens`).
@@ -52,7 +47,6 @@ export function useAdaptadorDm({
   const excluirFn = useServerFn(excluirMensagemDm);
   const reagirFn = useServerFn(reagirMensagem);
   const sessaoFn = useServerFn(getMinhaSessao);
-
 
   const { data: sessao } = useQuery({
     queryKey: ["minha-sessao"],
@@ -97,7 +91,6 @@ export function useAdaptadorDm({
         respostasRapidas: true,
         audio: true,
       },
-
 
       renderHeader,
 
@@ -168,10 +161,8 @@ export function useAdaptadorDm({
         ],
       },
 
-
       // Um papel único por usuário permite múltiplos "digitando" simultâneos.
       typing: { id: conversaId, myRole: meuId ?? "eu" },
-
     }),
     [
       conversaId,
@@ -188,7 +179,6 @@ export function useAdaptadorDm({
       excluirFn,
       reagirFn,
       qc,
-
     ],
   );
 }

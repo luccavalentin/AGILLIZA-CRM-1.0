@@ -231,10 +231,7 @@ function ComboFiltro({
                   }}
                 >
                   <Check
-                    className={cn(
-                      "mr-2 size-4",
-                      value === "todos" ? "opacity-100" : "opacity-0",
-                    )}
+                    className={cn("mr-2 size-4", value === "todos" ? "opacity-100" : "opacity-0")}
                   />
                   Todos
                 </CommandItem>
@@ -248,10 +245,7 @@ function ComboFiltro({
                     }}
                   >
                     <Check
-                      className={cn(
-                        "mr-2 size-4",
-                        value === o ? "opacity-100" : "opacity-0",
-                      )}
+                      className={cn("mr-2 size-4", value === o ? "opacity-100" : "opacity-0")}
                     />
                     <span className="truncate">{o}</span>
                   </CommandItem>

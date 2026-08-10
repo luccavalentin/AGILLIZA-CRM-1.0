@@ -226,8 +226,7 @@ export function DocumentosGerais() {
     const idsBase = new Set(base.map((b) => b.id));
     const clientesSoltos: DGCliente[] = [];
     for (const c of clientes) {
-      const id =
-        dim === "imob" ? c.imobiliaria_id : dim === "corr" ? c.corretor_id : c.analista_id;
+      const id = dim === "imob" ? c.imobiliaria_id : dim === "corr" ? c.corretor_id : c.analista_id;
       const nome =
         dim === "imob" ? c.imobiliaria_nome : dim === "corr" ? c.corretor_nome : c.analista_nome;
       if (id && idsBase.has(id)) {
@@ -436,8 +435,8 @@ export function DocumentosGerais() {
             </span>
             <p className="text-sm font-medium text-foreground">Lixeira vazia</p>
             <p className="max-w-md text-xs text-muted-foreground">
-              Documentos e pastas removidos aparecerão aqui por 30 dias antes da
-              exclusão definitiva.
+              Documentos e pastas removidos aparecerão aqui por 30 dias antes da exclusão
+              definitiva.
             </p>
           </CardContent>
         </Card>
@@ -555,14 +554,10 @@ export function DocumentosGerais() {
           {totalItens > POR_PAGINA && (
             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
               <p className="text-xs text-muted-foreground">
-                Mostrando {inicio + 1} a {Math.min(inicio + POR_PAGINA, totalItens)} de{" "}
-                {totalItens} itens
+                Mostrando {inicio + 1} a {Math.min(inicio + POR_PAGINA, totalItens)} de {totalItens}{" "}
+                itens
               </p>
-              <Paginador
-                pagina={paginaAtual}
-                totalPaginas={totalPaginas}
-                onIr={setPagina}
-              />
+              <Paginador pagina={paginaAtual} totalPaginas={totalPaginas} onIr={setPagina} />
             </div>
           )}
         </>

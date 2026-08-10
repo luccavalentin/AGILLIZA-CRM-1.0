@@ -42,9 +42,7 @@ export function UploadBar({
       <CardContent className="flex flex-wrap items-end gap-3 pt-6">
         {categoriasPasta.length > 1 && (
           <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">
-              Titular do documento
-            </label>
+            <label className="text-xs text-muted-foreground">Titular do documento</label>
             <Select
               value={categoria}
               onValueChange={(v) => {
@@ -67,9 +65,7 @@ export function UploadBar({
           </div>
         )}
         <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground">
-            Tipo de documento
-          </label>
+          <label className="text-xs text-muted-foreground">Tipo de documento</label>
           <Select
             value={tiposCategoria.includes(tipo) || tipo === "" ? tipo : TIPO_OUTRO}
             onValueChange={(v) => {
@@ -105,11 +101,7 @@ export function UploadBar({
         </div>
         <Button asChild disabled={enviando} className="relative">
           <label>
-            {enviando ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Upload className="size-4" />
-            )}
+            {enviando ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
             Enviar arquivos
             <input
               type="file"

@@ -11,7 +11,6 @@ export type TipoNotificacao =
   | "retorno_proposta"
   | "retorno_simulacao";
 
-
 export interface PrefTipo {
   /** Exibir a notificação (piscar menu / badge / toast). */
   ativo: boolean;
@@ -72,7 +71,6 @@ export const TIPOS_NOTIFICACAO: {
   },
 ];
 
-
 const STORAGE_KEY = "agilliza:notif-prefs";
 
 const PADRAO: NotificationPrefs = {
@@ -86,7 +84,6 @@ const PADRAO: NotificationPrefs = {
     sistema: { ativo: true, som: false },
     retorno_proposta: { ativo: true, som: true },
     retorno_simulacao: { ativo: true, som: true },
-
   },
 };
 
@@ -159,7 +156,12 @@ export function categoriaDeTipo(tipo: string | null | undefined): TipoNotificaca
   if (t.includes("retorno_simulacao")) return "retorno_simulacao";
   if (t.includes("proposta") || t.includes("envio") || t.includes("banco")) return "propostas";
 
-  if (t.includes("cliente") || t.includes("interacao") || t.includes("cadastro") || t.includes("crm"))
+  if (
+    t.includes("cliente") ||
+    t.includes("interacao") ||
+    t.includes("cadastro") ||
+    t.includes("crm")
+  )
     return "crm";
   if (
     t.includes("financ") ||

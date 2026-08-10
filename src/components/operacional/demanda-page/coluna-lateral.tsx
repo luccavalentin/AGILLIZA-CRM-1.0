@@ -4,7 +4,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { QueryClient } from "@tanstack/react-query";
 import {
-
   AlertTriangle,
   ArrowLeft,
   Calculator,
@@ -33,7 +32,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-
   Select,
   SelectContent,
   SelectItem,
@@ -107,8 +105,6 @@ export function ColunaLateral({
       setExcluindo(false);
     }
   }
-
-
 
   return (
     <aside className="space-y-4">
@@ -222,9 +218,7 @@ export function ColunaLateral({
               <VinculoRow
                 icone={<FileText className="h-4 w-4 text-primary" />}
                 label="Proposta"
-                nome={
-                  d.propostas?.numero_proposta ? `#${d.propostas.numero_proposta}` : "Proposta"
-                }
+                nome={d.propostas?.numero_proposta ? `#${d.propostas.numero_proposta}` : "Proposta"}
                 sub={
                   d.propostas?.created_at
                     ? `Criada em ${new Date(d.propostas.created_at).toLocaleDateString("pt-BR")}`
@@ -238,9 +232,7 @@ export function ColunaLateral({
                 icone={<Calculator className="h-4 w-4 text-primary" />}
                 label="Simulação"
                 nome={
-                  d.simulacoes?.numero_simulacao
-                    ? `#${d.simulacoes.numero_simulacao}`
-                    : "Simulação"
+                  d.simulacoes?.numero_simulacao ? `#${d.simulacoes.numero_simulacao}` : "Simulação"
                 }
                 sub={
                   d.simulacoes?.updated_at
@@ -342,7 +334,8 @@ export function ColunaLateral({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Excluir esta demanda?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Esta ação é permanente. Mensagens, anexos e histórico da demanda também serão removidos.
+                    Esta ação é permanente. Mensagens, anexos e histórico da demanda também serão
+                    removidos.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

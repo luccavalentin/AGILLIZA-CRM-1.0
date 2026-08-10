@@ -1,13 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { ChatEtiqueta } from "@/lib/crm/chat-gestao.functions";
 
-export function TagChip({
-  etiqueta,
-  onRemove,
-}: {
-  etiqueta: ChatEtiqueta;
-  onRemove?: () => void;
-}) {
+export function TagChip({ etiqueta, onRemove }: { etiqueta: ChatEtiqueta; onRemove?: () => void }) {
   return (
     <span className={cn("chat-tag", `chat-tag-${etiqueta.cor}`)}>
       {etiqueta.nome}

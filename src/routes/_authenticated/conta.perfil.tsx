@@ -90,13 +90,11 @@ function Pagina() {
       const imagem = await otimizarImagem(file);
       const ext = imagem.name.split(".").pop()?.toLowerCase() || "webp";
       const path = `${userId}/avatar-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("avatars")
-        .upload(path, imagem, {
-          upsert: true,
-          contentType: imagem.type,
-          cacheControl: "31536000",
-        });
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, imagem, {
+        upsert: true,
+        contentType: imagem.type,
+        cacheControl: "31536000",
+      });
       if (upErr) throw upErr;
       const { data: signed, error: signErr } = await supabase.storage
         .from("avatars")
@@ -190,9 +188,7 @@ function Pagina() {
         "Enviamos um link de confirmação para o novo e-mail. Confirme para concluir a alteração.",
       );
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Não foi possível alterar o e-mail.",
-      );
+      toast.error(e instanceof Error ? e.message : "Não foi possível alterar o e-mail.");
     } finally {
       setSalvandoEmail(false);
     }
@@ -343,8 +339,6 @@ function Pagina() {
         </div>
       </Secao>
 
-
-
       <div className="grid gap-6 lg:grid-cols-2">
         <Secao
           numero="03"
@@ -367,7 +361,10 @@ function Pagina() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="confirma-senha" className="text-xs font-medium text-muted-foreground">
+                <Label
+                  htmlFor="confirma-senha"
+                  className="text-xs font-medium text-muted-foreground"
+                >
                   Confirmar nova senha
                 </Label>
                 <Input
@@ -396,7 +393,6 @@ function Pagina() {
 
         <ChatSoundSetting />
       </div>
-
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">

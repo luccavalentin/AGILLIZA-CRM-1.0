@@ -4,7 +4,7 @@ export const getCroppedImg = async (
   imageSrc: string,
   pixelCrop: Area,
   rotation = 0,
-  flip = { horizontal: false, vertical: false }
+  flip = { horizontal: false, vertical: false },
 ): Promise<Blob | null> => {
   const image = await createImage(imageSrc);
   const canvas = document.createElement("canvas");
@@ -17,11 +17,7 @@ export const getCroppedImg = async (
   const rotRad = (rotation * Math.PI) / 180;
 
   // calculate bounding box of the rotated image
-  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
-    image.width,
-    image.height,
-    rotation
-  );
+  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(image.width, image.height, rotation);
 
   // set canvas size to match the bounding box
   canvas.width = bBoxWidth;
@@ -58,7 +54,7 @@ export const getCroppedImg = async (
     0,
     0,
     pixelCrop.width,
-    pixelCrop.height
+    pixelCrop.height,
   );
 
   // As a blob
@@ -82,9 +78,7 @@ export function rotateSize(width: number, height: number, rotation: number) {
   const rotRad = (rotation * Math.PI) / 180;
 
   return {
-    width:
-      Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
-    height:
-      Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+    width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+    height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
   };
 }

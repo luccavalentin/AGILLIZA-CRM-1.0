@@ -31,9 +31,36 @@ const TODAS_ABAS: { id: AbaId; label: string }[] = [
 ];
 
 const EMOJIS = [
-  "😀","😁","😂","🤣","😊","😉","😍","🤩","😎","🤔",
-  "👍","👏","🙏","🙌","💪","🔥","🎉","✅","❌","⚠️",
-  "📎","📄","📞","📧","💰","🏠","🔑","⏰","📅","🚀",
+  "😀",
+  "😁",
+  "😂",
+  "🤣",
+  "😊",
+  "😉",
+  "😍",
+  "🤩",
+  "😎",
+  "🤔",
+  "👍",
+  "👏",
+  "🙏",
+  "🙌",
+  "💪",
+  "🔥",
+  "🎉",
+  "✅",
+  "❌",
+  "⚠️",
+  "📎",
+  "📄",
+  "📞",
+  "📧",
+  "💰",
+  "🏠",
+  "🔑",
+  "⏰",
+  "📅",
+  "🚀",
 ];
 
 export interface ComposerSubmitPayload {
@@ -119,8 +146,7 @@ export function ChatComposer({
     if (aba !== "tarefa" && aba !== "retorno") setPrazo("");
   }, [aba]);
 
-  const bloqueiaEnvio =
-    enviarPending || salvarEdicaoPending || enviandoAnexo || enviandoAudio;
+  const bloqueiaEnvio = enviarPending || salvarEdicaoPending || enviandoAnexo || enviandoAudio;
 
   const podeEnviar = useMemo(() => {
     if (bloqueiaEnvio) return false;
@@ -162,9 +188,7 @@ export function ChatComposer({
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime = MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/mp4";
+      const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
       const rec = new MediaRecorder(stream, { mimeType: mime });
       chunksRef.current = [];
       rec.ondataavailable = (ev) => {
@@ -250,12 +274,7 @@ export function ChatComposer({
         </div>
       )}
 
-      <div
-        className={cn(
-          "border-t",
-          isNota ? "border-amber-500/30" : "border-border/50",
-        )}
-      >
+      <div className={cn("border-t", isNota ? "border-amber-500/30" : "border-border/50")}>
         {/* Faixa de contexto por aba */}
         {isNota && (
           <div className="border-b border-amber-500/20 bg-amber-500/[0.06] px-3 py-1.5 text-[11px] text-amber-700 dark:text-amber-300">
@@ -287,9 +306,7 @@ export function ChatComposer({
             <div
               className={cn(
                 "flex-1 rounded-lg border-l-2 px-2 py-1 text-xs",
-                editando
-                  ? "border-amber-500 bg-amber-500/5"
-                  : "border-primary bg-primary/5",
+                editando ? "border-amber-500 bg-amber-500/5" : "border-primary bg-primary/5",
               )}
             >
               <span className="block font-semibold text-foreground">
@@ -342,10 +359,7 @@ export function ChatComposer({
         <div className="flex min-w-0 items-center justify-between gap-2 px-2 pb-2.5 sm:px-3 sm:pb-3">
           <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
             {capRespostas && (
-              <RespostasRapidas
-                contexto={contextoResposta}
-                onEscolher={onEscolherResposta}
-              />
+              <RespostasRapidas contexto={contextoResposta} onEscolher={onEscolherResposta} />
             )}
             {capAnexo && (
               <>
@@ -415,9 +429,7 @@ export function ChatComposer({
                 variant={gravando ? "destructive" : "ghost"}
                 className={cn(
                   "hidden size-9 shrink-0 rounded-lg sm:inline-flex",
-                  gravando
-                    ? "animate-pulse"
-                    : "text-muted-foreground",
+                  gravando ? "animate-pulse" : "text-muted-foreground",
                 )}
                 title={gravando ? "Parar gravação" : "Gravar áudio"}
               >
@@ -440,8 +452,7 @@ export function ChatComposer({
               variant={isNota ? "secondary" : "default"}
               className={cn(
                 "h-10 w-10 gap-2 rounded-none rounded-l-lg px-0 sm:w-auto sm:px-4",
-                isNota &&
-                  "bg-amber-500 text-amber-50 hover:bg-amber-500/90 dark:bg-amber-600",
+                isNota && "bg-amber-500 text-amber-50 hover:bg-amber-500/90 dark:bg-amber-600",
               )}
               title={
                 editando
@@ -481,8 +492,7 @@ export function ChatComposer({
                   variant={isNota ? "secondary" : "default"}
                   className={cn(
                     "hidden h-10 w-8 rounded-none rounded-r-lg border-l border-primary-foreground/20 px-0 sm:inline-flex",
-                    isNota &&
-                      "bg-amber-500 text-amber-50 hover:bg-amber-500/90 dark:bg-amber-600",
+                    isNota && "bg-amber-500 text-amber-50 hover:bg-amber-500/90 dark:bg-amber-600",
                   )}
                   title="Outras opções de envio"
                 >

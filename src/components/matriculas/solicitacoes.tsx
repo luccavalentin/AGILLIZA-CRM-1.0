@@ -166,7 +166,9 @@ export function Solicitacoes({
             {filtrada.map((s) => (
               <TableRow key={s.id}>
                 <TableCell className="tabular-nums">
-                  {new Date(s.data_solicitacao + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                  {new Date(s.data_solicitacao + "T00:00:00").toLocaleDateString("pt-BR", {
+                    timeZone: "America/Sao_Paulo",
+                  })}
                 </TableCell>
                 <TableCell className="font-medium">{s.solicitante}</TableCell>
                 <TableCell>{s.corretor ?? "—"}</TableCell>
@@ -193,7 +195,9 @@ export function Solicitacoes({
                 </TableCell>
                 <TableCell className="tabular-nums text-muted-foreground">
                   {s.data_pagto_reembolso
-                    ? new Date(s.data_pagto_reembolso + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
+                    ? new Date(s.data_pagto_reembolso + "T00:00:00").toLocaleDateString("pt-BR", {
+                        timeZone: "America/Sao_Paulo",
+                      })
                     : "—"}
                 </TableCell>
                 <TableCell

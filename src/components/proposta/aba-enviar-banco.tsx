@@ -32,12 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import {
   faltantesEnvolvido,
@@ -100,11 +95,16 @@ function ehFormatoBanco(d: { mime_type?: string | null; nome_arquivo?: string | 
   const mime = String(d.mime_type ?? "").toLowerCase();
   const nome = String(d.nome_arquivo ?? "").toLowerCase();
   if (mime.includes("pdf") || nome.endsWith(".pdf")) return true;
-  if (mime.includes("jpeg") || mime.includes("jpg") || nome.endsWith(".jpg") || nome.endsWith(".jpeg")) return true;
+  if (
+    mime.includes("jpeg") ||
+    mime.includes("jpg") ||
+    nome.endsWith(".jpg") ||
+    nome.endsWith(".jpeg")
+  )
+    return true;
   if (mime.includes("png") || nome.endsWith(".png")) return true;
   return false;
 }
-
 
 export function AbaEnviarBanco({
   clienteId,
@@ -141,10 +141,12 @@ export function AbaEnviarBanco({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const pendencias = useMemo(() => {
-    return (envolvidos ?? []).map(env => ({
-      env,
-      faltantes: faltantesEnvolvido(env || {})
-    })).filter(p => p.faltantes && p.faltantes.length > 0);
+    return (envolvidos ?? [])
+      .map((env) => ({
+        env,
+        faltantes: faltantesEnvolvido(env || {}),
+      }))
+      .filter((p) => p.faltantes && p.faltantes.length > 0);
   }, [envolvidos]);
 
   const bloqueado = pendencias.length > 0;
@@ -254,7 +256,7 @@ export function AbaEnviarBanco({
         propostaId,
         bancoId: "todos",
         envolvidos,
-        onCadastroIncompleto: (primeiro) => onCompletar?.(primeiro)
+        onCadastroIncompleto: (primeiro) => onCompletar?.(primeiro),
       });
       return;
     }
@@ -267,12 +269,10 @@ export function AbaEnviarBanco({
         data: { proposta_id: propostaId, documento_ids: documentoIds },
       });
       setResultado(r);
-      if (r.enviados > 0)
-        toast.success(`${r.enviados} documento(s) enviado(s) ao banco.`);
+      if (r.enviados > 0) toast.success(`${r.enviados} documento(s) enviado(s) ao banco.`);
       if (r.erros.length > 0)
         toast.warning(`${r.erros.length} documento(s) não puderam ser enviados.`);
-      if (r.enviados === 0 && r.erros.length === 0)
-        toast.info("Nenhum documento foi enviado.");
+      if (r.enviados === 0 && r.erros.length === 0) toast.info("Nenhum documento foi enviado.");
       recarregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
@@ -304,7 +304,15 @@ export function AbaEnviarBanco({
               const faltantes = faltantesEnvolvido(env);
               const ok = faltantes.length === 0;
               return (
-                <Card key={env.id} className={cn("overflow-hidden border-l-4 transition-colors", ok ? "border-l-emerald-500 bg-emerald-500/5" : "border-l-destructive bg-destructive/5")}>
+                <Card
+                  key={env.id}
+                  className={cn(
+                    "overflow-hidden border-l-4 transition-colors",
+                    ok
+                      ? "border-l-emerald-500 bg-emerald-500/5"
+                      : "border-l-destructive bg-destructive/5",
+                  )}
+                >
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
@@ -356,28 +364,36 @@ export function AbaEnviarBanco({
       <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
         <p className="text-muted-foreground">
-          <span className="font-medium text-foreground">O banco aceita PDF, JPG e PNG (até 10 MB).</span>{" "}
-          Os documentos de todos os participantes (comprador, cônjuge, coproponente e vendedor) são enviados automaticamente para a vaga do dono, quando cadastrados no módulo{" "}
+          <span className="font-medium text-foreground">
+            O banco aceita PDF, JPG e PNG (até 10 MB).
+          </span>{" "}
+          Os documentos de todos os participantes (comprador, cônjuge, coproponente e vendedor) são
+          enviados automaticamente para a vaga do dono, quando cadastrados no módulo{" "}
           <span className="font-medium text-foreground">Documentos</span> do cliente correspondente.
         </p>
-
       </div>
 
       {/* Ação de envio */}
       <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.07] via-card to-card shadow-sm">
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <span className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1",
-              totalPdfs === 0 ? "bg-destructive/10 text-destructive ring-destructive/20" : "bg-primary/10 text-primary ring-primary/15"
-            )}>
+            <span
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1",
+                totalPdfs === 0
+                  ? "bg-destructive/10 text-destructive ring-destructive/20"
+                  : "bg-primary/10 text-primary ring-primary/15",
+              )}
+            >
               <Landmark className="h-5 w-5" />
             </span>
             <div className="text-sm">
-              <p className={cn(
-                "font-semibold tracking-tight",
-                totalPdfs === 0 ? "text-destructive" : "text-foreground"
-              )}>
+              <p
+                className={cn(
+                  "font-semibold tracking-tight",
+                  totalPdfs === 0 ? "text-destructive" : "text-foreground",
+                )}
+              >
                 {totalPdfs === 0 ? "Nenhum banco/documento pronto" : "Enviar documentos ao banco"}
               </p>
               <p className="text-muted-foreground">
@@ -394,7 +410,9 @@ export function AbaEnviarBanco({
                   <Button
                     onClick={() => {
                       if (bloqueado) {
-                        const pendente = envolvidos.find(env => faltantesEnvolvido(env).length > 0);
+                        const pendente = envolvidos.find(
+                          (env) => faltantesEnvolvido(env).length > 0,
+                        );
                         onCompletar?.(pendente || envolvidos[0]);
                       } else {
                         enviarAoBanco();
@@ -403,8 +421,16 @@ export function AbaEnviarBanco({
                     disabled={enviando || enviandoBanco || totalPdfs === 0}
                     className="h-11 w-full gap-2 rounded-xl px-6 font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:shadow-none sm:w-auto"
                   >
-                    {enviando || enviandoBanco ? <Loader2 className="h-4 w-4 animate-spin" /> : <Landmark className="h-4 w-4" />}
-                    {enviando || enviandoBanco ? "Enviando…" : (bloqueado ? "Completar cadastro e enviar" : "Enviar todos os documentos ao banco")}
+                    {enviando || enviandoBanco ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Landmark className="h-4 w-4" />
+                    )}
+                    {enviando || enviandoBanco
+                      ? "Enviando…"
+                      : bloqueado
+                        ? "Completar cadastro e enviar"
+                        : "Enviar todos os documentos ao banco"}
                   </Button>
                 </span>
               </TooltipTrigger>
@@ -418,7 +444,9 @@ export function AbaEnviarBanco({
                       <li key={i}>• {descreverParticipante(p.env)}</li>
                     ))}
                   </ul>
-                  <p className="text-xs text-muted-foreground">Complete os dados dos participantes acima para habilitar o envio.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Complete os dados dos participantes acima para habilitar o envio.
+                  </p>
                 </TooltipContent>
               )}
             </Tooltip>
@@ -427,70 +455,70 @@ export function AbaEnviarBanco({
       </Card>
 
       {/* Resultado do último envio */}
-      {resultado && (() => {
-        const semVaga = resultado.erros.filter((er) =>
-          /sem vaga|sem correspond/i.test(er.motivo),
-        );
-        const recusados = resultado.erros.filter((er) => !semVaga.includes(er));
-        return (
-          <Card>
-            <CardContent className="space-y-3 p-4 text-sm">
-              <div className="flex flex-wrap items-center gap-3 border-b border-border pb-2">
-                <p className="font-medium text-foreground">Resultado do envio</p>
-                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                  {resultado.enviados} enviado(s)
-                </span>
-                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                  {semVaga.length} sem vaga
-                </span>
-                <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
-                  {recusados.length} recusado(s) pelo banco
-                </span>
-              </div>
-              {resultado.sucesso.map((s, i) => (
-                <div key={`s-${i}`} className="flex items-center gap-2 text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="truncate">
-                    <span className="text-foreground">{s.nome}</span>
-                    {s.participante ? ` — ${s.participante}` : ""}
+      {resultado &&
+        (() => {
+          const semVaga = resultado.erros.filter((er) =>
+            /sem vaga|sem correspond/i.test(er.motivo),
+          );
+          const recusados = resultado.erros.filter((er) => !semVaga.includes(er));
+          return (
+            <Card>
+              <CardContent className="space-y-3 p-4 text-sm">
+                <div className="flex flex-wrap items-center gap-3 border-b border-border pb-2">
+                  <p className="font-medium text-foreground">Resultado do envio</p>
+                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                    {resultado.enviados} enviado(s)
+                  </span>
+                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                    {semVaga.length} sem vaga
+                  </span>
+                  <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
+                    {recusados.length} recusado(s) pelo banco
                   </span>
                 </div>
-              ))}
-              {semVaga.length > 0 && (
-                <div className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
-                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                    Documentos sem vaga correspondente
-                  </p>
-                  {semVaga.map((er, i) => (
-                    <div key={`sv-${i}`} className="flex items-start gap-2 text-muted-foreground">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                      <span>
-                        <span className="text-foreground">{er.nome}</span>
-                        {er.participante ? ` — ${er.participante}` : ""} — {er.motivo}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {recusados.length > 0 && (
-                <div className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2">
-                  <p className="text-xs font-medium text-destructive">Recusados pelo banco</p>
-                  {recusados.map((er, i) => (
-                    <div key={`rc-${i}`} className="flex items-start gap-2 text-muted-foreground">
-                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                      <span>
-                        <span className="text-foreground">{er.nome}</span>
-                        {er.participante ? ` — ${er.participante}` : ""} — {er.motivo}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })()}
-
+                {resultado.sucesso.map((s, i) => (
+                  <div key={`s-${i}`} className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <span className="truncate">
+                      <span className="text-foreground">{s.nome}</span>
+                      {s.participante ? ` — ${s.participante}` : ""}
+                    </span>
+                  </div>
+                ))}
+                {semVaga.length > 0 && (
+                  <div className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                      Documentos sem vaga correspondente
+                    </p>
+                    {semVaga.map((er, i) => (
+                      <div key={`sv-${i}`} className="flex items-start gap-2 text-muted-foreground">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <span>
+                          <span className="text-foreground">{er.nome}</span>
+                          {er.participante ? ` — ${er.participante}` : ""} — {er.motivo}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {recusados.length > 0 && (
+                  <div className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2">
+                    <p className="text-xs font-medium text-destructive">Recusados pelo banco</p>
+                    {recusados.map((er, i) => (
+                      <div key={`rc-${i}`} className="flex items-start gap-2 text-muted-foreground">
+                        <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                        <span>
+                          <span className="text-foreground">{er.nome}</span>
+                          {er.participante ? ` — ${er.participante}` : ""} — {er.motivo}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
       {/* Documentos consolidados por tipo */}
       {isLoading ? (

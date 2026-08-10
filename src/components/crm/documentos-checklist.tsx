@@ -2,10 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  getChecklistDados,
-  listarDocumentos,
-} from "@/lib/crm/clientes.functions";
+import { getChecklistDados, listarDocumentos } from "@/lib/crm/clientes.functions";
 import { AdicionarItem } from "./documentos-checklist/AdicionarItem";
 import { ChecklistsPersonalizados } from "./documentos-checklist/ChecklistsPersonalizados";
 import { DocItem } from "./documentos-checklist/doc-item";
@@ -81,7 +78,8 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
       {vendedores.length > 0 ? (
         vendedores.map((v: any, index: number) => {
           const vendedorPJ = vendTipoManual ? vendTipoManual === "PJ" : v?.tipo_pessoa === "PJ";
-          const vendedorCasado = v?.estado_civil === "casado" || v?.estado_civil === "uniao_estavel";
+          const vendedorCasado =
+            v?.estado_civil === "casado" || v?.estado_civil === "uniao_estavel";
           return (
             <SecaoVendedor
               key={v.id ?? index}

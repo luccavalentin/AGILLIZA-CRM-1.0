@@ -56,7 +56,7 @@ function PortalCliente() {
       }
       // Salva documento para biometria futura
       localStorage.setItem("last_logged_in_email", documento);
-      
+
       navigate({ to: "/cliente/visao-geral", replace: true });
     } catch {
       toast.error("Não foi possível acessar. Tente novamente.");
@@ -77,8 +77,6 @@ function PortalCliente() {
         { titulo: "Atendimento", descricao: "Fale com seu consultor pelo chat." },
       ]}
     >
-
-
       <Tabs defaultValue="pf" className="mt-6 w-full" onValueChange={() => setDocumento("")}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pf">Pessoa Física</TabsTrigger>
@@ -105,7 +103,7 @@ function PortalCliente() {
             <Button type="submit" className="w-full" disabled={carregando}>
               {carregando ? "Acessando…" : "Acessar Portal"}
             </Button>
-            <BiometricAuth 
+            <BiometricAuth
               onSuccess={(doc) => console.log("Biometria cliente:", doc)}
               disabled={carregando}
             />
@@ -132,7 +130,7 @@ function PortalCliente() {
             <Button type="submit" className="w-full" disabled={carregando}>
               {carregando ? "Acessando…" : "Acessar Portal"}
             </Button>
-            <BiometricAuth 
+            <BiometricAuth
               onSuccess={(doc) => console.log("Biometria cliente PJ:", doc)}
               disabled={carregando}
             />

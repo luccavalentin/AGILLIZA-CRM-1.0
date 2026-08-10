@@ -14,8 +14,8 @@ const MAPA: Record<string, { tone: Tone; label: string }> = {
 export function SimulacaoStatusBadge({ status }: { status: string }) {
   const cfg = MAPA[status] ?? { tone: "muted" as Tone, label: status };
   return (
-    <ToneBadge 
-      tone={cfg.tone} 
+    <ToneBadge
+      tone={cfg.tone}
       className="whitespace-nowrap px-2 py-0.5 h-auto text-[11px] font-bold"
     >
       {cfg.label}
@@ -33,8 +33,8 @@ const BANCO_MAPA: Record<string, { tone: Tone; label: string }> = {
 export function BancoStatusBadge({ status }: { status: string }) {
   const cfg = BANCO_MAPA[status] ?? { tone: "muted" as Tone, label: status };
   return (
-    <ToneBadge 
-      tone={cfg.tone} 
+    <ToneBadge
+      tone={cfg.tone}
       className="whitespace-nowrap px-1.5 py-0.5 h-auto text-[11px] font-bold"
     >
       {cfg.label}

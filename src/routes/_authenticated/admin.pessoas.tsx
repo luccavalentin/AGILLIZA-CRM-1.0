@@ -4,7 +4,21 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Copy, Search, MoreHorizontal, Pencil, KeyRound, Ban, CheckCircle2, Trash2, LogIn, Users, Loader2, ShieldAlert } from "lucide-react";
+import {
+  Plus,
+  Copy,
+  Search,
+  MoreHorizontal,
+  Pencil,
+  KeyRound,
+  Ban,
+  CheckCircle2,
+  Trash2,
+  LogIn,
+  Users,
+  Loader2,
+  ShieldAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,7 +73,6 @@ import {
   type ResultadoCriarPessoa,
 } from "@/lib/admin/pessoas.functions";
 import { assertModuloPermitido } from "@/lib/route-guards";
-
 
 export const Route = createFileRoute("/_authenticated/admin/pessoas")({
   head: () => ({ meta: [{ title: "Pessoas do meu ecossistema — Agilliza" }] }),
@@ -120,9 +133,7 @@ function PessoasPage() {
     queryFn: () => listarTiposPessoa(),
   });
   const rotuloTipo = (slug: string) =>
-    (tiposQuery.data ?? []).find((t) => t.slug === slug)?.nome ??
-    ROTULO_TIPO[slug] ??
-    "Usuário";
+    (tiposQuery.data ?? []).find((t) => t.slug === slug)?.nome ?? ROTULO_TIPO[slug] ?? "Usuário";
 
   const statusMut = useMutation({
     mutationFn: (v: { id: string; ativar: boolean }) => alternarStatusFn({ data: v }),
@@ -162,9 +173,6 @@ function PessoasPage() {
   });
 
   const podeGerenciar = sessaoQuery.data?.podeGerenciarPessoas ?? false;
-
-
-
 
   const pessoas = (pessoasQuery.data ?? [])
     .filter((p) => (filtro === "todos" ? true : p.acesso_tipo === filtro))
@@ -252,14 +260,20 @@ function PessoasPage() {
                 <TableBody>
                   {pessoasQuery.isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={podeGerenciar ? 5 : 4} className="py-10 text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={podeGerenciar ? 5 : 4}
+                        className="py-10 text-center text-muted-foreground"
+                      >
                         <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                         <span className="mt-2 block text-xs">Carregando…</span>
                       </TableCell>
                     </TableRow>
                   ) : pessoas.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={podeGerenciar ? 5 : 4} className="py-10 text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={podeGerenciar ? 5 : 4}
+                        className="py-10 text-center text-muted-foreground"
+                      >
                         Nenhuma pessoa encontrada.
                       </TableCell>
                     </TableRow>
@@ -289,32 +303,45 @@ function PessoasPage() {
                               </div>
                               <div className="flex flex-col">
                                 <span className="text-sm font-semibold">{p.nome ?? "—"}</span>
-                                <span className="text-xs text-muted-foreground">{p.email ?? "Sem e-mail"}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {p.email ?? "Sem e-mail"}
+                                </span>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col gap-1">
                               <div className="flex flex-wrap gap-1">
-                                  {(p.tipos_pessoa?.length ? p.tipos_pessoa : [p.tipo_pessoa]).map(
-                                    (slug: string) => (
-                                    <Badge key={slug} variant="secondary" className="px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider">
+                                {(p.tipos_pessoa?.length ? p.tipos_pessoa : [p.tipo_pessoa]).map(
+                                  (slug: string) => (
+                                    <Badge
+                                      key={slug}
+                                      variant="secondary"
+                                      className="px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider"
+                                    >
                                       {rotuloTipo(slug)}
                                     </Badge>
                                   ),
                                 )}
                               </div>
                               <span className="text-xs font-medium text-muted-foreground">
-                                {p.nivel_acesso_nome ?? (p.roles.map((r: string) => ROTULO_PAPEL[r] ?? r).join(", ") || "—")}
+                                {p.nivel_acesso_nome ??
+                                  (p.roles.map((r: string) => ROTULO_PAPEL[r] ?? r).join(", ") ||
+                                    "—")}
                               </span>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className="text-xs text-muted-foreground">{p.telefone ?? "—"}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {p.telefone ?? "—"}
+                            </span>
                           </TableCell>
                           <TableCell>
                             {!p.login_habilitado ? (
-                              <Badge variant="outline" className="h-5 border-dashed px-2 font-normal opacity-60">
+                              <Badge
+                                variant="outline"
+                                className="h-5 border-dashed px-2 font-normal opacity-60"
+                              >
                                 Sem login
                               </Badge>
                             ) : (
@@ -326,7 +353,9 @@ function PessoasPage() {
                                     : "h-5 px-2 font-normal"
                                 }
                               >
-                                {ativo && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
+                                {ativo && (
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                )}
                                 {ativo ? "Ativo" : "Bloqueado"}
                               </Badge>
                             )}
@@ -351,7 +380,9 @@ function PessoasPage() {
                                           <KeyRound className="mr-2 h-4 w-4" /> Redefinir senha
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                          className={ativo ? "text-destructive" : "text-emerald-600"}
+                                          className={
+                                            ativo ? "text-destructive" : "text-emerald-600"
+                                          }
                                           onClick={() =>
                                             statusMut.mutate({ id: p.id, ativar: !ativo })
                                           }
@@ -387,7 +418,6 @@ function PessoasPage() {
                     })
                   )}
                 </TableBody>
-
               </Table>
             </div>
           </TabsContent>
@@ -493,8 +523,6 @@ function PessoasPage() {
         </DialogContent>
       </Dialog>
 
-
-
       {/* Editar pessoa */}
       <EditarPessoaDialog pessoa={editando} onClose={() => setEditando(null)} />
 
@@ -520,6 +548,5 @@ function PessoasPage() {
         </AlertDialogContent>
       </AlertDialog>
     </>
-
   );
 }

@@ -75,9 +75,7 @@ export function AbaCliente({
                   : "border-border bg-muted text-muted-foreground",
               )}
               title={
-                data.ativo
-                  ? "App do cliente habilitado."
-                  : "App do cliente ainda não habilitado."
+                data.ativo ? "App do cliente habilitado." : "App do cliente ainda não habilitado."
               }
             >
               {data.ativo ? "Ativo" : "Inativo"}
@@ -206,7 +204,8 @@ export function AbaCliente({
           </div>
         ) : (
           <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Tag className="size-3.5" /> Nenhuma etiqueta. Use a barra de gestão acima para adicionar.
+            <Tag className="size-3.5" /> Nenhuma etiqueta. Use a barra de gestão acima para
+            adicionar.
           </p>
         )}
       </div>

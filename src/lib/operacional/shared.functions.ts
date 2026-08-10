@@ -45,7 +45,6 @@ export const listarColegas = createServerFn({ method: "GET" })
     return profs.map((p) => ({ ...p, roles: rolesMap.get(p.id) ?? [] })) as Colega[];
   });
 
-
 export interface ClienteOpcao {
   id: string;
   nome: string | null;

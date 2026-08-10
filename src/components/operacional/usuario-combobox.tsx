@@ -83,9 +83,7 @@ export function UsuarioCombobox({
                     setOpen(false);
                   }}
                 >
-                  <Check
-                    className={cn("h-4 w-4", value === u.id ? "opacity-100" : "opacity-0")}
-                  />
+                  <Check className={cn("h-4 w-4", value === u.id ? "opacity-100" : "opacity-0")} />
                   <span className="truncate">{rotulo(u)}</span>
                 </CommandItem>
               ))}

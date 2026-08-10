@@ -5,15 +5,8 @@ import { UserPlus, X, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  UsuarioCombobox,
-  type UsuarioOpcao,
-} from "@/components/operacional/usuario-combobox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { UsuarioCombobox, type UsuarioOpcao } from "@/components/operacional/usuario-combobox";
 import {
   listarParticipantesChat,
   adicionarParticipanteChat,

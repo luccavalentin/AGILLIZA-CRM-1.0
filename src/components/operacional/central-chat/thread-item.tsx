@@ -1,10 +1,7 @@
 import { Archive, Pin, BellOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import {
-  ConversaMenuAcoes,
-  EtiquetasPills,
-} from "@/components/shared/conversa-menu-acoes";
+import { ConversaMenuAcoes, EtiquetasPills } from "@/components/shared/conversa-menu-acoes";
 import type { ChatTipo, EtiquetaChat } from "@/lib/chats/gestao.functions";
 import type { ThreadCentral, ThreadKind } from "@/lib/chats/central.functions";
 import { iniciais, tempoRelativo } from "./helpers";
@@ -162,4 +159,3 @@ export function ThreadItem({
     </div>
   );
 }
-

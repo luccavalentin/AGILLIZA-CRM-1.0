@@ -84,7 +84,6 @@ export async function recalcularStatusGlobalProposta(
   return "enviada_banco";
 }
 
-
 export interface IntegracaoErroEstruturado {
   codigo: "CADASTRO_INCOMPLETO" | "TIMEOUT" | "FALHA_CONEXAO" | "ERRO_BANCO";
   mensagem: string;
@@ -134,7 +133,9 @@ function num(v: unknown): number {
  * alfanuméricos. Preservamos letras porque alguns tipos (ex.: RNE) as usam.
  */
 function sanitizarNumeroDocumento(v: unknown): string | undefined {
-  const s = String(v ?? "").replace(/[^0-9A-Za-z]/g, "").trim();
+  const s = String(v ?? "")
+    .replace(/[^0-9A-Za-z]/g, "")
+    .trim();
   return s.length ? s : undefined;
 }
 
@@ -175,7 +176,6 @@ function sistemaAmortizacaoBanco(v: unknown): string {
   return "S";
 }
 
-
 // ehFalhaIntegracaoBanco / MSG_FALHA_INTEGRACAO foram extraídos para
 // ./enviar/helpers-retorno.server.ts e são re-exportados no fim do arquivo.
 
@@ -195,7 +195,6 @@ function textoLivreParaBanco(v: unknown): string | undefined {
   // A lógica de mascaramento foi ajustada em homefin.server.ts para este fim.
   return s || undefined;
 }
-
 
 /**
  * Verifica no provedor se a simulação vinculada ao banco ainda pode ser usada
@@ -251,7 +250,9 @@ async function renovarSimulacaoSeConsumida({
   const { data: simLocal } = ctx.simulacao_id
     ? await supabase
         .from("simulacoes")
-        .select("valor_imovel, valor_financiamento, prazo, sistema_amortizacao, valor_despesas_financiadas, fg_financiar_despesas")
+        .select(
+          "valor_imovel, valor_financiamento, prazo, sistema_amortizacao, valor_despesas_financiadas, fg_financiar_despesas",
+        )
         .eq("id", ctx.simulacao_id)
         .maybeSingle()
     : { data: null };
@@ -262,13 +263,21 @@ async function renovarSimulacaoSeConsumida({
   // NÃO reutilizamos o idAtual — isso causa HTTP 500 no /incluir-proposta-integracao.
   // Em vez disso, tratamos como "consumida" e criamos uma nova simulação abaixo.
 
-  const tipo = String(sim?.tipoSituacao ?? "").toUpperCase().charAt(0);
+  const tipo = String(sim?.tipoSituacao ?? "")
+    .toUpperCase()
+    .charAt(0);
   const erroSimulacaoAtual = erroRetornoIntegracaoResposta(sim);
   // Além de A/R (simulação já consumida), P/E ou retornoIntegracao com validação
   // indicam uma simulação bancária contaminada por tentativa anterior. Reusar esse
   // id mantém o erro preso (ex.: Itaú com spouse=false mesmo após atualizar o
   // participante para solteiro). Nesses casos criamos uma simulação nova.
-  const simConsumida = !sim || tipo === "R" || tipo === "A" || tipo === "P" || tipo === "E" || Boolean(erroSimulacaoAtual);
+  const simConsumida =
+    !sim ||
+    tipo === "R" ||
+    tipo === "A" ||
+    tipo === "P" ||
+    tipo === "E" ||
+    Boolean(erroSimulacaoAtual);
   const idBanco = sim?.banco?.idBanco ?? sim?.idBanco ?? pb.homefin_id_banco;
   const valorImovel = num(prop.valor_imovel ?? simLocal?.valor_imovel ?? sim?.valorImovel);
   const valorFinanciamento = num(
@@ -280,14 +289,20 @@ async function renovarSimulacaoSeConsumida({
       sim?.valorTotalFinanciamento,
   );
   const prazo = num(
-    prop.prazo ?? simLocal?.prazo ?? sim?.prazo ?? sim?.prazoPagamentoSimulacao ?? sim?.prazoPagamentoBanco,
+    prop.prazo ??
+      simLocal?.prazo ??
+      sim?.prazo ??
+      sim?.prazoPagamentoSimulacao ??
+      sim?.prazoPagamentoBanco,
   );
   if (!(valorImovel > 0) || !(valorFinanciamento > 0) || !(prazo > 0)) {
     throw new Error(
       `O valor do imóvel, o financiamento e o prazo não podem ser zero. Por favor, revise os dados financeiros antes de reenviar ao ${pb.nome_banco ?? "banco"}.`,
     );
   }
-  const financiarDespesas = Boolean(prop.financia_despesas_cartorarias ?? simLocal?.fg_financiar_despesas);
+  const financiarDespesas = Boolean(
+    prop.financia_despesas_cartorarias ?? simLocal?.fg_financiar_despesas,
+  );
   const valorDespesasFinanciadas = financiarDespesas
     ? num(simLocal?.valor_despesas_financiadas ?? sim?.valorDespesasFinanciadas)
     : 0;
@@ -296,7 +311,12 @@ async function renovarSimulacaoSeConsumida({
     valorFinanciamento,
     prazo,
     codigoSistemaAmortizacaoBanco: {
-      id: sistemaAmortizacaoBanco(prop.sistema_amortizacao ?? simLocal?.sistema_amortizacao ?? sim?.codigoSistemaAmortizacaoBanco ?? sim?.idAmortizacao),
+      id: sistemaAmortizacaoBanco(
+        prop.sistema_amortizacao ??
+          simLocal?.sistema_amortizacao ??
+          sim?.codigoSistemaAmortizacaoBanco ??
+          sim?.idAmortizacao,
+      ),
     },
 
     fgFinanciarDespesas: financiarDespesas ? "S" : "N",
@@ -442,9 +462,8 @@ async function dadosFamiliaresAtuaisDaProposta({
       estadoCivilBanco(principal?.estado_civil) ||
       estadoCivilBanco(prop.estado_civil) ||
       undefined,
-    compoeRenda: Boolean(prop.compoe_renda) && (prop.compoe_renda_conjuge !== false),
+    compoeRenda: Boolean(prop.compoe_renda) && prop.compoe_renda_conjuge !== false,
   };
-
 }
 
 async function sincronizarSnapshotFamiliarLocal({
@@ -461,7 +480,10 @@ async function sincronizarSnapshotFamiliarLocal({
   if (!familiaAtual.estadoCivil) return;
   const possuiConjugeAtual = exigeConjugePorEstadoCivil(familiaAtual.estadoCivil);
   const estadoPropAtual = estadoCivilBanco(prop.estado_civil);
-  if (estadoPropAtual !== familiaAtual.estadoCivil || Boolean(prop.possui_conjuge) !== possuiConjugeAtual) {
+  if (
+    estadoPropAtual !== familiaAtual.estadoCivil ||
+    Boolean(prop.possui_conjuge) !== possuiConjugeAtual
+  ) {
     await supabase
       .from("propostas")
       .update({
@@ -491,10 +513,12 @@ async function sincronizarSnapshotFamiliarLocal({
         estado_civil_conjuge: null,
       });
     }
-    await supabase.from("simulacoes").update(patchSim as any).eq("id", ctx.simulacao_id);
+    await supabase
+      .from("simulacoes")
+      .update(patchSim as any)
+      .eq("id", ctx.simulacao_id);
   }
 }
-
 
 // Observação: a sincronização de cônjuge no nível da OPORTUNIDADE foi removida.
 // O `PUT /oportunidade` só aceita valorImovel/valorFinanciamento/prazo; enviar
@@ -502,7 +526,6 @@ async function sincronizarSnapshotFamiliarLocal({
 // `spouse: false` e o Itaú devolve "spouse: O campo deve ser informado".
 // Os campos de cônjuge são enviados no PUT do PARTICIPANTE titular
 // (garantirEnderecoParticipantes) como strings simples, conforme a API oficial.
-
 
 /**
  * Garante que o(s) participante(s) da oportunidade tenham os dados obrigatórios
@@ -541,12 +564,14 @@ async function garantirEnderecoParticipantes({
       ctx,
     );
     const op = resp?.oportunidade ?? resp ?? {};
-    const situacao = String(op?.tipoSituacao ?? "").toUpperCase().charAt(0);
+    const situacao = String(op?.tipoSituacao ?? "")
+      .toUpperCase()
+      .charAt(0);
 
     // Requisito 3: Interromper se a oportunidade estiver cancelada na HomeFin
     if (situacao === "C") {
       throw new Error(
-        "A oportunidade desta proposta foi cancelada na integração (provavelmente por um cancelamento anterior). Será criada uma nova oportunidade para reenviar."
+        "A oportunidade desta proposta foi cancelada na integração (provavelmente por um cancelamento anterior). Será criada uma nova oportunidade para reenviar.",
       );
     }
 
@@ -640,15 +665,22 @@ async function garantirEnderecoParticipantes({
       const cpfTit = soDigitos(env?.cpf_cnpj ?? src?.documento ?? prop.cpf_cnpj);
       const cpfConj = soDigitos(conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? sim?.cpf_conjuge);
       if (cpfTit && cpfConj && cpfTit === cpfConj) {
-        throw new Error(`O CPF do titular e do cônjuge não podem ser iguais (${cpfTit}). Por favor, corrija o cadastro.`);
+        throw new Error(
+          `O CPF do titular e do cônjuge não podem ser iguais (${cpfTit}). Por favor, corrija o cadastro.`,
+        );
       }
     }
     const dadosConjuge = casado
       ? {
           nomeConjuge:
-            conjuge?.nome ?? src?.conjuge_nome ?? sim?.nome_conjuge ?? part?.nomeConjuge ?? undefined,
-          cpfConjuge:
-            soDigitos(conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? sim?.cpf_conjuge ?? part?.cpfConjuge),
+            conjuge?.nome ??
+            src?.conjuge_nome ??
+            sim?.nome_conjuge ??
+            part?.nomeConjuge ??
+            undefined,
+          cpfConjuge: soDigitos(
+            conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? sim?.cpf_conjuge ?? part?.cpfConjuge,
+          ),
           dataNascimentoConjuge:
             conjuge?.data_nascimento ??
             src?.conjuge_data_nascimento ??
@@ -662,20 +694,38 @@ async function garantirEnderecoParticipantes({
             enumBancoId(part?.tipoDocumentoIdentidadeConjuge) ??
             undefined,
           numeroDocumentoConjuge: sanitizarNumeroDocumento(
-            conjuge?.numero_documento ?? src?.conjuge_numero_documento ?? part?.numeroDocumentoConjuge,
+            conjuge?.numero_documento ??
+              src?.conjuge_numero_documento ??
+              part?.numeroDocumentoConjuge,
           ),
           dataExpedicaoConjuge:
-            conjuge?.data_expedicao ?? src?.conjuge_data_expedicao ?? part?.dataExpedicaoConjuge ?? undefined,
+            conjuge?.data_expedicao ??
+            src?.conjuge_data_expedicao ??
+            part?.dataExpedicaoConjuge ??
+            undefined,
           orgaoExpedidorConjuge:
-            conjuge?.orgao_expedidor ?? src?.conjuge_orgao_expedidor ?? part?.orgaoExpedidorConjuge ?? undefined,
+            conjuge?.orgao_expedidor ??
+            src?.conjuge_orgao_expedidor ??
+            part?.orgaoExpedidorConjuge ??
+            undefined,
           ufExpedicaoConjuge:
-            conjuge?.uf_expedicao ?? src?.conjuge_uf_expedicao ?? part?.ufExpedicaoConjuge ?? undefined,
+            conjuge?.uf_expedicao ??
+            src?.conjuge_uf_expedicao ??
+            part?.ufExpedicaoConjuge ??
+            undefined,
           nomeProfissaoConjuge:
             textoLivreParaBanco(conjuge?.profissao) ||
             textoLivreParaBanco(src?.conjuge_profissao) ||
             textoLivreParaBanco(part?.nomeProfissaoConjuge) ||
             undefined,
-          rendaConjuge: (prop.compoe_renda_conjuge !== false) ? (conjuge?.renda ?? src?.conjuge_renda ?? sim?.renda_conjuge ?? part?.rendaConjuge ?? undefined) : 0,
+          rendaConjuge:
+            prop.compoe_renda_conjuge !== false
+              ? (conjuge?.renda ??
+                src?.conjuge_renda ??
+                sim?.renda_conjuge ??
+                part?.rendaConjuge ??
+                undefined)
+              : 0,
           nomeEmpresaProfissaoConjuge:
             textoLivreParaBanco(conjuge?.empresa) ||
             textoLivreParaBanco(src?.conjuge_empresa) ||
@@ -683,7 +733,9 @@ async function garantirEnderecoParticipantes({
             undefined,
           tipoSexoConjuge:
             enumBancoId(conjuge?.tipo_sexo) ??
-            (src?.conjuge_sexo ? String(src.conjuge_sexo).trim().charAt(0).toUpperCase() : undefined) ??
+            (src?.conjuge_sexo
+              ? String(src.conjuge_sexo).trim().charAt(0).toUpperCase()
+              : undefined) ??
             enumBancoId(part?.tipoSexoConjuge) ??
             undefined,
         }
@@ -700,7 +752,14 @@ async function garantirEnderecoParticipantes({
     // Quando temos um envolvido cadastrado no sistema, sempre sincronizamos os
     // dados complementares (documento, sexo, FGTS, endereço) com o banco.
     const temEnvolvido = Boolean(env);
-    if (!temEnvolvido && !faltaEstadoCivil && !faltaUf && !faltaProfissao && !faltaEmpresa && !faltaConjuge)
+    if (
+      !temEnvolvido &&
+      !faltaEstadoCivil &&
+      !faltaUf &&
+      !faltaProfissao &&
+      !faltaEmpresa &&
+      !faltaConjuge
+    )
       continue;
     // Sem meios de preencher estado civil ou UF, não adianta chamar a API —
     // profissão/empresa sempre têm fallback, então não bloqueiam.
@@ -722,11 +781,19 @@ async function garantirEnderecoParticipantes({
       tipoPessoa: enumBancoId(part?.tipoPessoa) ?? ((cpf?.length ?? 0) > 11 ? "J" : "F"),
       cpfCnpj: cpf,
       dataNascimento:
-        part?.dataNascimento ?? env?.data_nascimento ?? src?.data_nascimento ?? prop.data_nascimento ?? undefined,
+        part?.dataNascimento ??
+        env?.data_nascimento ??
+        src?.data_nascimento ??
+        prop.data_nascimento ??
+        undefined,
       tipoEstadoCivil: estadoCivil ?? undefined,
-      tipoRegimeCasamento: (exigeConjugePorEstadoCivil(estadoCivil) || (part?.idBanco === TIPO_BANCO_SANTANDER && (estadoCivil === "CA" || estadoCivil === "UE")))
-        ? enumBancoId(env?.regime_casamento) ?? enumBancoId(src?.regime_casamento) ?? enumBancoId(part?.tipoRegimeCasamento)
-        : undefined,
+      tipoRegimeCasamento:
+        exigeConjugePorEstadoCivil(estadoCivil) ||
+        (part?.idBanco === TIPO_BANCO_SANTANDER && (estadoCivil === "CA" || estadoCivil === "UE"))
+          ? (enumBancoId(env?.regime_casamento) ??
+            enumBancoId(src?.regime_casamento) ??
+            enumBancoId(part?.tipoRegimeCasamento))
+          : undefined,
 
       tipoSexo: enumBancoId(part?.tipoSexo) ?? env?.tipo_sexo ?? undefined,
       tipoDocumentoIdentidade:
@@ -738,7 +805,8 @@ async function garantirEnderecoParticipantes({
       nomeProfissao: profissao,
       nomeEmpresaProfissao: empresa,
       nomeMae: part?.nomeMae ?? env?.nome_mae ?? src?.mae ?? undefined,
-      renda: part?.renda ?? env?.renda ?? src?.renda_total_declarada ?? prop.renda_total ?? undefined,
+      renda:
+        part?.renda ?? env?.renda ?? src?.renda_total_declarada ?? prop.renda_total ?? undefined,
       email: part?.email ?? env?.email ?? src?.email ?? prop.email ?? undefined,
       celular: part?.celular ?? soDigitos(env?.celular ?? src?.celular) ?? undefined,
       utilizaFgts: part?.utilizaFgts ?? (env?.utiliza_fgts ? "S" : "N"),
@@ -760,7 +828,6 @@ async function garantirEnderecoParticipantes({
       throw new IntegracaoBancariaError(msg.texto);
     }
 
-
     try {
       await chamarIntegracao<any>(
         `/oportunidade/${idOportunidade}/participante/${part.idParticipante}`,
@@ -777,10 +844,6 @@ async function garantirEnderecoParticipantes({
   }
 }
 
-
-
-
-
 export async function enviarPropostaImpl(args: EnviarArgs): Promise<EnviarResultado> {
   try {
     return await enviarPropostaImplInner(args);
@@ -790,10 +853,7 @@ export async function enviarPropostaImpl(args: EnviarArgs): Promise<EnviarResult
     // Persiste o motivo no próprio registro para que o usuário veja na lista
     // (o toast pode ser perdido; o campo `ultimo_erro` fica visível).
     try {
-      await args.supabase
-        .from("propostas")
-        .update({ ultimo_erro: msg })
-        .eq("id", args.propostaId);
+      await args.supabase.from("propostas").update({ ultimo_erro: msg }).eq("id", args.propostaId);
       await recalcularStatusGlobalProposta(args.supabase, args.propostaId);
     } catch {}
     throw e;
@@ -814,7 +874,6 @@ async function enviarPropostaImplInner({
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!prop) throw new Error("Proposta não encontrada.");
-
 
   if (!prop.homefin_id_oportunidade) {
     throw new Error(
@@ -859,19 +918,19 @@ async function enviarPropostaImplInner({
               .from("propostas")
               .update({ homefin_id_oportunidade: novoIdOp } as any)
               .eq("id", propostaId);
-            
+
             await supabase.from("proposta_historico").insert({
               proposta_id: propostaId,
               tipo_evento: "sincronizacao",
               descricao: `A oportunidade bancária anterior (${prop.homefin_id_oportunidade}) estava cancelada no banco. Uma nova oportunidade (${novoIdOp}) foi criada automaticamente para este envio.`,
             });
-            
+
             // Atualiza a variável local para o restante do fluxo
             prop.homefin_id_oportunidade = novoIdOp;
           }
         } catch (errNova) {
           throw new IntegracaoBancariaError(
-            "A oportunidade no banco foi cancelada e não foi possível criar uma nova automaticamente. Gere uma nova simulação manual para enviar esta proposta."
+            "A oportunidade no banco foi cancelada e não foi possível criar uma nova automaticamente. Gere uma nova simulação manual para enviar esta proposta.",
           );
         }
       }
@@ -881,20 +940,19 @@ async function enviarPropostaImplInner({
   }
 
   let statusAtual = prop.status as PropostaStatus;
-  
+
   // Limpa mensagens de erro e protocolos de tentativas anteriores para garantir
   // que a mensagem exibida reflita a causa real desta tentativa.
   await supabase
     .from("propostas")
-    .update({ 
+    .update({
       ultimo_erro: null,
-      detalhe_status_atual: null 
+      detalhe_status_atual: null,
     } as any)
     .eq("id", propostaId);
 
   // Primeiro envio = ainda em rascunho ou após um erro de envio.
   const primeiroEnvio = statusAtual === "rascunho" || statusAtual === "erro_envio";
-
 
   const STATUS_BLOQUEIA_NOVO_BANCO: PropostaStatus[] = [
     "cancelada",
@@ -914,7 +972,7 @@ async function enviarPropostaImplInner({
 
   // Bancos a enviar: por linha (bancoId) ou todos os selecionados ainda não enviados.
   let query = supabase.from("proposta_bancos").select("*").eq("proposta_id", propostaId);
-  
+
   if (bancoId && bancoId !== "todos") {
     // 1. CRÍTICO — O BOTÃO AINDA NÃO ENVIA (CORREÇÃO)
     // Os chamadores passam banco_id (ex: 'itau', 'santander') ou o ID da linha (uuid).
@@ -923,7 +981,7 @@ async function enviarPropostaImplInner({
   } else {
     query = query.eq("selecionado", true);
   }
-  
+
   const { data: bancosSel } = await query;
 
   if (bancoId && (!bancosSel || bancosSel.length === 0)) {
@@ -982,7 +1040,6 @@ async function enviarPropostaImplInner({
     patchProposta.status = "enviada_banco";
   }
 
-
   await supabase.from("propostas").update(patchProposta).eq("id", propostaId);
 
   const ctx = {
@@ -1019,7 +1076,9 @@ async function enviarPropostaImplInner({
     const valFinan = num(prop.valor_financiamento);
     const pr = num(prop.prazo);
     if (!(valImovel > 0) || !(valFinan > 0) || !(pr > 0)) {
-      throw new Error(`A proposta não pode ser enviada com valor do imóvel, financiamento ou prazo zerados (${b.nome_banco}).`);
+      throw new Error(
+        `A proposta não pode ser enviada com valor do imóvel, financiamento ou prazo zerados (${b.nome_banco}).`,
+      );
     }
 
     try {
@@ -1060,7 +1119,9 @@ async function enviarPropostaImplInner({
       // codigoOportunidadeBanco, a proposta CHEGOU ao banco — não é erro
       // de envio, mesmo com mensagem em `retornoIntegracao`. A mensagem
       // é preservada em `mensagem_banco` apenas como observação.
-      const situacaoTipoResp = String(resp?.tipoSituacao ?? "").toUpperCase().charAt(0);
+      const situacaoTipoResp = String(resp?.tipoSituacao ?? "")
+        .toUpperCase()
+        .charAt(0);
       const erroBanco =
         extrairErroRetorno(resp?.retornoIntegracao, { codigoApenasComoErro: false }) ??
         extrairErroRetorno(resp?.descricaoRespostaBanco?.retornoIntegracao, {
@@ -1075,8 +1136,6 @@ async function enviarPropostaImplInner({
       if (erroBanco && falhaEnvioReal) {
         throw new IntegracaoBancariaError(erroBanco);
       }
-
-
 
       // Grava o RETORNO real do banco (taxa, parcela, financiamento, situação e
       // protocolo) em vez de apenas marcar "enviada". Assim o usuário vê o
@@ -1111,10 +1170,11 @@ async function enviarPropostaImplInner({
           .neq("id", b.id)
           .limit(1);
         if (colisao && colisao.length > 0) {
-          console.error(
-            "[proposta] protocolo duplicado entre bancos/propostas — descartado",
-            { numero: numeroExtraido, atual: b.id, existente: colisao[0] },
-          );
+          console.error("[proposta] protocolo duplicado entre bancos/propostas — descartado", {
+            numero: numeroExtraido,
+            atual: b.id,
+            existente: colisao[0],
+          });
           numeroBanco = null;
         }
       }
@@ -1161,9 +1221,10 @@ async function enviarPropostaImplInner({
     } catch (e) {
       const originalMsg = e instanceof Error ? e.message : "Falha ao enviar ao banco.";
       const msg = sanitizarMensagemErro(originalMsg);
-      
+
       // Detecção de erro de limite do Santander (INT-SANTANDER-RANGE)
-      const ehErroLimiteSantander = b.banco_id === TIPO_BANCO_SANTANDER && 
+      const ehErroLimiteSantander =
+        b.banco_id === TIPO_BANCO_SANTANDER &&
         (originalMsg.includes("INT-SANTANDER-RANGE") || originalMsg.includes("financingAmount"));
 
       // 1. "erro_envio" EM PROPOSTA QUE O BANCO RECEBEU
@@ -1171,18 +1232,27 @@ async function enviarPropostaImplInner({
       // ou se o erro indica que a leitura falhou mas o envio pode ter ocorrido.
       // Aqui, se falhou no catch do chamarIntegracao de inclusão, geralmente é erro de envio real.
       // Mas se o erro for timeout, usamos "aguardando_retorno" (mapeado como 'enviada' localmente).
-      const ehTimeout = originalMsg.includes("timeout") || originalMsg.includes("deadline") || originalMsg.includes("fetch");
-      
-      const statusFinalBanco = ehErroLimiteSantander ? "recusada" : (ehTimeout ? "enviada" : "erro");
-      const situacaoFinalBanco = ehErroLimiteSantander ? "recusado" : (ehTimeout ? "em_analise" : "nao_enviado");
-      const msgBanco = ehTimeout ? "Envio iniciado, aguardando confirmação do banco (timeout na leitura)." : msg;
+      const ehTimeout =
+        originalMsg.includes("timeout") ||
+        originalMsg.includes("deadline") ||
+        originalMsg.includes("fetch");
+
+      const statusFinalBanco = ehErroLimiteSantander ? "recusada" : ehTimeout ? "enviada" : "erro";
+      const situacaoFinalBanco = ehErroLimiteSantander
+        ? "recusado"
+        : ehTimeout
+          ? "em_analise"
+          : "nao_enviado";
+      const msgBanco = ehTimeout
+        ? "Envio iniciado, aguardando confirmação do banco (timeout na leitura)."
+        : msg;
 
       await supabase
         .from("proposta_bancos")
-        .update({ 
-          status_banco: statusFinalBanco, 
+        .update({
+          status_banco: statusFinalBanco,
           mensagem_banco: msgBanco,
-          situacao_banco: situacaoFinalBanco
+          situacao_banco: situacaoFinalBanco,
         } as any)
         .eq("id", b.id);
 
@@ -1220,17 +1290,17 @@ async function enviarPropostaImplInner({
     }
   }
 
-
-
-
   // ---- 3) Recálculo do status global (propostas.status) a partir dos bancos ----
   // FONTE ÚNICA DE VERDADE: propostas.status é DERIVADO do estado atual de
   // proposta_bancos através da função centralizada.
-  const novoStatusGlobal = (await recalcularStatusGlobalProposta(supabase, propostaId)) || statusAtual;
+  const novoStatusGlobal =
+    (await recalcularStatusGlobalProposta(supabase, propostaId)) || statusAtual;
 
   // Verificação de integridade (Log de divergência)
   if (sucesso > 0 && novoStatusGlobal === "credito_recusado") {
-    console.warn(`[proposta] Divergência detectada no envio: PRO-${propostaId} marcada como recusada mesmo com ${sucesso} bancos em processamento.`);
+    console.warn(
+      `[proposta] Divergência detectada no envio: PRO-${propostaId} marcada como recusada mesmo com ${sucesso} bancos em processamento.`,
+    );
   }
 
   // `propostas.ultimo_erro` é apenas o espelho das linhas de banco desta
@@ -1239,19 +1309,31 @@ async function enviarPropostaImplInner({
   const errosDestaTentativa = resultados
     .filter((r) => r.status === "erro")
     .map((r) => `${r.nome_banco ?? "Banco"}: ${r.mensagem ?? "falha ao enviar"}`);
-  
+
   const patchFinal: Record<string, any> = {
     ultimo_erro: errosDestaTentativa.length > 0 ? errosDestaTentativa.join(" | ") : null,
     status: novoStatusGlobal,
   };
-  
-  await supabase.from("propostas").update(patchFinal as any).eq("id", propostaId);
 
+  await supabase
+    .from("propostas")
+    .update(patchFinal as any)
+    .eq("id", propostaId);
 
   await supabase.from("proposta_historico").insert({
     proposta_id: propostaId,
-    tipo_evento: sucesso > 0 ? "enviada_ao_banco" : (patchFinal.status === "enviada_banco" ? "sincronizacao" : "erro_envio"),
-    descricao: sucesso > 0 ? "Proposta enviada ao banco" : (patchFinal.status === "enviada_banco" ? "Envio iniciado (timeout na leitura)" : "Falha ao enviar proposta ao banco"),
+    tipo_evento:
+      sucesso > 0
+        ? "enviada_ao_banco"
+        : patchFinal.status === "enviada_banco"
+          ? "sincronizacao"
+          : "erro_envio",
+    descricao:
+      sucesso > 0
+        ? "Proposta enviada ao banco"
+        : patchFinal.status === "enviada_banco"
+          ? "Envio iniciado (timeout na leitura)"
+          : "Falha ao enviar proposta ao banco",
     status_novo: novoStatusGlobal,
     ator_id: userId,
   });
@@ -1311,7 +1393,6 @@ export async function sincronizarPropostasAtivas({
 }): Promise<void> {
   // Chamado via cron/lote — implementado em propostas.functions.ts
 }
-
 
 /**
  * Sincroniza o andamento da proposta consultando a integração bancária.
@@ -1420,8 +1501,12 @@ export async function sincronizarPropostaImpl({
       algumFalhaIntegracao = true;
       bancosComFalhaIntegracao.push(pb.nome_banco ?? "Banco");
     }
-    const mapa = statusInternoBanco(sim.tipoSituacao, Boolean(erroMsg), sim.codigoSituacaoBanco, sim);
-
+    const mapa = statusInternoBanco(
+      sim.tipoSituacao,
+      Boolean(erroMsg),
+      sim.codigoSituacaoBanco,
+      sim,
+    );
 
     if (mapa.proposta === "credito_aprovado") algumAprovado = true;
     else if (mapa.proposta === "em_analise_credito") algumEmAnalise = true;
@@ -1467,7 +1552,7 @@ export async function sincronizarPropostaImpl({
     const enviouReal = (countEnvio ?? 0) > 0;
     const numeroReal = falhaIntegracao ? null : numeroPropostaBancoReal(sim, enviouReal);
     const refIntegracao = referenciaIntegracaoBanco(sim);
-    
+
     if (falhaIntegracao) {
       patchBanco.numero_proposta_banco = null;
     } else {
@@ -1521,7 +1606,6 @@ export async function sincronizarPropostaImpl({
     await supabase.from("proposta_bancos").upsert(patchesBanco as any);
   }
 
-
   // ---- 1.5) Recálculo do status global (propostas.status) a partir dos bancos ----
   // FONTE ÚNICA DE VERDADE: propostas.status é DERIVADO do estado atual de
   // proposta_bancos através da função centralizada.
@@ -1547,7 +1631,9 @@ export async function sincronizarPropostaImpl({
 
     // Verificação de integridade (Log de divergência pós-polling)
     if (derivado === "credito_recusado" && (algumAprovado || algumEmAnalise)) {
-      console.warn(`[proposta] Divergência detectada no polling: PRO-${propostaId} derivou 'recusado' mas possui bancos aprovados/em análise.`);
+      console.warn(
+        `[proposta] Divergência detectada no polling: PRO-${propostaId} derivou 'recusado' mas possui bancos aprovados/em análise.`,
+      );
     }
 
     // Funil/atividades só podem AVANÇAR além do desfecho de crédito
@@ -1580,8 +1666,7 @@ export async function sincronizarPropostaImpl({
       !algumAprovado &&
       !algumEmAnalise &&
       !algumRecusado &&
-      (derivado == null ||
-        ORDEM_STATUS.indexOf(derivado) <= ORDEM_STATUS.indexOf("enviada_banco"))
+      (derivado == null || ORDEM_STATUS.indexOf(derivado) <= ORDEM_STATUS.indexOf("enviada_banco"))
     ) {
       derivado = "erro_envio";
     }
@@ -1592,7 +1677,6 @@ export async function sincronizarPropostaImpl({
   // ---- 2.5) Recálculo Final e Sincronização de Status Global ----
   const statusDefinitivoBancos = await recalcularStatusGlobalProposta(supabase, propostaId);
   const statusEfetivo = (statusDefinitivoBancos ?? novoStatus ?? prop.status) as PropostaStatus;
-
 
   // ---- Propaga o desfecho da proposta para as linhas de banco ----
   // A lista de propostas exibe proposta_bancos.status_banco. Quando o desfecho
@@ -1638,24 +1722,31 @@ export async function sincronizarPropostaImpl({
 
   const patch: Record<string, unknown> = {
     status: statusEfetivo,
-    detalhe_status_atual:
-      statusAtividade.detalhe ?? ROTULO_DETALHE[statusEfetivo] ?? nomeEtapa,
+    detalhe_status_atual: statusAtividade.detalhe ?? ROTULO_DETALHE[statusEfetivo] ?? nomeEtapa,
     ultima_sincronizacao_em: new Date().toISOString(),
   };
 
-  const atualizado = statusEfetivo !== prop.status || patch.detalhe_status_atual !== prop.detalhe_status_atual;
+  const atualizado =
+    statusEfetivo !== prop.status || patch.detalhe_status_atual !== prop.detalhe_status_atual;
   if (atualizado) {
     patch.status_atualizado_em = new Date().toISOString();
-    await supabase.from("propostas").update(patch as any).eq("id", propostaId);
+    await supabase
+      .from("propostas")
+      .update(patch as any)
+      .eq("id", propostaId);
 
     // Verificação de integridade pós-gravação
-    const { data: conferir } = await supabase.from("propostas").select("status").eq("id", propostaId).single();
+    const { data: conferir } = await supabase
+      .from("propostas")
+      .select("status")
+      .eq("id", propostaId)
+      .single();
     if (conferir?.status !== statusEfetivo) {
-      console.error(`[proposta] FALHA CRÍTICA: Status da PRO-${propostaId} deveria ser ${statusEfetivo} mas está ${conferir?.status} após sync.`);
+      console.error(
+        `[proposta] FALHA CRÍTICA: Status da PRO-${propostaId} deveria ser ${statusEfetivo} mas está ${conferir?.status} após sync.`,
+      );
     }
   }
-
-
 
   // Funil COMPLETO da oportunidade retornado pelo banco (pós-aprovação e demais
   // etapas). Persistido integralmente para exibir o andamento real sem cortar
@@ -1683,14 +1774,14 @@ export async function sincronizarPropostaImpl({
     patch.numero_proposta_banco = null;
   } else if (numeroPropostaBanco || numeroOportunidadeBanco) {
     patch.numero_proposta_banco = numeroPropostaBanco ?? numeroOportunidadeBanco;
-  }
-  else if (numeroAtualEhReferenciaTecnica({ numero_proposta_banco: prop.numero_proposta_banco }, escolhida)) {
+  } else if (
+    numeroAtualEhReferenciaTecnica({ numero_proposta_banco: prop.numero_proposta_banco }, escolhida)
+  ) {
     patch.numero_proposta_banco = null;
   }
   const referenciaEscolhida = referenciaIntegracaoBanco(escolhida);
   if (op?.codigoOportunidadeBanco || referenciaEscolhida)
-    patch.codigo_oportunidade_homefin =
-      op?.codigoOportunidadeBanco ?? referenciaEscolhida;
+    patch.codigo_oportunidade_homefin = op?.codigoOportunidadeBanco ?? referenciaEscolhida;
   const vFin = op?.valorFinanciamentoBanco ?? escolhida.valorFinanciamentoBanco;
   const vParc = op?.valorParcelaBanco ?? escolhida.valorParcelaBanco;
   const vPrazo = op?.prazoPagamentoBanco ?? escolhida.prazoPagamentoBanco;
@@ -1759,9 +1850,10 @@ export async function sincronizarPropostaImpl({
       .map((a: any) => {
         const nome = String(a?.atividade?.nomeAtividade ?? a?.nomeAtividade ?? "").trim();
         if (!nome) return null;
-        const sit = String(a?.tipoSituacao ?? "").toUpperCase().charAt(0);
-        const rotuloSit =
-          sit === "C" ? "Concluída" : sit === "E" ? "Em andamento" : "Não iniciada";
+        const sit = String(a?.tipoSituacao ?? "")
+          .toUpperCase()
+          .charAt(0);
+        const rotuloSit = sit === "C" ? "Concluída" : sit === "E" ? "Em andamento" : "Não iniciada";
         const etapaNome = String(a?.etapa?.nomeEtapa ?? "").trim();
         const dt =
           a?.dataHoraConclusao ??
@@ -1835,4 +1927,3 @@ export {
   cancelarOportunidadeHomefinGenerico,
   enviarFollowupHomefinImpl,
 } from "./enviar/lifecycle.server";
-

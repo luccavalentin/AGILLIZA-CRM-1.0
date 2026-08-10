@@ -8,13 +8,7 @@
 import { rotuloTipo } from "./scan-ia-tipos";
 import { TIPOS_DOCUMENTO_POR_CATEGORIA } from "./documento-tipos";
 
-type Categoria =
-  | "comprador"
-  | "conjuge"
-  | "vendedor"
-  | "vendedor_conjuge"
-  | "imovel"
-  | "outros";
+type Categoria = "comprador" | "conjuge" | "vendedor" | "vendedor_conjuge" | "imovel" | "outros";
 
 const T = TIPOS_DOCUMENTO_POR_CATEGORIA;
 
@@ -23,26 +17,23 @@ const T = TIPOS_DOCUMENTO_POR_CATEGORIA;
  * `tipo` precisa ser EXATAMENTE o rótulo usado no checklist, senão o item
  * não aparece como "enviado" nem fica marcado.
  */
-const DESTINO_CHECKLIST: Record<
-  string,
-  { categoria: Categoria; tipo: string; itemKey?: string }
-> = {
-  rg: { categoria: "comprador", tipo: T.comprador[0], itemKey: "c_doc_id" },
-  cnh: { categoria: "comprador", tipo: T.comprador[0], itemKey: "c_doc_id" },
-  cpf: { categoria: "comprador", tipo: T.comprador[0], itemKey: "c_doc_id" },
-  comprovante_residencia: {
-    categoria: "comprador",
-    tipo: T.comprador[1],
-    itemKey: "c_comp_end",
-  },
-  certidao_casamento: { categoria: "comprador", tipo: T.comprador[2], itemKey: "c_cert_ec" },
-  certidao_nascimento: { categoria: "comprador", tipo: T.comprador[2], itemKey: "c_cert_ec" },
-  comprovante_renda: { categoria: "comprador", tipo: T.comprador[4], itemKey: "fgts_irpf" },
-  extrato_bancario: { categoria: "comprador", tipo: T.comprador[6], itemKey: "fgts_extrato" },
-  matricula_imovel: { categoria: "imovel", tipo: T.imovel[0], itemKey: "i_matricula" },
-  iptu: { categoria: "imovel", tipo: T.imovel[1], itemKey: "i_iptu" },
-};
-
+const DESTINO_CHECKLIST: Record<string, { categoria: Categoria; tipo: string; itemKey?: string }> =
+  {
+    rg: { categoria: "comprador", tipo: T.comprador[0], itemKey: "c_doc_id" },
+    cnh: { categoria: "comprador", tipo: T.comprador[0], itemKey: "c_doc_id" },
+    cpf: { categoria: "comprador", tipo: T.comprador[0], itemKey: "c_doc_id" },
+    comprovante_residencia: {
+      categoria: "comprador",
+      tipo: T.comprador[1],
+      itemKey: "c_comp_end",
+    },
+    certidao_casamento: { categoria: "comprador", tipo: T.comprador[2], itemKey: "c_cert_ec" },
+    certidao_nascimento: { categoria: "comprador", tipo: T.comprador[2], itemKey: "c_cert_ec" },
+    comprovante_renda: { categoria: "comprador", tipo: T.comprador[4], itemKey: "fgts_irpf" },
+    extrato_bancario: { categoria: "comprador", tipo: T.comprador[6], itemKey: "fgts_extrato" },
+    matricula_imovel: { categoria: "imovel", tipo: T.imovel[0], itemKey: "i_matricula" },
+    iptu: { categoria: "imovel", tipo: T.imovel[1], itemKey: "i_iptu" },
+  };
 
 export interface ResultadoArquivamento {
   arquivado: boolean;

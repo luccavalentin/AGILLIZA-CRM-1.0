@@ -2,7 +2,12 @@ import { statusProposta } from "./status";
 import { ToneBadge } from "@/components/crm/tone-badge";
 
 /** Status que devem discriminar o banco (ex.: "Crédito em análise · Itaú"). */
-const STATUS_COM_BANCO = new Set(["em_analise_credito", "credito_aprovado", "credito_recusado", "erro_envio"]);
+const STATUS_COM_BANCO = new Set([
+  "em_analise_credito",
+  "credito_aprovado",
+  "credito_recusado",
+  "erro_envio",
+]);
 
 export function PropostaStatusBadge({ status, banco }: { status: string; banco?: string | null }) {
   const cfg = statusProposta(status);

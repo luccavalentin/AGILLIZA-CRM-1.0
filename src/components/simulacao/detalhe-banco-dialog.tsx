@@ -32,7 +32,7 @@ import { formatBRL } from "@/lib/simulacao/format";
 
 function pct(v: number | null | undefined): string {
   if (v == null || Number.isNaN(v)) return "—";
-  return `${v.toLocaleString("pt-BR", {  minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.a.`;
+  return `${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.a.`;
 }
 
 /** Métrica de destaque no topo do detalhamento. */
@@ -135,7 +135,13 @@ export function DetalheBancoDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Ver detalhes" aria-label="Ver detalhes">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          title="Ver detalhes"
+          aria-label="Ver detalhes"
+        >
           <FileText className="h-4 w-4" />
         </Button>
       </DialogTrigger>
@@ -150,10 +156,7 @@ export function DetalheBancoDialog({
                 <BancoLogo nome={banco?.nome_banco} size="lg" />
               </span>
               <span className="flex flex-col">
-                <span
-                  className="text-base font-semibold leading-tight"
-                  style={{ color: cor }}
-                >
+                <span className="text-base font-semibold leading-tight" style={{ color: cor }}>
                   {banco?.nome_banco ?? "Banco"}
                 </span>
                 <span className="text-xs font-normal text-muted-foreground">
@@ -200,7 +203,7 @@ export function DetalheBancoDialog({
                   valor={pct(detalhe!.taxaJurosAno)}
                   sub={
                     detalhe!.taxaJurosMes != null
-                      ? `${detalhe!.taxaJurosMes.toLocaleString("pt-BR", {  minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.m.`
+                      ? `${detalhe!.taxaJurosMes.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.m.`
                       : undefined
                   }
                   cor={cor}

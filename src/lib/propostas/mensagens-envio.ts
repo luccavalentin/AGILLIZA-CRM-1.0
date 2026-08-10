@@ -9,11 +9,7 @@
  * em "Detalhes técnicos".
  */
 
-import {
-  descreverParticipante,
-  listarLabels,
-  type CampoObrigatorio,
-} from "./campos-obrigatorios";
+import { descreverParticipante, listarLabels, type CampoObrigatorio } from "./campos-obrigatorios";
 
 export type TipoFalhaEnvio =
   | "cadastro_incompleto"
@@ -49,7 +45,11 @@ export function msgCadastroIncompleto(
     texto:
       `Não enviamos ao ${banco} porque faltam dados obrigatórios de ` +
       `${descreverParticipante(env)}: ${listarLabels(faltantes)}.`,
-    acao: `Completar cadastro de ${String(env?.nome ?? "").trim().split(" ")[0] || "participante"}`,
+    acao: `Completar cadastro de ${
+      String(env?.nome ?? "")
+        .trim()
+        .split(" ")[0] || "participante"
+    }`,
     permiteReenvio: false,
   };
 }
@@ -134,7 +134,15 @@ export function msgRegraBanco(banco: string, regra: string): MensagemEnvio {
 /** (g) Sem tratamento específico — mostra o dado bruto, nunca "erro desconhecido". */
 export function msgDesconhecido(banco: string, cru: unknown): MensagemEnvio {
   const tecnico =
-    typeof cru === "string" ? cru : (() => { try { return JSON.stringify(cru); } catch { return String(cru); } })();
+    typeof cru === "string"
+      ? cru
+      : (() => {
+          try {
+            return JSON.stringify(cru);
+          } catch {
+            return String(cru);
+          }
+        })();
   return {
     tipo: "desconhecido",
     texto:
@@ -150,10 +158,7 @@ export function msgDesconhecido(banco: string, cru: unknown): MensagemEnvio {
  * Uma mensagem de REGRA DO BANCO nunca pode ser sobrescrita por um erro
  * posterior e genérico (ex.: HTTP 500 do PUT) — ela é a informação útil.
  */
-export function preservarMensagemUtil(
-  anterior: string | null | undefined,
-  nova: string,
-): string {
+export function preservarMensagemUtil(anterior: string | null | undefined, nova: string): string {
   const a = String(anterior ?? "").trim();
   if (!a) return nova;
   const ehUtil = /m[íi]nimo|m[áa]ximo|entre R\$|prazo de|recusou|aceita/i.test(a);

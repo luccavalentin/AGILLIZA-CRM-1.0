@@ -93,7 +93,9 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
     let pastas = await recarregar();
 
     const slugsExistentes = new Set(
-      pastas.map((p: any) => p.slug).filter((slug: unknown): slug is string => typeof slug === "string" && slug.length > 0),
+      pastas
+        .map((p: any) => p.slug)
+        .filter((slug: unknown): slug is string => typeof slug === "string" && slug.length > 0),
     );
     const faltantes = PASTAS_PADRAO.filter((p) => !slugsExistentes.has(p.slug));
     if (faltantes.length > 0) {
@@ -120,7 +122,10 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
       .select("pasta_id, categoria")
       .eq("cliente_id", data.cliente_id);
 
-    const nomes = await nomesDeUsuarios(supabase, (pastas ?? []).map((p: any) => p.criado_por));
+    const nomes = await nomesDeUsuarios(
+      supabase,
+      (pastas ?? []).map((p: any) => p.criado_por),
+    );
 
     return (pastas ?? []).map((p: any) => ({
       id: p.id,

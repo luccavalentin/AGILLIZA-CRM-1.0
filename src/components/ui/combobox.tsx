@@ -49,11 +49,12 @@ export function Combobox({
   const renderedOptions = React.useMemo(() => {
     if (!isLarge) return uniqueOptions;
     const norm = (s: string) =>
-      s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
     const term = norm(search.trim());
-    const base = term
-      ? uniqueOptions.filter((o) => norm(o).includes(term))
-      : uniqueOptions;
+    const base = term ? uniqueOptions.filter((o) => norm(o).includes(term)) : uniqueOptions;
     return base.slice(0, 100);
   }, [uniqueOptions, isLarge, search]);
 
@@ -67,7 +68,10 @@ export function Combobox({
             role="combobox"
             aria-expanded={open}
             disabled={disabled}
-            className={cn("w-full justify-between font-normal pr-9", !value && "text-muted-foreground")}
+            className={cn(
+              "w-full justify-between font-normal pr-9",
+              !value && "text-muted-foreground",
+            )}
           >
             <span className="truncate">{value || placeholder}</span>
             {!value && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
@@ -111,9 +115,7 @@ export function Combobox({
                     setOpen(false);
                   }}
                 >
-                  <Check
-                    className={cn("h-4 w-4", value === opt ? "opacity-100" : "opacity-0")}
-                  />
+                  <Check className={cn("h-4 w-4", value === opt ? "opacity-100" : "opacity-0")} />
                   {opt}
                 </CommandItem>
               ))}
@@ -195,7 +197,10 @@ export function AsyncCombobox({
             role="combobox"
             aria-expanded={open}
             disabled={disabled}
-            className={cn("w-full justify-between font-normal pr-9", !value && "text-muted-foreground")}
+            className={cn(
+              "w-full justify-between font-normal pr-9",
+              !value && "text-muted-foreground",
+            )}
           >
             <span className="truncate">{value || placeholder}</span>
             {!value && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
@@ -222,11 +227,7 @@ export function AsyncCombobox({
       </div>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command shouldFilter={false}>
-          <CommandInput
-            placeholder={searchPlaceholder}
-            value={term}
-            onValueChange={setTerm}
-          />
+          <CommandInput placeholder={searchPlaceholder} value={term} onValueChange={setTerm} />
           <CommandList>
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
@@ -234,9 +235,7 @@ export function AsyncCombobox({
               </div>
             ) : (
               <>
-                <CommandEmpty>
-                  {term.trim() ? emptyText : "Digite para buscar."}
-                </CommandEmpty>
+                <CommandEmpty>{term.trim() ? emptyText : "Digite para buscar."}</CommandEmpty>
                 <CommandGroup>
                   {results.map((opt) => (
                     <CommandItem
@@ -248,10 +247,7 @@ export function AsyncCombobox({
                       }}
                     >
                       <Check
-                        className={cn(
-                          "h-4 w-4",
-                          value === opt.label ? "opacity-100" : "opacity-0",
-                        )}
+                        className={cn("h-4 w-4", value === opt.label ? "opacity-100" : "opacity-0")}
                       />
                       <div className="min-w-0">
                         <p className="truncate">{opt.label}</p>

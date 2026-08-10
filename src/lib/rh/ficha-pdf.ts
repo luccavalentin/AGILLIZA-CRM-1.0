@@ -61,14 +61,19 @@ function drawWatermark(doc: jsPDF, palette: PdfPalette) {
 
 export function gerarFichaFuncionarioPdf(input: {
   funcionario: Funcionario;
-  dependentes?: Array<{ nome: string; parentesco: string; cpf: string | null; data_nascimento: string | null }>;
+  dependentes?: Array<{
+    nome: string;
+    parentesco: string;
+    cpf: string | null;
+    data_nascimento: string | null;
+  }>;
 }): { blob: Blob; filename: string } {
   const P = getPdfPalette();
-  const doc = new jsPDF({ 
-    orientation: "portrait", 
-    unit: "pt", 
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
     format: "a4",
-    compress: true
+    compress: true,
   });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -214,15 +219,14 @@ export function gerarFichaFuncionarioPdf(input: {
     doc.setFontSize(8);
     doc.setTextColor(P.cinza);
     const emitido = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-    doc.text(
-      `Agilliza · Ficha funcional confidencial — Emitido em ${emitido}`,
-      32,
-      pageH - 20,
-    );
+    doc.text(`Agilliza · Ficha funcional confidencial — Emitido em ${emitido}`, 32, pageH - 20);
     doc.text(`Página ${i} de ${total}`, pageW - 32, pageH - 20, { align: "right" });
   }
 
   const blob = doc.output("blob");
-  const safe = (f.nome || "funcionario").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w-]+/g, "_");
+  const safe = (f.nome || "funcionario")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w-]+/g, "_");
   return { blob, filename: `Ficha_${safe}_${f.numero}.pdf` };
 }
