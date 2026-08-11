@@ -1,0 +1,1 @@
+ALTER TABLE public.rh_holerites ADD COLUMN IF NOT EXISTS entrada jsonb;

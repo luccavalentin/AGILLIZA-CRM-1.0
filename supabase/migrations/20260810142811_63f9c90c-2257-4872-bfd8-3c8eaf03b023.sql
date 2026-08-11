@@ -1,0 +1,1 @@
+ALTER TABLE public.simulacoes ADD COLUMN IF NOT EXISTS oportunidade_lock_em timestamptz NULL;

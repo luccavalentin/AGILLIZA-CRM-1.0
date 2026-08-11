@@ -1,0 +1,184 @@
+import { useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  enviarMensagemDm,
+  listarMensagensDm,
+  marcarDmLida,
+  editarMensagemDm,
+  excluirMensagemDm,
+} from "@/lib/chats/central.functions";
+import { reagirMensagem } from "@/lib/chat-core/reacoes.functions";
+import { getMinhaSessao } from "@/lib/session.functions";
+import { supabase } from "@/integrations/supabase/client";
+
+const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
+
+/** Guarda o nome original do arquivo enviado para exibir na bolha. */
+const nomesAnexo = new Map<string, string>();
+
+import type { ChatAdapter, ChatClienteInfo, ChatMensagem, ContextoResposta } from "../types";
+
+/**
+ * Adaptador do chat de DMs 1:1 (tabelas `dm_conversas` / `dm_mensagens`).
+ *
+ * Capabilities reduzidas: sem responder/editar/excluir/nota/tarefa/retorno
+ * (a tabela dm_mensagens não guarda esses campos). Envio otimista, realtime,
+ * "digitando" e recibos de leitura são herdados do núcleo.
+ *
+ * Preserva o trigger trg_dm_after_insert_mensagem: nenhuma escrita direta é
+ * feita aqui — o envio passa por enviarMensagemDm (INSERT em dm_mensagens),
+ * que dispara o trigger normalmente.
+ */
+export function useAdaptadorDm({
+  conversaId,
+  info,
+  renderHeader,
+}: {
+  conversaId: string;
+  info?: ChatClienteInfo;
+  renderHeader?: ChatAdapter["renderHeader"];
+}): ChatAdapter {
+  const qc = useQueryClient();
+  const listarFn = useServerFn(listarMensagensDm);
+  const enviarFn = useServerFn(enviarMensagemDm);
+  const marcarFn = useServerFn(marcarDmLida);
+  const editarFn = useServerFn(editarMensagemDm);
+  const excluirFn = useServerFn(excluirMensagemDm);
+  const reagirFn = useServerFn(reagirMensagem);
+  const sessaoFn = useServerFn(getMinhaSessao);
+
+  const { data: sessao } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => sessaoFn(),
+    staleTime: 5 * 60_000,
+  });
+  const meuId = sessao?.profile?.id ?? null;
+  const meuNome = sessao?.profile?.nome?.trim() || null;
+
+  const queryKey = useMemo(() => ["dm", conversaId] as const, [conversaId]);
+
+  const contextoResposta: ContextoResposta = useMemo(
+    () => ({
+      primeiro_nome: info?.nome?.trim().split(/\s+/)[0] ?? null,
+      numero_proposta: null,
+      nome_banco: null,
+      etapa: null,
+    }),
+    [info?.nome],
+  );
+
+  return useMemo<ChatAdapter>(
+    () => ({
+      conversaId,
+      queryKey,
+      meuNome,
+      info,
+      contextoResposta,
+      somenteLeitura: false,
+      mineTipo: "time",
+      peerNomeCitacao: info?.nome?.trim() || "Colega",
+
+      capabilities: {
+        responder: true,
+        editar: true,
+        excluir: true,
+        reagir: true,
+        notaInterna: false,
+        tarefa: false,
+        retorno: false,
+        anexo: true,
+        respostasRapidas: true,
+        audio: true,
+      },
+
+      renderHeader,
+
+      uploadAnexo: async (file: File) => {
+        const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+        const path = `${conversaId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage
+          .from("chat-anexos")
+          .upload(path, file, { contentType: file.type || undefined, upsert: false });
+        if (error) throw error;
+        nomesAnexo.set(path, file.name);
+        return path;
+      },
+
+      listar: async () => {
+        const raw = await listarFn({ data: { conversa_id: conversaId } });
+        return (raw ?? []).map<ChatMensagem>((m: any) => ({
+          id: m.id,
+          remetente_tipo: m.autor_id === meuId ? "time" : "peer",
+          remetente_id: m.autor_id,
+          remetente_nome: m.autor_nome,
+          mensagem: m.texto ?? "",
+          anexo_url: m.anexo_url,
+          anexo_nome: m.anexo_nome,
+          anexo_is_imagem: m.anexo_nome
+            ? IMG_EXT.test(m.anexo_nome)
+            : !!m.anexo_url && IMG_EXT.test(String(m.anexo_url).split("?")[0]),
+          lida_em: null,
+          criada_em: m.created_at,
+          editada_em: m.editada_em ?? null,
+          excluida_em: m.excluida_em ?? null,
+          responde_a: m.responde_a ?? null,
+          interna: false,
+          citacao: m.citacao ?? null,
+          reacoes: m.reacoes ?? [],
+        }));
+      },
+      responder: async (p) => {
+        await enviarFn({
+          data: {
+            conversa_id: conversaId,
+            texto: p.mensagem ?? "",
+            responde_a: p.responde_a ?? null,
+            anexo_path: p.anexo_path ?? null,
+            anexo_nome: p.anexo_path ? (nomesAnexo.get(p.anexo_path) ?? null) : null,
+          },
+        });
+
+        qc.invalidateQueries({ queryKey: ["threads-central"] });
+      },
+      editar: (p) => editarFn({ data: { id: p.id, texto: p.mensagem } }),
+      excluir: (p) => excluirFn({ data: p }),
+      marcarLido: async () => {
+        await marcarFn({ data: { conversa_id: conversaId } });
+        qc.invalidateQueries({ queryKey: ["threads-central"] });
+      },
+
+      origem: "dm",
+      reagir: (p) =>
+        reagirFn({ data: { origem: "dm", mensagem_id: p.mensagem_id, emoji: p.emoji } }),
+
+      realtime: {
+        channel: `dm:${conversaId}`,
+        bindings: [
+          { table: "dm_mensagens", filter: `conversa_id=eq.${conversaId}` },
+          { table: "dm_conversas", filter: `id=eq.${conversaId}` },
+          { table: "chat_reacoes", filter: `origem=eq.dm` },
+        ],
+      },
+
+      // Um papel único por usuário permite múltiplos "digitando" simultâneos.
+      typing: { id: conversaId, myRole: meuId ?? "eu" },
+    }),
+    [
+      conversaId,
+      queryKey,
+      meuId,
+      meuNome,
+      info,
+      contextoResposta,
+      renderHeader,
+      listarFn,
+      enviarFn,
+      marcarFn,
+      editarFn,
+      excluirFn,
+      reagirFn,
+      qc,
+    ],
+  );
+}

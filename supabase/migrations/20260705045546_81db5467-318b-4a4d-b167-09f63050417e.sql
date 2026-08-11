@@ -1,0 +1,1 @@
+ALTER TABLE public.admin_api_integrations ADD COLUMN IF NOT EXISTS config jsonb NOT NULL DEFAULT '{}'::jsonb;

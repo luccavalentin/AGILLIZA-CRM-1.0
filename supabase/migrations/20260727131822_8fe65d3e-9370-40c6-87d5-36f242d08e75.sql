@@ -1,0 +1,1 @@
+ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS imovel_matricula jsonb NOT NULL DEFAULT '{}'::jsonb;
