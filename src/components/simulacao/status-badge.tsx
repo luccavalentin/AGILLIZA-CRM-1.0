@@ -30,8 +30,23 @@ const BANCO_MAPA: Record<string, { tone: Tone; label: string }> = {
   expirada: { tone: "muted", label: "Expirada" },
 };
 
-export function BancoStatusBadge({ status }: { status: string }) {
-  const cfg = BANCO_MAPA[status] ?? { tone: "muted" as Tone, label: status };
+export function BancoStatusBadge({
+  status,
+  hasId = true,
+}: {
+  status: string;
+  hasId?: boolean;
+}) {
+  let cfg = BANCO_MAPA[status] ?? { tone: "muted" as Tone, label: status };
+
+  // Status Honesto: Se o status é 'aguardando' mas não temos o ID da HomeFin,
+  // significa que o sistema ainda nem disparou o envio, não que o banco está analisando.
+  if (status === "aguardando" && !hasId) {
+    cfg = { tone: "warning", label: "Aguardando envio" };
+  } else if (status === "aguardando" && hasId) {
+    cfg = { tone: "info", label: "Em análise" };
+  }
+
   return (
     <ToneBadge
       tone={cfg.tone}

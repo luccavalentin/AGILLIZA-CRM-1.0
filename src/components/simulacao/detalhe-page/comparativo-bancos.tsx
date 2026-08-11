@@ -242,7 +242,10 @@ export function ComparativoBancos({
 
                     </div>
                     <div className="mt-1">
-                      <BancoStatusBadge status={b.status_banco} />
+                      <BancoStatusBadge
+                        status={b.status_banco}
+                        hasId={!!b.homefin_id_simulacao_banco}
+                      />
                     </div>
                   </div>
                 </div>
@@ -421,7 +424,10 @@ export function ComparativoBancos({
                       )}
                     </TableCell>
                     <TableCell className="py-3">
-                      <BancoStatusBadge status={b.status_banco} />
+                        <BancoStatusBadge
+                          status={b.status_banco}
+                          hasId={!!b.homefin_id_simulacao_banco}
+                        />
                     </TableCell>
                     <TableCell className="py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
                       {formatBRL(b.valor_parcela)}

@@ -112,19 +112,24 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
           for (const issue of parsedS.error.issues) novos[String(issue.path[0])] = issue.message;
           setErros(novos);
           toast.error(`SAC: ${mensagemCamposPendentes(Object.keys(novos))}`);
-        } else {
-          const { id } = await criarSimulacao({
-            data: {
-              modo: "completa",
-              dados: {
-                ...parsedS.data,
-                id_operacao_homefin: idOperacao,
-                email_verificado_em: f.email_verificado_em,
-                agrupador_id,
-              } as any,
-            },
-          });
-          idsGerados.push(id);
+      } else {
+        const { id } = await criarSimulacao({
+          data: {
+            modo: "completa",
+            dados: {
+              ...parsedS.data,
+              id_operacao_homefin: idOperacao,
+              email_verificado_em: f.email_verificado_em,
+              agrupador_id,
+            } as any,
+          },
+        });
+        idsGerados.push(id);
+        
+        // REGRA: Mark as 'rascunho' to be picked up by the retry watchdog if the request fails
+        await ctx.setSimulacaoResultadoId(id);
+        
+        // Envio controlado...
 
           // Envio controlado aos bancos SAC (lote de 2 em 2, mas serializado por simulação)
           const bancosSac = [...f.bancos_sac_ids];
@@ -175,19 +180,23 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
           for (const issue of parsedP.error.issues) novos[String(issue.path[0])] = issue.message;
           setErros(novos);
           toast.error(`PRICE: ${mensagemCamposPendentes(Object.keys(novos))}`);
-        } else {
-          const { id } = await criarSimulacao({
-            data: {
-              modo: "completa",
-              dados: {
-                ...parsedP.data,
-                id_operacao_homefin: idOperacao,
-                email_verificado_em: f.email_verificado_em,
-                agrupador_id,
-              } as any,
-            },
-          });
-          idsGerados.push(id);
+      } else {
+        const { id } = await criarSimulacao({
+          data: {
+            modo: "completa",
+            dados: {
+              ...parsedP.data,
+              id_operacao_homefin: idOperacao,
+              email_verificado_em: f.email_verificado_em,
+              agrupador_id,
+            } as any,
+          },
+        });
+        idsGerados.push(id);
+        
+        await ctx.setSimulacaoResultadoIdPrice(id);
+
+        // Envio controlado...
 
           // Envio controlado aos bancos PRICE
           const bancosPrice = [...f.bancos_price_ids];
