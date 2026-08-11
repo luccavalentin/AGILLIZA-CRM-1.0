@@ -26,12 +26,26 @@ import { calcularSimulacao, type SistemaAmortizacao } from "./simulacao-rapida";
  * Margem de segurança aplicada sobre o maior valor de renda encontrado
  * para absorver diferenças de encargos entre instituições.
  */
-export const MARGEM_SEGURANCA_RENDA = 0.0; // Margem removida conforme Princípio #1
+export const MARGEM_SEGURANCA_RENDA = 0.1;
 
-/** Percentual máximo da renda que pode ser comprometido com a parcela. */
+/** Percentual máximo da renda que pode ser comprometido com a parcela (SAC). */
 export const COMPROMETIMENTO_MAX = 0.3;
-/** Comprometimento máx no PRICE (SFH/SFI exige mais margem para juros sobre saldo). */
+/** Comprometimento máx no PRICE. Mantido 15% para Bradesco; demais IFs usam 30%. */
 export const COMPROMETIMENTO_MAX_PRICE = 0.15;
+
+/** 
+ * Mapa de comprometimento máximo por banco e sistema. 
+ * Itaú e Santander usam 30% em ambos por padrão (sem evidência de 15% no PRICE).
+ */
+export const COMPROMETIMENTO_BANCOS: Record<string, { SAC: number; PRICE: number }> = {
+  default: { SAC: 0.3, PRICE: 0.3 },
+  "237": { SAC: 0.3, PRICE: 0.15 }, // Bradesco
+  bradesco: { SAC: 0.3, PRICE: 0.15 },
+  "033": { SAC: 0.3, PRICE: 0.3 }, // Santander
+  santander: { SAC: 0.3, PRICE: 0.3 },
+  "341": { SAC: 0.3, PRICE: 0.3 }, // Itaú
+  itau: { SAC: 0.3, PRICE: 0.3 },
+};
 
 /**
  * Encargos mensais obrigatórios que os bancos SOMAM à parcela ao verificar o
@@ -58,7 +72,7 @@ export interface AvaliacaoRenda {
   /** Banco usado quando o cálculo vem do retorno real da integração bancária. */
   bancoNome?: string | null;
   /** Origem do cálculo exibido. */
-  fonte?: "api_banco" | "estimativa_local";
+  fonte?: "banco" | "estimativa";
 }
 
 export interface BancoRendaApi {
@@ -104,9 +118,16 @@ export function isBancoPrice(b: BancoRendaApi): boolean {
   return false;
 }
 
-/** Teto de comprometimento de renda aplicável ao banco (30% SAC / 15% PRICE). */
+/** Teto de comprometimento de renda aplicável ao banco conforme mapa de regras. */
 export function tetoDoBanco(b: BancoRendaApi): number {
-  return isBancoPrice(b) ? COMPROMETIMENTO_MAX_PRICE : COMPROMETIMENTO_MAX;
+  const nome = String(b.nome_banco ?? "").toLowerCase();
+  const cod = String(b.raw_response?.codigoBanco ?? b.raw_response?.simulacao?.banco?.codigoBanco ?? "").replace(/^0+/, "");
+  
+  const regra = COMPROMETIMENTO_BANCOS[cod] || 
+                COMPROMETIMENTO_BANCOS[nome.split(" ")[0]] || 
+                COMPROMETIMENTO_BANCOS.default;
+                
+  return isBancoPrice(b) ? regra.PRICE : regra.SAC;
 }
 
 /** Parcela que a integração retornou para o banco, já com os encargos do banco. */
@@ -123,48 +144,30 @@ export function parcelaExigidaPeloBanco(banco: BancoRendaApi): number | null {
 }
 
 /**
- * Renda mínima exigida pelo banco, aplicando o teto correto por sistema:
- *   SAC   → parcela / 30%
- *   PRICE → parcela / 15%  (regra padrão para todas as IFs que ofertam PRICE)
- *
- * Em PRICE a renda devolvida pela API do banco é frequentemente calculada
- * em SAC pela HomeFin; sempre recomputamos com o teto de 15% sobre a parcela.
+ * Renda mínima exigida pelo banco.
+ * Prioriza o valor real devolvido pela API (Bradesco) via valorRendaLiquidaMinimaExigida.
+ * Se ausente, calcula localmente usando a parcela e o teto específico do banco.
  */
 export function rendaMinimaDoBanco(banco: BancoRendaApi): number | null {
-  const parcela = parcelaExigidaPeloBanco(banco);
-  const price = isBancoPrice(banco);
-  const teto = price ? COMPROMETIMENTO_MAX_PRICE : COMPROMETIMENTO_MAX;
-
   const raw = unwrapApiResponse(banco.raw_response);
-  const detalhe = extrairDetalheBanco(raw ?? banco.raw_response);
+  const descBco = raw?.descricaoRespostaBanco;
+  
+  // 1. PRIORIZAR VALOR DO BANCO
+  const rendaApi = numeroPositivo(descBco?.valorRendaLiquidaMinimaExigida) ??
+                   numeroPositivo(descBco?.rendaMinimaExigida) ??
+                   numeroPositivo(raw?.rendaMinimaExigida);
 
-  // Extração da renda mínima da mensagem de recusa (Problema 1c)
-  let rendaMensagemRecusa: number | null = null;
-  const msg = String(banco.raw_response?.mensagem_banco ?? raw?.mensagem_banco ?? "").toLowerCase();
-  if (msg.includes("renda")) {
-    // Tenta encontrar um valor numérico na mensagem (ex: "exigência de 15.000")
-    const match = msg.match(/(\d{1,3}(\.\d{3})*(,\d{2})?)/);
-    if (match) {
-      const valStr = match[0].replace(/\./g, "").replace(",", ".");
-      const val = parseFloat(valStr);
-      if (val > 1000) rendaMensagemRecusa = val;
-    }
-  }
+  if (rendaApi) return rendaApi;
 
-  // Problema 1b: prefere Math.max(apiRenda, estimativa local baseada na parcela do banco)
-  let apiRenda = numeroPositivo(detalhe?.rendaMinimaExigida) ?? rendaMensagemRecusa;
+  // 2. CÁLCULO LOCAL (Estimativa baseada na parcela real do banco)
+  const parcela = parcelaExigidaPeloBanco(banco);
+  if (!parcela) return null;
 
-  if (!parcela && !apiRenda) return null;
-
-  let rendaMinima = 0;
-  if (parcela) {
-    const rendaPelaParcela = rendaMinimaParaParcela(parcela, teto);
-    rendaMinima = apiRenda ? Math.max(apiRenda, rendaPelaParcela) : rendaPelaParcela;
-  } else {
-    rendaMinima = apiRenda!;
-  }
-
-  return Math.ceil(rendaMinima / 100) * 100;
+  const teto = tetoDoBanco(banco);
+  // REGRA: Renda mínima estimada SEMPRE deriva da parcela retornada.
+  // Não arredondamos para o milhar quando a fonte é estimativa por banco,
+  // para manter a precisão do comprometimento solicitado.
+  return rendaMinimaParaParcela(parcela, teto);
 }
 
 /**
@@ -174,20 +177,22 @@ export function rendaMinimaDoBanco(banco: BancoRendaApi): number | null {
 export function rendaMinimaPelosBancos(
   bancos: BancoRendaApi[] | null | undefined,
   rendaInformada?: number | null,
-): AvaliacaoRenda | null {
+): (AvaliacaoRenda & { renda_minima_fonte?: string }) | null {
   const candidatos = (bancos ?? [])
     .filter((b) => !b.status_banco || b.status_banco === "simulada" || b.status_banco === "erro")
     .map((b) => {
       const parcela = parcelaExigidaPeloBanco(b);
       const rendaMinima = rendaMinimaDoBanco(b);
+      const fonte = b.raw_response?.renda_minima_fonte ?? (b as any).renda_minima_fonte ?? "estimativa";
       if (!parcela || !rendaMinima) return null;
       return {
         bancoNome: b.nome_banco ?? null,
         primeiraParcela: parcela,
         rendaMinima,
+        fonte: fonte as "banco" | "estimativa",
       };
     })
-    .filter((v): v is { bancoNome: string | null; primeiraParcela: number; rendaMinima: number } =>
+    .filter((v): v is { bancoNome: string | null; primeiraParcela: number; rendaMinima: number; fonte: "banco" | "estimativa" } =>
       Boolean(v),
     )
     .sort((a, b) => b.rendaMinima - a.rendaMinima);
@@ -199,7 +204,7 @@ export function rendaMinimaPelosBancos(
     ...maior,
     comprometimento: renda ? maior.primeiraParcela / renda : null,
     suficiente: renda == null ? null : renda >= maior.rendaMinima,
-    fonte: "api_banco",
+    renda_minima_fonte: maior.fonte,
   };
 }
 
@@ -266,8 +271,12 @@ export function avaliarRendaMinima(params: {
 
   const tetoComprometimento = sistema === "P" ? COMPROMETIMENTO_MAX_PRICE : COMPROMETIMENTO_MAX;
   const rendaMinimaCrua = rendaMinimaParaParcela(prestacaoTotal, tetoComprometimento);
-  // Arredonda para cima no centenar (Princípio #1 - Simulação nunca trava)
-  let rendaMinima = Math.ceil(rendaMinimaCrua / 100) * 100;
+  
+  // Aplica margem de segurança de 10% (CONCEITO ÚNICO)
+  const rendaComMargem = rendaMinimaCrua * (1 + MARGEM_SEGURANCA_RENDA);
+  
+  // Arredonda para cima no milhar (CONCEITO ÚNICO)
+  let rendaMinima = Math.ceil(rendaComMargem / 1000) * 1000;
 
   // Guarda-corpo: PRICE jamais pode exigir menos renda que SAC para o mesmo financiamento
   if (sistema === "P") {
@@ -286,7 +295,7 @@ export function avaliarRendaMinima(params: {
     rendaMinima,
     comprometimento: renda ? prestacaoTotal / renda : null,
     suficiente: renda == null ? null : renda >= rendaMinima,
-    fonte: "estimativa_local",
+    fonte: "estimativa",
   };
 }
 
@@ -335,7 +344,7 @@ export function rendaMinimaSugerida(params: {
             : null,
           suficiente: renda_informada ? renda_informada >= rendaBco : null,
           bancoNome: b.nome_banco,
-          fonte: "api_banco",
+          fonte: "banco",
           detalhe_fonte: `Exigência do banco: ${b.nome_banco}`,
         });
       }
@@ -348,7 +357,8 @@ export function rendaMinimaSugerida(params: {
       ? fontes.sort((a, b) => b.rendaMinima - a.rendaMinima)[0]
       : { primeiraParcela: 0, rendaMinima: 0, detalhe_fonte: "Indefinida", suficiente: null };
 
-  const rendaFinal = Math.ceil(vencedora.rendaMinima / 100) * 100;
+  // O arredondamento já foi feito em avaliarRendaMinima() seguindo o conceito único.
+  const rendaFinal = vencedora.rendaMinima;
 
   const renda = renda_informada && renda_informada > 0 ? renda_informada : null;
 

@@ -61,8 +61,8 @@ export function VincularClienteDialog({ propostaId }: { propostaId: string }) {
           Vincular cliente existente
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg flex flex-col p-0 overflow-hidden max-h-[85vh]">
+        <DialogHeader className="p-6 pb-2 shrink-0">
           <DialogTitle>Vincular cliente existente</DialogTitle>
           <DialogDescription>
             Busque um cliente já cadastrado no CRM por nome, documento ou e-mail e vincule-o a esta
@@ -70,7 +70,7 @@ export function VincularClienteDialog({ propostaId }: { propostaId: string }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative">
+        <div className="relative px-6 py-2 shrink-0">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             autoFocus
@@ -81,7 +81,7 @@ export function VincularClienteDialog({ propostaId }: { propostaId: string }) {
           />
         </div>
 
-        <div className="brand-scroll scroll-shadow-bottom flex-1 space-y-1 overflow-y-auto px-6 py-4">
+        <div className="brand-scroll scroll-shadow-bottom min-h-0 flex-1 space-y-1 overflow-y-auto px-6 py-4">
           {termoBusca.length < 2 ? (
             <p className="px-1 py-6 text-center text-sm text-muted-foreground">
               Digite ao menos 2 caracteres para buscar.

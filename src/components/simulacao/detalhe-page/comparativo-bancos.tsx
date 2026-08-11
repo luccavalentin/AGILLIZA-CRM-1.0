@@ -19,6 +19,8 @@ import { formatBRL, formatPercent, formatTaxa } from "@/lib/simulacao/format";
 import { rendaMinimaPelosBancos } from "@/lib/simulacao/renda";
 import { ErroBancoDetalhe } from "@/components/simulacao/erro-banco-detalhe";
 import { AmortizacaoTag, MobileStat, ResumoCelula } from "@/components/simulacao/detalhe-page/ui";
+import { ShieldCheck, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { totalFinanciadoBanco } from "@/lib/simulacao/origem-dados";
 
 /**
@@ -65,25 +67,36 @@ export function ComparativoBancos({
   const rendaBancos = rendaMinimaPelosBancos(bancos, rendaInformada || null);
   const rendaSac = isMista ? rendaMinimaPelosBancos(bancosSac, rendaInformada || null) : null;
   const rendaPrice = isMista ? rendaMinimaPelosBancos(bancosPrice, rendaInformada || null) : null;
-  const bancosComTaxa = bancos
-    .filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
-    .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0));
-  const melhorSacId = bancosSac
+  const bancosComSimulacao = bancos.filter(
+    (b: any) => b.status_banco === "simulada" && b.valor_parcela != null,
+  );
+
+  // Selos independentes: Menor Parcela e Menor CET
+  const melhorParcelaId = [...bancosComSimulacao].sort(
+    (a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0),
+  )[0]?.id;
+
+  const melhorCetId = [...bancosComSimulacao]
+    .filter((b) => b.taxa_cet_ano != null)
+    .sort((a: any, b: any) => (a.taxa_cet_ano ?? 0) - (b.taxa_cet_ano ?? 0))[0]?.id;
+
+  const melhorSacParcelaId = bancosSac
     .filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
     .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
-  const melhorPriceId = bancosPrice
+
+  const melhorPriceParcelaId = bancosPrice
     .filter((b: any) => b.status_banco === "simulada" && b.valor_parcela != null)
     .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
-  const melhorId = isMista
-    ? undefined
-    : bancosComTaxa.length > 1
-      ? bancosComTaxa[0]?.id
-      : undefined;
+
   const bancosExibicao: any[] = isMista ? [...bancosSac, ...bancosPrice] : bancos;
-  const ehMelhor = (b: any) => {
-    if (!isMista) return b.id === melhorId;
-    return (b._sistema === "PRICE" ? melhorPriceId : melhorSacId) === b.id;
+
+  const ehMelhorParcela = (b: any) => {
+    if (!isMista) return b.id === melhorParcelaId;
+    return (b._sistema === "PRICE" ? melhorPriceParcelaId : melhorSacParcelaId) === b.id;
   };
+
+  const ehMelhorCet = (b: any) => b.id === melhorCetId;
+
 
   return (
     <>
@@ -95,14 +108,58 @@ export function ComparativoBancos({
             {rendaSac && (
               <ResumoCelula
                 rotulo="Renda exigida — SAC"
-                valor={formatBRL(rendaSac.rendaMinima)}
+                valor={
+                  <div className="flex flex-col items-end">
+                    <span>{formatBRL(rendaSac.rendaMinima)}</span>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {rendaSac.renda_minima_fonte === "banco" ? (
+                        <span className="text-[9px] text-emerald-600 font-medium flex items-center gap-0.5">
+                          <ShieldCheck className="h-2.5 w-2.5" /> banco
+                        </span>
+                      ) : (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger className="text-[9px] text-muted-foreground/70 flex items-center gap-0.5 cursor-help">
+                              estimativa <Info className="h-2 w-2" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-[10px] max-w-[200px]">O banco não informa renda mínima nesta simulação. Valor calculado pela Agilliza a partir da parcela retornada.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  </div>
+                }
                 destaque
               />
             )}
             {rendaPrice && (
               <ResumoCelula
                 rotulo="Renda exigida — PRICE"
-                valor={formatBRL(rendaPrice.rendaMinima)}
+                valor={
+                  <div className="flex flex-col items-end">
+                    <span>{formatBRL(rendaPrice.rendaMinima)}</span>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {rendaPrice.renda_minima_fonte === "banco" ? (
+                        <span className="text-[9px] text-emerald-600 font-medium flex items-center gap-0.5">
+                          <ShieldCheck className="h-2.5 w-2.5" /> banco
+                        </span>
+                      ) : (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger className="text-[9px] text-muted-foreground/70 flex items-center gap-0.5 cursor-help">
+                              estimativa <Info className="h-2 w-2" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-[10px] max-w-[200px]">O banco não informa renda mínima nesta simulação. Valor calculado pela Agilliza a partir da parcela retornada.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  </div>
+                }
                 destaque
               />
             )}
@@ -111,7 +168,29 @@ export function ComparativoBancos({
           rendaBancos && (
             <ResumoCelula
               rotulo="Renda exigida"
-              valor={formatBRL(rendaBancos.rendaMinima)}
+              valor={
+                <div className="flex flex-col items-end">
+                  <span>{formatBRL(rendaBancos.rendaMinima)}</span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {rendaBancos.renda_minima_fonte === "banco" ? (
+                      <span className="text-[9px] text-emerald-600 font-medium flex items-center gap-0.5">
+                        <ShieldCheck className="h-2.5 w-2.5" /> banco
+                      </span>
+                    ) : (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger className="text-[9px] text-muted-foreground/70 flex items-center gap-0.5 cursor-help">
+                            estimativa <Info className="h-2 w-2" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-[10px] max-w-[200px]">O banco não informa renda mínima nesta simulação. Valor calculado pela Agilliza a partir da parcela retornada.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+                </div>
+              }
               destaque
             />
           )
@@ -158,7 +237,9 @@ export function ComparativoBancos({
                       >
                         {b.nome_banco}
                       </span>
-                      {ehMelhor(b) && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
+                      {ehMelhorParcela(b) && <ToneBadge tone="success">Menor parcela</ToneBadge>}
+                      {ehMelhorCet(b) && <ToneBadge tone="info">Menor CET</ToneBadge>}
+
                     </div>
                     <div className="mt-1">
                       <BancoStatusBadge status={b.status_banco} />
@@ -179,6 +260,11 @@ export function ComparativoBancos({
                     valor={b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—"}
                   />
                   <MobileStat
+                    rotulo="CET a.a."
+                    valor={b.taxa_cet_ano != null ? formatTaxa(b.taxa_cet_ano) : "—"}
+                  />
+                  <MobileStat
+
                     rotulo="Prazo"
                     valor={
                       b.prazo_pagamento_max != null
@@ -253,6 +339,24 @@ export function ComparativoBancos({
                 Taxa a.a.
               </TableHead>
               <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="flex items-center justify-end gap-1">
+                  CET a.a.
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="cursor-help">
+                        <Info className="h-3 w-3" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-[10px] max-w-[200px]">
+                          Custo Efetivo Total informado pelo banco. Inclui juros, seguros, tarifas e IOF. É o valor correto para comparar propostas entre bancos.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </TableHead>
+
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Prazo
               </TableHead>
               <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -269,7 +373,9 @@ export function ComparativoBancos({
             {bancosExibicao.map((b: any, idx: number) => {
               const primeiroDoGrupo =
                 isMista && (idx === 0 || bancosExibicao[idx - 1]._sistema !== b._sistema);
-              const melhor = ehMelhor(b);
+              const melhorParcela = ehMelhorParcela(b);
+              const melhorCet = ehMelhorCet(b);
+
               return (
                 <Fragment key={b.id}>
                   {primeiroDoGrupo && (
@@ -289,15 +395,20 @@ export function ComparativoBancos({
                   <TableRow
                     className={cn(
                       "border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5",
-                      melhor &&
+                      melhorParcela &&
                         "bg-success/5 even:bg-success/5 hover:bg-success/10 [box-shadow:inset_3px_0_0_var(--success)]",
+                      melhorCet && !melhorParcela &&
+                        "bg-info/5 even:bg-info/5 hover:bg-info/10 [box-shadow:inset_3px_0_0_var(--info)]",
+
                     )}
                   >
                     <TableCell className="py-3 text-sm font-semibold">
                       <div className="flex items-center gap-2.5">
                         <BancoLogo nome={b.nome_banco} size="lg" />
                         <span style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
-                        {b.id === melhorId && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
+                        {melhorParcela && <ToneBadge tone="success">Menor parcela</ToneBadge>}
+                        {melhorCet && <ToneBadge tone="info">Menor CET</ToneBadge>}
+
                       </div>
                       {b.status_banco === "erro" && b.mensagem_banco && (
                         <div className="mt-1">
@@ -318,6 +429,10 @@ export function ComparativoBancos({
                     <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                       {b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—"}
                     </TableCell>
+                    <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
+                      {b.taxa_cet_ano != null ? formatTaxa(b.taxa_cet_ano) : "—"}
+                    </TableCell>
+
                     <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
                       {b.prazo_pagamento_max ?? s.prazo ?? "—"}
                       {b.prazo_pagamento_max || s.prazo ? "m" : ""}

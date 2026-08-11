@@ -71,7 +71,7 @@ export const listarTarefas = createServerFn({ method: "GET" })
       .select(
         "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, criador_id, created_at, concluida_em, clientes(nome)",
       )
-      .limit(300);
+      .limit(1000);
 
     // Ordenação. `prioridade` é enum p1<p2<p3, então ascending já ordena
     // corretamente da mais alta (p1) para a mais baixa (p3).

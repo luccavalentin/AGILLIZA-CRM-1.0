@@ -109,8 +109,8 @@ export function SelecionarBancosPdfDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md flex flex-col p-0 overflow-hidden max-h-[90vh]">
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle>{titulo}</DialogTitle>
           <DialogDescription>{descricao}</DialogDescription>
         </DialogHeader>
@@ -161,7 +161,7 @@ export function SelecionarBancosPdfDialog({
           })}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

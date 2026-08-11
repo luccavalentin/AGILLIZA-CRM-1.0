@@ -243,8 +243,8 @@ export function ParticipanteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl flex flex-col p-0 overflow-hidden max-h-[90vh]">
+        <DialogHeader className="p-6 pb-2 shrink-0">
           <div className="flex items-center justify-between gap-4">
             <DialogTitle>{titulo}</DialogTitle>
             {participanteIndex !== undefined && totalParticipantes !== undefined && (
@@ -259,7 +259,7 @@ export function ParticipanteDialog({
         </DialogHeader>
 
         <div
-          className="brand-scroll scroll-shadow-bottom flex-1 space-y-5 overflow-y-auto px-6 py-4"
+          className="brand-scroll scroll-shadow-bottom min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-4"
           ref={corpoRef}
         >
           {avisoTopo}
@@ -306,7 +306,7 @@ export function ParticipanteDialog({
           )}
         </div>
 
-        <DialogFooter className="flex-col gap-2 sm:flex-row sm:items-center">
+        <DialogFooter className="flex-col gap-2 sm:flex-row sm:items-center p-6 pt-2 shrink-0">
           <div className="flex-1">
             {podeEnviar ? (
               <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-success">

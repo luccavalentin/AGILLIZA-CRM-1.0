@@ -3,7 +3,7 @@
  * logo abaixo do campo de renda familiar. A cor reflete a folga da renda
  * informada em relação à renda mínima estimada (verde/amarelo/vermelho).
  */
-import { AlertTriangle, CheckCircle2, Info, TriangleAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, TriangleAlert, ShieldCheck } from "lucide-react";
 import { formatBRL } from "@/lib/simulacao/format";
 import {
   avaliarRendaMinima,
@@ -95,9 +95,21 @@ export function DicaRendaMinima(props: Props) {
               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                 SAC
               </span>
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Renda {compoeRendaConjuge ? "familiar" : "titular"}
-              </span>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Renda mínima {compoeRendaConjuge ? "familiar" : "titular"} (SAC)
+                </span>
+                <span className="text-[9px] text-muted-foreground/60 flex items-center gap-1">
+                  {evalSac.fonte === "banco" ? (
+                    <>
+                      <ShieldCheck className="h-2.5 w-2.5 text-blue-500" />
+                      Informado pelo banco
+                    </>
+                  ) : (
+                    "Estimativa Agilliza"
+                  )}
+                </span>
+              </div>
             </div>
             <span
               className={cn(
@@ -114,9 +126,21 @@ export function DicaRendaMinima(props: Props) {
               <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
                 PRICE
               </span>
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Renda {compoeRendaConjuge ? "familiar" : "titular"}
-              </span>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Renda mínima {compoeRendaConjuge ? "familiar" : "titular"} (PRICE)
+                </span>
+                <span className="text-[9px] text-muted-foreground/60 flex items-center gap-1">
+                  {evalPrice.fonte === "banco" ? (
+                    <>
+                      <ShieldCheck className="h-2.5 w-2.5 text-purple-500" />
+                      Informado pelo banco
+                    </>
+                  ) : (
+                    "Estimativa Agilliza"
+                  )}
+                </span>
+              </div>
             </div>
             <span
               className={cn(
@@ -128,12 +152,13 @@ export function DicaRendaMinima(props: Props) {
             </span>
           </div>
         </div>
-        {compoeRendaConjuge && (
-          <p className="px-1 text-[10px] text-muted-foreground italic">
-            Sugestão: {formatBRL(Math.max(evalSac.rendaMinima, evalPrice.rendaMinima) / 2)} para
-            cada proponente
+        <div className="flex flex-col gap-1 px-1">
+          <p className="text-[10px] italic text-muted-foreground">
+            {evalSac.fonte === "banco" || evalPrice.fonte === "banco" 
+              ? "Valores exatos retornados pelo banco (sem arredondamento)."
+              : "Estimativa conservadora Agilliza, com folga de 10%. O banco pode aceitar renda menor."}
           </p>
-        )}
+        </div>
       </div>
     );
   }
@@ -173,10 +198,18 @@ export function DicaRendaMinima(props: Props) {
           </div>
           <div className="flex flex-col">
             <span className="text-[11px] font-medium text-muted-foreground leading-tight">
-              Renda necessária {compoeRendaConjuge ? "familiar" : "titular"}
+              Renda mínima {compoeRendaConjuge ? "familiar" : "titular"} (
+              {sistema === "S" ? "SAC" : "PRICE"})
             </span>
-            <span className="text-[9px] text-muted-foreground/60 leading-tight">
-              Tabela {sistema === "S" ? "SAC" : "PRICE"}
+            <span className="text-[9px] text-muted-foreground/60 leading-tight flex items-center gap-1">
+              {principal.fonte === "banco" ? (
+                <>
+                  <ShieldCheck className="h-2.5 w-2.5 text-primary" />
+                  Informado pelo banco
+                </>
+              ) : (
+                "Estimativa Agilliza (folga 10%)"
+              )}
             </span>
           </div>
         </div>
@@ -184,11 +217,17 @@ export function DicaRendaMinima(props: Props) {
           {formatBRL(rendaMin)}
         </p>
       </div>
-      {compoeRendaConjuge && (
-        <p className="px-1 text-[10px] text-muted-foreground/70 italic">
-          Sugestão: {formatBRL(rendaMin / 2)} para cada proponente
+      <div className="flex flex-col gap-1 px-1">
+        <p className="text-[10px] italic text-muted-foreground">
+          O banco pode aceitar renda menor — e também pode recusar por outros critérios além
+          da renda.
         </p>
-      )}
+        {compoeRendaConjuge && (
+          <p className="text-[10px] italic text-muted-foreground/70">
+            Sugestão: {formatBRL(rendaMin / 2)} para cada proponente
+          </p>
+        )}
+      </div>
     </div>
   );
 }

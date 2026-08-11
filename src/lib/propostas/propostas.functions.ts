@@ -150,7 +150,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
     // para compensar o filtro manual em memória feito logo abaixo.
     const temFiltroNome =
       data.responsavel_nome || data.corretor_nome || data.imobiliaria_nome || data.comercial_nome;
-    const finalTo = temFiltroNome ? Math.max(to, 2000) : to;
+    const finalTo = temFiltroNome ? Math.max(to, 5000) : to;
 
     query = query.order("created_at", { ascending: false }).range(from, finalTo);
 
@@ -394,6 +394,7 @@ export const listarResponsaveisEquipe = createServerFn({ method: "GET" })
       .select("id, nome, acesso_tipo, ativo")
       .eq("correspondente_id", corr)
       .eq("acesso_tipo", "sistema")
+      .limit(1000)
       .order("nome", { ascending: true });
     if (error) throw new Error(error.message);
     const ids = (membros ?? []).map((m: any) => m.id);

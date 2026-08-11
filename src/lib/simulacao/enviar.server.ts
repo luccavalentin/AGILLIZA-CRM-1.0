@@ -286,9 +286,19 @@ async function garantirDadosParticipantesSimulacao({
     const ehTitular = !ehConjuge && (!cpf || !cpfTitular || cpf === cpfTitular);
     if (!ehTitular && !ehConjuge) continue;
 
+    const estadoCivilSim = String(sim.estado_civil ?? "").toUpperCase();
+    const possuiConjugeSim = estadoCivilSim
+      ? estadoCivilSim === "CA" || estadoCivilSim === "UE"
+      : Boolean(sim.possui_conjuge);
+    const compoeRendaLocal = Boolean(sim.compoe_renda) && possuiConjugeSim;
+
     // REGRA 1: A renda enviada ao banco é SEMPRE a renda declarada para o participante.
-    // O sistema NUNCA substitui esse valor.
-    const rendaDeclarada = ehConjuge ? num(sim.renda_conjuge) : num(sim.renda_total);
+    // Quando compoe_renda é true, a renda é a SOMA de ambos em TODOS os casos.
+    const rendaDeclarada = compoeRendaLocal
+      ? num(sim.renda_total) + num(sim.renda_conjuge)
+      : ehConjuge
+        ? num(sim.renda_conjuge)
+        : num(sim.renda_total);
 
     const payload: Record<string, unknown> = {
       tipoSituacao: part?.tipoSituacao ?? "A",
@@ -339,7 +349,10 @@ async function garantirDadosParticipantesSimulacao({
               sim.estado_civil_conjuge ??
               sim.estado_civil ??
               undefined,
-            rendaConjuge: part?.rendaConjuge ?? num(sim.renda_conjuge) ?? undefined,
+            rendaConjuge:
+              part?.rendaConjuge ??
+              (compoeRendaLocal ? num(sim.renda_total) + num(sim.renda_conjuge) : num(sim.renda_conjuge)) ??
+              undefined,
           }
         : {}),
       ...endereco,
@@ -351,16 +364,17 @@ async function garantirDadosParticipantesSimulacao({
     );
 
     try {
-      await chamarIntegracao<any>(
-        `/oportunidade/${idOportunidade}/participante/${part.idParticipante}`,
-        "PUT",
-        cleanedPayload,
-        ctx,
-      );
+      // REGRA: Cada participante deve receber um PUT por envio.
+      // Verificamos se há idParticipante antes de chamar a integração.
+      if (part.idParticipante) {
+        await chamarIntegracao<any>(
+          `/oportunidade/${idOportunidade}/participante/${part.idParticipante}`,
+          "PUT",
+          cleanedPayload,
+          ctx,
+        );
+      }
     } catch (e) {
-      // Falha na complementação (PUT /participante) não deve travar o banco.
-      // Logamos o erro mas deixamos o fluxo seguir, pois alguns bancos processam
-      // a simulação mesmo com dados parciais se o proponente já existe na HomeFin.
       console.warn(`[enviar.server] Falha ao atualizar proponente ${part.idParticipante}:`, e);
     }
   }
@@ -522,8 +536,8 @@ export async function enviarSimulacaoImpl({
   const correspondente_id = sim.correspondente_id;
 
   // Garantia de sanitização de CPFs para evitar erros silenciosos na API (500)
-  sim.cpf_cnpj = (sim.cpf_cnpj ?? "").replace(/\D/g, "");
-  if (sim.cpf_conjuge) sim.cpf_conjuge = (sim.cpf_conjuge ?? "").replace(/\D/g, "");
+  sim.cpf_cnpj = soDigitos(sim.cpf_cnpj) || null;
+  if (sim.cpf_conjuge) sim.cpf_conjuge = soDigitos(sim.cpf_conjuge) || null;
 
   // Se o cliente (titular) tiver um cônjuge cadastrado e a simulação não tiver os dados dele,
   // mas o estado civil for casado/UE, forçamos o preenchimento para garantir que a proposta
@@ -715,6 +729,7 @@ export async function enviarSimulacaoImpl({
       valorDespesasFinanciadas,
       valorTotalFinanciamento,
       codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao ?? "S" },
+
     };
 
     if (!idOportunidade && !usaRotaSantanderHomeEquity) {
@@ -761,7 +776,7 @@ export async function enviarSimulacaoImpl({
       // Líder ou Santander Home Equity: executa a criação da oportunidade
       // (Embora o loop de bancos agora seja sequencial, o ID da oportunidade deve ser persistido antes).
       const rendaTotalCalculada = num(
-        sim.compoe_renda_conjuge ? num(sim.renda_total) + num(sim.renda_conjuge) : sim.renda_total,
+        compoeRenda ? num(sim.renda_total) + num(sim.renda_conjuge) : sim.renda_total,
       );
 
       console.log(
@@ -775,22 +790,22 @@ export async function enviarSimulacaoImpl({
           ? { usuarioParceiro: { idUsuarioParceiro: auth.idUsuarioParceiro } }
           : {}),
         ...dadosOportunidade,
-        bancos: bancos.map((b: any) => bancoPayloadOportunidade(sim, b)),
-        cpfCnpj: (sim.cpf_cnpj ?? "").replace(/\D/g, ""),
+        bancos: (bancosSelecionados ?? []).map((b: any) => bancoPayloadOportunidade(sim, b)),
+        cpfCnpj: soDigitos(sim.cpf_cnpj),
         nome: sim.nome_cliente,
         rendaTotal: rendaTotalCalculada,
         dataNascimento: sim.data_nascimento,
         email: sim.email,
-        celular: (sim.celular ?? "").replace(/\D/g, ""),
+        celular: soDigitos(sim.celular),
         tipoEstadoCivil: sim.estado_civil ? { id: sim.estado_civil } : undefined,
 
         fgCompoeRenda: compoeRenda,
         ...(possuiConjuge
           ? {
               nomeConjuge: sim.nome_conjuge,
-              cpfConjuge: (sim.cpf_conjuge ?? "").replace(/\D/g, ""),
+              cpfConjuge: soDigitos(sim.cpf_conjuge),
               emailConjuge: sim.email_conjuge,
-              celularConjuge: (sim.celular_conjuge ?? "").replace(/\D/g, ""),
+              celularConjuge: soDigitos(sim.celular_conjuge),
               rendaConjuge: num(sim.renda_conjuge),
               dataNascimentoConjuge: sim.data_nascimento_conjuge,
               tipoEstadoCivilConjuge: sim.estado_civil_conjuge
@@ -803,6 +818,10 @@ export async function enviarSimulacaoImpl({
       const resp = await chamarIntegracao<any>("/oportunidade", "POST", payload, ctx);
       const op = resp?.oportunidade ?? resp ?? {};
       idOportunidade = String(op.idOportunidade ?? op.id ?? "");
+      if (!idOportunidade) {
+        throw new Error("Falha ao gerar oportunidade na integração.");
+      }
+
       await supabase
         .from("simulacoes")
         .update({
@@ -825,7 +844,7 @@ export async function enviarSimulacaoImpl({
 
     // Auditoria de renda enviada ao banco (Princípio #2d - Log de auditoria)
     const rendaEnviada = num(
-      sim.compoe_renda_conjuge ? num(sim.renda_total) + num(sim.renda_conjuge) : sim.renda_total,
+      compoeRenda ? num(sim.renda_total) + num(sim.renda_conjuge) : sim.renda_total,
     );
     await supabase.from("simulacao_historico").insert({
       simulacao_id: simulacaoId,
@@ -1151,44 +1170,63 @@ export async function enviarSimulacaoImpl({
             return { banco_id: b.banco_id, status: "erro" as const, mensagem: msg };
           }
 
+          const raw = integ ?? simResp;
+          const apiData = raw?.simulacao ?? raw?.data ?? raw;
+          const descBco = apiData?.descricaoRespostaBanco;
+          
+          const { extrairDetalheBanco } = await import("./detalhe-banco");
+          const detalhe = extrairDetalheBanco(raw);
+          
+          // REGRA 1: PERSISTIR O VALOR DO BANCO (Problema 1)
+          const rendaMinimaApi = num(descBco?.valorRendaLiquidaMinimaExigida) || num(descBco?.rendaMinimaExigida) || num(apiData?.rendaMinimaExigida);
+          const rendaMinimaFonte = rendaMinimaApi > 0 ? "banco" : "estimativa";
+
+          
+          // Se não veio do banco, calcula localmente para persistir
+          let rendaMinimaPersistir = rendaMinimaApi;
+          if (rendaMinimaFonte === "estimativa") {
+            const parcela = num(apiData?.valorParcelaBanco ?? apiData?.valorParcelaSimulacao);
+            if (parcela > 0) {
+              // Importa dinamicamente para evitar ciclos
+              const { tetoDoBanco, rendaMinimaParaParcela } = await import("./renda");
+              const teto = tetoDoBanco({ ...b, raw_response: raw });
+              // REGRA: A renda mínima estimada SEMPRE deriva da parcela retornada. Sem arredondamento fixo.
+              rendaMinimaPersistir = rendaMinimaParaParcela(parcela, teto);
+            }
+          }
+
           await supabase
             .from("simulacao_bancos")
             .update({
               homefin_id_simulacao_banco: idSimulacao,
               status_banco: "simulada",
-              mensagem_banco: null, // Limpa qualquer erro residual de tentativa anterior
-              // Marca a ORIGEM dos campos que têm fallback para o valor
-              // solicitado: a tela só exibe como resposta do banco o que o banco
-              // realmente informou (ver src/lib/simulacao/origem-dados.ts).
-              raw_response:
-                dados && typeof dados === "object"
-                  ? { ...(dados as any), _origem_dados: marcarOrigemDados(dadosApi) }
-                  : dados,
-
+              mensagem_banco: null,
+              raw_response: raw,
+              renda_minima_banco: rendaMinimaPersistir || null,
+              renda_minima_fonte: rendaMinimaFonte,
+              taxa_cet_ano: num(detalhe?.cet) || null,
               simulado_em: new Date().toISOString(),
-              valor_parcela: dadosApi?.valorParcelaBanco ?? dadosApi?.valorParcelaSimulacao ?? null,
-              taxa_juros_ano: dadosApi?.taxa_juros_ano_banco ?? dadosApi?.taxaJurosAnoBanco ?? null,
+              valor_parcela: apiData?.valorParcelaBanco ?? apiData?.valorParcelaSimulacao ?? null,
+              taxa_juros_ano: apiData?.taxa_juros_ano_banco ?? apiData?.taxaJurosAnoBanco ?? null,
+
               prazo_pagamento_max:
-                dadosApi?.prazoPagamentoBancoMax ??
-                dadosApi?.prazoPagamentoBanco ??
-                dadosApi?.prazoPagamentoSimulacao ??
+                apiData?.prazoPagamentoBancoMax ??
+                apiData?.prazoPagamentoBanco ??
+                apiData?.prazoPagamentoSimulacao ??
                 num(sim.prazo) ??
                 null,
               valor_financiamento_max:
-                dadosApi?.valorFinanciamentoBancoMax ??
-                dadosApi?.valorFinanciamentoBanco ??
-                dadosApi?.valorTotalFinanciamento ??
-                dadosApi?.valorFinanciamentoSimulacao ??
+                num(apiData?.valorTotalFinanciamento) ??
+                num(apiData?.valorFinanciamentoBancoMax) ??
+                num(apiData?.valorFinanciamentoBanco) ??
+                num(apiData?.valorFinanciamentoSimulacao) ??
                 num(sim.valor_financiamento) ??
                 null,
-              valor_parcela_max: dadosApi?.valorParcelaBancoMax ?? null,
-              codigo_indexador: dadosApi?.codigoIndexadorBanco ?? null,
-              valor_iof: dadosApi?.valorIofBanco ?? null,
-              // A API devolve `codigoSistemaAmortizacaoBanco` ora como string
-              // ("S"/"P"), ora como objeto `{ id: "S" }` — normalizamos para
-              // string curta antes de persistir na coluna texto.
+              valor_parcela_max: apiData?.valorParcelaBancoMax ?? null,
+              codigo_indexador: apiData?.codigoIndexadorBanco ?? null,
+              valor_iof: apiData?.valorIofBanco ?? null,
               sistema_amortizacao_banco: (() => {
-                const v = dadosApi?.codigoSistemaAmortizacaoBanco;
+                const v = apiData?.codigoSistemaAmortizacaoBanco;
                 if (v == null) return null;
                 if (typeof v === "string") return v;
                 if (typeof v === "object" && "id" in (v as any))
@@ -1220,28 +1258,45 @@ export async function enviarSimulacaoImpl({
       }
     };
 
+    // Envio sequencial aos bancos para garantir que a API não recuse por excesso de concorrência
+    // e que cada erro seja capturado individualmente.
     for (const b of bancos as any[]) {
-      resultados.push(await enviarBanco(b));
+      try {
+        const resultado = await enviarBanco(b);
+        resultados.push(resultado);
+      } catch (e: any) {
+        console.error(`[enviar.server] Falha isolada no banco ${b.id}:`, e);
+        // Tenta uma única vez a recuperação se não houve resposta
+        try {
+          console.info(`[enviar.server] Retrying bank ${b.banco_id} once...`);
+          const retry = await enviarBanco(b);
+          resultados.push(retry);
+        } catch (retryErr) {
+          resultados.push({ banco_id: b.banco_id, status: "erro", mensagem: String(e?.message ?? e) });
+        }
+      }
     }
 
-    // REGRA 3d: Marcar como erro bancos que ficaram sem homefin_id_simulacao_banco
-    const { data: bancosFinais } = await supabase
+    // REGRA: Tentativa final para bancos que ficaram em "aguardando" (não tentados pelo fan-out)
+    const { data: bancosRestantes } = await supabase
       .from("simulacao_bancos")
       .select("*")
       .eq("simulacao_id", simulacaoId)
-      .eq("selecionado", true);
+      .eq("selecionado", true)
+      .in("status_banco", ["aguardando", "enviando"]);
 
-    for (const b of bancosFinais ?? []) {
-      if (b.status_banco === "aguardando" && !b.homefin_id_simulacao_banco) {
-        const msg =
-          "Não foi possível iniciar a simulação neste banco. Nenhum dado foi enviado ao banco. Clique em reenviar.";
-        await supabase
-          .from("simulacao_bancos")
-          .update({
-            status_banco: "erro",
-            mensagem_banco: msg,
-          })
-          .eq("id", b.id);
+    for (const b of bancosRestantes ?? []) {
+      if (!b.homefin_id_simulacao_banco) {
+        try {
+          console.info(`[enviar.server] Tentativa de recuperação para banco ${b.banco_id}`);
+          await enviarBanco(b);
+        } catch (e) {
+          const msg = "Não foi possível iniciar a simulação neste banco. Nenhum dado foi enviado ao banco. Clique em reenviar.";
+          await supabase
+            .from("simulacao_bancos")
+            .update({ status_banco: "erro", mensagem_banco: msg })
+            .eq("id", b.id);
+        }
       }
     }
 
@@ -1308,13 +1363,17 @@ export async function enviarSimulacaoImpl({
     const msg = sanitizarMensagemErro(bruto);
 
     // Garante status terminal para TODOS os bancos desta chamada em caso de erro global antes do loop.
-    const idsLote = (bancos as any[]).map((b) => b.id);
-    if (idsLote.length > 0) {
-      await supabase
-        .from("simulacao_bancos")
-        .update({ status_banco: "erro", mensagem_banco: msg })
-        .in("id", idsLote)
-        .or("status_banco.eq.aguardando,status_banco.eq.enviando");
+    try {
+      const idsLote = (bancos as any[]).map((b) => b.id);
+      if (idsLote.length > 0) {
+        await supabase
+          .from("simulacao_bancos")
+          .update({ status_banco: "erro", mensagem_banco: msg })
+          .in("id", idsLote)
+          .or("status_banco.eq.aguardando,status_banco.eq.enviando");
+      }
+    } catch (err) {
+      console.error("[enviar.server] Erro ao marcar falha no lote:", err);
     }
 
     await supabase

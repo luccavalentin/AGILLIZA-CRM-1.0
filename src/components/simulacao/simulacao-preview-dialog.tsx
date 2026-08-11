@@ -71,8 +71,8 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl flex flex-col p-0 overflow-hidden max-h-[95vh]">
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle className="flex flex-wrap items-center gap-2">
             <span>Simulação</span>
             {sim?.numero_simulacao ? (
@@ -174,7 +174,7 @@ export function SimulacaoPreviewDialog({ simulacaoId, open, onOpenChange }: Prop
           </div>
         )}
 
-        <DialogFooter className="flex flex-wrap gap-2 sm:justify-between">
+        <DialogFooter className="flex flex-wrap gap-2 sm:justify-between p-6 pt-2">
           <Button variant="ghost" asChild disabled={!sim}>
             <Link to="/operacional/simulacoes/$id" params={{ id: simulacaoId ?? "" }}>
               <ExternalLink className="mr-1 size-4" /> Abrir simulação

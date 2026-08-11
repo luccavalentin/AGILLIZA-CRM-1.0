@@ -565,7 +565,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           email: dd.email_conjuge || null,
           celular: dd.celular_conjuge || null,
           data_nascimento: dd.data_nascimento_conjuge || null,
-          renda_total: dd.renda_total ?? 0, // Ambos usam a mesma renda individual (ajustado para soma na integração)
+          renda_total: dd.compoe_renda ? rendaTotalSoma : (dd.renda_conjuge ?? 0),
           estado_civil: dd.estado_civil_conjuge || dd.estado_civil,
 
           nome_conjuge: dd.nome_cliente || null,
@@ -583,7 +583,6 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         // Se composição de renda ativa, garante que ambos levem a MESMA renda somada
         if (dd.compoe_renda) {
           insert.renda_total = rendaTotalSoma;
-          // O cônjuge na simulação 1 mantém sua renda original para registro
           insertInvertido.renda_total = rendaTotalSoma;
         }
 

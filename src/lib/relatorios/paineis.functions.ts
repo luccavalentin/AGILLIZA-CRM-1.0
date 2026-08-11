@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { cn } from "@/lib/utils";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -1158,7 +1159,10 @@ export interface PanelDrilldown {
   linkAbrirLabel?: string;
 }
 
-const drillSchema = schema.extend({ metrica: z.string().min(1).max(80) });
+const drillSchema = schema.extend({ 
+  metrica: z.string().min(1).max(80),
+  valorAtual: z.string().optional()
+});
 
 function normLabel(s: string): string {
   return (s || "")
@@ -1252,7 +1256,9 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
     const dentroPeriodo = (iso?: string | null) => !!iso && dataBR(iso) >= de && dataBR(iso) <= ate;
 
     const { simRows, volumeSimulado } = await carregarVariaveisDrilldown(supabase, de, ate);
-    const chave = normLabel(data.metrica);
+    const chaveRaw = data.metrica;
+    const chave = normLabel(chaveRaw);
+    const categoria = data.valorAtual ? normLabel(data.valorAtual) : null;
 
     // O detalhamento precisa refletir integralmente o contador do card.
     const LIMITE = 5000;
@@ -1282,7 +1288,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         supabase
           .from("simulacoes")
           .select(
-            "id,numero_simulacao,status,valor_financiamento,created_at,clientes(nome),simulacao_bancos(nome_banco,selecionado,status_banco)",
+            "id,numero_simulacao,status,tipo_simulacao,valor_financiamento,created_at,clientes(nome),simulacao_bancos(nome_banco,selecionado,status_banco)",
           )
           .is("deleted_at", null)
           .gte("created_at", deIni)
@@ -2056,11 +2062,78 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
       }
     }
 
+    if (chave === "simulacoes por tipo" || chave === "simulacoes_por_tipo") {
+      let rows = await simulacoesNoPeriodo();
+      if (categoria) {
+        rows = rows.filter((s) => normLabel(s.tipo_simulacao === "C" ? "Completa" : "Rápida") === categoria);
+      }
+      return {
+        titulo: categoria ? `Simulações por tipo · ${data.valorAtual}` : "Simulações por tipo",
+        subtitulo: "Ordenadas da mais recente para a mais antiga",
+        valor: int(rows.length),
+        itens: rows.map((s) => ({
+          ...itemSimulacao(s),
+          sub: `${s.tipo_simulacao === "C" ? "Completa" : "Rápida"} · ${itemSimulacao(s).sub}`,
+        })),
+        linkAbrir: "/operacional/simulacoes",
+      };
+    }
+
+    if (chave === "clientes por etapa" || chave === "clientes_por_etapa") {
+      const res = await escopoEq(
+        supabase
+          .from("clientes")
+          .select("id, nome, documento, created_at, etapa_id, etapas_esteira(nome)")
+          .is("deleted_at", null)
+          .gte("created_at", deIni)
+          .lte("created_at", ateFim)
+          .order("created_at", { ascending: false })
+          .limit(LIMITE),
+        "responsavel_id",
+        "criador_id",
+        "@cli:id",
+      );
+      if (res.error) throw new Error(res.error.message);
+      let rows = (res.data ?? []) as any[];
+      if (categoria) {
+        rows = rows.filter((c) => normLabel(c.etapas_esteira?.nome) === categoria);
+      }
+      return {
+        titulo: categoria ? `Clientes por etapa · ${data.valorAtual}` : "Clientes por etapa",
+        subtitulo: "Etapa atual na esteira do CRM",
+        valor: int(rows.length),
+        itens: rows.map((c) => ({
+          label: c.nome ?? "Cliente",
+          sub: c.etapas_esteira?.nome || "Sem etapa",
+          data: fmtData(c.created_at),
+          to: `/crm/clientes/${c.id}`,
+        })),
+        linkAbrir: "/crm/painel",
+      };
+    }
+
+    if (chave === "qualificacao de renda por banco") {
+      const { de: deIni, ate: ateFim } = resolverIntervalo(f);
+      return {
+        titulo: "Qualificação de Renda (Performance dos Tetos)",
+        subtitulo: "Análise de comprometimento e acurácia do alerta",
+        valor: "Análise",
+        descricao: "Métricas para calibração dos limites de 30% (SAC) e 15% (PRICE).",
+        itens: [
+          {
+            label: "Análise de Falsos Negativos",
+            sub: "Rodar query SQL para cruzar propostas recusadas com renda declarada > mínima estimada.",
+          },
+        ],
+      };
+    }
+
+    console.warn(`[getPanelDrilldown] Chave não encontrada: "${chaveRaw}" (norm: "${chave}")`);
+
     return {
       titulo: data.metrica,
       subtitulo: "Detalhamento não disponível para este indicador",
-      descricao:
-        "Este KPI é calculado a partir de várias fontes e ainda não tem uma listagem específica de detalhamento. Consulte os relatórios para explorar em profundidade.",
+      descricao: `O indicador "${chaveRaw}" ainda não tem uma listagem específica de detalhamento configurada no servidor.`,
       itens: [],
     };
   });

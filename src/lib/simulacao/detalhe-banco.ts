@@ -24,6 +24,7 @@ export interface DetalheBanco {
   cet: number | null;
   valorImovel: number | null;
   valorFinanciamento: number | null;
+  valorTotalFinanciamento: number | null;
   financiamentoTotal: number | null;
   valorEntrada: number | null;
   despesasFinanciadas: number | null;
@@ -350,7 +351,8 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     taxaNominalAno,
     cet,
     valorImovel,
-    valorFinanciamento: valorFin,
+    valorFinanciamento: financiamentoBase ?? valorFin,
+    valorTotalFinanciamento: financiamentoTotalRaw,
     financiamentoTotal: num(r.valorTotalFinanciamento) ?? valorFin,
     valorEntrada,
     despesasFinanciadas,

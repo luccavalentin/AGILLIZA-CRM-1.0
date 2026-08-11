@@ -1,7 +1,7 @@
 import { Link2, Repeat } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -111,88 +111,32 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           />
           <Erro erros={erros} campo="cpf_cnpj" />
         </Campo>
+
         <Campo
           label={
             <>
-              {f.sistema_amortizacao === "B" ? "Renda familiar — SAC (R$)" : "Renda total (R$)"}{" "}
-              <Ast />
+              Renda familiar — SAC (R$) <Ast />
             </>
           }
         >
-          <div className="flex gap-2">
-            <CurrencyInput
-              value={f.renda_total}
-              onChange={(v) => set("renda_total", v)}
-              placeholder="Ex: 9.500,00"
-              className="flex-1"
-            />
-            {f.valor_financiamento > 0 && f.prazo > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-10 w-10 shrink-0 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
-                title="Preencher renda necessária (Qualificação)"
-                onClick={() => {
-                  const aval = avaliarRendaMinima({
-                    valor_financiamento: f.valor_financiamento,
-                    valor_imovel: f.valor_imovel,
-                    prazo_meses: f.prazo,
-                    taxa_ano: ctx.melhorTaxaAno,
-                    sistema: "S",
-                  });
-                  if (aval) set("renda_total", aval.rendaMinima);
-                }}
-              >
-                <Repeat className="h-4 w-4" />
-              </Button>
+          <div
+            id="campo-renda-sac"
+            className={cn(
+              "flex flex-col gap-2",
+              f.sistema_amortizacao === "S" &&
+                "rounded-lg border border-primary/20 bg-primary/[0.02] p-2 -m-2",
             )}
-          </div>
-          <Erro erros={erros} campo="renda_total" />
-          {f.valor_financiamento > 0 &&
-            (f.sistema_amortizacao === "S" || f.sistema_amortizacao === "B") && (
-              <div className="pt-1">
-                <DicaRendaMinima
-                  valorFinanciamento={f.valor_financiamento}
-                  valorImovel={f.valor_imovel}
-                  prazoMeses={f.prazo}
-                  taxaAno={ctx.melhorTaxaAno}
-                  sistema="S"
-                  rendaInformada={0}
-                  compoeRendaConjuge={f.compoe_renda && f.compoe_renda_conjuge}
-                />
-              </div>
-            )}
-
-          {f.valor_financiamento > 0 && f.sistema_amortizacao === "P" && (
-            <div className="pt-1">
-              <DicaRendaMinima
-                valorFinanciamento={f.valor_financiamento}
-                valorImovel={f.valor_imovel}
-                prazoMeses={f.prazo}
-                taxaAno={ctx.melhorTaxaAno}
-                sistema="P"
-                rendaInformada={0}
-                compoeRendaConjuge={f.compoe_renda && f.compoe_renda_conjuge}
-              />
-            </div>
-          )}
-        </Campo>
-        {f.sistema_amortizacao === "B" && (
-          <Campo
-            label={
-              <>
-                Renda familiar — PRICE (R$) <Ast />
-              </>
-            }
           >
-            <div id="campo-renda-price" className="flex gap-2">
+            <div className="flex gap-2">
               <CurrencyInput
-                value={f.renda_price ?? 0}
-                onChange={(v) => set("renda_price", v)}
-                placeholder="Ex: 12.000,00"
-                aria-invalid={!!erros.renda_price}
-                className="flex-1"
+                value={f.renda_total ?? 0}
+                onChange={(v) => set("renda_total", v)}
+                placeholder="Ex: 10.000,00"
+                aria-invalid={!!erros.renda_total}
+                className={cn(
+                  "flex-1",
+                  f.sistema_amortizacao === "S" && "border-primary/40 shadow-sm",
+                )}
               />
               {f.valor_financiamento > 0 && f.prazo > 0 && (
                 <Button
@@ -207,30 +151,100 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                       valor_imovel: f.valor_imovel,
                       prazo_meses: f.prazo,
                       taxa_ano: ctx.melhorTaxaAno,
-                      sistema: "P",
+                      sistema: "S",
                     });
-                    if (aval) set("renda_price", aval.rendaMinima);
+                    if (aval) set("renda_total", aval.rendaMinima);
                   }}
                 >
                   <Repeat className="h-4 w-4" />
                 </Button>
               )}
             </div>
-            <Erro erros={erros} campo="renda_price" />
-            {f.valor_financiamento > 0 && (
-              <div className="pt-1">
-                <DicaRendaMinima
-                  valorFinanciamento={f.valor_financiamento}
-                  valorImovel={f.valor_imovel}
-                  prazoMeses={f.prazo}
-                  taxaAno={ctx.melhorTaxaAno}
-                  sistema="P"
-                  rendaInformada={0}
+            <Erro erros={erros} campo="renda_total" />
+
+            {f.valor_financiamento > 0 &&
+              (f.sistema_amortizacao === "S" || f.sistema_amortizacao === "B") && (
+                <div className="pt-1">
+                  <DicaRendaMinima
+                    valorFinanciamento={f.valor_financiamento}
+                    valorImovel={f.valor_imovel}
+                    prazoMeses={f.prazo}
+                    taxaAno={ctx.melhorTaxaAno}
+                    sistema="S"
+                    rendaInformada={0}
+                    compoeRendaConjuge={f.compoe_renda && f.compoe_renda_conjuge}
+                  />
+                </div>
+              )}
+          </div>
+        </Campo>
+
+        {f.sistema_amortizacao === "B" && (
+          <Campo
+            label={
+              <>
+                Renda familiar — PRICE (R$) <Ast />
+              </>
+            }
+          >
+            <div
+              id="campo-renda-price"
+              className={cn(
+                "flex flex-col gap-2",
+                f.sistema_amortizacao === "P" &&
+                  "rounded-lg border border-primary/20 bg-primary/[0.02] p-2 -m-2",
+              )}
+            >
+              <div className="flex gap-2">
+                <CurrencyInput
+                  value={f.renda_price ?? 0}
+                  onChange={(v) => set("renda_price", v)}
+                  placeholder="Ex: 12.000,00"
+                  aria-invalid={!!erros.renda_price}
+                  className={cn(
+                    "flex-1",
+                    f.sistema_amortizacao === "P" && "border-primary/40 shadow-sm",
+                  )}
                 />
+                {f.valor_financiamento > 0 && f.prazo > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
+                    title="Preencher renda necessária (Qualificação)"
+                    onClick={() => {
+                      const aval = avaliarRendaMinima({
+                        valor_financiamento: f.valor_financiamento,
+                        valor_imovel: f.valor_imovel,
+                        prazo_meses: f.prazo,
+                        taxa_ano: ctx.melhorTaxaAno,
+                        sistema: "P",
+                      });
+                      if (aval) set("renda_price", aval.rendaMinima);
+                    }}
+                  >
+                    <Repeat className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-            )}
+              <Erro erros={erros} campo="renda_price" />
+              {f.valor_financiamento > 0 && (
+                <div className="pt-1">
+                  <DicaRendaMinima
+                    valorFinanciamento={f.valor_financiamento}
+                    valorImovel={f.valor_imovel}
+                    prazoMeses={f.prazo}
+                    taxaAno={ctx.melhorTaxaAno}
+                    sistema="P"
+                    rendaInformada={0}
+                  />
+                </div>
+              )}
+            </div>
           </Campo>
         )}
+
         <Campo
           label={
             <>

@@ -43,7 +43,7 @@ export function ChatConfigSheet({ className }: { className?: string }) {
             Ajuste o som das mensagens do chat. A preferência fica salva neste dispositivo.
           </SheetDescription>
         </SheetHeader>
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           <div className="space-y-6 p-5">
             <ChatSoundSetting />
           </div>

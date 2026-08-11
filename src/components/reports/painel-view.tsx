@@ -480,18 +480,10 @@ export function PainelView({
                 <PanelCard
                   titulo={data.porTipoSimulacao.titulo}
                   subtitulo={data.porTipoSimulacao.subtitulo}
-                  onOpen={() => abrirDetalhe(data.porTipoSimulacao!.titulo)}
+                  onOpen={() => abrirDetalhe("simulacoes_por_tipo")}
                 >
                   <div
-                    className="h-[240px] w-full cursor-pointer overflow-hidden rounded-lg transition-colors hover:bg-primary/[0.02]"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => abrirDetalhe(data.porTipoSimulacao!.titulo)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ")
-                        abrirDetalhe(data.porTipoSimulacao!.titulo);
-                    }}
-                    aria-label={`Ver detalhamento de ${data.porTipoSimulacao.titulo}`}
+                    className="h-[240px] w-full overflow-hidden rounded-lg"
                   >
                     <ReportChartView
                       chart={{
@@ -499,6 +491,7 @@ export function PainelView({
                         tipo: "donut",
                         dados: data.porTipoSimulacao.dados,
                       }}
+                      onSelect={(label) => abrirDetalhe("simulacoes_por_tipo", label)}
                     />
                   </div>
                 </PanelCard>
@@ -508,18 +501,10 @@ export function PainelView({
                   titulo={data.clientesPorEtapa.titulo}
                   subtitulo={data.clientesPorEtapa.subtitulo}
                   abrirTo="/crm/painel"
-                  onOpen={() => abrirDetalhe(data.clientesPorEtapa!.titulo)}
+                  onOpen={() => abrirDetalhe("clientes_por_etapa")}
                 >
                   <div
-                    className="w-full cursor-pointer overflow-hidden rounded-lg transition-colors hover:bg-primary/[0.02]"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => abrirDetalhe(data.clientesPorEtapa!.titulo)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ")
-                        abrirDetalhe(data.clientesPorEtapa!.titulo);
-                    }}
-                    aria-label={`Ver detalhamento de ${data.clientesPorEtapa.titulo}`}
+                    className="w-full overflow-hidden rounded-lg"
                     style={{
                       height: Math.min(
                         360,
@@ -533,6 +518,7 @@ export function PainelView({
                         tipo: "barh",
                         dados: data.clientesPorEtapa.dados,
                       }}
+                      onSelect={(label) => abrirDetalhe("clientes_por_etapa", label)}
                     />
                   </div>
                 </PanelCard>

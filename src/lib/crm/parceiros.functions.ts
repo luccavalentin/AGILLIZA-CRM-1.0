@@ -25,7 +25,7 @@ export const listarParceiros = createServerFn({ method: "GET" })
         "id, profile_id, razao_social, creci, tipo_pessoa, percentual_comissao, profiles!parceiro_detalhes_profile_id_fkey(nome, email, telefone)",
       )
       .order("created_at", { ascending: false })
-      .limit(300);
+      .limit(2000);
     if (error) throw new Error(error.message);
     return (data ?? []).map((p: any) => ({
       id: p.id,

@@ -33,7 +33,7 @@ export function ResumoCelula({
   destaque,
 }: {
   rotulo: string;
-  valor: string;
+  valor: ReactNode;
   detalhe?: string;
   destaque?: boolean;
 }) {

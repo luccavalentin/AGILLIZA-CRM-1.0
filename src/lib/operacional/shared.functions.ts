@@ -26,6 +26,7 @@ export const listarColegas = createServerFn({ method: "GET" })
       .select("id, nome, email, tipo_pessoa")
       .eq("correspondente_id", me.correspondente_id)
       .eq("ativo", true)
+      .limit(1000)
       .order("nome", { ascending: true });
     if (error) throw new Error(error.message);
     const profs = (data ?? []) as any[];

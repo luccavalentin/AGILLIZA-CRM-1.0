@@ -89,7 +89,7 @@ export function DialogClientesEtapa({
           <DialogDescription>Pesquise e clique para abrir o cadastro.</DialogDescription>
         </DialogHeader>
 
-        <div className="brand-scroll scroll-shadow-bottom flex-1 space-y-4 overflow-y-auto px-6 pb-6 pt-4">
+        <div className="brand-scroll scroll-shadow-bottom min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-6 pt-4">
           <div className="group relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
             <Input
@@ -231,7 +231,7 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
             </span>
           </div>
         </div>
-        <div className="brand-scroll scroll-shadow-bottom mt-3 flex-1 space-y-2 overflow-y-auto p-6 pt-0">
+        <div className="brand-scroll scroll-shadow-bottom mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto p-6 pt-0">
           {p.carregando ? (
             Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-16 w-full rounded-lg" />

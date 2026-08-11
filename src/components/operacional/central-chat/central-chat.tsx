@@ -213,7 +213,7 @@ export function CentralChatPage() {
               </TabsList>
             </Tabs>
           </div>
-          <ScrollArea className="flex-1">
+          <ScrollArea className="min-h-0 flex-1">
             {isLoading ? (
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />

@@ -80,7 +80,7 @@ export function gerarNomeArquivoPdf(b: any, s: any, d: DetalheBanco | null): str
   const banco = (b?.nome_banco ?? "Banco").trim();
   const cv = Math.round(d?.valorImovel ?? s.valor_imovel ?? 0);
   const finan = Math.round(
-    d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0,
+    d?.valorTotalFinanciamento ?? d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0,
   );
   const prazo = d?.prazoMeses ?? s.prazo ?? 0;
   const sistema = sistemaDoBanco(b, s);
@@ -309,14 +309,19 @@ function drawInfoFinanciamento(
   const itens: { label: string; valor: string }[] = [
     { label: "Valor de compra e venda", valor: brlOuTraco(d?.valorImovel ?? s.valor_imovel) },
     {
+      label: "Valor solicitado",
+      valor: brlOuTraco(d?.valorFinanciamento ?? s.valor_financiamento),
+    },
+    {
       label: "Despesas financiadas",
       valor: brlOuTraco(d?.despesasFinanciadas ?? s.valor_despesas_financiadas),
     },
     {
       label: "Valor de financiamento total",
       valor: brlOuTraco(
-        (d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0) +
-          (d?.despesasFinanciadas ?? s.valor_despesas_financiadas ?? 0),
+        d?.valorTotalFinanciamento ??
+          (d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0) +
+            (d?.despesasFinanciadas ?? s.valor_despesas_financiadas ?? 0),
       ),
     },
     {
@@ -327,8 +332,8 @@ function drawInfoFinanciamento(
           if (e != null && Number(e) > 0) return e;
           const vi = Number(d?.valorImovel ?? s.valor_imovel ?? 0);
           const vf = Number(
-            d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0,
-          );
+    d?.valorTotalFinanciamento ?? d?.financiamentoTotal ?? d?.valorFinanciamento ?? s.valor_financiamento ?? 0,
+  );
           const df = Number(d?.despesasFinanciadas ?? s.valor_despesas_financiadas ?? 0);
           const calc = vi - (vf - df);
           return vi > 0 && vf > 0 && calc > 0 ? calc : null;
@@ -756,7 +761,15 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     {
       label: "Financiamento",
       valor: formatBRL(
-        (Number(s.valor_financiamento) || 0) + (Number(s.valor_despesas_financiadas) || 0),
+        (bancos ?? []).some((b) => extrairDetalheBanco(b.raw_response)?.valorTotalFinanciamento)
+          ? Math.max(
+              ...(bancos ?? []).map(
+                (b) =>
+                  extrairDetalheBanco(b.raw_response)?.valorTotalFinanciamento ??
+                  (Number(s.valor_financiamento) || 0) + (Number(s.valor_despesas_financiadas) || 0),
+              ),
+            )
+          : (Number(s.valor_financiamento) || 0) + (Number(s.valor_despesas_financiadas) || 0),
       ),
     },
     { label: "Entrada", valor: formatBRL(s.valor_entrada) },
@@ -777,7 +790,7 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
 
   const rows: ReportRow[] = (bancos ?? []).map((b) => {
     const d = extrairDetalheBanco(b.raw_response);
-    const cet = d?.cet ?? b.cet;
+    const cet = b.taxa_cet_ano ?? d?.cet;
     const seguros = d?.seguroMensal ?? 0;
 
     return {
@@ -787,8 +800,8 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
       taxa: b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—",
       cet: cet != null ? formatTaxa(cet) : "—",
       renda:
-        b.renda_minima != null
-          ? formatBRL(b.renda_minima)
+        b.renda_minima_banco != null
+          ? formatBRL(b.renda_minima_banco)
           : rendaMinimaDoBanco(b) != null
             ? formatBRL(rendaMinimaDoBanco(b)!)
             : d?.rendaMinimaExigida
