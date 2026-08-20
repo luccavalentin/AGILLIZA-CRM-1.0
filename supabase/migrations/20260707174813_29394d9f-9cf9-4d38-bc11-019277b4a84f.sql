@@ -1,0 +1,1 @@
+ALTER TYPE public.escopo_dados ADD VALUE IF NOT EXISTS 'personalizado';
