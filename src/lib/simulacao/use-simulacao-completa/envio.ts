@@ -110,12 +110,8 @@ async function simularTitularesAlternativos(opts: {
     );
     return;
   }
-  toast.info(
-    `Testando CPF de ${alternativos.length} proponente(s): ${alternativos
-      .map((a) => a.nome)
-      .join(", ")}.`,
-  );
-
+  // Sem aviso de "testando": o próprio overlay já mostra o total de
+  // simulações e cada proponente aparece no resultado.
   for (const alternativo of alternativos) {
     try {
       const { id } = await criarSimulacao({
@@ -357,9 +353,6 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
   const titularesExtras: TitularAlternativo[] = f.testar_cpfs
     ? listarTitularesAlternativos(f)
     : [];
-  if (!f.testar_cpfs && listarTitularesAlternativos(f).length > 0) {
-    toast.info("Teste de CPF desligado — apenas o titular será simulado.");
-  }
   const rodadas: Array<{ chave?: string; nome?: string }> = [
     {},
     ...titularesExtras.map((t) => ({ chave: t.chave, nome: t.nome })),
