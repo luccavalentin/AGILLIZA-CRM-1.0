@@ -273,9 +273,15 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       // REGRA: Evitar duplicidade de registros (Reenviar em vez de duplicar)
       // Se já existe uma simulação equivalente criada nos últimos 20 minutos, reutilizamos.
       const vinteMinutosAtras = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+      // O CPF do titular faz parte da identidade da simulação. Sem ele, a
+      // simulação de um proponente testado (mesmo cliente_id herdado, mesmos
+      // valores, mesmo agrupador) era confundida com a do titular e o guard
+      // devolvia a do titular — o cônjuge nunca chegava a ser criado.
+      const cpfTitularSim = String(dd.cpf_cnpj ?? "").replace(/\D/g, "");
       const { data: existente } = await supabaseAdmin
         .from("simulacoes")
         .select("id, numero_simulacao, agrupador_id")
+        .eq("cpf_cnpj", cpfTitularSim)
         .eq("cliente_id", dd.cliente_id || "")
         .eq("sistema_amortizacao", dd.sistema_amortizacao || "S")
         .eq("valor_imovel", dd.valor_imovel || 0)

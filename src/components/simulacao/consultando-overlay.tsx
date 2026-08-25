@@ -174,20 +174,20 @@ export function ConsultandoOverlay({
             {/* Só a porcentagem no centro: com o logo dividindo o eixo vertical,
                 as duas peças ficavam fora do centro óptico do anel. */}
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-px">
-              <div className="flex items-baseline text-slate-900">
+              <div className="flex items-baseline text-[#000F9F]">
                 <span className="text-[34px] font-semibold leading-none tracking-[-0.03em] tabular-nums">
                   {pctExibido}
                 </span>
                 <span className="ml-px text-[16px] font-medium tracking-tight">%</span>
               </div>
-              <span className="text-[10px] font-medium uppercase tracking-[0.09em] text-slate-400">
+              <span className="text-[10px] font-medium uppercase tracking-[0.09em] text-[#000F9F]/45">
                 concluído
               </span>
             </div>
           </div>
 
           <div className="mt-6 w-full text-center">
-            <h2 className="text-[19px] font-semibold tracking-[-0.021em] text-slate-900">{titulo}</h2>
+            <h2 className="text-[19px] font-semibold tracking-[-0.021em] text-[#000F9F]">{titulo}</h2>
             <p className="mt-1.5 text-[13.5px] text-slate-500 tabular-nums">
               {totalReal > 0 ? (
                 <span>{totalRetornadas} de {totalReal} simulações processadas</span>
@@ -216,7 +216,7 @@ export function ConsultandoOverlay({
                       <div className="flex items-baseline justify-between gap-3">
                         <span className={cn(
                           "truncate text-[13.5px] font-medium tracking-[-0.01em] transition-colors",
-                          concluido ? "text-slate-900" : "text-slate-600"
+                          concluido ? "text-[#000F9F]" : "text-slate-500"
                         )}>
                           {nomeExibido}
                         </span>

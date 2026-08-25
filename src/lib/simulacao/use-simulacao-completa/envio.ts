@@ -102,7 +102,19 @@ async function simularTitularesAlternativos(opts: {
   aoConcluir?: (chave: string, estado: "retornada" | "erro", nomeBanco?: string) => void;
 }): Promise<void> {
   const alternativos = listarTitularesAlternativos(opts.f);
-  if (alternativos.length === 0) return;
+  if (alternativos.length === 0) {
+    // Silêncio aqui já custou caro: o usuário ligava o teste, via 10
+    // simulações em vez de 20 e não tinha como saber o motivo.
+    toast.warning(
+      "Teste de CPF não executado: nenhum proponente tem nome, CPF, data de nascimento e renda completos.",
+    );
+    return;
+  }
+  toast.info(
+    `Testando CPF de ${alternativos.length} proponente(s): ${alternativos
+      .map((a) => a.nome)
+      .join(", ")}.`,
+  );
 
   for (const alternativo of alternativos) {
     try {
@@ -142,6 +154,11 @@ async function simularTitularesAlternativos(opts: {
       });
     } catch (e) {
       console.error(`[Teste de CPF] Falha para ${alternativo.nome}:`, e);
+      toast.error(
+        `Não foi possível simular com ${alternativo.nome} como titular: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
       opts.bancosIds.forEach((bid) =>
         opts.aoConcluir?.(
           chaveItem(opts.sistema, opts.dadosBase.prazo, bid, alternativo.chave),
@@ -340,6 +357,9 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
   const titularesExtras: TitularAlternativo[] = f.testar_cpfs
     ? listarTitularesAlternativos(f)
     : [];
+  if (!f.testar_cpfs && listarTitularesAlternativos(f).length > 0) {
+    toast.info("Teste de CPF desligado — apenas o titular será simulado.");
+  }
   const rodadas: Array<{ chave?: string; nome?: string }> = [
     {},
     ...titularesExtras.map((t) => ({ chave: t.chave, nome: t.nome })),
@@ -790,6 +810,11 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
           });
         } catch (e) {
           console.error(`[Teste de CPF] Falha para ${extra.nome}:`, e);
+          toast.error(
+            `Não foi possível simular com ${extra.nome} como titular: ${
+              e instanceof Error ? e.message : String(e)
+            }`,
+          );
           bancosParaEnviar.forEach((bid) => marcar(bid, "erro"));
         }
       }
