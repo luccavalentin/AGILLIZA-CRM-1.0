@@ -109,11 +109,16 @@ export const completaSchema = z.object({
     errorMap: () => ({ message: "É necessário autorizar a consulta ao SCR/Bacen" }),
   }),
 }).refine((d) => {
-  // Só é obrigatório quando REALMENTE existe cônjuge (estado civil casado/união
-  // estável), o flag possui_conjuge está ativo e ele compõe renda.
-  const temConjuge =
-    d.possui_conjuge && (d.estado_civil === "CA" || d.estado_civil === "UE");
-  if (temConjuge && d.compoe_renda_conjuge && !d.sexo_conjuge) return false;
+  // Espelha `validarCamposSimulacao`: exige o sexo do cônjuge apenas quando um
+  // cônjuge de fato será enviado — casado/união estável, identificação
+  // preenchida e compondo renda. Sem `possui_conjuge`, que sobrevive a trocas
+  // de estado civil e bloqueava simulações de solteiros.
+  const ec = String(d.estado_civil ?? "").trim().toLowerCase();
+  const casado = ec === "ca" || ec === "ue" || ec === "casado" || ec === "uniao_estavel";
+  const conjugeIdentificado =
+    String(d.nome_conjuge ?? "").trim() !== "" ||
+    String(d.cpf_conjuge ?? "").replace(/\D/g, "") !== "";
+  if (casado && conjugeIdentificado && d.compoe_renda_conjuge && !d.sexo_conjuge) return false;
   return true;
 }, {
   message: "Selecione o sexo do cônjuge",

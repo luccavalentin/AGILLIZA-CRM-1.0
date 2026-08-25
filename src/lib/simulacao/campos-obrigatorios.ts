@@ -38,11 +38,19 @@ export function validarCamposSimulacao(sim: any): CampoFaltante[] {
   if (!(Number(sim?.renda_total) > 0)) add("Renda total");
   if (!rot(sim?.estado_civil)) add("Estado civil");
   
-  // REGRA: sexo_conjuge só é obrigatório se REALMENTE houver cônjuge
-  const temConjuge =
-    Boolean(sim?.possui_conjuge) &&
-    (rot(sim?.estado_civil) === "CA" || rot(sim?.estado_civil) === "UE");
-  if (temConjuge && !rot(sim?.sexo_conjuge)) add("Sexo do cônjuge");
+  // REGRA: o sexo do cônjuge só é exigido quando um cônjuge REALMENTE vai ser
+  // enviado ao banco — estado civil casado/união estável E identificação dele
+  // preenchida. A flag `possui_conjuge` não entra na conta: ela sobrevive a
+  // trocas de estado civil e já fez a simulação de um solteiro ser bloqueada
+  // pedindo o sexo de um cônjuge que não existe.
+  const ecTitular = rot(sim?.estado_civil).toLowerCase();
+  const casadoTitular =
+    ecTitular === "ca" || ecTitular === "ue" || ecTitular === "casado" || ecTitular === "uniao_estavel";
+  const conjugeIdentificado =
+    rot(sim?.nome_conjuge) !== "" || rot(sim?.cpf_conjuge).replace(/\D/g, "") !== "";
+  if (casadoTitular && conjugeIdentificado && !rot(sim?.sexo_conjuge)) {
+    add("Sexo do cônjuge");
+  }
 
   return faltantes;
 }
