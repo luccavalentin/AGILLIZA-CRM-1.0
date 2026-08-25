@@ -69,6 +69,8 @@ export function listarTitularesAlternativos(f: Form): TitularAlternativo[] {
       nome: String(f.nome_conjuge),
       vinculo: "Cônjuge",
       patch: {
+        // Não herda o cadastro do titular: cada proponente resolve o seu.
+        cliente_id: null,
         nome_cliente: f.nome_conjuge,
         cpf_cnpj: f.cpf_conjuge,
         data_nascimento: f.data_nascimento_conjuge,
@@ -114,6 +116,7 @@ export function listarTitularesAlternativos(f: Form): TitularAlternativo[] {
       nome: String(p.nome),
       vinculo: p.vinculo ? String(p.vinculo) : `Participante ${indice + 1}`,
       patch: {
+        cliente_id: null,
         nome_cliente: p.nome,
         cpf_cnpj: p.cpf_cnpj,
         data_nascimento: p.data_nascimento,
