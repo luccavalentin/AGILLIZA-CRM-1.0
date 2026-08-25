@@ -138,7 +138,16 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
             bancos: bancosParaProcessar.map(b => ({ idBanco: b.homefin_id_banco || b.codigo_banco, nomeBanco: b.nome_banco, codigoBanco: b.codigo_banco, flagSimulacao: "N" }))
           };
 
-          if (sim.possui_conjuge) {
+          // Só manda cônjuge quando ele existe de fato: estado civil casado e
+          // identificação preenchida. Confiar em `possui_conjuge` já enviou
+          // cônjuge fantasma de titular solteiro.
+          const ecSim = String(sim.estado_civil ?? "").trim().toLowerCase();
+          const casadoSim =
+            ecSim === "ca" || ecSim === "ue" || ecSim === "casado" || ecSim === "uniao_estavel";
+          const conjugeIdentificado =
+            String(sim.nome_conjuge ?? "").trim() !== "" ||
+            String(sim.cpf_conjuge ?? "").replace(/\D/g, "") !== "";
+          if (casadoSim && conjugeIdentificado) {
             payloadOp.nomeConjuge = sim.nome_conjuge; payloadOp.cpfConjuge = String(sim.cpf_conjuge || "").replace(/\D/g, "");
             payloadOp.dataNascimentoConjuge = sim.data_nascimento_conjuge; payloadOp.emailConjuge = sim.email_conjuge;
             payloadOp.celularConjuge = String(sim.celular_conjuge || "").replace(/\D/g, ""); payloadOp.rendaConjuge = num(sim.renda_conjuge);
