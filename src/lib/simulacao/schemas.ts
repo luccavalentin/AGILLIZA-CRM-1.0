@@ -91,7 +91,17 @@ export const completaSchema = z.object({
   email_conjuge: z.string().optional().nullable(),
   celular_conjuge: z.string().optional().nullable(),
   renda_conjuge: z.number().optional().nullable(),
-  sexo_conjuge: z.enum(["M", "F"]).optional().nullable(),
+  /**
+   * `.optional().nullable()` aceita `undefined` e `null`, mas NÃO string
+   * vazia — e é exatamente isso que o formulário grava ao limpar o cônjuge
+   * (ao trocar o estado civil para solteiro, por exemplo). Sem este
+   * preprocess, um titular solteiro era barrado com "Falta preencher: Sexo
+   * do cônjuge", vindo da própria validação do enum.
+   */
+  sexo_conjuge: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? null : v),
+    z.enum(["M", "F"]).optional().nullable(),
+  ),
   estado_civil_conjuge: z.string().optional().nullable(),
   regime_casamento: z.string().optional().nullable(),
   /** Teste automático de CPFs — precisa atravessar o schema para chegar ao
