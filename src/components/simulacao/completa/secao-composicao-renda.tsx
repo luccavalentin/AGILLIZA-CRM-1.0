@@ -1,4 +1,4 @@
-import { Plus, Trash2, UserPlus, Info, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, UserPlus, Users, Info, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import {
   AlertDialog,
@@ -71,7 +71,8 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     if ((field === "data_nascimento" || field === "compoe_renda") && proponenteSimulado.compoe_renda && proponenteSimulado.data_nascimento) {
       const proponentesAtuais = [
         { nome: f.nome_cliente || "Titular", vinculo: "Titular", dataNascimento: f.data_nascimento },
-        ...(f.compoe_renda_conjuge ? [{ nome: f.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: f.data_nascimento_conjuge }] : []),
+        // O cônjuge entra no teto de idade mesmo sem compor renda.
+        ...(f.data_nascimento_conjuge ? [{ nome: f.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: f.data_nascimento_conjuge }] : []),
         ...participantes.map((part: any) => part.id === id ? proponenteSimulado : part).filter((part: any) => part.compoe_renda)
       ];
 
@@ -394,6 +395,35 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         </>
       )}
 
+
+      {/* Teste automático de CPFs — só faz sentido havendo alguém para testar. */}
+      {ctx.titularesTestaveis.length > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-primary/15 bg-primary/5 p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Users className="h-5 w-5" />
+          </div>
+          <div className="flex-1 space-y-0.5">
+            <Label
+              htmlFor="testar-cpfs"
+              className="cursor-pointer text-sm font-semibold text-foreground"
+            >
+              Testar CPF de todos os proponentes
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Repete a simulação com {ctx.titularesTestaveis.map((t: any) => t.nome).join(", ")}
+              {" "}na posição de titular e compara as taxas ao final.
+            </p>
+            <p className="text-[11px] font-medium text-amber-600">
+              Multiplica as consultas aos bancos por {ctx.titularesTestaveis.length + 1}.
+            </p>
+          </div>
+          <Switch
+            id="testar-cpfs"
+            checked={Boolean(f.testar_cpfs)}
+            onCheckedChange={(v) => set("testar_cpfs", v)}
+          />
+        </div>
+      )}
 
       <div className="rounded-lg border bg-muted/30 px-4 py-3">
         <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

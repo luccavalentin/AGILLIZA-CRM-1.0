@@ -299,9 +299,12 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       const casado = dd.estado_civil === "CA" || dd.estado_civil === "UE" || dd.estado_civil === "casado" || dd.estado_civil === "uniao_estavel";
       // NORMALIZAÇÃO DE PRAZO ANTES DO INSERT (SERVER-SIDE DETERMINISTIC)
       const { prazoMaximoParaProponentes } = await import("./prazo");
+      // O teto de idade olha o proponente mais velho, componha ele renda ou
+      // não: o cônjuge assina o contrato de qualquer forma, e o banco recusa
+      // o prazo pela idade dele.
       const proponentesParaTeto = [
         { nome: dd.nome_cliente || "Titular", vinculo: "Titular", dataNascimento: dd.data_nascimento },
-        ...(casado && dd.compoe_renda_conjuge ? [{ nome: dd.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: dd.data_nascimento_conjuge }] : []),
+        ...(dd.data_nascimento_conjuge ? [{ nome: dd.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: dd.data_nascimento_conjuge }] : []),
         ...(dd.participantes || []).filter((p: any) => p.compoe_renda).map((p: any) => ({
           nome: p.nome,
           vinculo: p.vinculo,
@@ -318,7 +321,16 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       }
 
       const possuiConjugeMinimo = Boolean(dd.nome_conjuge) && Boolean(dd.cpf_conjuge) && Boolean(dd.data_nascimento_conjuge);
-      const testarAmbos = data.modo === "completa" && casado && possuiConjugeMinimo && dd.compoe_renda_conjuge !== false;
+      // Quando o teste de CPF está ligado, o cliente já cria e envia a
+      // simulação de cada proponente (cônjuge incluído) e as agrupa. Manter o
+      // inversor automático aqui geraria uma segunda simulação do cônjuge e
+      // dobraria as consultas ao banco.
+      const testarAmbos =
+        data.modo === "completa" &&
+        casado &&
+        possuiConjugeMinimo &&
+        dd.compoe_renda_conjuge !== false &&
+        !(dd as any).testar_cpfs;
       let cliente_id = dd.cliente_id ?? null;
       const clienteOrigemId = cliente_id;
 
@@ -341,20 +353,33 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         conjugeEmail?: string | null;
         conjugeCelular?: string | null;
         conjugeRenda?: number | null;
+        /** Dados do imóvel informados na simulação. */
+        imovelCep?: string | null;
+        imovelTipo?: string | null;
+        imovelUso?: string | null;
+        imovelSituacao?: string | null;
+        imovelValor?: number | null;
       }) => {
         const nome = (params.nome ?? "").trim();
         const documento = limparDocumento(params.documento);
         if (!nome || !documento) return null;
         const conjugeCpf = limparDocumento(params.conjugeCpf);
+        // Colunas enum do Postgres não aceitam string vazia — só um valor
+        // válido ou NULL. Campos não preenchidos no formulário chegam como ""
+        // e derrubariam o insert com "invalid input value for enum".
+        const enumOuNulo = (v: unknown) => {
+          const s = String(v ?? "").trim();
+          return s === "" ? null : s;
+        };
         const campos = {
           nome,
           tipo_pessoa: documento.length > 11 ? "PJ" : "PF",
           email: (params.email ?? "").trim().toLowerCase() || null,
           telefone_celular: params.celular ?? null,
           data_nascimento: params.dataNascimento || null,
-          sexo: params.sexo ?? null,
+          sexo: enumOuNulo(params.sexo),
           estado_civil: mapEstadoCivilEnum(params.estadoCivil),
-          regime_casamento: params.regimeCasamento ?? null,
+          regime_casamento: enumOuNulo(params.regimeCasamento),
           renda_total_declarada: params.renda ?? null,
           uf_interesse: params.ufInteresse ?? null,
           utiliza_fgts: params.utilizaFgts ?? false,
@@ -364,7 +389,18 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           conjuge_email: params.conjugeEmail ?? null,
           conjuge_celular: params.conjugeCelular ?? null,
           conjuge_renda: params.conjugeRenda ?? null,
+          conjuge_sexo: enumOuNulo(params.conjugeSexo),
+          imovel_cep: params.imovelCep || null,
+          imovel_tipo: enumOuNulo(params.imovelTipo),
+          imovel_uso: enumOuNulo(params.imovelUso),
+          imovel_situacao: enumOuNulo(params.imovelSituacao),
+          imovel_valor: params.imovelValor ?? null,
         } as any;
+        // Não sobrescreve o cadastro com vazio: o que a simulação não coletou
+        // deve preservar o que já existe no CRM.
+        for (const [k, v] of Object.entries(campos)) {
+          if (v === null || v === undefined) delete (campos as any)[k];
+        }
         const { data: existente, error: errBusca } = await supabaseAdmin
           .from("clientes")
           .select("id")
@@ -480,6 +516,11 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         conjugeCelular: casado ? dd.celular_conjuge : null,
         conjugeRenda: casado ? dd.renda_conjuge : null,
         conjugeSexo: casado ? dd.sexo_conjuge : null,
+        imovelCep: dd.cep_imovel,
+        imovelTipo: dd.tipo_imovel,
+        imovelUso: dd.uso_imovel,
+        imovelSituacao: dd.situacao_imovel,
+        imovelValor: dd.valor_imovel,
       });
       if (titularId) cliente_id = titularId;
 
@@ -503,6 +544,11 @@ export const criarSimulacao = createServerFn({ method: "POST" })
             conjugeRenda: dd.renda_total,
             sexo: dd.sexo_conjuge,
             conjugeSexo: dd.sexo,
+            imovelCep: dd.cep_imovel,
+            imovelTipo: dd.tipo_imovel,
+            imovelUso: dd.uso_imovel,
+            imovelSituacao: dd.situacao_imovel,
+            imovelValor: dd.valor_imovel,
           })
         : null;
       await replicarVinculos(clienteOrigemId, [titularId, conjugeId]);
@@ -529,8 +575,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         email_conjuge: dd.email_conjuge ?? null,
         celular_conjuge: dd.celular_conjuge ?? null,
         renda_conjuge: dd.renda_conjuge ?? null,
-        estado_civil_conjuge: dd.estado_civil_conjuge ?? null,
-        regime_casamento: dd.regime_casamento ?? null,
+        estado_civil_conjuge: dd.estado_civil_conjuge || null,
+        // Enum: "" derruba o insert, precisa virar NULL.
+        regime_casamento: dd.regime_casamento || null,
         produto: dd.produto ?? null,
         id_operacao_homefin: dd.id_operacao_homefin ?? null,
         agrupador_id: (dd as any).agrupador_id ?? null,
@@ -880,11 +927,13 @@ export const obterSimulacao = createServerFn({ method: "GET" })
     let simIds: string[] = [data.id];
     let irmas: any[] = [];
     if (agrupador) {
+      // O agrupador é um UUID gerado por envio, então já isola o grupo sozinho.
+      // Filtrar também por cliente_id excluía justamente as simulações do teste
+      // de CPF — cada proponente testado é um cliente diferente no CRM.
       const { data: pares } = await supabase
         .from("simulacoes")
         .select("*")
-        .eq("agrupador_id", agrupador)
-        .eq("cliente_id", simulacao.cliente_id || ""); // REGRA 4a: Filtra irmãs também por cliente_id
+        .eq("agrupador_id", agrupador);
       irmas = pares ?? [];
       simIds = Array.from(new Set(irmas.map((p: any) => p.id)));
       if (!simIds.includes(data.id)) simIds.push(data.id);
@@ -899,20 +948,38 @@ export const obterSimulacao = createServerFn({ method: "GET" })
     // Mapa simulacao_id -> sistema/prazo para etiquetar os bancos com dados de origem.
     const sistemaPorSim = new Map<string, string>();
     const prazoPorSim = new Map<string, number>();
+    /** Quem figura como titular em cada simulação irmã (teste de CPF). */
+    const titularPorSim = new Map<string, { nome: string; cpf: string }>();
     const registros = irmas.length ? irmas : [simulacao];
 
     for (const r of registros) {
       sistemaPorSim.set((r as any).id, (r as any).sistema_amortizacao ?? "S");
       prazoPorSim.set((r as any).id, (r as any).prazo);
+      titularPorSim.set((r as any).id, {
+        nome: (r as any).nome_cliente ?? "",
+        // Só dígitos: o CPF é gravado ora mascarado, ora limpo, e comparar as
+        // strings cruas fazia a mesma pessoa ser lida como duas.
+        cpf: String((r as any).cpf_cnpj ?? "").replace(/\D/g, ""),
+      });
     }
 
-    const bancos = (bancosRaw ?? []).map((b: any) => ({
-      ...b,
-      _sistema: sistemaPorSim.get(b.simulacao_id) === "P" ? "PRICE" : "SAC",
-      _prazo: prazoPorSim.get(b.simulacao_id) ?? (simulacao as any).prazo,
-      prazo_min_banco: b.prazo_min_banco ?? null,
-      prazo_max_banco: b.prazo_max_banco ?? null,
-    }));
+    const cpfPrincipal = String((simulacao as any).cpf_cnpj ?? "").replace(/\D/g, "");
+
+    const bancos = (bancosRaw ?? []).map((b: any) => {
+      const titular = titularPorSim.get(b.simulacao_id);
+      return {
+        ...b,
+        _sistema: sistemaPorSim.get(b.simulacao_id) === "P" ? "PRICE" : "SAC",
+        _prazo: prazoPorSim.get(b.simulacao_id) ?? (simulacao as any).prazo,
+        // Etiquetas do teste de CPF: permitem à tela separar "titular" das
+        // simulações feitas com outro proponente na posição de titular.
+        _titularNome: titular?.nome ?? (simulacao as any).nome_cliente ?? "",
+        _titularCpf: titular?.cpf ?? cpfPrincipal,
+        _ehTitularPrincipal: (titular?.cpf ?? cpfPrincipal) === cpfPrincipal,
+        prazo_min_banco: b.prazo_min_banco ?? null,
+        prazo_max_banco: b.prazo_max_banco ?? null,
+      };
+    });
 
     const { data: historico } = await supabase
       .from("simulacao_historico")

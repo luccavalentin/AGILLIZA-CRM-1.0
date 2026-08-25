@@ -94,6 +94,9 @@ export const completaSchema = z.object({
   sexo_conjuge: z.enum(["M", "F"]).optional().nullable(),
   estado_civil_conjuge: z.string().optional().nullable(),
   regime_casamento: z.string().optional().nullable(),
+  /** Teste automático de CPFs — precisa atravessar o schema para chegar ao
+   *  servidor, que desliga o inversor automático quando o cliente assume. */
+  testar_cpfs: z.boolean().optional().default(false),
   // Participantes adicionais
   participantes: z.array(participanteSchema).default([]),
   // Bancos

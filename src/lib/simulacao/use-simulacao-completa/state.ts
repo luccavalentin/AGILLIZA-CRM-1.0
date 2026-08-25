@@ -55,6 +55,7 @@ export const ESTADO_INICIAL: Form = {
   email: EMAIL_PADRAO,
   celular: "",
   possui_conjuge: false,
+  regime_casamento: "",
   // Composição de renda é derivada do estado civil/cônjuge — começa desligada.
   compoe_renda: false,
   compoe_renda_conjuge: false,
@@ -63,6 +64,12 @@ export const ESTADO_INICIAL: Form = {
   bancos_price_ids: [] as string[],
   participantes: [] as any[],
   possui_participantes: false,
+  /**
+   * Testagem automática de CPFs: repete a simulação com cada proponente apto
+   * (cônjuge e participantes) na posição de titular, para comparar as taxas.
+   * Multiplica as consultas ao banco — por isso começa desligada.
+   */
+  testar_cpfs: false,
 
   consentimento_lgpd: false,
   consentimento_scr: false,

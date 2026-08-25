@@ -16,7 +16,9 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
     const { prazoMaximoParaProponentes } = await import("./prazo");
     const proponentes = [
       { nome: sim.nome_cliente || "Titular", vinculo: "Titular", dataNascimento: sim.data_nascimento },
-      ...(sim.possui_conjuge && sim.compoe_renda_conjuge ? [{ nome: sim.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: sim.data_nascimento_conjuge }] : []),
+      // Mais velho manda, componha renda ou não — a idade do cônjuge limita o
+      // prazo do contrato mesmo quando ele entra só como coobrigado.
+      ...(sim.data_nascimento_conjuge ? [{ nome: sim.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: sim.data_nascimento_conjuge }] : []),
       ...(latestParts || []).map(p => ({ nome: p.nome, vinculo: p.vinculo, dataNascimento: p.data_nascimento }))
     ];
     
@@ -140,7 +142,11 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
             payloadOp.nomeConjuge = sim.nome_conjuge; payloadOp.cpfConjuge = String(sim.cpf_conjuge || "").replace(/\D/g, "");
             payloadOp.dataNascimentoConjuge = sim.data_nascimento_conjuge; payloadOp.emailConjuge = sim.email_conjuge;
             payloadOp.celularConjuge = String(sim.celular_conjuge || "").replace(/\D/g, ""); payloadOp.rendaConjuge = num(sim.renda_conjuge);
-            payloadOp.tipoEstadoCivilConjuge = { id: estadoCivilCrmParaCodigo(sim.estado_civil) };
+            // Usa o estado civil do próprio cônjuge; só cai no do titular
+            // quando a coluna dedicada está vazia.
+            payloadOp.tipoEstadoCivilConjuge = {
+              id: estadoCivilCrmParaCodigo(sim.estado_civil_conjuge || sim.estado_civil),
+            };
           }
 
           const resp = await chamarIntegracao<any>("/oportunidade", "POST", payloadOp, { simulacao_id: simulacaoId });

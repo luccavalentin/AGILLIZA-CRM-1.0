@@ -26,6 +26,7 @@ import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
 import { DateInput } from "@/components/shared/date-input";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { ESTADOS_CIVIS } from "@/lib/simulacao/schemas";
+import { REGIMES } from "@/components/crm/cliente-form/constants";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
@@ -229,6 +230,25 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               {ESTADOS_CIVIS.map((p) => (
                 <SelectItem key={p.value} value={p.value}>
                   {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Campo>
+        {/* Regime de casamento vive aqui para não obrigar uma volta ao CRM
+            só para completar o cadastro no meio de uma simulação. */}
+        <Campo label="Regime de casamento">
+          <Select
+            value={f.regime_casamento ?? ""}
+            onValueChange={(v) => set("regime_casamento", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              {REGIMES.map((r) => (
+                <SelectItem key={r.v} value={r.v}>
+                  {r.l}
                 </SelectItem>
               ))}
             </SelectContent>

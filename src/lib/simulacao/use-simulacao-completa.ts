@@ -9,6 +9,7 @@ import {
 import { validarCamposSimulacao } from "@/lib/simulacao/campos-obrigatorios";
 import { completaSchema } from "@/lib/simulacao/schemas";
 import { 
+  ehCasado,
   prazoMaximoParaProponentes, 
   avaliarNovoPrazo, 
   type MotivoLimitador
@@ -48,7 +49,12 @@ import {
   faltaConjugeDoCRM,
   patchInverterPrincipal,
 } from "./use-simulacao-completa/cliente-crm";
-import { executarEnvioAmbos, executarEnvioSimples } from "./use-simulacao-completa/envio";
+import {
+  executarEnvioAmbos,
+  executarEnvioSimples,
+  type SimulacaoComparativo,
+} from "./use-simulacao-completa/envio";
+import { listarTitularesAlternativos } from "./use-simulacao-completa/titulares-alternativos";
 
 export type { Form };
 
@@ -73,6 +79,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const [simulacaoResultadoId, setSimulacaoResultadoId] = useState<string | null>(null);
   const [simulacaoResultadoIdPrice, setSimulacaoResultadoIdPrice] = useState<string | null>(null);
   const [simulacaoResultadoIdSecundario, setSimulacaoResultadoIdSecundario] = useState<string | null>(null);
+  /** Simulações do teste automático de CPFs, para o comparativo de taxas. */
+  const [comparativoCpfs, setComparativoCpfs] = useState<SimulacaoComparativo[]>([]);
   const [listaSimulacoes, setListaSimulacoes] = useState<any[]>([]);
   const [formInvalido, setFormInvalido] = useState(false);
   const [tentouEnviar, setTentouEnviar] = useState(false);
@@ -108,7 +116,40 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     enabled: Boolean(duplicar),
   });
 
-  const dadosProponentes = useMemo(() => [{ nome: f.nome_cliente || "Titular", vinculo: "Titular", dataNascimento: f.data_nascimento }], [f.nome_cliente, f.data_nascimento]);
+  /**
+   * O teto de prazo é ditado pelo proponente MAIS VELHO — titular, cônjuge ou
+   * participante. Considerar só o titular exibia um teto maior do que o banco
+   * aceita, e o servidor acabava reduzindo o prazo depois do envio.
+   */
+  const dadosProponentes = useMemo(
+    () => [
+      { nome: f.nome_cliente || "Titular", vinculo: "Titular", dataNascimento: f.data_nascimento },
+      ...(ehCasado(f.estado_civil) && f.data_nascimento_conjuge
+        ? [
+            {
+              nome: f.nome_conjuge || "Cônjuge",
+              vinculo: "Cônjuge",
+              dataNascimento: f.data_nascimento_conjuge,
+            },
+          ]
+        : []),
+      ...((f.participantes as any[]) ?? [])
+        .filter((p) => p?.compoe_renda && p?.data_nascimento)
+        .map((p) => ({
+          nome: p.nome || "Participante",
+          vinculo: p.vinculo || "Participante",
+          dataNascimento: p.data_nascimento,
+        })),
+    ],
+    [
+      f.nome_cliente,
+      f.data_nascimento,
+      f.estado_civil,
+      f.nome_conjuge,
+      f.data_nascimento_conjuge,
+      f.participantes,
+    ],
+  );
   const analisePrazo = useMemo(() => prazoMaximoParaProponentes(dadosProponentes), [dadosProponentes]);
   const maxPrazoIdade = analisePrazo?.prazo;
   const limitadorPrazo = analisePrazo?.limitador;
@@ -151,14 +192,18 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const melhorTaxaAno = useMemo(() => 0.1199, []);
   const rendaConsiderada = useMemo(() => Number(f.renda_total || 0) + Number(f.renda_conjuge || 0), [f.renda_total, f.renda_conjuge]);
   /** Casado(a) ou união estável — único gatilho para existir cônjuge. */
-  const casado = f.estado_civil === "CA" || f.estado_civil === "UE";
-  /** A seção de cônjuge aparece assim que o estado civil indica cônjuge,
-   *  venha o cadastro do CRM ou seja digitado direto na simulação. */
-  const mostraConjuge = useMemo(
-    () => casado || f.possui_conjuge || Boolean(f.compoe_renda_conjuge),
-    [casado, f.possui_conjuge, f.compoe_renda_conjuge],
-  );
+  const casado = ehCasado(f.estado_civil);
+  /**
+   * O estado civil é a ÚNICA fonte de verdade para a seção de cônjuge.
+   * Antes bastava um `possui_conjuge`/`compoe_renda_conjuge` residual — vindo
+   * de um cadastro do CRM ou de uma simulação duplicada — para a seção
+   * aparecer e cobrar o sexo do cônjuge de um titular solteiro.
+   */
+  const mostraConjuge = casado;
   
+  /** Proponentes aptos a serem testados como titular (além do titular atual). */
+  const titularesTestaveis = useMemo(() => listarTitularesAlternativos(f), [f]);
+
   const crmVinculado = Boolean(f.cliente_id);
   const podePuxarConjugeCrm = Boolean(f.cliente_id && casado);
   const [crmData, setCrmData] = useState<any>(null);
@@ -187,9 +232,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       // com ou sem cadastro do CRM vinculado. Sair desses estados desliga a
       // seção e limpa os dados, para não sobrar cônjuge órfão na simulação.
       if (k === "estado_civil") {
-        const ehCasado = v === "CA" || v === "UE";
-        next.possui_conjuge = ehCasado;
-        if (ehCasado) {
+        const passaASerCasado = ehCasado(v);
+        next.possui_conjuge = passaASerCasado;
+        if (passaASerCasado) {
           if (!next.estado_civil_conjuge) next.estado_civil_conjuge = v;
         } else {
           next.compoe_renda = false;
@@ -434,7 +479,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     ctxRef.current = {
       f, idOperacao, prazoMaximo: prazoMaximoEfetivo, motivoLimitador, modoProposta, router,
       setErros, setEnviando, setConcluidos, setListaSimulacoes, setSimulacaoResultadoId,
-      setSimulacaoResultadoIdPrice, setSimulacaoResultadoIdSecundario, bancos, set,
+      setSimulacaoResultadoIdPrice, setSimulacaoResultadoIdSecundario, setComparativoCpfs, bancos, set,
       confirmarAjustePrazo, setConfirmarAjustePrazo, avaliarPrazoComConfirmacao, aplicarAjustePrazo,
       cancelarAjustePrazo, definirPrazo, handlePrazoBlur, ltvMax, financiamentoMaximo, entradaMinima,
       entradaMinimaEfetiva, financiamentoExcedido, maxPrazoIdade, restricaoEspecial, prazoMinOperacional: 0,
@@ -483,6 +528,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     podeInverter, melhorTaxaAno, rendaConsiderada, mostraConjuge, puxarConjugeDoCRM,
     inverterPrincipal, selecionarClienteCRM, limparTitular, refetchCrm,
     simulacaoResultadoId, simulacaoResultadoIdPrice, simulacaoResultadoIdSecundario,
+    comparativoCpfs, limparComparativoCpfs: () => setComparativoCpfs([]),
+    titularesTestaveis,
     fecharResultadoInline: () => setSimulacaoResultadoId(null), 
     fecharResultadoInlinePrice: () => setSimulacaoResultadoIdPrice(null),
     fecharResultadoInlineSecundario: () => setSimulacaoResultadoIdSecundario(null),

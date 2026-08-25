@@ -37,6 +37,7 @@ import { SecaoBancos } from "@/components/simulacao/completa/secao-bancos";
 import { SecaoConsentimentos } from "@/components/simulacao/completa/secao-consentimentos";
 import { EnviarPropostaDialog } from "@/components/simulacao/enviar-proposta-dialog";
 import { SecaoComposicaoRenda } from "@/components/simulacao/completa/secao-composicao-renda";
+import { ComparativoCpfsDialog } from "@/components/simulacao/completa/comparativo-cpfs-dialog";
 
 import { ResultadoInlineCompleta } from "@/components/simulacao/completa/resultado-inline";
 import { ResultadoInlineAmbos } from "@/components/simulacao/completa/resultado-inline-ambos";
@@ -346,6 +347,7 @@ function Pagina() {
                 <ResultadoInlineAmbos
                   simulacaoIdSac={simulacaoResultadoId}
                   simulacaoIdPrice={simulacaoResultadoIdPrice}
+                  idsExtras={ctx.comparativoCpfs.flatMap((p: any) => p.ids)}
                   onFechar={() => {
                     fecharResultadoInline();
                     fecharResultadoInlinePrice();
@@ -410,6 +412,13 @@ function Pagina() {
       />
 
       {/* O bloqueio preventivo foi removido. A renda mínima agora é apenas informativa no painel de resultados. */}
+
+      {/* Teste automático de CPFs entre os proponentes */}
+      <ComparativoCpfsDialog
+        aberto={ctx.comparativoCpfs.length > 1}
+        onClose={ctx.limparComparativoCpfs}
+        proponentes={ctx.comparativoCpfs}
+      />
 
       {/* Popup de Comparação de Taxas (Dual CPF) */}
       <ComparativoTaxasDialog
