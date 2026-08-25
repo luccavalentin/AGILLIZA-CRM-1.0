@@ -34,16 +34,8 @@ export function SecaoConsentimentos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         </label>
         <Erro erros={erros} campo="consentimento_scr" />
       </div>
-
-      <div className="rounded-lg border border-border bg-muted/50 p-3">
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <Checkbox
-            checked={f.download_automatico !== false}
-            onCheckedChange={(c) => set("download_automatico", Boolean(c))}
-          />
-          <span>Baixar simulação em PDF automaticamente após gerar</span>
-        </label>
-      </div>
+      {/* O controle de download automático do PDF vive na seção de bancos —
+          esta seção trata apenas de consentimentos. */}
     </section>
   );
 }

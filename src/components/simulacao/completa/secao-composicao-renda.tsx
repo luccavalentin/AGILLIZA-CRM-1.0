@@ -101,49 +101,29 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
   };
 
   const updateParticipanteExec = (id: string, field: string, value: any) => {
-    const lista = participantes.map((p: any) => {
-      if (p.id !== id) return p;
-      const next = { ...p, [field]: value };
-      
-      // Regra: se o vínculo for Cônjuge, atualiza campos nativos de cônjuge
-      if (field === "vinculo" && value === "conjuge") {
-        set("possui_conjuge", true);
-        set("compoe_renda_conjuge", next.compoe_renda);
-        if (next.nome) set("nome_conjuge", next.nome);
-        if (next.cpf_cnpj) set("cpf_conjuge", next.cpf_cnpj);
-        if (next.data_nascimento) set("data_nascimento_conjuge", next.data_nascimento);
-        if (next.renda) set("renda_conjuge", next.renda);
-        if (next.sexo) set("sexo_conjuge", next.sexo);
-        if (next.estado_civil) set("estado_civil_conjuge", next.estado_civil);
-      }
-      
-      return next;
-    });
+    const lista = participantes.map((p: any) =>
+      p.id === id ? { ...p, [field]: value } : p,
+    );
     set("participantes", lista);
   };
 
   const updateParticipante = handleUpdateField;
 
   const removeParticipante = (id: string) => {
-    const p = participantes.find((p: any) => p.id === id);
-    if (p?.vinculo === "conjuge") {
-       // Se remover o participante cônjuge, mantém os campos mas desativa a flag de composição? 
-       // A instrução diz que a tabela convive.
-    }
     set("participantes", participantes.filter((p: any) => p.id !== id));
   };
 
-  const totalConsiderado = 
-    (Number(f.renda_total) || 0) + 
+  const totalConsiderado =
+    (Number(f.renda_total) || 0) +
     (f.compoe_renda_conjuge ? Number(f.renda_conjuge) || 0 : 0) +
-    (participantes || []).filter((p: any) => p.compoe_renda && p.vinculo !== "conjuge").reduce((acc: number, p: any) => acc + (Number(p.renda) || 0), 0);
+    (participantes || []).filter((p: any) => p.compoe_renda).reduce((acc: number, p: any) => acc + (Number(p.renda) || 0), 0);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4 rounded-lg border bg-muted/20 p-4">
           <Label htmlFor="possui_participantes" className="flex-1 cursor-pointer">
-            <div className="text-sm font-semibold">Deseja adicionar ou compor renda com terceiros?</div>
+            <div className="text-sm font-semibold">Adicionar terceiros</div>
             <div className="text-xs text-muted-foreground">Além do titular e cônjuge</div>
           </Label>
           <div className="flex bg-muted p-1 rounded-md">
@@ -199,12 +179,27 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             <div className="space-y-8">
               {participantes.map((p: any, index: number) => (
                 <div key={p.id} className="relative p-5 border rounded-xl bg-card shadow-sm space-y-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-primary font-bold">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[10px]">
-                        {index + 1}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[10px]">
+                          {index + 1}
+                        </div>
+                        Participante
                       </div>
-                      Participante
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id={`compoe-${p.id}`}
+                          checked={p.compoe_renda}
+                          onCheckedChange={(v) => updateParticipante(p.id, "compoe_renda", v)}
+                        />
+                        <Label
+                          htmlFor={`compoe-${p.id}`}
+                          className="text-sm font-medium cursor-pointer"
+                        >
+                          Compõe renda
+                        </Label>
+                      </div>
                     </div>
                     <Button
                       type="button"
@@ -227,7 +222,8 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                           <SelectValue placeholder="Selecione o vínculo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="companheiro">Companheiro(a)</SelectItem>
+                          {/* Cônjuge/companheiro(a) não entra como terceiro:
+                              tem seção própria, dirigida pelo estado civil. */}
                           <SelectItem value="pai">Pai</SelectItem>
                           <SelectItem value="mae">Mãe</SelectItem>
                           <SelectItem value="filho">Filho(a)</SelectItem>
@@ -325,16 +321,6 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                       />
                     </Campo>
 
-                    <div className="flex items-center gap-2 pt-6">
-                      <Switch
-                        id={`compoe-${p.id}`}
-                        checked={p.compoe_renda}
-                        onCheckedChange={(v) => updateParticipante(p.id, "compoe_renda", v)}
-                      />
-                      <Label htmlFor={`compoe-${p.id}`} className="text-sm font-medium cursor-pointer">
-                        Compõe renda
-                      </Label>
-                    </div>
                   </div>
 
                   {p.compoe_renda && (
@@ -409,36 +395,43 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       )}
 
 
-      <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 space-y-2">
-        <h4 className="font-semibold text-primary text-sm uppercase tracking-wider">Renda considerada para o cálculo</h4>
-        <div className="space-y-1 text-sm">
-          <div className="flex justify-between">
-            <span>Titular</span>
-            <span className="font-medium">{formatBRL(f.renda_total)}</span>
+      <div className="rounded-lg border bg-muted/30 px-4 py-3">
+        <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Renda considerada
+        </h4>
+        <dl className="mt-2 space-y-1 text-sm">
+          <div className="flex items-baseline justify-between gap-4">
+            <dt className="truncate">Titular</dt>
+            <dd className="shrink-0 tabular-nums">{formatBRL(f.renda_total)}</dd>
           </div>
           {f.compoe_renda_conjuge && (
-            <div className="flex justify-between">
-              <span>Cônjuge (compõe)</span>
-              <span className="font-medium">{formatBRL(f.renda_conjuge)}</span>
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="truncate">Cônjuge</dt>
+              <dd className="shrink-0 tabular-nums">{formatBRL(f.renda_conjuge)}</dd>
             </div>
           )}
-          {participantes.filter((p: any) => p.compoe_renda && p.vinculo !== "conjuge").map((p: any) => (
-            <div key={p.id} className="flex justify-between">
-              <span>{p.nome || 'Participante'} - {p.vinculo || 'Terceiro'} (compõe)</span>
-              <span className="font-medium">{formatBRL(p.renda)}</span>
+          {/* Numera pela posição no formulário: sem nome preenchido, dois
+              participantes gerariam linhas idênticas e indistinguíveis. */}
+          {participantes.map((p: any, i: number) => (
+            <div
+              key={p.id}
+              className={cn(
+                "flex items-baseline justify-between gap-4",
+                !p.compoe_renda && "text-muted-foreground",
+              )}
+            >
+              <dt className="truncate">
+                {p.nome?.trim() || `Participante ${i + 1}`}
+                {!p.compoe_renda && " — não compõe"}
+              </dt>
+              <dd className="shrink-0 tabular-nums">{formatBRL(p.renda)}</dd>
             </div>
           ))}
-          {participantes.filter((p: any) => !p.compoe_renda).map((p: any) => (
-            <div key={p.id} className="flex justify-between text-muted-foreground">
-              <span>{p.nome || 'Participante'} - {p.vinculo || 'Terceiro'} (não compõe)</span>
-              <span>{formatBRL(p.renda)}</span>
-            </div>
-          ))}
-          <div className="border-t pt-2 mt-2 flex justify-between text-base font-bold text-primary">
-            <span>Renda total considerada</span>
-            <span>{formatBRL(ctx.rendaConsiderada)}</span>
+          <div className="mt-2 flex items-baseline justify-between gap-4 border-t pt-2 font-semibold text-primary">
+            <dt>Total</dt>
+            <dd className="shrink-0 tabular-nums">{formatBRL(ctx.rendaConsiderada)}</dd>
           </div>
-        </div>
+        </dl>
       </div>
 
       <AlertDialog open={!!confirmacaoReducao} onOpenChange={(open) => !open && setConfirmacaoReducao(null)}>

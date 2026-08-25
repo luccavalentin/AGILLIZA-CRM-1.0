@@ -150,10 +150,17 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
 
   const melhorTaxaAno = useMemo(() => 0.1199, []);
   const rendaConsiderada = useMemo(() => Number(f.renda_total || 0) + Number(f.renda_conjuge || 0), [f.renda_total, f.renda_conjuge]);
-  const mostraConjuge = useMemo(() => f.possui_conjuge || Boolean(f.compoe_renda_conjuge), [f.possui_conjuge, f.compoe_renda_conjuge]);
+  /** Casado(a) ou união estável — único gatilho para existir cônjuge. */
+  const casado = f.estado_civil === "CA" || f.estado_civil === "UE";
+  /** A seção de cônjuge aparece assim que o estado civil indica cônjuge,
+   *  venha o cadastro do CRM ou seja digitado direto na simulação. */
+  const mostraConjuge = useMemo(
+    () => casado || f.possui_conjuge || Boolean(f.compoe_renda_conjuge),
+    [casado, f.possui_conjuge, f.compoe_renda_conjuge],
+  );
   
   const crmVinculado = Boolean(f.cliente_id);
-  const podePuxarConjugeCrm = Boolean(f.cliente_id && (f.estado_civil === "CA" || f.estado_civil === "UE"));
+  const podePuxarConjugeCrm = Boolean(f.cliente_id && casado);
   const [crmData, setCrmData] = useState<any>(null);
   const faltaDadosConjugeCrm = useMemo(() => {
     if (!podePuxarConjugeCrm || !crmData) return false;
@@ -173,6 +180,29 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       }
       if (k === "valor_imovel" || k === "valor_entrada") {
         next.valor_financiamento = Math.max(0, (next.valor_imovel || 0) - (next.valor_entrada || 0));
+      }
+
+      // O estado civil comanda a existência do cônjuge. Marcar casado(a) ou
+      // união estável abre a seção nativa de cônjuge para preenchimento —
+      // com ou sem cadastro do CRM vinculado. Sair desses estados desliga a
+      // seção e limpa os dados, para não sobrar cônjuge órfão na simulação.
+      if (k === "estado_civil") {
+        const ehCasado = v === "CA" || v === "UE";
+        next.possui_conjuge = ehCasado;
+        if (ehCasado) {
+          if (!next.estado_civil_conjuge) next.estado_civil_conjuge = v;
+        } else {
+          next.compoe_renda = false;
+          next.compoe_renda_conjuge = false;
+          next.nome_conjuge = "";
+          next.cpf_conjuge = "";
+          next.renda_conjuge = 0;
+          next.data_nascimento_conjuge = "";
+          next.sexo_conjuge = "";
+          next.estado_civil_conjuge = "";
+          next.email_conjuge = EMAIL_PADRAO;
+          next.celular_conjuge = "";
+        }
       }
 
       // REMOVIDO: A RENDA INTELIGENTE NÃO DEVE MAIS PREENCHER OS CAMPOS AUTOMATICAMENTE.
@@ -450,8 +480,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     financiamentoTotalExibido, aplicarPorEntrada, aplicarPorParcela, aplicarJogadaNumeros,
     setSistemaAmortizacao, alternarFinanciarDespesas, definirPctDespesas, normalizarPctDespesas,
     pctDespesas, isHomeEquity, cadastroNome, invertido, crmVinculado, podePuxarConjugeCrm, faltaDadosConjugeCrm,
-    podeInverter, melhorTaxaAno, rendaConsiderada, mostraConjuge, puxarConjugeDoCRM, 
-    inverterPrincipal, selecionarClienteCRM, limparTitular, refetchCrm, 
+    podeInverter, melhorTaxaAno, rendaConsiderada, mostraConjuge, puxarConjugeDoCRM,
+    inverterPrincipal, selecionarClienteCRM, limparTitular, refetchCrm,
     simulacaoResultadoId, simulacaoResultadoIdPrice, simulacaoResultadoIdSecundario,
     fecharResultadoInline: () => setSimulacaoResultadoId(null), 
     fecharResultadoInlinePrice: () => setSimulacaoResultadoIdPrice(null),

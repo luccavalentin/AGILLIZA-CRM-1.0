@@ -1,5 +1,4 @@
-import { Info, Link2, Repeat, UserPlus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Info, Link2, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +28,6 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     cadastroNome,
     invertido,
     crmVinculado,
-    podePuxarConjugeCrm,
-    faltaDadosConjugeCrm,
-    puxarConjugeDoCRM,
     selecionarClienteCRM,
     limparTitular,
   } = ctx;
@@ -80,23 +76,6 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               CPFs Invertidos
             </Badge>
           )}
-          {podePuxarConjugeCrm && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={cn(
-                "h-7 gap-1.5 px-3 text-[11px] font-bold uppercase tracking-wider transition-all",
-                faltaDadosConjugeCrm
-                  ? "border-amber-500/50 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
-                  : "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-              )}
-              onClick={puxarConjugeDoCRM}
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              Puxar Cônjuge do CRM
-            </Button>
-          )}
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -137,14 +116,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             </>
           }
         >
-          <div
-            id="campo-renda-sac"
-            className={cn(
-              "flex flex-col gap-2",
-              f.sistema_amortizacao === "S" &&
-                "rounded-lg border border-primary/20 bg-primary/[0.02] p-2 -m-2",
-            )}
-          >
+          <div id="campo-renda-sac" className="flex flex-col gap-2">
             <div className="flex gap-2">
               <CurrencyInput
                 value={f.renda_total ?? 0}
@@ -153,10 +125,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                 }}
                 placeholder="Ex: 10.000,00"
                 aria-invalid={!!erros.renda_total}
-                className={cn(
-                  "flex-1",
-                  f.sistema_amortizacao === "S" && "border-primary/40 shadow-sm",
-                )}
+                className="flex-1"
               />
               {f.valor_financiamento > 0 && f.prazo > 0 && (
                 <Button
@@ -207,14 +176,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               </>
             }
           >
-            <div
-              id="campo-renda-price"
-              className={cn(
-                "flex flex-col gap-2",
-                f.sistema_amortizacao === "P" &&
-                  "rounded-lg border border-primary/20 bg-primary/[0.02] p-2 -m-2",
-              )}
-            >
+            <div id="campo-renda-price" className="flex flex-col gap-2">
               <div className="flex gap-2">
                 <CurrencyInput
                   value={f.renda_price ?? 0}
@@ -223,10 +185,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                   }}
                   placeholder="Ex: 12.000,00"
                   aria-invalid={!!erros.renda_price}
-                  className={cn(
-                    "flex-1",
-                    f.sistema_amortizacao === "P" && "border-primary/40 shadow-sm",
-                  )}
+                  className="flex-1"
                 />
                 {f.valor_financiamento > 0 && f.prazo > 0 && (
                   <Button
@@ -358,24 +317,6 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <Erro erros={erros} campo="celular" />
         </Campo>
       </div>
-      {podePuxarConjugeCrm && (
-        <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-muted-foreground">
-            O cadastro do CRM tem um cônjuge registrado. Deseja puxar esses dados para esta
-            simulação?
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="shrink-0 gap-2"
-            onClick={puxarConjugeDoCRM}
-          >
-            <Link2 className="h-4 w-4" />
-            Puxar cônjuge do CRM
-          </Button>
-        </div>
-      )}
     </section>
   );
 }

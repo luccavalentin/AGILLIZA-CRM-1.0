@@ -373,8 +373,16 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
 
       for (const [simId, bancoIds] of Object.entries(porSim)) {
         const simData = await obterSimulacao({ data: { id: simId } });
-        const bancosReais = (simData.bancos as any[])?.filter((b: any) =>
-          (bancoIds as string[]).includes(b.banco_id),
+        // `obterSimulacao` devolve os bancos de todas as simulações irmãs do
+        // mesmo agrupador (SAC, PRICE e a invertida por CPF). Sem prender ao
+        // `simulacao_id` desta iteração o mesmo banco sairia repetido; sem
+        // exigir `status_banco === "simulada"` sairia um PDF em branco para
+        // quem não retornou.
+        const bancosReais = (simData.bancos as any[])?.filter(
+          (b: any) =>
+            b.simulacao_id === simId &&
+            b.status_banco === "simulada" &&
+            (bancoIds as string[]).includes(b.banco_id),
         );
         if (bancosReais?.length > 0) {
           await baixarSimulacaoDetalhadaPDF({
@@ -563,8 +571,10 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
           try {
             const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
             const simData = await obterSimulacao({ data: { id } });
+            // Idem: restringe às linhas desta simulação para não repetir os
+            // bancos das irmãs do mesmo agrupador.
             const bancosSimulados = (simData.bancos as any[])?.filter(
-              (b: any) => b.status_banco === "simulada",
+              (b: any) => b.simulacao_id === id && b.status_banco === "simulada",
             );
             if (bancosSimulados?.length > 0) {
               await baixarSimulacaoDetalhadaPDF({
