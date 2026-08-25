@@ -86,3 +86,53 @@ describe("validarCamposSimulacao — sexo do cônjuge", () => {
     ).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// O bloqueio real chegava pelo schema, não por `validarCamposSimulacao`: o
+// enum de `sexo_conjuge` reprovava string vazia, e o erro saía com o rótulo
+// "Sexo do cônjuge".
+// ---------------------------------------------------------------------------
+import { completaSchema } from "./schemas";
+
+const simulacaoCompletaSolteiro = {
+  ...baseSolteiro,
+  produto: "financiamento_imobiliario",
+  cep_imovel: "01001000",
+  valor_entrada: 100000,
+  utiliza_fgts: "N",
+  bancos_ids: ["11111111-1111-4111-8111-111111111111"],
+  consentimento_lgpd: true,
+  consentimento_scr: true,
+};
+
+const errosDe = (dados: any) => {
+  const r = completaSchema.safeParse(dados);
+  return r.success ? [] : r.error.issues.map((i) => String(i.path[0]));
+};
+
+describe("completaSchema — sexo do cônjuge", () => {
+  it("aceita solteiro com sexo_conjuge vazio (vindo da limpeza do formulário)", () => {
+    expect(errosDe({ ...simulacaoCompletaSolteiro, sexo_conjuge: "" })).not.toContain(
+      "sexo_conjuge",
+    );
+  });
+
+  it("aceita solteiro com sexo_conjuge nulo ou ausente", () => {
+    expect(errosDe({ ...simulacaoCompletaSolteiro, sexo_conjuge: null })).not.toContain(
+      "sexo_conjuge",
+    );
+    expect(errosDe(simulacaoCompletaSolteiro)).not.toContain("sexo_conjuge");
+  });
+
+  it("continua exigindo de casado que compõe renda com cônjuge identificado", () => {
+    expect(
+      errosDe({
+        ...simulacaoCompletaSolteiro,
+        estado_civil: "CA",
+        nome_conjuge: "JOÃO DA SILVA",
+        compoe_renda_conjuge: true,
+        sexo_conjuge: "",
+      }),
+    ).toContain("sexo_conjuge");
+  });
+});

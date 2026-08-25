@@ -136,7 +136,7 @@ export function listarTitularesAlternativos(f: Form): TitularAlternativo[] {
         cpf_conjuge: "",
         renda_conjuge: 0,
         data_nascimento_conjuge: "",
-        sexo_conjuge: "",
+        sexo_conjuge: null,
         estado_civil_conjuge: "",
         celular_conjuge: "",
         participantes: participantes.map((outro) =>

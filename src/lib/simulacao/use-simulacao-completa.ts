@@ -243,7 +243,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           next.cpf_conjuge = "";
           next.renda_conjuge = 0;
           next.data_nascimento_conjuge = "";
-          next.sexo_conjuge = "";
+          // null, não "": o schema aceita nulo, mas string vazia reprova no
+          // enum de sexo e vira "Falta preencher: Sexo do cônjuge".
+          next.sexo_conjuge = null;
           next.estado_civil_conjuge = "";
           next.email_conjuge = EMAIL_PADRAO;
           next.celular_conjuge = "";
