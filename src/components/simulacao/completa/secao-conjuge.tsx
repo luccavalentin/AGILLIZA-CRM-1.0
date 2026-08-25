@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Info, AlertTriangle } from "lucide-react";
+import { ArrowLeftRight, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import {
   AlertDialog,
@@ -31,7 +31,13 @@ import { Label } from "@/components/ui/label";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
 export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
-  const { f, set, erros, podeInverter, inverterPrincipal, podePuxarConjugeCrm, puxarConjugeDoCRM } = ctx;
+  const {
+    f,
+    set,
+    erros,
+    podeInverter,
+    inverterPrincipal,
+  } = ctx;
   const [confirmacaoReducao, setConfirmacaoReducao] = useState<{
     callback: () => void;
     prazoAntigo: number;
@@ -149,18 +155,6 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             <span className="text-[11px] text-muted-foreground">
               Disponível apenas para casado(a) ou união estável.
             </span>
-          )}
-          {podePuxarConjugeCrm && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 px-3 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 text-[11px] font-bold uppercase"
-              onClick={puxarConjugeDoCRM}
-            >
-              <Info className="h-3.5 w-3.5" />
-              Puxar dados do CRM
-            </Button>
           )}
         </div>
 

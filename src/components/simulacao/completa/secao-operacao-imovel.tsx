@@ -486,7 +486,10 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           {/* Prazo Principal */}
           <Campo
             label={
-              <div className="flex items-center gap-2 text-foreground font-semibold">
+              // min-h fixo para que os dois rótulos da linha ocupem a mesma
+              // altura mesmo quando um deles quebra em duas linhas — assim os
+              // campos abaixo ficam alinhados.
+              <div className="flex min-h-10 items-center gap-2 text-foreground font-semibold">
                 Prazo Principal (meses) <Ast />
               </div>
             }
@@ -512,35 +515,14 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               />
 
               {prazoMaximoEfetivo < 420 ? (
-                <div className="flex items-start gap-1.5 rounded-md border border-amber-500/20 bg-amber-500/5 px-2 py-1.5 animate-in fade-in slide-in-from-top-1">
-                  <Info className="h-3.5 w-3.5 shrink-0 text-amber-600 mt-0.5" />
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-[11px] font-bold text-amber-700 leading-tight">
-                      Prazo máximo pela idade: {prazoMaximoEfetivo} meses
-                    </p>
-                    <p className="text-[10px] text-amber-600/90 leading-tight font-medium">
-                      ({formatarMeses(prazoMaximoEfetivo)})
-                    </p>
-                    {motivoLimitador === "idade" && limitadorPrazo && (
-                      <p className="text-[10px] text-amber-600/90 leading-tight">
-                        Limitado por {limitadorPrazo.nome} ({limitadorPrazo.vinculo},{" "}
-                        {limitadorPrazo.idadeAnos} anos)
-                      </p>
-                    )}
-                    {motivoLimitador === "operacao" && (
-                      <p className="text-[10px] text-amber-600/90 leading-tight">
-                        Limitado para esta operação (Terreno/Comercial).
-                      </p>
-                    )}
-                    {motivoLimitador === "produto" && (
-                      <p className="text-[10px] text-amber-600/90 leading-tight">
-                        Limitado para o produto Home Equity.
-                      </p>
-                    )}
-                  </div>
+                <div className="flex h-10 items-center gap-1.5 rounded-md border border-amber-500/20 bg-amber-500/5 px-2 animate-in fade-in slide-in-from-top-1">
+                  <Info className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                  <p className="text-[11px] font-bold text-amber-700 leading-tight">
+                    Prazo máximo pela idade: {prazoMaximoEfetivo} meses
+                  </p>
                 </div>
               ) : (
-                <p className="text-[10px] text-muted-foreground/80">
+                <p className="flex h-10 items-center text-[10px] text-muted-foreground/80">
                   Máximo da operação: 420 meses
                 </p>
               )}
@@ -556,7 +538,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           {/* Segundo Prazo */}
           <Campo
             label={
-              <div className="text-foreground font-semibold">
+              <div className="flex min-h-10 items-center text-foreground font-semibold">
                 Segundo Prazo (Comparativo)
               </div>
             }

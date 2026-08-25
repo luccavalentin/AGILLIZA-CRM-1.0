@@ -462,12 +462,18 @@ function Pagina() {
       const numero = sim.numero_simulacao;
 
       if (dados.canal === "pdf") {
-        if (!resp.bancos?.length) {
-          toast.error("Esta simulação não possui bancos para baixar.");
+        // `obter` traz os bancos de todas as simulações irmãs do agrupador:
+        // prende ao id pedido para não repetir, e exige retorno do banco para
+        // não gerar PDF em branco.
+        const bancosParaPdf = (resp.bancos as any[])?.filter(
+          (b: any) => b.simulacao_id === simulacaoId && b.status_banco === "simulada",
+        );
+        if (!bancosParaPdf?.length) {
+          toast.error("Esta simulação ainda não tem retorno de banco para baixar.");
           return;
         }
         // Gera o PDF real com layout profissional para compartilhamento
-        baixarSimulacaoDetalhadaPDF({ simulacao: sim, bancos: resp.bancos });
+        baixarSimulacaoDetalhadaPDF({ simulacao: sim, bancos: bancosParaPdf });
         toast.success("PDF gerado com sucesso! Agora você pode compartilhá-lo.");
         return;
       }

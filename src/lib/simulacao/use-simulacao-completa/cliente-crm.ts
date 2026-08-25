@@ -154,22 +154,7 @@ export function patchInverterPrincipal(prev: Form): Form {
     celular_conjuge: prev.celular ?? "",
   };
 
-  if (prev.participantes?.length) {
-    next.participantes = prev.participantes.map((p: any) => {
-      if (p.vinculo === "conjuge") {
-        return {
-          ...p,
-          nome: next.nome_conjuge,
-          cpf_cnpj: next.cpf_conjuge,
-          renda: next.renda_conjuge,
-          data_nascimento: next.data_nascimento_conjuge,
-          sexo: next.sexo_conjuge,
-          estado_civil: next.estado_civil_conjuge,
-        };
-      }
-      return p;
-    });
-  }
-
+  // O cônjuge vive nos campos nativos do formulário, nunca na lista de
+  // participantes — por isso inverter titular/cônjuge não mexe nos terceiros.
   return next;
 }
