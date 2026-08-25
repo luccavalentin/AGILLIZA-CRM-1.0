@@ -15,6 +15,10 @@ import {
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
+import {
+  listarTitularesAlternativos,
+  type TitularAlternativo,
+} from "./titulares-alternativos";
 import type { Form } from "./state";
 
 type Router = { navigate: (opts: any) => void };
@@ -33,16 +37,132 @@ interface CtxBase {
   setSimulacaoResultadoId: (v: string | null) => void;
   setSimulacaoResultadoIdPrice: (v: string | null) => void;
   setSimulacaoResultadoIdSecundario?: (v: string | null) => void;
+  /** Recebe as simulações do teste de CPF para montar o comparativo de taxas. */
+  setComparativoCpfs?: (v: SimulacaoComparativo[]) => void;
 }
 
 export type ItemEnvio = {
-  chave: string; // `${sistema}-${prazo}-${banco_id}`
+  chave: string; // `${sistema}-${prazo}-${banco_id}` (+ `-${titular}` no teste de CPF)
   banco_id: string;
   nome_banco: string;
   sistema: "S" | "P";
   prazo: number;
   estado: "pendente" | "disparada" | "retornada" | "erro";
+  /** Nome do proponente testado como titular, quando não é o titular original. */
+  titular?: string;
 };
+
+/**
+ * Um proponente testado como titular, com TODAS as simulações geradas para ele
+ * — no modo "Ambos" são duas (SAC e PRICE), e no futuro podem ser mais. O
+ * comparativo é por pessoa, então as simulações ficam agrupadas sob ela em vez
+ * de virarem linhas separadas.
+ */
+export type SimulacaoComparativo = {
+  chave: string;
+  nome: string;
+  vinculo: string;
+  ids: string[];
+};
+
+/** Acumula simulações por pessoa, sem repetir a pessoa a cada cenário. */
+function acumularComparativo(
+  destino: Map<string, SimulacaoComparativo>,
+  entrada: { chave: string; nome: string; vinculo: string; id: string },
+) {
+  const atual = destino.get(entrada.chave);
+  if (atual) {
+    if (!atual.ids.includes(entrada.id)) atual.ids.push(entrada.id);
+    return;
+  }
+  destino.set(entrada.chave, {
+    chave: entrada.chave,
+    nome: entrada.nome,
+    vinculo: entrada.vinculo,
+    ids: [entrada.id],
+  });
+}
+
+/**
+ * Repete a simulação com cada proponente apto na posição de titular.
+ *
+ * Roda depois do envio principal e em série: cada consulta é uma chamada real
+ * ao banco, e disparar tudo de uma vez multiplica a carga sem ganho de tempo
+ * perceptível. Falha de um titular não interrompe os demais.
+ */
+async function simularTitularesAlternativos(opts: {
+  f: Form;
+  idOperacao: number | null;
+  dadosBase: any;
+  sistema: "S" | "P";
+  bancosIds: string[];
+  agrupadorId: string | null;
+  registrar: (item: { chave: string; nome: string; vinculo: string; id: string }) => void;
+  aoDisparar?: (chave: string) => void;
+  aoConcluir?: (chave: string, estado: "retornada" | "erro", nomeBanco?: string) => void;
+}): Promise<void> {
+  const alternativos = listarTitularesAlternativos(opts.f);
+  if (alternativos.length === 0) return;
+
+  for (const alternativo of alternativos) {
+    try {
+      const { id } = await criarSimulacao({
+        data: {
+          modo: "completa",
+          dados: {
+            ...opts.dadosBase,
+            ...alternativo.patch,
+            id_operacao_homefin: opts.idOperacao,
+            agrupador_id: opts.agrupadorId,
+          } as any,
+        },
+      });
+
+      opts.bancosIds.forEach((bid) =>
+        opts.aoDisparar?.(chaveItem(opts.sistema, opts.dadosBase.prazo, bid, alternativo.chave)),
+      );
+
+      const resp: any = await enviarSimulacaoBanco({
+        data: { simulacao_id: id, banco_ids: [...opts.bancosIds] },
+      });
+
+      for (const bResult of resp?.bancos ?? []) {
+        opts.aoConcluir?.(
+          chaveItem(opts.sistema, opts.dadosBase.prazo, bResult.banco_id, alternativo.chave),
+          bResult.status === "simulada" ? "retornada" : "erro",
+          bResult.nome_banco,
+        );
+      }
+
+      opts.registrar({
+        chave: alternativo.chave,
+        nome: alternativo.nome,
+        vinculo: alternativo.vinculo,
+        id,
+      });
+    } catch (e) {
+      console.error(`[Teste de CPF] Falha para ${alternativo.nome}:`, e);
+      opts.bancosIds.forEach((bid) =>
+        opts.aoConcluir?.(
+          chaveItem(opts.sistema, opts.dadosBase.prazo, bid, alternativo.chave),
+          "erro",
+        ),
+      );
+    }
+  }
+}
+
+/** Chave de rastreio de um item no overlay de progresso. */
+function chaveItem(
+  sistema: "S" | "P",
+  prazo: number | string,
+  bancoId: string,
+  titular?: string,
+): string {
+  return titular
+    ? `${sistema}-${prazo}-${bancoId}-${titular}`
+    : `${sistema}-${prazo}-${bancoId}`;
+}
 
 function bloquearSemCepHomeEquity(f: Form, setErros: (v: Record<string, string>) => void): boolean {
   const msg = validarCepImovelHomeEquity(f as any);
@@ -215,12 +335,24 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
           ? "Santander"
           : (ctx as any).bancos?.find((b: any) => b.id === bid)?.nome_banco || bid;
 
+  // Com o teste de CPF ligado, cada proponente apto rende uma rodada extra —
+  // a lista precisa refleti-los para o progresso não mentir.
+  const titularesExtras: TitularAlternativo[] = f.testar_cpfs
+    ? listarTitularesAlternativos(f)
+    : [];
+  const rodadas: Array<{ chave?: string; nome?: string }> = [
+    {},
+    ...titularesExtras.map((t) => ({ chave: t.chave, nome: t.nome })),
+  ];
+
   for (const p of prazos) {
-    for (const bid of (f.bancos_sac_ids ?? [])) {
-      lista.push({ chave: `S-${p}-${bid}`, banco_id: bid, nome_banco: nomeDoBanco(bid), sistema: "S", prazo: p, estado: "pendente" });
-    }
-    for (const bid of (f.bancos_price_ids ?? [])) {
-      lista.push({ chave: `P-${p}-${bid}`, banco_id: bid, nome_banco: nomeDoBanco(bid), sistema: "P", prazo: p, estado: "pendente" });
+    for (const rodada of rodadas) {
+      for (const bid of (f.bancos_sac_ids ?? [])) {
+        lista.push({ chave: chaveItem("S", p, bid, rodada.chave), banco_id: bid, nome_banco: nomeDoBanco(bid), sistema: "S", prazo: p, estado: "pendente", titular: rodada.nome });
+      }
+      for (const bid of (f.bancos_price_ids ?? [])) {
+        lista.push({ chave: chaveItem("P", p, bid, rodada.chave), banco_id: bid, nome_banco: nomeDoBanco(bid), sistema: "P", prazo: p, estado: "pendente", titular: rodada.nome });
+      }
     }
   }
 
@@ -237,16 +369,23 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
   setEnviando(true);
   const idsGerados: string[] = [];
   const bancosSimulados: any[] = [];
+  /** Simulações do teste de CPF, agrupadas por pessoa. */
+  const comparativo = new Map<string, SimulacaoComparativo>();
   let retornadasCount = 0;
   let primeiraCriacaoLogada = false;
   let primeiraChamadaLogada = false;
   const errosEnvio: string[] = [];
 
-  const agrupador_id =
-    (f.bancos_sac_ids?.length ?? 0) > 0 && (f.bancos_price_ids?.length ?? 0) > 0
-      ? (crypto.randomUUID?.() ??
-        `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`)
-      : null;
+  // O agrupador é o que faz as simulações irmãs (SAC+PRICE e as do teste de
+  // CPF) aparecerem juntas na tela de resultados. Sem ele, cada uma fica
+  // órfã e só o titular é exibido.
+  const precisaAgrupador =
+    ((f.bancos_sac_ids?.length ?? 0) > 0 && (f.bancos_price_ids?.length ?? 0) > 0) ||
+    Boolean(f.testar_cpfs);
+  const agrupador_id = precisaAgrupador
+    ? (crypto.randomUUID?.() ??
+      `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`)
+    : null;
 
   // Processamento Sequencial (evita condições de corrida em agrupadores).
   const processarSistema = async (cenario: Cenario) => {
@@ -305,6 +444,26 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
             setConcluidos(retornadasCount);
           }
         }
+
+        // Teste automático de CPFs: repete o cenário com cada proponente apto
+        // como titular, reaproveitando os mesmos bancos e prazo.
+        if (f.testar_cpfs) {
+          await simularTitularesAlternativos({
+            f,
+            idOperacao,
+            dadosBase: dados,
+            sistema,
+            bancosIds: bancosParaLote,
+            agrupadorId: agrupador_id ?? id,
+            registrar: (item) => acumularComparativo(comparativo, item),
+            aoDisparar: (chave) => atualizarLista(chave, "disparada"),
+            aoConcluir: (chave, estado, nomeBanco) => {
+              atualizarLista(chave, estado, nomeBanco);
+              retornadasCount++;
+              setConcluidos(retornadasCount);
+            },
+          });
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         console.error(`[Envio ${sistema}] Falha no lote:`, e);
@@ -351,6 +510,20 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
   sessionStorage.removeItem("simulacao_wizard");
   ctx.setSimulacaoResultadoId(idsGerados[0] ?? null);
   ctx.setSimulacaoResultadoIdPrice(idsGerados[1] ?? null);
+  // O titular original encabeça o comparativo, carregando TODAS as suas
+  // simulações (SAC e PRICE); os alternativos vêm na ordem em que foram
+  // testados, cada um como uma única linha.
+  if (comparativo.size > 0 && idsGerados.length > 0) {
+    ctx.setComparativoCpfs?.([
+      {
+        chave: "titular",
+        nome: f.nome_cliente || "Titular",
+        vinculo: "Titular",
+        ids: [...idsGerados],
+      },
+      ...comparativo.values(),
+    ]);
+  }
   setEnviando(false);
   setConcluidos(0);
   
@@ -445,7 +618,13 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
   setEnviando(true);
   try {
     const data = res.data;
-    const { id, agrupador_id } = await criarSimulacao({
+    // Com o teste de CPF ligado, o titular já nasce com agrupador para que as
+    // simulações dos demais proponentes fiquem visíveis junto com a dele.
+    const agrupadorPreDefinido = f.testar_cpfs
+      ? (crypto.randomUUID?.() ??
+        `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`)
+      : null;
+    const { id, agrupador_id: agrupadorServidor } = await criarSimulacao({
       data: {
         modo: "completa",
         dados: {
@@ -453,9 +632,11 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
           id_operacao_homefin: idOperacao,
           email_verificado_em: f.email_verificado_em,
           prazo_2: Number(fValidado.prazo_2) !== Number(fValidado.prazo) ? fValidado.prazo_2 : null,
+          ...(agrupadorPreDefinido ? { agrupador_id: agrupadorPreDefinido } : {}),
         } as any,
       },
     });
+    const agrupador_id = agrupadorServidor ?? agrupadorPreDefinido;
     sessionStorage.removeItem("simulacao_wizard");
     
     // 1. Envio de todas as simulações vinculadas ao agrupador
@@ -494,11 +675,33 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
           nome_banco, 
           sistema: 'S', 
           prazo: f.prazo, 
-          estado: 'pendente' 
+          estado: 'pendente'
         });
       }
     }
-    
+
+    // Teste automático de CPFs: uma rodada extra por proponente apto.
+    const titularesExtras: TitularAlternativo[] = f.testar_cpfs
+      ? listarTitularesAlternativos(f)
+      : [];
+    for (const extra of titularesExtras) {
+      for (const bid of bancosParaEnviar) {
+        const nome_banco =
+          (ctx as any).bancos?.find((b: any) => b.id === bid)?.nome_banco ||
+          bid ||
+          "Consultando...";
+        lista.push({
+          chave: `cpf-${extra.chave}-${bid || "default"}`,
+          banco_id: bid || "default",
+          nome_banco,
+          sistema: "S",
+          prazo: f.prazo,
+          estado: "pendente",
+          titular: extra.nome,
+        });
+      }
+    }
+
     const atualizarLista = (chave: string, estado: ItemEnvio["estado"], nomeBanco?: string) => {
       const idx = lista.findIndex(item => item.chave === chave);
       if (idx !== -1) {
@@ -545,6 +748,58 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
       }
     }
 
+    // Teste automático de CPFs — roda após o titular original, em série.
+    const comparativo = new Map<string, SimulacaoComparativo>();
+    if (titularesExtras.length > 0) {
+      for (const extra of titularesExtras) {
+        const marcar = (bid: string | null, estado: ItemEnvio["estado"], nome?: string) =>
+          atualizarLista(`cpf-${extra.chave}-${bid || "default"}`, estado, nome);
+        try {
+          const { id: idExtra } = await criarSimulacao({
+            data: {
+              modo: "completa",
+              dados: {
+                ...res.data,
+                ...extra.patch,
+                id_operacao_homefin: idOperacao,
+                agrupador_id: agrupador_id ?? id,
+              } as any,
+            },
+          });
+          bancosParaEnviar.forEach((bid) => marcar(bid, "disparada"));
+          const resp: any = await enviarSimulacaoBanco({
+            data: {
+              simulacao_id: idExtra,
+              banco_ids: bancosParaEnviar.length > 0 ? [...bancosParaEnviar] : undefined,
+            },
+          });
+          for (const bResult of resp?.bancos ?? []) {
+            marcar(
+              bResult.banco_id,
+              bResult.status === "simulada" ? "retornada" : "erro",
+              bResult.nome_banco,
+            );
+            retornadasCount++;
+            setConcluidos(retornadasCount);
+          }
+          acumularComparativo(comparativo, {
+            chave: extra.chave,
+            nome: extra.nome,
+            vinculo: extra.vinculo,
+            id: idExtra,
+          });
+        } catch (e) {
+          console.error(`[Teste de CPF] Falha para ${extra.nome}:`, e);
+          bancosParaEnviar.forEach((bid) => marcar(bid, "erro"));
+        }
+      }
+      if (comparativo.size > 0) {
+        ctx.setComparativoCpfs?.([
+          { chave: "titular", nome: f.nome_cliente || "Titular", vinculo: "Titular", ids: [id] },
+          ...comparativo.values(),
+        ]);
+      }
+    }
 
     // Fluxo "Nova Proposta": após simular, cria a proposta e redireciona.
     if (modoProposta) {

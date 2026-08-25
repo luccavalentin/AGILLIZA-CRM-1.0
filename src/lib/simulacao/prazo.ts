@@ -277,3 +277,13 @@ export function avaliarNovoPrazo(params: {
     descricao: desc,
   };
 }
+
+/**
+ * Estado civil que implica cônjuge. Aceita tanto o código usado nas
+ * simulações (CA/UE) quanto o texto gravado no CRM, porque simulações
+ * duplicadas e cadastros antigos carregam as duas formas.
+ */
+export function ehCasado(estadoCivil: string | null | undefined): boolean {
+  const v = String(estadoCivil ?? "").trim().toLowerCase();
+  return v === "ca" || v === "ue" || v === "casado" || v === "uniao_estavel";
+}

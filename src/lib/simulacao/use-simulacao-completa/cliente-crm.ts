@@ -18,8 +18,10 @@ export function patchSelecionarClienteCRM(
 } {
   const ecOriginal = estadoCivilCrmParaCodigo(c.estado_civil);
   const conjugePreenchido = Boolean(c.conjuge_nome || c.conjuge_cpf || c.conjuge_renda);
-  const ec =
-    ecOriginal === "CA" || ecOriginal === "UE" ? ecOriginal : conjugePreenchido ? "CA" : ecOriginal;
+  // O estado civil do cadastro manda. Antes, qualquer resquício de cônjuge no
+  // CRM promovia o cliente a "casado" — e um titular solteiro passava a ter
+  // seção de cônjuge e a cobrar o sexo dele.
+  const ec = ecOriginal;
   const temConjuge = ec === "CA" || ec === "UE";
   const next: Form = {
     ...prev,

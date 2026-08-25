@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ExternalLink, RefreshCw, X, Send, Download, Loader2 } from "lucide-react";
@@ -42,6 +42,12 @@ const totalBancoTexto = (b: any) => {
 interface Props {
   simulacaoIdSac: string | null;
   simulacaoIdPrice: string | null;
+  /**
+   * Simulações do teste automático de CPFs. Vêm explicitamente do envio para
+   * que o resultado não dependa do agrupador — se o vínculo falhar, as
+   * simulações dos outros proponentes ainda aparecem.
+   */
+  idsExtras?: string[];
   onFechar: () => void;
 }
 
@@ -114,7 +120,7 @@ function useSimQuery(id: string | null) {
   return q;
 }
 
-export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFechar }: Props) {
+export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtras = [], onFechar }: Props) {
   const router = useRouter();
   const qc = useQueryClient();
   const [reenviandoBanco, setReenviandoBanco] = useState<string | null>(null);
@@ -133,6 +139,21 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
 
   const dataSac = qSac.data as any;
   const dataPrice = qPrice.data as any;
+
+  // Consulta as simulações dos CPFs testados que ainda não vieram pelo grupo.
+  const idsJaCarregados = new Set(
+    [
+      ...((dataSac?.bancos as any[]) ?? []),
+      ...((dataPrice?.bancos as any[]) ?? []),
+    ].map((b: any) => b.simulacao_id),
+  );
+  const idsFaltantes = idsExtras.filter((id) => id && !idsJaCarregados.has(id));
+  const consultasExtras = useQueries({
+    queries: idsFaltantes.map((id) => ({
+      queryKey: ["simulacao", id],
+      queryFn: () => obterSimulacao({ data: { id } }),
+    })),
+  });
 
   async function reenviarBanco(simId: string, bancoId: string, simulacaoBancoId: string, banco: any) {
     if (banco.status_banco === "simulada") {
@@ -221,6 +242,9 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
     simId: string;
     simulacao: any;
     banco: any;
+    /** Quem figura como titular nesta linha (teste automático de CPFs). */
+    titularNome: string;
+    titularPrincipal: boolean;
   };
   const todasIrmas = [...(dataSac?.simulacao?._irmas ?? []), ...(dataPrice?.simulacao?._irmas ?? [])];
   const simIdsProcessados = new Set<string>();
@@ -241,6 +265,8 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
           simId: s.id,
           simulacao: s,
           banco: b,
+          titularNome: b._titularNome ?? s.nome_cliente ?? "",
+          titularPrincipal: b._ehTitularPrincipal !== false,
         });
       }
     }
@@ -249,9 +275,15 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
   const linhas: Linha[] = [];
   processarSimulacao(dataSac);
   processarSimulacao(dataPrice);
+  for (const c of consultasExtras) processarSimulacao(c.data as any);
 
-  // Ordena por PRAZO (maior para menor) depois por sistema e por parcela
+  // Teste de CPF: o titular original vem primeiro, depois cada proponente
+  // testado. Dentro de cada um, ordena por prazo, sistema e parcela.
   linhas.sort((a, b) => {
+    if (a.titularPrincipal !== b.titularPrincipal) return a.titularPrincipal ? -1 : 1;
+    const na = (a.titularNome || "").trim().toLowerCase();
+    const nb = (b.titularNome || "").trim().toLowerCase();
+    if (na !== nb) return na.localeCompare(nb);
     if (a.prazo !== b.prazo) return b.prazo - a.prazo;
     if (a.sistema !== b.sistema) return a.sistema === "SAC" ? -1 : 1;
     return (
@@ -259,6 +291,15 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
       (b.banco.valor_parcela ?? Number.POSITIVE_INFINITY)
     );
   });
+
+  /** Identidade da seção de um proponente, imune a caixa e espaços. */
+  const chaveTitular = (l: Linha) =>
+    `${l.titularPrincipal ? 0 : 1}|${(l.titularNome || "").trim().toLowerCase()}`;
+
+  // Só rotula por proponente quando houve teste de CPF — com um titular só,
+  // o cabeçalho seria ruído.
+  const variosTitulares =
+    new Set(linhas.map((l) => (l.titularNome || "").trim().toLowerCase())).size > 1;
 
   const melhorPorGrupo: Record<string, { menorParcela?: string; menorCET?: string }> = {};
   const gruposSet = new Set(linhas.map(l => `${l.prazo}-${l.sistema}`));
@@ -559,12 +600,30 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, onFecha
                     const grpKey = `${l.prazo}-${l.sistema}`;
                     const isMelhorParcela = melhorPorGrupo[grpKey]?.menorParcela === b.id;
                     const isMelhorCET = melhorPorGrupo[grpKey]?.menorCET === b.id;
-                    const novoPrazo = idx === 0 || linhas[idx - 1].prazo !== l.prazo;
-                    const primeiroDoGrupo = idx === 0 || 
-                                           linhas[idx - 1].prazo !== l.prazo || 
-                                           linhas[idx - 1].sistema !== l.sistema;
+                    // Comparações normalizadas: nome com espaços/caixa
+                    // diferentes ou prazo como texto reabriam a seção e
+                    // repetiam o cabeçalho do prazo.
+                    const ant = idx === 0 ? null : linhas[idx - 1];
+                    const novoTitular = !ant || chaveTitular(ant) !== chaveTitular(l);
+                    const novoPrazo = novoTitular || Number(ant!.prazo) !== Number(l.prazo);
+                    const primeiroDoGrupo = novoPrazo || ant!.sistema !== l.sistema;
                     return (
-                      <Fragment key={`${l.prazo}-${l.sistema}-${b.id}`}>
+                      <Fragment key={`${l.titularNome}-${l.prazo}-${l.sistema}-${b.id}`}>
+                        {novoTitular && variosTitulares && (
+                          <TableRow className="border-border/60 bg-primary/[0.06] hover:bg-primary/[0.06]">
+                            <TableCell colSpan={9} className="py-3">
+                              <div className="flex items-center gap-2 px-1">
+                                <span className="text-[13px] font-bold text-primary">
+                                  {l.titularNome}
+                                </span>
+                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                  {l.titularPrincipal ? "Titular" : "CPF testado"}
+                                </span>
+                                <div className="h-px flex-1 bg-primary/20" />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
                         {novoPrazo && (
                            <TableRow className="border-border/60 bg-primary/[0.03] hover:bg-primary/[0.03]">
                              <TableCell colSpan={9} className="py-2.5">
