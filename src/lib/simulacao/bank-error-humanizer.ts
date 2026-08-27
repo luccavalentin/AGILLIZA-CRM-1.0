@@ -19,8 +19,18 @@ const MAPA: Record<string, string> = {
 /** Códigos de recusa devolvidos pelo Bradesco dentro de INT-006. */
 const BRADESCO: Record<string, string> = {
   "119": "Renda informada abaixo da renda mínima exigida pelo banco.",
+  /**
+   * O Bradesco devolve 121-L com mensagem VAZIA. A comparação de payloads
+   * idênticos mostrou o que muda entre passar e falhar: o percentual
+   * financiado. A mesma titular foi simulada com sucesso a 70% do valor do
+   * imóvel e recusada a 80% — mesmo prazo, mesmo sistema, mesmos dados. E o
+   * teto varia por proponente: outro titular passa a 80% na mesma operação.
+   *
+   * Portanto a orientação é reduzir o valor financiado (ou trocar o titular),
+   * e não "revisar os dados" — não há nada errado no cadastro.
+   */
   "121-L":
-    "Bradesco: a operação não passou nas regras de crédito do banco (limite/valor x renda x prazo). Ajuste valor financiado, entrada ou prazo e reenvie.",
+    "O Bradesco não simulou este titular com o valor financiado solicitado. O teto que o banco concede varia por proponente: reduza o valor financiado (aumentando a entrada) e reenvie, ou teste outro proponente como titular.",
   "014": "Prazo informado acima do máximo permitido pelo Bradesco para esta operação. Reduza o prazo e reenvie.",
   "422": "Prazo informado abaixo do mínimo aceito pelo Bradesco para esta operação. Aumente o prazo e reenvie.",
 };

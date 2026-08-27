@@ -29,6 +29,8 @@ export const EMAIL_PADRAO = "thiago@agilliza.net.br";
 
 export const ESTADO_INICIAL: Form = {
   produto: "financiamento_imobiliario",
+  /** PF ou PJ. Em PJ o único banco que opera é o Bradesco. */
+  tipo_pessoa: "PF",
   tipo_imovel: "",
   uso_imovel: "",
   situacao_imovel: "",

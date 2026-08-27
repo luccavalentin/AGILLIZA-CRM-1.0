@@ -1483,7 +1483,13 @@ export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
     const principal = resultados.find((r) => r.id === data.simulacao_id);
     if (!principal || principal.status === "erro_banco") {
       // Propaga o erro da principal para a UI
-      const msg = (principal as any)?.erro || "Falha ao processar simulação principal.";
+      // Sem `principal` nos resultados não há causa a propagar — dizer só
+      // "falha ao processar" manda o usuário caçar um problema sem pista.
+      const primeiroErro = resultados.find((r: any) => r?.erro)?.erro;
+      const msg =
+        (principal as any)?.erro ||
+        primeiroErro ||
+        "A simulação não retornou resultado de nenhum banco. Reenvie pelos botões da linha.";
       throw new Error(msg);
     }
 

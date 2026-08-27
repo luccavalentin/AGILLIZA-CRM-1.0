@@ -107,6 +107,8 @@ export const completaSchema = z.object({
   /** Teste automático de CPFs — precisa atravessar o schema para chegar ao
    *  servidor, que desliga o inversor automático quando o cliente assume. */
   testar_cpfs: z.boolean().optional().default(false),
+  /** Modalidade do proponente. PJ tem regras próprias (ver REGRAS_PJ). */
+  tipo_pessoa: z.enum(["PF", "PJ"]).optional().default("PF"),
   // Participantes adicionais
   participantes: z.array(participanteSchema).default([]),
   // Bancos

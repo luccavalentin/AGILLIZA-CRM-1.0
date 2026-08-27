@@ -150,10 +150,15 @@ async function simularTitularesAlternativos(opts: {
       });
     } catch (e) {
       console.error(`[Teste de CPF] Falha para ${alternativo.nome}:`, e);
-      toast.error(
-        `Não foi possível simular com ${alternativo.nome} como titular: ${
-          e instanceof Error ? e.message : String(e)
-        }`,
+      // Recusa de banco não é falha do sistema: a simulação rodou e o banco
+      // disse não. Misturar as duas coisas manda o operador procurar defeito
+      // onde há decisão de crédito.
+      const detalhe = e instanceof Error ? e.message : String(e);
+      const recusaDeBanco = /banco|crédito|prazo|renda|limite|recus/i.test(detalhe);
+      toast[recusaDeBanco ? "warning" : "error"](
+        recusaDeBanco
+          ? `${alternativo.nome} como titular: ${detalhe}`
+          : `Não foi possível simular com ${alternativo.nome} como titular: ${detalhe}`,
       );
       opts.bancosIds.forEach((bid) =>
         opts.aoConcluir?.(
@@ -545,38 +550,36 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
   }
 
   // Download automático dos PDFs
-  if (bancosSimulados.length > 0 && f.download_automatico !== false) {
+  if (idsGerados.length > 0 && f.download_automatico !== false) {
     try {
       const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
-      const porSim = bancosSimulados.reduce(
-        (acc, curr) => {
-          if (!acc[curr.idSimulacao]) acc[curr.idSimulacao] = [];
-          acc[curr.idSimulacao].push(curr.banco_id);
-          return acc;
-        },
-        {} as Record<string, string[]>,
-      );
 
-      for (const [simId, bancoIds] of Object.entries(porSim)) {
-        const simData = await obterSimulacao({ data: { id: simId } });
-        // `obterSimulacao` devolve os bancos de todas as simulações irmãs do
-        // mesmo agrupador (SAC, PRICE e a invertida por CPF). Sem prender ao
-        // `simulacao_id` desta iteração o mesmo banco sairia repetido; sem
-        // exigir `status_banco === "simulada"` sairia um PDF em branco para
-        // quem não retornou.
-        const bancosReais = (simData.bancos as any[])?.filter(
-          (b: any) =>
-            b.simulacao_id === simId &&
-            b.status_banco === "simulada" &&
-            (bancoIds as string[]).includes(b.banco_id),
-        );
-        if (bancosReais?.length > 0) {
-          await baixarSimulacaoDetalhadaPDF({
-            simulacao: simData.simulacao,
-            bancos: bancosReais,
-          });
-          await new Promise((r) => setTimeout(r, 800));
+      // `bancosSimulados` só conhece a simulação PRINCIPAL de cada cenário.
+      // As irmãs de segundo prazo são criadas no servidor e nunca entravam
+      // nessa lista — por isso o PDF do prazo comparativo (ex.: 420 meses)
+      // não baixava. Aqui partimos das simulações do grupo, que incluem as
+      // irmãs e as do teste de CPF.
+      const simulacoesDoGrupo = new Map<string, any>();
+      for (const idBase of idsGerados) {
+        const dados = await obterSimulacao({ data: { id: idBase } });
+        for (const irma of ((dados as any).simulacao?._irmas ?? [dados.simulacao]) as any[]) {
+          if (irma?.id) simulacoesDoGrupo.set(irma.id, dados);
         }
+        simulacoesDoGrupo.set(idBase, dados);
+      }
+
+      for (const [simId, dados] of simulacoesDoGrupo) {
+        const bancosReais = ((dados.bancos as any[]) ?? []).filter(
+          (b: any) => b.simulacao_id === simId && b.status_banco === "simulada",
+        );
+        if (bancosReais.length === 0) continue;
+
+        const simulacao =
+          ((dados as any).simulacao?._irmas as any[])?.find((x: any) => x.id === simId) ??
+          dados.simulacao;
+
+        await baixarSimulacaoDetalhadaPDF({ simulacao, bancos: bancosReais });
+        await new Promise((r) => setTimeout(r, 800));
       }
     } catch (e) {
       console.error("[PDF Automático Ambos]", e);

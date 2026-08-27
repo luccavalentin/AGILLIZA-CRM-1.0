@@ -1293,6 +1293,10 @@ export type Database = {
           documentos_checklist: Json
           email: string | null
           empresa: string | null
+          tipo_empresa: string | null
+          faturamento_empresa: number | null
+          patrimonio_liquido_empresa: number | null
+          capital_social_empresa: number | null
           estado_civil:
             | Database["public"]["Enums"]["cliente_estado_civil"]
             | null
@@ -1384,6 +1388,10 @@ export type Database = {
           documentos_checklist?: Json
           email?: string | null
           empresa?: string | null
+          tipo_empresa?: string | null
+          faturamento_empresa?: number | null
+          patrimonio_liquido_empresa?: number | null
+          capital_social_empresa?: number | null
           estado_civil?:
             | Database["public"]["Enums"]["cliente_estado_civil"]
             | null
@@ -1475,6 +1483,10 @@ export type Database = {
           documentos_checklist?: Json
           email?: string | null
           empresa?: string | null
+          tipo_empresa?: string | null
+          faturamento_empresa?: number | null
+          patrimonio_liquido_empresa?: number | null
+          capital_social_empresa?: number | null
           estado_civil?:
             | Database["public"]["Enums"]["cliente_estado_civil"]
             | null
