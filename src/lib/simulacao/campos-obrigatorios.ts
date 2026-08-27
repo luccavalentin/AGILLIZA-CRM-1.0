@@ -32,11 +32,13 @@ export function validarCamposSimulacao(sim: any): CampoFaltante[] {
   if (!rot(sim?.nome_cliente)) add("Nome do proponente");
   if (rot(sim?.cpf_cnpj).replace(/\D/g, "").length < 11) add("CPF/CNPJ do proponente");
   if (!rot(sim?.data_nascimento)) add("Data de nascimento");
-  if (!rot(sim?.sexo)) add("Sexo");
+  // PJ não tem sexo nem estado civil; cobrá-los impede o envio da modalidade.
+  const ehPJ = String(sim?.tipo_pessoa ?? "PF").toUpperCase() === "PJ";
+  if (!ehPJ && !rot(sim?.sexo)) add("Sexo");
   if (!rot(sim?.email)) add("E-mail");
   if (rot(sim?.celular).replace(/\D/g, "").length < 10) add("Celular");
   if (!(Number(sim?.renda_total) > 0)) add("Renda total");
-  if (!rot(sim?.estado_civil)) add("Estado civil");
+  if (!ehPJ && !rot(sim?.estado_civil)) add("Estado civil");
   
   // REGRA: o sexo do cônjuge só é exigido quando um cônjuge REALMENTE vai ser
   // enviado ao banco — estado civil casado/união estável E identificação dele
