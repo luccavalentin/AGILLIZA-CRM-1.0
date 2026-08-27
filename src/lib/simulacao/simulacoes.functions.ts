@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { completaSchema, mapEstadoCivilEnum } from "./schemas";
 import { humanizarErroBanco } from "./bank-error-humanizer";
 import { ajustarPrazoPorIdade } from "./prazo";
+import { bancosQueOperamPJ } from "./use-simulacao-completa/bancos-helpers";
 
 /** ===== Tipos de saída ===== */
 export interface BancoAtivo {
@@ -129,7 +130,7 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     let query = supabase
       .from("clientes")
       .select(
-        "id, nome, documento, email, telefone_celular, data_nascimento, sexo, estado_civil, renda_total_declarada, tipo_pessoa, imovel_cep, imovel_uf, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular",
+        "id, nome, documento, email, telefone_celular, data_nascimento, sexo, estado_civil, renda_total_declarada, tipo_pessoa, faturamento_empresa, imovel_cep, imovel_uf, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular",
       )
       .is("deleted_at", null)
       .limit(8);
@@ -153,7 +154,7 @@ export const obterClienteCRM = createServerFn({ method: "GET" })
     const { data: row, error } = await supabase
       .from("clientes")
       .select(
-        "id, nome, documento, email, telefone_celular, data_nascimento, sexo, estado_civil, renda_total_declarada, tipo_pessoa, imovel_cep, imovel_uf, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular",
+        "id, nome, documento, email, telefone_celular, data_nascimento, sexo, estado_civil, renda_total_declarada, tipo_pessoa, faturamento_empresa, imovel_cep, imovel_uf, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -270,6 +271,41 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       const correspondente_id = prof?.correspondente_id;
       if (!correspondente_id) throw new Error("Correspondente não vinculado.");
 
+      // ===== Pessoa jurídica: só o Bradesco opera =====
+      // A tela já esconde e desmarca os demais, mas a decisão de qual banco
+      // recebe a consulta não pode depender só do cliente. Aqui a lista é
+      // filtrada uma vez e vale para os três inserts de `simulacao_bancos`
+      // (principal, comparativo de CPF e segundo prazo).
+      const ehPJ =
+        String(dd.tipo_pessoa ?? "").toUpperCase() === "PJ" ||
+        String(dd.cpf_cnpj ?? "").replace(/\D/g, "").length === 14;
+      if (ehPJ && Array.isArray(dd.bancos_ids) && dd.bancos_ids.length > 0) {
+        const { data: bancosEscolhidos } = await supabase
+          .from("vw_bancos_ativos")
+          .select("id, codigo_banco, nome_banco")
+          .in("id", dd.bancos_ids);
+        // A view expõe `id` como anulável; só entram linhas com id de verdade.
+        const comId = (bancosEscolhidos ?? []).filter(
+          (b): b is typeof b & { id: string } => typeof b.id === "string",
+        );
+        const permitidos = bancosQueOperamPJ(comId).map((b) => b.id);
+        if (permitidos.length === 0) {
+          throw new Error(
+            "Pessoa jurídica: apenas o Bradesco opera esta modalidade. Selecione o Bradesco para simular.",
+          );
+        }
+        if (permitidos.length !== dd.bancos_ids.length) {
+          const removidos = (bancosEscolhidos ?? [])
+            .filter((b: any) => !permitidos.includes(b.id))
+            .map((b: any) => b.nome_banco)
+            .join(", ");
+          console.warn(
+            `[simulacoes][PJ] bancos removidos da seleção por não operarem pessoa jurídica: ${removidos}`,
+          );
+          dd.bancos_ids = permitidos;
+        }
+      }
+
       // REGRA: Evitar duplicidade de registros (Reenviar em vez de duplicar)
       // Se já existe uma simulação equivalente criada nos últimos 20 minutos, reutilizamos.
       const vinteMinutosAtras = new Date(Date.now() - 20 * 60 * 1000).toISOString();
@@ -365,6 +401,8 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         imovelUso?: string | null;
         imovelSituacao?: string | null;
         imovelValor?: number | null;
+        /** Faturamento da empresa (só chega preenchido quando a modalidade é PJ). */
+        faturamentoEmpresa?: number | null;
       }) => {
         const nome = (params.nome ?? "").trim();
         const documento = limparDocumento(params.documento);
@@ -401,6 +439,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           imovel_uso: enumOuNulo(params.imovelUso),
           imovel_situacao: enumOuNulo(params.imovelSituacao),
           imovel_valor: params.imovelValor ?? null,
+          // Zero aqui significa "não informado": o campo inicia em 0 e gravar
+          // 0 apagaria um faturamento já cadastrado no CRM.
+          faturamento_empresa: Number(params.faturamentoEmpresa) > 0 ? params.faturamentoEmpresa : null,
         } as any;
         // Não sobrescreve o cadastro com vazio: o que a simulação não coletou
         // deve preservar o que já existe no CRM.
@@ -527,6 +568,8 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         imovelUso: dd.uso_imovel,
         imovelSituacao: dd.situacao_imovel,
         imovelValor: dd.valor_imovel,
+        // Só a empresa titular tem este dado; o cônjuge (abaixo) nunca.
+        faturamentoEmpresa: ehPJ ? dd.faturamento_empresa : null,
       });
       if (titularId) cliente_id = titularId;
 
@@ -566,6 +609,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         status: "rascunho" as const,
         cliente_id,
         cpf_cnpj: dd.cpf_cnpj ?? null,
+        // Modalidade da simulação. Gravada para que recarregar ou duplicar não
+        // devolva uma simulação de empresa para as regras de pessoa física.
+        tipo_pessoa: ehPJ ? "PJ" : "PF",
         nome_cliente: dd.nome_cliente ?? null,
         email: dd.email ?? null,
         celular: dd.celular ?? null,

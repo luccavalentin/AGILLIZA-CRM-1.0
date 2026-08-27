@@ -1,4 +1,4 @@
-import { Info, Link2, Repeat } from "lucide-react";
+import { Construction, Info, Link2, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,13 +60,40 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             </Button>
           ))}
         </div>
-        {isPJ && (
+        {isPJ && !ctx.pjBloqueada && (
           <span className="text-[11.5px] text-muted-foreground">
             Bradesco · financiamento até 70% · prazo de 180 a 240 meses
           </span>
         )}
       </div>
 
+      {/* Fluxo PJ suspenso: a integração do Bradesco quebra sem devolver motivo
+          nesta modalidade. O formulário fica visível, porém travado. */}
+      {ctx.pjBloqueada && (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4"
+        >
+          <Construction className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-500">
+              {ctx.msgPjEmConstrucao}
+            </p>
+            <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-500/80">
+              Volte para <span className="font-semibold">Pessoa física</span> para simular
+              normalmente.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <fieldset
+        disabled={ctx.pjBloqueada}
+        className={cn(
+          "m-0 min-w-0 space-y-4 border-0 p-0",
+          ctx.pjBloqueada && "pointer-events-none opacity-50",
+        )}
+      >
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
           <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
@@ -279,6 +306,20 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           )}
           <Erro erros={erros} campo="data_nascimento" />
         </Campo>
+        {/* Faturamento anual da empresa. Opcional no contrato da integração —
+            não trava o envio — mas o Bradesco o usa na análise de PJ.
+            Natureza jurídica, patrimônio líquido e capital social ficaram de
+            fora da simulação: quando o cadastro do CRM os tiver, o envio ao
+            banco os leva assim mesmo (ver `enviar.server.ts`). */}
+        {isPJ && (
+          <Campo label="Faturamento anual (R$)">
+            <CurrencyInput
+              value={f.faturamento_empresa ?? 0}
+              onChange={(v) => set("faturamento_empresa", v)}
+              placeholder="Ex: 3.600.000,00"
+            />
+          </Campo>
+        )}
         {/* Sexo e estado civil são atributos de pessoa física; empresa não
             tem nenhum dos dois. */}
         {!isPJ && (
@@ -356,6 +397,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <Erro erros={erros} campo="celular" />
         </Campo>
       </div>
+      </fieldset>
     </section>
   );
 }

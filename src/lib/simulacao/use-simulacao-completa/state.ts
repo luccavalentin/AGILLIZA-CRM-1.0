@@ -31,6 +31,8 @@ export const ESTADO_INICIAL: Form = {
   produto: "financiamento_imobiliario",
   /** PF ou PJ. Em PJ o único banco que opera é o Bradesco. */
   tipo_pessoa: "PF",
+  /** Faturamento anual — só coletado e enviado quando a modalidade é PJ. */
+  faturamento_empresa: 0,
   tipo_imovel: "",
   uso_imovel: "",
   situacao_imovel: "",

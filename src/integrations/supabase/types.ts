@@ -6588,6 +6588,7 @@ export type Database = {
           situacao_imovel: string | null
           status: Database["public"]["Enums"]["simulacao_status"]
           tipo_imovel: string | null
+          tipo_pessoa: string
           tipo_simulacao: Database["public"]["Enums"]["simulacao_tipo"]
           uf: string | null
           ultimo_envio_em: string | null
@@ -6655,6 +6656,7 @@ export type Database = {
           situacao_imovel?: string | null
           status?: Database["public"]["Enums"]["simulacao_status"]
           tipo_imovel?: string | null
+          tipo_pessoa?: string
           tipo_simulacao?: Database["public"]["Enums"]["simulacao_tipo"]
           uf?: string | null
           ultimo_envio_em?: string | null
@@ -6722,6 +6724,7 @@ export type Database = {
           situacao_imovel?: string | null
           status?: Database["public"]["Enums"]["simulacao_status"]
           tipo_imovel?: string | null
+          tipo_pessoa?: string
           tipo_simulacao?: Database["public"]["Enums"]["simulacao_tipo"]
           uf?: string | null
           ultimo_envio_em?: string | null

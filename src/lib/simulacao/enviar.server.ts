@@ -60,13 +60,49 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
     console.info(`[SIM-PERF] inicio total_ms=0`);
 
     const { data: bancosSelecionados } = await supabase.from("simulacao_bancos").select("*").eq("simulacao_id", simulacaoId).eq("selecionado", true);
-    const bancosParaProcessar = bancoIds && bancoIds.length > 0 ? (bancosSelecionados ?? []).filter((b: any) => bancoIds.includes(b.banco_id)) : (bancosSelecionados ?? []);
-    
+    const bancosEscolhidos = bancoIds && bancoIds.length > 0 ? (bancosSelecionados ?? []).filter((b: any) => bancoIds.includes(b.banco_id)) : (bancosSelecionados ?? []);
+
+    // ===== Pessoa jurídica: última barreira antes da consulta =====
+    // Simulações criadas antes desta trava, ou reenviadas direto por id, podem
+    // trazer bancos que não operam PJ. Consultá-los é recusa certa: marcamos
+    // com o motivo em vez de gastar a consulta e devolver "erro interno".
+    const ehPJ =
+      String((sim as any).tipo_pessoa ?? "").toUpperCase() === "PJ" ||
+      String(sim.cpf_cnpj ?? "").replace(/\D/g, "").length === 14;
+    let bancosParaProcessar = bancosEscolhidos;
+    if (ehPJ) {
+      const { bancoOperaPJ } = await import("./use-simulacao-completa/bancos-helpers");
+      bancosParaProcessar = bancosEscolhidos.filter((b: any) => bancoOperaPJ(b));
+      const recusados = bancosEscolhidos.filter((b: any) => !bancoOperaPJ(b));
+      if (recusados.length > 0) {
+        const { supabaseAdmin: sbAdminPJ } = await import("@/integrations/supabase/client.server");
+        await sbAdminPJ
+          .from("simulacao_bancos")
+          .update({
+            status_banco: "erro" as any,
+            mensagem_banco: "Este banco não opera financiamento para pessoa jurídica. Hoje só o Bradesco atende esta modalidade.",
+          })
+          .in("id", recusados.map((b: any) => b.id));
+        console.warn(
+          `[enviar.server][PJ] simulacao=${simulacaoId} bancos ignorados: ${recusados.map((b: any) => b.nome_banco).join(", ")}`,
+        );
+      }
+    }
+
     const { supabaseAdmin: sbAdminEnvio } = await import("@/integrations/supabase/client.server");
     await sbAdminEnvio.from("simulacoes").update({ ultimo_envio_em: new Date().toISOString() }).eq("id", simulacaoId);
 
     console.info(`[SIM-PERF] dados_carregados total_ms=${(performance.now() - t0).toFixed(0)}`);
-    if (bancosParaProcessar.length === 0) return { oportunidade_id: sim.homefin_id_oportunidade, status: "simulada", bancos: [] };
+    if (bancosParaProcessar.length === 0) {
+      // Em PJ pode não ter sobrado banco algum — nesse caso a simulação não foi
+      // simulada, foi recusada. Recalcula em vez de reportar sucesso.
+      if (ehPJ && bancosEscolhidos.length > 0) {
+        const statusPJ = (await recalcularStatusSimulacao(simulacaoId, supabase)) as EnviarResultado["status"];
+        await sbAdminEnvio.from("simulacoes").update({ status: statusPJ }).eq("id", simulacaoId);
+        return { oportunidade_id: sim.homefin_id_oportunidade, status: statusPJ, bancos: [] };
+      }
+      return { oportunidade_id: sim.homefin_id_oportunidade, status: "simulada", bancos: [] };
+    }
 
     let idOportunidade = sim.homefin_id_oportunidade;
     
@@ -163,44 +199,99 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
           
           if (idOportunidade) {
             // --- Pessoa jurídica -------------------------------------------
-            // A oportunidade não tem campo de tipo de pessoa: quem carrega a
-            // modalidade é o PARTICIPANTE. Para PJ, o próprio titular precisa
-            // ser enviado como participante `tipoPessoa: "J"`, com os dados da
-            // empresa — sem isso o banco analisa o CNPJ como se fosse pessoa
-            // física e recusa.
+            // O `POST /oportunidade` JÁ cria o participante titular e, quando o
+            // documento é um CNPJ, já o marca com `tipoPessoa: "J"` sozinho.
+            // Postar um segundo participante com o mesmo CNPJ deixava a
+            // oportunidade com dois compradores idênticos e o Bradesco devolvia
+            // `INT-006 ... falhou: undefined` — quebrava antes de formular uma
+            // recusa (a PF, com documentos distintos, recebia códigos normais
+            // como "121-L"). Então aqui a gente ATUALIZA o participante que já
+            // existe, em vez de criar outro.
             const docTitular = String(sim.cpf_cnpj ?? "").replace(/\D/g, "");
             if (docTitular.length === 14) {
-              try {
-                const { data: empresa } = await sbAdminPayload
-                  .from("clientes")
-                  .select(
-                    "tipo_empresa, faturamento_empresa, patrimonio_liquido_empresa, capital_social_empresa",
-                  )
-                  .eq("documento", docTitular)
-                  .maybeSingle();
+              const { data: empresa } = await sbAdminPayload
+                .from("clientes")
+                .select(
+                  "tipo_empresa, faturamento_empresa, patrimonio_liquido_empresa, capital_social_empresa",
+                )
+                // O mesmo CNPJ pode existir em mais de um correspondente; sem o
+                // escopo, `maybeSingle` estoura com "multiple rows returned".
+                .eq("correspondente_id", sim.correspondente_id)
+                .eq("documento", docTitular)
+                .maybeSingle();
 
+              try {
+                // Localiza o participante que a oportunidade criou para este
+                // CNPJ. Preferimos o comprador principal; qualquer um com o
+                // mesmo documento serve de alvo.
+                const respOp = await chamarIntegracao<any>(
+                  `/oportunidade/${idOportunidade}`,
+                  "GET",
+                  undefined,
+                  { simulacao_id: simulacaoId },
+                );
+                const participantesOp: any[] =
+                  respOp?.oportunidade?.participantes ?? respOp?.participantes ?? [];
+                const mesmoDoc = participantesOp.filter(
+                  (p: any) => String(p?.cpfCnpj ?? "").replace(/\D/g, "") === docTitular,
+                );
+                const alvo =
+                  mesmoDoc.find((p: any) => p?.compradorPrincipal === "S") ?? mesmoDoc[0] ?? null;
+                const idAlvo = alvo?.idParticipante ?? null;
+
+                const c: any = sim.cliente ?? {};
                 await chamarIntegracao<any>(
-                  `/oportunidade/${idOportunidade}/participante`,
-                  "POST",
+                  // Sem alvo (a API mudou o comportamento, ou o titular não foi
+                  // criado), cai no POST — melhor um participante a mais do que
+                  // uma oportunidade PJ sem dados de empresa.
+                  idAlvo
+                    ? `/oportunidade/${idOportunidade}/participante/${idAlvo}`
+                    : `/oportunidade/${idOportunidade}/participante`,
+                  idAlvo ? "PUT" : "POST",
                   {
+                    // Obrigatórios do contrato (marcados com "S" na
+                    // documentação) — valem também para pessoa jurídica, ainda
+                    // que alguns não tenham equivalente natural numa empresa.
+                    // Onde falta dado, seguimos o mesmo padrão de preenchimento
+                    // já usado no envio de terceiros.
                     tipoSituacao: "A",
                     tipoQualificacao: "CO",
                     tipoPessoa: "J",
                     nomeParticipante: sim.nome_cliente,
                     cpfCnpj: docTitular,
-                    // Em PJ este campo é a data de ABERTURA da empresa; o
-                    // cadastro guarda os dois no mesmo lugar.
-                    dataRegistroEmpresa: sim.data_nascimento,
-                    tipoEmpresa: empresa?.tipo_empresa ?? null,
-                    faturamentoEmpresa: num(empresa?.faturamento_empresa),
-                    patrimonioLiquidoEmpresa: num(empresa?.patrimonio_liquido_empresa),
-                    capitalSocialEmpresa: num(empresa?.capital_social_empresa),
+                    dataNascimento: sim.data_nascimento,
+                    nomeMae: c.mae || "NAO INFORMADO",
+                    tipoSexo: c.sexo || "M",
+                    tipoEstadoCivil: estadoCivilCrmParaCodigo(c.estado_civil) || "S",
+                    tipoDocumentoIdentidade: c.tipo_documento_identidade || "RG",
+                    numeroDocumento: c.numero_documento || docTitular,
+                    orgaoExpedidor: c.orgao_expedidor || "JUCESP",
+                    ufExpedicao: c.uf_expedicao || sim.uf || "SP",
+                    nomeProfissao: c.profissao || "EMPRESARIO",
                     renda: num(sim.renda_total),
                     email: sim.email,
                     celular: String(sim.celular ?? "").replace(/\D/g, ""),
+                    cep: String(c.imovel_cep ?? sim.cep_imovel ?? "01001000").replace(/\D/g, ""),
+                    logradouro: c.imovel_logradouro || "Nao informado",
+                    numeroLogradouro: c.imovel_numero || "SN",
+                    bairro: c.imovel_bairro || "Centro",
+                    municipio: c.imovel_cidade || "Sao Paulo",
+                    uf: c.imovel_uf || sim.uf || "SP",
+                    utilizaFgts: "N",
                     fgAutorizacaoDados: true,
+                    // Opcionais no contrato: enviados quando o cadastro tem.
+                    // Em PJ a data de abertura mora no mesmo campo da data de
+                    // nascimento.
+                    dataRegistroEmpresa: sim.data_nascimento,
+                    tipoEmpresa: empresa?.tipo_empresa ?? undefined,
+                    faturamentoEmpresa: num(empresa?.faturamento_empresa) || undefined,
+                    patrimonioLiquidoEmpresa: num(empresa?.patrimonio_liquido_empresa) || undefined,
+                    capitalSocialEmpresa: num(empresa?.capital_social_empresa) || undefined,
                   },
                   { simulacao_id: simulacaoId },
+                );
+                console.info(
+                  `[PJ] participante jurídico ${idAlvo ? `atualizado (PUT ${idAlvo})` : "criado (POST)"} na oportunidade ${idOportunidade}`,
                 );
               } catch (e) {
                 console.error("[PJ] falha ao enviar participante jurídico:", e);
@@ -374,7 +465,13 @@ async function processarBancoIndividual(b: any, idOportunidade: string, sim: any
       // documentação). Enviávamos a string "S", que é o formato dos flags
       // S/N de outros campos — aqui o tipo é outro.
       valorTotalFinanciamento, valorDespesasFinanciadas, fgFinanciarDespesas, fgAutorizacaoDados: true,
-      tipoSexo: (sim.cliente?.sexo || (sim.dados as any)?.sexo) || undefined,
+      // Empresa não tem sexo, então em PJ este campo saía ausente — e ausência
+      // é a única diferença que sobrou entre os envios que o Bradesco responde
+      // e os que ele quebra sem devolver motivo. Mandamos o mesmo valor que já
+      // gravamos no participante jurídico, para o payload ficar coerente.
+      tipoSexo:
+        (sim.cliente?.sexo || (sim.dados as any)?.sexo) ||
+        (String(sim.cpf_cnpj ?? "").replace(/\D/g, "").length === 14 ? "M" : undefined),
       tipoSexoConjuge: (sim.cliente?.conjuge_sexo || (sim.dados as any)?.conjuge_sexo || (sim.cliente?.dados as any)?.conjuge_sexo) || undefined
     };
 
