@@ -28,6 +28,7 @@ import { rendaMinimaDoBanco } from "@/lib/simulacao/renda";
 import { cn } from "@/lib/utils";
 import { ErroBancoDetalhe } from "@/components/simulacao/erro-banco-detalhe";
 import { totalFinanciadoBanco } from "@/lib/simulacao/origem-dados";
+import { pedirReconciliacao, temBancoAguardando } from "@/lib/simulacao/reconciliar";
 import { ResumoPerformanceSimulacao } from "./resumo-performance";
 
 /**
@@ -124,6 +125,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
   const router = useRouter();
   const qc = useQueryClient();
   const [reenviandoBanco, setReenviandoBanco] = useState<string | null>(null);
+  const [reenviandoLote, setReenviandoLote] = useState(false);
   const [criandoBanco, setCriandoBanco] = useState<string | null>(null);
   const {
     enviar: handleEnviarHook,
@@ -139,6 +141,17 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
 
   const dataSac = qSac.data as any;
   const dataPrice = qPrice.data as any;
+
+  // Bancos assíncronos (Santander) respondem depois do POST. Enquanto algum
+  // estiver aguardando, pedimos a reconciliação no mesmo ritmo do polling —
+  // sem isso a simulação fica presa em "aguardando" indefinidamente.
+  const aguardandoRetorno = temBancoAguardando(dataSac) || temBancoAguardando(dataPrice);
+  useEffect(() => {
+    if (!aguardandoRetorno) return;
+    void pedirReconciliacao();
+    const t = setInterval(() => void pedirReconciliacao(), 12000);
+    return () => clearInterval(t);
+  }, [aguardandoRetorno]);
 
   // Consulta as simulações dos CPFs testados que ainda não vieram pelo grupo.
   const idsJaCarregados = new Set(
@@ -301,6 +314,50 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
   const variosTitulares =
     new Set(linhas.map((l) => (l.titularNome || "").trim().toLowerCase())).size > 1;
 
+  /** Bancos sem retorno, agrupados por simulação — base do reenvio em lote. */
+  const pendentesPorSim = new Map<string, { bancoIds: string[]; linhaIds: string[] }>();
+  for (const l of linhas) {
+    if (l.banco.status_banco === "simulada") continue;
+    const atual = pendentesPorSim.get(l.simId) ?? { bancoIds: [], linhaIds: [] };
+    if (!atual.bancoIds.includes(l.banco.banco_id)) atual.bancoIds.push(l.banco.banco_id);
+    atual.linhaIds.push(l.banco.id);
+    pendentesPorSim.set(l.simId, atual);
+  }
+  const totalPendentes = [...pendentesPorSim.values()].reduce(
+    (n, x) => n + x.linhaIds.length,
+    0,
+  );
+
+  async function reenviarPendentes() {
+    if (totalPendentes === 0 || reenviandoLote) return;
+    setReenviandoLote(true);
+    let falhas = 0;
+    try {
+      // Um envio por simulação, levando só os bancos daquela simulação que
+      // ficaram sem retorno — os já simulados não são tocados.
+      for (const [simId, { bancoIds }] of pendentesPorSim) {
+        try {
+          await enviarSimulacaoBanco({ data: { simulacao_id: simId, banco_ids: bancoIds } });
+        } catch (e) {
+          falhas += 1;
+          console.error("[reenviar lote]", simId, e);
+        }
+        qc.invalidateQueries({ queryKey: ["simulacao", simId] });
+      }
+      if (falhas === 0) {
+        toast.success(
+          totalPendentes === 1
+            ? "Banco reenviado. O retorno aparece aqui mesmo."
+            : `${totalPendentes} bancos reenviados. Os retornos aparecem aqui mesmo.`,
+        );
+      } else {
+        toast.error("Parte dos reenvios falhou. Tente novamente pelos botões da linha.");
+      }
+    } finally {
+      setReenviandoLote(false);
+    }
+  }
+
   const melhorPorGrupo: Record<string, { menorParcela?: string; menorCET?: string }> = {};
   const gruposSet = new Set(linhas.map(l => `${l.prazo}-${l.sistema}`));
   const grupos = Array.from(gruposSet);
@@ -372,6 +429,26 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
             className="hidden sm:flex"
           />
           <div className="flex flex-wrap items-center gap-2">
+            {/* Reenvia só quem não retornou, na mesma simulação — quem já
+                respondeu não é consultado de novo. */}
+            {totalPendentes > 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={reenviandoLote}
+                onClick={reenviarPendentes}
+                title="Reenvia apenas os bancos sem retorno, mantendo os resultados já obtidos"
+              >
+                <RefreshCw
+                  className={cn("mr-1.5 h-4 w-4", reenviandoLote && "animate-spin")}
+                />
+                {reenviandoLote
+                  ? "Reenviando…"
+                  : totalPendentes === 1
+                    ? "Reenviar 1 sem retorno"
+                    : `Reenviar ${totalPendentes} sem retorno`}
+              </Button>
+            )}
             <BaixarPdfsButton dataSac={dataSac} dataPrice={dataPrice} />
             {dataSac && (
               <Button
@@ -520,16 +597,21 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
                             <Download className="mr-1 h-4 w-4" /> PDF
                           </Button>
                         )}
-                        {b.status_banco === "erro" ? (
+                        {b.status_banco !== "simulada" ? (
                           <Button
                             size="sm"
                             variant="secondary"
-                            disabled={reenviandoBanco !== null}
-                             onClick={() => reenviarBanco(l.simId, b.banco_id, b.id, b)}
-
+                            disabled={reenviandoBanco === b.id}
+                            onClick={() => reenviarBanco(l.simId, b.banco_id, b.id, b)}
+                            title="Reenvia somente este banco, na mesma simulação"
                           >
-                            <RefreshCw className="mr-1 h-4 w-4" />
-                            {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
+                            <RefreshCw
+                              className={cn(
+                                "mr-1 h-4 w-4",
+                                reenviandoBanco === b.id && "animate-spin",
+                              )}
+                            />
+                            {reenviandoBanco === b.id ? "Reenviando…" : "Reenviar"}
                           </Button>
                         ) : (
                           <Button
@@ -727,16 +809,16 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
                                   <Download className="h-4 w-4" />
                                 </Button>
                               )}
-                              {b.status_banco === "erro" ? (
+                              {b.status_banco !== "simulada" ? (
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  disabled={reenviandoBanco !== null}
+                                  disabled={reenviandoBanco === b.id}
                              onClick={() => reenviarBanco(l.simId, b.banco_id, b.id, b)}
 
                                 >
                                   <RefreshCw className="mr-1 h-4 w-4" />
-                                  {reenviandoBanco === b.banco_id ? "…" : "Reenviar"}
+                                  {reenviandoBanco === b.id ? "…" : "Reenviar"}
                                 </Button>
                               ) : (
                                 <Button

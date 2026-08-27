@@ -145,19 +145,19 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
     return "A sessão com o banco expirou durante o envio. Nenhum dado foi perdido — clique em reenviar/atualizar status para concluir.";
   }
 
+  // 5xx é falha DO provedor, não dos dados enviados. Mandar o usuário
+  // conferir campos aqui é enganoso: ele caça um problema que não existe no
+  // cadastro dele. O caminho certo é reenviar — e, na prática, o mesmo
+  // payload costuma passar na tentativa seguinte.
   if (code === "INTERNAL_ERROR" || status >= 500) {
-    const ondeParticipante = /participante/i.test(endpoint);
-    const ondeSimulacao = /\/simulacao/i.test(endpoint);
-    if (ondeParticipante) {
-      return "O banco rejeitou os dados do proponente (erro interno na integração). Verifique no cadastro do cliente: sexo, nome da mãe, RG/órgão expedidor, profissão e endereço completo (CEP, logradouro, número, bairro, cidade e UF).";
-    }
-    if (ondeSimulacao) {
-      return "A integração rejeitou os dados da simulação sem informar qual campo causou o erro. Confira valor do imóvel, valor financiado, prazo permitido pela idade, sistema de amortização e autorizações, e reenvie.";
-    }
-    if (/\/oportunidade\/?$/i.test(endpoint)) {
-      return "A oportunidade não foi criada porque a integração rejeitou o conjunto de dados, mas não identificou o campo. Confira estado civil, composição de renda, dados do cônjuge quando aplicável e os campos obrigatórios da operação antes de reenviar.";
-    }
-    return `A integração bancária não concluiu a solicitação (erro ${status}) e não informou um campo específico. Tente novamente; se persistir, revise os dados obrigatórios exibidos no cadastro.`;
+    const etapa = /participante/i.test(endpoint)
+      ? "ao enviar o proponente"
+      : /\/simulacao/i.test(endpoint)
+        ? "ao simular"
+        : /\/oportunidade\/?$/i.test(endpoint)
+          ? "ao abrir a oportunidade"
+          : "durante o envio";
+    return `A integração bancária falhou ${etapa} (erro ${status || 500} no provedor). Não é problema no cadastro — os dados enviados estão íntegros. Reenvie em alguns instantes; se persistir por mais de alguns minutos, o provedor está instável.`;
   }
 
   if (MAPA[code]) return MAPA[code];
