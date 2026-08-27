@@ -32,6 +32,7 @@ import {
 } from "./use-simulacao-completa/state";
 import {
   aceitaPrice,
+  prazoMinimoDosBancos,
   calcularRestricaoEspecial,
   aceitaBancoNaOperacao,
   mensagemBancoIncompativel,
@@ -156,6 +157,28 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const isHomeEquity = f.produto === "home_equity";
   const prazoMaxOperacional = useMemo(() => Math.min(420, isHomeEquity ? 240 : 420), [isHomeEquity]);
   const prazoMaximoEfetivo = useMemo(() => Math.min(maxPrazoIdade ?? 420, prazoMaxOperacional, 420), [maxPrazoIdade, prazoMaxOperacional]);
+  /**
+   * Piso de prazo exigido pelos bancos escolhidos (hoje: Bradesco, 180 meses).
+   * Simular abaixo disso é recusa certa — barramos antes de gastar a consulta.
+   */
+  const pisoPrazoBancos = useMemo(() => {
+    const ids = new Set([
+      ...((f.bancos_ids as string[]) ?? []),
+      ...((f.bancos_sac_ids as string[]) ?? []),
+      ...((f.bancos_price_ids as string[]) ?? []),
+    ]);
+    const escolhidos = (bancos ?? []).filter((b) => ids.has(b.id));
+    return prazoMinimoDosBancos(escolhidos);
+  }, [bancos, f.bancos_ids, f.bancos_sac_ids, f.bancos_price_ids]);
+
+  const prazoAbaixoDoPiso = useMemo(() => {
+    if (!pisoPrazoBancos) return null;
+    const abaixo = [f.prazo, f.prazo_2]
+      .map((p) => Number(p) || 0)
+      .filter((p) => p > 0 && p < pisoPrazoBancos.meses);
+    return abaixo.length > 0 ? { ...pisoPrazoBancos, prazos: abaixo } : null;
+  }, [pisoPrazoBancos, f.prazo, f.prazo_2]);
+
   const restricaoEspecial = useMemo(() => calcularRestricaoEspecial(f, (bancos ?? []).filter(b => (f.bancos_ids || []).includes(b.id))), [f, bancos]);
   const ltvMax = restricaoEspecial.ativo ? restricaoEspecial.ltvMax : 0.8;
   const motivoLimitador = useMemo((): MotivoLimitador => {
@@ -488,7 +511,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       mensagemPrazoInviavel: "", aplicarEntradaSugerida, aplicarPorFinanciamento, aplicarPorFinanciamentoTotal,
       financiamentoTotalExibido, aplicarPorEntrada, aplicarPorParcela, aplicarJogadaNumeros, setSistemaAmortizacao,
       alternarFinanciarDespesas, definirPctDespesas, normalizarPctDespesas, pctDespesas, isHomeEquity,
-      cadastroNome, invertido, crmVinculado, podePuxarConjugeCrm, podeInverter, melhorTaxaAno,
+      cadastroNome, invertido, crmVinculado, podePuxarConjugeCrm, podeInverter, melhorTaxaAno, prazoAbaixoDoPiso, pisoPrazoBancos,
       rendaConsiderada, mostraConjuge, puxarConjugeDoCRM, inverterPrincipal, selecionarClienteCRM,
       limparTitular, refetchCrm, simulacaoResultadoId, simulacaoResultadoIdPrice, simulacaoResultadoIdSecundario,
       fecharResultadoInline: () => setSimulacaoResultadoId(null), 
@@ -498,6 +521,18 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       enviarBancoIndividual: () => {}, enviarTodosBancos: () => {}, 
       enviarOriginal: async () => {
         setTentouEnviar(true);
+        if (prazoAbaixoDoPiso) {
+          setConfirmarAjustePrazo({
+            campo: "prazo",
+            valorDigitado: prazoAbaixoDoPiso.prazos[0],
+            teto: prazoAbaixoDoPiso.meses,
+            motivo: "banco",
+            titulo: `${prazoAbaixoDoPiso.bancos.join(" e ")} exige no mínimo ${prazoAbaixoDoPiso.meses} meses`,
+            descricao: `O prazo informado (${prazoAbaixoDoPiso.prazos.join(" e ")} meses) está abaixo do mínimo aceito. A consulta seria recusada. Ajuste para ${prazoAbaixoDoPiso.meses} meses ou remova o banco da seleção.`,
+            acaoAutomatico: true,
+          });
+          return;
+        }
         if (validarCamposSimulacao({ ...f, id_operacao_homefin: idOperacao }).length > 0) {
           const faltantes = validarCamposSimulacao({ ...f, id_operacao_homefin: idOperacao });
           toast.error("Corrija os campos obrigatórios antes de prosseguir:", {
@@ -527,6 +562,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     financiamentoTotalExibido, aplicarPorEntrada, aplicarPorParcela, aplicarJogadaNumeros,
     setSistemaAmortizacao, alternarFinanciarDespesas, definirPctDespesas, normalizarPctDespesas,
     pctDespesas, isHomeEquity, cadastroNome, invertido, crmVinculado, podePuxarConjugeCrm, faltaDadosConjugeCrm,
+    prazoAbaixoDoPiso, pisoPrazoBancos,
     podeInverter, melhorTaxaAno, rendaConsiderada, mostraConjuge, puxarConjugeDoCRM,
     inverterPrincipal, selecionarClienteCRM, limparTitular, refetchCrm,
     simulacaoResultadoId, simulacaoResultadoIdPrice, simulacaoResultadoIdSecundario,

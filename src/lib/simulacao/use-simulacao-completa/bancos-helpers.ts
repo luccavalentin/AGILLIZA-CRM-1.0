@@ -126,3 +126,23 @@ export function mensagemBancoIncompativel(
   }
   return "Banco incompatível com a operação selecionada.";
 }
+
+/** Prazo mínimo que o Bradesco aceita, em meses. */
+export const PRAZO_MIN_BRADESCO = 180;
+
+/**
+ * Prazo mínimo exigido pelos bancos selecionados.
+ *
+ * Hoje só o Bradesco tem piso próprio (180 meses). Simular abaixo disso é
+ * recusa certa — melhor barrar antes de gastar a consulta.
+ */
+export function prazoMinimoDosBancos(
+  bancos: BancoRef[],
+): { meses: number; bancos: string[] } | null {
+  const comPiso = (bancos ?? []).filter((b) => isBradesco(b));
+  if (comPiso.length === 0) return null;
+  return {
+    meses: PRAZO_MIN_BRADESCO,
+    bancos: comPiso.map((b) => b.nome_banco ?? "Bradesco"),
+  };
+}
