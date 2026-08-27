@@ -136,3 +136,46 @@ describe("completaSchema — sexo do cônjuge", () => {
     ).toContain("sexo_conjuge");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Pessoa jurídica: empresa não tem sexo nem estado civil. Exigi-los travava o
+// envio da modalidade inteira.
+// ---------------------------------------------------------------------------
+const basePJ = {
+  ...simulacaoCompletaSolteiro,
+  tipo_pessoa: "PJ",
+  nome_cliente: "CONSTRUTORA LELO LTDA",
+  cpf_cnpj: "11222333000181",
+  sexo: "",
+  estado_civil: "",
+};
+
+describe("pessoa jurídica", () => {
+  it("não exige sexo nem estado civil de PJ", () => {
+    const campos = validarCamposSimulacao(basePJ).map((c) => c.campo);
+    expect(campos).not.toContain("Sexo");
+    expect(campos).not.toContain("Estado civil");
+  });
+
+  it("continua exigindo os dois de pessoa física", () => {
+    const campos = validarCamposSimulacao({
+      ...basePJ,
+      tipo_pessoa: "PF",
+      cpf_cnpj: "12345678909",
+    }).map((c) => c.campo);
+    expect(campos).toContain("Sexo");
+    expect(campos).toContain("Estado civil");
+  });
+
+  it("o schema aceita PJ sem sexo e sem estado civil", () => {
+    const erros = errosDe(basePJ);
+    expect(erros).not.toContain("sexo");
+    expect(erros).not.toContain("estado_civil");
+  });
+
+  it("o schema segue exigindo os dois em PF", () => {
+    const erros = errosDe({ ...basePJ, tipo_pessoa: "PF", cpf_cnpj: "12345678909" });
+    expect(erros).toContain("sexo");
+    expect(erros).toContain("estado_civil");
+  });
+});

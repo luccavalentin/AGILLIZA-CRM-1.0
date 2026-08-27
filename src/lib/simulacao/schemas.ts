@@ -75,9 +75,15 @@ export const completaSchema = z.object({
   nome_cliente: z.string().min(3, "Informe o nome"),
   cpf_cnpj: z.string().refine((v) => validarCpfCnpj(v), "CPF/CNPJ inválido"),
   renda_total: z.number().positive("Informe a renda total"),
-  sexo: z.enum(["M", "F"], { errorMap: () => ({ message: "Selecione o sexo" }) }),
+  // Sexo e estado civil são de pessoa física. Em PJ não existem, e exigi-los
+  // no tipo travava o envio da modalidade — a obrigatoriedade virou refine,
+  // condicionada a `tipo_pessoa`.
+  sexo: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? null : v),
+    z.enum(["M", "F"]).optional().nullable(),
+  ),
   data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
-  estado_civil: z.string().min(1, "Selecione o estado civil"),
+  estado_civil: z.string().optional().nullable(),
   email: z.string().email("E-mail inválido"),
   celular: z.string().min(10, "Informe o celular"),
   // Cônjuge / composição de renda
@@ -120,6 +126,12 @@ export const completaSchema = z.object({
   consentimento_scr: z.literal(true, {
     errorMap: () => ({ message: "É necessário autorizar a consulta ao SCR/Bacen" }),
   }),
+}).refine((d) => (d.tipo_pessoa === "PJ" ? true : Boolean(d.sexo)), {
+  message: "Selecione o sexo",
+  path: ["sexo"],
+}).refine((d) => (d.tipo_pessoa === "PJ" ? true : String(d.estado_civil ?? "").trim() !== ""), {
+  message: "Selecione o estado civil",
+  path: ["estado_civil"],
 }).refine((d) => {
   // Espelha `validarCamposSimulacao`: exige o sexo do cônjuge apenas quando um
   // cônjuge de fato será enviado — casado/união estável, identificação

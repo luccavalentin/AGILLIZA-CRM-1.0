@@ -115,7 +115,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         <Campo
           label={
             <>
-              Nome <Ast />
+              {isPJ ? "Razão social" : "Nome"} <Ast />
             </>
           }
         >
@@ -129,7 +129,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         <Campo
           label={
             <>
-              CPF/CNPJ <Ast />
+              {isPJ ? "CNPJ" : "CPF/CNPJ"} <Ast />
             </>
           }
         >
@@ -145,7 +145,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         <Campo
           label={
             <>
-              Renda familiar — SAC (R$) <Ast />
+              {isPJ ? "Faturamento mensal (R$)" : "Renda familiar — SAC (R$)"} <Ast />
             </>
           }
         >
@@ -205,7 +205,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <Campo
             label={
               <>
-                Renda familiar — PRICE (R$) <Ast />
+                {isPJ ? "Faturamento mensal — PRICE (R$)" : "Renda familiar — PRICE (R$)"} <Ast />
               </>
             }
           >
@@ -262,7 +262,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         <Campo
           label={
             <>
-              Data de nascimento <Ast />
+              {isPJ ? "Data de abertura" : "Data de nascimento"} <Ast />
             </>
           }
         >
@@ -279,45 +279,51 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           )}
           <Erro erros={erros} campo="data_nascimento" />
         </Campo>
-        <Campo
-          label={
-            <>
-              Sexo <Ast />
-            </>
-          }
-        >
-          <Select value={f.sexo} onValueChange={(v) => set("sexo", v as any)}>
-            <SelectTrigger aria-invalid={!!erros.sexo}>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="M">Masculino</SelectItem>
-              <SelectItem value="F">Feminino</SelectItem>
-            </SelectContent>
-          </Select>
-          <Erro erros={erros} campo="sexo" />
-        </Campo>
-        <Campo
-          label={
-            <>
-              Estado civil <Ast />
-            </>
-          }
-        >
-          <Select value={f.estado_civil} onValueChange={(v) => set("estado_civil", v)}>
-            <SelectTrigger aria-invalid={!!erros.estado_civil}>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {ESTADOS_CIVIS.map((p) => (
-                <SelectItem key={p.value} value={p.value}>
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Erro erros={erros} campo="estado_civil" />
-        </Campo>
+        {/* Sexo e estado civil são atributos de pessoa física; empresa não
+            tem nenhum dos dois. */}
+        {!isPJ && (
+          <>
+          <Campo
+            label={
+              <>
+                Sexo <Ast />
+              </>
+            }
+          >
+            <Select value={f.sexo} onValueChange={(v) => set("sexo", v as any)}>
+              <SelectTrigger aria-invalid={!!erros.sexo}>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="M">Masculino</SelectItem>
+                <SelectItem value="F">Feminino</SelectItem>
+              </SelectContent>
+            </Select>
+            <Erro erros={erros} campo="sexo" />
+          </Campo>
+          <Campo
+            label={
+              <>
+                Estado civil <Ast />
+              </>
+            }
+          >
+            <Select value={f.estado_civil} onValueChange={(v) => set("estado_civil", v)}>
+              <SelectTrigger aria-invalid={!!erros.estado_civil}>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {ESTADOS_CIVIS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Erro erros={erros} campo="estado_civil" />
+          </Campo>
+          </>
+        )}
         <Campo
           label={
             <>
