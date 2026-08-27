@@ -34,6 +34,10 @@ import {
   aceitaPrice,
   REGRAS_PJ,
   bancosQueOperamPJ,
+  bancoOperaPJ,
+  modalidadePeloDocumento,
+  PJ_SIMULACAO_BLOQUEADA,
+  MSG_PJ_EM_CONSTRUCAO,
   prazoMinimoDosBancos,
   calcularRestricaoEspecial,
   aceitaBancoNaOperacao,
@@ -160,15 +164,13 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   /**
    * Simulação de pessoa jurídica: só Bradesco, LTV 70%, prazo 180–240.
    *
-   * `tipo_pessoa` não é coluna de `simulacoes` — ao recarregar ou duplicar, a
-   * flag se perde. O CNPJ (14 dígitos) é a fonte que sobrevive, então ele
-   * serve de âncora quando a flag não veio.
+   * `tipo_pessoa` é coluna de `simulacoes` e volta preenchida ao recarregar ou
+   * duplicar. O documento é a segunda âncora (ver o efeito logo abaixo), então
+   * aqui basta ler a flag.
    */
-  const isPJ = useMemo(() => {
-    if (f.tipo_pessoa === "PJ") return true;
-    if (f.tipo_pessoa === "PF") return false;
-    return String(f.cpf_cnpj ?? "").replace(/\D/g, "").length === 14;
-  }, [f.tipo_pessoa, f.cpf_cnpj]);
+  const isPJ = f.tipo_pessoa === "PJ";
+  /** Em PJ o fluxo está em construção: a tela fica travada e o envio, bloqueado. */
+  const pjBloqueada = isPJ && PJ_SIMULACAO_BLOQUEADA;
   const prazoMaxOperacional = useMemo(
     () => (isPJ ? REGRAS_PJ.prazoMax : Math.min(420, isHomeEquity ? 240 : 420)),
     [isPJ, isHomeEquity],
@@ -180,6 +182,44 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     () => (isPJ ? bancosQueOperamPJ(bancos ?? []) : (bancos ?? [])),
     [isPJ, bancos],
   );
+
+  /**
+   * Documento completo manda na modalidade: CNPJ é PJ, CPF é PF. Sem isso o
+   * botão e o documento podiam discordar — uma empresa puxada do CRM entrava
+   * com o seletor em "Pessoa física" e recebia as regras de PF (Itaú e
+   * Santander liberados, LTV 80%, prazo até 420). Documento incompleto não
+   * mexe em nada, para não trocar a modalidade a cada tecla digitada.
+   */
+  useEffect(() => {
+    const pelaDoc = modalidadePeloDocumento(f.cpf_cnpj);
+    if (pelaDoc && f.tipo_pessoa !== pelaDoc) {
+      setF((prev) => (prev.tipo_pessoa === pelaDoc ? prev : { ...prev, tipo_pessoa: pelaDoc }));
+    }
+  }, [f.cpf_cnpj, f.tipo_pessoa]);
+
+  /**
+   * Em PJ, tira da seleção os bancos que não operam a modalidade.
+   * `bancosDisponiveis` só filtra o que é desenhado na tela: um banco marcado
+   * antes de trocar para PJ continuava em `bancos_ids`, virava linha em
+   * `simulacao_bancos` e era enviado assim mesmo.
+   */
+  useEffect(() => {
+    if (!isPJ || !bancos?.length) return;
+    const permitidos = new Set(bancos.filter(bancoOperaPJ).map((b) => b.id));
+    setF((prev) => {
+      let mudou = false;
+      const proximo: Form = { ...prev };
+      for (const campo of ["bancos_ids", "bancos_sac_ids", "bancos_price_ids"] as const) {
+        const atual = (prev[campo] as string[] | undefined) ?? [];
+        const filtrado = atual.filter((id) => permitidos.has(id));
+        if (filtrado.length !== atual.length) {
+          proximo[campo] = filtrado;
+          mudou = true;
+        }
+      }
+      return mudou ? proximo : prev;
+    });
+  }, [isPJ, bancos]);
   const prazoMaximoEfetivo = useMemo(() => Math.min(maxPrazoIdade ?? 420, prazoMaxOperacional, 420), [maxPrazoIdade, prazoMaxOperacional]);
   /**
    * Piso de prazo exigido pelos bancos escolhidos (hoje: Bradesco, 180 meses).
@@ -481,6 +521,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           cliente_id: s.cliente_id,
           nome_cliente: s.nome_cliente || "",
           cpf_cnpj: s.cpf_cnpj || "",
+          // Modalidade gravada na simulação. O documento é o plano B para
+          // linhas anteriores à coluna `tipo_pessoa`.
+          tipo_pessoa:
+            s.tipo_pessoa === "PJ" || s.tipo_pessoa === "PF"
+              ? s.tipo_pessoa
+              : (modalidadePeloDocumento(s.cpf_cnpj) ?? "PF"),
           email: s.email || EMAIL_PADRAO,
           celular: s.celular || "",
           data_nascimento: s.data_nascimento || "",
@@ -548,7 +594,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       mensagemPrazoInviavel: "", aplicarEntradaSugerida, aplicarPorFinanciamento, aplicarPorFinanciamentoTotal,
       financiamentoTotalExibido, aplicarPorEntrada, aplicarPorParcela, aplicarJogadaNumeros, setSistemaAmortizacao,
       alternarFinanciarDespesas, definirPctDespesas, normalizarPctDespesas, pctDespesas, isHomeEquity,
-      cadastroNome, invertido, crmVinculado, podePuxarConjugeCrm, podeInverter, melhorTaxaAno, prazoAbaixoDoPiso, pisoPrazoBancos, isPJ, bancosDisponiveis,
+      cadastroNome, invertido, crmVinculado, podePuxarConjugeCrm, podeInverter, melhorTaxaAno, prazoAbaixoDoPiso, pisoPrazoBancos, isPJ, pjBloqueada, msgPjEmConstrucao: MSG_PJ_EM_CONSTRUCAO, bancosDisponiveis,
       rendaConsiderada, mostraConjuge, puxarConjugeDoCRM, inverterPrincipal, selecionarClienteCRM,
       limparTitular, refetchCrm, simulacaoResultadoId, simulacaoResultadoIdPrice, simulacaoResultadoIdSecundario,
       fecharResultadoInline: () => setSimulacaoResultadoId(null), 
@@ -599,7 +645,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     financiamentoTotalExibido, aplicarPorEntrada, aplicarPorParcela, aplicarJogadaNumeros,
     setSistemaAmortizacao, alternarFinanciarDespesas, definirPctDespesas, normalizarPctDespesas,
     pctDespesas, isHomeEquity, cadastroNome, invertido, crmVinculado, podePuxarConjugeCrm, faltaDadosConjugeCrm,
-    prazoAbaixoDoPiso, pisoPrazoBancos, isPJ, bancosDisponiveis,
+    prazoAbaixoDoPiso, pisoPrazoBancos, isPJ, pjBloqueada, msgPjEmConstrucao: MSG_PJ_EM_CONSTRUCAO, bancosDisponiveis,
     podeInverter, melhorTaxaAno, rendaConsiderada, mostraConjuge, puxarConjugeDoCRM,
     inverterPrincipal, selecionarClienteCRM, limparTitular, refetchCrm,
     simulacaoResultadoId, simulacaoResultadoIdPrice, simulacaoResultadoIdSecundario,
@@ -611,6 +657,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     envioEstado, statusPorBanco, abrirDialogEnvio, fecharDialogEnvio,
     enviarBancoIndividual: () => {}, enviarTodosBancos: () => {}, 
     enviarOriginal: async () => {
+      if (pjBloqueada) {
+        toast.error(MSG_PJ_EM_CONSTRUCAO);
+        return;
+      }
       setTentouEnviar(true);
       const faltantes = validarCamposSimulacao({ ...f, id_operacao_homefin: idOperacao });
       if (faltantes.length > 0) {
@@ -633,6 +683,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     confirmRenda, setConfirmRenda, avaliarPrazoComConfirmacao,
     carregandoOrigem,
     enviar: async () => {
+      if (pjBloqueada) {
+        toast.error(MSG_PJ_EM_CONSTRUCAO);
+        return;
+      }
       setTentouEnviar(true);
       const faltantes = validarCamposSimulacao({ ...f, id_operacao_homefin: idOperacao });
       if (faltantes.length > 0) {
@@ -650,6 +704,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       }
     }, 
     executarEnvio: async () => {
+      if (pjBloqueada) {
+        toast.error(MSG_PJ_EM_CONSTRUCAO);
+        return;
+      }
       if (ctxRef.current) {
         if (f.sistema_amortizacao === "B") {
           await executarEnvioAmbos(ctxRef.current);
