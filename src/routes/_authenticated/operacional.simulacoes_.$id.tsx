@@ -1,4 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { temBancoAguardando, useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -55,6 +56,10 @@ function Pagina() {
       return !simFinal || bancosPendentes ? 3000 : false;
     },
   });
+
+  // Bancos assíncronos (Santander) só devolvem o resultado depois. Enquanto
+  // algum estiver aguardando, esta tela pede a reconciliação junto do polling.
+  useReconciliacaoAutomatica(temBancoAguardando(data));
 
   useEffect(() => {
     const channel = supabase
