@@ -19,6 +19,11 @@ export interface ClienteFormValues {
   data_expedicao: string;
   profissao: string;
   empresa: string;
+  /** Campos de pessoa jurídica exigidos pela integração bancária. */
+  tipo_empresa: string;
+  faturamento_empresa: string;
+  patrimonio_liquido_empresa: string;
+  capital_social_empresa: string;
   banco_conta: string;
   agencia: string;
   conta_corrente: string;
@@ -236,6 +241,10 @@ export const emptyValues: ClienteFormValues = {
   data_expedicao: "",
   profissao: "",
   empresa: "",
+  tipo_empresa: "",
+  faturamento_empresa: "",
+  patrimonio_liquido_empresa: "",
+  capital_social_empresa: "",
   banco_conta: "",
   agencia: "",
   conta_corrente: "",
@@ -268,3 +277,12 @@ export const emptyValues: ClienteFormValues = {
   conjuge_conta_corrente: "",
   conjuge_digito_conta: "",
 };
+
+/** Naturezas jurídicas aceitas pela integração (campo `tipoEmpresa`). */
+export const TIPOS_EMPRESA = [
+  { v: "MEI", l: "MEI" },
+  { v: "ME", l: "ME — Microempresa" },
+  { v: "EPP", l: "EPP — Empresa de Pequeno Porte" },
+  { v: "EIRELI", l: "EIRELI" },
+  { v: "SA", l: "S.A." },
+];

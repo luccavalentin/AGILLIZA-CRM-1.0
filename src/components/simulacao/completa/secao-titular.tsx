@@ -1,4 +1,5 @@
 import { Info, Link2, Repeat } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +31,42 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     crmVinculado,
     selecionarClienteCRM,
     limparTitular,
+    isPJ,
   } = ctx;
 
   return (
     <section className="space-y-4">
+      {/* Modalidade do proponente. Em PJ só o Bradesco opera, o financiamento
+          fica em 70% do valor de compra e venda e o prazo em 180–240 meses. */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-primary/15 bg-primary/[0.04] px-4 py-3">
+        <span className="text-sm font-medium text-foreground">Modalidade</span>
+        <div className="flex rounded-lg bg-background p-1">
+          {[
+            { v: "PF", l: "Pessoa física" },
+            { v: "PJ", l: "Pessoa jurídica" },
+          ].map((o) => (
+            <Button
+              key={o.v}
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-4 text-xs font-semibold",
+                (f.tipo_pessoa ?? "PF") === o.v && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              )}
+              onClick={() => set("tipo_pessoa", o.v)}
+            >
+              {o.l}
+            </Button>
+          ))}
+        </div>
+        {isPJ && (
+          <span className="text-[11.5px] text-muted-foreground">
+            Bradesco · financiamento até 70% · prazo de 180 a 240 meses
+          </span>
+        )}
+      </div>
+
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
           <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">

@@ -40,6 +40,7 @@ import { PortalSection } from "./cliente-form/portal-section";
 import { DadosBasicosSection } from "./cliente-form/dados-basicos-section";
 import { ConjugeSection } from "./cliente-form/conjuge-section";
 import { IdentidadeSection } from "./cliente-form/identidade-section";
+import { EmpresaSection } from "./cliente-form/empresa-section";
 import { EnderecoSection } from "./cliente-form/endereco-section";
 import { FgtsSection } from "./cliente-form/fgts-section";
 import { BancariosSection } from "./cliente-form/bancarios-section";
@@ -239,6 +240,13 @@ export function ClienteForm({
       return toast.error("Celular inválido. Informe DDD + número (ex.: (11) 99999-9999).");
     }
     const renda = Number(v.renda_total_declarada.replace(/\./g, "").replace(",", "."));
+    /** "1.234,56" -> 1234.56; vazio/invalido -> null. */
+    const numeroOuNulo = (txt?: string | null) => {
+      const limpo = String(txt ?? "").replace(/\./g, "").replace(",", ".").trim();
+      if (!limpo) return null;
+      const n = Number(limpo);
+      return Number.isFinite(n) ? n : null;
+    };
     if (isNaN(renda) || renda < 0) return toast.error("Renda inválida.");
 
     // Estado civil e cônjuge só se aplicam a Pessoa Física.
@@ -284,6 +292,12 @@ export function ClienteForm({
         data_expedicao: v.data_expedicao || null,
         profissao: up(v.profissao) || null,
         empresa: up(v.empresa) || null,
+        // Campos da empresa: só fazem sentido em PJ; em PF vão nulos para não
+        // deixar resíduo de um cadastro que trocou de tipo.
+        tipo_empresa: ehPF ? null : v.tipo_empresa || null,
+        faturamento_empresa: ehPF ? null : numeroOuNulo(v.faturamento_empresa),
+        patrimonio_liquido_empresa: ehPF ? null : numeroOuNulo(v.patrimonio_liquido_empresa),
+        capital_social_empresa: ehPF ? null : numeroOuNulo(v.capital_social_empresa),
         banco_conta: up(v.banco_conta) || null,
         agencia: up(v.agencia) || null,
         conta_corrente: up(v.conta_corrente) || null,
@@ -408,6 +422,9 @@ export function ClienteForm({
     // Dados básicos / contato
     if (vazio(v.documento)) s.add("documento");
     if (vazio(v.nome)) s.add("nome");
+    // Vale para os dois tipos: em PF é a data de nascimento, em PJ a data de
+    // abertura (a integração pede `dataRegistroEmpresa`). O rótulo do campo
+    // já muda conforme o tipo.
     if (vazio(v.data_nascimento)) s.add("data_nascimento");
     if (vazio(v.email)) s.add("email");
     if (vazio(v.telefone_celular)) s.add("telefone_celular");
@@ -421,8 +438,9 @@ export function ClienteForm({
     }
 
     if (vazio(v.renda_total_declarada)) s.add("renda_total_declarada");
-    // Profissão
-    if (vazio(v.profissao)) s.add("profissao");
+    // Profissão só faz sentido para pessoa física; a empresa informa
+    // faturamento, não profissão.
+    if (ehPF && vazio(v.profissao)) s.add("profissao");
     // Endereço
     if (vazio(end.cep)) s.add("cep");
     if (vazio(end.logradouro)) s.add("logradouro");
@@ -432,6 +450,8 @@ export function ClienteForm({
     if (vazio(end.uf)) s.add("uf");
     // Autorização
     if (!v.fg_autorizacao_dados) s.add("fg_autorizacao_dados");
+    // Somente PJ — a integração recusa o participante sem natureza jurídica.
+    if (!ehPF && vazio(v.tipo_empresa)) s.add("tipo_empresa");
     // Somente PF
     if (ehPF) {
       if (vazio(v.estado_civil)) s.add("estado_civil");
@@ -515,7 +535,10 @@ export function ClienteForm({
 
       {casadoPF && <ConjugeSection v={v} set={set} />}
 
-      <IdentidadeSection v={v} set={set} erros={erros} />
+      {/* Profissão e empresa onde trabalha são de pessoa física; a empresa
+          informa faturamento, não profissão. */}
+      {ehPF && <IdentidadeSection v={v} set={set} erros={erros} />}
+      {!ehPF && <EmpresaSection v={v} set={set} erros={erros} />}
 
       <EnderecoSection
         end={end}

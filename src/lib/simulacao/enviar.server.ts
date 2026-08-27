@@ -162,6 +162,51 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
           idOportunidade = String(resp?.oportunidade?.idOportunidade || resp?.idOportunidade || resp?.id || "");
           
           if (idOportunidade) {
+            // --- Pessoa jurídica -------------------------------------------
+            // A oportunidade não tem campo de tipo de pessoa: quem carrega a
+            // modalidade é o PARTICIPANTE. Para PJ, o próprio titular precisa
+            // ser enviado como participante `tipoPessoa: "J"`, com os dados da
+            // empresa — sem isso o banco analisa o CNPJ como se fosse pessoa
+            // física e recusa.
+            const docTitular = String(sim.cpf_cnpj ?? "").replace(/\D/g, "");
+            if (docTitular.length === 14) {
+              try {
+                const { data: empresa } = await sbAdminPayload
+                  .from("clientes")
+                  .select(
+                    "tipo_empresa, faturamento_empresa, patrimonio_liquido_empresa, capital_social_empresa",
+                  )
+                  .eq("documento", docTitular)
+                  .maybeSingle();
+
+                await chamarIntegracao<any>(
+                  `/oportunidade/${idOportunidade}/participante`,
+                  "POST",
+                  {
+                    tipoSituacao: "A",
+                    tipoQualificacao: "CO",
+                    tipoPessoa: "J",
+                    nomeParticipante: sim.nome_cliente,
+                    cpfCnpj: docTitular,
+                    // Em PJ este campo é a data de ABERTURA da empresa; o
+                    // cadastro guarda os dois no mesmo lugar.
+                    dataRegistroEmpresa: sim.data_nascimento,
+                    tipoEmpresa: empresa?.tipo_empresa ?? null,
+                    faturamentoEmpresa: num(empresa?.faturamento_empresa),
+                    patrimonioLiquidoEmpresa: num(empresa?.patrimonio_liquido_empresa),
+                    capitalSocialEmpresa: num(empresa?.capital_social_empresa),
+                    renda: num(sim.renda_total),
+                    email: sim.email,
+                    celular: String(sim.celular ?? "").replace(/\D/g, ""),
+                    fgAutorizacaoDados: true,
+                  },
+                  { simulacao_id: simulacaoId },
+                );
+              } catch (e) {
+                console.error("[PJ] falha ao enviar participante jurídico:", e);
+              }
+            }
+
             if (terceiros && terceiros.length > 0) {
               for (const p of terceiros) {
                 if (p.homefin_id_participante) continue;
@@ -325,7 +370,10 @@ async function processarBancoIndividual(b: any, idOportunidade: string, sim: any
       codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao === "P" ? "P" : "S" },
       prazo: num(sim.prazo), // Já normalizado acima caso estivesse inválido
       valorImovel: num(sim.valor_imovel), valorFinanciamento,
-      valorTotalFinanciamento, valorDespesasFinanciadas, fgFinanciarDespesas, fgAutorizacaoDados: "S",
+      // O contrato define `fgAutorizacaoDados` como BOOLEAN (Swagger e
+      // documentação). Enviávamos a string "S", que é o formato dos flags
+      // S/N de outros campos — aqui o tipo é outro.
+      valorTotalFinanciamento, valorDespesasFinanciadas, fgFinanciarDespesas, fgAutorizacaoDados: true,
       tipoSexo: (sim.cliente?.sexo || (sim.dados as any)?.sexo) || undefined,
       tipoSexoConjuge: (sim.cliente?.conjuge_sexo || (sim.dados as any)?.conjuge_sexo || (sim.cliente?.dados as any)?.conjuge_sexo) || undefined
     };

@@ -146,3 +146,22 @@ export function prazoMinimoDosBancos(
     bancos: comPiso.map((b) => b.nome_banco ?? "Bradesco"),
   };
 }
+
+/**
+ * Regras da simulação de pessoa jurídica.
+ *
+ * Hoje só o Bradesco opera PJ, e com limites próprios: financiamento de até
+ * 70% do valor de compra e venda (contra 80% de PF) e prazo entre 180 e 240
+ * meses. As despesas financiáveis seguem em 5% do valor do imóvel.
+ */
+export const REGRAS_PJ = {
+  ltvMax: 0.7,
+  prazoMin: 180,
+  prazoMax: 240,
+  pctDespesas: 5,
+} as const;
+
+/** Dos bancos disponíveis, os que operam pessoa jurídica. */
+export function bancosQueOperamPJ<T extends BancoRef & { id: string }>(bancos: T[]): T[] {
+  return (bancos ?? []).filter((b) => isBradesco(b));
+}

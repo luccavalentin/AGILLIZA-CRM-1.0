@@ -208,7 +208,7 @@ function Pagina() {
             </div>
           </Card>
 
-          {mostraConjuge && (
+          {mostraConjuge && !ctx.isPJ && (
             <Card className="overflow-hidden">
               <SecaoCabecalho
                 icone={<Users className="h-4 w-4" />}
@@ -221,16 +221,18 @@ function Pagina() {
             </Card>
           )}
 
-          <Card className="overflow-hidden">
-            <SecaoCabecalho
-              icone={<UserPlus className="h-4 w-4" />}
-              titulo="Composição de Renda (Terceiros)"
-              descricao="Pessoas adicionais para compor renda"
-            />
-            <div className="p-4 sm:p-5 md:p-6">
-              <SecaoComposicaoRenda ctx={ctx} />
-            </div>
-          </Card>
+          {!ctx.isPJ && (
+            <Card className="overflow-hidden">
+              <SecaoCabecalho
+                icone={<UserPlus className="h-4 w-4" />}
+                titulo="Composição de Renda (Terceiros)"
+                descricao="Pessoas adicionais para compor renda"
+              />
+              <div className="p-4 sm:p-5 md:p-6">
+                <SecaoComposicaoRenda ctx={ctx} />
+              </div>
+            </Card>
+          )}
 
           <Card className="overflow-hidden">
             <SecaoCabecalho

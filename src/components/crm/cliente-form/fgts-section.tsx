@@ -29,6 +29,9 @@ export function FgtsSection({
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* FGTS é do trabalhador — não se aplica a pessoa jurídica. A
+            autorização de dados abaixo vale para os dois tipos. */}
+        {v.tipo_pessoa !== "PJ" && (
         <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
           <div className="space-y-0.5">
             <Label htmlFor="utiliza_fgts">Utiliza FGTS na operação</Label>
@@ -42,6 +45,7 @@ export function FgtsSection({
             onCheckedChange={(x) => set("utiliza_fgts", x)}
           />
         </div>
+        )}
         <div
           className={
             "flex items-start gap-3 rounded-lg border p-3 " +
