@@ -157,8 +157,18 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const maxPrazoIdade = analisePrazo?.prazo;
   const limitadorPrazo = analisePrazo?.limitador;
   const isHomeEquity = f.produto === "home_equity";
-  /** Simulação de pessoa jurídica: só Bradesco, LTV 70%, prazo 180–240. */
-  const isPJ = f.tipo_pessoa === "PJ";
+  /**
+   * Simulação de pessoa jurídica: só Bradesco, LTV 70%, prazo 180–240.
+   *
+   * `tipo_pessoa` não é coluna de `simulacoes` — ao recarregar ou duplicar, a
+   * flag se perde. O CNPJ (14 dígitos) é a fonte que sobrevive, então ele
+   * serve de âncora quando a flag não veio.
+   */
+  const isPJ = useMemo(() => {
+    if (f.tipo_pessoa === "PJ") return true;
+    if (f.tipo_pessoa === "PF") return false;
+    return String(f.cpf_cnpj ?? "").replace(/\D/g, "").length === 14;
+  }, [f.tipo_pessoa, f.cpf_cnpj]);
   const prazoMaxOperacional = useMemo(
     () => (isPJ ? REGRAS_PJ.prazoMax : Math.min(420, isHomeEquity ? 240 : 420)),
     [isPJ, isHomeEquity],
