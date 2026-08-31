@@ -123,6 +123,42 @@ let _tokenCache: { info: TokenInfo; expiresAt: number } | null = null;
 let _tokenEmVoo: Promise<TokenInfo> | null = null;
 const CACHE_ID = "00000000-0000-0000-0000-000000000000";
 
+/** Validade assumida quando o token não traz `exp` legível. */
+const VALIDADE_PADRAO_MS = 25 * 60 * 1000;
+
+/**
+ * Momento de expiração real do token, lido do claim `exp` do próprio JWT.
+ *
+ * Assumíamos 25 minutos fixos. Quando a sessão do provedor dura menos que
+ * isso, toda chamada entre a expiração real e o fim da janela assumida volta
+ * 401 — o cliente renova e repete, mas o 401 já foi gasto (foram ~5 mil).
+ * O `exp` é a única fonte correta: o serviço de autenticação devolve um JWT
+ * e é ele que carrega a validade.
+ */
+export function validadeDoToken(token: string, agora = Date.now()): number {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return agora + VALIDADE_PADRAO_MS;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = JSON.parse(
+      typeof atob === "function"
+        ? atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "="))
+        : Buffer.from(base64, "base64").toString("utf8"),
+    );
+    const exp = Number(json?.exp);
+    // `exp` é em segundos. Ignoramos valores absurdos (token já vencido ou
+    // com validade maior que um dia) e caímos no padrão conservador.
+    if (!Number.isFinite(exp)) return agora + VALIDADE_PADRAO_MS;
+    const expMs = exp * 1000;
+    if (expMs <= agora || expMs > agora + 24 * 60 * 60 * 1000) {
+      return agora + VALIDADE_PADRAO_MS;
+    }
+    return expMs;
+  } catch {
+    return agora + VALIDADE_PADRAO_MS;
+  }
+}
+
 async function solicitarToken(): Promise<TokenInfo> {
   const { base, secretId, secretKey } = config();
   const url = `${base}/auth/token`;
@@ -152,7 +188,7 @@ async function solicitarToken(): Promise<TokenInfo> {
     idUsuarioParceiro: String(usuario.idUsuarioParceiro ?? json.idUsuarioParceiro ?? "") || null,
   };
 
-  const expiresAt = Date.now() + 25 * 60 * 1000;
+  const expiresAt = validadeDoToken(info.token);
   _tokenCache = { info, expiresAt };
 
   try {

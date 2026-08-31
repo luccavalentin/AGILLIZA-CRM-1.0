@@ -39,7 +39,7 @@ export function validarCamposSimulacao(sim: any): CampoFaltante[] {
   if (rot(sim?.celular).replace(/\D/g, "").length < 10) add("Celular");
   if (!(Number(sim?.renda_total) > 0)) add("Renda total");
   if (!ehPJ && !rot(sim?.estado_civil)) add("Estado civil");
-  
+
   // REGRA: o sexo do cônjuge só é exigido quando um cônjuge REALMENTE vai ser
   // enviado ao banco — estado civil casado/união estável E identificação dele
   // preenchida. A flag `possui_conjuge` não entra na conta: ela sobrevive a
@@ -47,11 +47,27 @@ export function validarCamposSimulacao(sim: any): CampoFaltante[] {
   // pedindo o sexo de um cônjuge que não existe.
   const ecTitular = rot(sim?.estado_civil).toLowerCase();
   const casadoTitular =
-    ecTitular === "ca" || ecTitular === "ue" || ecTitular === "casado" || ecTitular === "uniao_estavel";
+    ecTitular === "ca" ||
+    ecTitular === "ue" ||
+    ecTitular === "casado" ||
+    ecTitular === "uniao_estavel";
   const conjugeIdentificado =
     rot(sim?.nome_conjuge) !== "" || rot(sim?.cpf_conjuge).replace(/\D/g, "") !== "";
   if (casadoTitular && conjugeIdentificado && !rot(sim?.sexo_conjuge)) {
     add("Sexo do cônjuge");
+  }
+
+  // Regime de bens e estado civil do cônjuge.
+  //
+  // O contrato da integração marca `tipoRegimeCasamento` como opcional, mas os
+  // bancos cobram o regime na proposta — coletar só lá obriga o operador a
+  // voltar atrás. Exigimos aqui, na simulação, para o dado nascer completo.
+  // Só quando há casamento/união estável: solteiro não tem regime de bens.
+  if (!ehPJ && casadoTitular) {
+    if (!rot(sim?.regime_casamento)) add("Regime de casamento");
+    if (conjugeIdentificado && !rot(sim?.estado_civil_conjuge)) {
+      add("Estado civil do cônjuge");
+    }
   }
 
   return faltantes;

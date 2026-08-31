@@ -218,7 +218,13 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </Select>
           <Erro erros={erros} campo="sexo_conjuge" />
         </Campo>
-        <Campo label="Estado civil">
+        <Campo
+          label={
+            <>
+              Estado civil <Ast />
+            </>
+          }
+        >
           <Select
             value={f.estado_civil_conjuge ?? ""}
             onValueChange={(v) => set("estado_civil_conjuge", v)}
@@ -234,10 +240,17 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               ))}
             </SelectContent>
           </Select>
+          <Erro erros={erros} campo="estado_civil_conjuge" />
         </Campo>
         {/* Regime de casamento vive aqui para não obrigar uma volta ao CRM
             só para completar o cadastro no meio de uma simulação. */}
-        <Campo label="Regime de casamento">
+        <Campo
+          label={
+            <>
+              Regime de casamento <Ast />
+            </>
+          }
+        >
           <Select
             value={f.regime_casamento ?? ""}
             onValueChange={(v) => set("regime_casamento", v)}
@@ -253,6 +266,7 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               ))}
             </SelectContent>
           </Select>
+          <Erro erros={erros} campo="regime_casamento" />
         </Campo>
         <Campo label="E-mail">
           <Input

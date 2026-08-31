@@ -1,15 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { toTitleCase } from "@/lib/utils";
+import { faltantesEnvolvido } from "./campos-obrigatorios";
 import {
   transicaoPermitida,
   STATUS_EDITAVEIS,
   STATUS_TERMINAIS,
   type PropostaStatus,
 } from "./state-machine";
-import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "./dominios";
+import {
+  estadoCivilCrmParaCodigo,
+  regimeCasamentoCrmParaCodigo,
+  QUALIFICACOES_ENVIADAS_AO_BANCO,
+  ESTADO_CIVIL_COM_REGIME,
+} from "./dominios";
 import { propostaQueryOptions } from "./queries";
 
 /** ===== Tipos de saída ===== */
@@ -421,6 +428,17 @@ export const listarResponsaveisEquipe = createServerFn({ method: "GET" })
   });
 
 /** ===== Criar proposta ===== */
+export interface CriarPropostaResultado {
+  proposta_id: string;
+  numero_proposta: string;
+  /**
+   * Primeiro proponente com campo obrigatório da API faltando, ou `null` se a
+   * proposta já pode ir direto ao banco. Quem chama usa isto para abrir o
+   * formulário de cadastro ANTES de tentar o envio.
+   */
+  envolvido_pendente_id: string | null;
+}
+
 export const criarProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
@@ -433,7 +451,7 @@ export const criarProposta = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ context, data }): Promise<{ proposta_id: string; numero_proposta: string }> => {
+  .handler(async ({ context, data }): Promise<CriarPropostaResultado> => {
     const { supabase, userId } = context;
     const corr = await correspondenteId(supabase, userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -665,9 +683,20 @@ export const criarProposta = createServerFn({ method: "POST" })
 
         // Cônjuge/coproponente já cadastrado na ficha do cliente entra como
         // envolvido vinculado ao titular (conjuge_de), para o formulário já vir preenchido.
-        const ehCasado =
-          ["casado", "uniao_estavel"].includes(String(c.estado_civil ?? "")) ||
-          Boolean(c.conjuge_nome || c.conjuge_cpf);
+        // O cônjuge só entra quando a proposta foi enviada como casado/união
+        // estável. O cadastro do cliente costuma guardar `conjuge_nome`/
+        // `conjuge_cpf` de um estado civil anterior, e a condição era um `||`:
+        // bastava o resíduo existir para criar um "cônjuge fantasma" numa
+        // proposta enviada como solteira — que depois travava o envio pedindo
+        // dados obrigatórios de alguém que não faz parte da operação.
+        //
+        // A fonte de verdade é o estado civil do snapshot (o que o usuário de
+        // fato enviou na simulação), não o cadastro. A simulação já aplica esta
+        // mesma regra em `enviar.server.ts`; aqui estava divergente.
+        const estadoCivilEnviado = estadoCivilCrmParaCodigo(
+          (snapshot.estado_civil as string | null | undefined) ?? c.estado_civil,
+        );
+        const ehCasado = ESTADO_CIVIL_COM_REGIME.has(estadoCivilEnviado);
         if (insTit?.id && ehCasado && (c.conjuge_nome || c.conjuge_cpf)) {
           const { error: conjugeErr } = await supabaseAdmin.from("proposta_envolvidos").insert({
             proposta_id: inserted.id,
@@ -775,8 +804,40 @@ export const criarProposta = createServerFn({ method: "POST" })
     });
     if (histErr) throw new Error(histErr.message);
 
-    return { proposta_id: inserted.id, numero_proposta: inserted.numero_proposta };
+    return {
+      proposta_id: inserted.id,
+      numero_proposta: inserted.numero_proposta,
+      // Lê pelo mesmo cliente que acabou de inserir os envolvidos: com o
+      // cliente do usuário, a RLS poderia devolver lista vazia e o fluxo
+      // seguiria para o envio sem abrir o formulário.
+      envolvido_pendente_id: await primeiroProponentePendente(supabaseAdmin, inserted.id),
+    };
   });
+
+/**
+ * Primeiro proponente da proposta que ainda não tem todos os campos exigidos
+ * pelo `POST /oportunidade/{id}/participante`.
+ *
+ * Só entram os envolvidos que de fato viram participante na integração —
+ * comprador (`CO`) e cônjuge/coproponente (`TI`). O vendedor (`VD`) existe
+ * apenas no cadastro local e nunca é enviado pelo fluxo de proposta, então
+ * cadastro incompleto de vendedor não pode travar o envio ao banco.
+ *
+ * Devolve `null` quando está tudo completo — aí a proposta pode seguir direto
+ * para o envio, sem abrir formulário.
+ */
+async function primeiroProponentePendente(
+  supabase: SupabaseClient<any, any, any>,
+  propostaId: string,
+): Promise<string | null> {
+  const { data: envolvidos } = await supabase
+    .from("proposta_envolvidos")
+    .select("*")
+    .eq("proposta_id", propostaId)
+    .in("tipo_qualificacao", QUALIFICACOES_ENVIADAS_AO_BANCO);
+  const pendente = (envolvidos ?? []).find((e: any) => faltantesEnvolvido(e).length > 0);
+  return pendente ? String((pendente as any).id) : null;
+}
 
 /**
  * Dados do cônjuge já cadastrados na ficha do cliente (CRM), mapeados para o
@@ -2265,6 +2326,63 @@ export const listarUsuariosParceiros = createServerFn({ method: "GET" })
  * Ressincroniza dados ausentes nos envolvidos da proposta a partir do cadastro
  * (clientes e cliente_enderecos).
  */
+/**
+ * Cópia de `clientes`/`cliente_enderecos` para `proposta_envolvidos`.
+ *
+ * `de` é a coluna REAL na tabela de origem — várias tinham nome diferente do
+ * destino (`mae`, `documento`, `telefone_celular`, `renda_total_declarada`,
+ * `cidade`) e, como o Supabase devolve `undefined` para coluna inexistente,
+ * a cópia falhava em silêncio e o participante seguia "incompleto" mesmo com
+ * o cadastro do cliente preenchido.
+ *
+ * `normalizar` converte para o domínio do swagger (CreateParticipantRequest)
+ * antes de gravar: sexo `M/F`, estado civil `CA/S/...`, regime `CP/CU/...`,
+ * documentos e telefone só com dígitos.
+ */
+type MapaCampoEnvolvido = {
+  de: string;
+  para: string;
+  normalizar?: (v: any) => any;
+};
+
+const inicialMaiuscula = (v: any) => String(v).trim().charAt(0).toUpperCase();
+const apenasDigitosOuVazio = (v: any) => String(v ?? "").replace(/\D+/g, "");
+
+const CAMPOS_CLIENTE_PARA_ENVOLVIDO: MapaCampoEnvolvido[] = [
+  { de: "nome", para: "nome" },
+  { de: "tipo_pessoa", para: "tipo_pessoa", normalizar: (v) => (String(v) === "PJ" ? "J" : "F") },
+  { de: "documento", para: "cpf_cnpj", normalizar: apenasDigitosOuVazio },
+  { de: "data_nascimento", para: "data_nascimento" },
+  { de: "mae", para: "nome_mae" },
+  { de: "sexo", para: "tipo_sexo", normalizar: inicialMaiuscula },
+  { de: "estado_civil", para: "estado_civil", normalizar: estadoCivilCrmParaCodigo },
+  { de: "regime_casamento", para: "regime_casamento", normalizar: regimeCasamentoCrmParaCodigo },
+  { de: "tipo_documento_identidade", para: "tipo_documento_identidade" },
+  { de: "numero_documento", para: "numero_documento" },
+  { de: "orgao_expedidor", para: "orgao_expedidor" },
+  { de: "uf_expedicao", para: "uf_expedicao" },
+  { de: "profissao", para: "profissao" },
+  { de: "empresa", para: "empresa" },
+  { de: "renda_total_declarada", para: "renda" },
+  { de: "email", para: "email" },
+  { de: "telefone_celular", para: "celular", normalizar: apenasDigitosOuVazio },
+];
+
+const CAMPOS_ENDERECO_PARA_ENVOLVIDO: MapaCampoEnvolvido[] = [
+  { de: "cep", para: "cep", normalizar: apenasDigitosOuVazio },
+  { de: "logradouro", para: "logradouro" },
+  { de: "numero", para: "numero_logradouro" },
+  { de: "complemento", para: "complemento" },
+  { de: "bairro", para: "bairro" },
+  { de: "cidade", para: "municipio" },
+  { de: "uf", para: "uf" },
+];
+
+/** Só completamos o que está realmente vazio — nunca sobrescrevemos o que o usuário digitou. */
+function vazioEnvolvido(v: unknown): boolean {
+  return v === null || v === undefined || v === "";
+}
+
 export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
@@ -2303,49 +2421,42 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
       const patch: Record<string, any> = {};
       const camposCompletados: string[] = [];
 
-      // Mapeamento campos de cliente -> envolvidos (lista de 25 campos "S")
-      const mapaCliente: Record<string, string> = {
-        nome: "nome",
-        tipo_pessoa: "tipo_pessoa",
-        cpf_cnpj: "cpf_cnpj",
-        data_nascimento: "data_nascimento",
-        nome_mae: "nome_mae",
-        sexo: "tipo_sexo",
-        estado_civil: "estado_civil",
-        tipo_documento_identidade: "tipo_documento_identidade",
-        numero_documento: "numero_documento",
-        orgao_expedidor: "orgao_expedidor",
-        uf_expedicao: "uf_expedicao",
-        profissao: "profissao",
-        renda: "renda",
-        email: "email",
-        celular: "celular",
-      };
+      for (const { de, para, normalizar } of CAMPOS_CLIENTE_PARA_ENVOLVIDO) {
+        if (!vazioEnvolvido(env[para])) continue;
+        const bruto = cliente?.[de];
+        if (bruto === null || bruto === undefined || bruto === "") continue;
+        const valor = normalizar ? normalizar(bruto) : bruto;
+        if (valor === null || valor === undefined || valor === "") continue;
+        patch[para] = valor;
+        camposCompletados.push(para);
+      }
 
-      for (const [de, para] of Object.entries(mapaCliente)) {
-        if ((env[para] === null || env[para] === undefined || env[para] === "") && cliente?.[de]) {
-          patch[para] = cliente[de];
+      if (endereco) {
+        for (const { de, para, normalizar } of CAMPOS_ENDERECO_PARA_ENVOLVIDO) {
+          if (!vazioEnvolvido(env[para])) continue;
+          const bruto = endereco[de];
+          if (bruto === null || bruto === undefined || bruto === "") continue;
+          const valor = normalizar ? normalizar(bruto) : bruto;
+          if (valor === null || valor === undefined || valor === "") continue;
+          patch[para] = valor;
           camposCompletados.push(para);
         }
       }
 
-      // Mapeamento campos de endereço -> envolvidos
-      const mapaEndereco: Record<string, string> = {
-        cep: "cep",
-        logradouro: "logradouro",
-        numero: "numero_logradouro",
-        complemento: "complemento",
-        bairro: "bairro",
-        municipio: "municipio",
-        uf: "uf",
-      };
-
-      if (endereco) {
-        for (const [de, para] of Object.entries(mapaEndereco)) {
-          if ((env[para] === null || env[para] === undefined || env[para] === "") && endereco[de]) {
-            patch[para] = endereco[de];
-            camposCompletados.push(para);
-          }
+      // Saneamento dos valores JÁ gravados que estão no formato do CRM
+      // ("casado", "comunhao_parcial") em vez do código do swagger ("CA", "CP").
+      // Sem isto o <Select> do formulário abre vazio e o dado segue divergente
+      // do que a integração espera.
+      for (const [coluna, paraCodigo] of [
+        ["estado_civil", estadoCivilCrmParaCodigo],
+        ["regime_casamento", regimeCasamentoCrmParaCodigo],
+      ] as const) {
+        const atual = patch[coluna] ?? env[coluna];
+        if (!atual) continue;
+        const codigo = paraCodigo(String(atual));
+        if (codigo && codigo !== atual) {
+          patch[coluna] = codigo;
+          if (!camposCompletados.includes(coluna)) camposCompletados.push(coluna);
         }
       }
 

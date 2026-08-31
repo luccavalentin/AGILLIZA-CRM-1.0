@@ -7,7 +7,7 @@ import {
   enviarPropostaHomeFin,
   ressincronizarDadosParticipantes,
 } from "@/lib/propostas/propostas.functions";
-import { faltantesEnvolvido } from "@/lib/propostas/campos-obrigatorios";
+import { proponentesPendentes } from "@/lib/propostas/campos-obrigatorios";
 import { propostaQueryOptions } from "@/lib/propostas/queries";
 import { playChatSound } from "@/lib/chat-sound";
 
@@ -54,6 +54,32 @@ export function useEnviarProposta() {
       [bancoId]: { ...(prev[bancoId] || { bancoId, status: "idle" }), ...patch },
     }));
   }, []);
+
+  /**
+   * Leva o usuário ao formulário de cadastro — sempre.
+   *
+   * Quem chama pode tratar a pendência na própria tela (a página da proposta
+   * abre o diálogo ali mesmo, via `onCadastroIncompleto`). Quem NÃO trata
+   * — a simulação, o resultado inline, a lista — antes simplesmente parava:
+   * o hook retornava sem `proposta_id`, a navegação não acontecia e o botão
+   * ficava girando à toa. Agora o próprio hook navega para a proposta com o
+   * formulário aberto no participante pendente.
+   */
+  const abrirFormularioPendencias = useCallback(
+    (propostaId: string, envolvidoPendente: any, tratadoPeloChamador?: (env: any) => void) => {
+      if (tratadoPeloChamador) {
+        tratadoPeloChamador(envolvidoPendente);
+        return;
+      }
+      toast.info("Complete o cadastro do participante para enviar ao banco.");
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id: propostaId },
+        search: { abrir_cadastro: envolvidoPendente?.id },
+      });
+    },
+    [router],
+  );
 
   const iniciarStatus = useCallback(
     (bancoId: string) => {
@@ -142,12 +168,8 @@ export function useEnviarProposta() {
           currentEnvolvidos = (atualizada as any)?.envolvidos ?? [];
         }
 
-        const pendencias = (currentEnvolvidos ?? [])
-          .map((env) => ({
-            env,
-            faltantes: env ? faltantesEnvolvido(env) : [],
-          }))
-          .filter((p) => p.faltantes && p.faltantes.length > 0);
+        // Só bloqueia por quem realmente vira participante na API (CO/TI).
+        const pendencias = proponentesPendentes(currentEnvolvidos ?? []);
 
         if (pendencias.length > 0) {
           clearInterval(interval);
@@ -171,7 +193,7 @@ export function useEnviarProposta() {
             },
           });
 
-          onCadastroIncompleto?.(pendencias[0].env);
+          abrirFormularioPendencias(currentPropostaId, pendencias[0].env, onCadastroIncompleto);
           return;
         }
 
@@ -225,7 +247,46 @@ export function useEnviarProposta() {
           e instanceof Error
             ? e.message
             : "Falha ao enviar proposta. Verifique os dados dos participantes.";
-        const erroEstruturado = (e as any)?.data?.erro_estruturado || (e as any)?.erro_estruturado;
+        let erroEstruturado = (e as any)?.data?.erro_estruturado || (e as any)?.erro_estruturado;
+
+        // O servidor também barra por cadastro incompleto (participante que já
+        // existe na oportunidade e está sem campo obrigatório), mas lança um
+        // erro de texto puro: `erro_estruturado` chega sempre indefinido aqui.
+        // Em vez de depender da serialização do erro, reconferimos as
+        // pendências com dados frescos — se houver, é cadastro incompleto e o
+        // formulário precisa abrir, venha a recusa de onde vier.
+        if (!erroEstruturado && currentPropostaId) {
+          try {
+            const atual: any = await qc.fetchQuery({
+              ...propostaQueryOptions(currentPropostaId),
+              staleTime: 0,
+            });
+            const pendentes = proponentesPendentes(atual?.envolvidos ?? []);
+            if (pendentes.length > 0) {
+              erroEstruturado = {
+                codigo: "CADASTRO_INCOMPLETO",
+                campos: pendentes.flatMap((p) =>
+                  p.faltantes.map((f) => ({
+                    envolvido_id: (p.env as any).id,
+                    campo: f.chave,
+                    rotulo: f.label,
+                  })),
+                ),
+              };
+              atualizarStatus(bancoId, {
+                status: "error",
+                mensagem: "Cadastro incompleto",
+                erroEstruturado,
+              });
+              abrirFormularioPendencias(currentPropostaId, pendentes[0].env, onCadastroIncompleto);
+              playChatSound();
+              throw e;
+            }
+          } catch (erroAoConferir) {
+            // Se a reconferência falhar, seguimos com o erro original.
+            if (erroAoConferir === e) throw e;
+          }
+        }
 
         atualizarStatus(bancoId, {
           status: "error",
@@ -240,7 +301,15 @@ export function useEnviarProposta() {
         throw e;
       }
     },
-    [enviarFnDefault, ressincronizarFn, qc, atualizarStatus, iniciarStatus, statusPorBanco],
+    [
+      enviarFnDefault,
+      ressincronizarFn,
+      qc,
+      atualizarStatus,
+      iniciarStatus,
+      statusPorBanco,
+      abrirFormularioPendencias,
+    ],
   );
 
   const limparStatus = useCallback(() => {
