@@ -3,7 +3,8 @@
  * Extraída sem alteração visual/comportamental.
  */
 import { Link } from "@tanstack/react-router";
-import { Calculator, Eye, Undo2, User as UserIcon } from "lucide-react";
+import { Calculator, Eye, Undo2, User as UserIcon, Users2 } from "lucide-react";
+import { ConjugeDaLinha } from "./conjuge-da-linha";
 import { Button } from "@/components/ui/button";
 import { BancosSimulados } from "@/components/simulacao/bancos-simulados";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
@@ -91,6 +92,21 @@ export function CartoesSimulacoes({
                 <p className="truncate text-sm font-medium text-foreground transition-colors group-hover/card:text-primary">
                   {s.nome_cliente ?? "—"}
                 </p>
+                {/* Crachá curto para não truncar; o nome do cônjuge vai na
+                    linha de baixo, onde cabe inteiro. */}
+                {s.teste_casal && (
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary ring-1 ring-inset ring-primary/20">
+                    <Users2 className="h-3 w-3 shrink-0" />
+                    Testagem de casal
+                  </span>
+                )}
+                {s.nome_conjuge && (
+                  <ConjugeDaLinha
+                    nome={s.nome_conjuge}
+                    irmaId={s.teste_casal ? (s.irma_teste_casal_id ?? null) : null}
+                    onAbrirIrma={handlers.onVer}
+                  />
+                )}
                 {escopo === "todas" && s.nome_responsavel && (
                   <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
                     <UserIcon className="h-3 w-3 shrink-0" />

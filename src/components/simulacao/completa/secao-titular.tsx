@@ -19,6 +19,7 @@ import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { avaliarRendaMinima } from "@/lib/simulacao/renda";
 import { ESTADOS_CIVIS } from "@/lib/simulacao/schemas";
+import { REGIMES } from "@/components/crm/cliente-form/constants";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
 export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
@@ -97,7 +98,10 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               className="h-7 gap-1 px-3 font-medium shadow-sm transition-all hover:bg-secondary/80"
             >
               <Link2 className="h-3.5 w-3.5" />
-              Vinculado: {cadastroNome}
+              {/* "Vinculado" repetia o nome do próprio titular, que já está no
+                  campo logo acima — informação nenhuma. O vínculo que interessa
+                  na tela é o do cônjuge; o cadastro em si vira só "Cadastro". */}
+              {f.nome_conjuge ? `Cônjuge: ${f.nome_conjuge}` : `Cadastro: ${cadastroNome}`}
             </Badge>
           )}
           {invertido && (
@@ -322,6 +326,36 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             </Select>
             <Erro erros={erros} campo="estado_civil" />
           </Campo>
+          {/* Regime de bens: aparece assim que o titular é marcado como casado
+              ou em união estável. Antes ele só existia na seção do cônjuge, que
+              nem sempre está visível — o usuário escolhia "Casado" e nada era
+              pedido, e o regime só era cobrado lá na frente, na proposta. */}
+          {(f.estado_civil === "CA" || f.estado_civil === "UE") && (
+            <Campo
+              label={
+                <>
+                  Regime de casamento <Ast />
+                </>
+              }
+            >
+              <Select
+                value={f.regime_casamento ?? ""}
+                onValueChange={(v) => set("regime_casamento", v)}
+              >
+                <SelectTrigger aria-invalid={!!erros.regime_casamento}>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REGIMES.map((r) => (
+                    <SelectItem key={r.v} value={r.v}>
+                      {r.l}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Erro erros={erros} campo="regime_casamento" />
+            </Campo>
+          )}
           </>
         )}
         <Campo

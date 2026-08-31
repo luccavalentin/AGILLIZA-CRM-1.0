@@ -59,6 +59,12 @@ export interface SimulacaoListaItem {
   deleted_by?: string | null;
   deleted_motivo?: string | null;
   nome_excluidor?: string | null;
+  /** Cônjuge desta simulação — na testagem de casal ele é o titular da irmã. */
+  nome_conjuge?: string | null;
+  /** Faz parte de uma testagem de casal (mesmo agrupador, titulares diferentes). */
+  teste_casal?: boolean;
+  /** Simulação do outro titular do par — permite pular direto para a comparação. */
+  irma_teste_casal_id?: string | null;
 }
 
 /** ===== Bancos e operações (cache) ===== */
@@ -1077,7 +1083,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       let query = supabase
         .from("simulacoes")
         .select(
-          "id, numero_simulacao, nome_cliente, cliente_id, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id",
+          "id, numero_simulacao, nome_cliente, cliente_id, cpf_cnpj, nome_conjuge, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id",
           { count: "exact" },
         );
 
@@ -1227,6 +1233,59 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
         for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
       }
 
+      // Testagem de casal: o mesmo agrupador rodado com titulares diferentes,
+      // para comparar as taxas com cada cônjuge na ponta. A consulta é feita no
+      // servidor (e não sobre a página) porque as simulações do par podem cair
+      // em páginas distintas — aí a marcação sumiria justamente onde importa.
+      const agrupadoresDaPagina = Array.from(
+        new Set(paginadas.map((r: any) => r.agrupador_id).filter(Boolean)),
+      ) as string[];
+      const agrupadoresComTesteCasal = new Set<string>();
+      /** agrupador -> (titular -> simulação mais recente daquele titular). */
+      const simPorTitularNoAgrupador = new Map<string, Map<string, string>>();
+      if (agrupadoresDaPagina.length) {
+        const { data: irmas } = await supabase
+          .from("simulacoes")
+          .select("id, agrupador_id, cliente_id, cpf_cnpj, created_at")
+          .in("agrupador_id", agrupadoresDaPagina)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: true });
+        const titularesPorAgrupador = new Map<string, Set<string>>();
+        for (const s of irmas ?? []) {
+          const ag = (s as any).agrupador_id;
+          // `cliente_id` é a chave de agrupamento da lista; o CPF cobre as
+          // simulações que ainda não foram vinculadas a um cadastro.
+          const titular =
+            String((s as any).cliente_id ?? "") ||
+            String((s as any).cpf_cnpj ?? "").replace(/\D/g, "");
+          if (!ag || !titular) continue;
+          const atual = titularesPorAgrupador.get(ag) ?? new Set<string>();
+          atual.add(titular);
+          titularesPorAgrupador.set(ag, atual);
+          // Ordenado por data crescente: o último `set` deixa a mais recente,
+          // que é a que a lista mostra como linha daquele titular.
+          const porTitular = simPorTitularNoAgrupador.get(ag) ?? new Map<string, string>();
+          porTitular.set(titular, String((s as any).id));
+          simPorTitularNoAgrupador.set(ag, porTitular);
+        }
+        for (const [ag, titulares] of titularesPorAgrupador) {
+          if (titulares.size > 1) agrupadoresComTesteCasal.add(ag);
+        }
+      }
+
+      /** Simulação do OUTRO titular do mesmo agrupador — a irmã do teste de casal. */
+      const irmaDoTesteCasal = (r: any): string | null => {
+        if (!r?.agrupador_id || !agrupadoresComTesteCasal.has(r.agrupador_id)) return null;
+        const porTitular = simPorTitularNoAgrupador.get(r.agrupador_id);
+        if (!porTitular) return null;
+        const meuTitular =
+          String(r.cliente_id ?? "") || String(r.cpf_cnpj ?? "").replace(/\D/g, "");
+        for (const [titular, id] of porTitular) {
+          if (titular !== meuTitular) return id;
+        }
+        return null;
+      };
+
       const itens = paginadas.map((r: any) => {
         const bancosPrincipal = bancosPorSim.get(r.id) ?? [];
         const bancosExtras = (r._agrupadas_ids ?? []).flatMap(
@@ -1257,6 +1316,9 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
             ? (nomesPerfis.get(r.usuario_criador_id) ?? null)
             : null,
           nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
+          nome_conjuge: r.nome_conjuge ?? null,
+          teste_casal: Boolean(r.agrupador_id && agrupadoresComTesteCasal.has(r.agrupador_id)),
+          irma_teste_casal_id: irmaDoTesteCasal(r),
           bancos: todosBancos,
         };
       }) as SimulacaoListaItem[];

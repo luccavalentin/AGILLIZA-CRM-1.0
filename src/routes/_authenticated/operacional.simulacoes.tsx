@@ -271,6 +271,20 @@ function Pagina() {
           numero: res.numero_proposta,
         },
       ]);
+      // A proposta exige campos que a simulação não pede. Havendo pendência,
+      // vamos direto ao formulário — antes o hook abortava em silêncio aqui
+      // (nenhum `onCadastroIncompleto` era passado) e o clique não fazia nada.
+      if (res.envolvido_pendente_id) {
+        setEnvio(null);
+        toast.info("Complete o cadastro do participante para enviar ao banco.");
+        router.navigate({
+          to: "/operacional/propostas/$id",
+          params: { id: res.proposta_id },
+          search: { abrir_cadastro: res.envolvido_pendente_id },
+        });
+        return;
+      }
+
       // Centraliza o envio através do hook único que cuida de validações e navegação
       await handleEnviarHook({
         propostaId: res.proposta_id,

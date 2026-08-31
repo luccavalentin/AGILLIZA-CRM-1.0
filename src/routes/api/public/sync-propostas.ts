@@ -33,17 +33,28 @@ export const Route = createFileRoute("/api/public/sync-propostas")({
           "analise_juridica",
         ];
 
-        const { data: propostas, error } = await supabaseAdmin
+        const { data: candidatas, error } = await supabaseAdmin
           .from("propostas")
-          .select("id")
+          .select("id, ultima_sincronizacao_em, status_atualizado_em, enviada_em, created_at")
           .in("status", STATUS_ATIVOS as any)
           .not("homefin_id_oportunidade", "is", null)
-          .order("updated_at", { ascending: true })
+          // Proposta na lixeira não tem retorno para receber. Sem este filtro,
+          // duas propostas excluídas em 10/08 continuaram sendo consultadas de
+          // 2 em 2 minutos por 20 dias (26 mil GETs numa única oportunidade).
+          .is("deleted_at", null)
+          .order("ultima_sincronizacao_em", { ascending: true, nullsFirst: true } as any)
           .limit(200);
 
         if (error) {
           return Response.json({ ok: false, error: error.message }, { status: 500 });
         }
+
+        // Backoff: sem webhook na API, o polling é obrigatório — mas uma
+        // proposta parada em análise não precisa ser consultada a cada 2 min
+        // para sempre. Ver `sync-backoff.ts`.
+        const { filtrarParaSincronizar } = await import("@/lib/propostas/sync-backoff");
+        const propostas = filtrarParaSincronizar(candidatas ?? []);
+        const adiadas = (candidatas ?? []).length - propostas.length;
 
         let processadas = 0;
         let atualizadas = 0;
@@ -53,7 +64,7 @@ export const Route = createFileRoute("/api/public/sync-propostas")({
         // fazia cada retorno esperar todos os anteriores, atrasando muito
         // Itaú/Santander que respondem rápido. Concorrência = 8 mantém o
         // throughput alto sem estourar limites da HomeFin.
-        const fila = [...(propostas ?? [])];
+        const fila = [...propostas];
         const CONCORRENCIA = 8;
         async function worker() {
           while (fila.length > 0) {
@@ -77,7 +88,7 @@ export const Route = createFileRoute("/api/public/sync-propostas")({
           Array.from({ length: Math.min(CONCORRENCIA, fila.length) }, () => worker()),
         );
 
-        return Response.json({ ok: true, processadas, atualizadas, falhas });
+        return Response.json({ ok: true, processadas, atualizadas, falhas, adiadas });
       },
     },
   },

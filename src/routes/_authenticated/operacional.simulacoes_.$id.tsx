@@ -190,12 +190,27 @@ function Pagina() {
   async function criar(simulacaoBancoId: string, bancoId?: string) {
     setCriandoBanco(simulacaoBancoId);
     try {
-      const { proposta_id } = await criarProposta({
+      const { proposta_id, envolvido_pendente_id } = await criarProposta({
         data: { simulacao_id: id, simulacao_banco_id: simulacaoBancoId },
       });
-      // O envio ao banco passa obrigatoriamente pelo gate único
-      // (useEnviarProposta), que ressincroniza o cadastro, valida os campos
-      // obrigatórios e abre o formulário quando faltar algo.
+
+      // A proposta exige campos que a simulação não pede (nome da mãe, sexo,
+      // documento de identidade, endereço completo...). Quando falta algum,
+      // abrimos o formulário DIRETO — nada de disparar um envio que já
+      // sabemos que o banco vai recusar. O próprio diálogo encadeia os demais
+      // participantes e envia ao final, pelo botão "Salvar e enviar ao banco".
+      if (envolvido_pendente_id) {
+        toast.info("Complete o cadastro do participante para enviar ao banco.");
+        router.navigate({
+          to: "/operacional/propostas/$id",
+          params: { id: proposta_id },
+          search: { abrir_cadastro: envolvido_pendente_id },
+        });
+        return;
+      }
+
+      // Cadastro completo: envia uma única vez aqui e abre a proposta já
+      // enviada (sem `complementar`, que dispararia um segundo envio).
       try {
         await handleEnviarHook({
           propostaId: proposta_id,
@@ -207,7 +222,7 @@ function Pagina() {
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: proposta_id },
-        search: { complementar: 1 },
+        search: {},
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao criar proposta.");

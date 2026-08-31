@@ -36,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import {
   faltantesEnvolvido,
+  proponentesPendentes,
   descreverParticipante,
   listarLabels,
   QUALIFICACAO_LABEL,
@@ -140,14 +141,9 @@ export function AbaEnviarBanco({
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const pendencias = useMemo(() => {
-    return (envolvidos ?? [])
-      .map((env) => ({
-        env,
-        faltantes: faltantesEnvolvido(env || {}),
-      }))
-      .filter((p) => p.faltantes && p.faltantes.length > 0);
-  }, [envolvidos]);
+  // Só bloqueia por quem vira participante na API (CO/TI) — vendedor não é
+  // enviado por este fluxo e não pode travar o envio dos documentos.
+  const pendencias = useMemo(() => proponentesPendentes(envolvidos ?? []), [envolvidos]);
 
   const bloqueado = pendencias.length > 0;
 
@@ -410,9 +406,7 @@ export function AbaEnviarBanco({
                   <Button
                     onClick={() => {
                       if (bloqueado) {
-                        const pendente = envolvidos.find(
-                          (env) => faltantesEnvolvido(env).length > 0,
-                        );
+                        const pendente = proponentesPendentes(envolvidos)[0]?.env;
                         onCompletar?.(pendente || envolvidos[0]);
                       } else {
                         enviarAoBanco();
