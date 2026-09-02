@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback, useMemo, Fragment } from "react";
-import { temBancoAguardando, useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -76,11 +75,6 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
       return simProc || bcoProc ? 5000 : false;
     },
   });
-
-  // O Santander responde depois do POST da integração. Enquanto houver
-  // banco aguardando, esta tela pede a reconciliação — sem isso o resultado
-  // só apareceria se alguém abrisse a tela "Ambos".
-  useReconciliacaoAutomatica(temBancoAguardando(data));
 
   useEffect(() => {
     const ch = supabase
