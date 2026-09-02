@@ -255,13 +255,33 @@ function Pagina() {
     }
   }
 
-  async function enviarBancoIndividual(banco: any) {
-    if (!envio) return;
+  /**
+   * Abre a ficha da proposta. Com `complementar`, a ficha abre o formulário
+   * complementar obrigatório no participante pendente e, ao salvar, segue
+   * sozinha para o envio ao banco.
+   */
+  function abrirProposta(propostaId: string, complementar: boolean) {
+    setEnvio(null);
+    router.navigate({
+      to: "/operacional/propostas/$id",
+      params: { id: propostaId },
+      ...(complementar ? { search: { complementar: 1 } } : {}),
+    });
+  }
+
+  async function enviarBancoIndividual(banco: any, opcoes?: { navegar?: boolean }) {
+    if (!envio) return null;
+    const navegar = opcoes?.navegar !== false;
     setEnviandoBancoId(banco.id);
+    // A proposta nasce antes da validação do cadastro, então guardamos o id
+    // aqui: mesmo quando o envio não vai adiante, é para ela que o operador
+    // precisa ser levado.
+    let propostaCriadaId: string | undefined;
     try {
       const res = await criar({
         data: { simulacao_id: envio.id, simulacao_banco_id: banco.id },
       });
+      propostaCriadaId = res.proposta_id;
       setPropostasCriadas((prev) => [
         ...prev,
         {
@@ -272,25 +292,57 @@ function Pagina() {
           numero: res.numero_proposta,
         },
       ]);
-      // Centraliza o envio através do hook único que cuida de validações e navegação
-      await handleEnviarHook({
+      // Centraliza o envio através do hook único que cuida de validações
+      const r = await handleEnviarHook({
         propostaId: res.proposta_id,
         bancoId: banco.banco_id,
       });
 
       queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
+
+      const incompleto = Boolean((r as any)?.cadastro_incompleto);
+      if (navegar) {
+        if (incompleto) {
+          toast.info("Complete o cadastro do participante para enviar ao banco.");
+        }
+        // Sem esta navegação o clique ficava "mudo": a proposta era criada e o
+        // envio parava na validação, mas a tela não saía do lugar.
+        abrirProposta(res.proposta_id, incompleto);
+      }
+      return { proposta_id: res.proposta_id, incompleto };
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
+      if (navegar && propostaCriadaId) abrirProposta(propostaCriadaId, false);
+      return propostaCriadaId ? { proposta_id: propostaCriadaId, incompleto: false } : null;
     } finally {
       setEnviandoBancoId(null);
     }
   }
+
   async function enviarTodos(bancos: any[]) {
     if (!envio) return;
-    // Dispara todos em paralelo no Hook, mas aqui na UI apenas iteramos
-    // O Hook useEnviarProposta agora gerencia o estado individual.
-    await Promise.allSettled(bancos.map((b) => enviarBancoIndividual(b)));
+    // Dispara todos em paralelo no Hook, mas aqui na UI apenas iteramos.
+    // A navegação fica suspensa durante o lote — navegar a cada banco levaria
+    // o operador embora antes de os demais terminarem.
+    const resultados = await Promise.allSettled(
+      bancos.map((b) => enviarBancoIndividual(b, { navegar: false })),
+    );
+
+    const criadas = resultados
+      .map((r) => (r.status === "fulfilled" ? r.value : null))
+      .filter((v): v is { proposta_id: string; incompleto: boolean } => Boolean(v?.proposta_id));
+    if (criadas.length === 0) return;
+
+    // Se alguma proposta ficou presa no cadastro, é para ELA que o operador
+    // precisa ir — não para a primeira do lote.
+    const pendente = criadas.find((v) => v.incompleto);
+    if (pendente) {
+      toast.info("Complete o cadastro do participante para enviar ao banco.");
+      abrirProposta(pendente.proposta_id, true);
+      return;
+    }
+    abrirProposta(criadas[0].proposta_id, false);
   }
 
   const itens = data?.itens ?? [];

@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PRAZO_MAX, prazoMaximoParaProponentes } from "@/lib/simulacao/prazo";
+import { PRAZO_MAX, prazoMaximoParaProponentes, modoTetoIdade } from "@/lib/simulacao/prazo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -76,7 +76,13 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         ...participantes.map((part: any) => part.id === id ? proponenteSimulado : part).filter((part: any) => part.compoe_renda)
       ];
 
-      const resNovo = prazoMaximoParaProponentes(proponentesAtuais);
+      // Mesmo modo usado em `ctx.maxPrazoIdade`, senão a comparação
+      // "prazo antes × prazo depois" compararia réguas diferentes.
+      const resNovo = prazoMaximoParaProponentes(
+        proponentesAtuais,
+        new Date(),
+        modoTetoIdade(Boolean(f.compoe_renda && f.compoe_renda_conjuge)),
+      );
       const prazoNovo = resNovo?.prazo ?? PRAZO_MAX;
       const prazoAtual = ctx.maxPrazoIdade ?? PRAZO_MAX;
 

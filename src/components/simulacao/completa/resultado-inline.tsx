@@ -140,6 +140,20 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
     iniciarStatusEnvio(bancoId);
     setCriandoBanco(bancoId);
 
+    // Guardamos o id fora do retorno do hook: a proposta é criada antes da
+    // validação do cadastro, então ela existe mesmo quando o envio não vai
+    // adiante. Sem isso a tela ficava parada e a proposta órfã.
+    let propostaCriadaId: string | undefined;
+
+    const irParaProposta = (id: string, complementar: boolean) => {
+      if (router.state.location.pathname.includes(`/propostas/${id}`)) return;
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id },
+        ...(complementar ? { search: { complementar: 1 } } : {}),
+      });
+    };
+
     try {
       // 2. Chama o hook que agora sabe gerenciar a criação e status
       const res = await handleEnviarHook({
@@ -151,20 +165,28 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
               banco_id: bancoId,
             },
           });
+          propostaCriadaId = proposta_id;
           return { proposta_id };
         },
       });
 
-      if (res?.proposta_id) {
-        if (!router.state.location.pathname.includes(`/propostas/${res.proposta_id}`)) {
-          router.navigate({
-            to: "/operacional/propostas/$id",
-            params: { id: res.proposta_id },
-          });
-        }
+      const propostaId = (res as any)?.proposta_id ?? propostaCriadaId;
+      if (!propostaId) return;
+
+      if ((res as any)?.cadastro_incompleto) {
+        // Faltam dados obrigatórios do participante: abre o cadastro
+        // complementar na ficha da proposta em vez de deixar a tela parada.
+        toast.info("Complete o cadastro do participante para enviar ao banco.");
+        irParaProposta(propostaId, true);
+        return;
       }
+
+      irParaProposta(propostaId, false);
     } catch (e) {
-      // Erros gerenciados pelo hook
+      // O hook já mostrou o motivo no card de status; aqui garantimos que o
+      // operador não fique preso na tela de simulação sem saída.
+      toast.error(e instanceof Error ? e.message : "Não foi possível enviar ao banco.");
+      if (propostaCriadaId) irParaProposta(propostaCriadaId, false);
     } finally {
       setCriandoBanco(null);
     }
