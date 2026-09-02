@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 /**
  * Disparo da reconciliação de simulações assíncronas.
  *
@@ -47,4 +49,25 @@ export function temBancoAguardando(data: any): boolean {
   return ((data?.bancos as any[]) ?? []).some(
     (b) => b?.status_banco === "aguardando" || b?.status_banco === "enviando",
   );
+}
+
+/**
+ * Mantém a reconciliação rodando enquanto `ativo` for verdadeiro.
+ *
+ * Toda tela que exibe simulação pendente deve chamar este hook. Antes, só a
+ * tela de resultado "Ambos" pedia reconciliação — uma simulação SAC simples,
+ * ou vista pela lista, ficava em "Em análise" para sempre, porque nada voltava
+ * a perguntar o resultado ao banco.
+ *
+ * `pedirReconciliacao` já se protege de rajada (uma chamada a cada 10 s no
+ * máximo, com contador compartilhado no módulo), então várias telas abertas ao
+ * mesmo tempo não multiplicam as requisições.
+ */
+export function useReconciliacaoAutomatica(ativo: boolean, intervaloMs = 12000): void {
+  useEffect(() => {
+    if (!ativo) return;
+    void pedirReconciliacao();
+    const t = setInterval(() => void pedirReconciliacao(), intervaloMs);
+    return () => clearInterval(t);
+  }, [ativo, intervaloMs]);
 }
