@@ -115,6 +115,10 @@ export const completaSchema = z.object({
   testar_cpfs: z.boolean().optional().default(false),
   /** Modalidade do proponente. PJ tem regras próprias (ver REGRAS_PJ). */
   tipo_pessoa: z.enum(["PF", "PJ"]).optional().default("PF"),
+  /** Faturamento anual da empresa. Opcional no contrato da integração, mas o
+   *  banco o usa na análise de PJ — precisa atravessar o schema para chegar ao
+   *  servidor, que o grava no cadastro do CRM. */
+  faturamento_empresa: z.number().optional().nullable(),
   // Participantes adicionais
   participantes: z.array(participanteSchema).default([]),
   // Bancos

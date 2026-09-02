@@ -23,11 +23,23 @@ export function patchSelecionarClienteCRM(
   // seção de cônjuge e a cobrar o sexo dele.
   const ec = ecOriginal;
   const temConjuge = ec === "CA" || ec === "UE";
+  // Modalidade do cadastro. Sem isto, puxar uma empresa do CRM deixava o
+  // seletor em "Pessoa física" e a simulação recebia as regras de PF.
+  const docDigitos = String(c.documento ?? "").replace(/\D/g, "");
+  const tipoPessoa =
+    c.tipo_pessoa === "PJ" || c.tipo_pessoa === "PF"
+      ? c.tipo_pessoa
+      : docDigitos.length === 14
+        ? "PJ"
+        : "PF";
   const next: Form = {
     ...prev,
     cliente_id: c.id,
+    tipo_pessoa: tipoPessoa,
     nome_cliente: c.nome ?? "",
     cpf_cnpj: c.documento ? maskCpfCnpj(c.documento) : "",
+    // Faturamento da empresa, usado pelo participante jurídico no envio.
+    faturamento_empresa: c.faturamento_empresa ?? prev.faturamento_empresa ?? 0,
     email: c.email || EMAIL_PADRAO,
     celular: c.telefone_celular ? maskCelular(c.telefone_celular) : "",
     data_nascimento: c.data_nascimento ?? "",
@@ -58,8 +70,10 @@ export function patchLimparTitular(prev: Form): Form {
   return {
     ...prev,
     cliente_id: null,
+    tipo_pessoa: "PF",
     nome_cliente: "",
     cpf_cnpj: "",
+    faturamento_empresa: 0,
     email: EMAIL_PADRAO,
     celular: "",
     data_nascimento: "",

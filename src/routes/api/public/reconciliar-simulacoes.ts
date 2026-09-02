@@ -99,12 +99,13 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
               correspondente_id: (bancos[0].simulacoes as any).correspondente_id
             });
 
-            const simulacoesApi = resp?.simulacoes || [];
+            // Ver `homefin-shape.ts`: o GET devolve as simulações dentro de um
+            // envelope `oportunidade`. Ler a raiz dava sempre `[]` e nenhum
+            // banco assíncrono era reconciliado.
+            const { acharSimulacaoBanco } = await import("@/lib/simulacao/homefin-shape");
             
             for (const b of bancos) {
-              const apiSim = simulacoesApi.find((s: any) => 
-                String(s.idSimulacao) === String(b.homefin_id_simulacao_banco)
-              );
+              const apiSim = acharSimulacaoBanco(resp, b.homefin_id_simulacao_banco);
 
               if (!apiSim) continue;
 
