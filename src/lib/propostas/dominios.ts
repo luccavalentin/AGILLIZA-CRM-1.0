@@ -60,6 +60,16 @@ export const TIPO_DOCUMENTO_IDENTIDADE: Opcao[] = [
 export const ESTADO_CIVIL_COM_REGIME = new Set(["CA", "UE"]);
 
 /**
+ * Qualificações que realmente viram participante na integração.
+ *
+ * O fluxo de envio da proposta só faz `PUT` nos participantes que já existem
+ * na oportunidade — comprador e cônjuge/coproponente. O vendedor (`VD`) fica
+ * apenas no cadastro local, então os campos obrigatórios do
+ * `CreateParticipantRequest` não se aplicam a ele e não podem travar o envio.
+ */
+export const QUALIFICACOES_ENVIADAS_AO_BANCO = ["CO", "TI"] as const;
+
+/**
  * Conversão dos valores gravados no cadastro do cliente (CRM, texto por extenso)
  * para os códigos usados nas simulações e propostas (swagger dos bancos).
  */

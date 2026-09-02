@@ -548,6 +548,15 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           estado_civil_conjuge: s.estado_civil_conjuge || "",
           regime_casamento: s.regime_casamento || "",
 
+          // Campos que o mapeamento esquecia e o usuário tinha de repreencher
+          // ao editar: a modalidade PF/PJ e os dois consentimentos. Editar deve
+          // devolver a simulação exatamente como ela foi enviada.
+          tipo_pessoa:
+            s.tipo_pessoa ||
+            (String(s.cpf_cnpj ?? "").replace(/\D/g, "").length === 14 ? "PJ" : "PF"),
+          consentimento_lgpd: Boolean(s.consentimento_lgpd),
+          consentimento_scr: Boolean(s.consentimento_scr),
+
           produto: s.produto || prev.produto,
           id_operacao_homefin: s.id_operacao_homefin || prev.id_operacao_homefin,
           tipo_imovel: s.tipo_imovel || "",

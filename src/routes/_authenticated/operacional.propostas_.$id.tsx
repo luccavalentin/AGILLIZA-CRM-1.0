@@ -10,7 +10,11 @@ import {
   atualizarEnvolvido,
   adicionarEnvolvido,
 } from "@/lib/propostas/propostas.functions";
-import { faltantesEnvolvido } from "@/lib/propostas/campos-obrigatorios";
+import {
+  faltantesEnvolvido,
+  ehProponenteEnviadoAoBanco,
+  proponentesPendentes,
+} from "@/lib/propostas/campos-obrigatorios";
 import { supabase } from "@/integrations/supabase/client";
 import { envolvidoParaForm } from "@/components/proposta/participante-form";
 import { bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
@@ -81,7 +85,7 @@ function PropostaRoute() {
         const idx = envolvidos.findIndex((e: any) => e.id === envolvidoPendente.id);
         setIndiceParticipante(idx + 1);
       } else {
-        const pendente = envolvidos.find((e: any) => faltantesEnvolvido(e).length > 0);
+        const pendente = proponentesPendentes(envolvidos)[0]?.env as any;
         if (pendente) {
           setParticipanteModal(pendente);
           const idx = envolvidos.findIndex((e: any) => e.id === pendente.id);
@@ -126,10 +130,12 @@ function PropostaRoute() {
           staleTime: 0,
         });
         const envolvidosAtualizados = atualizada?.envolvidos ?? [];
+        // O índice segue a posição na lista completa (é o "Participante X de Y"
+        // do diálogo); o filtro exclui vendedores, que não vão para a API.
         const novosPendentes = envolvidosAtualizados
           .map((env: any, index: number) => ({
             env,
-            faltantes: faltantesEnvolvido(env),
+            faltantes: ehProponenteEnviadoAoBanco(env) ? faltantesEnvolvido(env) : [],
             index: index + 1,
           }))
           .filter((item: any) => item.faltantes.length > 0);

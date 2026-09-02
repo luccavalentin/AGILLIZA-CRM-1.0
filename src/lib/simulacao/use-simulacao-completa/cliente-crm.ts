@@ -3,7 +3,7 @@
  * Extraído de `use-simulacao-completa.ts` para reduzir a superfície do hook.
  * Cada função recebe o `form` atual e devolve o próximo estado — sem side effects.
  */
-import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
+import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "@/lib/propostas/dominios";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { EMAIL_PADRAO, type Form } from "./state";
 
@@ -45,6 +45,12 @@ export function patchSelecionarClienteCRM(
     data_nascimento: c.data_nascimento ?? "",
     sexo: c.sexo === "M" || c.sexo === "F" ? c.sexo : prev.sexo,
     estado_civil: ec || prev.estado_civil,
+    // O regime já era GRAVADO no cadastro a cada simulação, mas nunca era lido
+    // de volta: a cada nova simulação do mesmo cliente o campo voltava vazio e
+    // precisava ser redigitado. Só faz sentido quando há casamento/união.
+    regime_casamento: temConjuge
+      ? regimeCasamentoCrmParaCodigo(c.regime_casamento) || prev.regime_casamento
+      : "",
     renda_total: c.renda_total_declarada ?? prev.renda_total,
     cep_imovel: c.imovel_cep ?? prev.cep_imovel,
     uf: c.imovel_uf ?? prev.uf,
@@ -57,7 +63,8 @@ export function patchSelecionarClienteCRM(
     cpf_conjuge: c.conjuge_cpf ? maskCpfCnpj(c.conjuge_cpf) : "",
     renda_conjuge: c.conjuge_renda ?? 0,
     data_nascimento_conjuge: c.conjuge_data_nascimento ?? "",
-    sexo_conjuge: c.conjuge_sexo === "M" || c.conjuge_sexo === "F" ? c.conjuge_sexo : prev.sexo_conjuge,
+    sexo_conjuge:
+      c.conjuge_sexo === "M" || c.conjuge_sexo === "F" ? c.conjuge_sexo : prev.sexo_conjuge,
     email_conjuge: c.conjuge_email || EMAIL_PADRAO,
     celular_conjuge: c.conjuge_celular ? maskCelular(c.conjuge_celular) : "",
     estado_civil_conjuge: temConjuge ? ec : (prev.estado_civil_conjuge ?? ""),

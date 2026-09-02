@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validarCamposSimulacao } from "./campos-obrigatorios";
+import { completaSchema } from "./schemas";
 
 /** Simulação completa de um titular, preenchida à mão (sem vínculo com o CRM). */
 const baseSolteiro = {
@@ -48,9 +49,9 @@ describe("validarCamposSimulacao — sexo do cônjuge", () => {
   });
 
   it("não exige para casado enquanto o cônjuge não foi identificado", () => {
-    expect(
-      pedeSexoDoConjuge({ ...baseSolteiro, estado_civil: "CA", possui_conjuge: true }),
-    ).toBe(false);
+    expect(pedeSexoDoConjuge({ ...baseSolteiro, estado_civil: "CA", possui_conjuge: true })).toBe(
+      false,
+    );
   });
 
   it("exige para casado com cônjuge identificado e sexo em branco", () => {
@@ -92,7 +93,6 @@ describe("validarCamposSimulacao — sexo do cônjuge", () => {
 // enum de `sexo_conjuge` reprovava string vazia, e o erro saía com o rótulo
 // "Sexo do cônjuge".
 // ---------------------------------------------------------------------------
-import { completaSchema } from "./schemas";
 
 const simulacaoCompletaSolteiro = {
   ...baseSolteiro,
@@ -177,5 +177,128 @@ describe("pessoa jurídica", () => {
     const erros = errosDe({ ...basePJ, tipo_pessoa: "PF", cpf_cnpj: "12345678909" });
     expect(erros).toContain("sexo");
     expect(erros).toContain("estado_civil");
+  });
+});
+
+const pede = (sim: any, campo: string) =>
+  validarCamposSimulacao(sim).some((c) => c.campo === campo);
+
+describe("validarCamposSimulacao — regime de bens e estado civil do cônjuge", () => {
+  const casadoComConjuge = {
+    ...baseSolteiro,
+    estado_civil: "CA",
+    possui_conjuge: true,
+    nome_conjuge: "JOÃO DE SOUZA",
+    cpf_conjuge: "98765432100",
+    sexo_conjuge: "M",
+  };
+
+  it("solteiro não é cobrado por regime de bens", () => {
+    expect(pede(baseSolteiro, "Regime de casamento")).toBe(false);
+  });
+
+  it("casado sem regime informado é bloqueado", () => {
+    expect(pede(casadoComConjuge, "Regime de casamento")).toBe(true);
+  });
+
+  it("união estável também exige o regime", () => {
+    expect(pede({ ...casadoComConjuge, estado_civil: "UE" }, "Regime de casamento")).toBe(true);
+  });
+
+  it("casado com regime informado passa", () => {
+    expect(pede({ ...casadoComConjuge, regime_casamento: "CP" }, "Regime de casamento")).toBe(
+      false,
+    );
+  });
+
+  it("exige o estado civil do cônjuge quando ele está identificado", () => {
+    expect(pede(casadoComConjuge, "Estado civil do cônjuge")).toBe(true);
+    expect(
+      pede({ ...casadoComConjuge, estado_civil_conjuge: "CA" }, "Estado civil do cônjuge"),
+    ).toBe(false);
+  });
+
+  it("não cobra estado civil de um cônjuge que não foi identificado", () => {
+    const semConjuge = { ...baseSolteiro, estado_civil: "CA", possui_conjuge: true };
+    expect(pede(semConjuge, "Estado civil do cônjuge")).toBe(false);
+  });
+
+  it("pessoa jurídica não é cobrada por nenhum dos dois", () => {
+    const pj = { ...casadoComConjuge, tipo_pessoa: "PJ", cpf_cnpj: "12345678000199" };
+    expect(pede(pj, "Regime de casamento")).toBe(false);
+    expect(pede(pj, "Estado civil do cônjuge")).toBe(false);
+  });
+});
+
+// --- Bloqueio no FORMULÁRIO (schema zod), não só no envio ---
+
+const formBase: any = {
+  produto: "financiamento_imobiliario",
+  tipo_pessoa: "PF",
+  tipo_imovel: "AP",
+  uso_imovel: "R",
+  situacao_imovel: "U",
+  uf: "SP",
+  valor_imovel: 500000,
+  valor_financiamento: 400000,
+  prazo: 360,
+  sistema_amortizacao: "S",
+  nome_cliente: "MARIA DE SOUZA",
+  cpf_cnpj: "12345678909",
+  data_nascimento: "1990-05-10",
+  sexo: "F",
+  email: "maria@exemplo.com",
+  celular: "11999998888",
+  renda_total: 12000,
+  estado_civil: "S",
+  // Campos exigidos pelo schema base — sem eles o parse falha antes e os
+  // `refine` de regime/estado civil nem chegam a rodar.
+  id_operacao_homefin: 1,
+  valor_entrada: 100000,
+  utiliza_fgts: "N",
+  bancos_ids: ["11111111-1111-4111-8111-111111111111"],
+  consentimento_lgpd: true,
+  consentimento_scr: true,
+};
+
+const erroNoCampo = (form: any, campo: string) => {
+  const r = completaSchema.safeParse(form);
+  if (r.success) return false;
+  return r.error.issues.some((i) => i.path.join(".") === campo);
+};
+
+describe("schema do formulário — regime e estado civil do cônjuge", () => {
+  const casada = {
+    ...formBase,
+    estado_civil: "CA",
+    possui_conjuge: true,
+    nome_conjuge: "JOÃO DE SOUZA",
+    cpf_conjuge: "98765432100",
+    sexo_conjuge: "M",
+    compoe_renda_conjuge: false,
+  };
+
+  it("solteira passa sem regime de bens", () => {
+    expect(erroNoCampo(formBase, "regime_casamento")).toBe(false);
+  });
+
+  it("casada sem regime é barrada no formulário", () => {
+    expect(erroNoCampo(casada, "regime_casamento")).toBe(true);
+  });
+
+  it("casada sem estado civil do cônjuge é barrada no formulário", () => {
+    expect(erroNoCampo(casada, "estado_civil_conjuge")).toBe(true);
+  });
+
+  it("casada com os dois preenchidos passa", () => {
+    const completa = { ...casada, regime_casamento: "CP", estado_civil_conjuge: "CA" };
+    expect(erroNoCampo(completa, "regime_casamento")).toBe(false);
+    expect(erroNoCampo(completa, "estado_civil_conjuge")).toBe(false);
+  });
+
+  it("PJ não é barrada por nenhum dos dois", () => {
+    const pj = { ...casada, tipo_pessoa: "PJ", cpf_cnpj: "12345678000199" };
+    expect(erroNoCampo(pj, "regime_casamento")).toBe(false);
+    expect(erroNoCampo(pj, "estado_civil_conjuge")).toBe(false);
   });
 });
