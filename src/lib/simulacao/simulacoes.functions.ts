@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { completaSchema, mapEstadoCivilEnum } from "./schemas";
 import { humanizarErroBanco } from "./bank-error-humanizer";
-import { ajustarPrazoPorIdade } from "./prazo";
+import { ajustarPrazoPorIdade, modoTetoIdade } from "./prazo";
 import { bancosQueOperamPJ } from "./use-simulacao-completa/bancos-helpers";
 
 /** ===== Tipos de saída ===== */
@@ -359,7 +359,12 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           dataNascimento: p.data_nascimento
         }))
       ];
-      const analiseTeto = prazoMaximoParaProponentes(proponentesParaTeto);
+      const compoeRendaConjugeTeto = Boolean(dd.compoe_renda) && dd.compoe_renda_conjuge !== false;
+      const analiseTeto = prazoMaximoParaProponentes(
+        proponentesParaTeto,
+        new Date(),
+        modoTetoIdade(compoeRendaConjugeTeto),
+      );
       const tetoEfetivo = analiseTeto?.prazo ?? 420;
       
       const prazoNormalizado = Math.min(Number(dd.prazo) || 420, tetoEfetivo);
@@ -745,7 +750,10 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         const analiseInvertida = ajustarPrazoPorIdade(
           dd.prazo || 0,
           { nome: dd.nome_conjuge!, dataNascimento: dd.data_nascimento_conjuge! },
-          [{ nome: dd.nome_cliente!, vinculo: "cônjuge", dataNascimento: dd.data_nascimento! }]
+          [{ nome: dd.nome_cliente!, vinculo: "cônjuge", dataNascimento: dd.data_nascimento! }],
+          // Mesma regra da simulação original: sem composição de renda, o teto
+          // é contado pelo proponente mais novo.
+          modoTetoIdade(compoeRendaConjugeTeto),
         );
         
         const prazoEfetivo = analiseInvertida.prazo;

@@ -11,7 +11,8 @@ import { completaSchema } from "@/lib/simulacao/schemas";
 import { 
   ehCasado,
   prazoMaximoParaProponentes, 
-  avaliarNovoPrazo, 
+  avaliarNovoPrazo,
+  modoTetoIdade,
   type MotivoLimitador
 } from "@/lib/simulacao/prazo";
 import { obterConfiguracoesModulos } from "@/lib/admin/configuracoes-modulos.functions";
@@ -157,7 +158,11 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       f.participantes,
     ],
   );
-  const analisePrazo = useMemo(() => prazoMaximoParaProponentes(dadosProponentes), [dadosProponentes]);
+  const compoeRendaConjuge = Boolean(f.compoe_renda && f.compoe_renda_conjuge);
+  const analisePrazo = useMemo(
+    () => prazoMaximoParaProponentes(dadosProponentes, new Date(), modoTetoIdade(compoeRendaConjuge)),
+    [dadosProponentes, compoeRendaConjuge],
+  );
   const maxPrazoIdade = analisePrazo?.prazo;
   const limitadorPrazo = analisePrazo?.limitador;
   const isHomeEquity = f.produto === "home_equity";
@@ -548,12 +553,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           estado_civil_conjuge: s.estado_civil_conjuge || "",
           regime_casamento: s.regime_casamento || "",
 
-          // Campos que o mapeamento esquecia e o usuário tinha de repreencher
-          // ao editar: a modalidade PF/PJ e os dois consentimentos. Editar deve
-          // devolver a simulação exatamente como ela foi enviada.
-          tipo_pessoa:
-            s.tipo_pessoa ||
-            (String(s.cpf_cnpj ?? "").replace(/\D/g, "").length === 14 ? "PJ" : "PF"),
+          // Consentimentos que o mapeamento esquecia e o usuário tinha de
+          // repreencher ao editar. Editar deve devolver a simulação
+          // exatamente como ela foi enviada. (A modalidade PF/PJ já é
+          // mapeada acima, a partir da coluna `tipo_pessoa`.)
           consentimento_lgpd: Boolean(s.consentimento_lgpd),
           consentimento_scr: Boolean(s.consentimento_scr),
 

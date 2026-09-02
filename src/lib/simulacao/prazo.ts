@@ -12,9 +12,15 @@
  * proponente já é considerado como iniciado (idade arredondada para cima).
  *
  * Para que a mesma simulação/proposta seja aceita por TODAS as IFs sem erro,
- * calculamos o prazo pela regra mais restritiva (idade corrida) e, quando há
- * mais de um proponente, usamos o mais velho (menor prazo). O prazo máximo de
- * contrato é 420 meses (35 anos) e o mínimo é 60 meses (5 anos).
+ * calculamos o prazo pela regra mais restritiva (idade corrida). Quando há mais
+ * de um proponente, qual deles dita o teto depende da composição de renda:
+ *
+ * - COM composição de renda do cônjuge: vale o mais velho (menor prazo).
+ * - SEM composição de renda: vale o mais novo (maior prazo), entre todos os
+ *   proponentes.
+ *
+ * O prazo máximo de contrato é 420 meses (35 anos) e o mínimo é 60 meses
+ * (5 anos).
  */
 
 export const PRAZO_MIN = 60;
@@ -96,34 +102,61 @@ export interface ProponenteLimite {
 }
 
 /**
+ * Qual proponente dita o teto de idade da operação.
+ *
+ * - `mais_velho`: menor prazo entre os proponentes. É a regra padrão e a mais
+ *   conservadora — garante que todas as IFs aceitem o mesmo prazo.
+ * - `mais_novo`: maior prazo entre os proponentes. Vale quando NÃO há
+ *   composição de renda do cônjuge: sem compor renda, o teto passa a ser
+ *   contado pelo proponente mais novo.
+ */
+export type ModoTetoIdade = "mais_velho" | "mais_novo";
+
+/**
+ * Traduz a marcação de "compor renda" no modo de cálculo do teto de idade.
+ * Compor renda marcado mantém a regra conservadora (mais velho); desmarcado
+ * passa a contar pelo mais novo.
+ */
+export function modoTetoIdade(compoeRenda: boolean | null | undefined): ModoTetoIdade {
+  return compoeRenda ? "mais_velho" : "mais_novo";
+}
+
+/**
  * Prazo máximo considerando TODOS os proponentes (titular, cônjuge e
- * coproponentes): usa o mais velho (menor prazo), garantindo que o contrato
- * seja aceito por todas as IFs. Datas inválidas/ausentes são ignoradas.
+ * coproponentes). Datas inválidas/ausentes são ignoradas. Com um único
+ * proponente válido os dois modos dão o mesmo resultado.
  */
 export function prazoMaximoParaProponentes(
   proponentes: Array<{ nome: string; vinculo: string; dataNascimento: string | null | undefined }>,
   hoje: Date = new Date(),
+  modo: ModoTetoIdade = "mais_velho",
 ): { prazo: number; limitador: ProponenteLimite | null } | null {
   const validos = proponentes.filter(p => !!p.dataNascimento);
   if (validos.length === 0) return null;
 
-  let minPrazo = PRAZO_MAX;
+  let prazoEscolhido: number | null = null;
   let limitador: ProponenteLimite | null = null;
 
   for (const p of validos) {
     const pMax = prazoMaximoPorIdade(p.dataNascimento!, hoje);
-    if (pMax !== null && pMax < minPrazo) {
-      minPrazo = pMax;
-      limitador = {
-        nome: p.nome,
-        vinculo: p.vinculo,
-        idadeAnos: Math.floor(idadeEmMesesCorridos(p.dataNascimento!, hoje)! / 12),
-        prazoMaximo: pMax
-      };
-    }
+    if (pMax === null) continue;
+
+    const melhor =
+      prazoEscolhido === null ||
+      (modo === "mais_velho" ? pMax < prazoEscolhido : pMax > prazoEscolhido);
+    if (!melhor) continue;
+
+    prazoEscolhido = pMax;
+    limitador = {
+      nome: p.nome,
+      vinculo: p.vinculo,
+      idadeAnos: Math.floor(idadeEmMesesCorridos(p.dataNascimento!, hoje)! / 12),
+      prazoMaximo: pMax,
+    };
   }
 
-  return { prazo: minPrazo, limitador };
+  if (prazoEscolhido === null) return null;
+  return { prazo: Math.min(PRAZO_MAX, prazoEscolhido), limitador };
 }
 
 /** Formata meses como "X anos" ou "X anos e Y meses". */
@@ -151,12 +184,13 @@ export function ajustarPrazoPorIdade(
   prazo: number,
   titular: { nome: string; dataNascimento: string },
   adicionais: Array<{ nome: string; vinculo: string; dataNascimento: string | null | undefined }> = [],
+  modo: ModoTetoIdade = "mais_velho",
 ): AjustePrazo {
   const res = prazoMaximoParaProponentes([
     { nome: titular.nome, vinculo: "Titular", dataNascimento: titular.dataNascimento },
     ...adicionais
-  ]);
-  
+  ], new Date(), modo);
+
   const maximoPermitido = res?.prazo ?? PRAZO_MAX;
   const limitador = res?.limitador;
 

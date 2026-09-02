@@ -92,69 +92,6 @@ export const completaSchema = z
     compoe_renda: z.boolean().default(false),
     compoe_renda_conjuge: z.boolean().default(true),
 
-<<<<<<< HEAD
-  nome_conjuge: z.string().optional().nullable(),
-  cpf_conjuge: z.string().optional().nullable(),
-  data_nascimento_conjuge: z.string().optional().nullable(),
-  email_conjuge: z.string().optional().nullable(),
-  celular_conjuge: z.string().optional().nullable(),
-  renda_conjuge: z.number().optional().nullable(),
-  /**
-   * `.optional().nullable()` aceita `undefined` e `null`, mas NÃO string
-   * vazia — e é exatamente isso que o formulário grava ao limpar o cônjuge
-   * (ao trocar o estado civil para solteiro, por exemplo). Sem este
-   * preprocess, um titular solteiro era barrado com "Falta preencher: Sexo
-   * do cônjuge", vindo da própria validação do enum.
-   */
-  sexo_conjuge: z.preprocess(
-    (v) => (typeof v === "string" && v.trim() === "" ? null : v),
-    z.enum(["M", "F"]).optional().nullable(),
-  ),
-  estado_civil_conjuge: z.string().optional().nullable(),
-  regime_casamento: z.string().optional().nullable(),
-  /** Teste automático de CPFs — precisa atravessar o schema para chegar ao
-   *  servidor, que desliga o inversor automático quando o cliente assume. */
-  testar_cpfs: z.boolean().optional().default(false),
-  /** Modalidade do proponente. PJ tem regras próprias (ver REGRAS_PJ). */
-  tipo_pessoa: z.enum(["PF", "PJ"]).optional().default("PF"),
-  /** Faturamento anual da empresa. Opcional no contrato da integração, mas o
-   *  banco o usa na análise de PJ — precisa atravessar o schema para chegar ao
-   *  servidor, que o grava no cadastro do CRM. */
-  faturamento_empresa: z.number().optional().nullable(),
-  // Participantes adicionais
-  participantes: z.array(participanteSchema).default([]),
-  // Bancos
-  bancos_ids: z.array(z.string().uuid()).min(1, "Selecione ao menos um banco"),
-  // Consentimentos
-  consentimento_lgpd: z.literal(true, {
-    errorMap: () => ({ message: "É necessário aceitar o consentimento LGPD" }),
-  }),
-  consentimento_scr: z.literal(true, {
-    errorMap: () => ({ message: "É necessário autorizar a consulta ao SCR/Bacen" }),
-  }),
-}).refine((d) => (d.tipo_pessoa === "PJ" ? true : Boolean(d.sexo)), {
-  message: "Selecione o sexo",
-  path: ["sexo"],
-}).refine((d) => (d.tipo_pessoa === "PJ" ? true : String(d.estado_civil ?? "").trim() !== ""), {
-  message: "Selecione o estado civil",
-  path: ["estado_civil"],
-}).refine((d) => {
-  // Espelha `validarCamposSimulacao`: exige o sexo do cônjuge apenas quando um
-  // cônjuge de fato será enviado — casado/união estável, identificação
-  // preenchida e compondo renda. Sem `possui_conjuge`, que sobrevive a trocas
-  // de estado civil e bloqueava simulações de solteiros.
-  const ec = String(d.estado_civil ?? "").trim().toLowerCase();
-  const casado = ec === "ca" || ec === "ue" || ec === "casado" || ec === "uniao_estavel";
-  const conjugeIdentificado =
-    String(d.nome_conjuge ?? "").trim() !== "" ||
-    String(d.cpf_conjuge ?? "").replace(/\D/g, "") !== "";
-  if (casado && conjugeIdentificado && d.compoe_renda_conjuge && !d.sexo_conjuge) return false;
-  return true;
-}, {
-  message: "Selecione o sexo do cônjuge",
-  path: ["sexo_conjuge"]
-});
-=======
     nome_conjuge: z.string().optional().nullable(),
     cpf_conjuge: z.string().optional().nullable(),
     data_nascimento_conjuge: z.string().optional().nullable(),
@@ -179,6 +116,10 @@ export const completaSchema = z
     testar_cpfs: z.boolean().optional().default(false),
     /** Modalidade do proponente. PJ tem regras próprias (ver REGRAS_PJ). */
     tipo_pessoa: z.enum(["PF", "PJ"]).optional().default("PF"),
+    /** Faturamento anual da empresa. Opcional no contrato da integração, mas o
+     *  banco o usa na análise de PJ — precisa atravessar o schema para chegar ao
+     *  servidor, que o grava no cadastro do CRM. */
+    faturamento_empresa: z.number().optional().nullable(),
     // Participantes adicionais
     participantes: z.array(participanteSchema).default([]),
     // Bancos
@@ -258,7 +199,6 @@ export const completaSchema = z
       path: ["estado_civil_conjuge"],
     },
   );
->>>>>>> origin/corrige-envio-de-proposta-e-documentos
 
 export type CompletaDados = z.infer<typeof completaSchema>;
 
