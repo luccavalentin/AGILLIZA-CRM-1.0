@@ -13,17 +13,19 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
 
     // REDE DE SEGURANÇA NO SERVIDOR (OBRIGATÓRIA): Validar prazo contra idade
     const { data: latestParts } = await supabase.from("simulacao_participantes").select("nome, vinculo, data_nascimento").eq("simulacao_id", simulacaoId).eq("compoe_renda", true);
-    const { prazoMaximoParaProponentes } = await import("./prazo");
+    const { prazoMaximoParaProponentes, modoTetoIdade } = await import("./prazo");
     const proponentes = [
       { nome: sim.nome_cliente || "Titular", vinculo: "Titular", dataNascimento: sim.data_nascimento },
-      // Mais velho manda, componha renda ou não — a idade do cônjuge limita o
-      // prazo do contrato mesmo quando ele entra só como coobrigado.
+      // O cônjuge entra no cálculo mesmo sem compor renda — ele assina o
+      // contrato de qualquer forma. O que muda é QUEM dita o teto: com
+      // composição de renda, o mais velho; sem composição, o mais novo.
       ...(sim.data_nascimento_conjuge ? [{ nome: sim.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: sim.data_nascimento_conjuge }] : []),
       ...(latestParts || []).map(p => ({ nome: p.nome, vinculo: p.vinculo, dataNascimento: p.data_nascimento }))
     ];
-    
+
     // ANALISE DE PRAZO: Centralizada e respeitando restrições de produto/uso
-    const analise = prazoMaximoParaProponentes(proponentes);
+    const compoeRendaConjuge = Boolean(sim.compoe_renda) && sim.compoe_renda_conjuge !== false;
+    const analise = prazoMaximoParaProponentes(proponentes, new Date(), modoTetoIdade(compoeRendaConjuge));
     const tMaxIdade = analise?.prazo ?? 420;
     
     // Restrições de Produto/Uso (replicadas da lógica UI para garantia absoluta)
