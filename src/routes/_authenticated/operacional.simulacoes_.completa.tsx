@@ -208,6 +208,15 @@ function Pagina() {
             </div>
           </Card>
 
+          {/* Fluxo PJ suspenso: tudo abaixo do Titular fica travado. O aviso
+              aparece dentro da seção Titular, junto do seletor de modalidade. */}
+          <fieldset
+            disabled={ctx.pjBloqueada}
+            className={cn(
+              "m-0 min-w-0 space-y-4 border-0 p-0",
+              ctx.pjBloqueada && "pointer-events-none opacity-50",
+            )}
+          >
           {mostraConjuge && !ctx.isPJ && (
             <Card className="overflow-hidden">
               <SecaoCabecalho
@@ -267,6 +276,8 @@ function Pagina() {
             </div>
           </Card>
 
+          </fieldset>
+
           {/* Ação sempre disponível no final do formulário */}
           <div className="flex justify-end pt-1">
             <Button
@@ -275,7 +286,7 @@ function Pagina() {
                 console.log("Clique manual no botão Gerar Simulação");
                 enviarOriginal();
               }}
-              disabled={enviando}
+              disabled={enviando || ctx.pjBloqueada}
             >
               <Send className="h-4 w-4" />{" "}
               {modoProposta ? "Gerar Proposta e Enviar ao Banco" : "Gerar Simulação"}
@@ -332,7 +343,7 @@ function Pagina() {
               <Button className="h-11 w-full gap-2" onClick={() => {
                 console.log("Clique manual no botão Resumo (Aside)");
                 enviarOriginal();
-              }} disabled={enviando}>
+              }} disabled={enviando || ctx.pjBloqueada}>
                 <Send className="h-4 w-4" /> {modoProposta ? "Gerar Proposta" : "Gerar Simulação"}
               </Button>
             </div>
