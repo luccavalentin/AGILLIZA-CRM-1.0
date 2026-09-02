@@ -14,6 +14,8 @@
  * ser bloqueada por eles.
  */
 
+import { QUALIFICACOES_ENVIADAS_AO_BANCO } from "./dominios";
+
 export type CampoObrigatorio = {
   /** Coluna em `proposta_envolvidos` (e chave do formulário). */
   chave: string;
@@ -98,6 +100,33 @@ export function faltantesEnvolvido(env: Record<string, any> = {}): CampoObrigato
     if (c.chave === "fg_autorizacao_dados") return env?.fg_autorizacao_dados !== true;
     return vazio(env?.[c.chave]);
   });
+}
+
+/**
+ * O envolvido vira participante na integração?
+ *
+ * Só comprador (`CO`) e cônjuge/coproponente (`TI`) são enviados — o vendedor
+ * (`VD`) existe apenas no cadastro local. Por isso os campos obrigatórios do
+ * `CreateParticipantRequest` não se aplicam a ele e um vendedor incompleto
+ * não pode travar o envio da proposta ao banco.
+ */
+export function ehProponenteEnviadoAoBanco(env: Record<string, any> = {}): boolean {
+  return QUALIFICACOES_ENVIADAS_AO_BANCO.includes(
+    String(env?.tipo_qualificacao ?? "CO") as (typeof QUALIFICACOES_ENVIADAS_AO_BANCO)[number],
+  );
+}
+
+/**
+ * Proponentes com campo obrigatório faltando, na ordem em que aparecem.
+ * É a fonte única usada pelos gates de envio e pelo formulário de cadastro.
+ */
+export function proponentesPendentes<T extends Record<string, any>>(
+  envolvidos: readonly (T | null | undefined)[] = [],
+): { env: T; faltantes: CampoObrigatorio[] }[] {
+  return (envolvidos ?? [])
+    .filter((e): e is T => Boolean(e) && ehProponenteEnviadoAoBanco(e as Record<string, any>))
+    .map((env) => ({ env, faltantes: faltantesEnvolvido(env) }))
+    .filter((p) => p.faltantes.length > 0);
 }
 
 /** "Hércules Rodrigues de Oliveira (coobrigado)". */

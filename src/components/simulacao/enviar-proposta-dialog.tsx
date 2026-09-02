@@ -49,15 +49,20 @@ export function EnviarPropostaDialog({
   const bancosComId = (envio?.bancos ?? []).filter((b: any) => b.banco_id);
   const simulados = bancosComId.filter((b: any) => b.status_banco === "simulada");
 
+  // O hook indexa o status por `banco_id` (é o que ele recebe de quem chama),
+  // mas as linhas aqui são de `simulacao_bancos`, cujo `id` é outro. Procurar
+  // só por `b.id` nunca encontrava nada: o botão ficava eternamente no estado
+  // inicial — sem spinner, sem erro, sem reação ao clique.
+  const statusDoBanco = (b: any): StatusEnvioBanco | undefined =>
+    statusPorBanco[b.banco_id] ?? statusPorBanco[b.id];
+
   const enviandoQualquer = Object.values(statusPorBanco).some((s) => s.status === "loading");
-  const concluidos = Object.values(statusPorBanco).filter(
-    (s) => s.status === "success" || s.status === "error",
-  );
   const todosConcluidos =
     simulados.length > 0 &&
-    simulados.every(
-      (b) => statusPorBanco[b.id]?.status === "success" || statusPorBanco[b.id]?.status === "error",
-    );
+    simulados.every((b) => {
+      const s = statusDoBanco(b)?.status;
+      return s === "success" || s === "error";
+    });
 
   // Identificar melhor taxa
   const melhorTaxa = useMemo(() => {
@@ -114,7 +119,7 @@ export function EnviarPropostaDialog({
           ) : (
             <div className="grid gap-2.5">
               {simulados.map((b: any) => {
-                const status = statusPorBanco[b.id];
+                const status = statusDoBanco(b);
                 const isLoading = status?.status === "loading";
                 const isSuccess = status?.status === "success";
                 const isError = status?.status === "error";

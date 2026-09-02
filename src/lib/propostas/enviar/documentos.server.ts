@@ -1,6 +1,23 @@
 /**
- * Envio de documentos ao banco (upload + inclusão na integração).
- * Extraído de `enviar.server.ts` sem alteração de comportamento.
+ * Envio dos documentos da proposta ao banco.
+ *
+ * Fluxo oficial (swagger HomeFin, tag "Documentos"):
+ *   1. `GET  /oportunidade/{id}/documentos`               — checklist da oportunidade;
+ *                                                           `idDocumento` é o alvo do upload.
+ *   2. `POST /documento/{idDocumento}/upload`             — arquivo + `documentoAprovado=true`.
+ *   3. `POST /oportunidade/{id}/incluir-documentos-integracao` — UMA vez, no fim.
+ *
+ * Dois pontos que faziam o Bradesco não receber nada:
+ *
+ * - O upload subia com `documentoAprovado=false`. A documentação é explícita:
+ *   "só documentos APROVADOS entram no envio ao Bradesco; sem a flag o documento
+ *   fica Em Análise (I)". Ele era aceito no upload e depois descartado em silêncio
+ *   do lote — hoje reaparece em `ignorados` com motivo `documento_nao_aprovado`.
+ *
+ * - O checklist era lido chamando `incluir-documentos-integracao` ANTES dos uploads,
+ *   como se fosse um GET. Não é: é a própria ação de enviar ao banco. Isso disparava
+ *   o lote duas vezes por operação — e o provedor agora serializa por oportunidade,
+ *   devolvendo 400 INT-007 em chamada concorrente.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normTexto } from "./shared-utils";
@@ -9,7 +26,7 @@ export interface EnviarDocumentosArgs {
   propostaId: string;
   userId: string;
   supabase: SupabaseClient<any, any, any>;
-  /** IDs de cliente_documentos selecionados para envio (opcional = todos os PDFs). */
+  /** IDs de cliente_documentos selecionados para envio (opcional = todos os aceitos). */
   documentoIds?: string[];
 }
 
@@ -18,6 +35,67 @@ export interface EnviarDocumentosResultado {
   total: number;
   sucesso: { nome: string; participante?: string | null }[];
   erros: { nome: string; motivo: string; participante?: string | null }[];
+}
+
+/** Limite aceito pelo banco (documentado no `UploadRequest`). */
+const MAX_BYTES = 5 * 1024 * 1024;
+
+/** Situações do checklist que ainda aceitam arquivo — `D` (Dispensado) não. */
+const SITUACOES_QUE_ACEITAM_UPLOAD = new Set(["P", "I", "A", "R"]);
+
+function ehVerdadeiro(v: unknown): boolean {
+  return (
+    v === true ||
+    String(v ?? "")
+      .trim()
+      .toLowerCase() === "true"
+  );
+}
+
+function ehFormatoAceito(d: { mime_type?: string | null; nome_arquivo?: string | null }): boolean {
+  const mime = String(d.mime_type ?? "").toLowerCase();
+  const nome = String(d.nome_arquivo ?? "").toLowerCase();
+  if (mime.includes("pdf") || nome.endsWith(".pdf")) return true;
+  if (mime.includes("jpeg") || mime.includes("jpg")) return true;
+  if (nome.endsWith(".jpg") || nome.endsWith(".jpeg")) return true;
+  if (mime.includes("png") || nome.endsWith(".png")) return true;
+  return false;
+}
+
+/**
+ * Quão bem um item do checklist casa com um documento local.
+ * `-1` = não serve. Empate resolve pelo item ainda sem arquivo.
+ */
+function pontuarItem(item: any, alvo: string, tipoDoc: string, nomeDono: string): number {
+  const nomeItem = normTexto(item?.nomeDocumento);
+  if (!nomeItem) return -1;
+
+  let pontos = 0;
+
+  // Dono: `referente` traz o nome do participante (ou "Imóvel"/"Interveniente").
+  const referente = normTexto(item?.referente);
+  const dono = normTexto(nomeDono);
+  if (dono && referente) {
+    if (referente === dono) pontos += 100;
+    else if (referente.includes(dono) || dono.includes(referente)) pontos += 60;
+    else pontos -= 40; // é de outra pessoa — só entra se não houver nada melhor
+  }
+
+  // Tipo/nome do documento.
+  const tipo = normTexto(tipoDoc);
+  if (alvo.includes(nomeItem)) pontos += 50;
+  else if (tipo && nomeItem.includes(tipo)) pontos += 40;
+  else {
+    const palavras = nomeItem.split(" ").filter((p) => p.length > 3);
+    const casadas = palavras.filter((p) => alvo.includes(p)).length;
+    if (casadas === 0) return -1;
+    pontos += casadas * 10;
+  }
+
+  // Vaga ainda vazia é preferível a uma que já tem arquivo.
+  if (!Array.isArray(item?.arquivos) || item.arquivos.length === 0) pontos += 15;
+
+  return pontos;
 }
 
 export async function enviarDocumentosBancoImpl({
@@ -32,7 +110,7 @@ export async function enviarDocumentosBancoImpl({
   const { data: prop, error } = await supabase
     .from("propostas")
     .select(
-      "id, cliente_id, cpf_cnpj, correspondente_id, homefin_id_oportunidade, homefin_id_simulacao",
+      "id, cliente_id, cpf_cnpj, nome_cliente, correspondente_id, homefin_id_oportunidade, homefin_id_simulacao",
     )
     .eq("id", propostaId)
     .maybeSingle();
@@ -44,7 +122,7 @@ export async function enviarDocumentosBancoImpl({
     );
   }
 
-  // idSimulacao = banco escolhido/enviado (homefin_id_simulacao_banco).
+  // idSimulacao = o banco escolhido/enviado (homefin_id_simulacao_banco).
   const { data: bancos } = await supabase
     .from("proposta_bancos")
     .select("homefin_id_simulacao_banco, selecionado")
@@ -60,29 +138,21 @@ export async function enviarDocumentosBancoImpl({
     );
   }
 
-  // Participantes da proposta — precisamos deles para rotear cada documento
-  // à vaga do dono (cpfCnpj no checklist do banco).
   const { data: envolvidosRaw } = await supabase
     .from("proposta_envolvidos")
     .select("cliente_id, cpf_cnpj, nome, tipo_qualificacao")
     .eq("proposta_id", propostaId);
   const envolvidos = (envolvidosRaw ?? []) as any[];
 
-  // Mapa cliente_id -> { cpf, nome } (com fallback para o comprador principal).
-  const cpfPrincipal = String(prop.cpf_cnpj ?? "").replace(/\D+/g, "");
-  const donoPorCliente = new Map<string, { cpf: string; nome: string | null }>();
+  // cliente_id -> nome do dono, para casar com o `referente` do checklist.
+  const donoPorCliente = new Map<string, string>();
   for (const e of envolvidos) {
-    if (!e.cliente_id) continue;
-    donoPorCliente.set(String(e.cliente_id), {
-      cpf: String(e.cpf_cnpj ?? "").replace(/\D+/g, ""),
-      nome: e.nome ?? null,
-    });
+    if (e.cliente_id && e.nome) donoPorCliente.set(String(e.cliente_id), String(e.nome));
   }
-  if (prop.cliente_id && !donoPorCliente.has(String(prop.cliente_id)) && cpfPrincipal) {
-    donoPorCliente.set(String(prop.cliente_id), { cpf: cpfPrincipal, nome: null });
+  if (prop.cliente_id && !donoPorCliente.has(String(prop.cliente_id)) && prop.nome_cliente) {
+    donoPorCliente.set(String(prop.cliente_id), String(prop.nome_cliente));
   }
 
-  // Documentos locais de TODOS os participantes (não só do comprador principal).
   const clienteIds = Array.from(
     new Set([
       ...(prop.cliente_id ? [String(prop.cliente_id)] : []),
@@ -106,83 +176,47 @@ export async function enviarDocumentosBancoImpl({
   const { data: docsRaw, error: docsErr } = await q;
   if (docsErr) throw new Error(docsErr.message);
 
-  // Aceita PDF, JPG e PNG (banco recusa outros formatos). Rejeita > 10 MB.
-  const MAX_BYTES = 10 * 1024 * 1024;
-  const ehFormatoAceito = (d: any) => {
-    const mime = String(d.mime_type ?? "").toLowerCase();
-    const nome = String(d.nome_arquivo ?? "").toLowerCase();
-    if (mime.includes("pdf") || nome.endsWith(".pdf")) return true;
-    if (
-      mime.includes("jpeg") ||
-      mime.includes("jpg") ||
-      nome.endsWith(".jpg") ||
-      nome.endsWith(".jpeg")
-    )
-      return true;
-    if (mime.includes("png") || nome.endsWith(".png")) return true;
-    return false;
-  };
   const docs = (docsRaw ?? []).filter((d: any) => d.storage_path && ehFormatoAceito(d));
   if (docs.length === 0) {
     throw new Error("Nenhum documento em PDF/JPG/PNG disponível para enviar ao banco.");
   }
 
-  const ctx = {
-    proposta_id: propostaId,
-    correspondente_id: prop.correspondente_id,
-  };
-
-  // 1) Obtém o checklist de documentos esperados pelo banco.
-  const checklist = await chamarIntegracao<any>(
-    `/oportunidade/${prop.homefin_id_oportunidade}/incluir-documentos-integracao`,
-    "POST",
-    { idSimulacao: Number(idSimulacao) },
-    ctx,
-  );
-  // Só vagas válidas (sucesso[]) são destino de upload. As vagas em error[]
-  // possuem erroIntegracao do banco e não aceitam arquivo.
-  const vagas: any[] = Array.isArray(checklist?.sucesso) ? checklist.sucesso : [];
-  const vagasComErro: any[] = Array.isArray(checklist?.error) ? checklist.error : [];
-
-  // Agrupa vagas por cpfCnpj (só dígitos) para rotear cada documento ao dono certo.
-  const vagasPorCpf = new Map<string, any[]>();
-  for (const v of vagas) {
-    const cpf = String(v?.cpfCnpj ?? "").replace(/\D+/g, "");
-    if (!cpf) continue;
-    const lista = vagasPorCpf.get(cpf);
-    if (lista) lista.push(v);
-    else vagasPorCpf.set(cpf, [v]);
-  }
-
+  const ctx = { proposta_id: propostaId, correspondente_id: prop.correspondente_id };
   const sucesso: EnviarDocumentosResultado["sucesso"] = [];
   const erros: EnviarDocumentosResultado["erros"] = [];
 
-  // Registra pendências reportadas pelo banco (não somem da UI).
-  for (const v of vagasComErro) {
-    const msg = String(v?.erroIntegracao ?? "").trim();
-    if (!msg) continue;
-    erros.push({
-      nome: String(v?.nomeDocumento ?? "Documento"),
-      motivo: msg,
-      participante: v?.nomeParticipante ?? null,
-    });
-  }
+  // ETAPA 1 — checklist da oportunidade (GET, não dispara envio ao banco).
+  const checklist = await chamarIntegracao<any[]>(
+    `/oportunidade/${prop.homefin_id_oportunidade}/documentos`,
+    "GET",
+    undefined,
+    ctx,
+  );
+  const itens: any[] = Array.isArray(checklist) ? checklist : [];
 
-  // 2) Faz upload de cada documento local, casando com a vaga pelo cpfCnpj
-  //    do dono e depois por semelhança de nome do documento.
-  const usados = new Set<string>();
-  const escolherVaga = (grupo: any[], alvo: string, tipoDoc: string) => {
-    return grupo.find((s) => {
-      if (s?.id == null || usados.has(String(s.id))) return false;
-      const nomeSlot = normTexto(s.nomeDocumento);
-      if (!nomeSlot) return false;
-      return (
-        alvo.includes(nomeSlot) ||
-        nomeSlot.includes(normTexto(tipoDoc)) ||
-        nomeSlot.split(" ").some((p) => p.length > 3 && alvo.includes(p))
-      );
-    });
-  };
+  const aceitaUpload = (i: any) =>
+    SITUACOES_QUE_ACEITAM_UPLOAD.has(
+      String(i?.tipoSituacao ?? "P")
+        .toUpperCase()
+        .charAt(0),
+    );
+  const disponiveis = itens.filter(aceitaUpload);
+
+  // `integravelBradesco` marca os tipos com código de integração Bradesco.
+  // Preferimos esses — mas NÃO exigimos: o campo é específico do Bradesco e
+  // viria falso para Itaú/Santander, e recusar o envio nesse caso deixaria os
+  // outros bancos sem documento algum. O upload em si (`/documento/{id}/upload`)
+  // vale para qualquer item do checklist; só a inclusão no lote é do Bradesco.
+  const integraveis = disponiveis.filter((i) => ehVerdadeiro(i?.integravelBradesco));
+  const vagas = integraveis.length > 0 ? integraveis : disponiveis;
+
+  if (vagas.length === 0) {
+    throw new Error(
+      itens.length === 0
+        ? "O banco ainda não gerou o checklist de documentos desta oportunidade. Envie a proposta ao banco antes de enviar os documentos."
+        : "Todos os documentos do checklist já estão dispensados ou não aceitam novo arquivo.",
+    );
+  }
 
   const marcarDoc = async (id: string, situacao: "enviado" | "erro", erro: string | null) => {
     try {
@@ -199,66 +233,74 @@ export async function enviarDocumentosBancoImpl({
     }
   };
 
+  // ETAPA 2 — upload de cada documento na vaga correspondente, JÁ APROVADO.
+  const usados = new Set<string>();
+  let enviouAlgum = false;
+
   for (const doc of docs) {
     const alvo = normTexto(`${doc.tipo_documento} ${doc.nome_arquivo}`);
-    const dono = donoPorCliente.get(String(doc.cliente_id));
-    const cpfDoc = dono?.cpf ?? "";
-    const nomeDono = dono?.nome ?? null;
+    const nomeDono = donoPorCliente.get(String(doc.cliente_id)) ?? "";
 
-    // Tamanho: rejeita > 10 MB antes de baixar do storage.
     if (doc.tamanho_bytes && Number(doc.tamanho_bytes) > MAX_BYTES) {
-      const motivo = "Arquivo maior que 10 MB. Reduza o tamanho antes de enviar.";
-      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono });
+      const motivo = "Arquivo maior que 5 MB, o limite aceito pelo banco. Reduza o tamanho.";
+      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
       await marcarDoc(doc.id, "erro", motivo);
       continue;
     }
 
-    // Escolhe vaga dentro do grupo do dono; se não houver, tenta em qualquer vaga.
-    let slot: any = undefined;
-    if (cpfDoc && vagasPorCpf.has(cpfDoc)) {
-      slot = escolherVaga(vagasPorCpf.get(cpfDoc) ?? [], alvo, doc.tipo_documento);
-    }
-    if (!slot) {
-      // Fallback: sem cpf identificável ou sem vaga no grupo — tenta qualquer vaga livre.
-      slot = escolherVaga(vagas, alvo, doc.tipo_documento);
+    let melhor: { item: any; pontos: number } | null = null;
+    for (const item of vagas) {
+      if (usados.has(String(item.idDocumento))) continue;
+      const pontos = pontuarItem(item, alvo, doc.tipo_documento, nomeDono);
+      if (pontos < 0) continue;
+      if (!melhor || pontos > melhor.pontos) melhor = { item, pontos };
     }
 
-    if (!slot) {
-      const motivo = cpfDoc
-        ? "Sem vaga correspondente no checklist do banco para este participante."
-        : "Sem vaga correspondente no checklist do banco.";
-      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono });
+    if (!melhor) {
+      const motivo = nomeDono
+        ? `Sem item correspondente no checklist do banco para ${nomeDono}.`
+        : "Sem item correspondente no checklist do banco.";
+      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
       await marcarDoc(doc.id, "erro", motivo);
       continue;
     }
-    usados.add(String(slot.id));
+    const item = melhor.item;
+    usados.add(String(item.idDocumento));
 
-    // Baixa o arquivo do storage.
     const { data: blob, error: dlErr } = await supabase.storage
       .from("cliente-documentos")
       .download(doc.storage_path);
     if (dlErr || !blob) {
       const motivo = "Falha ao ler o arquivo armazenado.";
-      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono });
+      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
       await marcarDoc(doc.id, "erro", motivo);
       continue;
     }
     const bytes = new Uint8Array(await blob.arrayBuffer());
+    if (bytes.byteLength > MAX_BYTES) {
+      const motivo = "Arquivo maior que 5 MB, o limite aceito pelo banco. Reduza o tamanho.";
+      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
+      await marcarDoc(doc.id, "erro", motivo);
+      continue;
+    }
 
     try {
+      // `documentoAprovado: true` é o que habilita o documento a entrar no
+      // lote do Bradesco. Sem isso ele fica "Em Análise" e é ignorado.
       await enviarArquivoIntegracao(
-        `/documento/${slot.id}/upload`,
+        `/documento/${item.idDocumento}/upload`,
         {
           bytes,
           nome: doc.nome_arquivo,
           mime: doc.mime_type ?? "application/octet-stream",
         },
-        false,
+        true,
         ctx,
       );
+      enviouAlgum = true;
       sucesso.push({
         nome: doc.nome_arquivo,
-        participante: slot.nomeParticipante ?? nomeDono,
+        participante: item?.referente ?? nomeDono ?? null,
       });
       await marcarDoc(doc.id, "enviado", null);
     } catch (e: any) {
@@ -266,33 +308,88 @@ export async function enviarDocumentosBancoImpl({
       erros.push({
         nome: doc.nome_arquivo,
         motivo,
-        participante: slot.nomeParticipante ?? nomeDono,
+        participante: item?.referente ?? nomeDono ?? null,
       });
       await marcarDoc(doc.id, "erro", motivo);
     }
   }
 
-  // 3) Finaliza a inclusão dos documentos enviados na integração do banco.
-  if (sucesso.length > 0) {
+  // ETAPA 3 — inclusão no lote do banco. Uma única chamada, no fim.
+  if (enviouAlgum) {
     try {
-      await chamarIntegracao<any>(
+      const resp = await chamarIntegracao<any>(
         `/oportunidade/${prop.homefin_id_oportunidade}/incluir-documentos-integracao`,
         "POST",
         { idSimulacao: Number(idSimulacao) },
         ctx,
       );
+
+      // `erro` no contrato atual; `error` era o nome antigo do mesmo campo.
+      const errosBanco: any[] = Array.isArray(resp?.erro)
+        ? resp.erro
+        : Array.isArray(resp?.error)
+          ? resp.error
+          : [];
+      for (const item of errosBanco) {
+        const msg = String(item?.erroIntegracao ?? "").trim();
+        erros.push({
+          nome: String(item?.nomeDocumento ?? "Documento"),
+          motivo: msg || "O banco recusou este documento.",
+          participante: item?.nomeParticipante ?? null,
+        });
+      }
+
+      // Documentos que ficaram FORA do lote — a causa mais comum do "sumiço"
+      // silencioso no Bradesco. A API diz o motivo; repassamos ao usuário.
+      const ignorados: any[] = Array.isArray(resp?.ignorados) ? resp.ignorados : [];
+      for (const item of ignorados) {
+        erros.push({
+          nome: String(item?.nomeDocumento ?? "Documento"),
+          motivo:
+            String(item?.descricaoMotivo ?? "").trim() ||
+            `Ficou fora do envio (${item?.motivo ?? "motivo não informado"}).`,
+          participante: item?.nomeParticipante ?? null,
+        });
+      }
+
+      const etapasIndisponiveis: string[] = Array.isArray(resp?.etapasChecklistIndisponiveis)
+        ? resp.etapasChecklistIndisponiveis
+        : [];
+      if (etapasIndisponiveis.length > 0) {
+        erros.push({
+          nome: "Checklist do banco",
+          motivo: `Não foi possível consultar as etapas ${etapasIndisponiveis.join(", ")} no banco. Reenvie os documentos dessas etapas em instantes.`,
+          participante: null,
+        });
+      }
+
+      // Documentos confirmados pelo banco deixam de contar como enviados só
+      // localmente: quem não aparece em `sucesso` já foi reportado acima.
+      const confirmados: any[] = Array.isArray(resp?.sucesso) ? resp.sucesso : [];
+      const nomesComProblema = new Set(erros.map((e) => normTexto(e.nome)));
+      for (let i = sucesso.length - 1; i >= 0; i--) {
+        if (nomesComProblema.has(normTexto(sucesso[i].nome))) sucesso.splice(i, 1);
+      }
+      if (confirmados.length === 0 && ignorados.length === 0 && errosBanco.length === 0) {
+        // Resposta vazia: o upload foi aceito, mas o banco não confirmou nada.
+        erros.push({
+          nome: "Inclusão no banco",
+          motivo:
+            "O banco não confirmou nenhum documento neste envio. Verifique o checklist e reenvie.",
+          participante: null,
+        });
+      }
     } catch (e) {
-      const motivo = sanitizarMensagemErro(e instanceof Error ? e.message : String(e));
-      erros.push({
-        nome: "Finalização dos documentos",
-        motivo,
-        participante: null,
-      });
+      const bruto = e instanceof Error ? e.message : String(e);
+      const motivo = /INT-007/i.test(bruto)
+        ? "Já existe um envio de documentos em andamento para esta oportunidade. Aguarde alguns segundos e tente novamente."
+        : sanitizarMensagemErro(bruto);
+      erros.push({ nome: "Finalização dos documentos", motivo, participante: null });
       try {
         await supabase.from("proposta_historico").insert({
           proposta_id: propostaId,
           tipo_evento: "erro_envio",
-          descricao: `Documentos enviados, mas a finalização no banco retornou erro: ${motivo}`,
+          descricao: `Documentos enviados, mas a inclusão no banco retornou erro: ${motivo}`,
           ator_id: userId,
         });
       } catch {
@@ -301,7 +398,6 @@ export async function enviarDocumentosBancoImpl({
     }
   }
 
-  // Auditoria.
   try {
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({

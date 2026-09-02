@@ -10,7 +10,7 @@ import {
   sanitizarMensagemErro,
   TIPO_BANCO_SANTANDER,
 } from "@/lib/simulacao/homefin.server";
-import { faltantesEnvolvido } from "./campos-obrigatorios";
+import { faltantesEnvolvido, ehProponenteEnviadoAoBanco } from "./campos-obrigatorios";
 import { msgCadastroIncompleto } from "./mensagens-envio";
 
 import { transicaoPermitida, type PropostaStatus } from "./state-machine";
@@ -821,11 +821,19 @@ async function garantirEnderecoParticipantes({
       ...dadosConjuge,
     };
 
-    // Validação OFICIAL baseada nos 25 campos obrigatórios
-    const faltantes = faltantesEnvolvido(env || {});
-    if (faltantes.length > 0) {
-      const msg = msgCadastroIncompleto(pb?.nome_banco ?? "banco", env || {}, faltantes);
-      throw new IntegracaoBancariaError(msg.texto);
+    // Validação OFICIAL baseada nos campos "S" do CreateParticipantRequest.
+    //
+    // Só vale para quem temos cadastrado localmente E que é proponente (CO/TI).
+    // Sem `env` não há o que validar nem o que completar — antes passávamos
+    // `{}` aqui, o que acusava os 25 campos como faltando e derrubava o envio
+    // de qualquer participante criado direto na oportunidade. O vendedor (VD)
+    // não é enviado por este fluxo e também não deve bloquear.
+    if (env && ehProponenteEnviadoAoBanco(env)) {
+      const faltantes = faltantesEnvolvido(env);
+      if (faltantes.length > 0) {
+        const msg = msgCadastroIncompleto(pb?.nome_banco ?? "banco", env, faltantes);
+        throw new IntegracaoBancariaError(msg.texto);
+      }
     }
 
     try {
@@ -896,9 +904,15 @@ async function enviarPropostaImplInner({
         ctxCheck,
       );
       const op = resp?.oportunidade ?? resp?.data ?? resp ?? {};
-      const situacao = String(
-        op?.tipoSituacao?.id ?? op?.tipoSituacao ?? op?.situacao ?? "",
-      ).toUpperCase();
+      // Comparávamos a string inteira com "C": um retorno como "Cancelada"
+      // escapava daqui e só era pego mais adiante, em
+      // `garantirEnderecoParticipantes`, que apenas LANÇA — com uma mensagem
+      // prometendo "será criada uma nova oportunidade" que nunca acontecia.
+      // Normalizando pela inicial, a recuperação abaixo volta a rodar.
+      const situacao = String(op?.tipoSituacao?.id ?? op?.tipoSituacao ?? op?.situacao ?? "")
+        .trim()
+        .toUpperCase()
+        .charAt(0);
 
       if (situacao === "C") {
         // CORREÇÃO: Em vez de apenas travar, tentamos criar uma oportunidade NOVA
@@ -1266,17 +1280,10 @@ async function enviarPropostaImplInner({
   };
 
   const enviados: EnviarResultado["bancos"] = [];
-  // Cache da oportunidade para evitar múltiplos GETs redundantes durante o loop de bancos.
-  const { data: opCache } = await supabase
-    .from("homefin_oportunidades")
-    .select("*")
-    .eq("proposta_id", propostaId)
-    .maybeSingle();
 
   for (const b of bancos as any[]) {
     // Sequencial de propósito (ver comentário acima): evita a condição de
     // corrida na inclusão de múltiplas propostas na mesma oportunidade.
-    // Passamos o opCache para que enviarBancoIntegracao não precise buscar novamente.
     const r = await enviarBancoIntegracao(b);
     enviados.push(r);
   }

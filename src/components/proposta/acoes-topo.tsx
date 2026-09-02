@@ -29,7 +29,7 @@ import {
   sincronizarProposta,
 } from "@/lib/propostas/propostas.functions";
 import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
-import { descreverParticipante } from "@/lib/propostas/campos-obrigatorios";
+import { descreverParticipante, proponentesPendentes } from "@/lib/propostas/campos-obrigatorios";
 import { bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
 import { TRANSICOES, type PropostaStatus } from "@/lib/propostas/state-machine";
 import { statusProposta } from "@/components/propostas/status";
@@ -69,16 +69,19 @@ export function AcoesTopo({
     (s) => s !== "cancelada",
   );
 
-  const pendencias = useMemo(() => {
-    const { faltantesEnvolvido } = require("@/lib/propostas/campos-obrigatorios");
-    return (envolvidos ?? [])
-      .map((env) => ({
-        env,
-        faltantes: faltantesEnvolvido(env || {}),
-        descrever: descreverParticipante(env || {}),
-      }))
-      .filter((p) => p.faltantes && p.faltantes.length > 0);
-  }, [envolvidos]);
+  // `require()` não existe no browser: essa chamada quebrava a tela inteira da
+  // proposta com "ReferenceError: require is not defined", derrubando o
+  // componente para o CatchBoundary. Como o erro acontecia na renderização, o
+  // efeito que abre o formulário de cadastro nunca rodava e o botão de enviar
+  // nunca aparecia — a proposta ficava parada em "aguardando envio".
+  const pendencias = useMemo(
+    () =>
+      proponentesPendentes(envolvidos ?? []).map((p) => ({
+        ...p,
+        descrever: descreverParticipante(p.env ?? {}),
+      })),
+    [envolvidos],
+  );
 
   const bloqueado = pendencias.length > 0;
 

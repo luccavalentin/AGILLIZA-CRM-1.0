@@ -838,7 +838,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
         const escolhido =
           simulados.find((b: any) => b.banco_id === escolhidoUsuarioId) ?? simulados[0];
         const bancoId = escolhido.banco_id as string;
-        const { proposta_id } = await criarProposta({
+        const { proposta_id, envolvido_pendente_id } = await criarProposta({
           data: { simulacao_id: id, banco_id: bancoId },
         });
 
@@ -863,14 +863,27 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
           }
         }
 
-        toast.success("Proposta criada. Complete o cadastro para enviar ao banco.");
         if (f.cliente_id) {
-          router.navigate({
-            to: "/operacional/propostas/$id",
-            params: { id: proposta_id },
-            search: { complementar: 1 },
-          });
+          // Só abrimos o formulário de participante quando a API realmente
+          // precisa de algo que a tela de proposta não coletou. Estando tudo
+          // completo, `complementar: 1` manda direto ao banco.
+          if (envolvido_pendente_id) {
+            toast.success("Proposta criada. Complete o cadastro para enviar ao banco.");
+            router.navigate({
+              to: "/operacional/propostas/$id",
+              params: { id: proposta_id },
+              search: { abrir_cadastro: envolvido_pendente_id },
+            });
+          } else {
+            toast.success("Proposta criada. Enviando ao banco…");
+            router.navigate({
+              to: "/operacional/propostas/$id",
+              params: { id: proposta_id },
+              search: { complementar: 1 },
+            });
+          }
         } else {
+          toast.success("Proposta criada. Complete o cadastro para enviar ao banco.");
           router.navigate({
             to: "/crm/clientes/novo",
             search: { proposta: proposta_id, enviar: 1 },

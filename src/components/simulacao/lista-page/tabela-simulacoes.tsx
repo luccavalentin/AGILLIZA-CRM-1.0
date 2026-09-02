@@ -4,7 +4,8 @@
  * no componente pai via `handlers`.
  */
 import { Link } from "@tanstack/react-router";
-import { Calculator, Eye, Undo2, User as UserIcon } from "lucide-react";
+import { Calculator, Eye, Undo2, User as UserIcon, Users2 } from "lucide-react";
+import { ConjugeDaLinha } from "./conjuge-da-linha";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -62,7 +63,7 @@ export function TabelaSimulacoes({
             <TableHead className="h-10 w-[100px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
               Número
             </TableHead>
-            <TableHead className="h-10 min-w-[150px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+            <TableHead className="h-10 min-w-[210px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
               Cliente
             </TableHead>
             <TableHead className="h-10 w-[70px] text-[12px] font-bold uppercase tracking-wider text-muted-foreground px-2">
@@ -158,10 +159,25 @@ export function TabelaSimulacoes({
                   </div>
                 </TableCell>
 
-                <TableCell className="py-3 px-2 font-medium text-foreground transition-colors group-hover/row:text-primary min-w-[150px]">
+                <TableCell className="py-3 px-2 font-medium text-foreground transition-colors group-hover/row:text-primary min-w-[210px]">
                   <p className="truncate text-[13px] font-bold leading-tight">
                     {s.nome_cliente ?? "—"}
                   </p>
+                  {/* Crachá curto para não truncar; o nome do cônjuge vai na
+                      linha de baixo, onde cabe inteiro. */}
+                  {s.teste_casal && (
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary ring-1 ring-inset ring-primary/20">
+                      <Users2 className="h-3 w-3 shrink-0" />
+                      Testagem de casal
+                    </span>
+                  )}
+                  {s.nome_conjuge && (
+                    <ConjugeDaLinha
+                      nome={s.nome_conjuge}
+                      irmaId={s.teste_casal ? (s.irma_teste_casal_id ?? null) : null}
+                      onAbrirIrma={handlers.onVer}
+                    />
+                  )}
                   {escopo === "todas" && s.nome_responsavel && (
                     <span className="mt-1 flex items-center gap-1 text-[11px] font-medium text-muted-foreground leading-none">
                       <UserIcon className="h-3 w-3 shrink-0" />
