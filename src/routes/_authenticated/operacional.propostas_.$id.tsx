@@ -71,7 +71,10 @@ function PropostaRoute() {
   const enviouAutoRef = React.useRef(false);
 
   // 3. Handlers de dados (memoized)
-  const envolvidos = data?.envolvidos ?? [];
+  // Sem o memo, `envolvidos` é um array novo a cada render e derruba a
+  // identidade de todo callback que depende dele — inclusive o efeito de
+  // envio automático, que passava a rodar repetidamente.
+  const envolvidos = React.useMemo(() => data?.envolvidos ?? [], [data?.envolvidos]);
   const bancos = data?.bancos ?? [];
 
   const onCadastroIncompleto = React.useCallback(
@@ -159,7 +162,11 @@ function PropostaRoute() {
           onCadastroIncompleto: onCadastroIncompleto,
         });
 
-        if (r) {
+        // Só fecha o formulário quando o envio realmente aconteceu. Com o
+        // cadastro ainda incompleto o hook devolve `cadastro_incompleto` e já
+        // reabriu o modal no participante pendente — fechar aqui esconderia
+        // justamente o que falta preencher.
+        if (r && !(r as any).cadastro_incompleto) {
           setParticipanteModal(null);
         }
       } catch (e: any) {
@@ -245,7 +252,11 @@ function PropostaRoute() {
           onCadastroIncompleto,
         });
       } catch {
-        enviouAutoRef.current = false;
+        // A trava NÃO é liberada aqui de propósito. Liberá-la fazia o efeito
+        // reenviar assim que qualquer dependência mudasse — e como o
+        // cronômetro do envio muda o estado a cada segundo, virava um laço de
+        // chamadas reais ao banco. O reenvio manual continua disponível nos
+        // botões da própria ficha.
       }
     })();
   }, [complementar, id, router, handleEnviarHook, envolvidos, onCadastroIncompleto]);
