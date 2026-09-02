@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -294,11 +293,6 @@ function Pagina() {
   }
 
   const itens = data?.itens ?? [];
-  // Simulação em "enviando" quer dizer banco assíncrono (Santander) ainda
-  // sem resposta. Enquanto houver alguma na lista, pedimos a reconciliação —
-  // antes ela só era disparada no envio, e a linha ficava em "Em análise"
-  // para sempre mesmo com a parcela já pronta na HomeFin.
-  useReconciliacaoAutomatica(itens.some((s: any) => s?.status === "enviando"));
   const kpiTotal = data?.total ?? itens.length;
   const kpiValor =
     data?.stats?.volumeTotal ??
