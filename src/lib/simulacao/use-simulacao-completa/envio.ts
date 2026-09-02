@@ -898,14 +898,11 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
       }
     }
 
+    // Basta publicar a simulação principal: `obterSimulacao` carrega as irmãs
+    // do mesmo `agrupador_id` e devolve os bancos de todas, etiquetados por
+    // prazo. O que faltava não era um segundo id na tela — era a original
+    // carregar o agrupador, que ela só ganha ao ter irmãs (ver `criarSimulacao`).
     ctx.setSimulacaoResultadoId(id);
-    if (agrupador_id) {
-      // No modo simples com múltiplos prazos/sistemas, a UI exibe via agrupador.
-      // O hook já deve ter lógica para lidar com isso ou buscar as irmãs.
-      if (f.prazo_2) {
-        // Marcamos a primeira como principal, a UI se encarrega de agrupar.
-      }
-    }
     setEnviando(false);
     setConcluidos(0);
     toast.success("Simulação realizada. Os retornos dos bancos estão sendo processados.");

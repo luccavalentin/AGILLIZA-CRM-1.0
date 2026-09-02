@@ -272,9 +272,14 @@ export function ComparativoBancos({
                     valor={
                       b.prazo_pagamento_max != null
                         ? `${b.prazo_pagamento_max}m`
-                        : s.prazo != null
-                          ? `${s.prazo}m`
-                          : "—"
+                        : // `_prazo` é o prazo da simulação a que ESTE banco pertence.
+                          // Sem `_prazo` a linha herdava o prazo da simulação aberta: num
+                          // comparativo de dois prazos, as duas linhas mostravam o mesmo número.
+                          b._prazo != null
+                          ? `${b._prazo}m`
+                          : s.prazo != null
+                            ? `${s.prazo}m`
+                            : "—"
                     }
                   />
                   <MobileStat rotulo="Financiado" valor={totalBancoTexto(b)} />
@@ -443,8 +448,10 @@ export function ComparativoBancos({
                     </TableCell>
 
                     <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap">
-                      {b.prazo_pagamento_max ?? s.prazo ?? "—"}
-                      {b.prazo_pagamento_max || s.prazo ? "m" : ""}
+                      {/* `_prazo`: o prazo da simulação deste banco. Sem ele, num
+                          comparativo de dois prazos as duas linhas exibiam o mesmo. */}
+                      {b.prazo_pagamento_max ?? b._prazo ?? s.prazo ?? "—"}
+                      {b.prazo_pagamento_max || b._prazo || s.prazo ? "m" : ""}
                     </TableCell>
                     <TableCell className="py-3 text-right text-sm font-medium tabular-nums whitespace-nowrap">
                       {totalBancoTexto(b)}
