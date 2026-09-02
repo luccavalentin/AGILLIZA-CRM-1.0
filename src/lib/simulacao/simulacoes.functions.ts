@@ -1160,50 +1160,100 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
         .eq("id", userId)
         .maybeSingle();
 
-      let query = supabase
-        .from("simulacoes")
-        .select(
-          "id, numero_simulacao, nome_cliente, cliente_id, cpf_cnpj, nome_conjuge, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id",
-          { count: "exact" },
-        );
+      const COLUNAS_LISTA =
+        "id, numero_simulacao, nome_cliente, cliente_id, cpf_cnpj, nome_conjuge, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id";
 
-      if (me?.correspondente_id) {
-        query = query.eq("correspondente_id", me.correspondente_id);
-      }
-
-      if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
-      else query = query.is("deleted_at", null);
-
+      // Clientes vinculados: resolvido antes para que os filtros possam ser
+      // aplicados a mais de uma consulta sem repetir a ida ao banco.
+      let idsVinculados: string[] = [];
       if (data.escopo === "minhas") {
         const { data: vinc } = await supabase
           .from("cliente_parceiros")
           .select("cliente_id")
           .eq("parceiro_id", userId);
-        const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
-        const partes = [`usuario_criador_id.eq.${userId}`, `usuario_responsavel_id.eq.${userId}`];
-        if (ids.length) partes.push(`cliente_id.in.(${ids.join(",")})`);
-        query = query.or(partes.join(","));
-      }
-      if (data.responsavel) query = query.eq("usuario_criador_id", data.responsavel);
-      if (data.status) query = query.eq("status", data.status as any);
-      if (data.desde) query = query.gte("created_at", data.desde);
-      if (data.ate) query = query.lte("created_at", `${data.ate}T23:59:59.999-03:00`);
-      if (data.q) {
-        const digitos = data.q.replace(/\D/g, "");
-        const filtros = [`numero_simulacao.ilike.%${data.q}%`, `nome_cliente.ilike.%${data.q}%`];
-        if (digitos.length >= 3) filtros.push(`cpf_cnpj.ilike.%${digitos}%`);
-        query = query.or(filtros.join(","));
+        idsVinculados = Array.from(
+          new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)),
+        ) as string[];
       }
 
-      // Pega o count real com TODOS os filtros aplicados antes de paginar
-      const { count, error: errCount } = await query;
-      if (errCount) throw new Error(errCount.message);
+      /** Aplica os filtros da tela a qualquer consulta sobre `simulacoes`. */
+      const aplicarFiltros = (q: any) => {
+        if (me?.correspondente_id) q = q.eq("correspondente_id", me.correspondente_id);
+        if (data.apenas_excluidas) q = q.not("deleted_at", "is", null);
+        else q = q.is("deleted_at", null);
+        if (data.escopo === "minhas") {
+          const partes = [`usuario_criador_id.eq.${userId}`, `usuario_responsavel_id.eq.${userId}`];
+          if (idsVinculados.length) partes.push(`cliente_id.in.(${idsVinculados.join(",")})`);
+          q = q.or(partes.join(","));
+        }
+        if (data.responsavel) q = q.eq("usuario_criador_id", data.responsavel);
+        if (data.status) q = q.eq("status", data.status as any);
+        if (data.desde) q = q.gte("created_at", data.desde);
+        if (data.ate) q = q.lte("created_at", `${data.ate}T23:59:59.999-03:00`);
+        if (data.q) {
+          const digitos = data.q.replace(/\D/g, "");
+          const filtros = [`numero_simulacao.ilike.%${data.q}%`, `nome_cliente.ilike.%${data.q}%`];
+          if (digitos.length >= 3) filtros.push(`cpf_cnpj.ilike.%${digitos}%`);
+          q = q.or(filtros.join(","));
+        }
+        return q;
+      };
 
-      const { data: rows, error: errRows } = await query
-        .order("created_at", { ascending: false })
-        .range(from, to);
+      // ----------------------------------------------------------------
+      // Paginação POR GRUPO.
+      //
+      // Antes a página trazia N linhas cruas e só então agrupava: a tela
+      // exibia menos itens do que o total prometia, e um grupo que caísse na
+      // fronteira entre páginas aparecia partido. Quando a simulação original
+      // passou a carregar `agrupador_id`, cada comparativo virou uma linha só
+      // e o buraco cresceu — daí a sensação de simulação sumida da lista.
+      //
+      // Agora as chaves de grupo são levantadas primeiro, a fatia da página é
+      // feita sobre elas e só então buscamos as linhas completas. O total
+      // passa a contar grupos, que é o que a tela de fato exibe.
+      // ----------------------------------------------------------------
+      const chaveDoGrupo = (r: any) =>
+        r.agrupador_id && r.cliente_id ? `g:${r.agrupador_id}:${r.cliente_id}` : `i:${r.id}`;
 
-      if (errRows) throw new Error(errRows.message);
+      const ordemGrupos: string[] = [];
+      const idsPorGrupo = new Map<string, string[]>();
+      const LOTE = 1000; // teto de linhas por resposta do PostgREST
+      const MAX_LOTES = 25; // 25 mil simulações; além disso a lista precisaria de cursor
+      for (let lote = 0; lote < MAX_LOTES; lote++) {
+        const ini = lote * LOTE;
+        const { data: chaves, error: errChaves } = await aplicarFiltros(
+          supabase.from("simulacoes").select("id, agrupador_id, cliente_id, created_at"),
+        )
+          .order("created_at", { ascending: false })
+          .range(ini, ini + LOTE - 1);
+        if (errChaves) throw new Error(errChaves.message);
+        for (const r of chaves ?? []) {
+          const k = chaveDoGrupo(r);
+          const atual = idsPorGrupo.get(k);
+          if (atual) atual.push((r as any).id);
+          else {
+            idsPorGrupo.set(k, [(r as any).id]);
+            ordemGrupos.push(k);
+          }
+        }
+        if (!chaves || chaves.length < LOTE) break;
+      }
+
+      const totalGrupos = ordemGrupos.length;
+      const idsDaPagina = ordemGrupos
+        .slice(from, to + 1)
+        .flatMap((k) => idsPorGrupo.get(k) ?? []);
+
+      let rows: any[] = [];
+      if (idsDaPagina.length) {
+        const { data: completas, error: errRows } = await supabase
+          .from("simulacoes")
+          .select(COLUNAS_LISTA)
+          .in("id", idsDaPagina)
+          .order("created_at", { ascending: false });
+        if (errRows) throw new Error(errRows.message);
+        rows = completas ?? [];
+      }
 
       // Agrupamento Visual (apenas se solicitado pela UI, mas o servidor prepara a estrutura)
       // O requisito pede agrupar por (agrupador_id, cliente_id)
@@ -1262,7 +1312,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
         _multi_prazo: (r._prazos_distintos?.size ?? 0) > 1,
         _multi_sistema: (r._sistemas_distintos?.size ?? 0) > 1
       }));
-      const total = count ?? 0;
+      const total = totalGrupos;
 
       // Carrega bancos de TODAS as simulações paginadas para consolidar a exibição.
       const idsTodos = paginadas.flatMap((r: any) => [r.id, ...(r._agrupadas_ids || [])]);
@@ -1404,12 +1454,23 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       }) as SimulacaoListaItem[];
       // Carrega estatísticas totais (Volume e Prazo Médio) do banco de dados baseadas nos mesmos filtros,
       // já que itens.reduce() só pega os itens da página atual (limit 50).
-      const { data: stats } = await query.select("valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo");
-      const totalVolume = (stats ?? []).reduce(
-        (acc, s) => acc + (Number(s.valor_financiamento) || 0) + (s.fg_financiar_despesas ? (Number(s.valor_despesas_financiadas) || 0) : 0),
+      const { data: stats } = await aplicarFiltros(
+        supabase
+          .from("simulacoes")
+          .select(
+            "valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo",
+          ),
+      );
+      const totalVolume = ((stats ?? []) as any[]).reduce(
+        (acc: number, s: any) =>
+          acc +
+          (Number(s.valor_financiamento) || 0) +
+          (s.fg_financiar_despesas ? Number(s.valor_despesas_financiadas) || 0 : 0),
         0,
       );
-      const validPrazos = (stats ?? []).map((s) => Number(s.prazo)).filter((n) => n > 0);
+      const validPrazos = ((stats ?? []) as any[])
+        .map((s: any) => Number(s.prazo))
+        .filter((n: number) => n > 0);
       const totalPrazoMedio = validPrazos.length
         ? Math.round(validPrazos.reduce((a, b) => a + b, 0) / validPrazos.length)
         : 0;
