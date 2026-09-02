@@ -724,6 +724,30 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         });
       }
 
+      /**
+       * Devolve o agrupador do lote, gravando-o na simulação original na
+       * primeira vez que uma irmã é criada.
+       *
+       * As irmãs (segundo prazo, titular invertido) sempre nasceram com
+       * `agrupador_id = <id da original>`, mas a original ficava com o campo
+       * nulo. Como `obterSimulacoesPorAgrupador` filtra por igualdade, a busca
+       * encontrava só as irmãs: pedir 360 e 420 devolvia um prazo só.
+       *
+       * Só é chamada quando o lote realmente ganha irmãs — uma simulação
+       * sozinha continua com `agrupador_id` nulo, como antes.
+       */
+      let agrupadorDoLote: string | null = insert.agrupador_id ?? null;
+      const garantirAgrupadorNaOriginal = async (): Promise<string> => {
+        if (!agrupadorDoLote) {
+          agrupadorDoLote = sim.id;
+          await supabaseAdmin
+            .from("simulacoes")
+            .update({ agrupador_id: agrupadorDoLote })
+            .eq("id", sim.id);
+        }
+        return agrupadorDoLote;
+      };
+
       let id_secundario: string | undefined;
 
       // O comparativo de CPF agora roda SEMPRE para casados com dados mínimos do cônjuge.
@@ -781,7 +805,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           estado_civil_conjuge: dd.estado_civil ?? null,
 
           // Mantém vínculo via agrupador para que a UI saiba que são parte da mesma "comparação"
-          agrupador_id: insert.agrupador_id || sim.id,
+          agrupador_id: await garantirAgrupadorNaOriginal(),
         };
 
         // Se composição de renda ativa, garante que ambos levem a MESMA renda somada
@@ -901,7 +925,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
             ...insert,
             prazo: combo.prazo,
             sistema_amortizacao: combo.amortizacao,
-            agrupador_id: insert.agrupador_id || sim.id,
+            agrupador_id: await garantirAgrupadorNaOriginal(),
           };
           const { data: simP2, error: errorP2 } = await supabaseAdmin
             .from("simulacoes")
@@ -947,7 +971,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         }
       }
 
-      return { id: sim.id, numero_simulacao: sim.numero_simulacao, agrupador_id: insert.agrupador_id || sim.id };
+      // Devolve o agrupador só quando ele existe de fato. Antes devolvia
+      // `sim.id` mesmo sem irmãs, e o cliente ia buscar um grupo inexistente.
+      return { id: sim.id, numero_simulacao: sim.numero_simulacao, agrupador_id: agrupadorDoLote ?? undefined };
       } catch (e: any) {
         console.error("[criarSimulacao] Erro crítico:", e);
         console.error("[criarSimulacao] Stack:", e?.stack);

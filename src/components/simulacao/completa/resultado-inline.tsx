@@ -343,9 +343,11 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                               ? `${b.prazo_pagamento_max}m`
                               : b.prazo != null
                                 ? `${b.prazo}m`
-                                : s.prazo != null
-                                  ? `${s.prazo}m`
-                                  : "—"
+                                : b._prazo != null
+                                  ? `${b._prazo}m`
+                                  : s.prazo != null
+                                    ? `${s.prazo}m`
+                                    : "—"
                           }
                         />
                         <MobileStat rotulo="Total fin. (banco)" valor={totalBancoTexto(b)} />
@@ -501,8 +503,10 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                             {b.taxa_juros_ano != null ? formatTaxa(b.taxa_juros_ano) : "—"}
                           </TableCell>
                           <TableCell className="px-2 py-2 text-right tabular-nums whitespace-nowrap">
-                            {b.prazo_pagamento_max ?? b.prazo ?? s.prazo ?? "—"}
-                            {b.prazo_pagamento_max || b.prazo || s.prazo ? "m" : ""}
+                            {/* `_prazo` antes de `s.prazo`: cada linha mostra o prazo da
+                                simulação a que pertence, não o da simulação aberta. */}
+                            {b.prazo_pagamento_max ?? b.prazo ?? b._prazo ?? s.prazo ?? "—"}
+                            {b.prazo_pagamento_max || b.prazo || b._prazo || s.prazo ? "m" : ""}
                           </TableCell>
                           <TableCell className="px-2 py-2 text-right font-semibold tabular-nums whitespace-nowrap">
                             {totalBancoTexto(b)}
