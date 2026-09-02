@@ -8,11 +8,10 @@ import {
 } from "@/lib/simulacao/renda";
 import { validarCamposSimulacao } from "@/lib/simulacao/campos-obrigatorios";
 import { completaSchema } from "@/lib/simulacao/schemas";
-import {
+import { 
   ehCasado,
-  prazoMaximoParaProponentes,
-  avaliarNovoPrazo,
-  modoTetoIdade,
+  prazoMaximoParaProponentes, 
+  avaliarNovoPrazo, 
   type MotivoLimitador
 } from "@/lib/simulacao/prazo";
 import { obterConfiguracoesModulos } from "@/lib/admin/configuracoes-modulos.functions";
@@ -121,12 +120,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   });
 
   /**
-   * O teto de prazo olha todos os proponentes — titular, cônjuge e
-   * participantes. Considerar só o titular exibia um teto maior do que o banco
+   * O teto de prazo é ditado pelo proponente MAIS VELHO — titular, cônjuge ou
+   * participante. Considerar só o titular exibia um teto maior do que o banco
    * aceita, e o servidor acabava reduzindo o prazo depois do envio.
-   *
-   * Qual deles dita o teto depende de "compor renda": marcado, vale o mais
-   * velho; desmarcado, vale o mais novo.
    */
   const dadosProponentes = useMemo(
     () => [
@@ -157,11 +153,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       f.participantes,
     ],
   );
-  const compoeRendaConjuge = Boolean(f.compoe_renda && f.compoe_renda_conjuge);
-  const analisePrazo = useMemo(
-    () => prazoMaximoParaProponentes(dadosProponentes, new Date(), modoTetoIdade(compoeRendaConjuge)),
-    [dadosProponentes, compoeRendaConjuge],
-  );
+  const analisePrazo = useMemo(() => prazoMaximoParaProponentes(dadosProponentes), [dadosProponentes]);
   const maxPrazoIdade = analisePrazo?.prazo;
   const limitadorPrazo = analisePrazo?.limitador;
   const isHomeEquity = f.produto === "home_equity";

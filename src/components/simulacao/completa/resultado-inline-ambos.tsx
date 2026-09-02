@@ -193,20 +193,6 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
     iniciarStatusEnvio(bancoId);
     setCriandoBanco(bancoId);
 
-    // A proposta é criada antes da validação do cadastro, então ela existe
-    // mesmo quando o envio não vai adiante. Guardamos o id fora do retorno do
-    // hook para não deixar a tela parada com uma proposta órfã.
-    let propostaCriadaId: string | undefined;
-
-    const irParaProposta = (id: string, complementar: boolean) => {
-      if (router.state.location.pathname.includes(`/propostas/${id}`)) return;
-      router.navigate({
-        to: "/operacional/propostas/$id",
-        params: { id },
-        ...(complementar ? { search: { complementar: 1 } } : {}),
-      });
-    };
-
     try {
       // 2. Chama o hook centralizado
       const res = await handleEnviarHook({
@@ -218,24 +204,20 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
               banco_id: bancoId,
             },
           });
-          propostaCriadaId = proposta_id;
           return { proposta_id };
         },
       });
 
-      const propostaId = (res as any)?.proposta_id ?? propostaCriadaId;
-      if (!propostaId) return;
-
-      if ((res as any)?.cadastro_incompleto) {
-        toast.info("Complete o cadastro do participante para enviar ao banco.");
-        irParaProposta(propostaId, true);
-        return;
+      if (res?.proposta_id) {
+        if (!router.state.location.pathname.includes(`/propostas/${res.proposta_id}`)) {
+          router.navigate({
+            to: "/operacional/propostas/$id",
+            params: { id: res.proposta_id },
+          });
+        }
       }
-
-      irParaProposta(propostaId, false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível enviar ao banco.");
-      if (propostaCriadaId) irParaProposta(propostaCriadaId, false);
+      // Erros gerenciados pelo hook
     } finally {
       setCriandoBanco(null);
     }

@@ -67,9 +67,7 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         }))
       ];
 
-      // Simula o cenário COM composição de renda do cônjuge — é o que o
-      // operador está prestes a confirmar —, então o teto é pelo mais velho.
-      const resNovo = prazoMaximoParaProponentes(proponentesAtuais, new Date(), "mais_velho");
+      const resNovo = prazoMaximoParaProponentes(proponentesAtuais);
       const prazoNovo = resNovo?.prazo ?? PRAZO_MAX;
       const prazoAtual = ctx.maxPrazoIdade ?? PRAZO_MAX;
 
@@ -114,9 +112,7 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       }))
     ];
 
-    // Este caminho só roda com a composição de renda já ligada, então o teto
-    // é pelo mais velho.
-    const resNovo = prazoMaximoParaProponentes(proponentesAtuais, new Date(), "mais_velho");
+    const resNovo = prazoMaximoParaProponentes(proponentesAtuais);
     const prazoNovo = resNovo?.prazo ?? PRAZO_MAX;
     const prazoAtual = ctx.maxPrazoIdade ?? PRAZO_MAX;
 

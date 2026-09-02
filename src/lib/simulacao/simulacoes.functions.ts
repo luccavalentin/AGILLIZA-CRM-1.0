@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { completaSchema, mapEstadoCivilEnum } from "./schemas";
 import { humanizarErroBanco } from "./bank-error-humanizer";
-import { ajustarPrazoPorIdade, modoTetoIdade } from "./prazo";
+import { ajustarPrazoPorIdade } from "./prazo";
 
 /** ===== Tipos de saída ===== */
 export interface BancoAtivo {
@@ -305,9 +305,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       const casado = dd.estado_civil === "CA" || dd.estado_civil === "UE" || dd.estado_civil === "casado" || dd.estado_civil === "uniao_estavel";
       // NORMALIZAÇÃO DE PRAZO ANTES DO INSERT (SERVER-SIDE DETERMINISTIC)
       const { prazoMaximoParaProponentes } = await import("./prazo");
-      // O cônjuge entra no teto de idade componha ele renda ou não — assina o
-      // contrato de qualquer forma. O que muda é QUEM dita o teto: com
-      // composição de renda, o mais velho; sem composição, o mais novo.
+      // O teto de idade olha o proponente mais velho, componha ele renda ou
+      // não: o cônjuge assina o contrato de qualquer forma, e o banco recusa
+      // o prazo pela idade dele.
       const proponentesParaTeto = [
         { nome: dd.nome_cliente || "Titular", vinculo: "Titular", dataNascimento: dd.data_nascimento },
         ...(dd.data_nascimento_conjuge ? [{ nome: dd.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: dd.data_nascimento_conjuge }] : []),
@@ -317,12 +317,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           dataNascimento: p.data_nascimento
         }))
       ];
-      const compoeRendaConjugeTeto = Boolean(dd.compoe_renda) && dd.compoe_renda_conjuge !== false;
-      const analiseTeto = prazoMaximoParaProponentes(
-        proponentesParaTeto,
-        new Date(),
-        modoTetoIdade(compoeRendaConjugeTeto),
-      );
+      const analiseTeto = prazoMaximoParaProponentes(proponentesParaTeto);
       const tetoEfetivo = analiseTeto?.prazo ?? 420;
       
       const prazoNormalizado = Math.min(Number(dd.prazo) || 420, tetoEfetivo);
@@ -698,10 +693,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         const analiseInvertida = ajustarPrazoPorIdade(
           dd.prazo || 0,
           { nome: dd.nome_conjuge!, dataNascimento: dd.data_nascimento_conjuge! },
-          [{ nome: dd.nome_cliente!, vinculo: "cônjuge", dataNascimento: dd.data_nascimento! }],
-          // Mesma regra da simulação original: sem composição de renda, o teto
-          // é contado pelo proponente mais novo.
-          modoTetoIdade(compoeRendaConjugeTeto),
+          [{ nome: dd.nome_cliente!, vinculo: "cônjuge", dataNascimento: dd.data_nascimento! }]
         );
         
         const prazoEfetivo = analiseInvertida.prazo;
