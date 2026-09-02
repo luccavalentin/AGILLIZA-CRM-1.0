@@ -39,13 +39,6 @@ export function useEnviarProposta() {
   const [statusPorBanco, setStatusPorBanco] = useState<Record<string, StatusEnvioBanco>>({});
   const [busyBancoId, setBusyBancoId] = useState<string | null>(null);
   const clickLock = useRef<Record<string, boolean>>({});
-  /**
-   * Espelho síncrono de `statusPorBanco`. O cronômetro do envio atualiza o
-   * estado a cada segundo; se `enviar` dependesse do estado, ganharia uma
-   * identidade nova por segundo e todo `useEffect` que o observa dispararia de
-   * novo — foi o que fazia a tela de proposta reenviar em laço.
-   */
-  const statusRef = useRef<Record<string, StatusEnvioBanco>>({});
 
   const enviarFnDefault = useServerFn(enviarPropostaHomeFin);
   const ressincronizarFn = useServerFn(ressincronizarDadosParticipantes);
@@ -56,10 +49,6 @@ export function useEnviarProposta() {
   );
 
   const atualizarStatus = useCallback((bancoId: string, patch: Partial<StatusEnvioBanco>) => {
-    statusRef.current = {
-      ...statusRef.current,
-      [bancoId]: { ...(statusRef.current[bancoId] || { bancoId, status: "idle" }), ...patch },
-    };
     setStatusPorBanco((prev) => ({
       ...prev,
       [bancoId]: { ...(prev[bancoId] || { bancoId, status: "idle" }), ...patch },
@@ -105,7 +94,7 @@ export function useEnviarProposta() {
       setBusyBancoId(bancoId);
 
       // Inicia status se ainda não foi iniciado manualmente
-      if (!statusRef.current[bancoId] || statusRef.current[bancoId].status !== "loading") {
+      if (!statusPorBanco[bancoId] || statusPorBanco[bancoId].status !== "loading") {
         iniciarStatus(bancoId);
       }
 
@@ -183,11 +172,7 @@ export function useEnviarProposta() {
           });
 
           onCadastroIncompleto?.(pendencias[0].env);
-          // Devolve a proposta criada mesmo sem envio. Antes retornava
-          // `undefined`, e a tela de simulação — que não passa
-          // `onCadastroIncompleto` — não tinha como saber que a proposta já
-          // existia e ficava parada, sem abrir o cadastro complementar.
-          return { cadastro_incompleto: true, proposta_id: currentPropostaId, campos };
+          return;
         }
 
         // 4. Simulação (etapa 4 de 6)
@@ -255,11 +240,10 @@ export function useEnviarProposta() {
         throw e;
       }
     },
-    [enviarFnDefault, ressincronizarFn, qc, atualizarStatus, iniciarStatus],
+    [enviarFnDefault, ressincronizarFn, qc, atualizarStatus, iniciarStatus, statusPorBanco],
   );
 
   const limparStatus = useCallback(() => {
-    statusRef.current = {};
     setStatusPorBanco({});
     clickLock.current = {};
   }, []);
