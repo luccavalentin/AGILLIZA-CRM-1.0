@@ -1,3 +1,4 @@
+import { validarCpfCnpj } from "@/lib/simulacao/format";
 import type { Form, Banco } from "./state";
 
 /**
@@ -161,7 +162,47 @@ export const REGRAS_PJ = {
   pctDespesas: 5,
 } as const;
 
+/**
+ * Pessoa jurídica está bloqueada para simular.
+ *
+ * O `POST /integracao` do Bradesco devolve `INT-006 ... falhou: undefined` em
+ * 100% dos envios PJ — sem código de recusa, ao contrário da PF, que recebe
+ * respostas normais ("121-L", "422 ...") no mesmo minuto. `undefined` é a
+ * integração quebrando, não o banco negando. Enquanto isso não se resolve do
+ * lado da HomeFin, o formulário não dispara consulta em PJ.
+ *
+ * Para reabrir: troque para `false`. O resto do fluxo PJ (modalidade
+ * persistida, trava de banco, participante jurídico) continua no lugar.
+ */
+export const PJ_SIMULACAO_BLOQUEADA = true;
+
+/** Texto exibido na tela e no bloqueio de envio quando a modalidade é PJ. */
+export const MSG_PJ_EM_CONSTRUCAO =
+  "Aguarde fluxo em construção! Ainda não é permitido simular aqui!";
+
 /** Dos bancos disponíveis, os que operam pessoa jurídica. */
 export function bancosQueOperamPJ<T extends BancoRef & { id: string }>(bancos: T[]): T[] {
   return (bancos ?? []).filter((b) => isBradesco(b));
+}
+
+/** `true` quando o banco opera pessoa jurídica. Hoje: só o Bradesco. */
+export function bancoOperaPJ(b: BancoRef): boolean {
+  return isBradesco(b);
+}
+
+/**
+ * Modalidade do titular a partir do documento. Só decide quando o documento
+ * está completo E é válido: 11 dígitos com CPF válido é PF, 14 com CNPJ
+ * válido é PJ. Qualquer outra coisa devolve `null` e a modalidade escolhida
+ * na tela continua valendo.
+ *
+ * A exigência de validade não é preciosismo: digitando um CNPJ, o campo passa
+ * por 11 dígitos no meio do caminho. Sem o dígito verificador a modalidade
+ * piscaria para PF nesse instante.
+ */
+export function modalidadePeloDocumento(doc: unknown): "PF" | "PJ" | null {
+  const digitos = String(doc ?? "").replace(/\D/g, "");
+  if (digitos.length !== 11 && digitos.length !== 14) return null;
+  if (!validarCpfCnpj(digitos)) return null;
+  return digitos.length === 14 ? "PJ" : "PF";
 }
