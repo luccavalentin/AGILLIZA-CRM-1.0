@@ -12,7 +12,6 @@ import {
   inverterTitularSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
-import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoricoTimeline } from "@/components/simulacao/detalhe-page/historico-timeline";
@@ -33,7 +32,6 @@ function Pagina() {
   const { id } = Route.useParams();
   const router = useRouter();
   const qc = useQueryClient();
-  const { enviar: handleEnviarHook } = useEnviarProposta();
   const [pdfDialogAberto, setPdfDialogAberto] = useState(false);
   const [detalhePdfAberto, setDetalhePdfAberto] = useState(false);
   const [reenviandoBanco, setReenviandoBanco] = useState<string | null>(null);
@@ -199,16 +197,9 @@ function Pagina() {
         data: { simulacao_id: id, simulacao_banco_id: simulacaoBancoId },
       });
       // O envio ao banco passa obrigatoriamente pelo gate único
-      // (useEnviarProposta), que ressincroniza o cadastro, valida os campos
-      // obrigatórios e abre o formulário quando faltar algo.
-      try {
-        await handleEnviarHook({
-          propostaId: proposta_id,
-          bancoId: bancoId ?? "todos", // Passa o ID do banco ou "todos" se não houver
-        });
-      } catch {
-        /* mensagem já exibida pelo gate */
-      }
+      // (useEnviarProposta). Ele é disparado UMA vez, pela própria ficha da
+      // proposta, ao receber `complementar: 1` — chamar o gate aqui também
+      // fazia a mesma proposta ser enviada duas vezes ao banco.
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: proposta_id },
