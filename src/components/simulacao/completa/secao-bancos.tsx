@@ -10,10 +10,13 @@ import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-complet
 type Banco = NonNullable<SimulacaoCompletaCtx["bancos"]>[number];
 
 export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
-  const { f, set, erros, bancos, aceitaPrice, aceitaBancoNaOperacao, restricaoEspecial, toggleBanco, isHomeEquity } =
+  const { f, set, erros, bancos: todosBancos, bancosDisponiveis, isPJ, aceitaPrice, aceitaBancoNaOperacao, restricaoEspecial, toggleBanco, isHomeEquity } =
     ctx;
 
   const modoAmbos = f.sistema_amortizacao === "B";
+
+  // Em PJ só o Bradesco opera — os demais nem aparecem para seleção.
+  const bancos = bancosDisponiveis ?? todosBancos;
 
   function renderCards(lista: Banco[], selecionados: string[], filtroSistema: "S" | "P" | null) {
     return (
