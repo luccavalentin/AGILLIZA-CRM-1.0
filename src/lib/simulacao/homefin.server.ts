@@ -245,42 +245,60 @@ export async function chamarIntegracao<T = unknown>(
   const queuedAt = performance.now();
   const isAuth = endpoint.startsWith("/auth");
   const isDominio = endpoint.includes("/dominios");
-  const isIntegracao = endpoint.includes("/integracao");
-  
-  // Elevar limite para 3 e garantir que funciona como fila global
-  const CONCURRENCY_LIMIT = 3;
+
+  /**
+   * DUAS FAIXAS, NÃO UMA.
+   *
+   * Havia uma fila única de 3 vagas para tudo que não fosse `/auth` ou
+   * `/dominios`. Só que o `GET /oportunidade/{id}` da reconciliação é 95% de
+   * todo o tráfego (medido: 6.888 de 7.214 chamadas em 6h) — ele lotava as 3
+   * vagas e os POSTs que fazem o trabalho de verdade ficavam na fila atrás de
+   * consultas de acompanhamento. Era essa a lentidão: não é o banco que
+   * demora, é a vez que não chega.
+   *
+   * Agora consulta e escrita têm orçamentos separados e não competem entre si.
+   * O teto total sobe de 3 para 5 chamadas simultâneas, o que continua sendo
+   * um limite conservador para a API.
+   */
+  const ehConsultaDeAcompanhamento = method === "GET" && /^\/oportunidade\/[^/]+$/.test(endpoint);
+  const faixa = ehConsultaDeAcompanhamento ? "leitura" : "escrita";
+  const LIMITE = { leitura: 2, escrita: 3 } as const;
   const deveSerializar = !isAuth && !isDominio;
 
   if (deveSerializar) {
     const global = globalThis as any;
-    global._hfActiveCount = global._hfActiveCount || 0;
-    global._hfQueue = global._hfQueue || [];
+    const chaveAtivos = `_hfActive_${faixa}`;
+    const chaveFila = `_hfQueue_${faixa}`;
+    global[chaveAtivos] = global[chaveAtivos] || 0;
+    global[chaveFila] = global[chaveFila] || [];
 
     return new Promise<T>((resolve, reject) => {
       const task = async () => {
-        global._hfActiveCount++;
+        global[chaveAtivos]++;
         const startedAt = performance.now();
         const queue_wait_ms = (startedAt - queuedAt).toFixed(0);
-        console.info(`[SIM-PERF][API] ${method} ${endpoint} queue_wait_ms=${queue_wait_ms}`);
-        
+        console.info(
+          `[SIM-PERF][API] ${method} ${endpoint} faixa=${faixa} queue_wait_ms=${queue_wait_ms}`,
+        );
+
         try {
           const result = await executarChamada<T>(endpoint, method, body, ctx);
           resolve(result);
         } catch (e) {
           reject(e);
         } finally {
-          global._hfActiveCount--;
-          if (global._hfQueue.length > 0) {
-            const nextTask = global._hfQueue.shift();
+          global[chaveAtivos]--;
+          if (global[chaveFila].length > 0) {
+            const nextTask = global[chaveFila].shift();
             nextTask();
           }
         }
       };
 
-      if (global._hfActiveCount < CONCURRENCY_LIMIT) {
+      if (global[chaveAtivos] < LIMITE[faixa]) {
         task();
       } else {
-        global._hfQueue.push(task);
+        global[chaveFila].push(task);
       }
     });
   }
