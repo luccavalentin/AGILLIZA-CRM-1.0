@@ -965,6 +965,17 @@ export const criarSimulacao = createServerFn({ method: "POST" })
                     selecionado: true,
                   })),
                 );
+
+                // CHAMADA CRÍTICA (mesmo padrão usado acima para `simSec`):
+                // sem isto, a simulação-irmã do 2º prazo fica com
+                // `homefin_id_simulacao_banco` nulo para sempre — a
+                // reconciliação (`/api/public/reconciliar-simulacoes`) só
+                // resgata bancos que JÁ têm esse id, então essas linhas
+                // nunca saíam de "aguardando" (visível como "Em análise" na
+                // tela, e contando no total do overlay sem nunca concluir).
+                const { enviarSimulacaoBanco } = await import("./simulacoes.functions");
+                enviarSimulacaoBanco({ data: { simulacao_id: simP2.id, banco_ids: dd.bancos_ids } })
+                  .catch((e) => console.error("[HomeFin] Erro no envio automático da simulação (2º prazo):", e));
               }
             }
           }
