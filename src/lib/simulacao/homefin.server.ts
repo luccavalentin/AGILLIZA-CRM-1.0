@@ -70,6 +70,51 @@ export function sanitizarMensagemErro(msg: string | null | undefined): string {
   return msg;
 }
 
+/**
+ * Encolhe o corpo guardado no log das consultas de acompanhamento.
+ *
+ * O `GET /oportunidade/{id}` da reconciliação é ~95% das chamadas e devolve a
+ * oportunidade inteira (etapas, participantes, simulações). Guardar esse JSON
+ * completo a cada consulta gerou 1,2 GB de log — `proposta_logs_homefin`
+ * sozinha tem 731 MB para 58 mil linhas, ~12,8 KB por linha — e cada gravação
+ * acontece DENTRO da chamada, segurando a vaga da fila.
+ *
+ * Ninguém lê essa coluna: a única consulta feita sobre os logs é um `count`
+ * por `endpoint`/`status_http` em `sincronizarPropostaImpl`. Então, quando a
+ * consulta deu certo, guardamos um resumo em vez do corpo inteiro.
+ *
+ * Erro continua guardado por completo — é justamente quando o corpo importa.
+ */
+export function enxugarRespostaDeLog(
+  endpoint: string,
+  metodo: string,
+  status_http: number | undefined,
+  response: unknown,
+): unknown {
+  const ehConsultaDeAcompanhamento = metodo === "GET" && /^\/oportunidade\/[^/]+$/.test(endpoint);
+  const deuCerto = typeof status_http === "number" && status_http >= 200 && status_http < 300;
+  if (!ehConsultaDeAcompanhamento || !deuCerto || !response || typeof response !== "object") {
+    return response ?? null;
+  }
+  const r = response as Record<string, any>;
+  const op = r.oportunidade ?? r;
+  const etapas: any[] = Array.isArray(r.etapa) ? r.etapa : [];
+  const simulacoes: any[] = Array.isArray(r.simulacoes) ? r.simulacoes : [];
+  return {
+    _resumido: true,
+    tipoSituacao: op?.tipoSituacao ?? null,
+    codigoOportunidadeBanco: op?.codigoOportunidadeBanco ?? null,
+    etapaAtiva: etapas.find((e) => e?.active)?.nomeEtapa ?? null,
+    qtdEtapas: etapas.length,
+    qtdParticipantes: Array.isArray(r.participantes) ? r.participantes.length : null,
+    simulacoes: simulacoes.map((s) => ({
+      idSimulacao: s?.idSimulacao ?? null,
+      tipoSituacao: s?.tipoSituacao ?? null,
+      valorParcelaBanco: s?.valorParcelaBanco ?? null,
+    })),
+  };
+}
+
 async function registrarLog(entrada: {
   simulacao_id?: string | null;
   proposta_id?: string | null;
@@ -92,7 +137,12 @@ async function registrarLog(entrada: {
         metodo: entrada.metodo,
         status_http: entrada.status_http ?? null,
         request_masked: entrada.request ? (mascarar(entrada.request) as any) : null,
-        response: (entrada.response as any) ?? null,
+        response: enxugarRespostaDeLog(
+          entrada.endpoint,
+          entrada.metodo,
+          entrada.status_http,
+          entrada.response,
+        ) as any,
         erro: entrada.erro ?? null,
       });
       return;
@@ -104,7 +154,12 @@ async function registrarLog(entrada: {
       metodo: entrada.metodo,
       status_http: entrada.status_http ?? null,
       request_masked: entrada.request ? (mascarar(entrada.request) as any) : null,
-      response: (entrada.response as any) ?? null,
+      response: enxugarRespostaDeLog(
+          entrada.endpoint,
+          entrada.metodo,
+          entrada.status_http,
+          entrada.response,
+        ) as any,
       erro: entrada.erro ?? null,
     });
   } catch (e) {
