@@ -121,7 +121,21 @@ function Pagina() {
   const { data, isLoading } = useQuery({
     queryKey: ["simulacoes", escopo, busca, desde, ate, responsavel, verExcluidas, pagina],
     refetchOnWindowFocus: true,
-    refetchInterval: 5000,
+    // 5s fixos recarregavam a lista inteira o dia todo, mesmo com tudo parado.
+    // A consulta não é barata (agrupamento + bancos + perfis + lote da testagem
+    // de casal). Agora a cadência acompanha o que está acontecendo: rápida
+    // enquanto houver simulação em andamento, folgada quando não há.
+    refetchInterval: (query: any) => {
+      const itens: any[] = query?.state?.data?.itens ?? [];
+      const emAndamento = itens.some(
+        (s) =>
+          s?.status === "enviando" ||
+          s?.status === "parcialmente_simulada" ||
+          (Array.isArray(s?.bancos) &&
+            s.bancos.some((b: any) => b?.status_banco === "aguardando")),
+      );
+      return emAndamento ? 5000 : 30000;
+    },
     staleTime: 0,
     queryFn: () =>
       listarSimulacoes({

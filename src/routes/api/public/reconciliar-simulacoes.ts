@@ -60,6 +60,86 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
         const { chamarIntegracao } = await import("@/lib/simulacao/homefin.server");
         const { recalcularStatusSimulacao } = await import("@/lib/simulacao/simulacoes.functions");
 
+        // ---------------------------------------------------------------
+        // 0. RESGATE DAS IRMÃS NUNCA DESPACHADAS
+        //
+        // O despacho das simulações-irmãs (2º prazo / outro sistema) é
+        // fire-and-forget: `enviarSimulacaoBanco(...).catch(...)` sem await.
+        // Quando a resposta da requisição sai antes de essa chamada terminar,
+        // ela é abortada — e o resultado é intermitente: a mesma operação
+        // despacha a irmã às vezes sim, às vezes não.
+        //
+        // Essas linhas ficam com `homefin_id_simulacao_banco` NULO, e o
+        // resgate abaixo (item 1) as ignora justamente por exigir esse id.
+        // Ficavam presas em "Em análise" para sempre, sem nenhuma chamada
+        // de API — visível na tela como um prazo inteiro sem valores.
+        //
+        // Aqui elas são redespachadas. O critério evita mexer em rascunho
+        // que o usuário nunca mandou: só entra a simulação cujo AGRUPADOR
+        // já teve alguma irmã efetivamente enviada.
+        try {
+          const { data: orfas } = await supabaseAdmin
+            .from("simulacao_bancos")
+            .select("simulacao_id, simulacoes!inner(agrupador_id, ultimo_envio_em, homefin_id_oportunidade)")
+            .eq("status_banco", "aguardando")
+            .is("homefin_id_simulacao_banco", null)
+            .gte("created_at", limite24h_limpeza)
+            .limit(60);
+
+          const candidatas = new Map<string, string>(); // simulacao_id -> agrupador_id
+          for (const o of orfas ?? []) {
+            const s = (o as any).simulacoes;
+            // Sem agrupador não há lote; e se ela própria já foi enviada,
+            // o problema é outro (tratado no item 1).
+            if (!s?.agrupador_id || s.ultimo_envio_em) continue;
+            candidatas.set(String((o as any).simulacao_id), String(s.agrupador_id));
+          }
+
+          if (candidatas.size > 0) {
+            const agrupadores = Array.from(new Set(candidatas.values()));
+            const { data: enviadas } = await supabaseAdmin
+              .from("simulacoes")
+              .select("agrupador_id")
+              .in("agrupador_id", agrupadores)
+              .not("ultimo_envio_em", "is", null);
+            const lotesAtivos = new Set((enviadas ?? []).map((e: any) => String(e.agrupador_id)));
+
+            // `enviarSimulacaoBanco` é server fn com `requireSupabaseAuth` e
+            // esta rota é pública (autenticada por apikey, sem sessão). Vamos
+            // direto na camada de baixo, injetando o cliente admin — é o mesmo
+            // caminho que aquela server fn percorre depois do middleware.
+            // Teto por rodada. Havia 34 órfãs acumuladas quando isto foi
+            // escrito; despachar todas de uma vez seriam ~100 chamadas num
+            // único disparo, saturando a fila de concorrência (limite 3) e
+            // atrasando as simulações que o usuário está fazendo AGORA.
+            // Drenando de 5 em 5, o passivo some em poucas rodadas sem pico.
+            const MAX_REDESPACHOS_POR_RODADA = 5;
+            let redespachadas = 0;
+
+            const { enviarSimulacaoImpl } = await import("@/lib/simulacao/enviar.server");
+            for (const [simId, agrupador] of candidatas) {
+              if (redespachadas >= MAX_REDESPACHOS_POR_RODADA) break;
+              if (!lotesAtivos.has(agrupador)) continue; // lote nunca enviado: é rascunho mesmo
+              redespachadas++;
+              try {
+                // Com await: aqui estamos numa rota dedicada, não no caminho
+                // da resposta ao usuário — dá para esperar de verdade.
+                await enviarSimulacaoImpl({
+                  simulacaoId: simId,
+                  userId: null as unknown as string,
+                  ip: null,
+                  supabase: supabaseAdmin as any,
+                });
+                console.info(`[reconciliar] irmã redespachada: ${simId}`);
+              } catch (e) {
+                console.error(`[reconciliar] falha ao redespachar ${simId}:`, e);
+              }
+            }
+          }
+        } catch (e) {
+          console.error("[reconciliar] erro no resgate de irmãs não despachadas:", e);
+        }
+
         // 1. Localizar simulação_bancos presas em 'aguardando' criadas nas últimas 24h
         const { data: pendentes, error } = await supabaseAdmin
           .from("simulacao_bancos")

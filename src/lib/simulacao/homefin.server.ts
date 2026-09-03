@@ -70,6 +70,51 @@ export function sanitizarMensagemErro(msg: string | null | undefined): string {
   return msg;
 }
 
+/**
+ * Encolhe o corpo guardado no log das consultas de acompanhamento.
+ *
+ * O `GET /oportunidade/{id}` da reconciliação é ~95% das chamadas e devolve a
+ * oportunidade inteira (etapas, participantes, simulações). Guardar esse JSON
+ * completo a cada consulta gerou 1,2 GB de log — `proposta_logs_homefin`
+ * sozinha tem 731 MB para 58 mil linhas, ~12,8 KB por linha — e cada gravação
+ * acontece DENTRO da chamada, segurando a vaga da fila.
+ *
+ * Ninguém lê essa coluna: a única consulta feita sobre os logs é um `count`
+ * por `endpoint`/`status_http` em `sincronizarPropostaImpl`. Então, quando a
+ * consulta deu certo, guardamos um resumo em vez do corpo inteiro.
+ *
+ * Erro continua guardado por completo — é justamente quando o corpo importa.
+ */
+export function enxugarRespostaDeLog(
+  endpoint: string,
+  metodo: string,
+  status_http: number | undefined,
+  response: unknown,
+): unknown {
+  const ehConsultaDeAcompanhamento = metodo === "GET" && /^\/oportunidade\/[^/]+$/.test(endpoint);
+  const deuCerto = typeof status_http === "number" && status_http >= 200 && status_http < 300;
+  if (!ehConsultaDeAcompanhamento || !deuCerto || !response || typeof response !== "object") {
+    return response ?? null;
+  }
+  const r = response as Record<string, any>;
+  const op = r.oportunidade ?? r;
+  const etapas: any[] = Array.isArray(r.etapa) ? r.etapa : [];
+  const simulacoes: any[] = Array.isArray(r.simulacoes) ? r.simulacoes : [];
+  return {
+    _resumido: true,
+    tipoSituacao: op?.tipoSituacao ?? null,
+    codigoOportunidadeBanco: op?.codigoOportunidadeBanco ?? null,
+    etapaAtiva: etapas.find((e) => e?.active)?.nomeEtapa ?? null,
+    qtdEtapas: etapas.length,
+    qtdParticipantes: Array.isArray(r.participantes) ? r.participantes.length : null,
+    simulacoes: simulacoes.map((s) => ({
+      idSimulacao: s?.idSimulacao ?? null,
+      tipoSituacao: s?.tipoSituacao ?? null,
+      valorParcelaBanco: s?.valorParcelaBanco ?? null,
+    })),
+  };
+}
+
 async function registrarLog(entrada: {
   simulacao_id?: string | null;
   proposta_id?: string | null;
@@ -92,7 +137,12 @@ async function registrarLog(entrada: {
         metodo: entrada.metodo,
         status_http: entrada.status_http ?? null,
         request_masked: entrada.request ? (mascarar(entrada.request) as any) : null,
-        response: (entrada.response as any) ?? null,
+        response: enxugarRespostaDeLog(
+          entrada.endpoint,
+          entrada.metodo,
+          entrada.status_http,
+          entrada.response,
+        ) as any,
         erro: entrada.erro ?? null,
       });
       return;
@@ -104,7 +154,12 @@ async function registrarLog(entrada: {
       metodo: entrada.metodo,
       status_http: entrada.status_http ?? null,
       request_masked: entrada.request ? (mascarar(entrada.request) as any) : null,
-      response: (entrada.response as any) ?? null,
+      response: enxugarRespostaDeLog(
+          entrada.endpoint,
+          entrada.metodo,
+          entrada.status_http,
+          entrada.response,
+        ) as any,
       erro: entrada.erro ?? null,
     });
   } catch (e) {
@@ -245,42 +300,60 @@ export async function chamarIntegracao<T = unknown>(
   const queuedAt = performance.now();
   const isAuth = endpoint.startsWith("/auth");
   const isDominio = endpoint.includes("/dominios");
-  const isIntegracao = endpoint.includes("/integracao");
-  
-  // Elevar limite para 3 e garantir que funciona como fila global
-  const CONCURRENCY_LIMIT = 3;
+
+  /**
+   * DUAS FAIXAS, NÃO UMA.
+   *
+   * Havia uma fila única de 3 vagas para tudo que não fosse `/auth` ou
+   * `/dominios`. Só que o `GET /oportunidade/{id}` da reconciliação é 95% de
+   * todo o tráfego (medido: 6.888 de 7.214 chamadas em 6h) — ele lotava as 3
+   * vagas e os POSTs que fazem o trabalho de verdade ficavam na fila atrás de
+   * consultas de acompanhamento. Era essa a lentidão: não é o banco que
+   * demora, é a vez que não chega.
+   *
+   * Agora consulta e escrita têm orçamentos separados e não competem entre si.
+   * O teto total sobe de 3 para 5 chamadas simultâneas, o que continua sendo
+   * um limite conservador para a API.
+   */
+  const ehConsultaDeAcompanhamento = method === "GET" && /^\/oportunidade\/[^/]+$/.test(endpoint);
+  const faixa = ehConsultaDeAcompanhamento ? "leitura" : "escrita";
+  const LIMITE = { leitura: 2, escrita: 3 } as const;
   const deveSerializar = !isAuth && !isDominio;
 
   if (deveSerializar) {
     const global = globalThis as any;
-    global._hfActiveCount = global._hfActiveCount || 0;
-    global._hfQueue = global._hfQueue || [];
+    const chaveAtivos = `_hfActive_${faixa}`;
+    const chaveFila = `_hfQueue_${faixa}`;
+    global[chaveAtivos] = global[chaveAtivos] || 0;
+    global[chaveFila] = global[chaveFila] || [];
 
     return new Promise<T>((resolve, reject) => {
       const task = async () => {
-        global._hfActiveCount++;
+        global[chaveAtivos]++;
         const startedAt = performance.now();
         const queue_wait_ms = (startedAt - queuedAt).toFixed(0);
-        console.info(`[SIM-PERF][API] ${method} ${endpoint} queue_wait_ms=${queue_wait_ms}`);
-        
+        console.info(
+          `[SIM-PERF][API] ${method} ${endpoint} faixa=${faixa} queue_wait_ms=${queue_wait_ms}`,
+        );
+
         try {
           const result = await executarChamada<T>(endpoint, method, body, ctx);
           resolve(result);
         } catch (e) {
           reject(e);
         } finally {
-          global._hfActiveCount--;
-          if (global._hfQueue.length > 0) {
-            const nextTask = global._hfQueue.shift();
+          global[chaveAtivos]--;
+          if (global[chaveFila].length > 0) {
+            const nextTask = global[chaveFila].shift();
             nextTask();
           }
         }
       };
 
-      if (global._hfActiveCount < CONCURRENCY_LIMIT) {
+      if (global[chaveAtivos] < LIMITE[faixa]) {
         task();
       } else {
-        global._hfQueue.push(task);
+        global[chaveFila].push(task);
       }
     });
   }

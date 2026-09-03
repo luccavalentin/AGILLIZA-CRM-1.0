@@ -1882,21 +1882,43 @@ export async function sincronizarPropostaImpl({
       .filter(Boolean) as { titulo: string; comentario: string; created_at: string }[];
 
     if (atvBanco.length > 0) {
-      await supabase
+      // Antes: apagava TODOS os follow-ups do banco e reinseria a lista inteira
+      // a cada sincronização — que roda de 2 em 2 minutos por proposta ativa.
+      // Resultado: 1.068.690 inserts para 3.906 linhas vivas, tabela inchada de
+      // tuplas mortas e os ids trocando a cada ciclo.
+      //
+      // O retorno do banco é quase sempre idêntico ao da rodada anterior.
+      // Comparamos antes de escrever e, se nada mudou, não tocamos na tabela.
+      const { data: atuais } = await supabase
         .from("proposta_followups")
-        .delete()
+        .select("titulo, comentario, created_at")
         .eq("proposta_id", propostaId)
         .eq("tipo", "banco");
-      await supabase.from("proposta_followups").insert(
-        atvBanco.map((a) => ({
-          proposta_id: propostaId,
-          tipo: "banco",
-          titulo: a.titulo,
-          comentario: a.comentario,
-          homefin_enviado: true,
-          created_at: a.created_at,
-        })) as any,
-      );
+
+      const assinatura = (l: { titulo: any; comentario: any; created_at: any }) =>
+        `${l.titulo ?? ""}|${l.comentario ?? ""}|${new Date(l.created_at).getTime()}`;
+      const antes = new Set((atuais ?? []).map(assinatura));
+      const depois = new Set(atvBanco.map(assinatura));
+      const mudou =
+        antes.size !== depois.size || [...depois].some((chave) => !antes.has(chave));
+
+      if (mudou) {
+        await supabase
+          .from("proposta_followups")
+          .delete()
+          .eq("proposta_id", propostaId)
+          .eq("tipo", "banco");
+        await supabase.from("proposta_followups").insert(
+          atvBanco.map((a) => ({
+            proposta_id: propostaId,
+            tipo: "banco",
+            titulo: a.titulo,
+            comentario: a.comentario,
+            homefin_enviado: true,
+            created_at: a.created_at,
+          })) as any,
+        );
+      }
     }
   } catch (e) {
     console.error("[proposta] importação de follow-ups do banco falhou", e);
