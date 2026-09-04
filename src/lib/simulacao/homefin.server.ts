@@ -98,19 +98,36 @@ export function enxugarRespostaDeLog(
   }
   const r = response as Record<string, any>;
   const op = r.oportunidade ?? r;
-  const etapas: any[] = Array.isArray(r.etapa) ? r.etapa : [];
-  const simulacoes: any[] = Array.isArray(r.simulacoes) ? r.simulacoes : [];
+  // As listas moram dentro do envelope `oportunidade` (contrato
+  // `GetOpportunityOk`). Lendo só a raiz, o resumo saía sempre com
+  // `simulacoes: []` e `qtdParticipantes: null` — o log dizia que a
+  // oportunidade estava vazia mesmo quando a HomeFin devolvia tudo, e a
+  // única trilha para investigar banco assíncrono virava ruído.
+  const primeiroArray = (...candidatos: any[]): any[] => {
+    for (const c of candidatos) if (Array.isArray(c)) return c;
+    return [];
+  };
+  const etapas = primeiroArray(op?.etapa, r.etapa);
+  const participantes = primeiroArray(op?.participantes, r.participantes);
+  const simulacoes = primeiroArray(op?.simulacoes, r.simulacoes);
   return {
     _resumido: true,
     tipoSituacao: op?.tipoSituacao ?? null,
     codigoOportunidadeBanco: op?.codigoOportunidadeBanco ?? null,
     etapaAtiva: etapas.find((e) => e?.active)?.nomeEtapa ?? null,
     qtdEtapas: etapas.length,
-    qtdParticipantes: Array.isArray(r.participantes) ? r.participantes.length : null,
+    qtdParticipantes: participantes.length,
     simulacoes: simulacoes.map((s) => ({
       idSimulacao: s?.idSimulacao ?? null,
+      idBanco: s?.idBanco ?? null,
       tipoSituacao: s?.tipoSituacao ?? null,
       valorParcelaBanco: s?.valorParcelaBanco ?? null,
+      // Campos que dizem se o banco assíncrono já respondeu. Sem eles não há
+      // como distinguir "o banco ainda não devolveu" de "a leitura falhou".
+      codigoSituacaoBanco: s?.codigoSituacaoBanco ?? null,
+      retornoIntegracao: s?.retornoIntegracao ?? null,
+      dataHoraEnvioIntegracao: s?.dataHoraEnvioIntegracao ?? null,
+      dataHoraRetornoIntegracao: s?.dataHoraRetornoIntegracao ?? null,
     })),
   };
 }

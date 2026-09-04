@@ -54,3 +54,53 @@ describe("log da integração — encolher só o que não é lido", () => {
     );
   });
 });
+
+/**
+ * Forma do contrato `GetOpportunityOk`: as listas moram DENTRO do envelope
+ * `oportunidade`. É a forma que a HomeFin devolve em produção — e a que o
+ * resumidor ignorava, gravando `simulacoes: []` em todo log de acompanhamento.
+ */
+const comEnvelope = {
+  etapa: [{ idEtapa: 1, nomeEtapa: "Simulação", active: true }],
+  oportunidade: {
+    tipoSituacao: "A",
+    codigoOportunidadeBanco: "XPTO-1",
+    participantes: [{ idParticipante: 1 }, { idParticipante: 2 }],
+    simulacoes: [
+      {
+        idSimulacao: 90271,
+        idBanco: 9,
+        tipoSituacao: "P",
+        valorParcelaBanco: null,
+        dataHoraRetornoIntegracao: null,
+      },
+      { idSimulacao: 90270, idBanco: 45, tipoSituacao: "P", valorParcelaBanco: 4827.11 },
+    ],
+  },
+};
+
+describe("log da integração — envelope `oportunidade`", () => {
+  it("lê simulações e participantes de dentro do envelope", () => {
+    const r = enxugarRespostaDeLog("/oportunidade/28417", "GET", 200, comEnvelope) as any;
+    expect(r.simulacoes).toHaveLength(2);
+    expect(r.qtdParticipantes).toBe(2);
+    expect(r.tipoSituacao).toBe("A");
+  });
+
+  it("preserva o que distingue banco assíncrono pendente de leitura falha", () => {
+    const r = enxugarRespostaDeLog("/oportunidade/28417", "GET", 200, comEnvelope) as any;
+    const santander = r.simulacoes.find((s: any) => s.idBanco === 9);
+    expect(santander.valorParcelaBanco).toBeNull();
+    expect(santander.dataHoraRetornoIntegracao).toBeNull();
+    const bradesco = r.simulacoes.find((s: any) => s.idBanco === 45);
+    expect(bradesco.valorParcelaBanco).toBe(4827.11);
+  });
+
+  it("regressão: ler só a raiz devolvia lista vazia", () => {
+    // Como o resumidor lia antes:
+    expect((comEnvelope as any).simulacoes ?? []).toEqual([]);
+    // Como lê agora:
+    const r = enxugarRespostaDeLog("/oportunidade/28417", "GET", 200, comEnvelope) as any;
+    expect(r.simulacoes.length).toBeGreaterThan(0);
+  });
+});
