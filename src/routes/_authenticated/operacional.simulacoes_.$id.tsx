@@ -114,8 +114,22 @@ function Pagina() {
   async function reenviarBanco(bancoId: string) {
     setReenviandoBanco(bancoId);
     try {
-      await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
-      toast.success("Banco reenviado.");
+      const r = await enviarSimulacaoBanco({ data: { simulacao_id: id, banco_ids: [bancoId] } });
+      // O servidor não reenvia um banco que já tem simulação aberta na
+      // HomeFin — reenviar criaria uma simulação duplicada lá. Nesse caso ele
+      // só pede o retorno de novo e devolve "aguardando". Dizer
+      // "Banco reenviado" a toda hora fazia o clique parecer sem efeito
+      // justamente quando o banco assíncrono estava demorando.
+      const st = ((r as any)?.bancos ?? []).find((x: any) => x.banco_id === bancoId)?.status;
+      if (st === "aguardando") {
+        toast.info("O banco ainda não devolveu o resultado. Pedimos o retorno novamente.");
+      } else if (st === "simulada") {
+        toast.success("O banco já respondeu.");
+      } else if (st === "erro") {
+        toast.error("O banco recusou a consulta. Veja o detalhe na linha.");
+      } else {
+        toast.success("Banco reenviado.");
+      }
       qc.invalidateQueries({ queryKey: ["simulacao", id] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao reenviar.");
