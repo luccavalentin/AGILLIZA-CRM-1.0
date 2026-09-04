@@ -14,6 +14,7 @@ import { getMinhaSessao } from "@/lib/session.functions";
 import { getMinhasPermissoes } from "@/lib/permissions.functions";
 import { limparCachePermissoes } from "@/lib/route-guards";
 import { listarPastasRaiz } from "@/lib/documentos/arquivos.functions";
+import { useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -66,6 +67,35 @@ function InternalLayout() {
   });
 
   const ehParceiro = sessaoQuery.data?.profile?.acesso_tipo === "portal_parceiro";
+
+  // Bancos assíncronos (Santander) devolvem o resultado depois do envio, e
+  // quem vai buscá-lo é `/api/public/reconciliar-simulacoes`. Até aqui só as
+  // três telas de simulação pediam essa rodada: bastava o operador sair delas
+  // para ninguém mais perguntar, e a simulação ficava em "Em análise" até a
+  // limpeza de 24h marcá-la como erro.
+  //
+  // O shell assume esse papel: enquanto houver simulação pendente ao alcance
+  // do usuário, a reconciliação segue rodando em qualquer tela do sistema. A
+  // contagem é `head: true` (não traz linhas), respeita a RLS e roda de minuto
+  // em minuto; `pedirReconciliacao` já limita a uma chamada a cada 10 s, então
+  // várias abas abertas não multiplicam as requisições.
+  const { data: temSimulacaoPendente } = useQuery({
+    queryKey: ["reconciliacao-pendentes"],
+    queryFn: async () => {
+      const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count } = await supabase
+        .from("simulacoes")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "enviando")
+        .is("deleted_at", null)
+        .gte("created_at", desde);
+      return (count ?? 0) > 0;
+    },
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+    enabled: Boolean(sessaoQuery.data),
+  });
+  useReconciliacaoAutomatica(Boolean(temSimulacaoPendente));
 
   const navFiltrada = useMemo(() => {
     if (!permsQuery.data) return [];
