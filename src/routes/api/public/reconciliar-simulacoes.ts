@@ -73,6 +73,11 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
           .eq("status_banco", "aguardando")
           .not("homefin_id_simulacao_banco", "is", null)
           .gte("created_at", limite24h_limpeza)
+          // Sem ordem explícita o lote saía na ordem física da tabela, e as
+          // pendências mais novas — as que alguém está olhando agora — podiam
+          // ficar fora dele assim que o volume passasse do limite. As mais
+          // recentes vêm primeiro; as antigas têm a limpeza de 24h como rede.
+          .order("created_at", { ascending: false })
           .limit(50); // Lote pequeno para evitar timeout do worker
 
         if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
