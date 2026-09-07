@@ -370,6 +370,34 @@ function mkDelta(cur: number, prev: number, bom = true): PanelDelta | undefined 
   return { pct: Math.abs(diff), dir, bom };
 }
 
+/**
+ * Traz TODAS as linhas de uma consulta, em lotes.
+ *
+ * `.limit(5000)` não vence o teto de mil linhas por resposta do PostgREST: o
+ * painel recebia no máximo 1000 registros e exibia essa quantidade como se
+ * fosse o total. Era a origem do "1.000" redondo no card de Simulações — e do
+ * volume financeiro truncado junto, já que ele soma as mesmas linhas.
+ *
+ * `montar` precisa devolver uma consulta NOVA a cada chamada: o builder do
+ * supabase-js carrega o `range` aplicado e não pode ser reaproveitado.
+ */
+async function todasAsLinhas<T = any>(
+  montar: () => any,
+  lote = 1000,
+  maxLotes = 25,
+): Promise<{ data: T[] | null; error: { message: string } | null }> {
+  const acumulado: T[] = [];
+  for (let i = 0; i < maxLotes; i++) {
+    const ini = i * lote;
+    const { data, error } = await montar().range(ini, ini + lote - 1);
+    if (error) return { data: null, error };
+    const linhas = (data ?? []) as T[];
+    acumulado.push(...linhas);
+    if (linhas.length < lote) break;
+  }
+  return { data: acumulado, error: null };
+}
+
 export const getPanelDados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(schema)
@@ -402,28 +430,36 @@ export const getPanelDados = createServerFn({ method: "POST" })
         try {
         [simsRes, propsRes, contratosInfo, antRes, clientesRes, demRes, tkRes, recRes, payRes, pipeRes] =
           await Promise.all([
-            escopoEq(
-              supabase
-                .from("simulacoes")
-                .select("id,status,tipo_simulacao,valor_financiamento,created_at,usuario_responsavel_id")
-                .is("deleted_at", null)
-                .gte("created_at", deIni)
-                .lte("created_at", ateFim)
-                .limit(5000),
-              "usuario_responsavel_id",
-              "usuario_criador_id",
-              "@cli:cliente_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase
+                  .from("simulacoes")
+                  .select(
+                    "id,status,tipo_simulacao,valor_financiamento,created_at,usuario_responsavel_id",
+                  )
+                  .is("deleted_at", null)
+                  .gte("created_at", deIni)
+                  .lte("created_at", ateFim),
+                "usuario_responsavel_id",
+                "usuario_criador_id",
+                "@cli:cliente_id",
+              ),
             ),
-            escopoEq(
-              supabase
-                .from("propostas")
-                .select("status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em,usuario_responsavel_id")
-                .is("deleted_at", null)
-                .or(`and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`)
-                .limit(5000),
-              "usuario_responsavel_id",
-              "usuario_criador_id",
-              "@cli:cliente_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase
+                  .from("propostas")
+                  .select(
+                    "status,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em,usuario_responsavel_id",
+                  )
+                  .is("deleted_at", null)
+                  .or(
+                    `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
+                  ),
+                "usuario_responsavel_id",
+                "usuario_criador_id",
+                "@cli:cliente_id",
+              ),
             ),
             carregarContratosCliente(supabase, escopoEq, de, ate),
             carregarAnterior(supabase, escopoEq, de, ate),
