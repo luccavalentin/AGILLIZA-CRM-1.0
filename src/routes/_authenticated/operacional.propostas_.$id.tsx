@@ -287,10 +287,46 @@ function PropostaRoute() {
   }, [id, qc]);
 
   // 5. Memos
-  const inicialParticipante = React.useMemo(
-    () => (participanteModal ? envolvidoParaForm(participanteModal) : undefined),
-    [participanteModal?.id],
-  );
+  /**
+   * Campos de endereço que o cônjuge/coproponente herda do titular.
+   *
+   * Morar no mesmo endereço é o caso comum, e exigir que o operador redigite
+   * CEP, rua, número, bairro, município e UF respondia por metade das
+   * pendências que travavam o envio. A herança só preenche o que está vazio e
+   * os campos seguem editáveis — endereço diferente é só sobrescrever.
+   */
+  const CAMPOS_ENDERECO = [
+    "cep",
+    "logradouro",
+    "numero_logradouro",
+    "complemento",
+    "bairro",
+    "municipio",
+    "uf",
+  ] as const;
+
+  const inicialParticipante = React.useMemo(() => {
+    if (!participanteModal) return undefined;
+
+    const ehCoproponente = ["TI", "CJ"].includes(
+      String(participanteModal.tipo_qualificacao ?? ""),
+    );
+    const titular = envolvidos.find(
+      (e: any) => !e?.conjuge_de && String(e?.tipo_qualificacao ?? "") === "CO",
+    );
+
+    if (!ehCoproponente || !titular || titular.id === participanteModal.id) {
+      return envolvidoParaForm(participanteModal);
+    }
+
+    const comEndereco: any = { ...participanteModal };
+    for (const campo of CAMPOS_ENDERECO) {
+      const atual = String(comEndereco[campo] ?? "").trim();
+      if (!atual) comEndereco[campo] = (titular as any)[campo] ?? comEndereco[campo];
+    }
+    return envolvidoParaForm(comEndereco);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participanteModal?.id, envolvidos]);
   const conjugeInicialParticipante = React.useMemo(() => {
     if (!participanteModal?.id) return undefined;
     const conjuge = envolvidos.find(
