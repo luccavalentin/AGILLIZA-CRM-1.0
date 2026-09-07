@@ -125,9 +125,15 @@ export function ParticipanteDialog({
     return () => clearTimeout(t);
   }, [open, focarPendencias]);
 
-  // 1 & 2. CORREÇÃO: A seção de cônjuge só aparece para o TITULAR/comprador principal
-  // e se não houver um cônjuge já cadastrado como participante independente.
-  const ehConjuge = f.tipo_qualificacao === "CJ";
+  // A seção de cônjuge só aparece para o titular/comprador, e só se ainda não
+  // houver cônjuge cadastrado como participante à parte.
+  //
+  // O código da qualificação "Cônjuge / Coproponente" é `TI` (ver dominios.ts);
+  // `CJ` é forma antiga que ainda aparece em registros gravados. Comparar só
+  // com `CJ` deixava `ehConjuge` sempre falso: ao completar o cadastro do
+  // próprio cônjuge, o formulário abria a seção pedindo o cônjuge DELE — que é
+  // o titular. Aceitamos as duas formas.
+  const ehConjuge = ["TI", "CJ"].includes(String(f.tipo_qualificacao ?? ""));
   const permiteConjuge = !ehConjuge && !nomeConjugeExistente;
   const precisaConjuge =
     permiteConjuge && f.tipo_pessoa === "F" && ESTADO_CIVIL_COM_REGIME.has(f.estado_civil);
