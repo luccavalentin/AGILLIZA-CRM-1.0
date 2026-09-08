@@ -249,8 +249,14 @@ export function statusInternoBanco(
     codigo.includes("indefer") ||
     codigo.includes("rejeit") ||
     codigoNumerico === "514" ||
-    t === "R" ||
-    t === "N"
+    // `N` NÃO é recusa: no contrato da integração o tipoSituacao segue
+    // S/P/N/A/R = Sem Integração / Erro ao Enviar Proposta / Análise de
+    // Crédito / Crédito Aprovado / Crédito Recusado. Recusa é `R`.
+    //
+    // Com `N` aqui dentro, toda proposta que o banco colocou EM ANÁLISE
+    // aparecia como "Crédito recusado" — e o `case "N"` logo abaixo, que
+    // mapeia para `em_analise`, era código morto que nunca executava.
+    t === "R"
   ) {
     return { banco: "recusada", proposta: "credito_recusado" };
   }

@@ -413,6 +413,34 @@ async function executarChamada<T = unknown>(
       resp = await executar(tokenAtual);
       console.info(`[SIM-PERF][API-RAW] ${method} ${endpoint} retry_api_duration_ms=${(performance.now() - tStart).toFixed(0)}`);
     }
+
+    // Erro de gateway (502/503/504) é falha de trânsito, não do payload: a
+    // requisição não chegou ao provedor ou ele demorou demais para responder.
+    // Até aqui a primeira falha desistia e a mensagem pedia ao operador que
+    // reenviasse na mão — o que ele fazia, e costumava passar. Fazemos isso
+    // por ele, com uma pausa entre as tentativas.
+    //
+    // Só repetimos o que é seguro repetir:
+    //   - GET, que não altera nada;
+    //   - `/integracao`, que dispara o envio de uma simulação JÁ criada e
+     //    identificada por id — é o mesmo que o botão "Reenviar" faz.
+    // Ficam de fora `POST /oportunidade`, `POST /simulacao` e
+    // `POST /participante`: eles CRIAM registro no provedor, e num 504 não há
+    // como saber se o primeiro pedido foi processado. Repetir duplicaria.
+    const podeRepetir = method === "GET" || /\/integracao$/.test(endpoint);
+    const ehGateway = (st: number) => st === 502 || st === 503 || st === 504;
+    for (let tentativa = 0; podeRepetir && tentativa < 2 && ehGateway(resp.status); tentativa++) {
+      const espera = 1500 * (tentativa + 1);
+      console.warn(
+        `[integracao] ${method} ${endpoint} devolveu ${resp.status}; nova tentativa em ${espera}ms`,
+      );
+      await new Promise((r) => setTimeout(r, espera));
+      const tStart = performance.now();
+      resp = await executar(tokenAtual);
+      console.info(
+        `[SIM-PERF][API-RAW] ${method} ${endpoint} gateway_retry_ms=${(performance.now() - tStart).toFixed(0)} status=${resp.status}`,
+      );
+    }
   } catch (e) {
     await registrarLog({ ...ctx, endpoint, metodo: method, request: bodyNormalizado, erro: String(e) });
     throw new IntegracaoBancariaError("O banco não respondeu no tempo esperado.");

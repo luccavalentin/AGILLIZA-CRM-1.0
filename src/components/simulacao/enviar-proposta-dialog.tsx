@@ -70,6 +70,25 @@ export function EnviarPropostaDialog({
     return taxas.length > 0 ? Math.min(...taxas) : null;
   }, [simulados]);
 
+  /**
+   * O teste de CPF roda a mesma operação com cada proponente na posição de
+   * titular, então o mesmo banco aparece mais de uma vez — às vezes com
+   * parcela idêntica. Sem dizer de quem é cada linha, a lista fica impossível
+   * de ler: o operador via "Santander" quatro vezes e não sabia qual enviar.
+   *
+   * Só rotulamos quando há mais de um titular na lista; num envio comum a
+   * etiqueta seria ruído.
+   */
+  const titularesDistintos = useMemo(() => {
+    const nomes = new Set(
+      simulados.map((b: any) => String(b?._titularNome ?? "").trim()).filter(Boolean),
+    );
+    return nomes.size;
+  }, [simulados]);
+
+  /** "Maria Aparecida Souza" -> "Maria Aparecida" (cabe na linha). */
+  const nomeCurto = (nome: string) => nome.trim().split(/\s+/).slice(0, 2).join(" ");
+
   const resumo = useMemo(() => {
     const ok = Object.values(statusPorBanco).filter((s) => s.status === "success").length;
     const erro = Object.values(statusPorBanco).filter((s) => s.status === "error").length;
@@ -153,6 +172,11 @@ export function EnviarPropostaDialog({
                               <Trophy className="h-2.5 w-2.5" /> Melhor taxa
                             </span>
                           )}
+                          {titularesDistintos > 1 && b._titularNome && (
+                            <span className="inline-flex shrink-0 items-center rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                              {nomeCurto(String(b._titularNome))}
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium text-muted-foreground">
@@ -169,12 +193,24 @@ export function EnviarPropostaDialog({
                           <span className="flex items-center gap-1">
                             Prazo{" "}
                             <span className="text-foreground">
-                              {b.prazo_pagamento_max ?? b.prazo_pagamento_banco ?? b.prazo ?? "—"}
-                              {b.prazo_pagamento_max || b.prazo_pagamento_banco || b.prazo
+                              {/* `_prazo` é o prazo da simulação desta linha. Sem ele a
+                                  coluna vinha vazia ("—") sempre que o banco não
+                                  devolvia um prazo máximo próprio. */}
+                              {b.prazo_pagamento_max ??
+                                b.prazo_pagamento_banco ??
+                                b._prazo ??
+                                b.prazo ??
+                                "—"}
+                              {b.prazo_pagamento_max || b.prazo_pagamento_banco || b._prazo || b.prazo
                                 ? "m"
                                 : ""}
                             </span>
                           </span>
+                          {b._sistema && (
+                            <span className="flex items-center gap-1">
+                              Sistema <span className="text-foreground">{b._sistema}</span>
+                            </span>
+                          )}
                         </div>
                       </div>
 
