@@ -42,10 +42,29 @@ export function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
  * Detecta o cenário em que a integração devolveu "erro" mas a proposta
  * NUNCA foi de fato efetivada na esteira do banco (falha de integração).
  *
- * Docs oficiais (swagger Homefin) — tipoSituacao:
- *   P = Pendente/Simulada · A = Aprovada · C = Condicionada/Favorável
- *   R = Recusada · N = Negada · E = Erro.
- *   (S = Sem Integração — nunca ocorre no fluxo real de proposta).
+ * DOMÍNIO OFICIAL de `tipoSituacao` (swagger 29/01/2026, schemas
+ * CreateProposalOk e SimulationIntegrationResponse — texto literal
+ * "S/P/N/A/R (Sem Integração/Erro ao Enviar Proposta/Análise Crédito/Crédito
+ * Aprovado/Crédito Recusado)"):
+ *
+ *   S = Sem Integração          (não foi enviado ao banco)
+ *   P = Erro ao Enviar Proposta (falha de integração)
+ *   N = Análise de Crédito      (chegou ao banco, em análise)
+ *   A = Crédito Aprovado
+ *   R = Crédito Recusado
+ *
+ * O comentário anterior aqui dizia outra coisa — "N = Negada", "P =
+ * Pendente/Simulada", "C = Condicionada" — e foi a origem do bug que exibia
+ * como recusada toda proposta que o banco havia colocado em análise.
+ *
+ * FORA DO CONTRATO, mas observados em produção:
+ *   E = falha definitiva. 1.490 ocorrências desde 14/07. Vem com
+ *       `dataHoraEnvioIntegracao: null` e nunca evolui (a simulação 93588
+ *       seguia "E" meia hora depois). Tratado como P.
+ *   C = observado 22 mil vezes em simulações e uma vez em proposta, esta com
+ *       protocolo e parcela do banco — comportamento de desfecho favorável,
+ *       que é como o tratamos. Não está documentado; se algum dia aparecer
+ *       um "C" sem protocolo, a hipótese precisa ser revista.
  *
  * Regras (a proposta CHEGOU ao banco quando existe protocolo):
  *  - "R" (Recusa) e "N" (Negada) são decisões REAIS de crédito — nunca falha técnica.
@@ -285,8 +304,12 @@ export function statusInternoBanco(
     case "E":
       return { banco: "erro", proposta: null };
 
+    // "Sem Integração" quer dizer que a proposta NÃO foi ao banco. Marcá-la
+    // como "enviada" era o oposto do que o código significa, e escondia do
+    // operador que ainda faltava enviar. (Nunca observado em produção: zero
+    // ocorrências em 175 mil retornos — a correção alinha ao contrato.)
     case "S":
-      return { banco: "enviada", proposta: null };
+      return { banco: "nao_enviado", proposta: null };
     default:
       // Sem tipoSituacao conhecido: assume "enviada" (aguardando retorno).
       // Preserva a mensagem em `mensagem_banco` sem classificar como erro.
