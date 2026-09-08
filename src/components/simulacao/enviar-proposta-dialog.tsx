@@ -307,10 +307,21 @@ export function EnviarPropostaDialog({
                             style={{ width: `${(status.etapaNumero || 1) * 16.66}%` }}
                           />
                         </div>
+                        {/*
+                          O texto anterior prometia "até 2 minutos", teto que o
+                          sistema não cumpre: nos 206 envios registrados a
+                          mediana é de 12 s, mas 10% passam de 38 s e há caso de
+                          quase 10 minutos. Prometer um limite que estoura é pior
+                          que não prometer nada — o operador conclui que travou.
+                          Dizemos o que é verdade e, quando passa do normal,
+                          avisamos que dá para sair da tela sem perder o envio.
+                        */}
                         {Number(status.tempoDecorrido) > 20 && (
                           <p className="mt-2 text-[10px] font-bold text-amber-600 flex items-center gap-1">
-                            <Info className="h-3 w-3" /> O banco pode levar até 2 minutos para
-                            responder.
+                            <Info className="h-3 w-3 shrink-0" />
+                            {Number(status.tempoDecorrido) > 75
+                              ? "Está demorando mais que o normal. O envio continua mesmo se você fechar esta janela."
+                              : "A maioria dos bancos responde em cerca de 15 segundos, mas alguns demoram bem mais."}
                           </p>
                         )}
                       </div>
