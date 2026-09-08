@@ -19,10 +19,20 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
 
         /**
          * Quanto esperar por um banco assíncrono antes de chamar de falha.
-         * A mediana histórica de resposta do Santander é de ~12 s; 15 minutos
-         * é folga larga sem deixar a linha presa em "Em análise" por um dia.
+         * Mediana de 23 s no Santander e 99% concluídas em menos de 15 min
+         * (17 de 1.755 passaram disso), então o corte cobre praticamente tudo
+         * que ainda tem chance, sem deixar a linha presa por um dia.
          */
         const MINUTOS_ATE_DESISTIR = 15;
+
+        /**
+         * Quantas vezes reenviar a integração antes de desistir, e a partir de
+         * quantos minutos. A janela cresce a cada tentativa (3 min, 6 min), de
+         * modo que um banco só lento tenha tempo de responder sozinho antes de
+         * receber nova chamada.
+         */
+        const MAX_RETENTATIVAS = 2;
+        const MINUTOS_ANTES_DE_RETENTAR = 3;
 
         // --- NOVA ROTINA DE LIMPEZA DE LOCKS E PRESAS ---
         const limite2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
@@ -76,6 +86,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
             homefin_id_simulacao_banco, 
             nome_banco,
             created_at,
+            raw_response,
             simulacoes!inner(homefin_id_oportunidade, correspondente_id)
           `)
           .eq("status_banco", "aguardando")
@@ -153,9 +164,10 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 // `codigoSituacaoBanco === "E"` também nunca casava: o "E"
                 // aparece em `tipoSituacao`, não nesse campo.
                 //
-                // Agora o tempo decide. O Santander responde em ~12 s na
-                // mediana histórica; passados 15 minutos sem parcela, esperar
-                // mais não traz resultado — traz só um status que mente.
+                // Agora o tempo decide. Em 30 dias, a mediana até a simulação
+                // do Santander ficar pronta é de 23 s e apenas 17 de 1.755
+                // passaram de 15 minutos; depois disso, esperar não traz
+                // resultado — traz só um status que mente.
                 const tipo = String(apiSim.tipoSituacao ?? "").toUpperCase().charAt(0);
                 const retorno = String(apiSim.retornoIntegracao ?? "").toLowerCase();
                 const erroExplicito =
@@ -168,6 +180,87 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 // proposta — 95334 está em "P" com parcela de R$ 9.216,71. Por
                 // isso ele só vira erro junto com a espera esgotada; o que
                 // caracteriza a falha é continuar sem valor depois do prazo.
+                // Antes de desistir, reenviamos a integração.
+                //
+                // É o que o operador faz na mão quando a linha trava, e os
+                // números dizem que funciona: das 1.755 simulações do
+                // Santander concluídas em 30 dias, 965 só saíram do lugar
+                // depois do envio inicial — mais do que as 773 que vieram na
+                // hora. O provedor responde 200 vazio e simplesmente não
+                // processa; a segunda chamada costuma processar.
+                //
+                // `/integracao` é a mesma rota do botão "Reenviar": não cria
+                // registro novo, apenas manda ao banco a simulação que já
+                // existe e está identificada por id. Repetir é seguro.
+                const tentativas = Number(
+                  (b as any)?.raw_response?._retentativas_integracao ?? 0,
+                );
+                const podeRetentar =
+                  !erroExplicito &&
+                  tentativas < MAX_RETENTATIVAS &&
+                  minutosEspera > MINUTOS_ANTES_DE_RETENTAR * (tentativas + 1) &&
+                  !esgotou;
+
+                if (podeRetentar) {
+                  try {
+                    const reenvio = await chamarIntegracao<any>(
+                      `/oportunidade/${idOp}/simulacao/${b.homefin_id_simulacao_banco}/integracao`,
+                      "POST",
+                      {},
+                      {
+                        simulacao_id: b.simulacao_id,
+                        correspondente_id: (b.simulacoes as any).correspondente_id,
+                      },
+                    );
+                    const parcelaReenvio = Number(reenvio?.valorParcelaBanco || 0);
+
+                    if (parcelaReenvio > 0) {
+                      await supabaseAdmin.from("simulacao_bancos").update({
+                        status_banco: "simulada" as any,
+                        valor_parcela: parcelaReenvio,
+                        taxa_juros_ano: reenvio.taxaJurosAnoBanco
+                          ? Number(reenvio.taxaJurosAnoBanco)
+                          : null,
+                        taxa_cet_ano: reenvio.taxaCetAnoBanco
+                          ? Number(reenvio.taxaCetAnoBanco)
+                          : null,
+                        mensagem_banco: null,
+                        raw_response: reenvio,
+                        simulado_em: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                      }).eq("id", b.id);
+                      await recalcularStatusSimulacao(b.simulacao_id, supabaseAdmin);
+                      recuperadas++;
+                      continue;
+                    }
+
+                    // Sem valor ainda: registra a tentativa para não repetir
+                    // a cada rodada do cron e deixa a próxima janela decidir.
+                    await supabaseAdmin.from("simulacao_bancos").update({
+                      raw_response: {
+                        ...(reenvio ?? apiSim),
+                        _retentativas_integracao: tentativas + 1,
+                      },
+                      mensagem_banco: `Sem resposta do ${b.nome_banco ?? "banco"}. Tentando novamente...`,
+                      updated_at: new Date().toISOString(),
+                    }).eq("id", b.id);
+                    continue;
+                  } catch (erroReenvio) {
+                    console.error(
+                      `[reconciliar-simulacoes] falha ao reenviar ${b.homefin_id_simulacao_banco}:`,
+                      erroReenvio,
+                    );
+                    await supabaseAdmin.from("simulacao_bancos").update({
+                      raw_response: {
+                        ...(apiSim ?? {}),
+                        _retentativas_integracao: tentativas + 1,
+                      },
+                      updated_at: new Date().toISOString(),
+                    }).eq("id", b.id);
+                    continue;
+                  }
+                }
+
                 if (erroExplicito || ((tipo === "P" || tipo === "E") && esgotou) || esgotou) {
                   await supabaseAdmin.from("simulacao_bancos").update({
                     status_banco: "erro" as any,
