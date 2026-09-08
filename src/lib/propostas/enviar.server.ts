@@ -180,6 +180,72 @@ function sistemaAmortizacaoBanco(v: unknown): string {
 // ./enviar/helpers-retorno.server.ts e são re-exportados no fim do arquivo.
 
 /**
+ * Mensagem para o caso em que a integração recusa a proposta SEM dizer por quê
+ * (`tipoSituacao: "E"` com `retornoIntegracao: null`).
+ *
+ * O provedor não repassa o motivo do banco, então em vez de um texto genérico
+ * procuramos a explicação mais frequente e verificável do nosso lado: já
+ * existe outra proposta deste mesmo cliente, no mesmo banco, com protocolo
+ * ativo. Os bancos recusam a segunda entrada para o mesmo CPF — e nesse caso
+ * "reenvie" é conselho ruim, porque vai falhar de novo.
+ */
+async function motivoFalhaSemMensagem({
+  prop,
+  pb,
+  propostaId,
+  supabase,
+}: {
+  prop: any;
+  pb: any;
+  propostaId: string;
+  supabase: any;
+}): Promise<string> {
+  const banco = String(pb?.nome_banco ?? "banco");
+  try {
+    if (!prop?.cliente_id || !pb?.banco_id) return MSG_FALHA_INTEGRACAO;
+    const { data } = await supabase
+      .from("proposta_bancos")
+      .select("numero_proposta_banco, status_banco, propostas!inner(id, numero_proposta, cliente_id, status)")
+      .eq("banco_id", pb.banco_id)
+      .eq("propostas.cliente_id", prop.cliente_id)
+      .neq("proposta_id", propostaId)
+      .not("numero_proposta_banco", "is", null)
+      .limit(20);
+
+    const ENCERRADAS = new Set(["cancelada", "contrato_emitido"]);
+    const anterior = (data ?? []).find(
+      (r: any) => !ENCERRADAS.has(String(r?.propostas?.status ?? "")),
+    );
+    if (!anterior) return MSG_FALHA_INTEGRACAO;
+
+    const numero = anterior.propostas?.numero_proposta ?? "anterior";
+    const protocolo = anterior.numero_proposta_banco;
+    const recusada = String(anterior.propostas?.status ?? "") === "credito_recusado";
+
+    // Recusa recente e proposta ainda em andamento levam ao mesmo bloqueio no
+    // banco, mas a saída para o operador é diferente: numa ele espera, na
+    // outra ele encerra a anterior.
+    if (recusada) {
+      return (
+        `O ${banco} não aceitou esta proposta e não informou o motivo. ` +
+        `O mesmo CPF foi recusado neste banco na proposta ${numero} ` +
+        `(protocolo ${protocolo}); os bancos costumam bloquear uma nova entrada ` +
+        `logo após uma recusa. Reenviar agora tende a falhar de novo — trate a ` +
+        `causa da recusa ou tente outro banco.`
+      );
+    }
+    return (
+      `O ${banco} não aceitou esta proposta e não informou o motivo. ` +
+      `Este cliente já tem a proposta ${numero} em andamento neste mesmo banco ` +
+      `(protocolo ${protocolo}), o que costuma impedir uma segunda entrada para ` +
+      `o mesmo CPF. Conclua ou cancele a anterior antes de reenviar.`
+    );
+  } catch {
+    return MSG_FALHA_INTEGRACAO;
+  }
+}
+
+/**
  * Normaliza textos livres antes de enviar ao banco. O usuário pode preencher
  * livremente, mas alguns bancos recusam caracteres como parênteses em campos
  * de ocupação (ex.: "Administrador(a)").
@@ -1147,8 +1213,26 @@ async function enviarPropostaImplInner({
       const falhaEnvioReal =
         !temProtocoloBanco &&
         (situacaoTipoResp === "P" || situacaoTipoResp === "E" || ehFalhaIntegracaoBanco(resp));
-      if (erroBanco && falhaEnvioReal) {
-        throw new IntegracaoBancariaError(erroBanco);
+      if (falhaEnvioReal) {
+        // A recusa da integração NÃO depende de haver mensagem.
+        //
+        // O caso real (PRO-000258, 08/09): o POST devolveu HTTP 200 com
+        // `tipoSituacao: "E"`, `dataHoraEnvioIntegracao: null` e
+        // `retornoIntegracao: null` — ou seja, recusa definitiva e MUDA. Como
+        // a condição exigia `erroBanco`, nada era lançado: o fluxo seguia
+        // adiante e gravava `status_banco: "enviada"` / `situacao_banco:
+        // "em_analise"`. A proposta aparecia como "Enviado p/ aprovação de
+        // crédito" por quase um minuto, até o polling reler a oportunidade e
+        // finalmente marcar "Erro no envio". Era exatamente o "vem erro e
+        // depois enviado para aprovação" — dois estados para o mesmo fato.
+        //
+        // Comparando com os envios que dão certo, o POST é SÍNCRONO: quando o
+        // banco aceita, ele já responde `N`/`R` com `codigoOportunidadeBanco`
+        // no mesmo instante. `E` sem protocolo nunca evolui — reconfirmado na
+        // simulação 93588, ainda `E` meia hora depois. Não há o que esperar.
+        throw new IntegracaoBancariaError(
+          erroBanco ?? (await motivoFalhaSemMensagem({ prop, pb: b, propostaId, supabase })),
+        );
       }
 
       // Grava o RETORNO real do banco (taxa, parcela, financiamento, situação e

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { statusInternoBanco } from "./enviar/helpers-retorno.server";
+import { ehFalhaIntegracaoBanco, statusInternoBanco } from "./enviar/helpers-retorno.server";
 
 /**
  * `tipoSituacao` da integração, conforme a documentação:
@@ -38,5 +38,26 @@ describe("statusInternoBanco — tipoSituacao do provedor", () => {
     // codigoSituacaoBanco e sem retornoIntegracao — ou seja, em análise.
     const r = statusInternoBanco("N", false, null);
     expect(r.proposta).not.toBe("credito_recusado");
+  });
+
+  it("regressão: a PRO-000258 voltou E sem mensagem e foi exibida como enviada", () => {
+    // Retorno real do POST /incluir-proposta-integracao em 08/09/2026: HTTP 200,
+    // `tipoSituacao: "E"`, nenhum protocolo e `retornoIntegracao: null`. A
+    // proposta nunca saiu da fila do provedor (`dataHoraEnvioIntegracao: null`)
+    // e continuava "E" meia hora depois — é recusa definitiva, não espera.
+    const respostaReal = {
+      idBanco: 45,
+      idSimulacao: 93588,
+      tipoSituacao: "E",
+      retornoIntegracao: null,
+      codigoSituacaoBanco: null,
+      codigoOportunidadeBanco: null,
+      codigoSimulacaoBanco: null,
+      dataHoraEnvioIntegracao: null,
+      dataHoraRetornoIntegracao: null,
+    };
+
+    expect(ehFalhaIntegracaoBanco(respostaReal)).toBe(true);
+    expect(statusInternoBanco("E", false, null, respostaReal).banco).toBe("erro");
   });
 });

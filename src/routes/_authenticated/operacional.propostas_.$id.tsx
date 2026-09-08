@@ -158,15 +158,37 @@ function PropostaRoute() {
         const bancoId = bancosPendentes.length === 1 ? bancosPendentes[0].banco_id : undefined;
         enviandoAoBanco = true;
 
-        const r = await handleEnviarHook({
-          propostaId: id,
-          bancoId,
-          envolvidos: envolvidosAtualizados,
-          onCadastroIncompleto: onCadastroIncompleto,
+        // O cadastro já está salvo neste ponto. O envio ao banco leva de 30 s a
+        // 2 min (é uma sequência de chamadas ao provedor, que por sua vez fala
+        // com o banco), e antes disso o diálogo ficava aberto com o botão
+        // girando o tempo todo, sem texto e com "Cancelar" desabilitado: o
+        // operador não sabia se travou, se podia fechar, se podia clicar de
+        // novo. Fechamos o formulário assim que ele cumpriu seu papel e o
+        // andamento passa a ser mostrado fora dele, com aviso de duração.
+        //
+        // Se o envio esbarrar em pendência de cadastro, `onCadastroIncompleto`
+        // reabre o diálogo no participante que falta.
+        setParticipanteModal(null);
+        const toastEnvio = toast.loading(`Enviando ao ${bancosPendentes[0]?.nome_banco ?? "banco"}...`, {
+          description: "Pode levar até 2 minutos. Você pode continuar usando o sistema.",
+          duration: Infinity,
         });
 
-        if (r) {
-          setParticipanteModal(null);
+        try {
+          const r = await handleEnviarHook({
+            propostaId: id,
+            bancoId,
+            envolvidos: envolvidosAtualizados,
+            onCadastroIncompleto: onCadastroIncompleto,
+          });
+          toast.dismiss(toastEnvio);
+          if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
+        } catch (erroEnvio: any) {
+          toast.dismiss(toastEnvio);
+          toast.error(erroEnvio?.message ?? "Falha ao enviar a proposta ao banco.", {
+            duration: 12_000,
+          });
+          throw erroEnvio;
         }
       } catch (e: any) {
         if (!enviandoAoBanco) {
