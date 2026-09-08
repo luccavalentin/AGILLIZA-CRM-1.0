@@ -81,9 +81,10 @@ export function useEnviarProposta() {
     [router],
   );
 
+  /** `chave` é o id da linha em andamento (ver `enviar`), não o do banco. */
   const iniciarStatus = useCallback(
-    (bancoId: string) => {
-      atualizarStatus(bancoId, {
+    (chave: string) => {
+      atualizarStatus(chave, {
         status: "loading",
         etapa: "criando",
         etapaNumero: 1,
@@ -98,6 +99,7 @@ export function useEnviarProposta() {
     async ({
       propostaId: propIdExistente,
       bancoId,
+      chave,
       envolvidos,
       onCadastroIncompleto,
       enviarFn: customEnviarFn,
@@ -106,27 +108,45 @@ export function useEnviarProposta() {
     }: {
       propostaId?: string;
       bancoId: string;
+      /**
+       * Identidade da LINHA em andamento, quando ela não é o banco.
+       *
+       * Um lote com dois prazos e dois sistemas gera quatro linhas do mesmo
+       * banco. Indexando tudo por `bancoId`, as quatro dividiam um único
+       * estado: clicar em uma acendia o spinner nas outras (todas mostravam o
+       * mesmo cronômetro e a mesma etapa), e a trava de clique duplo — também
+       * por banco — descartava em silêncio o segundo envio, deixando aquele
+       * card girando para sempre sem nada acontecer do lado do servidor.
+       *
+       * Quem tem linhas distintas para o mesmo banco passa o id da linha aqui.
+       * O `bancoId` continua sendo o que vai para o servidor.
+       */
+      chave?: string;
       envolvidos?: any[];
       onCadastroIncompleto?: (primeiroPendente: any) => void;
       enviarFn?: (args: { data: { proposta_id: string; banco_id?: string } }) => Promise<any>;
       criarPropostaFn?: () => Promise<{ proposta_id: string }>;
       reiniciarSeIncompleto?: boolean;
     }) => {
+      // Chave de UI: a linha, quando informada; senão o banco (comportamento
+      // de sempre para quem envia um banco por vez).
+      const k = chave ?? bancoId;
+
       // 5. TRAVA CONTRA CLIQUE DUPLO
-      if (clickLock.current[bancoId]) return;
-      clickLock.current[bancoId] = true;
+      if (clickLock.current[k]) return;
+      clickLock.current[k] = true;
 
       const fnParaUsar = customEnviarFn || enviarFnDefault;
-      setBusyBancoId(bancoId);
+      setBusyBancoId(k);
 
       // Inicia status se ainda não foi iniciado manualmente
-      if (!statusPorBanco[bancoId] || statusPorBanco[bancoId].status !== "loading") {
-        iniciarStatus(bancoId);
+      if (!statusPorBanco[k] || statusPorBanco[k].status !== "loading") {
+        iniciarStatus(k);
       }
 
       const startTime = Date.now();
       const interval = setInterval(() => {
-        atualizarStatus(bancoId, { tempoDecorrido: Math.round((Date.now() - startTime) / 1000) });
+        atualizarStatus(k, { tempoDecorrido: Math.round((Date.now() - startTime) / 1000) });
       }, 1000);
 
       let currentPropostaId = propIdExistente;
@@ -134,7 +154,7 @@ export function useEnviarProposta() {
       try {
         // 1. Criar proposta se necessário (etapa 1 de 6)
         if (!currentPropostaId && criarPropostaFn) {
-          atualizarStatus(bancoId, {
+          atualizarStatus(k, {
             etapa: "criando",
             etapaNumero: 1,
             mensagem: "Criando proposta no sistema...",
@@ -146,7 +166,7 @@ export function useEnviarProposta() {
         if (!currentPropostaId) throw new Error("ID da proposta não definido.");
 
         // 2. Ressincronizar (etapa 2 de 6)
-        atualizarStatus(bancoId, {
+        atualizarStatus(k, {
           etapa: "preparando",
           etapaNumero: 2,
           mensagem: "Sincronizando participantes...",
@@ -154,7 +174,7 @@ export function useEnviarProposta() {
         const res = await ressincronizarFn({ data: { proposta_id: currentPropostaId } });
 
         // 3. Validar (etapa 3 de 6)
-        atualizarStatus(bancoId, {
+        atualizarStatus(k, {
           etapa: "participantes",
           etapaNumero: 3,
           mensagem: "Validando dados obrigatórios...",
@@ -174,7 +194,7 @@ export function useEnviarProposta() {
         if (pendencias.length > 0) {
           clearInterval(interval);
           setBusyBancoId(null);
-          clickLock.current[bancoId] = false;
+          clickLock.current[k] = false;
 
           const campos = pendencias.flatMap((p) =>
             p.faltantes.map((f) => ({
@@ -184,7 +204,7 @@ export function useEnviarProposta() {
             })),
           );
 
-          atualizarStatus(bancoId, {
+          atualizarStatus(k, {
             status: "error",
             mensagem: "Cadastro incompleto",
             erroEstruturado: {
@@ -198,14 +218,14 @@ export function useEnviarProposta() {
         }
 
         // 4. Simulação (etapa 4 de 6)
-        atualizarStatus(bancoId, {
+        atualizarStatus(k, {
           etapa: "simulacao",
           etapaNumero: 4,
           mensagem: "Sincronizando simulação bancária...",
         });
 
         // 5. Enviar (etapa 5 de 6)
-        atualizarStatus(bancoId, {
+        atualizarStatus(k, {
           etapa: "enviando",
           etapaNumero: 5,
           mensagem: "Enviando ao banco...",
@@ -213,7 +233,7 @@ export function useEnviarProposta() {
         const r = await fnParaUsar({ data: { proposta_id: currentPropostaId, banco_id: bancoId } });
 
         // 6. Aguardar (etapa 6 de 6)
-        atualizarStatus(bancoId, {
+        atualizarStatus(k, {
           etapa: "aguardando",
           etapaNumero: 6,
           mensagem: "Aguardando retorno final...",
@@ -221,13 +241,13 @@ export function useEnviarProposta() {
 
         clearInterval(interval);
         setBusyBancoId(null);
-        clickLock.current[bancoId] = false;
+        clickLock.current[k] = false;
 
         const bancoInfo = (r?.bancos || [])?.find((b: any) => b.banco_id === bancoId);
         const protocolo = bancoInfo?.numero_proposta_banco;
         const tipoStatus = bancoInfo?.status;
 
-        atualizarStatus(bancoId, {
+        atualizarStatus(k, {
           status: "success",
           protocolo,
           tipoStatus,
@@ -242,7 +262,7 @@ export function useEnviarProposta() {
       } catch (e) {
         clearInterval(interval);
         setBusyBancoId(null);
-        clickLock.current[bancoId] = false;
+        clickLock.current[k] = false;
         const msg =
           e instanceof Error
             ? e.message
@@ -273,7 +293,7 @@ export function useEnviarProposta() {
                   })),
                 ),
               };
-              atualizarStatus(bancoId, {
+              atualizarStatus(k, {
                 status: "error",
                 mensagem: "Cadastro incompleto",
                 erroEstruturado,
@@ -288,7 +308,7 @@ export function useEnviarProposta() {
           }
         }
 
-        atualizarStatus(bancoId, {
+        atualizarStatus(k, {
           status: "error",
           mensagem: msg,
           erroEstruturado,

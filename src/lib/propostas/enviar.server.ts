@@ -183,12 +183,17 @@ function sistemaAmortizacaoBanco(v: unknown): string {
  * Mensagem para o caso em que a integração recusa a proposta SEM dizer por quê
  * (`tipoSituacao: "E"` com `retornoIntegracao: null`).
  *
- * O provedor não repassa o motivo do banco, então em vez de um texto genérico
- * procuramos a explicação mais frequente e verificável do nosso lado: já
- * existe outra proposta deste mesmo cliente, no mesmo banco, com protocolo
- * ativo. Os bancos recusam a segunda entrada para o mesmo CPF — e nesse caso
- * "reenvie" é conselho ruim, porque vai falhar de novo.
+ * O provedor não repassa o motivo do banco, e nós não temos como descobri-lo.
+ * A mensagem diz exatamente isso — não inventa uma causa.
+ *
+ * A única pista que podemos oferecer é factual e verificável: existe outra
+ * proposta RECENTE do mesmo CPF neste mesmo banco. Ela vai como observação,
+ * marcada como possibilidade, e só nos últimos 15 dias. Sem esse corte, uma
+ * recusa de dois meses atrás era apresentada como "recusa logo antes deste
+ * envio" — uma causa inventada, que manda o operador tratar o problema errado.
  */
+const DIAS_PROPOSTA_RECENTE = 15;
+
 async function motivoFalhaSemMensagem({
   prop,
   pb,
@@ -201,47 +206,42 @@ async function motivoFalhaSemMensagem({
   supabase: any;
 }): Promise<string> {
   const banco = String(pb?.nome_banco ?? "banco");
+  const base =
+    `O ${banco} não aceitou esta proposta e não informou o motivo — a integração ` +
+    `devolveu apenas uma falha genérica, sem código nem mensagem. Confira os dados ` +
+    `dos participantes e do financiamento; persistindo, acione o suporte com o ` +
+    `número desta proposta.`;
+
   try {
-    if (!prop?.cliente_id || !pb?.banco_id) return MSG_FALHA_INTEGRACAO;
+    if (!prop?.cliente_id || !pb?.banco_id) return base;
+    const desde = new Date(Date.now() - DIAS_PROPOSTA_RECENTE * 86400_000).toISOString();
     const { data } = await supabase
       .from("proposta_bancos")
-      .select("numero_proposta_banco, status_banco, propostas!inner(id, numero_proposta, cliente_id, status)")
+      .select(
+        "numero_proposta_banco, propostas!inner(id, numero_proposta, cliente_id, status, created_at)",
+      )
       .eq("banco_id", pb.banco_id)
       .eq("propostas.cliente_id", prop.cliente_id)
       .neq("proposta_id", propostaId)
       .not("numero_proposta_banco", "is", null)
+      .gte("propostas.created_at", desde)
       .limit(20);
 
     const ENCERRADAS = new Set(["cancelada", "contrato_emitido"]);
-    const anterior = (data ?? []).find(
+    const recente = (data ?? []).find(
       (r: any) => !ENCERRADAS.has(String(r?.propostas?.status ?? "")),
     );
-    if (!anterior) return MSG_FALHA_INTEGRACAO;
+    if (!recente) return base;
 
-    const numero = anterior.propostas?.numero_proposta ?? "anterior";
-    const protocolo = anterior.numero_proposta_banco;
-    const recusada = String(anterior.propostas?.status ?? "") === "credito_recusado";
-
-    // Recusa recente e proposta ainda em andamento levam ao mesmo bloqueio no
-    // banco, mas a saída para o operador é diferente: numa ele espera, na
-    // outra ele encerra a anterior.
-    if (recusada) {
-      return (
-        `O ${banco} não aceitou esta proposta e não informou o motivo. ` +
-        `O mesmo CPF foi recusado neste banco na proposta ${numero} ` +
-        `(protocolo ${protocolo}); os bancos costumam bloquear uma nova entrada ` +
-        `logo após uma recusa. Reenviar agora tende a falhar de novo — trate a ` +
-        `causa da recusa ou tente outro banco.`
-      );
-    }
     return (
-      `O ${banco} não aceitou esta proposta e não informou o motivo. ` +
-      `Este cliente já tem a proposta ${numero} em andamento neste mesmo banco ` +
-      `(protocolo ${protocolo}), o que costuma impedir uma segunda entrada para ` +
-      `o mesmo CPF. Conclua ou cancele a anterior antes de reenviar.`
+      base +
+      ` Observação: este CPF teve a proposta ${recente.propostas?.numero_proposta ?? ""} ` +
+      `neste mesmo banco nos últimos ${DIAS_PROPOSTA_RECENTE} dias ` +
+      `(protocolo ${recente.numero_proposta_banco}). Vale checar se isso pode estar ` +
+      `impedindo uma nova entrada.`
     );
   } catch {
-    return MSG_FALHA_INTEGRACAO;
+    return base;
   }
 }
 

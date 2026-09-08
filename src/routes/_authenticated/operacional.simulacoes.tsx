@@ -304,6 +304,10 @@ function Pagina() {
       await handleEnviarHook({
         propostaId: res.proposta_id,
         bancoId: banco.banco_id,
+        // A lista traz uma linha por combinação de prazo e sistema, então o
+        // mesmo banco aparece várias vezes. A identidade do que está em
+        // andamento é a linha, não o banco.
+        chave: banco.id,
       });
 
       queryClient.invalidateQueries({ queryKey: ["simulacoes"] });

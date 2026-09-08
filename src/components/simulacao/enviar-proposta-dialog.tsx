@@ -1,5 +1,6 @@
 import { Send, CheckCircle2, XCircle, Loader2, Info, Trophy } from "lucide-react";
 import { useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -49,12 +50,16 @@ export function EnviarPropostaDialog({
   const bancosComId = (envio?.bancos ?? []).filter((b: any) => b.banco_id);
   const simulados = bancosComId.filter((b: any) => b.status_banco === "simulada");
 
-  // O hook indexa o status por `banco_id` (é o que ele recebe de quem chama),
-  // mas as linhas aqui são de `simulacao_bancos`, cujo `id` é outro. Procurar
-  // só por `b.id` nunca encontrava nada: o botão ficava eternamente no estado
-  // inicial — sem spinner, sem erro, sem reação ao clique.
+  // O status é procurado PRIMEIRO pelo id da linha e só depois pelo banco.
+  //
+  // Um lote com dois prazos e dois sistemas produz quatro linhas do mesmo
+  // banco. Enquanto a busca começava por `banco_id`, as quatro liam o mesmo
+  // estado: enviar uma acendia o spinner nas outras três, todas com o mesmo
+  // cronômetro e a mesma etapa — e nenhuma delas estava realmente em curso.
+  // Quem envia passa `chave: b.id` ao hook; o fallback por banco atende quem
+  // ainda envia um banco por vez.
   const statusDoBanco = (b: any): StatusEnvioBanco | undefined =>
-    statusPorBanco[b.banco_id] ?? statusPorBanco[b.id];
+    statusPorBanco[b.id] ?? statusPorBanco[b.banco_id];
 
   const enviandoQualquer = Object.values(statusPorBanco).some((s) => s.status === "loading");
   const todosConcluidos =
@@ -96,19 +101,23 @@ export function EnviarPropostaDialog({
   }, [statusPorBanco]);
 
   const handleTentativaFechar = (o: boolean) => {
-    if (!o) {
-      if (enviandoQualquer) {
-        if (
-          confirm(
-            "Há envios em andamento. Fechar não cancela o envio — o resultado aparecerá na lista de propostas. Deseja fechar?",
-          )
-        ) {
-          onClose();
-        }
-      } else {
-        onClose();
-      }
+    if (o) return;
+    // O fechamento nunca é negado.
+    //
+    // Antes, com envio em andamento, a saída dependia de um `confirm()`
+    // nativo. Quando o navegador suprime esse diálogo — o que acontece em
+    // app embarcado e depois de vários prompts seguidos — ele devolve false
+    // sem mostrar nada, e a janela simplesmente não fechava: nem o X, nem o
+    // botão, nem Esc. O operador ficava preso na tela com um spinner.
+    //
+    // Fechar nunca cancelou envio nenhum, então não há o que confirmar:
+    // fechamos e dizemos onde o resultado vai aparecer.
+    if (enviandoQualquer) {
+      toast.info("O envio continua em andamento.", {
+        description: "O resultado aparece na lista de propostas assim que o banco responder.",
+      });
     }
+    onClose();
   };
 
   return (
