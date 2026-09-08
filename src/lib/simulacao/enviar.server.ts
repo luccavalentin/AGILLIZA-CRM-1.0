@@ -165,7 +165,13 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
             nome: sim.nome_cliente, cpfCnpj: String(sim.cpf_cnpj || "").replace(/\D/g, ""), dataNascimento: sim.data_nascimento, email: sim.email,
             celular: String(sim.celular || "").replace(/\D/g, ""),
             rendaTotal: num(sim.renda_total) + (sim.compoe_renda_conjuge ? num(sim.renda_conjuge) : 0) + rendaTerceiros,
-            fgCompoeRenda: Boolean(sim.possui_conjuge && sim.compoe_renda_conjuge), utilizaFgtsSimulacao: "N", valorImovel: num(sim.valor_imovel),
+            fgCompoeRenda: Boolean(sim.possui_conjuge && sim.compoe_renda_conjuge),
+            // O FGTS marcado na simulação era descartado: mandávamos "N" fixo,
+            // então o banco nunca soube que o cliente usaria o fundo. A coluna
+            // `utiliza_fgts` já guarda "S"/"N" — passamos o que o operador
+            // escolheu (8 simulações foram enviadas com "N" indevidamente).
+            utilizaFgtsSimulacao: String(sim.utiliza_fgts ?? "N") === "S" ? "S" : "N",
+            valorImovel: num(sim.valor_imovel),
             valorTotalFinanciamento, valorFinanciamento, valorDespesasFinanciadas,
             fgFinanciarDespesas, prazo: num(sim.prazo), uf: { codigo: sim.uf }, tipoEstadoCivil: { id: estadoCivilCrmParaCodigo(sim.estado_civil) },
             tipoImovel: { id: sim.tipo_imovel === "CS" ? "CS" : "AP" }, situacaoImovel: { codigo: sim.situacao_imovel === "N" ? "N" : "U" },
@@ -279,7 +285,7 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
                     bairro: c.imovel_bairro || "Centro",
                     municipio: c.imovel_cidade || "Sao Paulo",
                     uf: c.imovel_uf || sim.uf || "SP",
-                    utilizaFgts: "N",
+                    utilizaFgts: String(sim.utiliza_fgts ?? "N") === "S" ? "S" : "N",
                     fgAutorizacaoDados: true,
                     // Opcionais no contrato: enviados quando o cadastro tem.
                     // Em PJ a data de abertura mora no mesmo campo da data de
@@ -483,6 +489,44 @@ async function processarBancoIndividual(b: any, idOportunidade: string, sim: any
     if (!idSimulacaoBanco) throw new Error("ID simulação banco ausente.");
 
     await sbAdminProc.from("simulacao_bancos").update({ homefin_id_simulacao_banco: idSimulacaoBanco, mensagem_banco: "Simulação bancária preparada." }).eq("id", b.id);
+
+    // As despesas financiadas (custas/ITBI) só entram por PUT.
+    //
+    // No swagger, `valorDespesasFinanciadas`, `valorTotalFinanciamento` e
+    // `fgFinanciarDespesas` constam de `UpdateSimulationRequest` e NÃO de
+    // `CreateSimulationRequest`. Nós os mandávamos no POST de criação, onde a
+    // API simplesmente os descarta: a resposta do POST ecoa o que enviamos e
+    // parece certa, mas a simulação nasce só com `valorFinanciamento`, e a
+    // integração leva esse valor ao banco.
+    //
+    // Caso real (SIM-005262, 08/09): imóvel 780.000, financiamento 130.000 e
+    // 39.000 de despesas. Enviamos `valorTotalFinanciamento: 169000` no POST;
+    // o retorno da integração veio com 130.000 e parcela R$ 1.628,64 —
+    // idêntica à da mesma simulação SEM despesas (SIM-005263). No extrato do
+    // próprio Santander, 169.000 dá R$ 2.098,03. Marcar "financiar despesas"
+    // não mudava nada, e a parcela saía R$ 469 abaixo da real.
+    //
+    // O fluxo de proposta já fazia esse PUT; o de simulação não fazia.
+    // Só chamamos quando há despesas — sem elas o payload não muda nada e a
+    // ida extra ao provedor seria latência à toa.
+    if (valorDespesasFinanciadas > 0) {
+      await sbAdminProc.from("simulacao_bancos").update({ mensagem_banco: "Aplicando despesas financiadas..." }).eq("id", b.id);
+      await chamarIntegracao<any>(
+        `/oportunidade/${idOportunidade}/simulacao/${idSimulacaoBanco}`,
+        "PUT",
+        {
+          valorImovel: num(sim.valor_imovel),
+          valorFinanciamento,
+          prazo: num(sim.prazo),
+          codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao === "P" ? "P" : "S" },
+          valorDespesasFinanciadas,
+          valorTotalFinanciamento,
+          fgFinanciarDespesas,
+          fgAutorizacaoDados: true,
+        },
+        { simulacao_id: simulacaoId },
+      );
+    }
 
     // FASE B: Integração (Chamada pesada)
     await sbAdminProc.from("simulacao_bancos").update({ mensagem_banco: "Integrando com a instituição..." }).eq("id", b.id);
