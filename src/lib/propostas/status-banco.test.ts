@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ehFalhaIntegracaoBanco, statusInternoBanco } from "./enviar/helpers-retorno.server";
+import {
+  ehFalhaIntegracaoBanco,
+  situacaoBancoDeTipo,
+  statusInternoBanco,
+} from "./enviar/helpers-retorno.server";
 
 /**
  * `tipoSituacao` da integração, conforme a documentação:
@@ -59,5 +63,19 @@ describe("statusInternoBanco — tipoSituacao do provedor", () => {
 
     expect(ehFalhaIntegracaoBanco(respostaReal)).toBe(true);
     expect(statusInternoBanco("E", false, null, respostaReal).banco).toBe("erro");
+  });
+
+  // Domínio oficial do swagger 29/01/2026: S/P/N/A/R =
+  // Sem Integração / Erro ao Enviar Proposta / Análise Crédito /
+  // Crédito Aprovado / Crédito Recusado.
+  it('"S" é "Sem Integração": a proposta não foi ao banco', () => {
+    const r = statusInternoBanco("S", false, null);
+    expect(r.banco).toBe("nao_enviado");
+    expect(r.proposta).toBeNull();
+    expect(situacaoBancoDeTipo("S")).toBe("nao_enviado");
+  });
+
+  it('"P" é "Erro ao Enviar Proposta"', () => {
+    expect(statusInternoBanco("P", false, null).banco).toBe("erro");
   });
 });
