@@ -551,6 +551,37 @@ async function processarBancoIndividual(b: any, idOportunidade: string, sim: any
     const matchMax = msg.match(/maximo de (\d+)/i) || msg.match(/máximo aceito[^:]*[:\s]+(\d+)/i);
     if (matchMax) prazoMaxBanco = parseInt(matchMax[1]);
 
+    // Timeout de gateway não é recusa nem erro de dados: o provedor apenas
+    // demorou mais do que o gateway aceita esperar, e o pedido segue sendo
+     // processado do outro lado. O Santander é o caso típico — a primeira
+    // chamada da oportunidade estoura, a seguinte, segundos depois, passa.
+    //
+    // Marcar como "erro" obrigava o operador a reenviar uma simulação que na
+    // prática existia. Com a simulação já criada e identificada por id, o
+    // estado honesto é "aguardando": a reconciliação busca o resultado e
+    // resolve sozinha, como já faz com qualquer banco assíncrono.
+    const statusHttpErro =
+      e instanceof IntegracaoBancariaError ? ((e as any).statusHttp as number | undefined) : undefined;
+    const ehTimeoutDeGateway = statusHttpErro === 502 || statusHttpErro === 503 || statusHttpErro === 504;
+    const { data: bancoAtual } = await sbAdminErr
+      .from("simulacao_bancos")
+      .select("homefin_id_simulacao_banco")
+      .eq("id", b.id)
+      .maybeSingle();
+    const jaExisteNoProvedor = Boolean(bancoAtual?.homefin_id_simulacao_banco);
+
+    if (ehTimeoutDeGateway && jaExisteNoProvedor) {
+      await sbAdminErr
+        .from("simulacao_bancos")
+        .update({
+          status_banco: "aguardando" as any,
+          mensagem_banco: "Aguardando resposta da instituição...",
+          raw_response: { timeout_gateway: statusHttpErro, erro: String(e) } as any,
+        })
+        .eq("id", b.id);
+      return { status: "aguardando" };
+    }
+
     await sbAdminErr.from("simulacao_bancos").update({ 
       status_banco: "erro" as any, 
       mensagem_banco: msg, 
