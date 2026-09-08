@@ -165,7 +165,7 @@ function mapParcela(p: Record<string, any>): ParcelaDetalhe {
  * (SAC ou PRICE), do valor financiado, do prazo e da taxa mensal. Cada parcela é
  * composta apenas por amortização + juros (sem seguros ou tarifas).
  */
-function calcularPlano(
+export function calcularPlano(
   principal: number,
   n: number,
   taxaMesPct: number,
