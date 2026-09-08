@@ -17,6 +17,13 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        /**
+         * Quanto esperar por um banco assíncrono antes de chamar de falha.
+         * A mediana histórica de resposta do Santander é de ~12 s; 15 minutos
+         * é folga larga sem deixar a linha presa em "Em análise" por um dia.
+         */
+        const MINUTOS_ATE_DESISTIR = 15;
+
         // --- NOVA ROTINA DE LIMPEZA DE LOCKS E PRESAS ---
         const limite2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
         const limite30min = new Date(Date.now() - 30 * 60 * 1000).toISOString();
@@ -68,6 +75,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
             simulacao_id, 
             homefin_id_simulacao_banco, 
             nome_banco,
+            created_at,
             simulacoes!inner(homefin_id_oportunidade, correspondente_id)
           `)
           .eq("status_banco", "aguardando")
@@ -135,15 +143,43 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
 
                 await recalcularStatusSimulacao(b.simulacao_id, supabaseAdmin);
                 recuperadas++;
-              } else if (apiSim.codigoSituacaoBanco === "E" || apiSim.retornoIntegracao?.toLowerCase().includes("erro")) {
-                 // Se houver erro explícito, marcamos como erro
-                 await supabaseAdmin.from("simulacao_bancos").update({
-                   status_banco: "erro" as any,
-                   mensagem_banco: apiSim.retornoIntegracao || "Erro retornado pela instituição.",
-                   raw_response: apiSim,
-                   updated_at: new Date().toISOString()
-                 }).eq("id", b.id);
-                 await recalcularStatusSimulacao(b.simulacao_id, supabaseAdmin);
+              } else {
+                // Sem valor de parcela. Antes só encerrávamos com erro
+                // explícito, e o provedor quase nunca dá um: nas simulações
+                // travadas de 08/09 (95284, 95326, 95335) `retornoIntegracao`
+                // e `codigoSituacaoBanco` vinham nulos. Nenhum ramo executava
+                // e a linha ficava "Em análise" até a faxina de 24 h.
+                //
+                // `codigoSituacaoBanco === "E"` também nunca casava: o "E"
+                // aparece em `tipoSituacao`, não nesse campo.
+                //
+                // Agora o tempo decide. O Santander responde em ~12 s na
+                // mediana histórica; passados 15 minutos sem parcela, esperar
+                // mais não traz resultado — traz só um status que mente.
+                const tipo = String(apiSim.tipoSituacao ?? "").toUpperCase().charAt(0);
+                const retorno = String(apiSim.retornoIntegracao ?? "").toLowerCase();
+                const erroExplicito =
+                  apiSim.codigoSituacaoBanco === "E" || retorno.includes("erro");
+                const minutosEspera =
+                  (Date.now() - new Date(b.created_at as string).getTime()) / 60_000;
+                const esgotou = minutosEspera > MINUTOS_ATE_DESISTIR;
+
+                // `P` é o estado normal de uma simulação que ainda não virou
+                // proposta — 95334 está em "P" com parcela de R$ 9.216,71. Por
+                // isso ele só vira erro junto com a espera esgotada; o que
+                // caracteriza a falha é continuar sem valor depois do prazo.
+                if (erroExplicito || ((tipo === "P" || tipo === "E") && esgotou) || esgotou) {
+                  await supabaseAdmin.from("simulacao_bancos").update({
+                    status_banco: "erro" as any,
+                    mensagem_banco:
+                      apiSim.retornoIntegracao ||
+                      `O ${b.nome_banco ?? "banco"} não devolveu os valores desta simulação. Reenvie para tentar de novo.`,
+                    raw_response: apiSim,
+                    updated_at: new Date().toISOString()
+                  }).eq("id", b.id);
+                  await recalcularStatusSimulacao(b.simulacao_id, supabaseAdmin);
+                  erros++;
+                }
               }
             }
           } catch (e) {
