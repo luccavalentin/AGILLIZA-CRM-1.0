@@ -55,7 +55,7 @@ export function ConsultorMessage({
           )}
         </div>
 
-        <div className="text-[15px] leading-relaxed text-brand-azul-noite/90 selection:bg-primary/10">
+        <div className="text-[15px] leading-relaxed text-foreground/90 selection:bg-primary/10">
           <Markdown conteudo={message.conteudo} />
         </div>
 
