@@ -334,7 +334,7 @@ function ConsultorIaPage() {
                       <Bot className="size-5 animate-pulse" />
                     </div>
                     <div className="min-w-0 flex-1 space-y-4">
-                      <div className="text-[15px] leading-relaxed text-brand-azul-noite/90">
+                      <div className="text-[15px] leading-relaxed text-foreground/90">
                         {parcial ? (
                           <>
                             <Markdown conteudo={parcial} />

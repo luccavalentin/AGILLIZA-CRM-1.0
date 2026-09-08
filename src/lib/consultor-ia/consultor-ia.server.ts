@@ -82,7 +82,13 @@ export function selecionarTrechos(itens: TrechoBase[], pergunta: string, limite 
     let score = 0;
     for (const t of termos) {
       if (alvoTitulo.some((x) => x.startsWith(t) || t.startsWith(x))) score += 3;
-      score += Math.min(alvoConteudo.filter((x) => x === t).length, 4);
+      // Mesma tolerância a plural/conjugação usada no título (ex.: "documento"
+      // casando com "documentos", "financia" com "financiamento") — antes o
+      // conteúdo só pontuava em igualdade exata e perdia trechos relevantes.
+      score += Math.min(
+        alvoConteudo.filter((x) => x === t || x.startsWith(t) || t.startsWith(x)).length,
+        4,
+      );
     }
     return { it, score };
   });
@@ -238,7 +244,8 @@ export async function prepararConsulta(
     `4. TOM: Executivo, sofisticado e autoritativo. Use um vocabulário rico mas acessível.\n` +
     `5. ESTRUTURA: Respostas visualmente organizadas com títulos em negrito e listas elegantes.\n` +
     `6. VERACIDADE TÉCNICA: Seja exato em termos como SFH, SFI, LTV, CET e ITBI.\n` +
-    `7. FONTES: Finalize sempre com "FONTES: id1, id2" em uma linha única.\n\n` +
+    `7. FONTES: Finalize sempre com "FONTES: id1, id2" em uma linha única, citando apenas os ids dos TRECHOS DE REFERÊNCIA que você realmente usou.\n` +
+    `8. PROIBIDO ALUCINAR: baseie toda afirmação técnica, numérica ou normativa (taxas, prazos, LTV, percentuais, exigências de banco/produto) SOMENTE nos TRECHOS DE REFERÊNCIA abaixo ou no HISTÓRICO DA CONSULTORIA. Se os trechos estiverem vazios ou não cobrirem o que foi perguntado, NÃO responda com conhecimento geral nem estime valores — inclua no início da resposta o marcador exato ${MARCADOR_SEM_INFO}, explique objetivamente que esse ponto ainda não está na base de conhecimento da Agilliza e, se fizer sentido, oriente a sugerir o conteúdo para a base (recurso já disponível na tela). Dúvidas conceituais gerais (explicar o que é SFH, por exemplo) podem ser respondidas com seu conhecimento mesmo sem trecho, mas nunca dados específicos da operação/política da Agilliza sem respaldo nos trechos.\n\n` +
     `TRECHOS DE REFERÊNCIA (INTELIGÊNCIA AGILLIZA):\n${referencias}\n\n` +
     `HISTÓRICO DA CONSULTORIA:\n${historicoTexto}\n\n` +
     `DEMANDA DO ESPECIALISTA ${nomeUsuario.toUpperCase()}: ${entrada.pergunta}`;
