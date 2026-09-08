@@ -545,7 +545,10 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
                           </div>
 
                           <div className="mt-1">
-                            <BancoStatusBadge status={b.status_banco} />
+                            <BancoStatusBadge
+                              status={b.status_banco}
+                              hasId={Boolean(b.homefin_id_simulacao_banco)}
+                            />
                           </div>
                         </div>
                       </div>
@@ -774,7 +777,10 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
                             </div>
                           </TableCell>
                           <TableCell className="py-3">
-                            <BancoStatusBadge status={b.status_banco} />
+                            <BancoStatusBadge
+                              status={b.status_banco}
+                              hasId={Boolean(b.homefin_id_simulacao_banco)}
+                            />
                           </TableCell>
                           <TableCell className="py-3 text-right text-sm font-bold tabular-nums whitespace-nowrap text-foreground">
                             {formatBRL(b.valor_parcela)}

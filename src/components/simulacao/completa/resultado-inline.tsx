@@ -329,7 +329,10 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                             {b.id === melhorId && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
                           </div>
                           <div className="mt-1">
-                            <BancoStatusBadge status={b.status_banco} />
+                            <BancoStatusBadge
+                              status={b.status_banco}
+                              hasId={Boolean(b.homefin_id_simulacao_banco)}
+                            />
                           </div>
                         </div>
                       </div>
@@ -508,7 +511,10 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                             )}
                           </TableCell>
                           <TableCell className="px-2 py-2">
-                            <BancoStatusBadge status={b.status_banco} />
+                            <BancoStatusBadge
+                              status={b.status_banco}
+                              hasId={Boolean(b.homefin_id_simulacao_banco)}
+                            />
                           </TableCell>
                           <TableCell className="px-2 py-2 text-right font-semibold tabular-nums whitespace-nowrap">
                             {formatBRL(b.valor_parcela)}
