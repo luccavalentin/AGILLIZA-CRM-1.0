@@ -1,11 +1,13 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Calculator, ListChecks, Building2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { supabase } from "@/integrations/supabase/client";
+import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import {
   listarSimulacoes,
   excluirSimulacao,
@@ -153,6 +155,47 @@ function Pagina() {
       }),
   });
 
+
+  // Tempo real: a lista só se atualizava por polling — 30 s com tudo parado,
+  // 5 s enquanto havia envio em andamento. Uma simulação criada por outro
+  // operador levava até meio minuto para aparecer, e o mesmo atraso valia com
+  // um filtro de usuário aplicado, porque o filtro só troca a chave da query,
+  // não a cadência.
+  //
+  // `simulacoes` e `simulacao_bancos` já estão publicadas em
+  // `supabase_realtime`; passamos a ouvi-las e a revalidar assim que qualquer
+  // uma muda. Invalidar pela raiz `["simulacoes"]` atinge todas as variantes
+  // da chave, então escopo, busca, período, responsável e página se atualizam
+  // juntos, sem precisar saber qual filtro está ativo.
+  //
+  // O polling continua como rede de segurança para o caso de o websocket cair
+  // — quando ele está de pé, a lista chega antes.
+  useEffect(() => {
+    // Uma simulação enviada a três bancos dispara vários eventos em rajada;
+    // o debounce agrupa tudo num único refetch.
+    const invalidador = createDebouncedInvalidator(() => {
+      queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
+    }, 250);
+
+    const canal = supabase
+      .channel("lista-simulacoes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "simulacoes" },
+        invalidador.schedule,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "simulacao_bancos" },
+        invalidador.schedule,
+      )
+      .subscribe();
+
+    return () => {
+      invalidador.cancel();
+      supabase.removeChannel(canal);
+    };
+  }, [queryClient]);
   async function handleExcluir(id: string) {
     try {
       await excluir({ data: { id } });
