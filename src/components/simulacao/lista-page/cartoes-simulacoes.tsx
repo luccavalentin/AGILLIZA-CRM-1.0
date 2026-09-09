@@ -70,28 +70,25 @@ export function CartoesSimulacoes({
             onClick={() => (verExcluidas ? undefined : handlers.onEditar(s.id))}
           >
             <span className="absolute inset-y-0 left-0 w-1 bg-[var(--banco)]" />
-            <div className="flex items-start justify-between gap-3 pl-1">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-mono font-semibold text-primary">{s.numero_simulacao}</p>
-                  {(s._agrupadas_ids?.length ?? 0) > 0 && (
-                    <div className="flex flex-wrap items-center gap-1 opacity-60">
-                      {s._agrupadas_ids.map((id: string) => {
-                        return (
-                          <span key={id} className="text-[9px] font-mono text-muted-foreground">
-                            · {id.split("-")[0].toUpperCase()}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-tight">
-                    {formatDataHoraBR(s.created_at)}
-                  </span>
-                </div>
+            <div className="flex items-start justify-between gap-2 pl-1">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-mono text-sm font-semibold leading-tight text-primary">
+                  {s.numero_simulacao}
+                </p>
                 <p className="truncate text-sm font-medium text-foreground transition-colors group-hover/card:text-primary">
                   {s.nome_cliente ?? "—"}
                 </p>
+                {/* Data e IDs agrupados em linha própria: em telas estreitas eles
+                    não cabiam ao lado do número e sobrepunham o badge de status. */}
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-medium uppercase tracking-tight text-muted-foreground">
+                  <span className="tabular-nums">{formatDataHoraBR(s.created_at)}</span>
+                  {(s._agrupadas_ids?.length ?? 0) > 0 &&
+                    s._agrupadas_ids.map((id: string) => (
+                      <span key={id} className="font-mono normal-case opacity-60">
+                        · {id.split("-")[0].toUpperCase()}
+                      </span>
+                    ))}
+                </div>
                 {/* Crachá curto para não truncar; o nome do cônjuge vai na
                     linha de baixo, onde cabe inteiro. */}
                 {s.teste_casal && (
@@ -120,46 +117,50 @@ export function CartoesSimulacoes({
                   </p>
                 )}
               </div>
+              {/* Em telas estreitas o badge fica acima dos botões, para o bloco
+                  de ações não roubar a largura do cabeçalho. */}
               <div
-                className="flex shrink-0 items-center gap-1"
+                className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center"
                 onClick={(e) => e.stopPropagation()}
               >
                 <SimulacaoStatusBadge status={s.status} />
-                {verExcluidas ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 rounded-lg"
-                    onClick={() => handlers.onRestaurar(s.id)}
-                  >
-                    <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
-                  </Button>
-                ) : (
-                  <>
+                <div className="flex items-center gap-1">
+                  {verExcluidas ? (
                     <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      title="Ver detalhes"
-                      aria-label="Ver detalhes da simulação"
-                      onClick={() => handlers.onVer(s.id)}
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-lg"
+                      onClick={() => handlers.onRestaurar(s.id)}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Undo2 className="mr-1 h-3.5 w-3.5" /> Restaurar
                     </Button>
-                    <AcoesSimulacao
-                      onVisualizar={() => handlers.onVer(s.id)}
-                      onEditar={() => handlers.onEditar(s.id)}
-                      onBaixarComparativo={() => handlers.onBaixarComparativo(s.id)}
-                      onBaixarDetalhada={() => handlers.onBaixarDetalhada(s.id)}
-                      onDuplicar={() => handlers.onDuplicar(s.id)}
-                      onEnviarProposta={() => handlers.onEnviarProposta(s.id, s.numero_simulacao)}
-                      onExcluir={() => handlers.onExcluir(s.id)}
-                      onEncaminhar={(id, canal) => handlers.onEncaminhar(s.id, canal)}
-                      onDestravar={() => handlers.onDestravar(s.id)}
-                      numero={s.numero_simulacao}
-                    />
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        title="Ver detalhes"
+                        aria-label="Ver detalhes da simulação"
+                        onClick={() => handlers.onVer(s.id)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <AcoesSimulacao
+                        onVisualizar={() => handlers.onVer(s.id)}
+                        onEditar={() => handlers.onEditar(s.id)}
+                        onBaixarComparativo={() => handlers.onBaixarComparativo(s.id)}
+                        onBaixarDetalhada={() => handlers.onBaixarDetalhada(s.id)}
+                        onDuplicar={() => handlers.onDuplicar(s.id)}
+                        onEnviarProposta={() => handlers.onEnviarProposta(s.id, s.numero_simulacao)}
+                        onExcluir={() => handlers.onExcluir(s.id)}
+                        onEncaminhar={(id, canal) => handlers.onEncaminhar(s.id, canal)}
+                        onDestravar={() => handlers.onDestravar(s.id)}
+                        numero={s.numero_simulacao}
+                      />
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
