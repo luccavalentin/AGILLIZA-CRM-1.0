@@ -27,7 +27,9 @@ export function grupoDoStatus(status: string | null | undefined): GrupoProposta 
     case "em_analise_credito":
       return "enviadas";
     // Aprovadas (crédito aprovado em diante, incluindo contrato).
+    // O condicionado entra aqui: o crédito saiu, ainda que com exigências.
     case "credito_aprovado":
+    case "credito_condicionado":
     case "checklist_documentacao":
     case "cadastro_complementar":
     case "dossie_completo":

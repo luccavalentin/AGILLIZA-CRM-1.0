@@ -63,20 +63,28 @@ export async function recalcularStatusGlobalProposta(
   if (!bancos || bancos.length === 0) return null;
 
   let algumAprovado = false;
+  let algumCondicionado = false;
   let algumEmAnalise = false;
   let algumRecusado = false;
   let algumErroEnvio = false;
 
   for (const b of bancos) {
     const s = String(b.situacao_banco);
-    if (s === "aprovado" || s === "condicionado") algumAprovado = true;
+    if (s === "aprovado") algumAprovado = true;
+    // Condicionado deixa de ser somado ao aprovado: o cabeçalho dizia
+    // "Crédito aprovado" mesmo quando TODOS os bancos tinham imposto
+    // exigências, e o operador seguia para os documentos sem saber delas.
+    else if (s === "condicionado") algumCondicionado = true;
     else if (s === "em_analise") algumEmAnalise = true;
     else if (s === "recusado") algumRecusado = true;
     else if (s === "erro") algumErroEnvio = true;
   }
 
   // Hierarquia de relevância para o cabeçalho
+  // Aprovação plena de um banco vale mais que a condicionada de outro — é a
+  // melhor oferta em mão.
   if (algumAprovado) return "credito_aprovado";
+  if (algumCondicionado) return "credito_condicionado";
   if (algumEmAnalise) return "em_analise_credito";
   if (algumRecusado) return "credito_recusado";
   if (algumErroEnvio) return "erro_envio";

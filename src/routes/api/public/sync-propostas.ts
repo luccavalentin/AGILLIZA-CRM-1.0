@@ -28,6 +28,10 @@ export const Route = createFileRoute("/api/public/sync-propostas")({
           "enviada_banco",
           "em_analise_credito",
           "credito_aprovado",
+          // Condicionado ainda evolui: as condições podem ser cumpridas
+          // (vira aprovado) ou não (vira recusa). Fora desta lista, a
+          // proposta pararia de receber retorno do banco no meio do caminho.
+          "credito_condicionado",
           "aguardando_documentos",
           "engenharia_vistoria",
           "analise_juridica",

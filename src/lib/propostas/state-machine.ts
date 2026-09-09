@@ -6,6 +6,7 @@
  *  1  Simulação                          -> rascunho / erro_envio
  *  2  Enviado para aprovação de crédito  -> enviada_banco / em_analise_credito   (AUTOMÁTICO via API)
  *  3  Crédito aprovado (banco)           -> credito_aprovado                      (AUTOMÁTICO via retorno da API)
+ *  3b Crédito aprovado COM condições     -> credito_condicionado                  (AUTOMÁTICO; segue o mesmo caminho)
  *  4  Coleta de documentos               -> aguardando_documentos                 (manual)
  *  5  Engenharia / vistoria              -> engenharia_vistoria                   (manual)
  *  6  Análise jurídica                   -> analise_juridica                      (manual)
@@ -21,6 +22,7 @@ export type PropostaStatus =
   | "enviada_banco"
   | "em_analise_credito"
   | "credito_aprovado"
+  | "credito_condicionado"
   | "credito_recusado"
   | "checklist_documentacao"
   | "cadastro_complementar"
@@ -48,12 +50,26 @@ export const TRANSICOES: Record<PropostaStatus, PropostaStatus[]> = {
   enviada_banco: [
     "em_analise_credito",
     "credito_aprovado",
+    "credito_condicionado",
     "credito_recusado",
     "erro_envio",
     "cancelada",
   ],
-  em_analise_credito: ["credito_aprovado", "credito_recusado", "cancelada"],
+  em_analise_credito: [
+    "credito_aprovado",
+    "credito_condicionado",
+    "credito_recusado",
+    "cancelada",
+  ],
   credito_aprovado: ["aguardando_documentos", "cancelada"],
+  // O condicionado segue para documentos como a aprovação plena, mas também
+  // pode virar aprovação (condições cumpridas) ou recusa (não cumpridas).
+  credito_condicionado: [
+    "credito_aprovado",
+    "aguardando_documentos",
+    "credito_recusado",
+    "cancelada",
+  ],
   aguardando_documentos: ["engenharia_vistoria", "cancelada"],
   engenharia_vistoria: ["analise_juridica", "cancelada"],
   analise_juridica: ["contrato_emitido", "cancelada"],
@@ -80,6 +96,7 @@ export const ORDEM_STATUS: PropostaStatus[] = [
   "enviada_banco",
   "em_analise_credito",
   "credito_aprovado",
+  "credito_condicionado",
   "aguardando_documentos",
   "engenharia_vistoria",
   "analise_juridica",

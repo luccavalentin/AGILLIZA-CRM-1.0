@@ -78,4 +78,38 @@ describe("statusInternoBanco — tipoSituacao do provedor", () => {
   it('"P" é "Erro ao Enviar Proposta"', () => {
     expect(statusInternoBanco("P", false, null).banco).toBe("erro");
   });
+
+  // O Santander devolve `tipoSituacao: "C"` com o código
+  // "513  ANALISE AUTOMATICA FAVORAVEL", que é aprovação PLENA. Enquanto
+   // bastava o "C" para cair em condicionado, toda análise favorável dele
+  // aparecia como "Aprovado com condições" sem existir condição nenhuma.
+  it('"C" com 513 favorável é aprovação plena, não condicionada', () => {
+    const r = statusInternoBanco("C", false, "513  ANALISE AUTOMATICA FAVORAVEL");
+    expect(r.banco).toBe("aprovada");
+    expect(r.proposta).toBe("credito_aprovado");
+  });
+
+  it("514 desfavorável continua sendo recusa", () => {
+    const r = statusInternoBanco("R", false, "514 - ANALISE AUTOMATICA DESFAVORAVEL");
+    expect(r.proposta).toBe("credito_recusado");
+  });
+
+  it("condicionado vem do texto do banco e tem status próprio", () => {
+    for (const codigo of [
+      "CREDITO APROVADO CONDICIONADO",
+      "APROVADO COM RESSALVA",
+      "APROVADO COM EXIGENCIA",
+    ]) {
+      const r = statusInternoBanco("A", false, codigo);
+      expect(r.banco).toBe("condicionado");
+      expect(r.proposta).toBe("credito_condicionado");
+    }
+  });
+
+  it("condicionado ganha da aprovação quando o retorno diz as duas coisas", () => {
+    // "aprovado condicionado" casa com "aprov" e com "cond"; a condição manda.
+    expect(statusInternoBanco("A", false, "APROVADO CONDICIONADO").proposta).toBe(
+      "credito_condicionado",
+    );
+  });
 });
