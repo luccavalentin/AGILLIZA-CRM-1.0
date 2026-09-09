@@ -249,7 +249,16 @@ export function ParticipanteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl flex flex-col p-0 overflow-hidden max-h-[90vh]">
+      {/*
+        4xl (896px) e quase toda a altura, no lugar dos 2xl (672px) de antes.
+        São mais de 25 campos obrigatórios: naquela largura o formulário virava
+        uma coluna estreita com rolagem infinita.
+
+        A largura é deliberadamente 4xl e não maior: os campos são organizados
+        em pares, e num diálogo de 1152px cada par passaria de 500px — um CPF
+        ocupando meia tela lê pior do que num campo de tamanho normal.
+      */}
+      <DialogContent className="flex h-[92vh] w-[96vw] max-w-4xl flex-col overflow-hidden p-0 sm:h-[90vh]">
         <DialogHeader className="p-6 pb-2 shrink-0">
           <div className="flex items-center justify-between gap-4">
             <DialogTitle>{titulo}</DialogTitle>
@@ -265,7 +274,7 @@ export function ParticipanteDialog({
         </DialogHeader>
 
         <div
-          className="brand-scroll scroll-shadow-bottom min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-4"
+          className="brand-scroll scroll-shadow-bottom min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5 md:px-8"
           ref={corpoRef}
         >
           {avisoTopo}
@@ -312,21 +321,29 @@ export function ParticipanteDialog({
           )}
         </div>
 
-        <DialogFooter className="flex-col gap-2 sm:flex-row sm:items-center p-6 pt-2 shrink-0">
-          <div className="flex-1">
+        <DialogFooter className="shrink-0 flex-col gap-3 border-t border-border bg-muted/20 px-6 py-4 sm:flex-row sm:items-center md:px-8">
+          <div className="min-w-0 flex-1">
             {podeEnviar ? (
-              <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-success">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Tudo pronto para enviar
+              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-success">
+                <CheckCircle2 className="h-4 w-4 shrink-0" /> Tudo pronto para enviar
               </p>
             ) : (
-              <p className="text-[11px] font-medium text-muted-foreground">
-                Falta{pendentesAgora.length === 1 ? "" : "m"} {pendentesAgora.length}{" "}
-                {pendentesAgora.length === 1 ? "dado obrigatório" : "dados obrigatórios"}:{" "}
-                {pendentesAgora.join(", ")}
-              </p>
+              <div className="min-w-0 text-[11px] font-medium text-muted-foreground">
+                {/* Contador em destaque e a lista em no máximo duas linhas.
+                    Antes ela quebrava em muitas linhas e empurrava os botões
+                    para fora; a versão com rolagem horizontal resolvia isso mas
+                    escondia metade dos nomes atrás de uma barra. */}
+                <span className="font-bold text-foreground">
+                  Falta{pendentesAgora.length === 1 ? "" : "m"} {pendentesAgora.length}{" "}
+                  {pendentesAgora.length === 1 ? "dado obrigatório" : "dados obrigatórios"}
+                </span>
+                <p className="mt-0.5 line-clamp-2 leading-snug" title={pendentesAgora.join(", ")}>
+                  {pendentesAgora.join(" · ")}
+                </p>
+              </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
