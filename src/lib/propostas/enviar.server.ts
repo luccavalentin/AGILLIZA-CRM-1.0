@@ -226,7 +226,7 @@ async function motivoFalhaSemMensagem({
     const { data } = await supabase
       .from("proposta_bancos")
       .select(
-        "numero_proposta_banco, propostas!inner(id, numero_proposta, cliente_id, status, created_at)",
+        "numero_proposta_banco, status_banco, propostas!inner(id, numero_proposta, cliente_id, status, created_at, deleted_at)",
       )
       .eq("banco_id", pb.banco_id)
       .eq("propostas.cliente_id", prop.cliente_id)
@@ -235,19 +235,47 @@ async function motivoFalhaSemMensagem({
       .gte("propostas.created_at", desde)
       .limit(20);
 
-    const ENCERRADAS = new Set(["cancelada", "contrato_emitido"]);
-    const recente = (data ?? []).find(
-      (r: any) => !ENCERRADAS.has(String(r?.propostas?.status ?? "")),
-    );
-    if (!recente) return base;
+    // Proposta na lixeira não ocupa vaga no banco.
+    const candidatas = (data ?? []).filter((r: any) => !r?.propostas?.deleted_at);
 
-    return (
-      base +
-      ` Observação: este CPF teve a proposta ${recente.propostas?.numero_proposta ?? ""} ` +
-      `neste mesmo banco nos últimos ${DIAS_PROPOSTA_RECENTE} dias ` +
-      `(protocolo ${recente.numero_proposta_banco}). Vale checar se isso pode estar ` +
-      `impedindo uma nova entrada.`
+    // Uma proposta VIVA no mesmo banco é a explicação mais provável, e a que
+    // exige ação diferente: não adianta reenviar, é preciso tratar a que existe.
+    const EM_ANDAMENTO = new Set([
+      "enviada_banco",
+      "em_analise_credito",
+      "credito_aprovado",
+      "credito_condicionado",
+      "aguardando_documentos",
+      "engenharia_vistoria",
+      "analise_juridica",
+    ]);
+    const ativa = candidatas.find((r: any) =>
+      EM_ANDAMENTO.has(String(r?.propostas?.status ?? "")),
     );
+    if (ativa) {
+      return (
+        `O ${banco} já tem uma proposta em andamento para este CPF: ` +
+        `${ativa.propostas?.numero_proposta ?? ""} (protocolo ${ativa.numero_proposta_banco}). ` +
+        `Os bancos não aceitam duas propostas do mesmo CPF ao mesmo tempo, e por isso ` +
+        `esta foi recusada sem mensagem. Acompanhe ou cancele a proposta existente ` +
+        `antes de enviar outra — reenviar agora vai falhar de novo.`
+      );
+    }
+
+    const recusada = candidatas.find(
+      (r: any) => String(r?.propostas?.status ?? "") === "credito_recusado",
+    );
+    if (recusada) {
+      return (
+        `O ${banco} não aceitou esta proposta e não informou o motivo. O mesmo CPF ` +
+        `foi recusado neste banco na proposta ${recusada.propostas?.numero_proposta ?? ""} ` +
+        `(protocolo ${recusada.numero_proposta_banco}) nos últimos ${DIAS_PROPOSTA_RECENTE} dias; ` +
+        `os bancos costumam bloquear uma nova entrada logo após uma recusa. Trate a ` +
+        `causa da recusa ou tente outro banco.`
+      );
+    }
+
+    return base;
   } catch {
     return base;
   }
@@ -1739,7 +1767,18 @@ export async function sincronizarPropostaImpl({
     if (falhaIntegracao) {
       patchBanco.numero_proposta_banco = null;
     } else {
-      patchBanco.referencia_integracao = refIntegracao;
+      // `referencia_integracao` NÃO EXISTE em `proposta_bancos`. Gravá-la fazia
+      // o banco recusar a escrita inteira com 42703 (coluna inexistente), e o
+      // erro não era conferido — então TODA sincronização falhava em silêncio e
+      // a linha do banco nunca era atualizada.
+      //
+      // Era o que prendia a proposta no último status conhecido: a PRO-000273
+      // estava recusada no Itaú (tipoSituacao "R", protocolo 17774375) e a tela
+      // seguia em "em análise", sincronizando a cada 2 minutos sem efeito.
+      //
+      // A referência técnica não tem coluna nem uso; fica só no `raw_response`,
+      // que já é gravado logo acima.
+      void refIntegracao;
       if (numeroReal) {
         // Um mesmo protocolo em duas linhas de banco/propostas diferentes é bug
         // de vazamento — loga e não propaga.
