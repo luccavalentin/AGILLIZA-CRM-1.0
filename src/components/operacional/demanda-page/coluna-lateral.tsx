@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -100,7 +101,7 @@ export function ColunaLateral({
       qc.invalidateQueries({ queryKey: ["demandas"] });
       navigate({ to: "/operacional/demandas" });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+      toast.error(mensagemDeErro(e, "Falha ao excluir."));
     } finally {
       setExcluindo(false);
     }

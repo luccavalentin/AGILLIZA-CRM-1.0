@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -238,7 +239,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       toast.success(status === "aprovado" ? "Documento aprovado." : "Documento reprovado.");
       qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao revisar documento.");
+      toast.error(mensagemDeErro(e, "Falha ao revisar documento."));
     }
   }
 
@@ -255,7 +256,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       toast.success("Correção solicitada.");
       qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao solicitar correção.");
+      toast.error(mensagemDeErro(e, "Falha ao solicitar correção."));
     }
   }
 
@@ -279,7 +280,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       setEditDoc(null);
       recarregar();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao atualizar.");
+      toast.error(mensagemDeErro(e, "Falha ao atualizar."));
     } finally {
       setSalvandoEdit(false);
     }
@@ -294,7 +295,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       setDelDoc(null);
       recarregar();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+      toast.error(mensagemDeErro(e, "Falha ao excluir."));
     } finally {
       setExcluindo(false);
     }
@@ -312,7 +313,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       setNovaPastaNome("");
       qc.invalidateQueries({ queryKey: ["cliente-doc-pastas", clienteId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao criar pasta.");
+      toast.error(mensagemDeErro(e, "Falha ao criar pasta."));
     } finally {
       setSalvandoPasta(false);
     }
@@ -328,7 +329,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       setRenomearAlvo(null);
       qc.invalidateQueries({ queryKey: ["cliente-doc-pastas", clienteId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao renomear.");
+      toast.error(mensagemDeErro(e, "Falha ao renomear."));
     } finally {
       setSalvandoPasta(false);
     }
@@ -343,7 +344,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       setDelPasta(null);
       recarregar();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao excluir pasta.");
+      toast.error(mensagemDeErro(e, "Falha ao excluir pasta."));
     } finally {
       setExcluindoPasta(false);
     }

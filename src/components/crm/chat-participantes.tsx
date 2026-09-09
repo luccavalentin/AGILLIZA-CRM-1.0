@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { UserPlus, X, Users } from "lucide-react";
@@ -63,7 +64,7 @@ export function ChatParticipantes({
       qc.invalidateQueries({ queryKey: partKey });
       toast.success("Pessoa adicionada à conversa.");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao adicionar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao adicionar.")),
   });
 
   const rmMut = useMutation({
@@ -73,7 +74,7 @@ export function ChatParticipantes({
       qc.invalidateQueries({ queryKey: partKey });
       toast.success("Pessoa removida da conversa.");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao remover."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao remover.")),
   });
 
   const total = participantes?.length ?? 0;

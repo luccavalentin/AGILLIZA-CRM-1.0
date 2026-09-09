@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -160,7 +161,7 @@ function Pagina() {
       queryClient.invalidateQueries({ queryKey: ["demandas"] });
       setExcluirId(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível excluir a demanda.");
+      toast.error(mensagemDeErro(e, "Não foi possível excluir a demanda."));
     } finally {
       setExcluindo(false);
     }

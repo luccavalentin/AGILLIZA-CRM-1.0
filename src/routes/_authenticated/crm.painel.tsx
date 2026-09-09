@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -216,7 +217,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-painel"], refetchType: "none" });
     } catch (e) {
       if (anterior) qc.setQueryData(queryKey, anterior);
-      toast.error(e instanceof Error ? e.message : "Falha ao mover o cliente.");
+      toast.error(mensagemDeErro(e, "Falha ao mover o cliente."));
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     }
   }
@@ -243,7 +244,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-painel"], refetchType: "none" });
     } catch (e) {
       if (anterior) qc.setQueryData(queryKey, anterior);
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar a data.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar a data."));
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     }
   }
@@ -271,7 +272,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-painel"], refetchType: "none" });
     } catch (e) {
       if (anterior) qc.setQueryData(queryKey, anterior);
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar a data.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar a data."));
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     }
   }
@@ -293,7 +294,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
     } catch (e) {
       if (anterior) qc.setQueryData(queryKey, anterior);
-      toast.error(e instanceof Error ? e.message : "Falha ao arquivar o contrato.");
+      toast.error(mensagemDeErro(e, "Falha ao arquivar o contrato."));
     } finally {
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     }
@@ -306,7 +307,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao mover o contrato.");
+      toast.error(mensagemDeErro(e, "Falha ao mover o contrato."));
     }
   }
 
@@ -318,7 +319,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-contratos-emitidos"] });
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao excluir o contrato.");
+      toast.error(mensagemDeErro(e, "Falha ao excluir o contrato."));
     }
   }
 
@@ -331,7 +332,7 @@ function Pagina() {
       toast.success("Vínculo de simulação/aprovação removido. Cliente voltou ao cadastro.");
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao remover o vínculo.");
+      toast.error(mensagemDeErro(e, "Falha ao remover o vínculo."));
     }
   }
 
@@ -345,7 +346,7 @@ function Pagina() {
       setAdicionarBusca("");
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao adicionar o cliente.");
+      toast.error(mensagemDeErro(e, "Falha ao adicionar o cliente."));
     } finally {
       setAdicionando(false);
     }

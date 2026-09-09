@@ -1,4 +1,5 @@
 import { AdminHero } from "@/components/admin/admin-hero";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -69,7 +70,7 @@ function Pagina() {
       );
       qc.invalidateQueries({ queryKey: ["admin-health"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha no teste."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha no teste.")),
   });
 
   const sincronizar = useMutation({
@@ -78,7 +79,7 @@ function Pagina() {
       toast.success(`Domínios sincronizados: ${r.bancos} banco(s) e ${r.operacoes} operação(ões).`);
       qc.invalidateQueries({ queryKey: ["admin-banco-cred"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao sincronizar domínios."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao sincronizar domínios.")),
   });
 
   return (
@@ -321,7 +322,7 @@ function OrfasTabContent() {
       toast.success(`${r.sucessos} confirmados, ${r.falhas} falhas.`);
       qc.invalidateQueries({ queryKey: ["admin-orfas"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha no cancelamento."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha no cancelamento.")),
   });
 
   if (orfas.isLoading) return <Skeleton className="h-40 w-full" />;

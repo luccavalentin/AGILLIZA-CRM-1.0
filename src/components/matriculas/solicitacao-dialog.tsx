@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Plus } from "lucide-react";
@@ -97,7 +98,7 @@ export function SolicitacaoDialog({
       setOpen(false);
       onMudou();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar."));
     } finally {
       setSalvando(false);
     }

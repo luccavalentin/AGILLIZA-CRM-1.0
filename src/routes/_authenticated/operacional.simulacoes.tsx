@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -355,7 +356,7 @@ function Pagina() {
       });
       return;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
+      toast.error(mensagemDeErro(e, "Não foi possível gerar a proposta."));
     } finally {
       setEnviandoBancoId(null);
     }

@@ -1,4 +1,5 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { temBancoAguardando, useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -48,7 +49,13 @@ function Pagina() {
     refetchInterval: (query) => {
       const d = query.state.data as any;
       if (!d) return 3000;
-      const simFinal = ["simulada", "parcialmente_simulada", "erro_banco", "expirada", "cancelada"].includes(d.simulacao?.status);
+      const simFinal = [
+        "simulada",
+        "parcialmente_simulada",
+        "erro_banco",
+        "expirada",
+        "cancelada",
+      ].includes(d.simulacao?.status);
       const bancosPendentes = (d.bancos ?? []).some(
         (b: any) => !["simulada", "erro", "expirada"].includes(b.status_banco),
       );
@@ -107,7 +114,7 @@ function Pagina() {
       }
       qc.invalidateQueries({ queryKey: ["simulacao", id] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao reenviar.");
+      toast.error(mensagemDeErro(e, "Falha ao reenviar."));
     }
   }
 
@@ -132,7 +139,7 @@ function Pagina() {
       }
       qc.invalidateQueries({ queryKey: ["simulacao", id] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao reenviar.");
+      toast.error(mensagemDeErro(e, "Falha ao reenviar."));
     } finally {
       setReenviandoBanco(null);
     }
@@ -169,7 +176,7 @@ function Pagina() {
       }
       qc.invalidateQueries({ queryKey: ["simulacao", id] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao inverter titular.");
+      toast.error(mensagemDeErro(e, "Falha ao inverter titular."));
     } finally {
       setInvertendo(false);
     }
@@ -244,7 +251,7 @@ function Pagina() {
         search: {},
       });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao criar proposta.");
+      toast.error(mensagemDeErro(e, "Falha ao criar proposta."));
     } finally {
       setCriandoBanco(null);
     }

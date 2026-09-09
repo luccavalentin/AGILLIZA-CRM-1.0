@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -54,7 +55,7 @@ export function ChatClienteHeader({
       qc.invalidateQueries({ queryKey: ["chat-estado-usuario"] });
       qc.invalidateQueries({ queryKey: ["conversas-cliente"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível favoritar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível favoritar.")),
   });
 
   return (

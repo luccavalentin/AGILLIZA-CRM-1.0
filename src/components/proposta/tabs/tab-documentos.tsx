@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -79,7 +80,7 @@ export function TabDocumentos({
       toast.success("Documento excluído.");
       setExcluindo(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível excluir o documento.");
+      toast.error(mensagemDeErro(e, "Não foi possível excluir o documento."));
     } finally {
       setRemovendo(false);
     }
@@ -109,7 +110,7 @@ export function TabDocumentos({
       toast.success("Documento anexado.");
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha no upload.");
+      toast.error(mensagemDeErro(e, "Falha no upload."));
     } finally {
       setUploading(false);
     }

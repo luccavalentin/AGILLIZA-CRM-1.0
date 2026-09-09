@@ -3,6 +3,7 @@
  * para o usuário ver o texto aparecendo imediatamente.
  */
 import { createFileRoute } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import {
   clienteDoToken,
   finalizarResposta,
@@ -66,7 +67,7 @@ export const Route = createFileRoute("/api/consultor-ia/stream")({
             } catch (e) {
               enviar({
                 tipo: "erro",
-                mensagem: e instanceof Error ? e.message : "Falha ao consultar a IA.",
+                mensagem: mensagemDeErro(e, "Falha ao consultar a IA."),
               });
             } finally {
               controller.close();

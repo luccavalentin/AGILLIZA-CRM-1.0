@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -242,7 +243,7 @@ function BibliotecaPage() {
       await qc.invalidateQueries({ queryKey: ["consultor-ia-base"] });
       toast.success("Verbete publicado na biblioteca.");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   const excluir = useMutation({
@@ -252,7 +253,7 @@ function BibliotecaPage() {
       await qc.invalidateQueries({ queryKey: ["consultor-ia-base"] });
       toast.success("Verbete removido da biblioteca.");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao remover."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao remover.")),
   });
 
   const base = itens ?? [];

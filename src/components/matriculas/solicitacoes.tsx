@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { toast } from "sonner";
 import { CheckCircle2, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +51,7 @@ export function Solicitacoes({
       await alternarReembolsoMatricula({ data: { id, reembolsado } });
       onMudou();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao atualizar.");
+      toast.error(mensagemDeErro(e, "Falha ao atualizar."));
     }
   }
 

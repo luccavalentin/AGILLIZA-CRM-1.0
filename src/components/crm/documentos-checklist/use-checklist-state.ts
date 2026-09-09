@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -56,7 +57,7 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
             data: { cliente_id: clienteId, checklist: payload.next, utiliza_fgts: payload.fgts },
           });
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Falha ao salvar checklist.");
+          toast.error(mensagemDeErro(e, "Falha ao salvar checklist."));
           break;
         }
       }

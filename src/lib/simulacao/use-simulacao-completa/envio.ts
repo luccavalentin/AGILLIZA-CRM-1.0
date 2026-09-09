@@ -7,6 +7,7 @@
  * ciclo de vida do React e serem testáveis isoladamente.
  */
 import { mensagemCamposPendentes } from "@/lib/simulacao/rotulos-campos";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { toast } from "sonner";
 import { completaSchema, validarCepImovelHomeEquity } from "@/lib/simulacao/schemas";
 import {
@@ -15,10 +16,7 @@ import {
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
-import {
-  listarTitularesAlternativos,
-  type TitularAlternativo,
-} from "./titulares-alternativos";
+import { listarTitularesAlternativos, type TitularAlternativo } from "./titulares-alternativos";
 import type { Form } from "./state";
 
 type Router = { navigate: (opts: any) => void };
@@ -177,9 +175,7 @@ function chaveItem(
   bancoId: string,
   titular?: string,
 ): string {
-  return titular
-    ? `${sistema}-${prazo}-${bancoId}-${titular}`
-    : `${sistema}-${prazo}-${bancoId}`;
+  return titular ? `${sistema}-${prazo}-${bancoId}-${titular}` : `${sistema}-${prazo}-${bancoId}`;
 }
 
 function bloquearSemCepHomeEquity(f: Form, setErros: (v: Record<string, string>) => void): boolean {
@@ -211,9 +207,11 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
   if (!(Number(f.renda_price) > 0)) {
     novosErros.renda_price = "Informe a renda para o sistema PRICE.";
   }
-  const segundoPrazoInformado = f.prazo_2 && Number(f.prazo_2) > 0 && Number(f.prazo_2) !== Number(f.prazo);
+  const segundoPrazoInformado =
+    f.prazo_2 && Number(f.prazo_2) > 0 && Number(f.prazo_2) !== Number(f.prazo);
   const qtdPrazos = segundoPrazoInformado ? 2 : 1;
-  const totalSimulacoes = ((f.bancos_sac_ids?.length ?? 0) + (f.bancos_price_ids?.length ?? 0)) * qtdPrazos;
+  const totalSimulacoes =
+    ((f.bancos_sac_ids?.length ?? 0) + (f.bancos_price_ids?.length ?? 0)) * qtdPrazos;
 
   if (totalSimulacoes === 0) {
     novosErros.bancos_ids = "Selecione ao menos um banco em SAC ou PRICE.";
@@ -259,7 +257,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
 
   const { prazoMaximo, set } = ctx;
   const fValidado = { ...f };
-  
+
   // Normalização unificada determinística
   if (fValidado.prazo > prazoMaximo) {
     fValidado.prazo = prazoMaximo;
@@ -273,7 +271,6 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
     fValidado.prazo_2 = null;
     set?.("prazo_2", null);
   }
-
 
   type Cenario = {
     sistema: "S" | "P";
@@ -319,7 +316,12 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
     validarCenario("S", f.bancos_sac_ids, ctx.setSimulacaoResultadoId);
   }
   if ((f.bancos_price_ids?.length ?? 0) > 0) {
-    validarCenario("P", f.bancos_price_ids, ctx.setSimulacaoResultadoIdPrice, Number(f.renda_price));
+    validarCenario(
+      "P",
+      f.bancos_price_ids,
+      ctx.setSimulacaoResultadoIdPrice,
+      Number(f.renda_price),
+    );
   }
 
   console.log(
@@ -355,9 +357,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
 
   // Com o teste de CPF ligado, cada proponente apto rende uma rodada extra —
   // a lista precisa refleti-los para o progresso não mentir.
-  const titularesExtras: TitularAlternativo[] = f.testar_cpfs
-    ? listarTitularesAlternativos(f)
-    : [];
+  const titularesExtras: TitularAlternativo[] = f.testar_cpfs ? listarTitularesAlternativos(f) : [];
   const rodadas: Array<{ chave?: string; nome?: string }> = [
     {},
     ...titularesExtras.map((t) => ({ chave: t.chave, nome: t.nome })),
@@ -365,17 +365,33 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
 
   for (const p of prazos) {
     for (const rodada of rodadas) {
-      for (const bid of (f.bancos_sac_ids ?? [])) {
-        lista.push({ chave: chaveItem("S", p, bid, rodada.chave), banco_id: bid, nome_banco: nomeDoBanco(bid), sistema: "S", prazo: p, estado: "pendente", titular: rodada.nome });
+      for (const bid of f.bancos_sac_ids ?? []) {
+        lista.push({
+          chave: chaveItem("S", p, bid, rodada.chave),
+          banco_id: bid,
+          nome_banco: nomeDoBanco(bid),
+          sistema: "S",
+          prazo: p,
+          estado: "pendente",
+          titular: rodada.nome,
+        });
       }
-      for (const bid of (f.bancos_price_ids ?? [])) {
-        lista.push({ chave: chaveItem("P", p, bid, rodada.chave), banco_id: bid, nome_banco: nomeDoBanco(bid), sistema: "P", prazo: p, estado: "pendente", titular: rodada.nome });
+      for (const bid of f.bancos_price_ids ?? []) {
+        lista.push({
+          chave: chaveItem("P", p, bid, rodada.chave),
+          banco_id: bid,
+          nome_banco: nomeDoBanco(bid),
+          sistema: "P",
+          prazo: p,
+          estado: "pendente",
+          titular: rodada.nome,
+        });
       }
     }
   }
 
   const atualizarLista = (chave: string, estado: ItemEnvio["estado"], nomeBanco?: string) => {
-    const idx = lista.findIndex(item => item.chave === chave);
+    const idx = lista.findIndex((item) => item.chave === chave);
     if (idx !== -1) {
       lista[idx].estado = estado;
       if (nomeBanco) lista[idx].nome_banco = nomeBanco;
@@ -401,8 +417,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
     ((f.bancos_sac_ids?.length ?? 0) > 0 && (f.bancos_price_ids?.length ?? 0) > 0) ||
     Boolean(f.testar_cpfs);
   const agrupador_id = precisaAgrupador
-    ? (crypto.randomUUID?.() ??
-      `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`)
+    ? (crypto.randomUUID?.() ?? `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`)
     : null;
 
   // Processamento Sequencial (evita condições de corrida em agrupadores).
@@ -434,12 +449,14 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
       setResultadoId(id);
 
       const bancosParaLote = [...bancosIds];
-      bancosParaLote.forEach(bid => atualizarLista(`${sistema}-${dados.prazo}-${bid}`, "disparada"));
+      bancosParaLote.forEach((bid) =>
+        atualizarLista(`${sistema}-${dados.prazo}-${bid}`, "disparada"),
+      );
 
       const tChamada = performance.now();
       try {
-        const respLote: any = await enviarSimulacaoBanco({ 
-          data: { simulacao_id: id, banco_ids: bancosParaLote } 
+        const respLote: any = await enviarSimulacaoBanco({
+          data: { simulacao_id: id, banco_ids: bancosParaLote },
         });
         if (!primeiraChamadaLogada) {
           primeiraChamadaLogada = true;
@@ -453,10 +470,17 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
             const chave = `${sistema}-${dados.prazo}-${bResult.banco_id}`;
             if (bResult.status === "simulada") {
               atualizarLista(chave, "retornada", bResult.nome_banco);
-              bancosSimulados.push({ idSimulacao: id, banco_id: bResult.banco_id, nome_banco: bResult.nome_banco });
+              bancosSimulados.push({
+                idSimulacao: id,
+                banco_id: bResult.banco_id,
+                nome_banco: bResult.nome_banco,
+              });
             } else if (bResult.status === "erro") {
               atualizarLista(chave, "erro");
-              if (bResult.mensagem_erro) errosEnvio.push(`${bResult.nome_banco ?? bResult.banco_id}: ${bResult.mensagem_erro}`);
+              if (bResult.mensagem_erro)
+                errosEnvio.push(
+                  `${bResult.nome_banco ?? bResult.banco_id}: ${bResult.mensagem_erro}`,
+                );
             }
             retornadasCount++;
             setConcluidos(retornadasCount);
@@ -487,7 +511,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
         console.error(`[Envio ${sistema}] Falha no lote:`, e);
         errosEnvio.push(`${sistema === "S" ? "SAC" : "PRICE"}: ${msg}`);
         toast.error(`Falha ao consultar os bancos (${sistema === "S" ? "SAC" : "PRICE"}): ${msg}`);
-        bancosParaLote.forEach(bid => atualizarLista(`${sistema}-${dados.prazo}-${bid}`, "erro"));
+        bancosParaLote.forEach((bid) => atualizarLista(`${sistema}-${dados.prazo}-${bid}`, "erro"));
         retornadasCount += bancosParaLote.length;
         setConcluidos(retornadasCount);
       }
@@ -495,10 +519,14 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`[Envio ${sistema}] Falha ao criar a simulação:`, e);
       errosEnvio.push(`${sistema === "S" ? "SAC" : "PRICE"}: ${msg}`);
-      toast.error(`Não foi possível criar a simulação (${sistema === "S" ? "SAC" : "PRICE"}): ${msg}`);
-      bancosIds.forEach(bid => atualizarLista(`${sistema}-${dados.prazo}-${bid}`, "erro"));
+      toast.error(
+        `Não foi possível criar a simulação (${sistema === "S" ? "SAC" : "PRICE"}): ${msg}`,
+      );
+      bancosIds.forEach((bid) => atualizarLista(`${sistema}-${dados.prazo}-${bid}`, "erro"));
     } finally {
-      console.log(`[SIM-PERF][CENARIO] sistema=${sistema} duration_ms=${(performance.now() - tCenario).toFixed(0)}`);
+      console.log(
+        `[SIM-PERF][CENARIO] sistema=${sistema} duration_ms=${(performance.now() - tCenario).toFixed(0)}`,
+      );
     }
   };
 
@@ -524,7 +552,6 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
     return;
   }
 
-
   sessionStorage.removeItem("simulacao_wizard");
   ctx.setSimulacaoResultadoId(idsGerados[0] ?? null);
   ctx.setSimulacaoResultadoIdPrice(idsGerados[1] ?? null);
@@ -544,7 +571,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
   }
   setEnviando(false);
   setConcluidos(0);
-  
+
   if (idsGerados.length > 0) {
     toast.success("Simulações processadas. Confira os resultados abaixo.");
   }
@@ -585,16 +612,24 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
       console.error("[PDF Automático Ambos]", e);
     }
   }
-
 }
 
 /** Envio padrão (SAC ou PRICE isolado). */
 export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
-  const { f, idOperacao, modoProposta, router, setErros, setEnviando, setConcluidos, setListaSimulacoes } = ctx;
+  const {
+    f,
+    idOperacao,
+    modoProposta,
+    router,
+    setErros,
+    setEnviando,
+    setConcluidos,
+    setListaSimulacoes,
+  } = ctx;
   if (bloquearSemCepHomeEquity(f, setErros)) return;
   // 1. Validação final e normalização de prazos (Rede de segurança final)
   const { prazoMaximo, set } = ctx;
-  
+
   const fValidado = { ...f };
   if (fValidado.prazo > prazoMaximo) {
     fValidado.prazo = prazoMaximo;
@@ -604,25 +639,24 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     fValidado.prazo_2 = prazoMaximo;
     set?.("prazo_2", prazoMaximo);
   }
-  
+
   // Regra: se prazo_2 ficou igual ao principal, limpa o comparativo
   if (fValidado.prazo_2 && Number(fValidado.prazo_2) === Number(fValidado.prazo)) {
     fValidado.prazo_2 = null;
     set?.("prazo_2", null);
   }
 
-
   const res = completaSchema.safeParse({ ...fValidado, id_operacao_homefin: idOperacao });
   if (!res.success) {
     const novos: Record<string, string> = {};
     const pendentes: string[] = [];
-    
-    res.error.issues.forEach(issue => {
+
+    res.error.issues.forEach((issue) => {
       const campo = String(issue.path[0]);
       novos[campo] = issue.message;
       pendentes.push(campo);
     });
-    
+
     setErros(novos);
     console.error("[executarEnvioSimples] Falha na validação:", novos);
     toast.error(mensagemCamposPendentes(pendentes));
@@ -654,15 +688,16 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     });
     const agrupador_id = agrupadorServidor ?? agrupadorPreDefinido;
     sessionStorage.removeItem("simulacao_wizard");
-    
+
     // 1. Envio de todas as simulações vinculadas ao agrupador
     const idsParaEnviar = [id];
     if (agrupador_id) {
       try {
-        const { obterSimulacoesPorAgrupador } = await import("@/lib/simulacao/simulacoes.functions");
+        const { obterSimulacoesPorAgrupador } =
+          await import("@/lib/simulacao/simulacoes.functions");
         const vinculadas = await obterSimulacoesPorAgrupador({ data: { agrupador_id } });
         if (vinculadas && vinculadas.length > 0) {
-          idsParaEnviar.push(...vinculadas.map(v => v.id).filter(vid => vid !== id));
+          idsParaEnviar.push(...vinculadas.map((v) => v.id).filter((vid) => vid !== id));
         }
       } catch (e) {
         console.error("[executarEnvioSimples] Falha ao buscar simulações agrupadas:", e);
@@ -672,7 +707,8 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     const idsBancos = (f.bancos_ids?.length ?? 0) > 0 ? f.bancos_ids : [];
     const bancosParaEnviar = idsBancos.length > 0 ? [...idsBancos] : [null];
     let retornadasCount = 0;
-    const segundoPrazoInformado = f.prazo_2 && Number(f.prazo_2) > 0 && Number(f.prazo_2) !== Number(f.prazo);
+    const segundoPrazoInformado =
+      f.prazo_2 && Number(f.prazo_2) > 0 && Number(f.prazo_2) !== Number(f.prazo);
     const qtdPrazos = segundoPrazoInformado ? 2 : 1;
     const totalSimulacoes = (idsBancos?.length > 0 ? idsBancos.length : 1) * qtdPrazos;
 
@@ -681,17 +717,22 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     for (const currentSimId of idsParaEnviar) {
       const fila = [...bancosParaEnviar];
       for (const bid of fila) {
-        const nome_banco = bid?.toLowerCase().includes("itau") ? "Itaú" : 
-                           bid?.toLowerCase().includes("bradesco") ? "Bradesco" : 
-                           bid?.toLowerCase().includes("santander") ? "Santander" : 
-                           ((ctx as any).bancos?.find((b: any) => b.id === bid)?.nome_banco || (bid || 'Consultando...'));
-        lista.push({ 
-          chave: `${currentSimId}-${bid || 'default'}`, 
-          banco_id: bid || 'default', 
-          nome_banco, 
-          sistema: 'S', 
-          prazo: f.prazo, 
-          estado: 'pendente'
+        const nome_banco = bid?.toLowerCase().includes("itau")
+          ? "Itaú"
+          : bid?.toLowerCase().includes("bradesco")
+            ? "Bradesco"
+            : bid?.toLowerCase().includes("santander")
+              ? "Santander"
+              : (ctx as any).bancos?.find((b: any) => b.id === bid)?.nome_banco ||
+                bid ||
+                "Consultando...";
+        lista.push({
+          chave: `${currentSimId}-${bid || "default"}`,
+          banco_id: bid || "default",
+          nome_banco,
+          sistema: "S",
+          prazo: f.prazo,
+          estado: "pendente",
         });
       }
     }
@@ -719,7 +760,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     }
 
     const atualizarLista = (chave: string, estado: ItemEnvio["estado"], nomeBanco?: string) => {
-      const idx = lista.findIndex(item => item.chave === chave);
+      const idx = lista.findIndex((item) => item.chave === chave);
       if (idx !== -1) {
         lista[idx].estado = estado;
         if (nomeBanco) lista[idx].nome_banco = nomeBanco;
@@ -732,9 +773,11 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     for (const currentSimId of idsParaEnviar) {
       try {
         const fila = [...bancosParaEnviar];
-        console.log(`[Envio Simples] [LOTE] Despachando lote de ${fila.length} bancos para simulação ${currentSimId}`);
-        
-        fila.forEach(bid => atualizarLista(`${currentSimId}-${bid || 'default'}`, "disparada"));
+        console.log(
+          `[Envio Simples] [LOTE] Despachando lote de ${fila.length} bancos para simulação ${currentSimId}`,
+        );
+
+        fila.forEach((bid) => atualizarLista(`${currentSimId}-${bid || "default"}`, "disparada"));
 
         try {
           const respLote: any = await enviarSimulacaoBanco({
@@ -743,7 +786,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
 
           if (respLote?.bancos) {
             for (const bResult of respLote.bancos) {
-              const chave = `${currentSimId}-${bResult.banco_id || 'default'}`;
+              const chave = `${currentSimId}-${bResult.banco_id || "default"}`;
               if (bResult.status === "simulada") {
                 atualizarLista(chave, "retornada", bResult.nome_banco);
               } else if (bResult.status === "erro") {
@@ -755,7 +798,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
           }
         } catch (e) {
           console.error(`[Envio Simples] [LOTE] Falha no lote da simulação ${currentSimId}:`, e);
-          fila.forEach(bid => atualizarLista(`${currentSimId}-${bid || 'default'}`, "erro"));
+          fila.forEach((bid) => atualizarLista(`${currentSimId}-${bid || "default"}`, "erro"));
           retornadasCount += fila.length;
           setConcluidos(retornadasCount);
         }
@@ -891,7 +934,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
         }
         return;
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Não foi possível criar a proposta.");
+        toast.error(mensagemDeErro(e, "Não foi possível criar a proposta."));
         setEnviando(false);
         setConcluidos(0);
         return;
@@ -913,12 +956,10 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
       prazo_principal: f.prazo,
       prazo_2: f.prazo_2,
       modoProposta,
-      bancos: f.bancos_ids
+      bancos: f.bancos_ids,
     });
     const msg = e instanceof Error ? e.message : String(e);
-    toast.error(
-      `FALHA NO ENVIO: ${msg}`
-    );
+    toast.error(`FALHA NO ENVIO: ${msg}`);
     setEnviando(false);
     setConcluidos(0);
   }

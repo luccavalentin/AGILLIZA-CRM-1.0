@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, FileText, Loader2 } from "lucide-react";
@@ -26,7 +27,7 @@ export function AbaArquivos({ clienteId }: { clienteId: string }) {
         toast.error("Não foi possível abrir o arquivo.");
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível abrir o arquivo.");
+      toast.error(mensagemDeErro(e, "Não foi possível abrir o arquivo."));
     }
   }
 

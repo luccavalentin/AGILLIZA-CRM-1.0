@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link2, Loader2, Search, UserRound } from "lucide-react";
@@ -47,7 +48,7 @@ export function VincularClienteDialog({ propostaId }: { propostaId: string }) {
       setOpen(false);
       setTermo("");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível vincular o cliente.");
+      toast.error(mensagemDeErro(e, "Não foi possível vincular o cliente."));
     } finally {
       setSalvandoId(null);
     }

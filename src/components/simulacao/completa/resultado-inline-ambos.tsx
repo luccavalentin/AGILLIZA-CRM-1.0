@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState, useRef } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -121,7 +122,12 @@ function useSimQuery(id: string | null) {
   return q;
 }
 
-export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtras = [], onFechar }: Props) {
+export function ResultadoInlineAmbos({
+  simulacaoIdSac,
+  simulacaoIdPrice,
+  idsExtras = [],
+  onFechar,
+}: Props) {
   const router = useRouter();
   const qc = useQueryClient();
   const [reenviandoBanco, setReenviandoBanco] = useState<string | null>(null);
@@ -155,10 +161,9 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
 
   // Consulta as simulações dos CPFs testados que ainda não vieram pelo grupo.
   const idsJaCarregados = new Set(
-    [
-      ...((dataSac?.bancos as any[]) ?? []),
-      ...((dataPrice?.bancos as any[]) ?? []),
-    ].map((b: any) => b.simulacao_id),
+    [...((dataSac?.bancos as any[]) ?? []), ...((dataPrice?.bancos as any[]) ?? [])].map(
+      (b: any) => b.simulacao_id,
+    ),
   );
   const idsFaltantes = idsExtras.filter((id) => id && !idsJaCarregados.has(id));
   const consultasExtras = useQueries({
@@ -168,7 +173,12 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
     })),
   });
 
-  async function reenviarBanco(simId: string, bancoId: string, simulacaoBancoId: string, banco: any) {
+  async function reenviarBanco(
+    simId: string,
+    bancoId: string,
+    simulacaoBancoId: string,
+    banco: any,
+  ) {
     if (banco.status_banco === "simulada") {
       toast.info("Este banco já possui uma simulação concluída.");
       return;
@@ -180,7 +190,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
       toast.success("Banco reenviado.");
       qc.invalidateQueries({ queryKey: ["simulacao", simId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao reenviar.");
+      toast.error(mensagemDeErro(e, "Falha ao reenviar."));
     } finally {
       setReenviandoBanco(null);
     }
@@ -251,13 +261,16 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
     titularNome: string;
     titularPrincipal: boolean;
   };
-  const todasIrmas = [...(dataSac?.simulacao?._irmas ?? []), ...(dataPrice?.simulacao?._irmas ?? [])];
+  const todasIrmas = [
+    ...(dataSac?.simulacao?._irmas ?? []),
+    ...(dataPrice?.simulacao?._irmas ?? []),
+  ];
   const simIdsProcessados = new Set<string>();
 
   const processarSimulacao = (data: any) => {
     if (!data) return;
-    const irmas = (data.simulacao?._irmas || [data.simulacao]);
-    
+    const irmas = data.simulacao?._irmas || [data.simulacao];
+
     for (const s of irmas) {
       if (simIdsProcessados.has(s.id)) continue;
       simIdsProcessados.add(s.id);
@@ -315,10 +328,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
     atual.linhaIds.push(l.banco.id);
     pendentesPorSim.set(l.simId, atual);
   }
-  const totalPendentes = [...pendentesPorSim.values()].reduce(
-    (n, x) => n + x.linhaIds.length,
-    0,
-  );
+  const totalPendentes = [...pendentesPorSim.values()].reduce((n, x) => n + x.linhaIds.length, 0);
 
   async function reenviarPendentes() {
     if (totalPendentes === 0 || reenviandoLote) return;
@@ -351,30 +361,35 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
   }
 
   const melhorPorGrupo: Record<string, { menorParcela?: string; menorCET?: string }> = {};
-  const gruposSet = new Set(linhas.map(l => `${l.prazo}-${l.sistema}`));
+  const gruposSet = new Set(linhas.map((l) => `${l.prazo}-${l.sistema}`));
   const grupos = Array.from(gruposSet);
-  
+
   for (const grp of grupos) {
-    const [pStr, sStr] = grp.split('-');
+    const [pStr, sStr] = grp.split("-");
     const p = parseInt(pStr);
     const s = sStr as "SAC" | "PRICE";
-    
-    const cand = linhas
-      .filter(
-        (l) =>
-          l.prazo === p && 
-          l.sistema === s && 
-          l.banco.status_banco === "simulada" && 
-          l.banco.valor_parcela != null,
-      );
+
+    const cand = linhas.filter(
+      (l) =>
+        l.prazo === p &&
+        l.sistema === s &&
+        l.banco.status_banco === "simulada" &&
+        l.banco.valor_parcela != null,
+    );
 
     if (cand.length > 0) {
-      const sortedParcela = [...cand].sort((a, b) => (a.banco.valor_parcela ?? 0) - (b.banco.valor_parcela ?? 0));
-      const sortedCET = [...cand].sort((a, b) => (a.banco.taxa_cet_ano ?? a.banco.taxa_juros_ano ?? 0) - (b.banco.taxa_cet_ano ?? b.banco.taxa_juros_ano ?? 0));
-      
+      const sortedParcela = [...cand].sort(
+        (a, b) => (a.banco.valor_parcela ?? 0) - (b.banco.valor_parcela ?? 0),
+      );
+      const sortedCET = [...cand].sort(
+        (a, b) =>
+          (a.banco.taxa_cet_ano ?? a.banco.taxa_juros_ano ?? 0) -
+          (b.banco.taxa_cet_ano ?? b.banco.taxa_juros_ano ?? 0),
+      );
+
       melhorPorGrupo[grp] = {
         menorParcela: sortedParcela[0].banco.id,
-        menorCET: sortedCET[0].banco.id
+        menorCET: sortedCET[0].banco.id,
       };
     }
   }
@@ -401,7 +416,8 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
           <p className="mt-0.5 text-xs text-muted-foreground">
             Prazo:{" "}
             <span className="font-medium text-foreground">
-              {dataSac?.simulacao?.prazo === dataPrice?.simulacao?.prazo && !dataSac?.simulacao?._multi_prazo
+              {dataSac?.simulacao?.prazo === dataPrice?.simulacao?.prazo &&
+              !dataSac?.simulacao?._multi_prazo
                 ? `${dataSac?.simulacao?.prazo} meses`
                 : "Múltiplos prazos"}
             </span>
@@ -416,10 +432,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <ResumoPerformanceSimulacao 
-            linhas={linhas} 
-            className="hidden sm:flex"
-          />
+          <ResumoPerformanceSimulacao linhas={linhas} className="hidden sm:flex" />
           <div className="flex flex-wrap items-center gap-2">
             {/* Reenvia só quem não retornou, na mesma simulação — quem já
                 respondeu não é consultado de novo. */}
@@ -431,9 +444,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
                 onClick={reenviarPendentes}
                 title="Reenvia apenas os bancos sem retorno, mantendo os resultados já obtidos"
               >
-                <RefreshCw
-                  className={cn("mr-1.5 h-4 w-4", reenviandoLote && "animate-spin")}
-                />
+                <RefreshCw className={cn("mr-1.5 h-4 w-4", reenviandoLote && "animate-spin")} />
                 {reenviandoLote
                   ? "Reenviando…"
                   : totalPendentes === 1
@@ -485,13 +496,8 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
 
       {/* Mobile-only performance summary */}
       <div className="flex w-full border-b border-border/40 px-5 pb-3 pt-1 sm:hidden">
-        <ResumoPerformanceSimulacao 
-          linhas={linhas} 
-          className="w-full justify-between"
-        />
+        <ResumoPerformanceSimulacao linhas={linhas} className="w-full justify-between" />
       </div>
-
-
 
       <div className="p-4 sm:p-5">
         {linhas.length === 0 ? (
@@ -507,15 +513,18 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
                 const grpKey = `${l.prazo}-${l.sistema}`;
                 const isMelhorParcela = melhorPorGrupo[grpKey]?.menorParcela === b.id;
                 const isMelhorCET = melhorPorGrupo[grpKey]?.menorCET === b.id;
-                const primeiroDoGrupo = idx === 0 || 
-                                       linhas[idx - 1].prazo !== l.prazo || 
-                                       linhas[idx - 1].sistema !== l.sistema;
+                const primeiroDoGrupo =
+                  idx === 0 ||
+                  linhas[idx - 1].prazo !== l.prazo ||
+                  linhas[idx - 1].sistema !== l.sistema;
                 return (
                   <div key={`${l.prazo}-${l.sistema}-${b.id}`}>
                     {primeiroDoGrupo && (
                       <div className="mb-2 flex items-center gap-2">
                         <AmortizacaoTag sistema={l.sistema} />
-                        <span className="text-[10px] font-bold text-primary/70">{l.prazo} meses</span>
+                        <span className="text-[10px] font-bold text-primary/70">
+                          {l.prazo} meses
+                        </span>
                         <div className="h-px flex-1 bg-border" />
                       </div>
                     )}
@@ -702,16 +711,16 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
                           </TableRow>
                         )}
                         {novoPrazo && (
-                           <TableRow className="border-border/60 bg-primary/[0.03] hover:bg-primary/[0.03]">
-                             <TableCell colSpan={9} className="py-2.5">
-                               <div className="flex items-center gap-2 px-1">
-                                 <span className="text-xs font-bold uppercase tracking-widest text-primary">
-                                   Prazo: {l.prazo} meses
-                                 </span>
-                                 <div className="h-px flex-1 bg-primary/20" />
-                               </div>
-                             </TableCell>
-                           </TableRow>
+                          <TableRow className="border-border/60 bg-primary/[0.03] hover:bg-primary/[0.03]">
+                            <TableCell colSpan={9} className="py-2.5">
+                              <div className="flex items-center gap-2 px-1">
+                                <span className="text-xs font-bold uppercase tracking-widest text-primary">
+                                  Prazo: {l.prazo} meses
+                                </span>
+                                <div className="h-px flex-1 bg-primary/20" />
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         )}
                         {primeiroDoGrupo && (
                           <TableRow
@@ -753,7 +762,9 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
                                   </span>
                                 </div>
 
-                                {isMelhorParcela && <ToneBadge tone="success">Menor parcela</ToneBadge>}
+                                {isMelhorParcela && (
+                                  <ToneBadge tone="success">Menor parcela</ToneBadge>
+                                )}
                                 {isMelhorCET && <ToneBadge tone="info">Menor CET</ToneBadge>}
                                 {b.status_banco === "erro" && b.mensagem_banco && (
                                   <div className="mt-0.5">
@@ -812,8 +823,7 @@ export function ResultadoInlineAmbos({ simulacaoIdSac, simulacaoIdPrice, idsExtr
                                   size="sm"
                                   variant="secondary"
                                   disabled={reenviandoBanco === b.id}
-                             onClick={() => reenviarBanco(l.simId, b.banco_id, b.id, b)}
-
+                                  onClick={() => reenviarBanco(l.simId, b.banco_id, b.id, b)}
                                 >
                                   <RefreshCw className="mr-1 h-4 w-4" />
                                   {reenviandoBanco === b.id ? "…" : "Reenviar"}
@@ -862,15 +872,14 @@ function MobileStat({ rotulo, valor }: { rotulo: string; valor: string }) {
 
 function BaixarPdfsButton({ dataSac, dataPrice }: { dataSac: any; dataPrice: any }) {
   const [baixando, setBaixando] = useState(false);
-  
+
   // No modo Ambos, consolidamos todos os bancos de todas as simulações irmãs.
   const ref = dataSac?.simulacao ?? dataPrice?.simulacao;
   const bancosConsolidados = [
     ...bancosDaSimulacaoAtual(dataSac),
-    ...bancosDaSimulacaoAtual(dataPrice)
-  ].filter((b, idx, self) => 
-    b.status_banco === "simulada" && 
-    self.findIndex(t => t.id === b.id) === idx
+    ...bancosDaSimulacaoAtual(dataPrice),
+  ].filter(
+    (b, idx, self) => b.status_banco === "simulada" && self.findIndex((t) => t.id === b.id) === idx,
   );
 
   const totalOk = bancosConsolidados.length;
@@ -881,13 +890,13 @@ function BaixarPdfsButton({ dataSac, dataPrice }: { dataSac: any; dataPrice: any
     setBaixando(true);
     try {
       const { baixarSimulacaoPDF } = await import("@/lib/simulacao/simulacao-pdf");
-      
+
       // Chama a função de PDF consolidado (Comparativo) que agora suporta múltiplos prazos.
-      baixarSimulacaoPDF({ 
-        simulacao: ref, 
-        bancos: bancosConsolidados 
+      baixarSimulacaoPDF({
+        simulacao: ref,
+        bancos: bancosConsolidados,
       });
-      
+
       toast.success("PDF comparativo gerado com sucesso.");
     } catch (e) {
       console.error("[baixar PDF] consolidado", e);

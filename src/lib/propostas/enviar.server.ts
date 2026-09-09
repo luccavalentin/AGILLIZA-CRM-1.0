@@ -4,6 +4,7 @@
  * cita o fornecedor.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import {
   chamarIntegracao,
   IntegracaoBancariaError,
@@ -1537,7 +1538,7 @@ async function enviarPropostaImplInner({
         mensagem: "Enviado. Aguardando atualização do banco.",
       };
     } catch (e) {
-      const originalMsg = e instanceof Error ? e.message : "Falha ao enviar ao banco.";
+      const originalMsg = mensagemDeErro(e, "Falha ao enviar ao banco.");
       const msg = sanitizarMensagemErro(originalMsg);
 
       // Detecção de erro de limite do Santander (INT-SANTANDER-RANGE)

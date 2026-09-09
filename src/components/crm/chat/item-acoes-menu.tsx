@@ -6,6 +6,7 @@
 // sidebar coerente com o restante do módulo.
 
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Archive, ArchiveRestore, MoreVertical, Pencil, Pin, PinOff, Trash2 } from "lucide-react";
@@ -90,7 +91,7 @@ export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual
       toast.success(arquivado ? "Conversa desarquivada." : "Conversa arquivada.");
       invalidar();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao arquivar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao arquivar.")),
   });
 
   const mFixar = useMutation({
@@ -102,7 +103,7 @@ export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual
       toast.success(fixado ? "Conversa desafixada." : "Conversa fixada no topo.");
       invalidar();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha.")),
   });
 
   const mRenomear = useMutation({
@@ -119,7 +120,7 @@ export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual
       setOpenRen(false);
       invalidar();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha.")),
   });
 
   const mOcultar = useMutation({
@@ -131,7 +132,7 @@ export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual
       toast.success("Conversa removida da sua lista.");
       invalidar();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha.")),
   });
 
   return (

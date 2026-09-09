@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -85,7 +86,7 @@ export function NovaTarefaDialog({
       setChecklist([]);
       onCriada();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao criar.");
+      toast.error(mensagemDeErro(e, "Falha ao criar."));
     } finally {
       setSalvando(false);
     }

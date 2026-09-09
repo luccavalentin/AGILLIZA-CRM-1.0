@@ -1,4 +1,5 @@
 import { AdminHero } from "@/components/admin/admin-hero";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useState, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -110,7 +111,7 @@ function Pagina() {
       setJustificativa("");
       qc.invalidateQueries({ queryKey: ["admin-compras"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao registrar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao registrar.")),
   });
 
   return (
@@ -328,7 +329,7 @@ function EditarPedidoDialog({ pedido, onSalvo }: { pedido: CompraLinha; onSalvo:
       setOpen(false);
       onSalvo();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível salvar o pedido.");
+      toast.error(mensagemDeErro(e, "Não foi possível salvar o pedido."));
     } finally {
       setSalvando(false);
     }

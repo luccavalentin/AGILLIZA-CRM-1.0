@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -114,7 +115,7 @@ export function AcoesTopo({
       );
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao consultar o banco.");
+      toast.error(mensagemDeErro(e, "Falha ao consultar o banco."));
     } finally {
       setBusy(false);
     }
@@ -126,7 +127,7 @@ export function AcoesTopo({
       await moverFn({ data: { proposta_id: propostaId, novo_status: novo } });
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Transição inválida.");
+      toast.error(mensagemDeErro(e, "Transição inválida."));
     } finally {
       setBusy(false);
     }
@@ -144,7 +145,7 @@ export function AcoesTopo({
       setCancelOpen(false);
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao cancelar.");
+      toast.error(mensagemDeErro(e, "Falha ao cancelar."));
     } finally {
       setBusy(false);
     }

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -177,7 +178,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["tarefas"] });
       toast.success(`Tarefa movida para ${statusTarefa(coluna).label}.`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao mover.");
+      toast.error(mensagemDeErro(e, "Falha ao mover."));
     }
   }
 

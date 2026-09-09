@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -205,7 +206,7 @@ export function NovaDemandaDialog({
       limpar();
       onCriada(nova.id);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao criar demanda.");
+      toast.error(mensagemDeErro(e, "Falha ao criar demanda."));
     } finally {
       setSalvando(false);
     }

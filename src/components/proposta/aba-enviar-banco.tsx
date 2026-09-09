@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -240,7 +241,7 @@ export function AbaEnviarBanco({
       toast.success("Documento excluído.");
       recarregar();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+      toast.error(mensagemDeErro(e, "Falha ao excluir."));
     } finally {
       setExcluindo(null);
     }
@@ -271,7 +272,7 @@ export function AbaEnviarBanco({
       if (r.enviados === 0 && r.erros.length === 0) toast.info("Nenhum documento foi enviado.");
       recarregar();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao enviar ao banco.");
+      toast.error(mensagemDeErro(e, "Falha ao enviar ao banco."));
     } finally {
       setEnviando(false);
       setEnviandoId(null);

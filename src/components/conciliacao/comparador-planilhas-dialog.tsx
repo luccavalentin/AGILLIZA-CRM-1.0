@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
@@ -183,7 +184,7 @@ export function ComparadorPlanilhasDialog({
       }));
       setItens(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao ler as planilhas.");
+      toast.error(mensagemDeErro(e, "Falha ao ler as planilhas."));
     } finally {
       setOcupado(false);
     }
@@ -212,7 +213,7 @@ export function ComparadorPlanilhasDialog({
           : "Planilhas cruzadas entre si.",
       );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao cruzar os dados.");
+      toast.error(mensagemDeErro(e, "Falha ao cruzar os dados."));
     } finally {
       setOcupado(false);
     }
