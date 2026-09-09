@@ -1351,21 +1351,39 @@ async function enviarPropostaImplInner({
       // desfecho imediato da comunicação com o banco.
       const situacaoTipo = String(resp?.tipoSituacao ?? "").trim();
       const mapa = statusInternoBanco(situacaoTipo, false, resp?.codigoSituacaoBanco);
-      const statusBancoInicial = mapa.banco === "erro" ? "enviada" : mapa.banco || "enviada";
+
+      // O status só avança quando o BANCO se pronuncia.
+      //
+      // Antes, um retorno sem desfecho virava "enviada" e a situação virava
+      // "em análise" — o sistema afirmava que a proposta estava sob análise de
+      // crédito sem que o banco tivesse dito nada. Depois o polling trazia a
+      // realidade e a tela ia de "Enviado p/ aprovação de crédito" para "Erro no
+      // envio" e daí para o desfecho, três estados para o mesmo fato. Quem lê
+      // isso conclui coisas erradas sobre a operação.
+      //
+      // Sem desfecho, o estado honesto é "aguardando": a chamada foi feita e a
+      // resposta ainda não permite concluir nada. E como o status global da
+      // proposta é derivado de `situacao_banco`, deixá-lo em "nao_enviado" faz
+      // a proposta permanecer onde estava até o retorno chegar de verdade.
+      const SEM_DESFECHO = new Set(["erro", "aguardando", "nao_enviado"]);
+      const semDesfecho = !mapa.banco || SEM_DESFECHO.has(mapa.banco);
       const patchOk: Record<string, unknown> = {
-        status_banco: statusBancoInicial,
+        status_banco: semDesfecho ? "aguardando" : mapa.banco,
         selecionado: true,
-        mensagem_banco: erroBanco ? sanitizarMensagemErro(erroBanco) : null,
+        mensagem_banco: erroBanco
+          ? sanitizarMensagemErro(erroBanco)
+          : semDesfecho
+            ? `Aguardando retorno do ${b.nome_banco ?? "banco"}...`
+            : null,
         raw_response: resp,
       };
       // situacao_banco é um enum interno (nao_enviado/em_analise/condicionado/
       // aprovado/recusado/cancelado). O tipoSituacao do banco vem como código
       // cru (S/P/N/A/R) — precisa ser mapeado, senão o valor não bate com o
       // <Select> da tela e a linha continua exibindo "Não enviado".
-      patchOk.situacao_banco =
-        mapa.banco === "erro"
-          ? "em_analise"
-          : situacaoBancoDeTipo(situacaoTipo, resp?.codigoSituacaoBanco, false, resp);
+      patchOk.situacao_banco = semDesfecho
+        ? "nao_enviado"
+        : situacaoBancoDeTipo(situacaoTipo, resp?.codigoSituacaoBanco, false, resp);
       const numeroExtraido = numeroPropostaBancoReal(resp);
       const referenciaBanco = referenciaIntegracaoBanco(resp);
       // Um mesmo protocolo não pode existir em duas propostas / bancos
