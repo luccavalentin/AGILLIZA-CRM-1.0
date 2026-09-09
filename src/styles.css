@@ -803,6 +803,24 @@ iframe[src*="lvbl" i] {
   animation: carga 1.2s linear infinite;
 }
 
+/*
+  Fio de luz do painel de envio ao banco. O `shimmer` do Skeleton translada
+  apenas a própria largura do elemento e não atravessaria a barra; aqui a luz
+  precisa percorrer todo o trilho, de fora a fora.
+*/
+@keyframes envio-luz {
+  0% {
+    left: -35%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.animate-envio-luz {
+  animation: envio-luz 1.6s ease-in-out infinite;
+}
+
 /* Shimmer usado pelo Skeleton para dar sensação de carregamento premium. */
 @keyframes shimmer {
   0% {

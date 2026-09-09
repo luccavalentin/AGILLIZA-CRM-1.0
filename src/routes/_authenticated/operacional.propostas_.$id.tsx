@@ -27,6 +27,7 @@ import {
   PropostaErro,
 } from "@/components/proposta/visualizacao/proposta-skeletons";
 import { PropostaView } from "@/components/proposta/visualizacao/proposta-view";
+import { EnvioProgresso } from "@/components/proposta/envio-progresso";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id")({
   head: () => ({ meta: [{ title: "Proposta — Agilliza" }] }),
@@ -53,7 +54,11 @@ function PropostaRoute() {
   const { complementar, abrir_cadastro } = Route.useSearch();
   const router = useRouter();
   const qc = useQueryClient();
-  const { enviar: handleEnviarHook } = useEnviarProposta();
+  const {
+    enviar: handleEnviarHook,
+    statusPorBanco,
+    busyBancoId,
+  } = useEnviarProposta();
 
   // 1. Hooks de dados
   const { data, isLoading, isError, error } = useQuery({
@@ -71,6 +76,8 @@ function PropostaRoute() {
 
   // 2. Estados de controle de dados
   const [participanteModal, setParticipanteModal] = React.useState<any>(null);
+  /** Banco cujo envio está em curso — alimenta o painel de progresso. */
+  const [bancoEmEnvio, setBancoEmEnvio] = React.useState<string | null>(null);
   const [indiceParticipante, setIndiceParticipante] = React.useState(0);
   const enviouAutoRef = React.useRef(false);
 
@@ -169,10 +176,10 @@ function PropostaRoute() {
         // Se o envio esbarrar em pendência de cadastro, `onCadastroIncompleto`
         // reabre o diálogo no participante que falta.
         setParticipanteModal(null);
-        const toastEnvio = toast.loading(`Enviando ao ${bancosPendentes[0]?.nome_banco ?? "banco"}...`, {
-          description: "Pode levar até 2 minutos. Você pode continuar usando o sistema.",
-          duration: Infinity,
-        });
+        // O andamento aparece no painel `EnvioProgresso`, ancorado no canto —
+        // com etapa, barra e cronômetro. Um toast de texto não dava noção de
+        // progresso num envio que pode levar mais de um minuto.
+        setBancoEmEnvio(bancosPendentes[0]?.nome_banco ?? null);
 
         try {
           const r = await handleEnviarHook({
@@ -181,10 +188,10 @@ function PropostaRoute() {
             envolvidos: envolvidosAtualizados,
             onCadastroIncompleto: onCadastroIncompleto,
           });
-          toast.dismiss(toastEnvio);
+          setBancoEmEnvio(null);
           if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
         } catch (erroEnvio: any) {
-          toast.dismiss(toastEnvio);
+          setBancoEmEnvio(null);
           toast.error(erroEnvio?.message ?? "Falha ao enviar a proposta ao banco.", {
             duration: 12_000,
           });
@@ -376,22 +383,29 @@ function PropostaRoute() {
   if (isLoading) return <PropostaSkeleton />;
   if (!data) return <PropostaNaoEncontrada />;
 
+  // O status é indexado pela chave do envio; aqui há um envio por vez, então
+  // basta o do banco ocupado.
+  const statusEnvioAtual = busyBancoId ? statusPorBanco[busyBancoId] : null;
+
   return (
-    <PropostaView
-      id={id}
-      data={data}
-      handleEnviarHook={handleEnviarHook}
-      onCadastroIncompletoSemArgs={onCadastroIncompletoSemArgs}
-      onCadastroIncompleto={onCadastroIncompleto}
-      inicialParticipante={inicialParticipante}
-      conjugeInicialParticipante={conjugeInicialParticipante}
-      indiceParticipante={indiceParticipante}
-      totalPendentes={envolvidos.length}
-      participanteModal={participanteModal}
-      setParticipanteModal={setParticipanteModal}
-      onSalvarParticipante={onSalvarParticipante}
-      nomeConjugeExistente={nomeConjugeExistente}
-      router={router}
-    />
+    <>
+      <EnvioProgresso status={statusEnvioAtual} nomeBanco={bancoEmEnvio} />
+      <PropostaView
+        id={id}
+        data={data}
+        handleEnviarHook={handleEnviarHook}
+        onCadastroIncompletoSemArgs={onCadastroIncompletoSemArgs}
+        onCadastroIncompleto={onCadastroIncompleto}
+        inicialParticipante={inicialParticipante}
+        conjugeInicialParticipante={conjugeInicialParticipante}
+        indiceParticipante={indiceParticipante}
+        totalPendentes={envolvidos.length}
+        participanteModal={participanteModal}
+        setParticipanteModal={setParticipanteModal}
+        onSalvarParticipante={onSalvarParticipante}
+        nomeConjugeExistente={nomeConjugeExistente}
+        router={router}
+      />
+    </>
   );
 }

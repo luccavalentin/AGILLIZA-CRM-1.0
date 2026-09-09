@@ -361,7 +361,11 @@ export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
       .select(
         "id, numero_simulacao, nome_cliente, cpf_cnpj, produto, valor_imovel, valor_financiamento, prazo, status, cliente_id, simulacao_bancos(id, banco_id, nome_banco, status_banco, homefin_id_simulacao_banco, valor_parcela, taxa_juros_ano)",
       )
-      .in("status", ["simulada", "parcialmente_simulada"]);
+      .in("status", ["simulada", "parcialmente_simulada"])
+      // Simulação na lixeira não pode virar proposta: ao ser excluída, a
+      // oportunidade correspondente é cancelada na integração, e qualquer
+      // envio a partir dela falha no banco.
+      .is("deleted_at", null);
     if (data.q) {
       const q = data.q.trim();
       query = query.or(`numero_simulacao.ilike.%${q}%,nome_cliente.ilike.%${q}%`);
@@ -486,6 +490,16 @@ export const criarProposta = createServerFn({ method: "POST" })
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (!sim) throw new Error("Simulação não encontrada.");
+      // Excluir a simulação cancela a oportunidade na integração. Sem esta
+      // checagem a proposta era criada normalmente e só quebrava no envio,
+      // minutos depois, com "a oportunidade foi cancelada" — sem que ninguém
+      // ligasse o erro à exclusão feita antes (caso real: SIM-005076 excluída
+      // às 01:09 e PRO-000262 criada a partir dela às 01:11).
+      if ((sim as any).deleted_at) {
+        throw new Error(
+          "Esta simulação está na lixeira e não pode virar proposta: ao ser excluída, a oportunidade foi cancelada no banco. Restaure a simulação ou faça uma nova.",
+        );
+      }
 
       bancosSimulados = ((sim as any).simulacao_bancos ?? []).filter(
         (b: any) => b.status_banco === "simulada",
