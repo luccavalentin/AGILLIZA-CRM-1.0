@@ -87,11 +87,14 @@ function InternalLayout() {
     queryKey: ["reconciliacao-pendentes"],
     queryFn: async () => {
       const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      // Conta o BANCO pendente, não o status da simulação: assim que um banco
+      // responde, a simulação vira "parcialmente_simulada" e o critério
+      // antigo (`status = enviando`) desligava a reconciliação justamente do
+      // banco que ainda faltava.
       const { count } = await supabase
-        .from("simulacoes")
+        .from("simulacao_bancos")
         .select("id", { count: "exact", head: true })
-        .eq("status", "enviando")
-        .is("deleted_at", null)
+        .eq("status_banco", "aguardando")
         .gte("created_at", desde);
       return (count ?? 0) > 0;
     },

@@ -6,6 +6,7 @@ import {
   ErroBiometria,
   biometriaAtiva,
   biometriaDisponivel,
+  ehAparelhoMovel,
   guardarSessaoBiometria,
   impedimentoBiometria,
   registrarBiometria,
@@ -32,6 +33,8 @@ export function BiometriaConvite({
 
   useEffect(() => {
     if (!userId) return;
+    // Só no mobile: no desktop nada muda de lugar na tela.
+    if (!ehAparelhoMovel()) return;
     if (biometriaAtiva(userId)) return;
     if (impedimentoBiometria()) return;
     try {
