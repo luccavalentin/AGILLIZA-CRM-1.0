@@ -31,6 +31,7 @@ import {
   Landmark,
   Cpu,
   ClipboardList,
+  FileCheck2,
   Link as LinkIcon,
   Percent,
   Bot,
@@ -51,6 +52,8 @@ export interface NavItem {
   to?: string;
   /** Parâmetros de busca (query string) opcionais para o destino. */
   search?: Record<string, string>;
+  /** Parâmetros de rota (ex.: `/checklists/$id`). */
+  params?: Record<string, string>;
   children?: NavItem[];
   badge?: string;
   /** Ausente = item sempre visível (ex.: Visão Geral). */
@@ -298,28 +301,7 @@ export const navInterno: NavGroup[] = [
             to: "/formularios/powerpoint",
             perm: { modulo: "documentos.formularios" },
           },
-          {
-            label: "Checklist de Documentação",
-            icon: ListChecks,
-            to: "/formularios/checklist",
-            perm: { modulo: "documentos.formularios" },
-            children: [
-              {
-                label: "Inter",
-                icon: Landmark,
-                to: "/formularios/checklist",
-                search: { banco: "inter" },
-                perm: { modulo: "documentos.formularios" },
-              },
-              {
-                label: "Caixa",
-                icon: Landmark,
-                to: "/formularios/checklist",
-                search: { banco: "caixa" },
-                perm: { modulo: "documentos.formularios" },
-              },
-            ],
-          },
+
         ],
       },
       {
@@ -333,6 +315,109 @@ export const navInterno: NavGroup[] = [
         icon: ClipboardList,
         to: "/matriculas",
         perm: { modulo: "documentos.matriculas" },
+      },
+    ],
+  },
+  {
+    // Checklists saíram de submenu de Formulários para grupo próprio: são
+    // material de apoio usado ANTES de existir proposta, e ficavam três
+    // níveis abaixo, onde ninguém achava.
+    id: "checklists",
+    label: "Checklists",
+    items: [
+      {
+        label: "Todos os checklists",
+        icon: ClipboardList,
+        to: "/checklists",
+        perm: { modulo: "documentos.formularios" },
+      },
+      {
+        label: "Abertura de conta",
+        icon: Landmark,
+        to: "/checklists",
+        perm: { modulo: "documentos.formularios" },
+        children: [
+          {
+            label: "Bradesco",
+            icon: Landmark,
+            to: "/checklists/$id",
+            params: { id: "abertura-bradesco" },
+            perm: { modulo: "documentos.formularios" },
+          },
+          {
+            label: "Itaú",
+            icon: Landmark,
+            to: "/checklists/$id",
+            params: { id: "abertura-itau" },
+            perm: { modulo: "documentos.formularios" },
+          },
+          {
+            label: "Santander",
+            icon: Landmark,
+            to: "/checklists/$id",
+            params: { id: "abertura-santander" },
+            perm: { modulo: "documentos.formularios" },
+          },
+          {
+            label: "Inter",
+            icon: Landmark,
+            to: "/checklists/$id",
+            params: { id: "abertura-inter" },
+            perm: { modulo: "documentos.formularios" },
+          },
+        ],
+      },
+      {
+        label: "Seguir com a proposta",
+        icon: FileCheck2,
+        to: "/checklists/$id",
+        params: { id: "seguir-proposta" },
+        perm: { modulo: "documentos.formularios" },
+      },
+      {
+        // Rótulo curto: o anterior ("Documentos exigidos pelo banco") não
+        // cabia na largura da barra e aparecia cortado como "Documentos exigid…".
+        label: "Exigidos pelo banco",
+        icon: ListChecks,
+        to: "/formularios/checklist",
+        perm: { modulo: "documentos.formularios" },
+        children: [
+          {
+            label: "Itaú",
+            icon: Landmark,
+            to: "/formularios/checklist",
+            search: { banco: "itau" },
+            perm: { modulo: "documentos.formularios" },
+          },
+          {
+            label: "Bradesco",
+            icon: Landmark,
+            to: "/formularios/checklist",
+            search: { banco: "bradesco" },
+            perm: { modulo: "documentos.formularios" },
+          },
+          {
+            label: "Santander",
+            icon: Landmark,
+            to: "/formularios/checklist",
+            search: { banco: "santander" },
+            perm: { modulo: "documentos.formularios" },
+          },
+          {
+            label: "Inter",
+            icon: Landmark,
+            to: "/formularios/checklist",
+            search: { banco: "inter" },
+            perm: { modulo: "documentos.formularios" },
+          },
+          {
+            label: "Caixa",
+            icon: Landmark,
+            to: "/formularios/checklist",
+            search: { banco: "caixa" },
+            perm: { modulo: "documentos.formularios" },
+          },
+        ],
       },
     ],
   },

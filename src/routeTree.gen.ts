@@ -38,6 +38,7 @@ import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/cr
 import { Route as AuthenticatedRhIndexRouteImport } from './routes/_authenticated/rh.index'
 import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_authenticated/relatorios.index'
 import { Route as AuthenticatedFormulariosIndexRouteImport } from './routes/_authenticated/formularios.index'
+import { Route as AuthenticatedChecklistsIndexRouteImport } from './routes/_authenticated/checklists.index'
 import { Route as ApiPublicSyncPropostasAtivasRouteImport } from './routes/api/public/sync-propostas-ativas'
 import { Route as ApiPublicSyncPropostasRouteImport } from './routes/api/public/sync-propostas'
 import { Route as ApiPublicReconciliarSimulacoesRouteImport } from './routes/api/public/reconciliar-simulacoes'
@@ -97,6 +98,7 @@ import { Route as AuthenticatedCrmChatRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedContaSegurancaRouteImport } from './routes/_authenticated/conta.seguranca'
 import { Route as AuthenticatedContaPerfilRouteImport } from './routes/_authenticated/conta.perfil'
 import { Route as AuthenticatedContaNotificacoesRouteImport } from './routes/_authenticated/conta.notificacoes'
+import { Route as AuthenticatedChecklistsIdRouteImport } from './routes/_authenticated/checklists.$id'
 import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_authenticated/admin.regras-modulos'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
 import { Route as AuthenticatedAdminParametrosRouteImport } from './routes/_authenticated/admin.parametros'
@@ -276,6 +278,12 @@ const AuthenticatedFormulariosIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedFormulariosRoute,
+  } as any)
+const AuthenticatedChecklistsIndexRoute =
+  AuthenticatedChecklistsIndexRouteImport.update({
+    id: '/checklists/',
+    path: '/checklists/',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ApiPublicSyncPropostasAtivasRoute =
   ApiPublicSyncPropostasAtivasRouteImport.update({
@@ -625,6 +633,12 @@ const AuthenticatedContaNotificacoesRoute =
     path: '/conta/notificacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedChecklistsIdRoute =
+  AuthenticatedChecklistsIdRouteImport.update({
+    id: '/checklists/$id',
+    path: '/checklists/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminRegrasModulosRoute =
   AuthenticatedAdminRegrasModulosRouteImport.update({
     id: '/admin/regras-modulos',
@@ -842,6 +856,7 @@ export interface FileRoutesByFullPath {
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/checklists/$id': typeof AuthenticatedChecklistsIdRoute
   '/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
@@ -901,6 +916,7 @@ export interface FileRoutesByFullPath {
   '/api/public/reconciliar-simulacoes': typeof ApiPublicReconciliarSimulacoesRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
+  '/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/rh/': typeof AuthenticatedRhIndexRoute
@@ -959,6 +975,7 @@ export interface FileRoutesByTo {
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/checklists/$id': typeof AuthenticatedChecklistsIdRoute
   '/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
@@ -1018,6 +1035,7 @@ export interface FileRoutesByTo {
   '/api/public/reconciliar-simulacoes': typeof ApiPublicReconciliarSimulacoesRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
+  '/checklists': typeof AuthenticatedChecklistsIndexRoute
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
   '/rh': typeof AuthenticatedRhIndexRoute
@@ -1080,6 +1098,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/_authenticated/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/_authenticated/checklists/$id': typeof AuthenticatedChecklistsIdRoute
   '/_authenticated/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
   '/_authenticated/conta/seguranca': typeof AuthenticatedContaSegurancaRoute
@@ -1139,6 +1158,7 @@ export interface FileRoutesById {
   '/api/public/reconciliar-simulacoes': typeof ApiPublicReconciliarSimulacoesRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
+  '/_authenticated/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/_authenticated/rh/': typeof AuthenticatedRhIndexRoute
@@ -1201,6 +1221,7 @@ export interface FileRouteTypes {
     | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
+    | '/checklists/$id'
     | '/conta/notificacoes'
     | '/conta/perfil'
     | '/conta/seguranca'
@@ -1260,6 +1281,7 @@ export interface FileRouteTypes {
     | '/api/public/reconciliar-simulacoes'
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
+    | '/checklists/'
     | '/formularios/'
     | '/relatorios/'
     | '/rh/'
@@ -1318,6 +1340,7 @@ export interface FileRouteTypes {
     | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
+    | '/checklists/$id'
     | '/conta/notificacoes'
     | '/conta/perfil'
     | '/conta/seguranca'
@@ -1377,6 +1400,7 @@ export interface FileRouteTypes {
     | '/api/public/reconciliar-simulacoes'
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
+    | '/checklists'
     | '/formularios'
     | '/relatorios'
     | '/rh'
@@ -1438,6 +1462,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/parametros'
     | '/_authenticated/admin/pessoas'
     | '/_authenticated/admin/regras-modulos'
+    | '/_authenticated/checklists/$id'
     | '/_authenticated/conta/notificacoes'
     | '/_authenticated/conta/perfil'
     | '/_authenticated/conta/seguranca'
@@ -1497,6 +1522,7 @@ export interface FileRouteTypes {
     | '/api/public/reconciliar-simulacoes'
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
+    | '/_authenticated/checklists/'
     | '/_authenticated/formularios/'
     | '/_authenticated/relatorios/'
     | '/_authenticated/rh/'
@@ -1741,6 +1767,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/formularios/'
       preLoaderRoute: typeof AuthenticatedFormulariosIndexRouteImport
       parentRoute: typeof AuthenticatedFormulariosRoute
+    }
+    '/_authenticated/checklists/': {
+      id: '/_authenticated/checklists/'
+      path: '/checklists'
+      fullPath: '/checklists/'
+      preLoaderRoute: typeof AuthenticatedChecklistsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/sync-propostas-ativas': {
       id: '/api/public/sync-propostas-ativas'
@@ -2155,6 +2188,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContaNotificacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/checklists/$id': {
+      id: '/_authenticated/checklists/$id'
+      path: '/checklists/$id'
+      fullPath: '/checklists/$id'
+      preLoaderRoute: typeof AuthenticatedChecklistsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/regras-modulos': {
       id: '/_authenticated/admin/regras-modulos'
       path: '/admin/regras-modulos'
@@ -2508,6 +2548,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminParametrosRoute: typeof AuthenticatedAdminParametrosRoute
   AuthenticatedAdminPessoasRoute: typeof AuthenticatedAdminPessoasRoute
   AuthenticatedAdminRegrasModulosRoute: typeof AuthenticatedAdminRegrasModulosRoute
+  AuthenticatedChecklistsIdRoute: typeof AuthenticatedChecklistsIdRoute
   AuthenticatedContaNotificacoesRoute: typeof AuthenticatedContaNotificacoesRoute
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
   AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
@@ -2538,6 +2579,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRhPreviaFolhaRoute: typeof AuthenticatedRhPreviaFolhaRoute
   AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
   AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
+  AuthenticatedChecklistsIndexRoute: typeof AuthenticatedChecklistsIndexRoute
   AuthenticatedRhIndexRoute: typeof AuthenticatedRhIndexRoute
   AuthenticatedAdminComprasAprovacoesRoute: typeof AuthenticatedAdminComprasAprovacoesRoute
   AuthenticatedAdminComprasPedidosRoute: typeof AuthenticatedAdminComprasPedidosRoute
@@ -2578,6 +2620,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminParametrosRoute: AuthenticatedAdminParametrosRoute,
   AuthenticatedAdminPessoasRoute: AuthenticatedAdminPessoasRoute,
   AuthenticatedAdminRegrasModulosRoute: AuthenticatedAdminRegrasModulosRoute,
+  AuthenticatedChecklistsIdRoute: AuthenticatedChecklistsIdRoute,
   AuthenticatedContaNotificacoesRoute: AuthenticatedContaNotificacoesRoute,
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
   AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
@@ -2616,6 +2659,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRhPreviaFolhaRoute: AuthenticatedRhPreviaFolhaRoute,
   AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
   AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,
+  AuthenticatedChecklistsIndexRoute: AuthenticatedChecklistsIndexRoute,
   AuthenticatedRhIndexRoute: AuthenticatedRhIndexRoute,
   AuthenticatedAdminComprasAprovacoesRoute:
     AuthenticatedAdminComprasAprovacoesRoute,
