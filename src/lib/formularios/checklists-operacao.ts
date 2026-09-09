@@ -101,12 +101,27 @@ export const CHECKLIST_ABERTURA_CONTA: Record<BancoAbertura, ChecklistOperacao> 
   },
 };
 
+/**
+ * Bancos com checklist de documentos exigidos na esteira de crédito.
+ * As listas em si vivem em `checklists.functions.ts` (`CHECKLISTS_BANCOS`);
+ * aqui ficam só a ordem e os nomes usados na tela de Checklists.
+ */
+export const BANCOS_EXIGIDOS = ["itau", "bradesco", "santander", "inter", "caixa"] as const;
+export type BancoExigido = (typeof BANCOS_EXIGIDOS)[number];
+
+export const NOME_BANCO_EXIGIDO: Record<BancoExigido, string> = {
+  itau: "Itaú",
+  bradesco: "Bradesco",
+  santander: "Santander",
+  inter: "Inter",
+  caixa: "Caixa",
+};
+
 /** Dossiê da operação — igual para todos os bancos. */
 export const CHECKLIST_PROPOSTA: ChecklistOperacao = {
   id: "seguir-proposta",
   titulo: "Checklist para seguir com a proposta",
-  descricao:
-    "Documentos e informações necessários para dar andamento à proposta de financiamento.",
+  descricao: "Documentos e informações necessários para dar andamento à proposta de financiamento.",
   blocos: [
     {
       titulo: "Comprador — pessoa física",
@@ -121,26 +136,16 @@ export const CHECKLIST_PROPOSTA: ChecklistOperacao = {
     },
     {
       titulo: "Imóvel",
-      itens: [
-        "Matrícula atualizada",
-        "IPTU 2026 ou certidão de valor venal 2026",
-        "CND de IPTU",
-      ],
+      itens: ["Matrícula atualizada", "IPTU 2026 ou certidão de valor venal 2026", "CND de IPTU"],
     },
     {
       titulo: "Imóvel em condomínio",
       condicao: "Somente se o imóvel for apartamento",
-      itens: [
-        "CND de condomínio com assinatura do síndico ou da administradora",
-      ],
+      itens: ["CND de condomínio com assinatura do síndico ou da administradora"],
     },
     {
       titulo: "Contato para a vistoria",
-      itens: [
-        "Nome completo de quem vai acompanhar a vistoria",
-        "Telefone de contato",
-        "E-mail",
-      ],
+      itens: ["Nome completo de quem vai acompanhar a vistoria", "Telefone de contato", "E-mail"],
     },
     {
       titulo: "Uso de FGTS",
@@ -180,9 +185,7 @@ export const CHECKLIST_PROPOSTA: ChecklistOperacao = {
 
 /** Todos os checklists de operação, indexados pelo id usado na rota. */
 export const CHECKLISTS_OPERACAO: Record<string, ChecklistOperacao> = {
-  ...Object.fromEntries(
-    Object.values(CHECKLIST_ABERTURA_CONTA).map((c) => [c.id, c]),
-  ),
+  ...Object.fromEntries(Object.values(CHECKLIST_ABERTURA_CONTA).map((c) => [c.id, c])),
   [CHECKLIST_PROPOSTA.id]: CHECKLIST_PROPOSTA,
 };
 

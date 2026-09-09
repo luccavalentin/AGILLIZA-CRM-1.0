@@ -19,6 +19,7 @@ import {
 } from "@/lib/notificacoes.functions";
 import { playNotificationSound } from "@/lib/chat-sound";
 import { categoriaDeTipo, tipoAtivo, tipoComSom } from "@/lib/notification-prefs";
+import { mostrarNotificacaoSistema } from "@/lib/pwa/notificacoes-sistema";
 
 function formatarData(iso: string): string {
   const d = new Date(iso);
@@ -66,6 +67,19 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
       notifVistas.current.add(n.id);
       if (n.lida) continue;
       const cat = categoriaDeTipo(n.tipo);
+
+      // Popup do sistema operacional (comportamento de app nativo). Só quando
+      // o app não está em primeiro plano: com a tela aberta o usuário já vê o
+      // sino e o alerta in-app, e veria o mesmo aviso duas vezes.
+      if (tipoAtivo(cat) && document.visibilityState !== "visible") {
+        void mostrarNotificacaoSistema({
+          titulo: n.titulo,
+          corpo: n.corpo,
+          link: n.link,
+          tag: n.id,
+        });
+      }
+
       if (cat === "chat") continue;
       if (tipoAtivo(cat) && tipoComSom(cat)) playNotificationSound();
     }
