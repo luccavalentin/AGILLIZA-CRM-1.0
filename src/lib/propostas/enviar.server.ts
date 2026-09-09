@@ -992,6 +992,23 @@ async function enviarPropostaImplInner({
         // CORREÇÃO: Em vez de apenas travar, tentamos criar uma oportunidade NOVA
         // para reaproveitar os dados e não bloquear o usuário.
         try {
+          // `enviarSimulacaoImpl` só cria oportunidade quando a simulação não
+          // tem uma. Como esta tem — a cancelada —, ele a reutilizava e
+          // devolvia o MESMO id, a recuperação não recuperava nada e o envio
+          // seguia até estourar em `garantirEnderecoParticipantes`.
+          //
+          // Caso real (PRO-000265): a PRO-000254 usava a oportunidade 27788 e
+          // foi excluída em 07/09, o que a cancelou no provedor. Nove dias
+          // depois a nova proposta reusou a mesma oportunidade morta, e os
+          // logs mostram três GETs a 27788 e nenhum POST de criação.
+          //
+          // Soltamos o vínculo antes de chamar, para que a simulação seja
+          // obrigada a nascer numa oportunidade nova.
+          await supabase
+            .from("simulacoes")
+            .update({ homefin_id_oportunidade: null } as any)
+            .eq("id", prop.simulacao_id);
+
           const { enviarSimulacaoImpl } = await import("../simulacao/enviar.server");
           const { oportunidade_id: novoIdOp } = await enviarSimulacaoImpl({
             simulacaoId: prop.simulacao_id,
@@ -1024,6 +1041,10 @@ async function enviarPropostaImplInner({
       }
     } catch (e) {
       if (e instanceof IntegracaoBancariaError) throw e;
+      // Falha ao CONSULTAR a oportunidade não deve impedir o envio — pode ser
+      // instabilidade momentânea do provedor. Registramos para não sumir em
+      // silêncio, como acontecia antes.
+      console.error("[proposta] falha ao verificar oportunidade cancelada:", e);
     }
   }
 
