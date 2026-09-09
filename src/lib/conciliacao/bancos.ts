@@ -200,7 +200,7 @@ export function situacaoInternaDeTextoBanco(texto: unknown): string | null {
 export const SITUACAO_LABEL: Record<string, string> = {
   nao_enviado: "Não enviado",
   em_analise: "Em análise de crédito",
-  condicionado: "Aprovado com condições",
+  condicionado: "Aprovação condicionada",
   aprovado: "Crédito aprovado",
   recusado: "Crédito recusado",
   cancelado: "Cancelado",

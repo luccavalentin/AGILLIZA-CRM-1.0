@@ -281,15 +281,33 @@ export function statusInternoBanco(
   ) {
     return { banco: "recusada", proposta: "credito_recusado" };
   }
-  // CONDICIONADO é aprovação COM EXIGÊNCIAS a cumprir, e só o texto do banco
-  // diz isso. Antes bastava `tipoSituacao === "C"` para cair aqui, e estava
-  // errado: o Santander devolve `C` com "513 ANÁLISE AUTOMÁTICA FAVORÁVEL",
-  // que é aprovação plena. Toda análise favorável do Santander aparecia como
-  // "Aprovado com condições" sem que houvesse condição nenhuma.
+  // CONDICIONADO = aprovação COM EXIGÊNCIAS a cumprir.
+  //
+  // `C` é o marcador do provedor para esse desfecho. Caso comprovado: a
+  // PRO-000261 (Santander) voltou com `tipoSituacao: "C"` e
+  // `codigoSituacaoBanco: "900"`, e no portal do próprio Santander a proposta
+  // aparece como "Crédito aprovado mediante a comprovação de renda" — ou seja,
+   // aprovada, mas travada até o cliente enviar documento.
+  //
+  // Houve uma tentativa de tratar `C` como aprovação plena, por causa do
+  // código 513 ("ANÁLISE AUTOMÁTICA FAVORÁVEL"). Foi um erro: o sistema passou
+  // a exibir "Crédito aprovado" para uma proposta condicionada, e o operador
+  // seguiria sem saber da exigência. Na dúvida entre os dois, condicionado é
+  // o lado seguro — um falso "com condições" custa uma conferência; um falso
+  // "aprovado" custa a operação.
   //
   // A checagem por texto vem ANTES da de aprovação porque um retorno pode
   // dizer as duas coisas ("aprovado condicionado") — e aí a condição manda.
-  if (codigo.includes("cond") || codigo.includes("ressalva") || codigo.includes("exigencia")) {
+  if (
+    t === "C" ||
+    codigo.includes("cond") ||
+    codigo.includes("ressalva") ||
+    codigo.includes("exigencia") ||
+    // "aprovado MEDIANTE a comprovação de renda", "SUJEITO A ..." — o crédito
+    // saiu, mas preso a uma pendência.
+    codigo.includes("mediante") ||
+    codigo.includes("sujeito")
+  ) {
     return { banco: "condicionado", proposta: "credito_condicionado" };
   }
   if (codigo.includes("aprov") || codigo.includes("favoravel")) {
@@ -298,11 +316,7 @@ export function statusInternoBanco(
   switch (t) {
     case "A":
       return { banco: "aprovada", proposta: "credito_aprovado" };
-    // `C` fora do contrato S/P/N/A/R. O único uso observado em produção é o
-    // do Santander com o código 513 (favorável), então é desfecho aprovado —
-    // um "C" que trouxesse condição já teria sido capturado pelo texto acima.
-    case "C":
-      return { banco: "aprovada", proposta: "credito_aprovado" };
+
     case "R":
       return { banco: "recusada", proposta: "credito_recusado" };
     case "N":

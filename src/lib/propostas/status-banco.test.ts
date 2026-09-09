@@ -28,8 +28,10 @@ describe("statusInternoBanco — tipoSituacao do provedor", () => {
     expect(statusInternoBanco("A", false, null).proposta).toBe("credito_aprovado");
   });
 
-  it('"C" (condicionada) é desfecho favorável', () => {
-    expect(statusInternoBanco("C", false, null).proposta).toBe("credito_aprovado");
+  it('"C" é desfecho favorável, porém condicionado', () => {
+    // Favorável (o crédito saiu), mas com exigência a cumprir — por isso não
+    // entra como aprovação plena.
+    expect(statusInternoBanco("C", false, null).proposta).toBe("credito_condicionado");
   });
 
   it("recusa explícita no código do banco continua sendo recusa", () => {
@@ -79,14 +81,23 @@ describe("statusInternoBanco — tipoSituacao do provedor", () => {
     expect(statusInternoBanco("P", false, null).banco).toBe("erro");
   });
 
-  // O Santander devolve `tipoSituacao: "C"` com o código
-  // "513  ANALISE AUTOMATICA FAVORAVEL", que é aprovação PLENA. Enquanto
-   // bastava o "C" para cair em condicionado, toda análise favorável dele
-  // aparecia como "Aprovado com condições" sem existir condição nenhuma.
-  it('"C" com 513 favorável é aprovação plena, não condicionada', () => {
-    const r = statusInternoBanco("C", false, "513  ANALISE AUTOMATICA FAVORAVEL");
-    expect(r.banco).toBe("aprovada");
-    expect(r.proposta).toBe("credito_aprovado");
+  // Caso comprovado: a PRO-000261 voltou com `tipoSituacao: "C"` e
+  // `codigoSituacaoBanco: "900"`, e no portal do próprio Santander aparece
+  // como "Crédito aprovado mediante a comprovação de renda". O sistema exibia
+  // "Crédito aprovado", e o operador seguiria sem saber da exigência.
+  it('"C" é aprovação COM condições (PRO-000261, código 900)', () => {
+    const r = statusInternoBanco("C", false, "900");
+    expect(r.banco).toBe("condicionado");
+    expect(r.proposta).toBe("credito_condicionado");
+  });
+
+  it("texto de exigência marca condicionado em qualquer banco", () => {
+    for (const codigo of [
+      "CREDITO APROVADO MEDIANTE COMPROVACAO DE RENDA",
+      "APROVADO SUJEITO A ANALISE DOCUMENTAL",
+    ]) {
+      expect(statusInternoBanco("A", false, codigo).proposta).toBe("credito_condicionado");
+    }
   });
 
   it("514 desfavorável continua sendo recusa", () => {

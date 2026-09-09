@@ -334,13 +334,7 @@ export function ParticipanteDialog({
             >
               Cancelar
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => submit(false)}
-              disabled={salvando || salvandoInterno || !podeEnviar}
-            >
-              Salvar sem enviar
-            </Button>
+
             <Button
               onClick={() => submit(true)}
               disabled={salvando || salvandoInterno || !podeEnviar}

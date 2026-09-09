@@ -13,7 +13,7 @@ export const STATUS_BANCO: Record<string, { label: string; tone: Tone }> = {
   nao_enviado: { label: "Não enviado", tone: "muted" },
   enviada: { label: "Enviado p/ aprovação de crédito", tone: "info" },
   em_analise: { label: "Enviado p/ aprovação de crédito", tone: "info" },
-  condicionado: { label: "Aprovado com condições", tone: "warning" },
+  condicionado: { label: "Aprovação condicionada", tone: "warning" },
   aprovada: { label: "Aprovada", tone: "success" },
   aprovado: { label: "Aprovada", tone: "success" },
   recusada: { label: "Crédito recusado", tone: "danger" },
