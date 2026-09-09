@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Fingerprint, Loader2 } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
 import {
   appDesbloqueado,
   biometriaAtiva,
@@ -109,17 +110,17 @@ export function AppLock({
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-between bg-[#00052E] px-6 py-10 text-white">
       <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
-        <img
-          src="/icons/app/icon-192.png"
-          alt="Agilliza"
-          className="h-16 w-16 rounded-2xl shadow-lg ring-1 ring-white/15"
-        />
+        {/* `variant="light"` explícito: a versão "auto" some quando a classe
+            de tema do <html> não bate com o fundo — era o logo invisível,
+            sobrando só o traço vermelho. Sobre o azul da marca, a versão
+            branca é a mesma do lado escuro da tela de login. */}
+        <Logo variant="light" className="h-9" />
 
         <div className="space-y-1.5">
-          <p className="text-xl font-semibold tracking-tight">
+          <p className="text-[22px] font-semibold leading-tight tracking-tight">
             {primeiroNome ? `Olá, ${primeiroNome}` : "Bem-vindo de volta"}
           </p>
-          <p className="text-sm text-white/60">Confirme sua biometria para continuar</p>
+          <p className="text-sm text-white/55">Confirme sua biometria para continuar</p>
         </div>
 
         <button
