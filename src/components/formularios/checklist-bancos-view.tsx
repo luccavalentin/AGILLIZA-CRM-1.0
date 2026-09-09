@@ -18,9 +18,22 @@ import {
 } from "lucide-react";
 import { CHECKLISTS_BANCOS } from "@/lib/formularios/checklists.functions";
 import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
+import { corDoBanco } from "@/lib/bancos/cores";
 import { gerarChecklistBancoPDF } from "@/lib/formularios/checklist-pdf";
 import { EncaminharChecklistDialog } from "./encaminhar-checklist-dialog";
 import { toast } from "sonner";
+
+/** "Caixa Econômica" -> "CX"; "Inter" -> "IN". Duas letras, sem acento. */
+function monogramaBanco(nome: string): string {
+  const n = nome
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+  if (n.includes("caixa")) return "CX";
+  if (n.includes("inter")) return "IN";
+  if (n.includes("banco do brasil")) return "BB";
+  return nome.trim().slice(0, 2).toUpperCase();
+}
 
 export function ChecklistBancosView() {
   const search = useSearch({ from: "/_authenticated/formularios/$banco" });
@@ -212,9 +225,16 @@ export function ChecklistBancosView() {
               onClick={() => setBancoSelecionado(b.id)}
             >
               <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-4">
+                {/*
+                  Caixa e Inter não têm logotipo no projeto e caíam num ícone
+                  genérico sobre fundo cinza — pareciam card quebrado, do lado
+                  dos bancos que têm marca. Sem a logo, usamos a cor
+                  institucional do banco com o monograma, que identifica sem
+                  fingir que há um logotipo.
+                */}
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center p-3 shadow-sm"
-                  style={{ backgroundColor: brand?.cor || "#F1F5F9" }}
+                  style={{ backgroundColor: brand?.cor || corDoBanco(b.nome) }}
                 >
                   {brand?.logo ? (
                     <img
@@ -223,7 +243,9 @@ export function ChecklistBancosView() {
                       className={`w-full h-full object-contain ${b.id === "itau" ? "" : "brightness-0 invert"}`}
                     />
                   ) : (
-                    <ListChecks className="w-8 h-8 text-white" />
+                    <span className="text-xl font-bold tracking-tight text-white">
+                      {monogramaBanco(b.nome)}
+                    </span>
                   )}
                 </div>
                 <div className="space-y-1">

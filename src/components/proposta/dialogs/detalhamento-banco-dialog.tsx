@@ -41,7 +41,7 @@ export function DetalhamentoBancoDialog({
     },
     condicionado: {
       icone: <CheckCircle2 className="h-6 w-6 text-warning" />,
-      titulo: "Aprovado com condições",
+      titulo: "Aprovação condicionada",
       mensagem:
         "O crédito foi aprovado, mas o banco estabeleceu condições. Confira abaixo as observações enviadas pelo banco.",
     },
