@@ -339,9 +339,13 @@ export function statusInternoBanco(
     case "S":
       return { banco: "nao_enviado", proposta: null };
     default:
-      // Sem tipoSituacao conhecido: assume "enviada" (aguardando retorno).
-      // Preserva a mensagem em `mensagem_banco` sem classificar como erro.
-      return { banco: "enviada", proposta: null };
+      // Sem `tipoSituacao`, não sabemos nada — e "enviada" afirmava que a
+      // proposta estava na esteira do banco. Somado ao mapeamento de
+      // `situacao_banco`, isso colocava a proposta em "Enviado p/ aprovação de
+      // crédito" antes de qualquer pronunciamento, para depois recuar. O
+      // estado honesto é "aguardando": a chamada foi feita, a resposta não
+      // permite concluir. A mensagem segue preservada em `mensagem_banco`.
+      return { banco: "aguardando", proposta: null };
   }
 }
 
