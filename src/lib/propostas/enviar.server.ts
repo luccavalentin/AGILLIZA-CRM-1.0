@@ -1671,7 +1671,16 @@ export async function sincronizarPropostaImpl({
       Boolean(pb.numero_proposta_banco);
     const falhaIntegracao = ehFalhaIntegracaoBanco(sim) && !jaConfirmadoLocal;
     if (falhaIntegracao) {
-      erroMsg = MSG_FALHA_INTEGRACAO;
+      // O envio já grava aqui a explicação que conseguiu apurar — inclusive a
+      // de proposta duplicada no mesmo banco. A sincronização vinha logo atrás
+      // e trocava tudo pelo texto genérico de falha de comunicação, apagando a
+      // única pista que o operador tinha.
+      //
+      // Caso real (PRO-000272, Bradesco): recusada porque o mesmo CPF já tinha
+      // a PRO-000269 em análise no Bradesco (protocolo 5499977). O envio às
+      // 06:55 apurou o motivo; o sync às 06:56 o substituiu por "falha na
+      // comunicação", e a tela passou a não dizer nada de útil.
+      erroMsg = await motivoFalhaSemMensagem({ prop, pb, propostaId, supabase });
       algumFalhaIntegracao = true;
       bancosComFalhaIntegracao.push(pb.nome_banco ?? "Banco");
     }
