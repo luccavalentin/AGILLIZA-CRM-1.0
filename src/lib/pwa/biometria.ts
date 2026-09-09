@@ -78,6 +78,21 @@ function codigoDoErro(e: unknown): CodigoErroBiometria {
 }
 
 /**
+ * Aparelho de mão (celular/tablet) ou app instalado.
+ *
+ * A entrada por digital foi pedida para o mobile; no navegador de desktop a
+ * tela de login continua exatamente como era.
+ */
+export function ehAparelhoMovel(): boolean {
+  if (typeof window === "undefined") return false;
+  const instalado =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+  const porToque = window.matchMedia("(pointer: coarse)").matches;
+  return instalado || (porToque && window.innerWidth < 1024);
+}
+
+/**
  * Por que a biometria não pode ser usada agora — ou `null` se pode.
  * Checagem barata e síncrona, feita antes do clique.
  */

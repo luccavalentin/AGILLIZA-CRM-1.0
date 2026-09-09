@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Fingerprint, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  ehAparelhoMovel,
   lerSessaoBiometria,
   limparSessaoBiometria,
   marcarAppDesbloqueado,
@@ -35,6 +36,9 @@ export function BiometricAuth({
   const tentouSozinho = useRef(false);
 
   useEffect(() => {
+    // A digital no login vale para o mobile; o login da versão web fica
+    // exatamente como era.
+    if (!ehAparelhoMovel()) return;
     const salva = ultimaBiometria();
     if (!salva) return;
     setConta(salva);

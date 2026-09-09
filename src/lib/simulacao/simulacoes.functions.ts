@@ -262,681 +262,615 @@ export const criarSimulacao = createServerFn({ method: "POST" })
     async ({
       data,
       context,
-    }): Promise<{ id: string; numero_simulacao: string; id_secundario?: string; agrupador_id?: string }> => {
+    }): Promise<{
+      id: string;
+      numero_simulacao: string;
+      id_secundario?: string;
+      agrupador_id?: string;
+    }> => {
       try {
-      const { supabase, userId } = context;
-      const dd = data.dados;
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabase, userId } = context;
+        const dd = data.dados;
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("correspondente_id")
-        .eq("id", userId)
-        .maybeSingle();
-
-      const correspondente_id = prof?.correspondente_id;
-      if (!correspondente_id) throw new Error("Correspondente não vinculado.");
-
-      // ===== Pessoa jurídica: só o Bradesco opera =====
-      // A tela já esconde e desmarca os demais, mas a decisão de qual banco
-      // recebe a consulta não pode depender só do cliente. Aqui a lista é
-      // filtrada uma vez e vale para os três inserts de `simulacao_bancos`
-      // (principal, comparativo de CPF e segundo prazo).
-      const ehPJ =
-        String(dd.tipo_pessoa ?? "").toUpperCase() === "PJ" ||
-        String(dd.cpf_cnpj ?? "").replace(/\D/g, "").length === 14;
-      if (ehPJ && Array.isArray(dd.bancos_ids) && dd.bancos_ids.length > 0) {
-        const { data: bancosEscolhidos } = await supabase
-          .from("vw_bancos_ativos")
-          .select("id, codigo_banco, nome_banco")
-          .in("id", dd.bancos_ids);
-        // A view expõe `id` como anulável; só entram linhas com id de verdade.
-        const comId = (bancosEscolhidos ?? []).filter(
-          (b): b is typeof b & { id: string } => typeof b.id === "string",
-        );
-        const permitidos = bancosQueOperamPJ(comId).map((b) => b.id);
-        if (permitidos.length === 0) {
-          throw new Error(
-            "Pessoa jurídica: apenas o Bradesco opera esta modalidade. Selecione o Bradesco para simular.",
-          );
-        }
-        if (permitidos.length !== dd.bancos_ids.length) {
-          const removidos = (bancosEscolhidos ?? [])
-            .filter((b: any) => !permitidos.includes(b.id))
-            .map((b: any) => b.nome_banco)
-            .join(", ");
-          console.warn(
-            `[simulacoes][PJ] bancos removidos da seleção por não operarem pessoa jurídica: ${removidos}`,
-          );
-          dd.bancos_ids = permitidos;
-        }
-      }
-
-      // REGRA: Evitar duplicidade de registros (Reenviar em vez de duplicar)
-      // Se já existe uma simulação equivalente criada nos últimos 20 minutos, reutilizamos.
-      const vinteMinutosAtras = new Date(Date.now() - 20 * 60 * 1000).toISOString();
-      // O CPF do titular faz parte da identidade da simulação. Sem ele, a
-      // simulação de um proponente testado (mesmo cliente_id herdado, mesmos
-      // valores, mesmo agrupador) era confundida com a do titular e o guard
-      // devolvia a do titular — o cônjuge nunca chegava a ser criado.
-      const cpfTitularSim = String(dd.cpf_cnpj ?? "").replace(/\D/g, "");
-      const { data: existente } = await supabaseAdmin
-        .from("simulacoes")
-        .select("id, numero_simulacao, agrupador_id")
-        .eq("cpf_cnpj", cpfTitularSim)
-        .eq("cliente_id", dd.cliente_id || "")
-        .eq("sistema_amortizacao", dd.sistema_amortizacao || "S")
-        .eq("valor_imovel", dd.valor_imovel || 0)
-        .eq("valor_financiamento", dd.valor_financiamento || 0)
-        .eq("prazo", dd.prazo || 0)
-        .filter("agrupador_id", dd.agrupador_id ? "eq" : "is", dd.agrupador_id || null)
-        .in("status", ["rascunho", "erro_banco", "enviando", "parcialmente_simulada", "simulada"])
-        .gte("created_at", vinteMinutosAtras)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (existente && !dd.participantes?.length) {
-        console.log(`[simulacoes] Reutilizando simulação existente ${existente.numero_simulacao} (${existente.id}) em vez de criar duplicata.`);
-        return { id: existente.id, numero_simulacao: existente.numero_simulacao, id_secundario: undefined, agrupador_id: existente.agrupador_id || undefined };
-      }
-
-      const limparDocumento = (v?: string | null) => (v ?? "").replace(/\D/g, "");
-      
-      const casado = dd.estado_civil === "CA" || dd.estado_civil === "UE" || dd.estado_civil === "casado" || dd.estado_civil === "uniao_estavel";
-      // NORMALIZAÇÃO DE PRAZO ANTES DO INSERT (SERVER-SIDE DETERMINISTIC)
-      const { prazoMaximoParaProponentes } = await import("./prazo");
-      // O teto de idade olha o proponente mais velho, componha ele renda ou
-      // não: o cônjuge assina o contrato de qualquer forma, e o banco recusa
-      // o prazo pela idade dele.
-      const proponentesParaTeto = [
-        { nome: dd.nome_cliente || "Titular", vinculo: "Titular", dataNascimento: dd.data_nascimento },
-        ...(dd.data_nascimento_conjuge ? [{ nome: dd.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: dd.data_nascimento_conjuge }] : []),
-        ...(dd.participantes || []).filter((p: any) => p.compoe_renda).map((p: any) => ({
-          nome: p.nome,
-          vinculo: p.vinculo,
-          dataNascimento: p.data_nascimento
-        }))
-      ];
-      const compoeRendaConjugeTeto = Boolean(dd.compoe_renda) && dd.compoe_renda_conjuge !== false;
-      const analiseTeto = prazoMaximoParaProponentes(
-        proponentesParaTeto,
-        new Date(),
-        modoTetoIdade(compoeRendaConjugeTeto),
-      );
-      const tetoEfetivo = analiseTeto?.prazo ?? 420;
-      
-      const prazoNormalizado = Math.min(Number(dd.prazo) || 420, tetoEfetivo);
-      if (prazoNormalizado !== Number(dd.prazo)) {
-         console.warn(`[SIM-PRAZO][DB] Normalizando prazo de ${dd.prazo} para ${prazoNormalizado} antes do insert.`);
-         dd.prazo = prazoNormalizado;
-      }
-
-      const possuiConjugeMinimo = Boolean(dd.nome_conjuge) && Boolean(dd.cpf_conjuge) && Boolean(dd.data_nascimento_conjuge);
-      // Quando o teste de CPF está ligado, o cliente já cria e envia a
-      // simulação de cada proponente (cônjuge incluído) e as agrupa. Manter o
-      // inversor automático aqui geraria uma segunda simulação do cônjuge e
-      // dobraria as consultas ao banco.
-      const testarAmbos =
-        data.modo === "completa" &&
-        casado &&
-        possuiConjugeMinimo &&
-        dd.compoe_renda_conjuge !== false &&
-        !(dd as any).testar_cpfs;
-      let cliente_id = dd.cliente_id ?? null;
-      const clienteOrigemId = cliente_id;
-
-      const upsertClienteCRM = async (params: {
-        nome?: string | null;
-        documento?: string | null;
-        email?: string | null;
-        celular?: string | null;
-        dataNascimento?: string | null;
-        sexo?: string | null;
-        renda?: number | null;
-        estadoCivil?: string | null;
-        regimeCasamento?: string | null;
-        ufInteresse?: string | null;
-        utilizaFgts?: boolean | null;
-        conjugeNome?: string | null;
-        conjugeCpf?: string | null;
-        conjugeSexo?: string | null;
-        conjugeDataNascimento?: string | null;
-        conjugeEmail?: string | null;
-        conjugeCelular?: string | null;
-        conjugeRenda?: number | null;
-        /** Dados do imóvel informados na simulação. */
-        imovelCep?: string | null;
-        imovelTipo?: string | null;
-        imovelUso?: string | null;
-        imovelSituacao?: string | null;
-        imovelValor?: number | null;
-        /** Faturamento da empresa (só chega preenchido quando a modalidade é PJ). */
-        faturamentoEmpresa?: number | null;
-      }) => {
-        const nome = (params.nome ?? "").trim();
-        const documento = limparDocumento(params.documento);
-        if (!nome || !documento) return null;
-        const conjugeCpf = limparDocumento(params.conjugeCpf);
-        // Colunas enum do Postgres não aceitam string vazia — só um valor
-        // válido ou NULL. Campos não preenchidos no formulário chegam como ""
-        // e derrubariam o insert com "invalid input value for enum".
-        const enumOuNulo = (v: unknown) => {
-          const s = String(v ?? "").trim();
-          return s === "" ? null : s;
-        };
-        const campos = {
-          nome,
-          tipo_pessoa: documento.length > 11 ? "PJ" : "PF",
-          email: (params.email ?? "").trim().toLowerCase() || null,
-          telefone_celular: params.celular ?? null,
-          data_nascimento: params.dataNascimento || null,
-          sexo: enumOuNulo(params.sexo),
-          estado_civil: mapEstadoCivilEnum(params.estadoCivil),
-          regime_casamento: enumOuNulo(params.regimeCasamento),
-          renda_total_declarada: params.renda ?? null,
-          uf_interesse: params.ufInteresse ?? null,
-          utiliza_fgts: params.utilizaFgts ?? false,
-          conjuge_nome: params.conjugeNome ?? null,
-          conjuge_cpf: conjugeCpf || null,
-          conjuge_data_nascimento: params.conjugeDataNascimento || null,
-          conjuge_email: params.conjugeEmail ?? null,
-          conjuge_celular: params.conjugeCelular ?? null,
-          conjuge_renda: params.conjugeRenda ?? null,
-          conjuge_sexo: enumOuNulo(params.conjugeSexo),
-          imovel_cep: params.imovelCep || null,
-          imovel_tipo: enumOuNulo(params.imovelTipo),
-          imovel_uso: enumOuNulo(params.imovelUso),
-          imovel_situacao: enumOuNulo(params.imovelSituacao),
-          imovel_valor: params.imovelValor ?? null,
-          // Zero aqui significa "não informado": o campo inicia em 0 e gravar
-          // 0 apagaria um faturamento já cadastrado no CRM.
-          faturamento_empresa: Number(params.faturamentoEmpresa) > 0 ? params.faturamentoEmpresa : null,
-        } as any;
-        // Não sobrescreve o cadastro com vazio: o que a simulação não coletou
-        // deve preservar o que já existe no CRM.
-        for (const [k, v] of Object.entries(campos)) {
-          if (v === null || v === undefined) delete (campos as any)[k];
-        }
-        const { data: existente, error: errBusca } = await supabaseAdmin
-          .from("clientes")
-          .select("id")
-          .eq("correspondente_id", correspondente_id)
-          .eq("documento", documento)
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("correspondente_id")
+          .eq("id", userId)
           .maybeSingle();
-        if (errBusca) throw new Error(`Falha ao localizar cliente no CRM: ${errBusca.message}`);
-        if (existente?.id) {
-          const { error: errUpd } = await supabaseAdmin
-            .from("clientes")
-            .update(campos)
-            .eq("id", existente.id);
-          if (errUpd) throw new Error(`Falha ao atualizar cliente no CRM: ${errUpd.message}`);
-          return existente.id as string;
+
+        const correspondente_id = prof?.correspondente_id;
+        if (!correspondente_id) throw new Error("Correspondente não vinculado.");
+
+        // ===== Pessoa jurídica: só o Bradesco opera =====
+        // A tela já esconde e desmarca os demais, mas a decisão de qual banco
+        // recebe a consulta não pode depender só do cliente. Aqui a lista é
+        // filtrada uma vez e vale para os três inserts de `simulacao_bancos`
+        // (principal, comparativo de CPF e segundo prazo).
+        const ehPJ =
+          String(dd.tipo_pessoa ?? "").toUpperCase() === "PJ" ||
+          String(dd.cpf_cnpj ?? "").replace(/\D/g, "").length === 14;
+        if (ehPJ && Array.isArray(dd.bancos_ids) && dd.bancos_ids.length > 0) {
+          const { data: bancosEscolhidos } = await supabase
+            .from("vw_bancos_ativos")
+            .select("id, codigo_banco, nome_banco")
+            .in("id", dd.bancos_ids);
+          // A view expõe `id` como anulável; só entram linhas com id de verdade.
+          const comId = (bancosEscolhidos ?? []).filter(
+            (b): b is typeof b & { id: string } => typeof b.id === "string",
+          );
+          const permitidos = bancosQueOperamPJ(comId).map((b) => b.id);
+          if (permitidos.length === 0) {
+            throw new Error(
+              "Pessoa jurídica: apenas o Bradesco opera esta modalidade. Selecione o Bradesco para simular.",
+            );
+          }
+          if (permitidos.length !== dd.bancos_ids.length) {
+            const removidos = (bancosEscolhidos ?? [])
+              .filter((b: any) => !permitidos.includes(b.id))
+              .map((b: any) => b.nome_banco)
+              .join(", ");
+            console.warn(
+              `[simulacoes][PJ] bancos removidos da seleção por não operarem pessoa jurídica: ${removidos}`,
+            );
+            dd.bancos_ids = permitidos;
+          }
         }
-        const { data: novo, error: errCli } = await supabaseAdmin
-          .from("clientes")
-          .insert({
-            correspondente_id,
-            numero_cliente: "",
-            documento,
-            origem: "direto",
-            criador_id: userId,
-            responsavel_id: userId,
-            ...campos,
-          })
-          .select("id")
+
+        // REGRA: Evitar duplicidade de registros (Reenviar em vez de duplicar)
+        // Se já existe uma simulação equivalente criada nos últimos 20 minutos, reutilizamos.
+        const vinteMinutosAtras = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+        // O CPF do titular faz parte da identidade da simulação. Sem ele, a
+        // simulação de um proponente testado (mesmo cliente_id herdado, mesmos
+        // valores, mesmo agrupador) era confundida com a do titular e o guard
+        // devolvia a do titular — o cônjuge nunca chegava a ser criado.
+        const cpfTitularSim = String(dd.cpf_cnpj ?? "").replace(/\D/g, "");
+        const { data: existente } = await supabaseAdmin
+          .from("simulacoes")
+          .select("id, numero_simulacao, agrupador_id")
+          .eq("cpf_cnpj", cpfTitularSim)
+          .eq("cliente_id", dd.cliente_id || "")
+          .eq("sistema_amortizacao", dd.sistema_amortizacao || "S")
+          .eq("valor_imovel", dd.valor_imovel || 0)
+          .eq("valor_financiamento", dd.valor_financiamento || 0)
+          .eq("prazo", dd.prazo || 0)
+          .filter("agrupador_id", dd.agrupador_id ? "eq" : "is", dd.agrupador_id || null)
+          .in("status", ["rascunho", "erro_banco", "enviando", "parcialmente_simulada", "simulada"])
+          .gte("created_at", vinteMinutosAtras)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle();
-        if (errCli) throw new Error(`Falha ao gravar cliente no CRM: ${errCli.message}`);
-        return (novo?.id as string | undefined) ?? null;
-      };
 
-      const replicarVinculos = async (origemId: string | null, alvos: Array<string | null>) => {
-        const destinoIds = Array.from(
-          new Set(alvos.filter((v): v is string => Boolean(v && v !== origemId))),
-        );
-        if (!origemId || destinoIds.length === 0) return;
-        const { data: vinculos, error: errVinculos } = await supabaseAdmin
-          .from("cliente_parceiros")
-          .select("parceiro_id, tipo_vinculo")
-          .eq("cliente_id", origemId);
-        if (errVinculos)
-          throw new Error(`Falha ao ler vínculos do cliente: ${errVinculos.message}`);
-        if (!vinculos?.length) return;
-        const rows = destinoIds.flatMap((cid) =>
-          vinculos.map((v: any) => ({
-            cliente_id: cid,
-            parceiro_id: v.parceiro_id,
-            tipo_vinculo: v.tipo_vinculo,
-            correspondente_id,
-          })),
-        );
-        const { error: errUpsert } = await supabaseAdmin.from("cliente_parceiros").upsert(rows, {
-          onConflict: "cliente_id,parceiro_id,tipo_vinculo",
-          ignoreDuplicates: true,
-        });
-        if (errUpsert)
-          throw new Error(`Falha ao replicar vínculos do cliente: ${errUpsert.message}`);
-      };
-
-      const vincularConjugeAoTitular = async (
-        titularId: string | null,
-        conjugeId: string | null,
-      ) => {
-        if (!titularId || !conjugeId || titularId === conjugeId) return;
-
-        // Vincula o titular ao cônjuge com tipo_vinculo 'conjuge'
-        const { error: err1 } = await supabaseAdmin.from("cliente_parceiros").upsert(
-          {
-            cliente_id: titularId,
-            parceiro_id: conjugeId,
-            tipo_vinculo: "conjuge",
-            correspondente_id,
-          },
-          { onConflict: "cliente_id,parceiro_id,tipo_vinculo" },
-        );
-
-        // Vincula o cônjuge ao titular com tipo_vinculo 'conjuge'
-        const { error: err2 } = await supabaseAdmin.from("cliente_parceiros").upsert(
-          {
-            cliente_id: conjugeId,
-            parceiro_id: titularId,
-            tipo_vinculo: "conjuge",
-            correspondente_id,
-          },
-          { onConflict: "cliente_id,parceiro_id,tipo_vinculo" },
-        );
-
-        if (err1 || err2) {
-          console.error("Falha ao vincular cônjuges:", err1?.message || err2?.message);
+        if (existente && !dd.participantes?.length) {
+          console.log(
+            `[simulacoes] Reutilizando simulação existente ${existente.numero_simulacao} (${existente.id}) em vez de criar duplicata.`,
+          );
+          return {
+            id: existente.id,
+            numero_simulacao: existente.numero_simulacao,
+            id_secundario: undefined,
+            agrupador_id: existente.agrupador_id || undefined,
+          };
         }
 
-        // Além do vínculo mútuo, garante que ambos compartilhem os mesmos parceiros (imobiliárias, etc)
-        await replicarVinculos(titularId, [conjugeId]);
-      };
+        const limparDocumento = (v?: string | null) => (v ?? "").replace(/\D/g, "");
 
-      const titularId = await upsertClienteCRM({
-        nome: dd.nome_cliente,
-        documento: dd.cpf_cnpj,
-        email: dd.email,
-        celular: dd.celular,
-        dataNascimento: dd.data_nascimento,
-        sexo: dd.sexo,
-        renda: dd.renda_total,
-        estadoCivil: dd.estado_civil,
-        regimeCasamento: casado ? dd.regime_casamento : null,
-        ufInteresse: dd.uf,
-        utilizaFgts: dd.utiliza_fgts === "S",
-        conjugeNome: casado ? dd.nome_conjuge : null,
-        conjugeCpf: casado ? dd.cpf_conjuge : null,
-        conjugeDataNascimento: casado ? dd.data_nascimento_conjuge : null,
-        conjugeEmail: casado ? dd.email_conjuge : null,
-        conjugeCelular: casado ? dd.celular_conjuge : null,
-        conjugeRenda: casado ? dd.renda_conjuge : null,
-        conjugeSexo: casado ? dd.sexo_conjuge : null,
-        imovelCep: dd.cep_imovel,
-        imovelTipo: dd.tipo_imovel,
-        imovelUso: dd.uso_imovel,
-        imovelSituacao: dd.situacao_imovel,
-        imovelValor: dd.valor_imovel,
-        // Só a empresa titular tem este dado; o cônjuge (abaixo) nunca.
-        faturamentoEmpresa: ehPJ ? dd.faturamento_empresa : null,
-      });
-      if (titularId) cliente_id = titularId;
-
-      const conjugeId = casado
-        ? await upsertClienteCRM({
-            nome: dd.nome_conjuge,
-            documento: dd.cpf_conjuge,
-            email: dd.email_conjuge,
-            celular: dd.celular_conjuge,
-            dataNascimento: dd.data_nascimento_conjuge,
-            renda: dd.renda_conjuge,
-            estadoCivil: dd.estado_civil_conjuge || dd.estado_civil,
-            regimeCasamento: dd.regime_casamento,
-            ufInteresse: dd.uf,
-            utilizaFgts: false,
-            conjugeNome: dd.nome_cliente,
-            conjugeCpf: dd.cpf_cnpj,
-            conjugeDataNascimento: dd.data_nascimento,
-            conjugeEmail: dd.email,
-            conjugeCelular: dd.celular,
-            conjugeRenda: dd.renda_total,
-            sexo: dd.sexo_conjuge,
-            conjugeSexo: dd.sexo,
-            imovelCep: dd.cep_imovel,
-            imovelTipo: dd.tipo_imovel,
-            imovelUso: dd.uso_imovel,
-            imovelSituacao: dd.situacao_imovel,
-            imovelValor: dd.valor_imovel,
-          })
-        : null;
-      await replicarVinculos(clienteOrigemId, [titularId, conjugeId]);
-      await vincularConjugeAoTitular(titularId, conjugeId);
-
-      const insert = {
-        correspondente_id,
-        tipo_simulacao: data.modo,
-        status: "rascunho" as const,
-        cliente_id,
-        cpf_cnpj: dd.cpf_cnpj ?? null,
-        // Modalidade da simulação. Gravada para que recarregar ou duplicar não
-        // devolva uma simulação de empresa para as regras de pessoa física.
-        tipo_pessoa: ehPJ ? "PJ" : "PF",
-        nome_cliente: dd.nome_cliente ?? null,
-        email: dd.email ?? null,
-        celular: dd.celular ?? null,
-        data_nascimento: dd.data_nascimento || null,
-        renda_total: dd.renda_total ?? null,
-        estado_civil: dd.estado_civil ?? null,
-        possui_conjuge: dd.possui_conjuge ?? false,
-        compoe_renda: dd.compoe_renda ?? false,
-        compoe_renda_conjuge: dd.compoe_renda_conjuge ?? true,
-        nome_conjuge: dd.nome_conjuge ?? null,
-        cpf_conjuge: dd.cpf_conjuge ?? null,
-        data_nascimento_conjuge: dd.data_nascimento_conjuge || null,
-        email_conjuge: dd.email_conjuge ?? null,
-        celular_conjuge: dd.celular_conjuge ?? null,
-        renda_conjuge: dd.renda_conjuge ?? null,
-        estado_civil_conjuge: dd.estado_civil_conjuge || null,
-        // Enum: "" derruba o insert, precisa virar NULL.
-        regime_casamento: dd.regime_casamento || null,
-        produto: dd.produto ?? null,
-        id_operacao_homefin: dd.id_operacao_homefin ?? null,
-        agrupador_id: (dd as any).agrupador_id ?? null,
-        tipo_imovel: dd.tipo_imovel ?? null,
-        uso_imovel: dd.uso_imovel ?? null,
-        situacao_imovel: dd.situacao_imovel ?? null,
-        uf: dd.uf ?? null,
-        cep_imovel: dd.cep_imovel ?? null,
-        valor_imovel: dd.valor_imovel ?? null,
-        valor_entrada: dd.valor_entrada ?? null,
-        valor_financiamento: dd.valor_financiamento ?? null,
-        prazo: dd.prazo ?? null,
-        prazo_anos: dd.prazo_anos ?? null,
-        possui_imovel_escolhido: dd.possui_imovel_escolhido ?? null,
-        utiliza_fgts: dd.utiliza_fgts ?? null,
-        fg_financiar_despesas: dd.fg_financiar_despesas ?? false,
-        valor_despesas_financiadas: dd.fg_financiar_despesas
-          ? (dd.valor_despesas_financiadas ?? 0)
-          : 0,
-        sistema_amortizacao: dd.sistema_amortizacao ?? null,
-        email_verificado_em: dd.email_verificado_em || null,
-        email_verificado_por: dd.email_verificado_em ? "homefin_otp" : null,
-        consentimento_lgpd: dd.consentimento_lgpd ?? false,
-        consentimento_scr: dd.consentimento_scr ?? false,
-        usuario_criador_id: userId,
-        usuario_responsavel_id: userId,
-      };
-
-      // O insert é feito com o client admin usando o escopo já validado
-      // (correspondente_id do próprio usuário + usuario_criador_id = userId).
-      // Isso evita falhas de "row-level security policy" em cenários de borda
-      // (token renovado no envio, usuário sem permissão direta de escrita etc.),
-      // mantendo o mesmo padrão já usado para gravar o cliente no CRM acima.
-      const { data: sim, error } = await supabaseAdmin
-        .from("simulacoes")
-        .insert(insert as any)
-        .select("id, numero_simulacao")
-        .single();
-      if (error) throw new Error(error.message);
-
-      // Salva participantes se houver
-      if (dd.participantes && dd.participantes.length > 0) {
-        const rowsPart = dd.participantes.map((p: any) => ({
-          simulacao_id: sim.id,
-          nome: p.nome,
-          cpf_cnpj: limparDocumento(p.cpf_cnpj),
-          data_nascimento: p.data_nascimento,
-          renda: Number(p.renda) || 0,
-          vinculo: p.vinculo,
-          estado_civil: p.estado_civil,
-          compoe_renda: Boolean(p.compoe_renda),
-          dados: { 
-            sexo: p.sexo,
-            nome_mae: p.nome_mae,
-            email: p.email,
-            celular: p.celular,
-            cep: p.cep,
-            logradouro: p.logradouro,
-            numero: p.numero,
-            complemento: p.complemento,
-            bairro: p.bairro,
-            municipio: p.municipio,
-            uf: p.uf
-          } as any
-        }));
-        await supabaseAdmin.from('simulacao_participantes').insert(rowsPart as any);
-      }
-
-      // Auditoria de alteração de renda (Problema 3)
-      if (
-        dd.renda_total !== undefined &&
-        dd.renda_total_anterior !== undefined &&
-        dd.renda_total !== dd.renda_total_anterior
-      ) {
-        const { formatBRL } = await import("./format");
-        await supabaseAdmin.from("simulacao_historico").insert({
-          simulacao_id: sim.id,
-          tipo: "info",
-          descricao: `Ajuste manual de renda declarada: alterado de ${formatBRL(dd.renda_total_anterior ?? 0)} para ${formatBRL(dd.renda_total ?? 0)}.`,
-          ator_id: userId,
-        });
-      }
-
-      /**
-       * Devolve o agrupador do lote, gravando-o na simulação original na
-       * primeira vez que uma irmã é criada.
-       *
-       * As irmãs (segundo prazo, titular invertido) sempre nasceram com
-       * `agrupador_id = <id da original>`, mas a original ficava com o campo
-       * nulo. Como `obterSimulacoesPorAgrupador` filtra por igualdade, a busca
-       * encontrava só as irmãs: pedir 360 e 420 devolvia um prazo só.
-       *
-       * Só é chamada quando o lote realmente ganha irmãs — uma simulação
-       * sozinha continua com `agrupador_id` nulo, como antes.
-       */
-      let agrupadorDoLote: string | null = insert.agrupador_id ?? null;
-      const garantirAgrupadorNaOriginal = async (): Promise<string> => {
-        if (!agrupadorDoLote) {
-          agrupadorDoLote = sim.id;
-          await supabaseAdmin
-            .from("simulacoes")
-            .update({ agrupador_id: agrupadorDoLote })
-            .eq("id", sim.id);
-        }
-        return agrupadorDoLote;
-      };
-
-      let id_secundario: string | undefined;
-
-      // O comparativo de CPF agora roda SEMPRE para casados com dados mínimos do cônjuge.
-      // A simulação secundária é criada apenas se o cônjuge tiver dados aptos a ser titular.
-      const conjugeAptoTitular =
-        !!dd.cpf_conjuge && !!dd.data_nascimento_conjuge && Number(dd.renda_conjuge ?? 0) > 0;
-
-      if (testarAmbos && !conjugeAptoTitular) {
-        await supabaseAdmin.from("simulacao_historico").insert({
-          simulacao_id: sim.id,
-          tipo: "info",
-          descricao:
-            "Comparativo de CPF não executado: faltam nome, CPF, data de nascimento ou renda do cônjuge.",
-          ator_id: userId,
-        });
-      }
-
-      if (testarAmbos && conjugeAptoTitular && dd.cpf_conjuge !== dd.cpf_cnpj) {
-        // REGRA DE SEGURANÇA: Validar prazo contra idade no servidor para o cônjuge como titular
-        const proponentesInvertidos = [
-          { nome: dd.nome_conjuge || "Titular", vinculo: "Titular", dataNascimento: dd.data_nascimento_conjuge },
-          { nome: dd.nome_cliente || "Cônjuge", vinculo: "cônjuge", dataNascimento: dd.data_nascimento }
+        const casado =
+          dd.estado_civil === "CA" ||
+          dd.estado_civil === "UE" ||
+          dd.estado_civil === "casado" ||
+          dd.estado_civil === "uniao_estavel";
+        // NORMALIZAÇÃO DE PRAZO ANTES DO INSERT (SERVER-SIDE DETERMINISTIC)
+        const { prazoMaximoParaProponentes } = await import("./prazo");
+        // O teto de idade olha o proponente mais velho, componha ele renda ou
+        // não: o cônjuge assina o contrato de qualquer forma, e o banco recusa
+        // o prazo pela idade dele.
+        const proponentesParaTeto = [
+          {
+            nome: dd.nome_cliente || "Titular",
+            vinculo: "Titular",
+            dataNascimento: dd.data_nascimento,
+          },
+          ...(dd.data_nascimento_conjuge
+            ? [
+                {
+                  nome: dd.nome_conjuge || "Cônjuge",
+                  vinculo: "cônjuge",
+                  dataNascimento: dd.data_nascimento_conjuge,
+                },
+              ]
+            : []),
+          ...(dd.participantes || [])
+            .filter((p: any) => p.compoe_renda)
+            .map((p: any) => ({
+              nome: p.nome,
+              vinculo: p.vinculo,
+              dataNascimento: p.data_nascimento,
+            })),
         ];
-        const analiseInvertida = ajustarPrazoPorIdade(
-          dd.prazo || 0,
-          { nome: dd.nome_conjuge!, dataNascimento: dd.data_nascimento_conjuge! },
-          [{ nome: dd.nome_cliente!, vinculo: "cônjuge", dataNascimento: dd.data_nascimento! }],
-          // Mesma regra da simulação original: sem composição de renda, o teto
-          // é contado pelo proponente mais novo.
+        const compoeRendaConjugeTeto =
+          Boolean(dd.compoe_renda) && dd.compoe_renda_conjuge !== false;
+        const analiseTeto = prazoMaximoParaProponentes(
+          proponentesParaTeto,
+          new Date(),
           modoTetoIdade(compoeRendaConjugeTeto),
         );
-        
-        const prazoEfetivo = analiseInvertida.prazo;
-        const rendaTotalSoma = (dd.renda_total ?? 0) + (dd.renda_conjuge ?? 0);
-        const insertInvertido = {
-          ...insert,
-          // Inverte titular ⇄ cônjuge
-          cliente_id: conjugeId || cliente_id,
-          cpf_cnpj: dd.cpf_conjuge || null,
-          nome_cliente: dd.nome_conjuge || null,
-          email: dd.email_conjuge || null,
-          celular: dd.celular_conjuge || null,
-          data_nascimento: dd.data_nascimento_conjuge || null,
-          renda_total: dd.compoe_renda ? rendaTotalSoma : (dd.renda_conjuge ?? 0),
-          prazo: prazoEfetivo,
-          prazo_anos: Math.floor(prazoEfetivo / 12),
-          estado_civil: dd.estado_civil_conjuge || dd.estado_civil,
+        const tetoEfetivo = analiseTeto?.prazo ?? 420;
 
-          nome_conjuge: dd.nome_cliente || null,
-          cpf_conjuge: dd.cpf_cnpj || null,
-          data_nascimento_conjuge: dd.data_nascimento || null,
-          email_conjuge: dd.email || null,
-          celular_conjuge: dd.celular || null,
-          renda_conjuge: dd.renda_total || null,
-          estado_civil_conjuge: dd.estado_civil ?? null,
+        const prazoNormalizado = Math.min(Number(dd.prazo) || 420, tetoEfetivo);
+        if (prazoNormalizado !== Number(dd.prazo)) {
+          console.warn(
+            `[SIM-PRAZO][DB] Normalizando prazo de ${dd.prazo} para ${prazoNormalizado} antes do insert.`,
+          );
+          dd.prazo = prazoNormalizado;
+        }
 
-          // Mantém vínculo via agrupador para que a UI saiba que são parte da mesma "comparação"
-          agrupador_id: await garantirAgrupadorNaOriginal(),
+        const possuiConjugeMinimo =
+          Boolean(dd.nome_conjuge) &&
+          Boolean(dd.cpf_conjuge) &&
+          Boolean(dd.data_nascimento_conjuge);
+        // Quando o teste de CPF está ligado, o cliente já cria e envia a
+        // simulação de cada proponente (cônjuge incluído) e as agrupa. Manter o
+        // inversor automático aqui geraria uma segunda simulação do cônjuge e
+        // dobraria as consultas ao banco.
+        const testarAmbos =
+          data.modo === "completa" &&
+          casado &&
+          possuiConjugeMinimo &&
+          dd.compoe_renda_conjuge !== false &&
+          !(dd as any).testar_cpfs;
+        let cliente_id = dd.cliente_id ?? null;
+        const clienteOrigemId = cliente_id;
+
+        const upsertClienteCRM = async (params: {
+          nome?: string | null;
+          documento?: string | null;
+          email?: string | null;
+          celular?: string | null;
+          dataNascimento?: string | null;
+          sexo?: string | null;
+          renda?: number | null;
+          estadoCivil?: string | null;
+          regimeCasamento?: string | null;
+          ufInteresse?: string | null;
+          utilizaFgts?: boolean | null;
+          conjugeNome?: string | null;
+          conjugeCpf?: string | null;
+          conjugeSexo?: string | null;
+          conjugeDataNascimento?: string | null;
+          conjugeEmail?: string | null;
+          conjugeCelular?: string | null;
+          conjugeRenda?: number | null;
+          /** Dados do imóvel informados na simulação. */
+          imovelCep?: string | null;
+          imovelTipo?: string | null;
+          imovelUso?: string | null;
+          imovelSituacao?: string | null;
+          imovelValor?: number | null;
+          /** Faturamento da empresa (só chega preenchido quando a modalidade é PJ). */
+          faturamentoEmpresa?: number | null;
+        }) => {
+          const nome = (params.nome ?? "").trim();
+          const documento = limparDocumento(params.documento);
+          if (!nome || !documento) return null;
+          const conjugeCpf = limparDocumento(params.conjugeCpf);
+          // Colunas enum do Postgres não aceitam string vazia — só um valor
+          // válido ou NULL. Campos não preenchidos no formulário chegam como ""
+          // e derrubariam o insert com "invalid input value for enum".
+          const enumOuNulo = (v: unknown) => {
+            const s = String(v ?? "").trim();
+            return s === "" ? null : s;
+          };
+          const campos = {
+            nome,
+            tipo_pessoa: documento.length > 11 ? "PJ" : "PF",
+            email: (params.email ?? "").trim().toLowerCase() || null,
+            telefone_celular: params.celular ?? null,
+            data_nascimento: params.dataNascimento || null,
+            sexo: enumOuNulo(params.sexo),
+            estado_civil: mapEstadoCivilEnum(params.estadoCivil),
+            regime_casamento: enumOuNulo(params.regimeCasamento),
+            renda_total_declarada: params.renda ?? null,
+            uf_interesse: params.ufInteresse ?? null,
+            utiliza_fgts: params.utilizaFgts ?? false,
+            conjuge_nome: params.conjugeNome ?? null,
+            conjuge_cpf: conjugeCpf || null,
+            conjuge_data_nascimento: params.conjugeDataNascimento || null,
+            conjuge_email: params.conjugeEmail ?? null,
+            conjuge_celular: params.conjugeCelular ?? null,
+            conjuge_renda: params.conjugeRenda ?? null,
+            conjuge_sexo: enumOuNulo(params.conjugeSexo),
+            imovel_cep: params.imovelCep || null,
+            imovel_tipo: enumOuNulo(params.imovelTipo),
+            imovel_uso: enumOuNulo(params.imovelUso),
+            imovel_situacao: enumOuNulo(params.imovelSituacao),
+            imovel_valor: params.imovelValor ?? null,
+            // Zero aqui significa "não informado": o campo inicia em 0 e gravar
+            // 0 apagaria um faturamento já cadastrado no CRM.
+            faturamento_empresa:
+              Number(params.faturamentoEmpresa) > 0 ? params.faturamentoEmpresa : null,
+          } as any;
+          // Não sobrescreve o cadastro com vazio: o que a simulação não coletou
+          // deve preservar o que já existe no CRM.
+          for (const [k, v] of Object.entries(campos)) {
+            if (v === null || v === undefined) delete (campos as any)[k];
+          }
+          const { data: existente, error: errBusca } = await supabaseAdmin
+            .from("clientes")
+            .select("id")
+            .eq("correspondente_id", correspondente_id)
+            .eq("documento", documento)
+            .maybeSingle();
+          if (errBusca) throw new Error(`Falha ao localizar cliente no CRM: ${errBusca.message}`);
+          if (existente?.id) {
+            const { error: errUpd } = await supabaseAdmin
+              .from("clientes")
+              .update(campos)
+              .eq("id", existente.id);
+            if (errUpd) throw new Error(`Falha ao atualizar cliente no CRM: ${errUpd.message}`);
+            return existente.id as string;
+          }
+          const { data: novo, error: errCli } = await supabaseAdmin
+            .from("clientes")
+            .insert({
+              correspondente_id,
+              numero_cliente: "",
+              documento,
+              origem: "direto",
+              criador_id: userId,
+              responsavel_id: userId,
+              ...campos,
+            })
+            .select("id")
+            .maybeSingle();
+          if (errCli) throw new Error(`Falha ao gravar cliente no CRM: ${errCli.message}`);
+          return (novo?.id as string | undefined) ?? null;
         };
 
-        // Se composição de renda ativa, garante que ambos levem a MESMA renda somada
-        if (dd.compoe_renda) {
-          insert.renda_total = rendaTotalSoma;
-          insertInvertido.renda_total = rendaTotalSoma;
-        }
-
-        const { data: simSec, error: errorSec } = await supabaseAdmin
-          .from("simulacoes")
-          .insert(insertInvertido as any)
-          .select("id")
-          .single();
-
-        if (!errorSec && simSec) {
-          id_secundario = simSec.id;
-          // Salva participantes se houver
-          if (dd.participantes && dd.participantes.length > 0) {
-            const rowsPart = dd.participantes.map((p: any) => ({
-              simulacao_id: simSec.id,
-              nome: p.nome,
-              cpf_cnpj: limparDocumento(p.cpf_cnpj),
-              data_nascimento: p.data_nascimento,
-              renda: Number(p.renda) || 0,
-              vinculo: p.vinculo,
-              estado_civil: p.estado_civil,
-              compoe_renda: Boolean(p.compoe_renda),
-              dados: { sexo: p.sexo } as any
-            }));
-            await supabaseAdmin.from('simulacao_participantes').insert(rowsPart as any);
-          }
-          // Replica os bancos selecionados para a simulação invertida
-          if (dd.bancos_ids && dd.bancos_ids.length > 0) {
-            const { data: bancosAtivos } = await supabase
-              .from("vw_bancos_ativos")
-              .select("id, codigo_banco, nome_banco, id_banco")
-              .in("id", dd.bancos_ids);
-
-            if (bancosAtivos && bancosAtivos.length > 0) {
-              await supabaseAdmin.from("simulacao_bancos").insert(
-                bancosAtivos.map((b) => ({
-                  simulacao_id: simSec.id,
-                  banco_id: b.id,
-                  codigo_banco: b.codigo_banco,
-                  nome_banco: b.nome_banco,
-                  homefin_id_banco: b.id_banco,
-                  status_banco: "aguardando",
-                  selecionado: true,
-                })),
-              );
-            }
-          }
-
-          // CHAMADA CRÍTICA: Dispara o envio da simulação secundária imediatamente após a criação para evitar rascunhos órfãos.
-          // O disparo é feito via fetch interno para garantir que o worker não seja interrompido pelo ciclo de vida do request principal.
-          const origin = process.env.VITE_SITE_URL || "http://localhost:8080";
-          const apiKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
-          
-          const body = JSON.stringify({
-            data: {
-              simulacao_id: simSec.id,
-              banco_ids: dd.bancos_ids
-            }
-          });
-
-          // Usamos o endpoint de server function via HTTP se necessário, ou chamamos a função exportada com cuidado.
-          // Para máxima resiliência contra "rascunhos órfãos", garantimos que a execução não bloqueie.
-          const { enviarSimulacaoBanco } = await import("./simulacoes.functions");
-          enviarSimulacaoBanco({ data: { simulacao_id: simSec.id, banco_ids: dd.bancos_ids } })
-            .catch((e) => console.error("[HomeFin] Erro no envio automático da simulação secundária:", e));
-        }
-      }
-
-      // registra bancos selecionados
-      if (dd.bancos_ids && dd.bancos_ids.length > 0) {
-        const { data: bancos } = await supabase
-          .from("vw_bancos_ativos")
-          .select("id, codigo_banco, nome_banco, id_banco")
-          .in("id", dd.bancos_ids);
-        if (bancos && bancos.length > 0) {
-          await supabaseAdmin.from("simulacao_bancos").insert(
-            bancos.map((b) => ({
-              simulacao_id: sim.id,
-              banco_id: b.id,
-              codigo_banco: b.codigo_banco,
-              nome_banco: b.nome_banco,
-              homefin_id_banco: b.id_banco,
-              selecionado: true,
+        const replicarVinculos = async (origemId: string | null, alvos: Array<string | null>) => {
+          const destinoIds = Array.from(
+            new Set(alvos.filter((v): v is string => Boolean(v && v !== origemId))),
+          );
+          if (!origemId || destinoIds.length === 0) return;
+          const { data: vinculos, error: errVinculos } = await supabaseAdmin
+            .from("cliente_parceiros")
+            .select("parceiro_id, tipo_vinculo")
+            .eq("cliente_id", origemId);
+          if (errVinculos)
+            throw new Error(`Falha ao ler vínculos do cliente: ${errVinculos.message}`);
+          if (!vinculos?.length) return;
+          const rows = destinoIds.flatMap((cid) =>
+            vinculos.map((v: any) => ({
+              cliente_id: cid,
+              parceiro_id: v.parceiro_id,
+              tipo_vinculo: v.tipo_vinculo,
+              correspondente_id,
             })),
           );
-        }
-      }
+          const { error: errUpsert } = await supabaseAdmin.from("cliente_parceiros").upsert(rows, {
+            onConflict: "cliente_id,parceiro_id,tipo_vinculo",
+            ignoreDuplicates: true,
+          });
+          if (errUpsert)
+            throw new Error(`Falha ao replicar vínculos do cliente: ${errUpsert.message}`);
+        };
 
-      await supabaseAdmin.from("simulacao_historico").insert({
-        simulacao_id: sim.id,
-        tipo: "cadastro",
-        descricao: "Simulação criada",
-        ator_id: userId,
-      });
+        const vincularConjugeAoTitular = async (
+          titularId: string | null,
+          conjugeId: string | null,
+        ) => {
+          if (!titularId || !conjugeId || titularId === conjugeId) return;
 
-      // Lógica para Simulação em Dobro por PRAZO (agrupador_id)
-      if (dd.prazo_2) {
-        const prazos = [dd.prazo, dd.prazo_2].filter(Boolean);
-        const sistemas = ["S", "P"].filter(s => s === "S" ? ((dd.sistema_amortizacao as any) === "S" || (dd.sistema_amortizacao as any) === "A") : ((dd.sistema_amortizacao as any) === "P" || (dd.sistema_amortizacao as any) === "A"));
-        const combinacoes = [];
-        for (const p of prazos) {
-          for (const s of sistemas) {
-             // Evita duplicar a combinação original já criada (sim)
-             const originalSistema = (dd.sistema_amortizacao as any) === "A" ? "S" : dd.sistema_amortizacao;
-             if (Number(p) === Number(dd.prazo) && s === originalSistema) continue;
-             combinacoes.push({ prazo: p, amortizacao: s });
+          // Vincula o titular ao cônjuge com tipo_vinculo 'conjuge'
+          const { error: err1 } = await supabaseAdmin.from("cliente_parceiros").upsert(
+            {
+              cliente_id: titularId,
+              parceiro_id: conjugeId,
+              tipo_vinculo: "conjuge",
+              correspondente_id,
+            },
+            { onConflict: "cliente_id,parceiro_id,tipo_vinculo" },
+          );
+
+          // Vincula o cônjuge ao titular com tipo_vinculo 'conjuge'
+          const { error: err2 } = await supabaseAdmin.from("cliente_parceiros").upsert(
+            {
+              cliente_id: conjugeId,
+              parceiro_id: titularId,
+              tipo_vinculo: "conjuge",
+              correspondente_id,
+            },
+            { onConflict: "cliente_id,parceiro_id,tipo_vinculo" },
+          );
+
+          if (err1 || err2) {
+            console.error("Falha ao vincular cônjuges:", err1?.message || err2?.message);
           }
+
+          // Além do vínculo mútuo, garante que ambos compartilhem os mesmos parceiros (imobiliárias, etc)
+          await replicarVinculos(titularId, [conjugeId]);
+        };
+
+        const titularId = await upsertClienteCRM({
+          nome: dd.nome_cliente,
+          documento: dd.cpf_cnpj,
+          email: dd.email,
+          celular: dd.celular,
+          dataNascimento: dd.data_nascimento,
+          sexo: dd.sexo,
+          renda: dd.renda_total,
+          estadoCivil: dd.estado_civil,
+          regimeCasamento: casado ? dd.regime_casamento : null,
+          ufInteresse: dd.uf,
+          utilizaFgts: dd.utiliza_fgts === "S",
+          conjugeNome: casado ? dd.nome_conjuge : null,
+          conjugeCpf: casado ? dd.cpf_conjuge : null,
+          conjugeDataNascimento: casado ? dd.data_nascimento_conjuge : null,
+          conjugeEmail: casado ? dd.email_conjuge : null,
+          conjugeCelular: casado ? dd.celular_conjuge : null,
+          conjugeRenda: casado ? dd.renda_conjuge : null,
+          conjugeSexo: casado ? dd.sexo_conjuge : null,
+          imovelCep: dd.cep_imovel,
+          imovelTipo: dd.tipo_imovel,
+          imovelUso: dd.uso_imovel,
+          imovelSituacao: dd.situacao_imovel,
+          imovelValor: dd.valor_imovel,
+          // Só a empresa titular tem este dado; o cônjuge (abaixo) nunca.
+          faturamentoEmpresa: ehPJ ? dd.faturamento_empresa : null,
+        });
+        if (titularId) cliente_id = titularId;
+
+        const conjugeId = casado
+          ? await upsertClienteCRM({
+              nome: dd.nome_conjuge,
+              documento: dd.cpf_conjuge,
+              email: dd.email_conjuge,
+              celular: dd.celular_conjuge,
+              dataNascimento: dd.data_nascimento_conjuge,
+              renda: dd.renda_conjuge,
+              estadoCivil: dd.estado_civil_conjuge || dd.estado_civil,
+              regimeCasamento: dd.regime_casamento,
+              ufInteresse: dd.uf,
+              utilizaFgts: false,
+              conjugeNome: dd.nome_cliente,
+              conjugeCpf: dd.cpf_cnpj,
+              conjugeDataNascimento: dd.data_nascimento,
+              conjugeEmail: dd.email,
+              conjugeCelular: dd.celular,
+              conjugeRenda: dd.renda_total,
+              sexo: dd.sexo_conjuge,
+              conjugeSexo: dd.sexo,
+              imovelCep: dd.cep_imovel,
+              imovelTipo: dd.tipo_imovel,
+              imovelUso: dd.uso_imovel,
+              imovelSituacao: dd.situacao_imovel,
+              imovelValor: dd.valor_imovel,
+            })
+          : null;
+        await replicarVinculos(clienteOrigemId, [titularId, conjugeId]);
+        await vincularConjugeAoTitular(titularId, conjugeId);
+
+        const insert = {
+          correspondente_id,
+          tipo_simulacao: data.modo,
+          status: "rascunho" as const,
+          cliente_id,
+          cpf_cnpj: dd.cpf_cnpj ?? null,
+          // Modalidade da simulação. Gravada para que recarregar ou duplicar não
+          // devolva uma simulação de empresa para as regras de pessoa física.
+          tipo_pessoa: ehPJ ? "PJ" : "PF",
+          nome_cliente: dd.nome_cliente ?? null,
+          email: dd.email ?? null,
+          celular: dd.celular ?? null,
+          data_nascimento: dd.data_nascimento || null,
+          renda_total: dd.renda_total ?? null,
+          estado_civil: dd.estado_civil ?? null,
+          possui_conjuge: dd.possui_conjuge ?? false,
+          compoe_renda: dd.compoe_renda ?? false,
+          compoe_renda_conjuge: dd.compoe_renda_conjuge ?? true,
+          nome_conjuge: dd.nome_conjuge ?? null,
+          cpf_conjuge: dd.cpf_conjuge ?? null,
+          data_nascimento_conjuge: dd.data_nascimento_conjuge || null,
+          email_conjuge: dd.email_conjuge ?? null,
+          celular_conjuge: dd.celular_conjuge ?? null,
+          renda_conjuge: dd.renda_conjuge ?? null,
+          estado_civil_conjuge: dd.estado_civil_conjuge || null,
+          // Enum: "" derruba o insert, precisa virar NULL.
+          regime_casamento: dd.regime_casamento || null,
+          produto: dd.produto ?? null,
+          id_operacao_homefin: dd.id_operacao_homefin ?? null,
+          agrupador_id: (dd as any).agrupador_id ?? null,
+          tipo_imovel: dd.tipo_imovel ?? null,
+          uso_imovel: dd.uso_imovel ?? null,
+          situacao_imovel: dd.situacao_imovel ?? null,
+          uf: dd.uf ?? null,
+          cep_imovel: dd.cep_imovel ?? null,
+          valor_imovel: dd.valor_imovel ?? null,
+          valor_entrada: dd.valor_entrada ?? null,
+          valor_financiamento: dd.valor_financiamento ?? null,
+          prazo: dd.prazo ?? null,
+          prazo_anos: dd.prazo_anos ?? null,
+          possui_imovel_escolhido: dd.possui_imovel_escolhido ?? null,
+          utiliza_fgts: dd.utiliza_fgts ?? null,
+          fg_financiar_despesas: dd.fg_financiar_despesas ?? false,
+          valor_despesas_financiadas: dd.fg_financiar_despesas
+            ? (dd.valor_despesas_financiadas ?? 0)
+            : 0,
+          sistema_amortizacao: dd.sistema_amortizacao ?? null,
+          email_verificado_em: dd.email_verificado_em || null,
+          email_verificado_por: dd.email_verificado_em ? "homefin_otp" : null,
+          consentimento_lgpd: dd.consentimento_lgpd ?? false,
+          consentimento_scr: dd.consentimento_scr ?? false,
+          usuario_criador_id: userId,
+          usuario_responsavel_id: userId,
+        };
+
+        // O insert é feito com o client admin usando o escopo já validado
+        // (correspondente_id do próprio usuário + usuario_criador_id = userId).
+        // Isso evita falhas de "row-level security policy" em cenários de borda
+        // (token renovado no envio, usuário sem permissão direta de escrita etc.),
+        // mantendo o mesmo padrão já usado para gravar o cliente no CRM acima.
+        const { data: sim, error } = await supabaseAdmin
+          .from("simulacoes")
+          .insert(insert as any)
+          .select("id, numero_simulacao")
+          .single();
+        if (error) throw new Error(error.message);
+
+        // Salva participantes se houver
+        if (dd.participantes && dd.participantes.length > 0) {
+          const rowsPart = dd.participantes.map((p: any) => ({
+            simulacao_id: sim.id,
+            nome: p.nome,
+            cpf_cnpj: limparDocumento(p.cpf_cnpj),
+            data_nascimento: p.data_nascimento,
+            renda: Number(p.renda) || 0,
+            vinculo: p.vinculo,
+            estado_civil: p.estado_civil,
+            compoe_renda: Boolean(p.compoe_renda),
+            dados: {
+              sexo: p.sexo,
+              nome_mae: p.nome_mae,
+              email: p.email,
+              celular: p.celular,
+              cep: p.cep,
+              logradouro: p.logradouro,
+              numero: p.numero,
+              complemento: p.complemento,
+              bairro: p.bairro,
+              municipio: p.municipio,
+              uf: p.uf,
+            } as any,
+          }));
+          await supabaseAdmin.from("simulacao_participantes").insert(rowsPart as any);
         }
 
-        for (const combo of combinacoes) {
-          const insertPrazo2 = {
+        // Auditoria de alteração de renda (Problema 3)
+        if (
+          dd.renda_total !== undefined &&
+          dd.renda_total_anterior !== undefined &&
+          dd.renda_total !== dd.renda_total_anterior
+        ) {
+          const { formatBRL } = await import("./format");
+          await supabaseAdmin.from("simulacao_historico").insert({
+            simulacao_id: sim.id,
+            tipo: "info",
+            descricao: `Ajuste manual de renda declarada: alterado de ${formatBRL(dd.renda_total_anterior ?? 0)} para ${formatBRL(dd.renda_total ?? 0)}.`,
+            ator_id: userId,
+          });
+        }
+
+        /**
+         * Devolve o agrupador do lote, gravando-o na simulação original na
+         * primeira vez que uma irmã é criada.
+         *
+         * As irmãs (segundo prazo, titular invertido) sempre nasceram com
+         * `agrupador_id = <id da original>`, mas a original ficava com o campo
+         * nulo. Como `obterSimulacoesPorAgrupador` filtra por igualdade, a busca
+         * encontrava só as irmãs: pedir 360 e 420 devolvia um prazo só.
+         *
+         * Só é chamada quando o lote realmente ganha irmãs — uma simulação
+         * sozinha continua com `agrupador_id` nulo, como antes.
+         */
+        let agrupadorDoLote: string | null = insert.agrupador_id ?? null;
+        const garantirAgrupadorNaOriginal = async (): Promise<string> => {
+          if (!agrupadorDoLote) {
+            agrupadorDoLote = sim.id;
+            await supabaseAdmin
+              .from("simulacoes")
+              .update({ agrupador_id: agrupadorDoLote })
+              .eq("id", sim.id);
+          }
+          return agrupadorDoLote;
+        };
+
+        let id_secundario: string | undefined;
+
+        // O comparativo de CPF agora roda SEMPRE para casados com dados mínimos do cônjuge.
+        // A simulação secundária é criada apenas se o cônjuge tiver dados aptos a ser titular.
+        const conjugeAptoTitular =
+          !!dd.cpf_conjuge && !!dd.data_nascimento_conjuge && Number(dd.renda_conjuge ?? 0) > 0;
+
+        if (testarAmbos && !conjugeAptoTitular) {
+          await supabaseAdmin.from("simulacao_historico").insert({
+            simulacao_id: sim.id,
+            tipo: "info",
+            descricao:
+              "Comparativo de CPF não executado: faltam nome, CPF, data de nascimento ou renda do cônjuge.",
+            ator_id: userId,
+          });
+        }
+
+        if (testarAmbos && conjugeAptoTitular && dd.cpf_conjuge !== dd.cpf_cnpj) {
+          // REGRA DE SEGURANÇA: Validar prazo contra idade no servidor para o cônjuge como titular
+          const proponentesInvertidos = [
+            {
+              nome: dd.nome_conjuge || "Titular",
+              vinculo: "Titular",
+              dataNascimento: dd.data_nascimento_conjuge,
+            },
+            {
+              nome: dd.nome_cliente || "Cônjuge",
+              vinculo: "cônjuge",
+              dataNascimento: dd.data_nascimento,
+            },
+          ];
+          const analiseInvertida = ajustarPrazoPorIdade(
+            dd.prazo || 0,
+            { nome: dd.nome_conjuge!, dataNascimento: dd.data_nascimento_conjuge! },
+            [{ nome: dd.nome_cliente!, vinculo: "cônjuge", dataNascimento: dd.data_nascimento! }],
+            // Mesma regra da simulação original: sem composição de renda, o teto
+            // é contado pelo proponente mais novo.
+            modoTetoIdade(compoeRendaConjugeTeto),
+          );
+
+          const prazoEfetivo = analiseInvertida.prazo;
+          const rendaTotalSoma = (dd.renda_total ?? 0) + (dd.renda_conjuge ?? 0);
+          const insertInvertido = {
             ...insert,
-            prazo: combo.prazo,
-            sistema_amortizacao: combo.amortizacao,
+            // Inverte titular ⇄ cônjuge
+            cliente_id: conjugeId || cliente_id,
+            cpf_cnpj: dd.cpf_conjuge || null,
+            nome_cliente: dd.nome_conjuge || null,
+            email: dd.email_conjuge || null,
+            celular: dd.celular_conjuge || null,
+            data_nascimento: dd.data_nascimento_conjuge || null,
+            renda_total: dd.compoe_renda ? rendaTotalSoma : (dd.renda_conjuge ?? 0),
+            prazo: prazoEfetivo,
+            prazo_anos: Math.floor(prazoEfetivo / 12),
+            estado_civil: dd.estado_civil_conjuge || dd.estado_civil,
+
+            nome_conjuge: dd.nome_cliente || null,
+            cpf_conjuge: dd.cpf_cnpj || null,
+            data_nascimento_conjuge: dd.data_nascimento || null,
+            email_conjuge: dd.email || null,
+            celular_conjuge: dd.celular || null,
+            renda_conjuge: dd.renda_total || null,
+            estado_civil_conjuge: dd.estado_civil ?? null,
+
+            // Mantém vínculo via agrupador para que a UI saiba que são parte da mesma "comparação"
             agrupador_id: await garantirAgrupadorNaOriginal(),
           };
-          const { data: simP2, error: errorP2 } = await supabaseAdmin
+
+          // Se composição de renda ativa, garante que ambos levem a MESMA renda somada
+          if (dd.compoe_renda) {
+            insert.renda_total = rendaTotalSoma;
+            insertInvertido.renda_total = rendaTotalSoma;
+          }
+
+          const { data: simSec, error: errorSec } = await supabaseAdmin
             .from("simulacoes")
-            .insert(insertPrazo2 as any)
+            .insert(insertInvertido as any)
             .select("id")
             .single();
 
-          if (!errorP2 && simP2) {
+          if (!errorSec && simSec) {
+            id_secundario = simSec.id;
+            // Salva participantes se houver
             if (dd.participantes && dd.participantes.length > 0) {
               const rowsPart = dd.participantes.map((p: any) => ({
-                simulacao_id: simP2.id,
+                simulacao_id: simSec.id,
                 nome: p.nome,
                 cpf_cnpj: limparDocumento(p.cpf_cnpj),
                 data_nascimento: p.data_nascimento,
@@ -944,19 +878,21 @@ export const criarSimulacao = createServerFn({ method: "POST" })
                 vinculo: p.vinculo,
                 estado_civil: p.estado_civil,
                 compoe_renda: Boolean(p.compoe_renda),
-                dados: { sexo: p.sexo } as any
+                dados: { sexo: p.sexo } as any,
               }));
-              await supabaseAdmin.from('simulacao_participantes').insert(rowsPart as any);
+              await supabaseAdmin.from("simulacao_participantes").insert(rowsPart as any);
             }
+            // Replica os bancos selecionados para a simulação invertida
             if (dd.bancos_ids && dd.bancos_ids.length > 0) {
               const { data: bancosAtivos } = await supabase
                 .from("vw_bancos_ativos")
                 .select("id, codigo_banco, nome_banco, id_banco")
                 .in("id", dd.bancos_ids);
+
               if (bancosAtivos && bancosAtivos.length > 0) {
                 await supabaseAdmin.from("simulacao_bancos").insert(
                   bancosAtivos.map((b) => ({
-                    simulacao_id: simP2.id,
+                    simulacao_id: simSec.id,
                     banco_id: b.id,
                     codigo_banco: b.codigo_banco,
                     nome_banco: b.nome_banco,
@@ -965,26 +901,150 @@ export const criarSimulacao = createServerFn({ method: "POST" })
                     selecionado: true,
                   })),
                 );
+              }
+            }
 
-                // CHAMADA CRÍTICA (mesmo padrão usado acima para `simSec`):
-                // sem isto, a simulação-irmã do 2º prazo fica com
-                // `homefin_id_simulacao_banco` nulo para sempre — a
-                // reconciliação (`/api/public/reconciliar-simulacoes`) só
-                // resgata bancos que JÁ têm esse id, então essas linhas
-                // nunca saíam de "aguardando" (visível como "Em análise" na
-                // tela, e contando no total do overlay sem nunca concluir).
-                const { enviarSimulacaoBanco } = await import("./simulacoes.functions");
-                enviarSimulacaoBanco({ data: { simulacao_id: simP2.id, banco_ids: dd.bancos_ids } })
-                  .catch((e) => console.error("[HomeFin] Erro no envio automático da simulação (2º prazo):", e));
+            // CHAMADA CRÍTICA: Dispara o envio da simulação secundária imediatamente após a criação para evitar rascunhos órfãos.
+            // O disparo é feito via fetch interno para garantir que o worker não seja interrompido pelo ciclo de vida do request principal.
+            const origin = process.env.VITE_SITE_URL || "http://localhost:8080";
+            const apiKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+
+            const body = JSON.stringify({
+              data: {
+                simulacao_id: simSec.id,
+                banco_ids: dd.bancos_ids,
+              },
+            });
+
+            // Usamos o endpoint de server function via HTTP se necessário, ou chamamos a função exportada com cuidado.
+            // Para máxima resiliência contra "rascunhos órfãos", garantimos que a execução não bloqueie.
+            const { enviarSimulacaoBanco } = await import("./simulacoes.functions");
+            enviarSimulacaoBanco({
+              data: { simulacao_id: simSec.id, banco_ids: dd.bancos_ids },
+            }).catch((e) =>
+              console.error("[HomeFin] Erro no envio automático da simulação secundária:", e),
+            );
+          }
+        }
+
+        // registra bancos selecionados
+        if (dd.bancos_ids && dd.bancos_ids.length > 0) {
+          const { data: bancos } = await supabase
+            .from("vw_bancos_ativos")
+            .select("id, codigo_banco, nome_banco, id_banco")
+            .in("id", dd.bancos_ids);
+          if (bancos && bancos.length > 0) {
+            await supabaseAdmin.from("simulacao_bancos").insert(
+              bancos.map((b) => ({
+                simulacao_id: sim.id,
+                banco_id: b.id,
+                codigo_banco: b.codigo_banco,
+                nome_banco: b.nome_banco,
+                homefin_id_banco: b.id_banco,
+                selecionado: true,
+              })),
+            );
+          }
+        }
+
+        await supabaseAdmin.from("simulacao_historico").insert({
+          simulacao_id: sim.id,
+          tipo: "cadastro",
+          descricao: "Simulação criada",
+          ator_id: userId,
+        });
+
+        // Lógica para Simulação em Dobro por PRAZO (agrupador_id)
+        if (dd.prazo_2) {
+          const prazos = [dd.prazo, dd.prazo_2].filter(Boolean);
+          const sistemas = ["S", "P"].filter((s) =>
+            s === "S"
+              ? (dd.sistema_amortizacao as any) === "S" || (dd.sistema_amortizacao as any) === "A"
+              : (dd.sistema_amortizacao as any) === "P" || (dd.sistema_amortizacao as any) === "A",
+          );
+          const combinacoes = [];
+          for (const p of prazos) {
+            for (const s of sistemas) {
+              // Evita duplicar a combinação original já criada (sim)
+              const originalSistema =
+                (dd.sistema_amortizacao as any) === "A" ? "S" : dd.sistema_amortizacao;
+              if (Number(p) === Number(dd.prazo) && s === originalSistema) continue;
+              combinacoes.push({ prazo: p, amortizacao: s });
+            }
+          }
+
+          for (const combo of combinacoes) {
+            const insertPrazo2 = {
+              ...insert,
+              prazo: combo.prazo,
+              sistema_amortizacao: combo.amortizacao,
+              agrupador_id: await garantirAgrupadorNaOriginal(),
+            };
+            const { data: simP2, error: errorP2 } = await supabaseAdmin
+              .from("simulacoes")
+              .insert(insertPrazo2 as any)
+              .select("id")
+              .single();
+
+            if (!errorP2 && simP2) {
+              if (dd.participantes && dd.participantes.length > 0) {
+                const rowsPart = dd.participantes.map((p: any) => ({
+                  simulacao_id: simP2.id,
+                  nome: p.nome,
+                  cpf_cnpj: limparDocumento(p.cpf_cnpj),
+                  data_nascimento: p.data_nascimento,
+                  renda: Number(p.renda) || 0,
+                  vinculo: p.vinculo,
+                  estado_civil: p.estado_civil,
+                  compoe_renda: Boolean(p.compoe_renda),
+                  dados: { sexo: p.sexo } as any,
+                }));
+                await supabaseAdmin.from("simulacao_participantes").insert(rowsPart as any);
+              }
+              if (dd.bancos_ids && dd.bancos_ids.length > 0) {
+                const { data: bancosAtivos } = await supabase
+                  .from("vw_bancos_ativos")
+                  .select("id, codigo_banco, nome_banco, id_banco")
+                  .in("id", dd.bancos_ids);
+                if (bancosAtivos && bancosAtivos.length > 0) {
+                  await supabaseAdmin.from("simulacao_bancos").insert(
+                    bancosAtivos.map((b) => ({
+                      simulacao_id: simP2.id,
+                      banco_id: b.id,
+                      codigo_banco: b.codigo_banco,
+                      nome_banco: b.nome_banco,
+                      homefin_id_banco: b.id_banco,
+                      status_banco: "aguardando",
+                      selecionado: true,
+                    })),
+                  );
+
+                  // CHAMADA CRÍTICA (mesmo padrão usado acima para `simSec`):
+                  // sem isto, a simulação-irmã do 2º prazo fica com
+                  // `homefin_id_simulacao_banco` nulo para sempre — a
+                  // reconciliação (`/api/public/reconciliar-simulacoes`) só
+                  // resgata bancos que JÁ têm esse id, então essas linhas
+                  // nunca saíam de "aguardando" (visível como "Em análise" na
+                  // tela, e contando no total do overlay sem nunca concluir).
+                  const { enviarSimulacaoBanco } = await import("./simulacoes.functions");
+                  enviarSimulacaoBanco({
+                    data: { simulacao_id: simP2.id, banco_ids: dd.bancos_ids },
+                  }).catch((e) =>
+                    console.error("[HomeFin] Erro no envio automático da simulação (2º prazo):", e),
+                  );
+                }
               }
             }
           }
         }
-      }
 
-      // Devolve o agrupador só quando ele existe de fato. Antes devolvia
-      // `sim.id` mesmo sem irmãs, e o cliente ia buscar um grupo inexistente.
-      return { id: sim.id, numero_simulacao: sim.numero_simulacao, agrupador_id: agrupadorDoLote ?? undefined };
+        // Devolve o agrupador só quando ele existe de fato. Antes devolvia
+        // `sim.id` mesmo sem irmãs, e o cliente ia buscar um grupo inexistente.
+        return {
+          id: sim.id,
+          numero_simulacao: sim.numero_simulacao,
+          agrupador_id: agrupadorDoLote ?? undefined,
+        };
       } catch (e: any) {
         console.error("[criarSimulacao] Erro crítico:", e);
         console.error("[criarSimulacao] Stack:", e?.stack);
@@ -1005,7 +1065,7 @@ export const obterSimulacoesPorAgrupador = createServerFn({ method: "GET" })
       .eq("agrupador_id", data.agrupador_id)
       .is("deleted_at", null)
       .order("created_at", { ascending: true });
-    
+
     if (error) throw new Error(error.message);
     return sims || [];
   });
@@ -1107,13 +1167,13 @@ export const obterSimulacao = createServerFn({ method: "GET" })
     // Se agrupado, expõe também qual sistema é o "principal" (esta simulação)
     // e sinaliza que é mista, para o front renderizar cabeçalhos SAC/PRICE.
     const simulacaoOut =
-      irmas.length > 1 
-        ? { 
-            ...simulacao, 
+      irmas.length > 1
+        ? {
+            ...simulacao,
             sistema_amortizacao: "B" as const,
             _irmas: irmas,
-            _multi_prazo: new Set(irmas.map(i => i.prazo)).size > 1
-          } 
+            _multi_prazo: new Set(irmas.map((i) => i.prazo)).size > 1,
+          }
         : simulacao;
 
     // Carrega participantes (composição de renda)
@@ -1122,11 +1182,11 @@ export const obterSimulacao = createServerFn({ method: "GET" })
       .select("*")
       .eq("simulacao_id", data.id);
 
-    return { 
-      simulacao: simulacaoOut, 
-      bancos, 
+    return {
+      simulacao: simulacaoOut,
+      bancos,
       historico: historicoComAutor,
-      participantes: participantes ?? []
+      participantes: participantes ?? [],
     };
   });
 
@@ -1251,9 +1311,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       }
 
       const totalGrupos = ordemGrupos.length;
-      const idsDaPagina = ordemGrupos
-        .slice(from, to + 1)
-        .flatMap((k) => idsPorGrupo.get(k) ?? []);
+      const idsDaPagina = ordemGrupos.slice(from, to + 1).flatMap((k) => idsPorGrupo.get(k) ?? []);
 
       let rows: any[] = [];
       if (idsDaPagina.length) {
@@ -1274,16 +1332,16 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       for (const r of rows ?? []) {
         const agrp = (r as any).agrupador_id;
         const cli = (r as any).cliente_id;
-        
+
         if (agrp && cli) {
           const key = `${agrp}-${cli}`;
           if (!agrupadas.has(key)) {
-            agrupadas.set(key, { 
-              ...r, 
-              _agrupadas_ids: [], 
-              _agrupadas_numeros: [], 
+            agrupadas.set(key, {
+              ...r,
+              _agrupadas_ids: [],
+              _agrupadas_numeros: [],
               _prazos_distintos: new Set([r.prazo]),
-              _sistemas_distintos: new Set([r.sistema_amortizacao])
+              _sistemas_distintos: new Set([r.sistema_amortizacao]),
             });
           } else {
             const grupo = agrupadas.get(key);
@@ -1308,33 +1366,33 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
             }
           }
         } else {
-          individuais.push({ 
-            ...r, 
-            _agrupadas_ids: [], 
-            _agrupadas_numeros: [], 
+          individuais.push({
+            ...r,
+            _agrupadas_ids: [],
+            _agrupadas_numeros: [],
             _prazos_distintos: new Set([r.prazo]),
-            _sistemas_distintos: new Set([r.sistema_amortizacao])
+            _sistemas_distintos: new Set([r.sistema_amortizacao]),
           });
         }
       }
 
-      const paginadas = [...Array.from(agrupadas.values()), ...individuais].map(r => ({
+      const paginadas = [...Array.from(agrupadas.values()), ...individuais].map((r) => ({
         ...r,
         _multi_prazo: (r._prazos_distintos?.size ?? 0) > 1,
-        _multi_sistema: (r._sistemas_distintos?.size ?? 0) > 1
+        _multi_sistema: (r._sistemas_distintos?.size ?? 0) > 1,
       }));
       const total = totalGrupos;
 
       // Carrega bancos de TODAS as simulações paginadas para consolidar a exibição.
       const idsTodos = paginadas.flatMap((r: any) => [r.id, ...(r._agrupadas_ids || [])]);
-      
+
       const simulacoesMap = new Map();
       if (idsTodos.length) {
         const { data: todasSims } = await supabase
           .from("simulacoes")
           .select("id, sistema_amortizacao")
           .in("id", idsTodos);
-        todasSims?.forEach(s => simulacoesMap.set(s.id, s.sistema_amortizacao));
+        todasSims?.forEach((s) => simulacoesMap.set(s.id, s.sistema_amortizacao));
       }
 
       const bancosPorSim = new Map<string, SimulacaoBancoResumo[]>();
@@ -1436,17 +1494,22 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
 
         // Consolidação de Status do Grupo:
         // enviando > parcial > simulada > rascunho/erro
-        const statuses = new Set([r.status, ...(r._agrupadas_ids ?? []).map((id: string) => {
-          const item = (rows ?? []).find((x: any) => x.id === id);
-          return item?.status;
-        })]);
-        
+        const statuses = new Set([
+          r.status,
+          ...(r._agrupadas_ids ?? []).map((id: string) => {
+            const item = (rows ?? []).find((x: any) => x.id === id);
+            return item?.status;
+          }),
+        ]);
+
         let statusConsolidado = r.status;
         if (statuses.has("enviando")) statusConsolidado = "enviando";
         else if (statuses.has("parcialmente_simulada")) statusConsolidado = "parcialmente_simulada";
         else if (statuses.has("simulada")) statusConsolidado = "simulada";
 
-        const valorTotalFinanciado = Number(r.valor_financiamento || 0) + (r.fg_financiar_despesas ? Number(r.valor_despesas_financiadas || 0) : 0);
+        const valorTotalFinanciado =
+          Number(r.valor_financiamento || 0) +
+          (r.fg_financiar_despesas ? Number(r.valor_despesas_financiadas || 0) : 0);
 
         return {
           ...r,
@@ -1468,9 +1531,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       const { data: stats } = await aplicarFiltros(
         supabase
           .from("simulacoes")
-          .select(
-            "valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo",
-          ),
+          .select("valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo"),
       );
       const totalVolume = ((stats ?? []) as any[]).reduce(
         (acc: number, s: any) =>
@@ -1636,14 +1697,16 @@ export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
         .eq("cliente_id", simDetalhe?.cliente_id || "")
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
-      
+
       if (todos && todos.length > 0) {
-        idsParaEnviar = todos.map(t => t.id);
+        idsParaEnviar = todos.map((t) => t.id);
       }
     }
 
     const resultados = [];
-    console.info(`[enviarSimulacaoBanco] Processando ${idsParaEnviar.length} simulações sequencialmente.`);
+    console.info(
+      `[enviarSimulacaoBanco] Processando ${idsParaEnviar.length} simulações sequencialmente.`,
+    );
     for (const sid of idsParaEnviar) {
       try {
         console.info(`[enviarSimulacaoBanco] Processando simulação ${sid}...`);
@@ -1659,7 +1722,7 @@ export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
       } catch (e: any) {
         console.error(`[enviarSimulacaoBanco] Falha crítica na simulação ${sid}:`, e);
         const erroMsg = e?.message || String(e);
-        
+
         // Garante status terminal de erro para a simulação e seus bancos caso falhe o arranque
         try {
           // Registra o erro no histórico
@@ -1670,26 +1733,35 @@ export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
             ator_id: userId,
           });
 
-          await supabase.from("simulacoes").update({ 
-            status: "erro_banco", 
-            ultimo_erro: erroMsg 
-          }).eq("id", sid);
-          
+          await supabase
+            .from("simulacoes")
+            .update({
+              status: "erro_banco",
+              ultimo_erro: erroMsg,
+            })
+            .eq("id", sid);
+
           // Marca bancos afetados como erro para tirar do estado 'aguardando' falso
-          const updateBancos = supabase.from("simulacao_bancos").update({ 
-            status_banco: "erro", 
-            mensagem_banco: `Falha no início do processo: ${erroMsg}` 
-          }).eq("simulacao_id", sid);
-          
+          const updateBancos = supabase
+            .from("simulacao_bancos")
+            .update({
+              status_banco: "erro",
+              mensagem_banco: `Falha no início do processo: ${erroMsg}`,
+            })
+            .eq("simulacao_id", sid);
+
           if (data.banco_ids && data.banco_ids.length > 0) {
-             await updateBancos.in("banco_id", data.banco_ids);
+            await updateBancos.in("banco_id", data.banco_ids);
           } else {
-             await updateBancos.eq("selecionado", true);
+            await updateBancos.eq("selecionado", true);
           }
         } catch (dbErr) {
-          console.error(`[enviarSimulacaoBanco] Falha ao gravar erro de fallback para ${sid}:`, dbErr);
+          console.error(
+            `[enviarSimulacaoBanco] Falha ao gravar erro de fallback para ${sid}:`,
+            dbErr,
+          );
         }
-        
+
         resultados.push({ id: sid, status: "erro_banco", erro: erroMsg });
       }
     }
@@ -2053,7 +2125,11 @@ export const destravarSimulacao = createServerFn({ method: "POST" })
 export function num(v: unknown): number {
   if (v === null || v === undefined) return 0;
   if (typeof v === "number") return v;
-  const n = parseFloat(String(v).replace(/\D/g, ".").replace(/[^0-9.]/g, ""));
+  const n = parseFloat(
+    String(v)
+      .replace(/\D/g, ".")
+      .replace(/[^0-9.]/g, ""),
+  );
   return isNaN(n) ? 0 : n;
 }
 
@@ -2078,6 +2154,34 @@ export function estadoCivilCrmParaCodigo(v: string | null | undefined): string {
   return map[String(v).toLowerCase()] || "S";
 }
 
+export type StatusSimulacaoCalculado =
+  | "enviando"
+  | "simulada"
+  | "parcialmente_simulada"
+  | "erro_banco"
+  | "rascunho";
+
+/**
+ * Status da simulação a partir do status de cada banco.
+ *
+ * A ordem importa. Antes, um único banco ainda aguardando mandava a simulação
+ * inteira para "enviando": o operador via "Em análise" mesmo com Bradesco e
+ * Itaú já respondidos em segundos, e ficava assim até o banco lento responder
+ * ou a espera de 15 min estourar. Agora o que já voltou vale — com resultado
+ * de pelo menos um banco a simulação é PARCIAL, e o crachá de cada banco
+ * continua dizendo quem ainda está em análise.
+ */
+export function statusPorBancos(statuses: string[]): StatusSimulacaoCalculado {
+  const temPendente = statuses.some((s) => s === "enviando" || s === "aguardando");
+  const temSimulada = statuses.some((s) => s === "simulada");
+
+  if (!temPendente && statuses.every((s) => s === "simulada")) return "simulada";
+  if (temSimulada) return "parcialmente_simulada";
+  if (temPendente) return "enviando";
+  if (statuses.every((s) => s === "erro")) return "erro_banco";
+  return "rascunho";
+}
+
 /**
  * Recalcula o status global de uma simulação baseado no status de seus bancos.
  */
@@ -2096,18 +2200,7 @@ export async function recalcularStatusSimulacao(simulacaoId: string, supabase: a
 
   if (!bancos || bancos.length === 0) return sim?.status || "rascunho";
 
-  const statuses = bancos.map((b: any) => b.status_banco);
-  let novoStatus: "enviando" | "simulada" | "parcialmente_simulada" | "erro_banco" | "rascunho" = "rascunho";
-  
-  if (statuses.some((s: string) => s === "enviando" || s === "aguardando")) {
-    novoStatus = "enviando";
-  } else if (statuses.every((s: string) => s === "simulada")) {
-    novoStatus = "simulada";
-  } else if (statuses.some((s: string) => s === "simulada")) {
-    novoStatus = "parcialmente_simulada";
-  } else if (statuses.every((s: string) => s === "erro")) {
-    novoStatus = "erro_banco";
-  }
+  const novoStatus = statusPorBancos(bancos.map((b: any) => b.status_banco));
 
   // Persiste a mudança de status se for diferente do atual
   if (novoStatus !== sim?.status) {
