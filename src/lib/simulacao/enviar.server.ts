@@ -451,6 +451,14 @@ export async function enviarSimulacaoImpl({ simulacaoId, userId, supabase, banco
   }
 }
 
+/** "R$ 169.000,00" — usado nas mensagens que o operador lê na linha do banco. */
+function formatarBRL(v: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(v) || 0);
+}
+
 async function processarBancoIndividual(b: any, idOportunidade: string, sim: any, supabase: SupabaseClient, t0: number): Promise<{ status: any }> {
   const { supabaseAdmin: sbAdminProc } = await import("@/integrations/supabase/client.server");
   const simulacaoId = sim.id;
@@ -534,6 +542,29 @@ async function processarBancoIndividual(b: any, idOportunidade: string, sim: any
 
     const fonte = respInt ?? respSim;
     const valorParcela = num(fonte?.valorParcelaBanco ?? fonte?.valorParcelaSimulacao ?? fonte?.simulacao?.valorParcelaBanco ?? respSim?.valorParcelaBanco);
+
+    // O banco pode devolver uma parcela calculada sobre um financiamento MENOR
+    // do que o pedido, e a diferença não aparece em lugar nenhum do retorno.
+    //
+    // Caso comprovado (SIM-005285, 09/09): imóvel 780.000, financiamento
+    // 130.000 + 39.000 de despesas. O PUT gravou `valorTotalFinanciamento:
+    // 169000` nas três simulações e a resposta confirmou 169000 nas três. Na
+    // integração, Bradesco e Itaú devolveram 169.000 (parcelas de R$ 2.291,56
+    // e R$ 2.152,46) e o Santander devolveu 130.000, com parcela de
+    // R$ 1.628,64 — a mesma de uma simulação sem despesa nenhuma.
+    //
+    // Não temos como forçar o provedor a considerar a despesa. O que não pode
+    // acontecer é o operador levar ao cliente uma parcela de R$ 1.628 achando
+    // que ela cobre os 169.000. O aviso fica na linha do banco.
+    const totalPedido = valorTotalFinanciamento;
+    const totalRetornado = num(fonte?.valorTotalFinanciamento);
+    const ignorouDespesas =
+      valorDespesasFinanciadas > 0 &&
+      totalRetornado > 0 &&
+      totalRetornado < totalPedido - 0.01;
+    const avisoDespesas = ignorouDespesas
+      ? `Atenção: o ${b.nome_banco ?? "banco"} calculou sobre ${formatarBRL(totalRetornado)} e desconsiderou as despesas financiadas de ${formatarBRL(valorDespesasFinanciadas)}. A parcela real, com as despesas, será maior.`
+      : null;
     
     if (valorParcela > 0) {
       const taxaJuros = fonte?.taxaJurosAnoBanco ?? respSim?.taxaJurosAnoBanco ?? fonte?.taxaJurosAno ?? respSim?.taxaJurosAno;
@@ -545,7 +576,7 @@ async function processarBancoIndividual(b: any, idOportunidade: string, sim: any
         valor_parcela: valorParcela, 
         taxa_juros_ano: taxaJuros != null && num(taxaJuros) > 0 ? num(taxaJuros) : undefined,
         taxa_cet_ano: taxaCet != null && num(taxaCet) > 0 ? num(taxaCet) : undefined,
-        mensagem_banco: null,
+        mensagem_banco: avisoDespesas,
         raw_response: fonte, 
         simulado_em: new Date().toISOString() 
       }).eq("id", b.id);
