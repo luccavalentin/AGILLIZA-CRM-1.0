@@ -1699,26 +1699,29 @@ export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
 
     if (!sim) throw new Error("Simulação não encontrada.");
 
-    // Se tiver agrupador_id, buscamos simulações do MESMO sistema e MESMO titular (ERRO CRÍTICO 3)
+    // Toda a comparação (`agrupador_id`) vai junto.
+    //
+    // O filtro anterior exigia MESMO `cliente_id` e MESMO
+    // `sistema_amortizacao` — e a irmã da testagem de casal tem outro
+    // `cliente_id` de propósito (o cônjuge vira titular), então ela nunca
+    // entrava. Sobrava depender de um disparo separado na criação; quando ele
+    // falhava, a irmã ficava rascunho com os bancos em "Não enviado".
+    //
+    // Quem já foi enviada fica de fora: reenviar custa tempo e não muda nada.
+    // Um reenvio pedido pelo operador chega com o id explícito e é sempre
+    // processado, porque `sim.id` entra na lista de qualquer jeito.
     let idsParaEnviar = [sim.id];
     if (sim.agrupador_id) {
-      const { data: simDetalhe } = await supabase
-        .from("simulacoes")
-        .select("sistema_amortizacao, cliente_id")
-        .eq("id", data.simulacao_id)
-        .single();
-
       const { data: todos } = await supabase
         .from("simulacoes")
-        .select("id")
+        .select("id, homefin_id_oportunidade")
         .eq("agrupador_id", sim.agrupador_id)
-        .eq("sistema_amortizacao", simDetalhe?.sistema_amortizacao || "S")
-        .eq("cliente_id", simDetalhe?.cliente_id || "")
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
 
       if (todos && todos.length > 0) {
-        idsParaEnviar = todos.map((t) => t.id);
+        const pendentes = todos.filter((t) => t.id === sim.id || !t.homefin_id_oportunidade);
+        if (pendentes.length > 0) idsParaEnviar = pendentes.map((t) => t.id);
       }
     }
 
