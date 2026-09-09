@@ -26,6 +26,9 @@ const MAPA: Record<PropostaStatus, StepperCodigo> = {
   enviada_banco: "credito_enviado",
   em_analise_credito: "credito_enviado",
   credito_aprovado: "credito_aprovado",
+  // Condicionado ocupa a MESMA etapa do funil que a aprovação: o crédito saiu,
+  // com exigências. Quem mostra a diferença é o rótulo do status, não o passo.
+  credito_condicionado: "credito_aprovado",
   credito_recusado: "credito_enviado",
   aguardando_documentos: "coleta_documentos",
   engenharia_vistoria: "engenharia_vistoria",

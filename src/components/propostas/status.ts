@@ -8,6 +8,8 @@ export const STATUS_PROPOSTA: Record<PropostaStatus, { tone: Tone; label: string
   enviada_banco: { tone: "info", label: "Enviado p/ aprovação de crédito" },
   em_analise_credito: { tone: "info", label: "Enviado p/ aprovação de crédito" },
   credito_aprovado: { tone: "success", label: "Crédito aprovado" },
+  // Tom de atenção, não de sucesso: há exigências a cumprir antes de seguir.
+  credito_condicionado: { tone: "warning", label: "Aprovado com condições" },
   aguardando_documentos: { tone: "info", label: "Coleta de documentos" },
   engenharia_vistoria: { tone: "warning", label: "Engenharia / vistoria" },
   analise_juridica: { tone: "warning", label: "Análise jurídica" },

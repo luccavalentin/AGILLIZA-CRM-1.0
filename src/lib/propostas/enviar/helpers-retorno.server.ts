@@ -27,6 +27,8 @@ export function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
   if (n.includes("vistoria") || n.includes("engenharia") || n.includes("avaliaç"))
     return "engenharia_vistoria";
   if (n.includes("document")) return "aguardando_documentos";
+  // Antes de "aprov": "aprovado com condições" contém as duas palavras.
+  if (n.includes("condicion") || n.includes("ressalva")) return "credito_condicionado";
   if (n.includes("aprov")) return "credito_aprovado";
   if (
     n.includes("análise") ||
@@ -279,15 +281,27 @@ export function statusInternoBanco(
   ) {
     return { banco: "recusada", proposta: "credito_recusado" };
   }
-  // C = Condicionada é desfecho FAVORÁVEL.
-  if (codigo.includes("cond") || t === "C") {
-    return { banco: "condicionado", proposta: "credito_aprovado" };
+  // CONDICIONADO é aprovação COM EXIGÊNCIAS a cumprir, e só o texto do banco
+  // diz isso. Antes bastava `tipoSituacao === "C"` para cair aqui, e estava
+  // errado: o Santander devolve `C` com "513 ANÁLISE AUTOMÁTICA FAVORÁVEL",
+  // que é aprovação plena. Toda análise favorável do Santander aparecia como
+  // "Aprovado com condições" sem que houvesse condição nenhuma.
+  //
+  // A checagem por texto vem ANTES da de aprovação porque um retorno pode
+  // dizer as duas coisas ("aprovado condicionado") — e aí a condição manda.
+  if (codigo.includes("cond") || codigo.includes("ressalva") || codigo.includes("exigencia")) {
+    return { banco: "condicionado", proposta: "credito_condicionado" };
   }
   if (codigo.includes("aprov") || codigo.includes("favoravel")) {
     return { banco: "aprovada", proposta: "credito_aprovado" };
   }
   switch (t) {
     case "A":
+      return { banco: "aprovada", proposta: "credito_aprovado" };
+    // `C` fora do contrato S/P/N/A/R. O único uso observado em produção é o
+    // do Santander com o código 513 (favorável), então é desfecho aprovado —
+    // um "C" que trouxesse condição já teria sido capturado pelo texto acima.
+    case "C":
       return { banco: "aprovada", proposta: "credito_aprovado" };
     case "R":
       return { banco: "recusada", proposta: "credito_recusado" };
@@ -576,10 +590,15 @@ export function statusDaAtividade(atividades: any[]): {
     if (n.includes("credito nao aprovado") || n.includes("credito reprov") || n.includes("recus")) {
       return { status: "credito_recusado", detalhe: nome || null };
     }
+    // Antes da checagem de aprovação: "crédito aprovado condicionado" contém
+    // as duas palavras, e com a ordem invertida o condicionado nunca era
+    // alcançado — a etapa entrava como aprovação plena.
+    if (n.includes("condicionado") || n.includes("condicional")) {
+      return { status: "credito_condicionado", detalhe: nome || null };
+    }
     if (n.includes("credito aprovado") || n.includes("aprovado")) {
       return { status: "credito_aprovado", detalhe: nome || null };
     }
-    if (n.includes("condicionado")) return { status: "credito_aprovado", detalhe: nome || null };
     if (n.includes("analise de credito") || n.includes("credito")) {
       return { status: "em_analise_credito", detalhe: nome || null };
     }
