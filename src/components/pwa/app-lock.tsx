@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Fingerprint, Loader2, LogOut, ShieldCheck } from "lucide-react";
-import { Logo } from "@/components/brand/Logo";
-import { Button } from "@/components/ui/button";
+import { Fingerprint, Loader2 } from "lucide-react";
 import {
   appDesbloqueado,
   biometriaAtiva,
@@ -12,13 +10,17 @@ import {
 } from "@/lib/pwa/biometria";
 
 /**
- * Tela de bloqueio do app, no mesmo espírito da dos apps de banco: quando o
- * usuário ativa a biometria, o sistema volta bloqueado toda vez que o app é
- * aberto ou fica um tempo em segundo plano.
+ * Tela de bloqueio do app, no mesmo espírito da dos apps de banco: com a
+ * biometria ativa, o sistema volta bloqueado quando o app é reaberto ou
+ * fica um tempo em segundo plano.
  *
- * Ela não substitui o login: a sessão continua sendo a do Supabase. É uma
- * trava de aparelho — impede que alguém que pegou o celular já destravado
- * entre na operação.
+ * Não substitui o login: a sessão continua sendo a do Supabase. É uma trava
+ * de aparelho — impede que alguém que pegou o celular já destravado entre
+ * na operação.
+ *
+ * As cores são fixas (azul da marca) em vez de seguirem o tema: esta tela
+ * cobre o app inteiro e precisa ficar legível antes de qualquer decisão de
+ * tema, sem depender de qual classe está no <html>.
  */
 
 /** Tempo em segundo plano a partir do qual o app volta bloqueado. */
@@ -38,32 +40,36 @@ export function AppLock({
   // novo; fechar o app (que zera o sessionStorage) deve.
   const [bloqueado, setBloqueado] = useState(() => ativa && !appDesbloqueado());
   const [verificando, setVerificando] = useState(false);
-  const [falhou, setFalhou] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
   const saiuEm = useRef<number | null>(null);
   const tentouSozinho = useRef(false);
 
-  const destravar = useCallback(async () => {
-    if (verificando) return;
-    setVerificando(true);
-    setFalhou(null);
-    try {
-      const r = await verificarBiometria(userId);
-      if (r.ok) {
-        marcarAppDesbloqueado();
-        setBloqueado(false);
-        return;
+  const destravar = useCallback(
+    async (automatico: boolean) => {
+      if (verificando) return;
+      setVerificando(true);
+      setErro(null);
+      try {
+        const r = await verificarBiometria(userId);
+        if (r.ok) {
+          marcarAppDesbloqueado();
+          setBloqueado(false);
+          return;
+        }
+        // A tentativa automática não vira mensagem de erro: o usuário pode
+        // simplesmente não ter encostado o dedo ainda.
+        if (automatico) return;
+        setErro(
+          r.codigo && r.codigo !== "cancelado"
+            ? mensagemErroBiometria(r.codigo)
+            : "Não deu para confirmar. Toque para tentar de novo.",
+        );
+      } finally {
+        setVerificando(false);
       }
-      // Cancelar é o caso comum e não merece texto de erro; o resto merece,
-      // porque diz ao usuário o que precisa mudar no aparelho.
-      setFalhou(
-        r.codigo && r.codigo !== "cancelado"
-          ? mensagemErroBiometria(r.codigo)
-          : "Toque no ícone para tentar de novo.",
-      );
-    } finally {
-      setVerificando(false);
-    }
-  }, [userId, verificando]);
+    },
+    [userId, verificando],
+  );
 
   // Volta a bloquear depois de um tempo em segundo plano.
   useEffect(() => {
@@ -92,57 +98,66 @@ export function AppLock({
     if (!bloqueado || tentouSozinho.current) return;
     if (document.visibilityState !== "visible") return;
     tentouSozinho.current = true;
-    const t = window.setTimeout(() => {
-      void destravar();
-    }, 400);
+    const t = window.setTimeout(() => void destravar(true), 400);
     return () => window.clearTimeout(t);
   }, [bloqueado, destravar]);
 
   if (!ativa || !bloqueado) return null;
 
-  return (
-    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center gap-6 bg-background px-6 text-center">
-      <Logo className="h-8" />
+  const primeiroNome = nome?.trim().split(/\s+/)[0] ?? null;
 
-      <div className="space-y-1">
-        <p className="text-base font-semibold text-foreground">
-          {nome ? `Olá, ${nome.split(" ")[0]}` : "App bloqueado"}
-        </p>
-        <p className="text-sm text-muted-foreground">Use sua biometria para voltar ao sistema.</p>
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-between bg-[#00052E] px-6 py-10 text-white">
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
+        <img
+          src="/icons/app/icon-192.png"
+          alt="Agilliza"
+          className="h-16 w-16 rounded-2xl shadow-lg ring-1 ring-white/15"
+        />
+
+        <div className="space-y-1.5">
+          <p className="text-xl font-semibold tracking-tight">
+            {primeiroNome ? `Olá, ${primeiroNome}` : "Bem-vindo de volta"}
+          </p>
+          <p className="text-sm text-white/60">Confirme sua biometria para continuar</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void destravar(false)}
+          disabled={verificando}
+          aria-label="Desbloquear com biometria"
+          className="group relative grid h-28 w-28 place-items-center rounded-full transition-transform active:scale-95 disabled:opacity-80"
+        >
+          {/* Halo suave, no lugar de um círculo chapado. */}
+          <span className="absolute inset-0 rounded-full bg-white/[0.06] ring-1 ring-inset ring-white/15" />
+          <span className="absolute inset-0 animate-ping rounded-full bg-white/[0.04] [animation-duration:2.4s]" />
+          {verificando ? (
+            <Loader2 className="relative h-11 w-11 animate-spin text-white/90" />
+          ) : (
+            <Fingerprint className="relative h-11 w-11 text-white/90" />
+          )}
+        </button>
+
+        <div className="h-5">
+          {erro ? (
+            <p className="max-w-xs text-xs text-red-300">{erro}</p>
+          ) : (
+            <p className="text-xs text-white/40">Toque para usar a digital ou o rosto</p>
+          )}
+        </div>
       </div>
 
       <button
         type="button"
-        onClick={destravar}
-        disabled={verificando}
-        aria-label="Desbloquear com biometria"
-        className="grid h-24 w-24 place-items-center rounded-full bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 transition-transform active:scale-95 disabled:opacity-70"
-      >
-        {verificando ? (
-          <Loader2 className="h-10 w-10 animate-spin" />
-        ) : (
-          <Fingerprint className="h-10 w-10" />
-        )}
-      </button>
-
-      {falhou && <p className="max-w-xs text-sm text-destructive">{falhou}</p>}
-
-      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-        <ShieldCheck className="h-3.5 w-3.5" />
-        Sua sessão continua ativa neste aparelho.
-      </div>
-
-      <Button
-        variant="ghost"
-        size="sm"
         onClick={() => {
           limparDesbloqueioApp();
           onSair();
         }}
+        className="text-xs font-medium text-white/50 underline-offset-4 transition-colors hover:text-white/80 hover:underline"
       >
-        <LogOut className="mr-1.5 h-4 w-4" />
         Sair da conta
-      </Button>
+      </button>
     </div>
   );
 }
