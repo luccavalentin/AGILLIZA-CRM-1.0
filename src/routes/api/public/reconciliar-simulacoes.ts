@@ -169,7 +169,13 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
             nome_banco,
             created_at,
             raw_response,
-            simulacoes!inner(homefin_id_oportunidade, correspondente_id)
+            simulacoes!inner(
+              homefin_id_oportunidade,
+              correspondente_id,
+              valor_financiamento,
+              valor_despesas_financiadas,
+              fg_financiar_despesas
+            )
           `,
           )
           .eq("status_banco", "aguardando")
@@ -224,6 +230,23 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 const taxaJuros = apiSim.taxaJurosAnoBanco ?? apiSim.taxaJurosAno;
                 const taxaCet = apiSim.taxaCetAnoBanco ?? apiSim.taxaCetAno;
 
+                // O Santander devolve o financiamento sem as custas. Quando o
+                // retorno chega por aqui (assíncrono), o aviso precisa ser
+                // recalculado: a linha era gravada com `mensagem_banco: null`
+                // e o operador levava ao cliente uma parcela que não cobre as
+                // despesas, sem nada na tela dizendo isso.
+                const dadosSim = (b.simulacoes as any) ?? {};
+                const despesas = dadosSim.fg_financiar_despesas
+                  ? Number(dadosSim.valor_despesas_financiadas ?? 0)
+                  : 0;
+                const { avisoDespesasDescartadas } = await import("@/lib/simulacao/aviso-despesas");
+                const aviso = avisoDespesasDescartadas({
+                  nomeBanco: b.nome_banco,
+                  totalPedido: Number(dadosSim.valor_financiamento ?? 0) + despesas,
+                  totalRetornado: Number(apiSim.valorTotalFinanciamento ?? 0),
+                  despesasFinanciadas: despesas,
+                });
+
                 await supabaseAdmin
                   .from("simulacao_bancos")
                   .update({
@@ -234,7 +257,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                     valor_financiamento_max: apiSim.valorFinanciamento
                       ? Number(apiSim.valorFinanciamento)
                       : null,
-                    mensagem_banco: null,
+                    mensagem_banco: aviso,
                     raw_response: apiSim,
                     simulado_em: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
