@@ -167,6 +167,7 @@ function AuthPage() {
 
         <TabsContent value="entrar">
           <form onSubmit={entrar} className="mt-6 space-y-4">
+            <BiometricAuth destino={destinoPosLogin("sistema")} disabled={carregando} />
             <div className="space-y-2">
               <Label htmlFor="login-email">E-mail</Label>
               <Input id="login-email" name="email" type="email" autoComplete="email" required />
@@ -191,8 +192,6 @@ function AuthPage() {
             <Button type="submit" className="w-full" disabled={carregando}>
               {carregando ? "Entrando…" : "Entrar"}
             </Button>
-
-            <BiometricAuth destino={destinoPosLogin("sistema")} disabled={carregando} />
           </form>
         </TabsContent>
 

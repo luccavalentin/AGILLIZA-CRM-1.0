@@ -6,6 +6,7 @@ import { Folder } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell/app-shell";
 import { AppLock } from "@/components/pwa/app-lock";
+import { BiometriaConvite } from "@/components/pwa/biometria-convite";
 import { Logo } from "@/components/brand/Logo";
 import { navInterno, navParceiro } from "@/components/app-shell/nav-config";
 import type { NavGroup } from "@/components/app-shell/nav-config";
@@ -246,6 +247,11 @@ function InternalLayout() {
       {/* Trava de aparelho: só aparece para quem ativou a biometria em
           Minha conta · Segurança. */}
       <AppLock userId={profile?.id ?? ""} nome={profile?.nome ?? null} onSair={sair} />
+      <BiometriaConvite
+        userId={profile?.id ?? ""}
+        email={profile?.email ?? null}
+        nome={profile?.nome ?? null}
+      />
     </>
   );
 }

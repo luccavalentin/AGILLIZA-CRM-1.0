@@ -114,6 +114,7 @@ function PortalParceiro() {
       ]}
     >
       <form onSubmit={entrar} className="mt-6 space-y-4">
+        <BiometricAuth destino="/parceiro-inicio" disabled={carregando} />
         <div className="space-y-2">
           <Label htmlFor="p-email">E-mail</Label>
           <Input id="p-email" name="email" type="email" autoComplete="email" required />
@@ -131,7 +132,6 @@ function PortalParceiro() {
         <Button type="submit" className="w-full" disabled={carregando}>
           {carregando ? "Entrando…" : "Entrar"}
         </Button>
-        <BiometricAuth destino="/parceiro-inicio" disabled={carregando} />
       </form>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">

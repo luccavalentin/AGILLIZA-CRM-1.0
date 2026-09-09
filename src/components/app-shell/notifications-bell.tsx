@@ -21,6 +21,18 @@ import { playNotificationSound } from "@/lib/chat-sound";
 import { categoriaDeTipo, tipoAtivo, tipoComSom } from "@/lib/notification-prefs";
 import { mostrarNotificacaoSistema } from "@/lib/pwa/notificacoes-sistema";
 
+/** Texto do botão da notificação do sistema, por categoria. */
+const ROTULO_ACAO: Record<string, string> = {
+  chat: "Responder",
+  tarefas: "Ver tarefa",
+  propostas: "Ver proposta",
+  retorno_proposta: "Ver proposta",
+  retorno_simulacao: "Ver simulação",
+  crm: "Ver cliente",
+  financeiro: "Ver lançamento",
+  sistema: "Abrir",
+};
+
 function formatarData(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("pt-BR", {
@@ -72,11 +84,16 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
       // o app não está em primeiro plano: com a tela aberta o usuário já vê o
       // sino e o alerta in-app, e veria o mesmo aviso duas vezes.
       if (tipoAtivo(cat) && document.visibilityState !== "visible") {
+        const retorno = cat === "retorno_proposta" || cat === "retorno_simulacao";
         void mostrarNotificacaoSistema({
           titulo: n.titulo,
           corpo: n.corpo,
           link: n.link,
           tag: n.id,
+          acao: n.link ? ROTULO_ACAO[cat] : undefined,
+          // Retorno de banco fica na barra até o usuário abrir: é o aviso
+          // que não pode passar batido.
+          importante: retorno,
         });
       }
 

@@ -7,6 +7,7 @@ import {
   biometriaAtiva,
   limparDesbloqueioApp,
   marcarAppDesbloqueado,
+  mensagemErroBiometria,
   verificarBiometria,
 } from "@/lib/pwa/biometria";
 
@@ -37,22 +38,28 @@ export function AppLock({
   // novo; fechar o app (que zera o sessionStorage) deve.
   const [bloqueado, setBloqueado] = useState(() => ativa && !appDesbloqueado());
   const [verificando, setVerificando] = useState(false);
-  const [falhou, setFalhou] = useState(false);
+  const [falhou, setFalhou] = useState<string | null>(null);
   const saiuEm = useRef<number | null>(null);
   const tentouSozinho = useRef(false);
 
   const destravar = useCallback(async () => {
     if (verificando) return;
     setVerificando(true);
-    setFalhou(false);
+    setFalhou(null);
     try {
-      const ok = await verificarBiometria(userId);
-      if (ok) {
+      const r = await verificarBiometria(userId);
+      if (r.ok) {
         marcarAppDesbloqueado();
         setBloqueado(false);
-      } else {
-        setFalhou(true);
+        return;
       }
+      // Cancelar é o caso comum e não merece texto de erro; o resto merece,
+      // porque diz ao usuário o que precisa mudar no aparelho.
+      setFalhou(
+        r.codigo && r.codigo !== "cancelado"
+          ? mensagemErroBiometria(r.codigo)
+          : "Toque no ícone para tentar de novo.",
+      );
     } finally {
       setVerificando(false);
     }
@@ -118,11 +125,7 @@ export function AppLock({
         )}
       </button>
 
-      {falhou && (
-        <p className="text-sm text-destructive">
-          Não deu para confirmar a biometria. Toque no ícone para tentar de novo.
-        </p>
-      )}
+      {falhou && <p className="max-w-xs text-sm text-destructive">{falhou}</p>}
 
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
         <ShieldCheck className="h-3.5 w-3.5" />
