@@ -617,11 +617,32 @@ async function processarBancoIndividual(
     const valorFinanciamento = num(sim.valor_financiamento);
     const valorTotalFinanciamento = valorFinanciamento + valorDespesasFinanciadas;
 
+    /**
+     * Prazo desta simulação NESTE banco.
+     *
+     * Em imóvel comercial o teto é por instituição: o Santander alonga até
+     * 360 meses, Bradesco e Itaú param em 240. A simulação guarda o prazo
+     * pedido pelo operador; aqui cada banco recebe o seu limite, para o
+     * Santander não perder o prazo mais longo só porque foi simulado junto
+     * com outro banco.
+     */
+    const { prazoMaxComercialDoBanco } = await import("./use-simulacao-completa/bancos-helpers");
+    const prazoDoBanco =
+      sim.uso_imovel === "C"
+        ? Math.min(num(sim.prazo), prazoMaxComercialDoBanco(b))
+        : num(sim.prazo);
+
+    if (prazoDoBanco !== num(sim.prazo)) {
+      console.info(
+        `[SIM-PRAZO][BANCO] simulacao=${simulacaoId} banco=${b.nome_banco} prazoSimulacao=${num(sim.prazo)} prazoEnviado=${prazoDoBanco} (teto comercial do banco)`,
+      );
+    }
+
     const payloadSim = {
       idOportunidade,
       banco: { idBanco: b.homefin_id_banco || b.codigo_banco },
       codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao === "P" ? "P" : "S" },
-      prazo: num(sim.prazo), // Já normalizado acima caso estivesse inválido
+      prazo: prazoDoBanco, // teto de idade/operação já aplicado; aqui entra o do banco
       valorImovel: num(sim.valor_imovel),
       valorFinanciamento,
       // O contrato define `fgAutorizacaoDados` como BOOLEAN (Swagger e
@@ -695,7 +716,7 @@ async function processarBancoIndividual(
         {
           valorImovel: num(sim.valor_imovel),
           valorFinanciamento,
-          prazo: num(sim.prazo),
+          prazo: prazoDoBanco,
           codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao === "P" ? "P" : "S" },
           valorDespesasFinanciadas,
           valorTotalFinanciamento,
