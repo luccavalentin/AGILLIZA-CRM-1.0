@@ -15,10 +15,18 @@
 
 /** Faixas de idade (desde a última mudança) e o intervalo mínimo entre consultas. */
 export const FAIXAS_BACKOFF: { ateHoras: number; intervaloMinutos: number }[] = [
-  { ateHoras: 2, intervaloMinutos: 2 }, // acabou de ser enviada: cadência do cron
-  { ateHoras: 24, intervaloMinutos: 15 },
-  { ateHoras: 24 * 7, intervaloMinutos: 60 },
-  { ateHoras: Infinity, intervaloMinutos: 360 }, // parada há mais de uma semana
+  // As primeiras 24 h são quando o banco decide, e é aí que o retorno importa.
+  // A faixa anterior abria para 15 min já com 2 h de vida, e uma recusa levava
+  // até um quarto de hora para aparecer — as PRO-000269 e PRO-000270 estavam
+  // recusadas no provedor enquanto a tela ainda dizia "em análise". Com quatro
+  // propostas ativas, consultar de 2 em 2 min custa pouco e devolve o retorno
+  // quase na hora.
+  { ateHoras: 24, intervaloMinutos: 2 },
+  { ateHoras: 24 * 7, intervaloMinutos: 15 },
+  { ateHoras: 24 * 30, intervaloMinutos: 60 },
+  // Parada há mais de um mês: consulta esparsa, só para não ficar órfã. Era
+  // este o caso que gerou 26 mil GETs numa única oportunidade.
+  { ateHoras: Infinity, intervaloMinutos: 360 },
 ];
 
 export interface PropostaParaSincronizar {

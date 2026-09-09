@@ -10,20 +10,21 @@ describe("intervalo de consulta conforme a idade da proposta", () => {
     expect(intervaloMinimoMinutos({ status_atualizado_em: minutosAtras(10) }, AGORA)).toBe(2);
   });
 
-  it("parada há algumas horas espaça para 15 minutos", () => {
-    expect(intervaloMinimoMinutos({ status_atualizado_em: horasAtras(6) }, AGORA)).toBe(15);
+  it("dentro das primeiras 24 h mantém a cadência do cron", () => {
+    // É a janela em que o banco decide; o retorno precisa aparecer na hora.
+    expect(intervaloMinimoMinutos({ status_atualizado_em: horasAtras(6) }, AGORA)).toBe(2);
   });
 
-  it("parada há dias espaça para 1 hora", () => {
-    expect(intervaloMinimoMinutos({ status_atualizado_em: horasAtras(72) }, AGORA)).toBe(60);
+  it("parada há dias espaça para 15 minutos", () => {
+    expect(intervaloMinimoMinutos({ status_atualizado_em: horasAtras(72) }, AGORA)).toBe(15);
   });
 
   it("parada há semanas espaça para 6 horas", () => {
-    expect(intervaloMinimoMinutos({ status_atualizado_em: horasAtras(24 * 30) }, AGORA)).toBe(360);
+    expect(intervaloMinimoMinutos({ status_atualizado_em: horasAtras(24 * 31) }, AGORA)).toBe(360);
   });
 
   it("usa created_at quando nunca houve mudança de status", () => {
-    expect(intervaloMinimoMinutos({ created_at: horasAtras(24 * 10) }, AGORA)).toBe(360);
+    expect(intervaloMinimoMinutos({ created_at: horasAtras(24 * 10) }, AGORA)).toBe(60);
   });
 
   it("sem nenhuma data, assume a cadência mais frequente", () => {
@@ -49,7 +50,7 @@ describe("intervalo de consulta conforme a idade da proposta", () => {
       enviada_em: horasAtras(24 * 20),
       status_atualizado_em: horasAtras(3),
     };
-    expect(intervaloMinimoMinutos(p, AGORA)).toBe(15);
+    expect(intervaloMinimoMinutos(p, AGORA)).toBe(2);
   });
 });
 
@@ -73,7 +74,7 @@ describe("decisão de consultar agora", () => {
 
   it("mas volta a ser consultada quando o intervalo dela vence", () => {
     const parada = {
-      status_atualizado_em: horasAtras(24 * 30),
+      status_atualizado_em: horasAtras(24 * 31),
       ultima_sincronizacao_em: horasAtras(7),
     };
     expect(devesincronizar(parada, AGORA)).toBe(true);
