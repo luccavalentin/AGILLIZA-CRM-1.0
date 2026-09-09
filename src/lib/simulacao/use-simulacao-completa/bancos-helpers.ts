@@ -49,12 +49,23 @@ export interface RestricaoEspecial {
   apenasBradesco: boolean;
 }
 
+/** Teto de prazo em imóvel comercial, por banco (Santander alonga até 360). */
+export const PRAZO_COMERCIAL_SANTANDER = 360;
+export const PRAZO_COMERCIAL_PADRAO = 240;
+
+export function prazoMaxComercialDoBanco(b: BancoRef): number {
+  return isSantander(b) ? PRAZO_COMERCIAL_SANTANDER : PRAZO_COMERCIAL_PADRAO;
+}
+
 /**
  * Deriva a "restrição especial" a partir do formulário. Terreno/imóvel
  * comercial impõem LTV 70% e prazo máx. 240; terreno adicionalmente
  * restringe o pool de bancos a Bradesco.
  */
-export function calcularRestricaoEspecial(f: Form, bancosSelecionados: Banco[] = []): RestricaoEspecial {
+export function calcularRestricaoEspecial(
+  f: Form,
+  bancosSelecionados: Banco[] = [],
+): RestricaoEspecial {
   const isTerreno = f.tipo_imovel === "TE" || f.tipo_imovel === "TC";
   const isComercial = f.uso_imovel === "C";
   const ativo = isTerreno || isComercial;
@@ -68,17 +79,19 @@ export function calcularRestricaoEspecial(f: Form, bancosSelecionados: Banco[] =
 
   let prazoMax = 240;
   if (isComercial) {
-    // NOVA REGRA: Santander até 360, Bradesco e Itaú até 240.
-    // O teto é o menor entre os bancos SELECIONADOS.
-    const outrosBancos = bancosSelecionados.some(b => !isSantander(b));
-    const temSantander = bancosSelecionados.some(b => isSantander(b));
-    
-    // Se só tem Santander, 360. Se tem outros ou não tem nenhum, 240 (conservador).
-    if (temSantander && !outrosBancos) {
-      prazoMax = 360;
-    } else {
-      prazoMax = 240;
-    }
+    // Em imóvel comercial o teto é POR BANCO: Santander vai a 360, Bradesco e
+    // Itaú param em 240.
+    //
+    // Antes o teto era o MENOR entre os bancos selecionados: simular
+    // Santander junto com Bradesco derrubava o Santander para 240 e jogava
+    // fora justamente o prazo mais longo que ele aceita — o operador tinha de
+    // simular o Santander sozinho para ver a condição real.
+    //
+    // Agora este valor é o MAIOR entre os selecionados (é o que o formulário
+    // pode aceitar) e cada banco é limitado ao seu próprio teto na hora do
+    // envio, por `prazoMaxComercialDoBanco`.
+    const tetos = bancosSelecionados.map((b) => prazoMaxComercialDoBanco(b));
+    prazoMax = tetos.length > 0 ? Math.max(...tetos) : 240;
   }
 
   return {
