@@ -27,12 +27,16 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
 
         /**
          * Quantas vezes reenviar a integração antes de desistir, e a partir de
-         * quantos minutos. A janela cresce a cada tentativa (3 min, 6 min), de
-         * modo que um banco só lento tenha tempo de responder sozinho antes de
-         * receber nova chamada.
+         * quantos minutos. As janelas crescem a cada tentativa: 45 s, 1min30 e
+         * 2min15.
+         *
+         * Eram 3 e 6 minutos, tempo demais para uma tela em que o operador
+         * está com o cliente esperando. A mediana de resposta do Santander é
+         * de 23 s, então aos 45 s já é razoável insistir — e a espera anterior
+         * só adiava a informação sem aumentar a chance de sucesso.
          */
-        const MAX_RETENTATIVAS = 2;
-        const MINUTOS_ANTES_DE_RETENTAR = 3;
+        const MAX_RETENTATIVAS = 3;
+        const MINUTOS_ANTES_DE_RETENTAR = 0.75;
 
         // --- NOVA ROTINA DE LIMPEZA DE LOCKS E PRESAS ---
         const limite2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
