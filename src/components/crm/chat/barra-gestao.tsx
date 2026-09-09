@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -141,7 +142,7 @@ function BarraGestao({
       qc.invalidateQueries({ queryKey: ["cliente-pipeline", clienteId] });
       qc.invalidateQueries({ queryKey: ["conversas-cliente"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível mover a etapa."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível mover a etapa.")),
   });
 
   const toggleTag = useMutation({
@@ -157,8 +158,7 @@ function BarraGestao({
       qc.invalidateQueries({ queryKey: ["chat-overview-cliente", clienteId] });
       qc.invalidateQueries({ queryKey: ["chat-overview"] });
     },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Não foi possível atualizar as etiquetas."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível atualizar as etiquetas.")),
   });
 
   const adicionarTag = useMutation({
@@ -168,8 +168,7 @@ function BarraGestao({
       toast.success("Etiqueta criada.");
       qc.invalidateQueries({ queryKey: ["chat-etiquetas"] });
     },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Não foi possível criar a etiqueta."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível criar a etiqueta.")),
   });
 
   const removerTag = useMutation({
@@ -180,8 +179,7 @@ function BarraGestao({
       qc.invalidateQueries({ queryKey: ["chat-overview-cliente", clienteId] });
       qc.invalidateQueries({ queryKey: ["chat-overview"] });
     },
-    onError: (e) =>
-      toast.error(e instanceof Error ? e.message : "Não foi possível excluir a etiqueta."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível excluir a etiqueta.")),
   });
 
   const gravarMeta = useMutation({
@@ -199,7 +197,7 @@ function BarraGestao({
       qc.invalidateQueries({ queryKey: ["chat-meta", clienteId] });
       qc.invalidateQueries({ queryKey: ["chat-overview"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível salvar.")),
   });
 
   const estaArquivada = meta?.arquivado ?? false;
@@ -211,7 +209,7 @@ function BarraGestao({
       qc.invalidateQueries({ queryKey: ["chat-overview"] });
       qc.invalidateQueries({ queryKey: ["chat-overview-cliente", clienteId] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível arquivar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível arquivar.")),
   });
 
   const aplicadas = etiquetas.filter((e) => tagsAplicadas.has(e.id));

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { MatriculaTab } from "./imovel-matricula-tab";
 import { useQueryClient } from "@tanstack/react-query";
@@ -138,7 +139,7 @@ function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cl
       toast.success("Dados do imóvel salvos.");
       qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar."));
     } finally {
       setSalvando(false);
     }
@@ -290,7 +291,7 @@ export function IqTab({ clienteId, cliente }: { clienteId: string; cliente: Clie
       toast.success("Dados do interveniente salvos.");
       qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar."));
     } finally {
       setSalvando(false);
     }

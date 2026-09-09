@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -191,14 +192,14 @@ function SecaoCategorias() {
       setAberto(false);
       invalidate();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   const alternar = useMutation({
     mutationFn: (i: ConfigItem) =>
       atualizar({ data: { entidade: "categoria", id: i.id, ativo: !i.ativo } }),
     onSuccess: invalidate,
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao atualizar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao atualizar.")),
   });
 
   const remover = useMutation({
@@ -209,7 +210,7 @@ function SecaoCategorias() {
       );
       invalidate();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao remover."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao remover.")),
   });
 
   function novo() {
@@ -379,13 +380,13 @@ function SecaoSimples({
       setAberto(false);
       invalidate();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   const alternar = useMutation({
     mutationFn: (i: ConfigItem) => atualizar({ data: { entidade, id: i.id, ativo: !i.ativo } }),
     onSuccess: invalidate,
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao atualizar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao atualizar.")),
   });
 
   const remover = useMutation({
@@ -394,7 +395,7 @@ function SecaoSimples({
       toast.success(r.desativado ? "Registro desativado (em uso)." : "Registro removido.");
       invalidate();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao remover."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao remover.")),
   });
 
   function novo() {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -45,13 +46,13 @@ export function EbookFaqButton({ pergunta, resposta }: Props) {
       setEbook(e);
       setAberto(true);
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao montar o e-book."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao montar o e-book.")),
   });
 
   const publicar = useMutation({
     mutationFn: () => publicarFaqNaBase({ data: { ebook } }),
     onSuccess: () => toast.success("Verbete publicado na base de conhecimento."),
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao publicar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao publicar.")),
   });
 
   return (

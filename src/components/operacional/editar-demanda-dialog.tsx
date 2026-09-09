@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
@@ -91,7 +92,7 @@ export function EditarDemandaDialog({
       setAberto(false);
       onSalva();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar."));
     } finally {
       setSalvando(false);
     }

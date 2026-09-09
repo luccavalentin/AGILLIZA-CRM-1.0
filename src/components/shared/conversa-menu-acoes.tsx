@@ -2,6 +2,7 @@
 // renomear, etiquetar, ocultar ("excluir para mim").
 
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -131,7 +132,7 @@ export function ConversaMenuAcoes({
       toast.success(arquivado ? "Conversa desarquivada" : "Conversa arquivada");
       invalidar();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao arquivar"),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao arquivar")),
   });
 
   const mFixar = useMutation({
@@ -141,7 +142,7 @@ export function ConversaMenuAcoes({
       toast.success(fixado ? "Conversa desafixada" : "Conversa fixada");
       invalidar();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha"),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha")),
   });
 
   const mExcluir = useMutation({
@@ -151,7 +152,7 @@ export function ConversaMenuAcoes({
       toast.success("Conversa removida da sua lista");
       invalidar();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha"),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha")),
   });
 
   const mRenomear = useMutation({
@@ -168,7 +169,7 @@ export function ConversaMenuAcoes({
       setOpenRenomear(false);
       invalidar();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha"),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha")),
   });
 
   return (
@@ -343,7 +344,7 @@ function PopoverEtiquetasHelper({
       setSelecionadas((s) => new Set(s).add(nova.id));
       toast.success("Etiqueta criada");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha"),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha")),
   });
 
   const mDefinir = useMutation({
@@ -360,7 +361,7 @@ function PopoverEtiquetasHelper({
       onChanged();
       onOpenChange(false);
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha"),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha")),
   });
 
   return (

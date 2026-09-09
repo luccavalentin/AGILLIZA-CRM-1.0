@@ -1,4 +1,5 @@
 import { AdminHero } from "@/components/admin/admin-hero";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -110,7 +111,7 @@ function Pagina() {
       setApiKey("");
       qc.invalidateQueries({ queryKey: ["admin-config-ia"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   const testar = useMutation({
@@ -129,8 +130,7 @@ function Pagina() {
       else toast.error(res.message);
       qc.invalidateQueries({ queryKey: ["admin-config-ia"] });
     },
-    onError: (e) =>
-      setTeste({ ok: false, message: e instanceof Error ? e.message : "Falha ao conectar." }),
+    onError: (e) => setTeste({ ok: false, message: mensagemDeErro(e, "Falha ao conectar.") }),
   });
 
   if (q.isLoading) {

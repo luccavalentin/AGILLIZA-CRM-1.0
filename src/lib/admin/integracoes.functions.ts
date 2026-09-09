@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -139,7 +140,7 @@ export const testarConectividade = createServerFn({ method: "POST" })
       detalhe = `HTTP ${resp.status}`;
     } catch (e) {
       sucesso = false;
-      detalhe = e instanceof Error ? e.message : "Falha de conexão";
+      detalhe = mensagemDeErro(e, "Falha de conexão");
     }
     const latencia = Date.now() - inicio;
 

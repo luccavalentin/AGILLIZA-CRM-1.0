@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Plus, Search } from "lucide-react";
@@ -47,7 +48,7 @@ export function NovaConversaDialog({
       setAberto(false);
       onCriado(r);
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao iniciar conversa."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao iniciar conversa.")),
   });
 
   return (
@@ -148,7 +149,7 @@ export function IniciarDmInline({
       setAberto(false);
       onCriado(r);
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao iniciar conversa."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao iniciar conversa.")),
   });
 
   return (

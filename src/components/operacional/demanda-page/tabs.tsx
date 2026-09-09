@@ -1,4 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { toast } from "sonner";
 import { Activity, Download, FileSearch, Paperclip, StickyNote } from "lucide-react";
 import { urlAnexoDemanda } from "@/lib/operacional/demandas.functions";
@@ -26,7 +27,7 @@ export function ArquivosTab({ anexos }: { anexos: any[] }) {
       const url = await urlFn({ data: { id: anexoId } });
       if (typeof url === "string") window.open(url, "_blank");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível abrir o arquivo.");
+      toast.error(mensagemDeErro(e, "Não foi possível abrir o arquivo."));
     }
   }
   if (!anexos.length) {

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -103,7 +104,7 @@ function Pagina() {
       setFotoUrl(signed.signedUrl);
       toast.success("Foto enviada. Clique em Salvar alterações para confirmar.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao enviar a foto.");
+      toast.error(mensagemDeErro(e, "Falha ao enviar a foto."));
     } finally {
       setEnviandoFoto(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -188,7 +189,7 @@ function Pagina() {
         "Enviamos um link de confirmação para o novo e-mail. Confirme para concluir a alteração.",
       );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível alterar o e-mail.");
+      toast.error(mensagemDeErro(e, "Não foi possível alterar o e-mail."));
     } finally {
       setSalvandoEmail(false);
     }

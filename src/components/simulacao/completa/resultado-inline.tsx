@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo, Fragment } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { temBancoAguardando, useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
@@ -123,7 +124,9 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
 
     setReenviandoBanco(bancoId);
     try {
-      const r = await enviarSimulacaoBanco({ data: { simulacao_id: simulacaoId, banco_ids: [bancoId] } });
+      const r = await enviarSimulacaoBanco({
+        data: { simulacao_id: simulacaoId, banco_ids: [bancoId] },
+      });
       // O servidor não reenvia um banco que já tem simulação aberta na
       // HomeFin — reenviar criaria uma simulação duplicada lá. Nesse caso ele
       // só pede o retorno de novo e devolve "aguardando". Dizer
@@ -141,7 +144,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
       }
       qc.invalidateQueries({ queryKey: ["simulacao", simulacaoId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao reenviar.");
+      toast.error(mensagemDeErro(e, "Falha ao reenviar."));
     } finally {
       setReenviandoBanco(null);
     }
@@ -397,9 +400,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                             size="sm"
                             variant="secondary"
                             disabled={reenviandoBanco !== null || b.status_banco === "simulada"}
-
                             onClick={() => reenviarBanco(b.banco_id, b)}
-
                           >
                             <RefreshCw className="mr-1 h-4 w-4" />
                             {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}

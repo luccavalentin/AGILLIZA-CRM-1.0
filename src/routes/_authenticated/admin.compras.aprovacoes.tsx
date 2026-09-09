@@ -1,4 +1,5 @@
 import { AdminHero } from "@/components/admin/admin-hero";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useState, useMemo } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -91,7 +92,7 @@ function Pagina() {
       setDialogo(null);
       setObservacao("");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha na decisão."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha na decisão.")),
   });
 
   return (

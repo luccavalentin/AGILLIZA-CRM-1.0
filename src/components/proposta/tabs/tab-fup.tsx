@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -38,7 +39,7 @@ export function TabFup({ propostaId, followups }: { propostaId: string; followup
       setComentario("");
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao incluir.");
+      toast.error(mensagemDeErro(e, "Falha ao incluir."));
     } finally {
       setBusy(false);
     }

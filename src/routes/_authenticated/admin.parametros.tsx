@@ -1,4 +1,5 @@
 import { AdminHero } from "@/components/admin/admin-hero";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -242,7 +243,7 @@ function Pagina() {
       setSalvo(form);
       qc.invalidateQueries({ queryKey: ["admin-parametros"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   const set = (k: keyof Form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));

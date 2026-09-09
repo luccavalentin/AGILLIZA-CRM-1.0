@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -136,7 +137,7 @@ export function TabEnvolvidos({
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
       onFechouAposSalvar?.();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar."));
     } finally {
       setSalvando(false);
     }
@@ -147,7 +148,7 @@ export function TabEnvolvidos({
       await delFn({ data: { id } });
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao remover participante.");
+      toast.error(mensagemDeErro(e, "Falha ao remover participante."));
     }
   }
 

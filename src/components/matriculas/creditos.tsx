@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -112,7 +113,7 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
       setData(hoje());
       onMudou();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar."));
     } finally {
       setSalvando(false);
     }

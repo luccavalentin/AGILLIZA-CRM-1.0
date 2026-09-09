@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -68,7 +69,7 @@ function ConsultorIaPage() {
   const [busca, setBusca] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [contextoOpen, setContextoOpen] = useState(false);
-  
+
   const [fonteAberta, setFonteAberta] = useState<string | null>(null);
   const [sugerindo, setSugerindo] = useState<string | null>(null);
   const [observacao, setObservacao] = useState("");
@@ -101,17 +102,17 @@ function ConsultorIaPage() {
     setStreaming(true);
     setParcial("");
     setPerguntaPendente(texto);
-    
+
     // Adição local otimista da mensagem do usuário para evitar "flash" de carregamento e garantir data
     const msgOtimista = {
       id: "otimista-" + Math.random().toString(36).substring(7),
       papel: "usuario" as const,
       conteudo: texto,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
-    
+
     // Invalidamos apenas após a conclusão, mas mantemos o estado visual via perguntaPendente
-    // ou poderíamos injetar na listaMensagens se tivéssemos controle total do estado, 
+    // ou poderíamos injetar na listaMensagens se tivéssemos controle total do estado,
     // mas ConsultorMessage já trata perguntaPendente separadamente.
 
     try {
@@ -141,8 +142,12 @@ function ConsultorIaPage() {
         for (const linha of linhas) {
           if (!linha.trim()) continue;
           let ev: any;
-          try { ev = JSON.parse(linha); } catch { continue; }
-          
+          try {
+            ev = JSON.parse(linha);
+          } catch {
+            continue;
+          }
+
           if (ev.tipo === "conversa") {
             idConversa = ev.conversa_id;
             if (!conversaId) setConversaId(ev.conversa_id);
@@ -159,7 +164,7 @@ function ConsultorIaPage() {
       await qc.invalidateQueries({ queryKey: ["consultor-ia-mensagens", idConversa] });
       await qc.invalidateQueries({ queryKey: ["consultor-ia-conversas"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao consultar a IA.");
+      toast.error(mensagemDeErro(e, "Falha ao consultar a IA."));
     } finally {
       setStreaming(false);
       setParcial("");
@@ -192,19 +197,18 @@ function ConsultorIaPage() {
       setObservacao("");
       toast.success("Sugestão enviada com sucesso.");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao enviar sugestão."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao enviar sugestão.")),
   });
 
   // Hook para scroll automático
   useEffect(() => {
     if (scrollRef.current) {
-      const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      const scrollContainer = scrollRef.current.querySelector("[data-radix-scroll-area-viewport]");
       if (scrollContainer) {
         scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: "smooth" });
       }
     }
   }, [mensagensProcessadas, parcial, streaming, perguntaPendente]);
-
 
   function handleEnviar(texto?: string) {
     const t = (texto ?? pergunta).trim();
@@ -213,11 +217,10 @@ function ConsultorIaPage() {
     void perguntarStream(t);
   }
 
-
-  const conversaAtiva = useMemo(() => 
-
-    conversas?.find(c => c.id === conversaId), 
-  [conversas, conversaId]);
+  const conversaAtiva = useMemo(
+    () => conversas?.find((c) => c.id === conversaId),
+    [conversas, conversaId],
+  );
 
   return (
     <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-background">
@@ -227,7 +230,10 @@ function ConsultorIaPage() {
         busca={busca}
         setBusca={setBusca}
         setConversaId={setConversaId}
-        onNovaConversa={() => { setConversaId(null); setPergunta(""); }}
+        onNovaConversa={() => {
+          setConversaId(null);
+          setPergunta("");
+        }}
         onExcluir={(id) => excluir.mutate(id)}
         isOpen={sidebarOpen}
         toggle={() => setSidebarOpen(!sidebarOpen)}
@@ -249,12 +255,12 @@ function ConsultorIaPage() {
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              className={`size-9 text-muted-foreground transition-all ${contextoOpen ? 'text-primary bg-primary/5' : ''}`}
+              className={`size-9 text-muted-foreground transition-all ${contextoOpen ? "text-primary bg-primary/5" : ""}`}
               onClick={() => setContextoOpen(!contextoOpen)}
               title="Informações da conversa"
             >
@@ -278,7 +284,8 @@ function ConsultorIaPage() {
                   Como posso ajudar?
                 </h2>
                 <p className="mt-4 text-sm font-medium text-muted-foreground/60 max-w-md">
-                  Use o Consultor de IA para analisar informações, esclarecer dúvidas técnicas e apoiar suas decisões de crédito imobiliário.
+                  Use o Consultor de IA para analisar informações, esclarecer dúvidas técnicas e
+                  apoiar suas decisões de crédito imobiliário.
                 </p>
 
                 <div className="mt-12 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
@@ -308,7 +315,7 @@ function ConsultorIaPage() {
             ) : (
               <div className="space-y-6">
                 {carregandoMsgs && <Skeleton className="h-40 w-full rounded-2xl" />}
-                
+
                 {mensagensProcessadas.map((m) => (
                   <ConsultorMessage
                     key={m.id}
@@ -378,7 +385,9 @@ function ConsultorIaPage() {
                   Operação
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/40 p-4">
-                  <p className="text-xs text-muted-foreground italic">Nenhuma operação vinculada a esta conversa no momento.</p>
+                  <p className="text-xs text-muted-foreground italic">
+                    Nenhuma operação vinculada a esta conversa no momento.
+                  </p>
                 </div>
               </section>
 
@@ -388,17 +397,24 @@ function ConsultorIaPage() {
                   Privacidade
                 </div>
                 <p className="text-[10px] leading-relaxed text-muted-foreground/60">
-                  Suas conversas são criptografadas e utilizadas exclusivamente para o aprimoramento do seu atendimento pela Agilliza.
+                  Suas conversas são criptografadas e utilizadas exclusivamente para o aprimoramento
+                  do seu atendimento pela Agilliza.
                 </p>
               </section>
 
               <Separator className="bg-border/40" />
-              
+
               <div className="flex flex-col gap-2">
-                <Button variant="ghost" className="justify-start text-xs font-semibold text-muted-foreground hover:text-primary">
+                <Button
+                  variant="ghost"
+                  className="justify-start text-xs font-semibold text-muted-foreground hover:text-primary"
+                >
                   Exportar histórico
                 </Button>
-                <Button variant="ghost" className="justify-start text-xs font-semibold text-muted-foreground hover:text-destructive">
+                <Button
+                  variant="ghost"
+                  className="justify-start text-xs font-semibold text-muted-foreground hover:text-destructive"
+                >
                   Limpar conversa
                 </Button>
               </div>
@@ -414,7 +430,11 @@ function ConsultorIaPage() {
             <DialogTitle>{fonteDetalhe?.titulo ?? "Fonte"}</DialogTitle>
             <DialogDescription>{fonteDetalhe?.categoria}</DialogDescription>
           </DialogHeader>
-          {fonteDetalhe ? <Markdown conteudo={fonteDetalhe.conteudo} className="text-sm" /> : <Skeleton className="h-24 w-full" />}
+          {fonteDetalhe ? (
+            <Markdown conteudo={fonteDetalhe.conteudo} className="text-sm" />
+          ) : (
+            <Skeleton className="h-24 w-full" />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -426,11 +446,26 @@ function ConsultorIaPage() {
           </DialogHeader>
           <div className="space-y-3">
             <Input value={sugerindo ?? ""} onChange={(e) => setSugerindo(e.target.value)} />
-            <Textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observação (opcional)" rows={3} />
+            <Textarea
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Observação (opcional)"
+              rows={3}
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSugerindo(null)}>Cancelar</Button>
-            <Button disabled={enviarSugestao.isPending || !(sugerindo ?? "").trim()} onClick={() => enviarSugestao.mutate({ pergunta: (sugerindo ?? "").trim(), observacao: observacao.trim() || undefined })}>
+            <Button variant="outline" onClick={() => setSugerindo(null)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={enviarSugestao.isPending || !(sugerindo ?? "").trim()}
+              onClick={() =>
+                enviarSugestao.mutate({
+                  pergunta: (sugerindo ?? "").trim(),
+                  observacao: observacao.trim() || undefined,
+                })
+              }
+            >
               Enviar sugestão
             </Button>
           </DialogFooter>

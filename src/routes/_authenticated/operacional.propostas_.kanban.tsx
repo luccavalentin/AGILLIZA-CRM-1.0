@@ -1,4 +1,5 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -217,7 +218,7 @@ function Pagina() {
       await moverFn({ data: { proposta_id: id, novo_status: coluna } });
       qc.invalidateQueries({ queryKey: ["propostas"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao mover.");
+      toast.error(mensagemDeErro(e, "Falha ao mover."));
     }
   }
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -185,7 +186,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
       setEditando(false);
       invalidar();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao atualizar.");
+      toast.error(mensagemDeErro(e, "Falha ao atualizar."));
     } finally {
       setSalvando(false);
     }
@@ -200,7 +201,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
       qc.invalidateQueries({ queryKey: ["tarefas"] });
       onClose();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao excluir.");
+      toast.error(mensagemDeErro(e, "Falha ao excluir."));
     }
   }
 
@@ -223,7 +224,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
       qc.invalidateQueries({ queryKey: ["tarefa-tags"] });
       qc.invalidateQueries({ queryKey: ["tarefa", id] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao criar etiqueta.");
+      toast.error(mensagemDeErro(e, "Falha ao criar etiqueta."));
     }
   }
 
@@ -727,9 +728,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                                         await excluirComentarioFn({ data: { id: c.id } });
                                         invalidar();
                                       } catch (e) {
-                                        toast.error(
-                                          e instanceof Error ? e.message : "Falha ao excluir.",
-                                        );
+                                        toast.error(mensagemDeErro(e, "Falha ao excluir."));
                                       }
                                     }}
                                     className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive focus:opacity-100 group-hover:opacity-100"

@@ -1,4 +1,5 @@
 import { AdminHero } from "@/components/admin/admin-hero";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -61,7 +62,7 @@ function Pagina() {
       toast.success("Banco atualizado.");
       qc.invalidateQueries({ queryKey: ["admin-bancos"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao atualizar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao atualizar.")),
   });
 
   return (
@@ -253,7 +254,7 @@ function EditarBancoDialog({ banco, onClose }: { banco: BancoAdmin; onClose: () 
       qc.invalidateQueries({ queryKey: ["admin-bancos"] });
       onClose();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   return (

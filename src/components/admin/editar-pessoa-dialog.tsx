@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -84,7 +85,7 @@ export function EditarPessoaDialog({
       qc.invalidateQueries({ queryKey: ["pessoas"] });
       onClose();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao atualizar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Erro ao atualizar.")),
   });
 
   if (!pessoa) return null;

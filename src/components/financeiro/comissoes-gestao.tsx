@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -124,7 +125,7 @@ export function SecaoRegrasComissao() {
       setAberto(false);
       qc.invalidateQueries({ queryKey: ["admin-comissoes"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   const excluirM = useMutation({
@@ -133,7 +134,7 @@ export function SecaoRegrasComissao() {
       toast.success("Regra removida.");
       qc.invalidateQueries({ queryKey: ["admin-comissoes"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao remover."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao remover.")),
   });
 
   function novo() {
@@ -458,7 +459,7 @@ export function SimuladorComissao() {
         },
       }),
     onSuccess: (r) => setResultado(r),
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Falha ao simular."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao simular.")),
   });
 
   return (

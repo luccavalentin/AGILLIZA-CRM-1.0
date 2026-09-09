@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -94,7 +95,7 @@ export function TabResumo({
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
       toast.success("Situação do banco atualizada.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao atualizar situação.");
+      toast.error(mensagemDeErro(e, "Falha ao atualizar situação."));
     }
   }
 
@@ -112,7 +113,7 @@ export function TabResumo({
       await selecionarFn({ data: { proposta_id: propostaId, proposta_banco_id: pbId } });
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao selecionar banco.");
+      toast.error(mensagemDeErro(e, "Falha ao selecionar banco."));
     }
   }
 

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -427,7 +428,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
         search: { complementar: 1 },
       });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
+      toast.error(mensagemDeErro(e, "Não foi possível gerar a proposta."));
     } finally {
       setConvertendo(null);
     }
