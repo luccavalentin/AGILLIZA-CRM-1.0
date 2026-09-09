@@ -341,16 +341,30 @@ async function renovarSimulacaoSeConsumida({
     .toUpperCase()
     .charAt(0);
   const erroSimulacaoAtual = erroRetornoIntegracaoResposta(sim);
-  // Além de A/R (simulação já consumida), P/E ou retornoIntegracao com validação
-  // indicam uma simulação bancária contaminada por tentativa anterior. Reusar esse
-  // id mantém o erro preso (ex.: Itaú com spouse=false mesmo após atualizar o
-  // participante para solteiro). Nesses casos criamos uma simulação nova.
+
+  // Uma simulação só precisa ser refeita quando NÃO tem retorno do banco.
+  //
+  // `P` estava na lista de "consumida", e isso descartava justamente as
+  // simulações boas. No contexto da simulação, `P` é o estado normal de quem
+  // foi integrado e ainda não virou proposta — a 95417 do Itaú estava em `P`
+  // com parcela de R$ 11.567,90, pronta para uso. O código a jogava fora,
+  // criava a 95427 do zero e mandava `incluir-proposta-integracao` sobre uma
+  // simulação que nunca passou por `/simulacao/{id}/integracao`. Sem retorno do
+  // banco, o provedor recusa com `tipoSituacao: "E"` e sem motivo — foi o
+  // "Erro desconhecido na integração Itaú" da PRO-000266, e o mesmo padrão
+  // aparecia com Bradesco e Santander.
+  //
+  // O critério passa a ser o valor devolvido pelo banco: com parcela, a
+  // simulação serve; sem parcela, ela nunca foi integrada e precisa nascer de
+  // novo. `A` e `R` continuam consumidas (a esteira já andou), e uma mensagem
+  // de validação presa em `retornoIntegracao` também obriga a refazer.
+  const temRetornoDoBanco = num(sim?.valorParcelaBanco) > 0;
   const simConsumida =
     !sim ||
     tipo === "R" ||
     tipo === "A" ||
-    tipo === "P" ||
     tipo === "E" ||
+    !temRetornoDoBanco ||
     Boolean(erroSimulacaoAtual);
   const idBanco = sim?.banco?.idBanco ?? sim?.idBanco ?? pb.homefin_id_banco;
   const valorImovel = num(prop.valor_imovel ?? simLocal?.valor_imovel ?? sim?.valorImovel);
