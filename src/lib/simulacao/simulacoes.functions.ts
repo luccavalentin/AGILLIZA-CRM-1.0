@@ -774,6 +774,22 @@ export const criarSimulacao = createServerFn({ method: "POST" })
          * sozinha continua com `agrupador_id` nulo, como antes.
          */
         let agrupadorDoLote: string | null = insert.agrupador_id ?? null;
+
+        /**
+         * Envios das simulações-irmãs (testagem de casal e 2º prazo).
+         *
+         * Eles eram disparados sem `await`. No Cloudflare Workers, quando o
+         * handler devolve a resposta, toda promessa ainda pendente é
+         * cancelada — o envio morria no meio e a irmã ficava rascunho com os
+         * bancos em "aguardando" e sem id da HomeFin, que é o "Não enviado"
+         * que aparece na lista. Como a corrida dependia de quem terminasse
+         * primeiro, falhava de forma intermitente: em 09/09 as irmãs das
+         * 07:41 saíram e as das 07:56 (SIM-005307 e SIM-005309) não.
+         *
+         * Agora as promessas ficam nesta fila e são aguardadas juntas antes
+         * do retorno: em paralelo entre si, para não somar o tempo de cada.
+         */
+        const enviosDasIrmas: Promise<unknown>[] = [];
         const garantirAgrupadorNaOriginal = async (): Promise<string> => {
           if (!agrupadorDoLote) {
             agrupadorDoLote = sim.id;
@@ -904,25 +920,15 @@ export const criarSimulacao = createServerFn({ method: "POST" })
               }
             }
 
-            // CHAMADA CRÍTICA: Dispara o envio da simulação secundária imediatamente após a criação para evitar rascunhos órfãos.
-            // O disparo é feito via fetch interno para garantir que o worker não seja interrompido pelo ciclo de vida do request principal.
-            const origin = process.env.VITE_SITE_URL || "http://localhost:8080";
-            const apiKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
-
-            const body = JSON.stringify({
-              data: {
-                simulacao_id: simSec.id,
-                banco_ids: dd.bancos_ids,
-              },
-            });
-
-            // Usamos o endpoint de server function via HTTP se necessário, ou chamamos a função exportada com cuidado.
-            // Para máxima resiliência contra "rascunhos órfãos", garantimos que a execução não bloqueie.
+            // Envio da simulação invertida (testagem de casal). Vai para a
+            // fila e é aguardado antes do retorno — ver `enviosDasIrmas`.
             const { enviarSimulacaoBanco } = await import("./simulacoes.functions");
-            enviarSimulacaoBanco({
-              data: { simulacao_id: simSec.id, banco_ids: dd.bancos_ids },
-            }).catch((e) =>
-              console.error("[HomeFin] Erro no envio automático da simulação secundária:", e),
+            enviosDasIrmas.push(
+              enviarSimulacaoBanco({
+                data: { simulacao_id: simSec.id, banco_ids: dd.bancos_ids },
+              }).catch((e) =>
+                console.error("[HomeFin] Erro no envio automático da simulação secundária:", e),
+              ),
             );
           }
         }
@@ -1027,15 +1033,28 @@ export const criarSimulacao = createServerFn({ method: "POST" })
                   // nunca saíam de "aguardando" (visível como "Em análise" na
                   // tela, e contando no total do overlay sem nunca concluir).
                   const { enviarSimulacaoBanco } = await import("./simulacoes.functions");
-                  enviarSimulacaoBanco({
-                    data: { simulacao_id: simP2.id, banco_ids: dd.bancos_ids },
-                  }).catch((e) =>
-                    console.error("[HomeFin] Erro no envio automático da simulação (2º prazo):", e),
+                  enviosDasIrmas.push(
+                    enviarSimulacaoBanco({
+                      data: { simulacao_id: simP2.id, banco_ids: dd.bancos_ids },
+                    }).catch((e) =>
+                      console.error(
+                        "[HomeFin] Erro no envio automático da simulação (2º prazo):",
+                        e,
+                      ),
+                    ),
                   );
                 }
               }
             }
           }
+        }
+
+        // Espera os envios das irmãs. Sem isto o worker encerra a requisição
+        // e cancela o que estiver em voo, deixando a simulação como rascunho
+        // "Não enviado". Em paralelo: o custo é o do envio mais lento, não a
+        // soma de todos.
+        if (enviosDasIrmas.length > 0) {
+          await Promise.allSettled(enviosDasIrmas);
         }
 
         // Devolve o agrupador só quando ele existe de fato. Antes devolvia
