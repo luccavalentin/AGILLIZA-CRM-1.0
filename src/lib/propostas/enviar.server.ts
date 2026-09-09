@@ -438,6 +438,65 @@ async function renovarSimulacaoSeConsumida({
     valorTotalFinanciamento: valorFinanciamento + valorDespesasFinanciadas,
     fgAutorizacaoDados: true,
   };
+  /**
+   * Cotação que o banco já devolveu, reenviada no PUT da simulação.
+   *
+   * A HomeFin trata o `PUT /simulacao` como SUBSTITUIÇÃO: campo que não vai no
+   * corpo é apagado. O `UpdateSimulationRequest` do swagger aceita
+   * `valorParcelaBanco`, `taxaJurosAnoBanco`, `valorIofBanco`,
+   * `codigoIndexadorBanco`, `codigoOportunidadeBanco` e os `*Max` — e nós não
+   * mandávamos nenhum deles de volta. Resultado: a simulação voltava com
+   * `valorParcelaBanco: ""`, e o `incluir-proposta-integracao` seguinte ia
+   * sobre uma simulação sem cotação. Era essa a origem do "Erro desconhecido
+   * na integração Itaú" (PRO-000279 e PRO-000280).
+   *
+   * A fonte é o que a HomeFin tem agora (`sim`), com a linha local como
+   * reserva quando o GET veio resumido.
+   */
+  const cotacaoDoBanco = (): Record<string, unknown> => {
+    const preservado: Record<string, unknown> = {};
+    const numero = (...candidatos: unknown[]) => {
+      for (const c of candidatos) {
+        const v = num(c);
+        if (v > 0) return v;
+      }
+      return undefined;
+    };
+    const texto = (...candidatos: unknown[]) => {
+      for (const c of candidatos) {
+        const v = String(c ?? "").trim();
+        if (v) return v;
+      }
+      return undefined;
+    };
+
+    const parcela = numero(sim?.valorParcelaBanco, pb.valor_parcela);
+    if (parcela !== undefined) preservado.valorParcelaBanco = parcela;
+
+    const taxa = numero(sim?.taxaJurosAnoBanco, pb.taxa_juros_ano);
+    if (taxa !== undefined) preservado.taxaJurosAnoBanco = taxa;
+
+    const iof = numero(sim?.valorIofBanco);
+    if (iof !== undefined) preservado.valorIofBanco = iof;
+
+    const financiamentoMax = numero(sim?.valorFinanciamentoBancoMax);
+    if (financiamentoMax !== undefined) preservado.valorFinanciamentoBancoMax = financiamentoMax;
+
+    const parcelaMax = numero(sim?.valorParcelaBancoMax);
+    if (parcelaMax !== undefined) preservado.valorParcelaBancoMax = parcelaMax;
+
+    const prazoMax = numero(sim?.prazoPagamentoBancoMax);
+    if (prazoMax !== undefined) preservado.prazoPagamentoBancoMax = prazoMax;
+
+    const indexador = texto(sim?.codigoIndexadorBanco);
+    if (indexador !== undefined) preservado.codigoIndexadorBanco = indexador;
+
+    const codigoOportunidade = texto(sim?.codigoOportunidadeBanco);
+    if (codigoOportunidade !== undefined) preservado.codigoOportunidadeBanco = codigoOportunidade;
+
+    return preservado;
+  };
+
   // O PUT /oportunidade aceita EXCLUSIVAMENTE valorImovel, valorFinanciamento
   // e prazo. Qualquer outro campo (estado civil, regime de casamento, cônjuge,
   // dados do imóvel) provoca HTTP 500 no provedor e mascara a mensagem real do
@@ -582,7 +641,7 @@ async function renovarSimulacaoSeConsumida({
     const putResp = await chamarIntegracao<any>(
       `/oportunidade/${idOportunidade}/simulacao/${idAtual}`,
       "PUT",
-      payloadCompleto,
+      { ...payloadCompleto, ...cotacaoDoBanco() },
       ctx,
     );
     const erroPut = erroRetornoIntegracaoResposta(putResp);
