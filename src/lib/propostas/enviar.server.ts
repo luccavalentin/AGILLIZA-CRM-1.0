@@ -1775,9 +1775,33 @@ export async function sincronizarPropostaImpl({
     if (sim.codigoIndexadorBanco) patchBanco.codigo_indexador = sim.codigoIndexadorBanco;
     patchesBanco.push(patchBanco);
   }
-  // Persistência em lote — reduz N updates sequenciais a um único round-trip.
+  // Persistência do retorno de cada banco.
+  //
+  // Era um `upsert` em lote, e ele NUNCA gravava: `upsert` é
+  // `INSERT ... ON CONFLICT DO UPDATE`, o Postgres valida as constraints da
+  // tupla de inserção antes de detectar o conflito, e `proposta_id` é NOT NULL
+  // sem default — ausente do patch, a operação falhava toda vez. O retorno do
+  // erro não era conferido, então a falha passava em silêncio: a linha do banco
+  // ficava congelada no snapshot do envio.
+  //
+  // Efeito observado: PRO-000269 e PRO-000270 recusadas no provedor com a tela
+  // dizendo "em análise", e os protocolos 54932542 (PRO-000261) e 54933427
+  // (PRO-000267) existindo na API sem nunca chegarem à coluna.
+  //
+  // Como o id de cada linha é conhecido, o certo é UPDATE — que não passa por
+  // validação de inserção e não corre o risco de criar linha órfã. São uma a
+   // três linhas por proposta; o custo do lote não se justificava.
   if (patchesBanco.length > 0) {
-    await supabase.from("proposta_bancos").upsert(patchesBanco as any);
+    const resultados = await Promise.all(
+      patchesBanco.map(({ id, ...campos }) =>
+        supabase.from("proposta_bancos").update(campos as any).eq("id", id as string),
+      ),
+    );
+    for (const r of resultados) {
+      if (r.error) {
+        console.error("[sincronizarProposta] falha ao gravar retorno do banco:", r.error);
+      }
+    }
   }
 
   // ---- 1.5) Recálculo do status global (propostas.status) a partir dos bancos ----
