@@ -287,7 +287,13 @@ export function statusInternoBanco(
   // PRO-000261 (Santander) voltou com `tipoSituacao: "C"` e
   // `codigoSituacaoBanco: "900"`, e no portal do próprio Santander a proposta
   // aparece como "Crédito aprovado mediante a comprovação de renda" — ou seja,
-   // aprovada, mas travada até o cliente enviar documento.
+  // aprovada, mas travada até o cliente enviar documento.
+  //
+  // Confirmado também no Itaú (09/09/2026): a PRO-000281 voltou com
+  // `tipoSituacao: "C"` e `codigoSituacaoBanco: 43`, e o portal do Itaú mostra
+  // a proposta 17774887 como "Aprovação condicionada – enviar documentos". São
+  // dois bancos, com códigos diferentes (900 e 43), e o mesmo significado: o
+  // que decide é o `C`, não o código.
   //
   // Houve uma tentativa de tratar `C` como aprovação plena, por causa do
   // código 513 ("ANÁLISE AUTOMÁTICA FAVORÁVEL"). Foi um erro: o sistema passou
