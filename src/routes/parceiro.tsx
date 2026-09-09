@@ -131,10 +131,7 @@ function PortalParceiro() {
         <Button type="submit" className="w-full" disabled={carregando}>
           {carregando ? "Entrando…" : "Entrar"}
         </Button>
-        <BiometricAuth
-          onSuccess={(email) => console.log("Biometria parceiro:", email)}
-          disabled={carregando}
-        />
+        <BiometricAuth destino="/parceiro-inicio" disabled={carregando} />
       </form>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">

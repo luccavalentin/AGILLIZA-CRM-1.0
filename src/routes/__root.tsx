@@ -12,6 +12,7 @@ import { useEffect, type ReactNode, lazy, Suspense } from "react";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { CookieConsent } from "@/components/legal/cookie-consent";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { registrarSwApp } from "@/lib/pwa/registrar-sw";
 import { RealtimeAuthSync } from "@/components/shared/realtime-auth-sync";
 import { PropostaRetornoWatcher } from "@/components/propostas/proposta-retorno-watcher";
 import { PropostaPopupHost } from "@/components/propostas/proposta-popup-host";
@@ -157,10 +158,31 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
 
   useEffect(() => {
     return iniciarLimpezaBadge();
   }, []);
+
+  // Service worker do app: habilita as notificações do sistema (o popup que
+  // app nativo mostra) e deixa o Web Push pronto para quando houver servidor.
+  useEffect(() => {
+    registrarSwApp();
+
+    // Quando o usuário toca na notificação e o app já está aberto, o service
+    // worker devolve o destino por mensagem (navegadores em que
+    // `WindowClient.navigate` não está disponível).
+    if (!("serviceWorker" in navigator)) return;
+    const aoReceber = (e: MessageEvent) => {
+      const dado = e.data as { tipo?: string; destino?: string } | null;
+      if (!dado || dado.tipo !== "agilliza:navegar" || !dado.destino) return;
+      router.navigate({ to: dado.destino, replace: false }).catch(() => {
+        window.location.href = dado.destino as string;
+      });
+    };
+    navigator.serviceWorker.addEventListener("message", aoReceber);
+    return () => navigator.serviceWorker.removeEventListener("message", aoReceber);
+  }, [router]);
 
   const userId = (queryClient.getQueryData(["auth-user"]) as any)?.id;
 

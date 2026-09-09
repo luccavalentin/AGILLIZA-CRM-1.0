@@ -3,7 +3,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
-import { BiometricAuth } from "@/components/auth/BiometricAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,10 +102,6 @@ function PortalCliente() {
             <Button type="submit" className="w-full" disabled={carregando}>
               {carregando ? "Acessando…" : "Acessar Portal"}
             </Button>
-            <BiometricAuth
-              onSuccess={(doc) => console.log("Biometria cliente:", doc)}
-              disabled={carregando}
-            />
           </form>
         </TabsContent>
 
@@ -130,10 +125,6 @@ function PortalCliente() {
             <Button type="submit" className="w-full" disabled={carregando}>
               {carregando ? "Acessando…" : "Acessar Portal"}
             </Button>
-            <BiometricAuth
-              onSuccess={(doc) => console.log("Biometria cliente PJ:", doc)}
-              disabled={carregando}
-            />
           </form>
         </TabsContent>
       </Tabs>

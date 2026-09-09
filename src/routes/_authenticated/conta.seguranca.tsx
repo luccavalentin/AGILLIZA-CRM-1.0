@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminHero } from "@/components/admin/admin-hero";
+import { BiometriaCard } from "@/components/pwa/biometria-card";
 
 export const Route = createFileRoute("/_authenticated/conta/seguranca")({
   head: () => ({ meta: [{ title: "Segurança — Agilliza" }] }),
@@ -43,7 +44,7 @@ function Pagina() {
         secao="Minha conta"
         icon={<Lock className="h-5 w-5" />}
         titulo="Segurança"
-        descricao="Gerencie a senha de acesso à sua conta."
+        descricao="Gerencie a senha de acesso e o desbloqueio por biometria."
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -120,6 +121,10 @@ function Pagina() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="lg:col-span-2">
+          <BiometriaCard />
+        </div>
       </div>
     </div>
   );

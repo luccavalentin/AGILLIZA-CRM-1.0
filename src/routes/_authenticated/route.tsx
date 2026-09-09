@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Folder } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell/app-shell";
+import { AppLock } from "@/components/pwa/app-lock";
 import { Logo } from "@/components/brand/Logo";
 import { navInterno, navParceiro } from "@/components/app-shell/nav-config";
 import type { NavGroup } from "@/components/app-shell/nav-config";
@@ -229,17 +230,22 @@ function InternalLayout() {
   const profile = sessaoQuery.data.profile;
 
   return (
-    <AppShell
-      nav={navComPastas}
-      user={{
-        id: profile?.id ?? "",
-        nome: profile?.nome ?? null,
-        email: profile?.email ?? null,
-        foto_url: profile?.foto_url ?? null,
-      }}
-      onSignOut={sair}
-    >
-      <Outlet />
-    </AppShell>
+    <>
+      <AppShell
+        nav={navComPastas}
+        user={{
+          id: profile?.id ?? "",
+          nome: profile?.nome ?? null,
+          email: profile?.email ?? null,
+          foto_url: profile?.foto_url ?? null,
+        }}
+        onSignOut={sair}
+      >
+        <Outlet />
+      </AppShell>
+      {/* Trava de aparelho: só aparece para quem ativou a biometria em
+          Minha conta · Segurança. */}
+      <AppLock userId={profile?.id ?? ""} nome={profile?.nome ?? null} onSair={sair} />
+    </>
   );
 }

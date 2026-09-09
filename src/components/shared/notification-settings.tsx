@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { previewChatSound } from "@/lib/chat-sound";
+import { NotificacoesSistemaCard } from "@/components/pwa/notificacoes-sistema-card";
 import {
   TIPOS_NOTIFICACAO,
   getNotificationPrefs,
@@ -68,6 +69,8 @@ export function NotificationSettings() {
           </div>
         </CardContent>
       </Card>
+
+      <NotificacoesSistemaCard />
 
       <Card>
         <CardHeader className="pb-2">

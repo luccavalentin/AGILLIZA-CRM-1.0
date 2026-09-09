@@ -1,91 +1,92 @@
-import { useState, useEffect, useRef } from "react";
-import { Fingerprint } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Fingerprint, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  biometriaAtiva,
+  biometriaDisponivel,
+  marcarAppDesbloqueado,
+  verificarBiometria,
+} from "@/lib/pwa/biometria";
 
 /**
- * Componente para autenticação biométrica (WebAuthn).
- * Habilita login rápido por impressão digital/rosto em dispositivos compatíveis.
- * Só aparece em ambiente PWA mobile e solicita automaticamente se possível.
+ * Entrada rápida por biometria na tela de login.
+ *
+ * Só aparece quando as três condições existem ao mesmo tempo:
+ *  1. o aparelho tem digital/rosto disponível para o navegador;
+ *  2. o usuário já ativou a biometria em Minha conta · Segurança;
+ *  3. a sessão do Supabase ainda está guardada neste navegador.
+ *
+ * Fora disso o botão não aparece: sem sessão guardada, a biometria sozinha
+ * não consegue autenticar (isso exigiria o servidor validar a assinatura da
+ * passkey), e mostrar um botão que não entra seria enganar o usuário.
  */
 export function BiometricAuth({
-  onSuccess,
+  destino,
   disabled,
 }: {
-  onSuccess: (email: string) => void;
+  /** Para onde ir depois de destravar. */
+  destino: string;
   disabled?: boolean;
 }) {
-  const [isSupported, setIsSupported] = useState(false);
-  const [isPWA, setIsPWA] = useState(false);
-  const autoRequested = useRef(false);
+  const navigate = useNavigate();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [verificando, setVerificando] = useState(false);
+  const tentouSozinho = useRef(false);
 
   useEffect(() => {
-    // Verifica se é PWA
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone ||
-      document.referrer.includes("android-app://");
-
-    setIsPWA(isStandalone);
-
-    // Verifica suporte básico ao WebAuthn
-    if (
-      window.PublicKeyCredential &&
-      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable
-    ) {
-      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then((result) => {
-        setIsSupported(result);
-      });
-    }
+    let vivo = true;
+    void (async () => {
+      const [temLeitor, { data }] = await Promise.all([
+        biometriaDisponivel(),
+        supabase.auth.getSession(),
+      ]);
+      if (!vivo) return;
+      const id = data.session?.user?.id ?? null;
+      if (temLeitor && id && biometriaAtiva(id)) setUserId(id);
+    })();
+    return () => {
+      vivo = false;
+    };
   }, []);
 
-  // Solicitação automática se for PWA e tiver suporte
-  useEffect(() => {
-    if (isPWA && isSupported && !autoRequested.current && !disabled) {
-      const email = localStorage.getItem("last_logged_in_email");
-      if (email) {
-        autoRequested.current = true;
-        // Pequeno delay para não assustar o usuário assim que a página carrega
-        const timer = setTimeout(() => {
-          handleBiometric();
-        }, 1500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [isPWA, isSupported, disabled]);
-
-  async function handleBiometric() {
+  async function entrar() {
+    if (!userId || verificando) return;
+    setVerificando(true);
     try {
-      const email = localStorage.getItem("last_logged_in_email");
-
-      if (!email) {
-        if (!autoRequested.current) {
-          toast.info(
-            "Faça o primeiro login com senha para habilitar a biometria neste dispositivo.",
-          );
-        }
+      const ok = await verificarBiometria(userId);
+      if (!ok) {
+        toast.error("Não foi possível confirmar a biometria. Entre com e-mail e senha.");
         return;
       }
-
-      // Simulação do fluxo: no futuro, integraremos com o signInWithPasskey do Supabase
-      toast.info("Autenticação biométrica solicitada no PWA.");
-
-      // Se tivéssemos a implementação real, chamaríamos onSuccess(email) após a validação
-      // onSuccess(email);
-    } catch (error) {
-      console.error("Erro na biometria:", error);
-      toast.error("Falha na autenticação biométrica.");
+      marcarAppDesbloqueado();
+      navigate({ to: destino, replace: true });
+    } finally {
+      setVerificando(false);
     }
   }
 
-  // Só aparece se for PWA e suportado
-  if (!isPWA || !isSupported) return null;
+  // Como app nativo: já pede a biometria ao abrir. Onde o navegador exige
+  // gesto do usuário (Safari), a chamada falha em silêncio e o botão fica.
+  useEffect(() => {
+    if (!userId || disabled || tentouSozinho.current) return;
+    tentouSozinho.current = true;
+    const t = window.setTimeout(() => {
+      void entrar();
+    }, 800);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, disabled]);
+
+  if (!userId) return null;
 
   return (
-    <div className="flex flex-col items-center gap-2 pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="flex flex-col items-center gap-2 pt-2 duration-500 animate-in fade-in slide-in-from-bottom-2">
       <div className="flex w-full items-center gap-3 py-2">
         <div className="h-px flex-1 bg-border/60" />
-        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground font-sans">
+        <span className="font-sans text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           Ou acesse com
         </span>
         <div className="h-px flex-1 bg-border/60" />
@@ -93,12 +94,16 @@ export function BiometricAuth({
       <Button
         type="button"
         variant="outline"
-        className="w-full gap-2 rounded-xl border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all active:scale-95"
-        onClick={handleBiometric}
-        disabled={disabled}
+        className="w-full gap-2 rounded-xl border-primary/20 bg-primary/5 transition-all hover:bg-primary/10 active:scale-95"
+        onClick={entrar}
+        disabled={disabled || verificando}
       >
-        <Fingerprint className="h-4 w-4 text-primary animate-pulse" />
-        Impressão Digital / Biometria
+        {verificando ? (
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        ) : (
+          <Fingerprint className="h-4 w-4 text-primary" />
+        )}
+        Entrar com biometria
       </Button>
     </div>
   );

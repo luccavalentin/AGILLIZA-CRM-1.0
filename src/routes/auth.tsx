@@ -192,13 +192,7 @@ function AuthPage() {
               {carregando ? "Entrando…" : "Entrar"}
             </Button>
 
-            <BiometricAuth
-              onSuccess={(email) => {
-                // Implementação futura de login automático via biometria
-                console.log("Biometria ok para:", email);
-              }}
-              disabled={carregando}
-            />
+            <BiometricAuth destino={destinoPosLogin("sistema")} disabled={carregando} />
           </form>
         </TabsContent>
 
