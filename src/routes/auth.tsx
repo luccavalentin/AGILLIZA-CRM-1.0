@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate, useRouter, Link } from "@tanstack/react-r
 import { toast } from "sonner";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { BiometricAuth } from "@/components/auth/BiometricAuth";
+import { marcarAppDesbloqueado } from "@/lib/pwa/biometria";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,8 @@ function AuthPage() {
       // Salva o e-mail para habilitar biometria futura
       localStorage.setItem("last_logged_in_email", email);
 
+      // Quem acabou de entrar com a senha não deve cair na tela de bloqueio.
+      marcarAppDesbloqueado();
       router.invalidate();
       navigate({ to: destinoPosLogin("sistema") });
     } catch {
@@ -167,7 +170,6 @@ function AuthPage() {
 
         <TabsContent value="entrar">
           <form onSubmit={entrar} className="mt-6 space-y-4">
-            <BiometricAuth destino={destinoPosLogin("sistema")} disabled={carregando} />
             <div className="space-y-2">
               <Label htmlFor="login-email">E-mail</Label>
               <Input id="login-email" name="email" type="email" autoComplete="email" required />
@@ -192,6 +194,7 @@ function AuthPage() {
             <Button type="submit" className="w-full" disabled={carregando}>
               {carregando ? "Entrando…" : "Entrar"}
             </Button>
+            <BiometricAuth destino={destinoPosLogin("sistema")} disabled={carregando} />
           </form>
         </TabsContent>
 

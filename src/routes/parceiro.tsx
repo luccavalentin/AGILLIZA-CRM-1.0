@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { BiometricAuth } from "@/components/auth/BiometricAuth";
+import { marcarAppDesbloqueado } from "@/lib/pwa/biometria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,6 +78,8 @@ function PortalParceiro() {
       localStorage.setItem("last_logged_in_email", email);
 
       await queryClient.invalidateQueries({ queryKey: ["minha-sessao"] });
+      // Quem acabou de entrar com a senha não deve cair na tela de bloqueio.
+      marcarAppDesbloqueado();
       toast.success("Bem-vindo(a) de volta.");
     } catch {
       toast.error(ERRO_CREDENCIAIS);
@@ -114,7 +117,6 @@ function PortalParceiro() {
       ]}
     >
       <form onSubmit={entrar} className="mt-6 space-y-4">
-        <BiometricAuth destino="/parceiro-inicio" disabled={carregando} />
         <div className="space-y-2">
           <Label htmlFor="p-email">E-mail</Label>
           <Input id="p-email" name="email" type="email" autoComplete="email" required />
@@ -132,6 +134,7 @@ function PortalParceiro() {
         <Button type="submit" className="w-full" disabled={carregando}>
           {carregando ? "Entrando…" : "Entrar"}
         </Button>
+        <BiometricAuth destino="/parceiro-inicio" disabled={carregando} />
       </form>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">

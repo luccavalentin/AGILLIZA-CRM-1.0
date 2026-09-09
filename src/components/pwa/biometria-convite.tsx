@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Fingerprint, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ErroBiometria,
   biometriaAtiva,
   biometriaDisponivel,
+  guardarSessaoBiometria,
   impedimentoBiometria,
   registrarBiometria,
 } from "@/lib/pwa/biometria";
@@ -62,6 +64,15 @@ export function BiometriaConvite({
       // Chamada direta no clique: qualquer espera antes daqui derruba a
       // permissão de gesto e o aparelho recusa o cadastro.
       await registrarBiometria({ userId, email, nome });
+      // Guarda a sessão já protegida pela digital: sem isso, a primeira saída
+      // do app deixaria a biometria sem o que restaurar.
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.access_token && data.session.refresh_token) {
+        guardarSessaoBiometria(userId, {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      }
       toast.success("Biometria ativada. Da próxima vez, entre com a digital.");
       setVisivel(false);
     } catch (e) {

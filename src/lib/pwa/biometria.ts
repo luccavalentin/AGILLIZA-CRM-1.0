@@ -156,6 +156,7 @@ export function desativarBiometria(userId: string): void {
   const m = lerMapa();
   delete m[userId];
   salvarMapa(m);
+  limparSessaoBiometria(userId);
 }
 
 function desafio(): Uint8Array<ArrayBuffer> {
@@ -312,4 +313,75 @@ export function limparDesbloqueioApp(): void {
   } catch {
     /* ignore */
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Sessão guardada atrás da biometria
+ * ------------------------------------------------------------------ */
+
+/**
+ * Para a digital realmente ENTRAR (e não só destravar uma sessão que já
+ * estava aberta), guardamos os tokens da sessão junto da credencial. Depois
+ * da digital confirmada, a sessão é restaurada com `setSession`.
+ *
+ * Sobre o risco: o cliente do Supabase já mantém a sessão no localStorage
+ * deste mesmo domínio (`persistSession: true`), então isto não abre uma
+ * porta nova — é a mesma gaveta. O que muda é que a cópia sobrevive ao
+ * "Sair" e só é usada depois que o aparelho confirma a biometria.
+ *
+ * O refresh token do Supabase gira a cada renovação: por isso a cópia é
+ * atualizada em todo `TOKEN_REFRESHED` (ver `sessao-biometria-sync`).
+ */
+const CHAVE_SESSAO = "agilliza:biometria-sessao";
+
+export interface SessaoGuardada {
+  access_token: string;
+  refresh_token: string;
+  atualizadoEm: string;
+}
+
+type MapaSessao = Record<string, SessaoGuardada>;
+
+function lerMapaSessao(): MapaSessao {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(CHAVE_SESSAO);
+    return raw ? (JSON.parse(raw) as MapaSessao) : {};
+  } catch {
+    return {};
+  }
+}
+
+function salvarMapaSessao(m: MapaSessao): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CHAVE_SESSAO, JSON.stringify(m));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Guarda/atualiza a sessão protegida pela biometria deste usuário. */
+export function guardarSessaoBiometria(
+  userId: string,
+  tokens: { access_token: string; refresh_token: string },
+): void {
+  if (!biometriaAtiva(userId)) return;
+  const m = lerMapaSessao();
+  m[userId] = { ...tokens, atualizadoEm: new Date().toISOString() };
+  salvarMapaSessao(m);
+}
+
+export function lerSessaoBiometria(userId: string): SessaoGuardada | null {
+  return lerMapaSessao()[userId] ?? null;
+}
+
+export function limparSessaoBiometria(userId?: string): void {
+  if (!userId) {
+    salvarMapaSessao({});
+    return;
+  }
+  const m = lerMapaSessao();
+  delete m[userId];
+  salvarMapaSessao(m);
 }

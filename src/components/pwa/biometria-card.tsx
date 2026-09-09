@@ -10,6 +10,7 @@ import {
   biometriaAtiva,
   biometriaDisponivel,
   desativarBiometria,
+  guardarSessaoBiometria,
   impedimentoBiometria,
   mensagemErroBiometria,
   registrarBiometria,
@@ -66,6 +67,16 @@ export function BiometriaCard() {
       // válido para abrir o pedido de digital/rosto.
       await registrarBiometria({ userId, email, nome });
       setAtiva(true);
+      // Guarda a sessão já protegida pela digital: sem isso, a primeira saída
+      // do app deixaria a biometria sem o que restaurar.
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.access_token && data.session.refresh_token) {
+        guardarSessaoBiometria(userId, {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      }
+
       toast.success("Pronto. O app vai pedir sua biometria ao abrir.");
     } catch (e) {
       const msg = e instanceof ErroBiometria ? e.message : mensagemErroBiometria("desconhecido");

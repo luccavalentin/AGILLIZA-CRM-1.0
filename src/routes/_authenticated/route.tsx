@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell/app-shell";
 import { AppLock } from "@/components/pwa/app-lock";
 import { BiometriaConvite } from "@/components/pwa/biometria-convite";
+import { SessaoBiometriaSync } from "@/components/pwa/sessao-biometria-sync";
+import { biometriaAtiva } from "@/lib/pwa/biometria";
 import { Logo } from "@/components/brand/Logo";
 import { navInterno, navParceiro } from "@/components/app-shell/nav-config";
 import type { NavGroup } from "@/components/app-shell/nav-config";
@@ -162,7 +164,12 @@ function InternalLayout() {
     await queryClient.cancelQueries();
     queryClient.clear();
     limparCachePermissoes();
-    await supabase.auth.signOut();
+
+    // Com biometria ativa, o "Sair" encerra a sessão apenas neste aparelho.
+    // O escopo global revoga o refresh token no servidor e mataria a entrada
+    // por digital — o aparelho segue confiável, mas só depois da biometria.
+    const comBiometria = biometriaAtiva(sessaoQuery.data?.profile?.id);
+    await supabase.auth.signOut(comBiometria ? { scope: "local" } : undefined);
     navigate({ to: "/auth", replace: true });
   }
 
@@ -252,6 +259,7 @@ function InternalLayout() {
         email={profile?.email ?? null}
         nome={profile?.nome ?? null}
       />
+      <SessaoBiometriaSync userId={profile?.id ?? ""} />
     </>
   );
 }
