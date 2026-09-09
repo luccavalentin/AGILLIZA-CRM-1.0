@@ -6,10 +6,7 @@
  */
 import { useQueries } from "@tanstack/react-query";
 import { Crown, Landmark, X } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogContent,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { obterSimulacao } from "@/lib/simulacao/simulacoes.functions";
 import { formatBRL } from "@/lib/simulacao/format";
@@ -23,10 +20,26 @@ export interface ProponenteComparado {
   ids: string[];
 }
 
-/** Melhor taxa (menor) entre os bancos que efetivamente retornaram. */
-function melhorRetorno(sim: any): { taxa: number; parcela: number | null; banco: string } | null {
+/**
+ * Melhor taxa (menor) entre os bancos que efetivamente retornaram NESTA
+ * simulação.
+ *
+ * O filtro por `simulacao_id` é o ponto do conserto: `obterSimulacao` devolve
+ * os bancos do grupo inteiro (`agrupador_id`), então cada proponente lia a
+ * mesma lista — a do titular junto com a do cônjuge — e chegava sempre à
+ * mesma taxa mínima. Resultado: empate em toda comparação, mesmo quando o
+ * banco cotou diferente (em 09/09 o Bradesco deu 13,50% para um titular e
+ * 12,45% para o outro).
+ */
+function melhorRetorno(
+  sim: any,
+  simulacaoId: string,
+): { taxa: number; parcela: number | null; banco: string } | null {
   const bancos = ((sim?.bancos as any[]) ?? []).filter(
-    (b) => b.status_banco === "simulada" && Number(b.taxa_juros_ano) > 0,
+    (b) =>
+      b.simulacao_id === simulacaoId &&
+      b.status_banco === "simulada" &&
+      Number(b.taxa_juros_ano) > 0,
   );
   if (bancos.length === 0) return null;
   const melhor = bancos.reduce((a, b) =>
@@ -63,26 +76,20 @@ export function ComparativoCpfsDialog({
   });
 
   const linhas = proponentes.map((p) => {
-    const indices = planas
-      .map((x, i) => (x.chave === p.chave ? i : -1))
-      .filter((i) => i >= 0);
+    const indices = planas.map((x, i) => (x.chave === p.chave ? i : -1)).filter((i) => i >= 0);
     const resultados = indices
-      .map((i) => melhorRetorno(consultas[i]?.data))
+      .map((i) => melhorRetorno(consultas[i]?.data, planas[i].id))
       .filter((r): r is NonNullable<typeof r> => Boolean(r));
     return {
       ...p,
       carregando: indices.some((i) => consultas[i]?.isLoading),
       resultado:
-        resultados.length > 0
-          ? resultados.reduce((a, b) => (b.taxa < a.taxa ? b : a))
-          : null,
+        resultados.length > 0 ? resultados.reduce((a, b) => (b.taxa < a.taxa ? b : a)) : null,
     };
   });
 
   const comTaxa = linhas.filter((l) => l.resultado);
-  const melhorTaxa = comTaxa.length > 0
-    ? Math.min(...comTaxa.map((l) => l.resultado!.taxa))
-    : null;
+  const melhorTaxa = comTaxa.length > 0 ? Math.min(...comTaxa.map((l) => l.resultado!.taxa)) : null;
   const vencedores = comTaxa.filter((l) => l.resultado!.taxa === melhorTaxa);
   const empate = vencedores.length > 1;
 
@@ -117,9 +124,7 @@ export function ComparativoCpfsDialog({
                   key={l.chave}
                   className={cn(
                     "flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-colors",
-                    vencedor
-                      ? "border-primary/40 bg-primary/5"
-                      : "border-border bg-muted/20",
+                    vencedor ? "border-primary/40 bg-primary/5" : "border-border bg-muted/20",
                   )}
                 >
                   <div className="min-w-0 flex-1">
