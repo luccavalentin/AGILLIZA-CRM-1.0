@@ -249,9 +249,7 @@ async function motivoFalhaSemMensagem({
       "engenharia_vistoria",
       "analise_juridica",
     ]);
-    const ativa = candidatas.find((r: any) =>
-      EM_ANDAMENTO.has(String(r?.propostas?.status ?? "")),
-    );
+    const ativa = candidatas.find((r: any) => EM_ANDAMENTO.has(String(r?.propostas?.status ?? "")));
     if (ativa) {
       return (
         `O ${banco} já tem uma proposta em andamento para este CPF: ` +
@@ -500,9 +498,38 @@ async function renovarSimulacaoSeConsumida({
     const erroInt = erroRetornoIntegracaoResposta(respInt);
     if (erroInt) throw new IntegracaoBancariaError(sanitizarMensagemErro(erroInt));
 
-    // Bancos assíncronos (Santander) respondem 200 sem valores; seguimos assim
-    // mesmo, porque a simulação FOI entregue e o resultado chega depois. O que
-    // não podia continuar é pedir proposta sem ter feito esta chamada.
+    // A própria resposta da integração já pode trazer a cotação de volta.
+    if (num(respInt?.valorParcelaBanco) > 0) return;
+
+    /**
+     * Confirma que a cotação voltou ANTES de pedir a proposta.
+     *
+     * O `PUT /simulacao` zera `valorParcelaBanco` (a HomeFin devolve ""), e o
+     * `incluir-proposta-integracao` disparado no mesmo segundo ia sobre uma
+     * simulação sem valor — foi assim que a PRO-000279 morreu às 08:41 com
+     * "Erro desconhecido na integração Itaú": o log mostra o PUT zerando os
+     * 11.567,90 às 11:41:51 e a proposta saindo às 11:41:52, com a cotação
+     * ainda vazia. Três segundos depois ela já estava de volta.
+     *
+     * A espera é curta de propósito: banco síncrono devolve em ~1 s. Se o
+     * prazo esgotar sem valor — caso do Santander, que é assíncrono — a
+     * proposta segue mesmo assim, porque para ele o resultado chega depois.
+     */
+    const { acharSimulacaoBanco } = await import("@/lib/simulacao/homefin-shape");
+    for (const espera of [800, 1500, 2500]) {
+      await new Promise((resolve) => setTimeout(resolve, espera));
+      const respOp = await chamarIntegracao<any>(
+        `/oportunidade/${idOportunidade}`,
+        "GET",
+        undefined,
+        ctx,
+      );
+      const simAtual = acharSimulacaoBanco(respOp, idSim);
+      if (!simAtual) continue;
+      const erroSim = erroRetornoIntegracaoResposta(simAtual);
+      if (erroSim) throw new IntegracaoBancariaError(sanitizarMensagemErro(erroSim));
+      if (num(simAtual?.valorParcelaBanco) > 0) return;
+    }
   };
 
   const criarNovaSimulacao = async (motivo: string): Promise<number> => {
@@ -1856,11 +1883,14 @@ export async function sincronizarPropostaImpl({
   //
   // Como o id de cada linha é conhecido, o certo é UPDATE — que não passa por
   // validação de inserção e não corre o risco de criar linha órfã. São uma a
-   // três linhas por proposta; o custo do lote não se justificava.
+  // três linhas por proposta; o custo do lote não se justificava.
   if (patchesBanco.length > 0) {
     const resultados = await Promise.all(
       patchesBanco.map(({ id, ...campos }) =>
-        supabase.from("proposta_bancos").update(campos as any).eq("id", id as string),
+        supabase
+          .from("proposta_bancos")
+          .update(campos as any)
+          .eq("id", id as string),
       ),
     );
     for (const r of resultados) {
@@ -2156,8 +2186,7 @@ export async function sincronizarPropostaImpl({
         `${l.titulo ?? ""}|${l.comentario ?? ""}|${new Date(l.created_at).getTime()}`;
       const antes = new Set((atuais ?? []).map(assinatura));
       const depois = new Set(atvBanco.map(assinatura));
-      const mudou =
-        antes.size !== depois.size || [...depois].some((chave) => !antes.has(chave));
+      const mudou = antes.size !== depois.size || [...depois].some((chave) => !antes.has(chave));
 
       if (mudou) {
         await supabase

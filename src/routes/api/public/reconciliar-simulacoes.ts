@@ -19,11 +19,19 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
 
         /**
          * Quanto esperar por um banco assíncrono antes de chamar de falha.
-         * Mediana de 23 s no Santander e 99% concluídas em menos de 15 min
-         * (17 de 1.755 passaram disso), então o corte cobre praticamente tudo
-         * que ainda tem chance, sem deixar a linha presa por um dia.
+         *
+         * Medido em 30/dias sobre 1.743 simulações do Santander concluídas:
+         * mediana 23 s, p90 36 s, e apenas 29 (1,7%) passaram de 3 minutos —
+         * das quais 22 passaram de 10, ou seja, quem estoura os primeiros
+         * minutos normalmente só volta horas depois, se voltar.
+         *
+         * Eram 15 minutos: o operador ficava com o cliente na frente olhando
+         * "Em análise" por um quarto de hora para receber um erro no fim.
+         * Com 4 minutos, o desfecho chega 11 minutos antes e a margem de
+         * engano é de ~7 simulações em 1.743 — que continuam recuperáveis
+         * pelo botão "Reenviar".
          */
-        const MINUTOS_ATE_DESISTIR = 15;
+        const MINUTOS_ATE_DESISTIR = 4;
 
         /**
          * Quantas vezes reenviar a integração antes de desistir, e a partir de
@@ -52,9 +60,9 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
         // 2. Tratar simulações presas em 'enviando' sem ID HomeFin (nunca saíram)
         await supabaseAdmin
           .from("simulacoes")
-          .update({ 
-            status: "erro_banco" as any, 
-            updated_at: new Date().toISOString() 
+          .update({
+            status: "erro_banco" as any,
+            updated_at: new Date().toISOString(),
           })
           .eq("status", "enviando")
           .is("homefin_id_oportunidade", null)
@@ -67,14 +75,21 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
           .eq("status", "enviando")
           .not("homefin_id_oportunidade", "is", null)
           .lt("created_at", limite24h_limpeza);
-        
+
         if (presas24h && presas24h.length > 0) {
-          const ids = presas24h.map(s => s.id);
-          await supabaseAdmin.from("simulacoes").update({ status: "erro_banco" as any }).in("id", ids);
-          await supabaseAdmin.from("simulacao_bancos").update({ 
-            status_banco: "erro" as any, 
-            mensagem_banco: "Banco não retornou resultado em tempo hábil (24h)." 
-          }).in("simulacao_id", ids).eq("status_banco", "aguardando");
+          const ids = presas24h.map((s) => s.id);
+          await supabaseAdmin
+            .from("simulacoes")
+            .update({ status: "erro_banco" as any })
+            .in("id", ids);
+          await supabaseAdmin
+            .from("simulacao_bancos")
+            .update({
+              status_banco: "erro" as any,
+              mensagem_banco: "Banco não retornou resultado em tempo hábil (24h).",
+            })
+            .in("simulacao_id", ids)
+            .eq("status_banco", "aguardando");
         }
         // --- FIM DA LIMPEZA ---
 
@@ -84,7 +99,8 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
         // 1. Localizar simulação_bancos presas em 'aguardando' criadas nas últimas 24h
         const { data: pendentes, error } = await supabaseAdmin
           .from("simulacao_bancos")
-          .select(`
+          .select(
+            `
             id, 
             simulacao_id, 
             homefin_id_simulacao_banco, 
@@ -92,7 +108,8 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
             created_at,
             raw_response,
             simulacoes!inner(homefin_id_oportunidade, correspondente_id)
-          `)
+          `,
+          )
           .eq("status_banco", "aguardando")
           .not("homefin_id_simulacao_banco", "is", null)
           .gte("created_at", limite24h_limpeza)
@@ -104,7 +121,8 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
           .limit(50); // Lote pequeno para evitar timeout do worker
 
         if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
-        if (!pendentes || pendentes.length === 0) return Response.json({ ok: true, processadas: 0 });
+        if (!pendentes || pendentes.length === 0)
+          return Response.json({ ok: true, processadas: 0 });
 
         let recuperadas = 0;
         let erros = 0;
@@ -124,14 +142,14 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
             // Consultar a oportunidade na HomeFin
             const resp = await chamarIntegracao<any>(`/oportunidade/${idOp}`, "GET", undefined, {
               simulacao_id: bancos[0].simulacao_id,
-              correspondente_id: (bancos[0].simulacoes as any).correspondente_id
+              correspondente_id: (bancos[0].simulacoes as any).correspondente_id,
             });
 
             // Ver `homefin-shape.ts`: o GET devolve as simulações dentro de um
             // envelope `oportunidade`. Ler a raiz dava sempre `[]` e nenhum
             // banco assíncrono era reconciliado.
             const { acharSimulacaoBanco } = await import("@/lib/simulacao/homefin-shape");
-            
+
             for (const b of bancos) {
               const apiSim = acharSimulacaoBanco(resp, b.homefin_id_simulacao_banco);
 
@@ -144,17 +162,22 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 const taxaJuros = apiSim.taxaJurosAnoBanco ?? apiSim.taxaJurosAno;
                 const taxaCet = apiSim.taxaCetAnoBanco ?? apiSim.taxaCetAno;
 
-                await supabaseAdmin.from("simulacao_bancos").update({
-                  status_banco: "simulada" as any,
-                  valor_parcela: valorParcela,
-                  taxa_juros_ano: taxaJuros ? Number(taxaJuros) : null,
-                  taxa_cet_ano: taxaCet ? Number(taxaCet) : null,
-                  valor_financiamento_max: apiSim.valorFinanciamento ? Number(apiSim.valorFinanciamento) : null,
-                  mensagem_banco: null,
-                  raw_response: apiSim,
-                  simulado_em: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                }).eq("id", b.id);
+                await supabaseAdmin
+                  .from("simulacao_bancos")
+                  .update({
+                    status_banco: "simulada" as any,
+                    valor_parcela: valorParcela,
+                    taxa_juros_ano: taxaJuros ? Number(taxaJuros) : null,
+                    taxa_cet_ano: taxaCet ? Number(taxaCet) : null,
+                    valor_financiamento_max: apiSim.valorFinanciamento
+                      ? Number(apiSim.valorFinanciamento)
+                      : null,
+                    mensagem_banco: null,
+                    raw_response: apiSim,
+                    simulado_em: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", b.id);
 
                 await recalcularStatusSimulacao(b.simulacao_id, supabaseAdmin);
                 recuperadas++;
@@ -172,7 +195,9 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 // do Santander ficar pronta é de 23 s e apenas 17 de 1.755
                 // passaram de 15 minutos; depois disso, esperar não traz
                 // resultado — traz só um status que mente.
-                const tipo = String(apiSim.tipoSituacao ?? "").toUpperCase().charAt(0);
+                const tipo = String(apiSim.tipoSituacao ?? "")
+                  .toUpperCase()
+                  .charAt(0);
                 const retorno = String(apiSim.retornoIntegracao ?? "").toLowerCase();
                 const erroExplicito =
                   apiSim.codigoSituacaoBanco === "E" || retorno.includes("erro");
@@ -196,9 +221,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 // `/integracao` é a mesma rota do botão "Reenviar": não cria
                 // registro novo, apenas manda ao banco a simulação que já
                 // existe e está identificada por id. Repetir é seguro.
-                const tentativas = Number(
-                  (b as any)?.raw_response?._retentativas_integracao ?? 0,
-                );
+                const tentativas = Number((b as any)?.raw_response?._retentativas_integracao ?? 0);
                 const podeRetentar =
                   !erroExplicito &&
                   tentativas < MAX_RETENTATIVAS &&
@@ -219,20 +242,23 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                     const parcelaReenvio = Number(reenvio?.valorParcelaBanco || 0);
 
                     if (parcelaReenvio > 0) {
-                      await supabaseAdmin.from("simulacao_bancos").update({
-                        status_banco: "simulada" as any,
-                        valor_parcela: parcelaReenvio,
-                        taxa_juros_ano: reenvio.taxaJurosAnoBanco
-                          ? Number(reenvio.taxaJurosAnoBanco)
-                          : null,
-                        taxa_cet_ano: reenvio.taxaCetAnoBanco
-                          ? Number(reenvio.taxaCetAnoBanco)
-                          : null,
-                        mensagem_banco: null,
-                        raw_response: reenvio,
-                        simulado_em: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                      }).eq("id", b.id);
+                      await supabaseAdmin
+                        .from("simulacao_bancos")
+                        .update({
+                          status_banco: "simulada" as any,
+                          valor_parcela: parcelaReenvio,
+                          taxa_juros_ano: reenvio.taxaJurosAnoBanco
+                            ? Number(reenvio.taxaJurosAnoBanco)
+                            : null,
+                          taxa_cet_ano: reenvio.taxaCetAnoBanco
+                            ? Number(reenvio.taxaCetAnoBanco)
+                            : null,
+                          mensagem_banco: null,
+                          raw_response: reenvio,
+                          simulado_em: new Date().toISOString(),
+                          updated_at: new Date().toISOString(),
+                        })
+                        .eq("id", b.id);
                       await recalcularStatusSimulacao(b.simulacao_id, supabaseAdmin);
                       recuperadas++;
                       continue;
@@ -240,40 +266,49 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
 
                     // Sem valor ainda: registra a tentativa para não repetir
                     // a cada rodada do cron e deixa a próxima janela decidir.
-                    await supabaseAdmin.from("simulacao_bancos").update({
-                      raw_response: {
-                        ...(reenvio ?? apiSim),
-                        _retentativas_integracao: tentativas + 1,
-                      },
-                      mensagem_banco: `Sem resposta do ${b.nome_banco ?? "banco"}. Tentando novamente...`,
-                      updated_at: new Date().toISOString(),
-                    }).eq("id", b.id);
+                    await supabaseAdmin
+                      .from("simulacao_bancos")
+                      .update({
+                        raw_response: {
+                          ...(reenvio ?? apiSim),
+                          _retentativas_integracao: tentativas + 1,
+                        },
+                        mensagem_banco: `Sem resposta do ${b.nome_banco ?? "banco"}. Tentando novamente...`,
+                        updated_at: new Date().toISOString(),
+                      })
+                      .eq("id", b.id);
                     continue;
                   } catch (erroReenvio) {
                     console.error(
                       `[reconciliar-simulacoes] falha ao reenviar ${b.homefin_id_simulacao_banco}:`,
                       erroReenvio,
                     );
-                    await supabaseAdmin.from("simulacao_bancos").update({
-                      raw_response: {
-                        ...(apiSim ?? {}),
-                        _retentativas_integracao: tentativas + 1,
-                      },
-                      updated_at: new Date().toISOString(),
-                    }).eq("id", b.id);
+                    await supabaseAdmin
+                      .from("simulacao_bancos")
+                      .update({
+                        raw_response: {
+                          ...(apiSim ?? {}),
+                          _retentativas_integracao: tentativas + 1,
+                        },
+                        updated_at: new Date().toISOString(),
+                      })
+                      .eq("id", b.id);
                     continue;
                   }
                 }
 
                 if (erroExplicito || ((tipo === "P" || tipo === "E") && esgotou) || esgotou) {
-                  await supabaseAdmin.from("simulacao_bancos").update({
-                    status_banco: "erro" as any,
-                    mensagem_banco:
-                      apiSim.retornoIntegracao ||
-                      `O ${b.nome_banco ?? "banco"} não devolveu os valores desta simulação. Reenvie para tentar de novo.`,
-                    raw_response: apiSim,
-                    updated_at: new Date().toISOString()
-                  }).eq("id", b.id);
+                  await supabaseAdmin
+                    .from("simulacao_bancos")
+                    .update({
+                      status_banco: "erro" as any,
+                      mensagem_banco:
+                        apiSim.retornoIntegracao ||
+                        `O ${b.nome_banco ?? "banco"} não devolveu os valores desta simulação. Reenvie para tentar de novo.`,
+                      raw_response: apiSim,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", b.id);
                   await recalcularStatusSimulacao(b.simulacao_id, supabaseAdmin);
                   erros++;
                 }
