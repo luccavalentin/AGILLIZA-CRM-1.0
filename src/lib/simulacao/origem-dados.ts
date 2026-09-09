@@ -55,29 +55,37 @@ export function totalFinanciadoBanco(banco: any): number | null {
     const n = Number(v);
     return Number.isFinite(n) && n > 0 ? n : null;
   };
-  
+
+  const despesas = num(raw?.valorDespesasFinanciadas) ?? 0;
+
   if (raw && typeof raw === "object") {
-    // O valor financiado total deve ser a soma do valor base financiado + despesas financiadas
-    const valorBase = num(raw.valorFinanciamentoBancoMax) ?? 
-                     num(raw.valorFinanciamentoBanco) ?? 
-                     num(raw.valorTotalFinanciamento);
-                     
-    if (valorBase != null) {
-      // Soma as despesas financiadas se existirem no retorno do banco
-      const despesas = num(raw.valorDespesasFinanciadas) ?? 0;
-      return valorBase + despesas;
-    }
+    // `valorTotalFinanciamento` JÁ É o total com as despesas embutidas — some
+    // as despesas nele e elas contam duas vezes. Antes ele dividia a mesma
+    // cadeia de fallback com campos que são BASE (sem despesas), e o resultado
+    // dependia de qual campo o banco tivesse preenchido:
+    //
+    //   Bradesco  base 130.000 + 39.000 = 169.000  → certo por acaso
+    //   Itaú      total 169.000 + 39.000 = 208.000  → despesa dobrada
+    //   Santander total 130.000 + 39.000 = 169.000  → exibia o valor que
+    //             PEDIMOS, escondendo que o banco calculou sobre 130.000
+    //
+    // O caso do Santander era o mais grave: a tela mostrava 169.000 ao lado de
+    // uma parcela de R$ 1.628,64, que é de 130.000 — os dois números lado a
+    // lado, um contradizendo o outro, e o erro de exibição mascarando um
+    // problema real do provedor.
+    const total = num(raw.valorTotalFinanciamento);
+    if (total != null) return total;
+
+    // Sem o total, o que resta é a base — aí sim as despesas entram.
+    const base = num(raw.valorFinanciamentoBancoMax) ?? num(raw.valorFinanciamentoBanco);
+    if (base != null) return base + despesas;
   }
-  
+
   // Sem retorno bruto (registros legados): usa o campo apenas se marcado como
-  // resposta do banco.
+  // resposta do banco. Aqui o campo é base, então a soma continua valendo.
   if (bancoInformou(banco, "valor_financiamento_max")) {
     const vBase = num(banco?.valor_financiamento_max);
-    if (vBase != null) {
-      // Em registros legados, tentamos buscar as despesas no raw se houver
-      const despesasLegado = num(raw?.valorDespesasFinanciadas) ?? 0;
-      return vBase + despesasLegado;
-    }
+    if (vBase != null) return vBase + despesas;
   }
   return null;
 }
