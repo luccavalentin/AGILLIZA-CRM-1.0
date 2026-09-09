@@ -1255,7 +1255,12 @@ async function enviarPropostaImplInner({
     prop.status === "rascunho" ||
     prop.status === "aguardando_envio"
   ) {
-    patchProposta.status = "enviada_banco";
+    // NÃO marca "Enviado p/ aprovação" aqui: neste ponto nada saiu ainda.
+    // Era isso que punha o selo azul de enviado na tela junto com a caixa
+    // vermelha do erro do banco, dois minutos antes de o status finalmente
+    // virar "Erro no envio". O status definitivo é escrito no fim, com o
+    // retorno na mão (`patchFinal`).
+    patchProposta.status = "aguardando_envio";
   }
 
   await supabase.from("propostas").update(patchProposta).eq("id", propostaId);
