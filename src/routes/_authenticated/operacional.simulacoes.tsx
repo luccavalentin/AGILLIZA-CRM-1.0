@@ -29,6 +29,7 @@ import { EncaminharSimulacaoDialog } from "@/components/simulacao/encaminhar-sim
 import { baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
 import { KpiDetalheDialog } from "@/components/simulacao/kpi-detalhe-dialog";
 import { FiltrosLista } from "@/components/simulacao/lista-page/filtros-lista";
+import { AvisoReenvioAutomatico } from "@/components/simulacao/aviso-reenvio-automatico";
 import { TabelaSimulacoes } from "@/components/simulacao/lista-page/tabela-simulacoes";
 import { CartoesSimulacoes } from "@/components/simulacao/lista-page/cartoes-simulacoes";
 import type { HandlersLinha } from "@/components/simulacao/lista-page/tipos";
@@ -71,7 +72,6 @@ function Pagina() {
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
   const porPagina = 20;
-
 
   // Debounce manual para não sobrecarregar o servidor em cada tecla
   useMemo(() => {
@@ -133,8 +133,7 @@ function Pagina() {
         (s) =>
           s?.status === "enviando" ||
           s?.status === "parcialmente_simulada" ||
-          (Array.isArray(s?.bancos) &&
-            s.bancos.some((b: any) => b?.status_banco === "aguardando")),
+          (Array.isArray(s?.bancos) && s.bancos.some((b: any) => b?.status_banco === "aguardando")),
       );
       return emAndamento ? 5000 : 30000;
     },
@@ -154,7 +153,6 @@ function Pagina() {
         },
       }),
   });
-
 
   // Tempo real: a lista só se atualizava por polling — 30 s com tudo parado,
   // 5 s enquanto havia envio em andamento. Uma simulação criada por outro
@@ -677,7 +675,6 @@ function Pagina() {
           setBusca(q);
           setPagina(1);
         }}
-
         responsavel={responsavel}
         setResponsavel={setResponsavel}
         colegas={colegas}
@@ -691,9 +688,18 @@ function Pagina() {
           setResponsavel("todos");
           setPagina(1);
         }}
-
         verExcluidas={verExcluidas}
         toggleExcluidas={() => setVerExcluidas((v) => !v)}
+      />
+
+      {/* Enquanto houver banco sem retorno, o cron reenvia sozinho; a tela
+          precisa dizer isso, senão "Em análise" parece um travamento. */}
+      <AvisoReenvioAutomatico
+        quantidade={
+          (data?.itens ?? []).filter((s: any) =>
+            (s?.bancos ?? []).some((b: any) => b?.status_banco === "aguardando"),
+          ).length
+        }
       />
 
       {/* Tabela (telas médias e maiores) */}
@@ -737,9 +743,7 @@ function Pagina() {
             Anterior
           </Button>
           <div className="flex items-center gap-1.5 px-2">
-            <span className="text-xs font-semibold text-foreground">
-              Página {pagina}
-            </span>
+            <span className="text-xs font-semibold text-foreground">Página {pagina}</span>
             <span className="text-[10px] font-medium text-muted-foreground">
               de {Math.ceil(data.total / porPagina)}
             </span>
@@ -754,7 +758,6 @@ function Pagina() {
           </Button>
         </div>
       )}
-
 
       {/* Enviar proposta: escolher UM banco por vez */}
       <EnviarPropostaDialog

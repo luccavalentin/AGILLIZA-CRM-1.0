@@ -18,33 +18,21 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         /**
-         * Quanto esperar por um banco assíncrono antes de chamar de falha.
+         * Bancos assíncronos são reenviados até responderem.
          *
-         * Medido em 30/dias sobre 1.743 simulações do Santander concluídas:
-         * mediana 23 s, p90 36 s, e apenas 29 (1,7%) passaram de 3 minutos —
-         * das quais 22 passaram de 10, ou seja, quem estoura os primeiros
-         * minutos normalmente só volta horas depois, se voltar.
+         * Não existe mais "desistir aos N minutos": o sistema insiste sozinho
+         * e avisa na tela enquanto insiste. O único corte é a faxina de 24 h,
+         * que já existia e continua sendo a rede final para o que nunca volta.
          *
-         * Eram 15 minutos: o operador ficava com o cliente na frente olhando
-         * "Em análise" por um quarto de hora para receber um erro no fim.
-         * Com 4 minutos, o desfecho chega 11 minutos antes e a margem de
-         * engano é de ~7 simulações em 1.743 — que continuam recuperáveis
-         * pelo botão "Reenviar".
+         * O intervalo entre tentativas cresce para não martelar o provedor:
+         * 45 s na primeira, depois 1min30, 2min15, 3min e daí a cada 5 min. A
+         * mediana de resposta do Santander é de 23 s, então a primeira
+         * insistência já cai num ponto útil.
          */
-        const MINUTOS_ATE_DESISTIR = 4;
+        const janelaDeRetentativa = (tentativas: number) => Math.min(0.75 * (tentativas + 1), 5);
 
-        /**
-         * Quantas vezes reenviar a integração antes de desistir, e a partir de
-         * quantos minutos. As janelas crescem a cada tentativa: 45 s, 1min30 e
-         * 2min15.
-         *
-         * Eram 3 e 6 minutos, tempo demais para uma tela em que o operador
-         * está com o cliente esperando. A mediana de resposta do Santander é
-         * de 23 s, então aos 45 s já é razoável insistir — e a espera anterior
-         * só adiava a informação sem aumentar a chance de sucesso.
-         */
-        const MAX_RETENTATIVAS = 3;
-        const MINUTOS_ANTES_DE_RETENTAR = 0.75;
+        /** Quantas simulações órfãs (sem id na HomeFin) reenviar por rodada. */
+        const MAX_ORFAS_POR_RODADA = 3;
 
         // --- NOVA ROTINA DE LIMPEZA DE LOCKS E PRESAS ---
         const limite2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
@@ -96,6 +84,69 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
         const { chamarIntegracao } = await import("@/lib/simulacao/homefin.server");
         const { recalcularStatusSimulacao } = await import("@/lib/simulacao/simulacoes.functions");
 
+        /**
+         * 0. Órfãs: bancos em "aguardando" que nunca chegaram à HomeFin.
+         *
+         * São as linhas que a tela mostra como "Não enviado" — sem
+         * `homefin_id_simulacao_banco` elas ficam fora da reconciliação
+         * normal, que só resgata quem já tem id. Aqui o envio é refeito do
+         * zero, do mesmo jeito que o botão "Reenviar" faz.
+         *
+         * Lote pequeno por rodada: cada envio é uma sequência de chamadas
+         * reais à HomeFin e o worker tem tempo limitado. O cron roda a cada
+         * 2 minutos, então a fila anda sozinha.
+         */
+        let reenviadasOrfas = 0;
+        try {
+          const { data: orfas } = await supabaseAdmin
+            .from("simulacao_bancos")
+            .select("simulacao_id, simulacoes!inner(usuario_criador_id, status, deleted_at)")
+            .eq("status_banco", "aguardando")
+            .is("homefin_id_simulacao_banco", null)
+            .gte("created_at", limite24h_limpeza)
+            .limit(60);
+
+          const porSimulacao = new Map<string, string | null>();
+          for (const o of orfas ?? []) {
+            const sim = (o as any).simulacoes;
+            if (!sim || sim.deleted_at) continue;
+            if (!porSimulacao.has(o.simulacao_id)) {
+              porSimulacao.set(o.simulacao_id, sim.usuario_criador_id ?? null);
+            }
+          }
+
+          if (porSimulacao.size > 0) {
+            const { enviarSimulacaoImpl } = await import("@/lib/simulacao/enviar.server");
+            const fila = Array.from(porSimulacao.entries()).slice(0, MAX_ORFAS_POR_RODADA);
+
+            for (const [simulacaoId, criadorId] of fila) {
+              try {
+                await supabaseAdmin
+                  .from("simulacao_bancos")
+                  .update({
+                    mensagem_banco: "Reenviando automaticamente ao banco...",
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("simulacao_id", simulacaoId)
+                  .eq("status_banco", "aguardando")
+                  .is("homefin_id_simulacao_banco", null);
+
+                await enviarSimulacaoImpl({
+                  simulacaoId,
+                  userId: criadorId ?? "",
+                  ip: null,
+                  supabase: supabaseAdmin,
+                });
+                reenviadasOrfas++;
+              } catch (e) {
+                console.error(`[reconciliar-simulacoes] falha ao reenviar órfã ${simulacaoId}:`, e);
+              }
+            }
+          }
+        } catch (e) {
+          console.error("[reconciliar-simulacoes] falha ao varrer órfãs:", e);
+        }
+
         // 1. Localizar simulação_bancos presas em 'aguardando' criadas nas últimas 24h
         const { data: pendentes, error } = await supabaseAdmin
           .from("simulacao_bancos")
@@ -122,7 +173,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
 
         if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
         if (!pendentes || pendentes.length === 0)
-          return Response.json({ ok: true, processadas: 0 });
+          return Response.json({ ok: true, processadas: 0, reenviadasOrfas });
 
         let recuperadas = 0;
         let erros = 0;
@@ -195,15 +246,11 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 // do Santander ficar pronta é de 23 s e apenas 17 de 1.755
                 // passaram de 15 minutos; depois disso, esperar não traz
                 // resultado — traz só um status que mente.
-                const tipo = String(apiSim.tipoSituacao ?? "")
-                  .toUpperCase()
-                  .charAt(0);
                 const retorno = String(apiSim.retornoIntegracao ?? "").toLowerCase();
                 const erroExplicito =
                   apiSim.codigoSituacaoBanco === "E" || retorno.includes("erro");
                 const minutosEspera =
                   (Date.now() - new Date(b.created_at as string).getTime()) / 60_000;
-                const esgotou = minutosEspera > MINUTOS_ATE_DESISTIR;
 
                 // `P` é o estado normal de uma simulação que ainda não virou
                 // proposta — 95334 está em "P" com parcela de R$ 9.216,71. Por
@@ -222,11 +269,14 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 // registro novo, apenas manda ao banco a simulação que já
                 // existe e está identificada por id. Repetir é seguro.
                 const tentativas = Number((b as any)?.raw_response?._retentativas_integracao ?? 0);
+                const ultima = (b as any)?.raw_response?._ultima_retentativa as string | undefined;
+                const minutosDesdeUltima = ultima
+                  ? (Date.now() - new Date(ultima).getTime()) / 60_000
+                  : minutosEspera;
+                // Insiste enquanto o banco não se pronunciar; o intervalo
+                // cresce a cada tentativa.
                 const podeRetentar =
-                  !erroExplicito &&
-                  tentativas < MAX_RETENTATIVAS &&
-                  minutosEspera > MINUTOS_ANTES_DE_RETENTAR * (tentativas + 1) &&
-                  !esgotou;
+                  !erroExplicito && minutosDesdeUltima >= janelaDeRetentativa(tentativas);
 
                 if (podeRetentar) {
                   try {
@@ -272,8 +322,9 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                         raw_response: {
                           ...(reenvio ?? apiSim),
                           _retentativas_integracao: tentativas + 1,
+                          _ultima_retentativa: new Date().toISOString(),
                         },
-                        mensagem_banco: `Sem resposta do ${b.nome_banco ?? "banco"}. Tentando novamente...`,
+                        mensagem_banco: `Sem retorno do ${b.nome_banco ?? "banco"} ainda. Reenviando automaticamente (tentativa ${tentativas + 1})...`,
                         updated_at: new Date().toISOString(),
                       })
                       .eq("id", b.id);
@@ -289,6 +340,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                         raw_response: {
                           ...(apiSim ?? {}),
                           _retentativas_integracao: tentativas + 1,
+                          _ultima_retentativa: new Date().toISOString(),
                         },
                         updated_at: new Date().toISOString(),
                       })
@@ -297,7 +349,10 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                   }
                 }
 
-                if (erroExplicito || ((tipo === "P" || tipo === "E") && esgotou) || esgotou) {
+                // Só um "não" do banco encerra a linha. Sem mensagem, ela
+                // segue em análise e sendo reenviada — a faxina de 24 h é o
+                // corte final.
+                if (erroExplicito) {
                   await supabaseAdmin
                     .from("simulacao_bancos")
                     .update({
@@ -320,7 +375,13 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
           }
         }
 
-        return Response.json({ ok: true, processadas: pendentes.length, recuperadas, erros });
+        return Response.json({
+          ok: true,
+          processadas: pendentes.length,
+          recuperadas,
+          erros,
+          reenviadasOrfas,
+        });
       },
     },
   },
