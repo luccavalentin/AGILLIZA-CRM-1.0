@@ -12,6 +12,9 @@
  */
 const CACHE_ICONES = "agz-app-icones-v1";
 const ICONE = "/icons/app/icon-192.png";
+// Silhueta da marca em fundo transparente: é o que o Android usa na barra
+// de status. Ícone colorido ali vira uma bolha sem forma.
+const BADGE = "/icons/app/badge-96.png";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -68,11 +71,15 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(titulo, {
       body: dados.corpo || dados.body || "",
       icon: ICONE,
-      badge: ICONE,
+      badge: BADGE,
       tag: dados.tag || undefined,
       renotify: Boolean(dados.tag),
       data: { link: dados.link || "/" },
-      vibrate: [80, 40, 80],
+      vibrate: [60, 40, 120],
+      requireInteraction: Boolean(dados.importante),
+      timestamp: Date.now(),
+      lang: "pt-BR",
+      actions: dados.acao ? [{ action: "abrir", title: dados.acao }] : undefined,
     }),
   );
 });

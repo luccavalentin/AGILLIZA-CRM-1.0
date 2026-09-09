@@ -16,7 +16,15 @@
 import { registroSwApp } from "./registrar-sw";
 
 const CHAVE_PREF = "agilliza:notif-sistema";
+
+/** Ícone colorido, exibido ao lado do texto. */
 const ICONE = "/icons/app/icon-192.png";
+/**
+ * Ícone da barra de status. O Android usa só o canal alfa e pinta de branco,
+ * então precisa ser a silhueta da marca em fundo transparente — o ícone
+ * colorido virava uma bolha sem forma.
+ */
+const BADGE = "/icons/app/badge-96.png";
 
 export type EstadoPermissao = NotificationPermission | "indisponivel";
 
@@ -90,6 +98,13 @@ export interface NotificacaoSistema {
   link?: string | null;
   /** Agrupa notificações do mesmo assunto em vez de empilhar várias. */
   tag?: string;
+  /** Texto do botão de ação. Sem ele, a notificação não ganha botão. */
+  acao?: string;
+  /**
+   * Mantém o aviso na barra até o usuário interagir. Usado no retorno do
+   * banco, que é o que ninguém pode perder de vista.
+   */
+  importante?: boolean;
 }
 
 /**
@@ -101,14 +116,26 @@ export async function mostrarNotificacaoSistema(n: NotificacaoSistema): Promise<
   if (!notificacoesSistemaLigadas()) return false;
   if (Notification.permission !== "granted") return false;
 
-  const opcoes: NotificationOptions & { vibrate?: number[]; renotify?: boolean } = {
+  const opcoes: NotificationOptions & {
+    vibrate?: number[];
+    renotify?: boolean;
+    actions?: { action: string; title: string }[];
+    timestamp?: number;
+  } = {
     body: n.corpo ?? undefined,
     icon: ICONE,
-    badge: ICONE,
+    badge: BADGE,
     tag: n.tag,
     renotify: Boolean(n.tag),
     data: { link: n.link || "/" },
-    vibrate: [80, 40, 80],
+    // Padrão curto de duas batidas, como os apps de banco usam.
+    vibrate: [60, 40, 120],
+    silent: false,
+    requireInteraction: Boolean(n.importante),
+    timestamp: Date.now(),
+    lang: "pt-BR",
+    dir: "ltr",
+    actions: n.acao ? [{ action: "abrir", title: n.acao }] : undefined,
   };
 
   const reg = await registroSwApp();
@@ -121,10 +148,13 @@ export async function mostrarNotificacaoSistema(n: NotificacaoSistema): Promise<
     }
   }
 
-  // Fallback para desktop sem SW ativo. No Android isto lança de propósito
-  // (a plataforma exige service worker), por isso o try/catch.
+  // Fallback para desktop sem SW ativo. `actions` só existe via service
+  // worker: passar aqui faz o construtor lançar. No Android este caminho
+  // lança de propósito (a plataforma exige service worker).
   try {
-    new Notification(n.titulo, opcoes);
+    const { actions: _acoes, ...semAcoes } = opcoes;
+    void _acoes;
+    new Notification(n.titulo, semAcoes);
     return true;
   } catch {
     return false;

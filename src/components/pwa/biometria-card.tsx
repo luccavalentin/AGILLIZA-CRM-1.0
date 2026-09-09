@@ -6,10 +6,14 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  ErroBiometria,
   biometriaAtiva,
   biometriaDisponivel,
   desativarBiometria,
+  impedimentoBiometria,
+  mensagemErroBiometria,
   registrarBiometria,
+  type CodigoErroBiometria,
 } from "@/lib/pwa/biometria";
 
 /**
@@ -23,12 +27,15 @@ export function BiometriaCard() {
   const [nome, setNome] = useState<string | null>(null);
   const [ativa, setAtiva] = useState(false);
   const [ocupado, setOcupado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [impedimento, setImpedimento] = useState<CodigoErroBiometria | null>(null);
 
   useEffect(() => {
     let vivo = true;
     void (async () => {
       const [ok, { data }] = await Promise.all([biometriaDisponivel(), supabase.auth.getUser()]);
       if (!vivo) return;
+      setImpedimento(impedimentoBiometria());
       setDisponivel(ok);
       const u = data.user;
       setUserId(u?.id ?? null);
@@ -47,21 +54,23 @@ export function BiometriaCard() {
     if (!valor) {
       desativarBiometria(userId);
       setAtiva(false);
+      setErro(null);
       toast.success("Desbloqueio por biometria desativado neste aparelho.");
       return;
     }
 
     setOcupado(true);
+    setErro(null);
     try {
-      const ok = await registrarBiometria({ userId, email, nome });
-      if (!ok) {
-        toast.error("Não foi possível cadastrar a biometria neste aparelho.");
-        return;
-      }
+      // Sem `await` antes daqui: o navegador exige o gesto do usuário ainda
+      // válido para abrir o pedido de digital/rosto.
+      await registrarBiometria({ userId, email, nome });
       setAtiva(true);
       toast.success("Pronto. O app vai pedir sua biometria ao abrir.");
-    } catch {
-      toast.error("Cadastro cancelado ou não permitido pelo aparelho.");
+    } catch (e) {
+      const msg = e instanceof ErroBiometria ? e.message : mensagemErroBiometria("desconhecido");
+      setErro(msg);
+      toast.error(msg);
     } finally {
       setOcupado(false);
     }
@@ -91,19 +100,23 @@ export function BiometriaCard() {
             <Switch
               id="biometria"
               checked={ativa}
-              disabled={!disponivel || !userId || ocupado}
+              disabled={!disponivel || Boolean(impedimento) || !userId || ocupado}
               onCheckedChange={(v) => void alternar(v)}
             />
           </div>
         </div>
 
-        {disponivel === false && (
+        {(disponivel === false || impedimento) && (
           <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              Este aparelho não oferece leitor de digital, Face ID ou Windows Hello para o
-              navegador. Em celular, instale o app na tela inicial e tente de novo.
-            </span>
+            <span>{mensagemErroBiometria(impedimento ?? "sem-leitor")}</span>
+          </div>
+        )}
+
+        {erro && (
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{erro}</span>
           </div>
         )}
 

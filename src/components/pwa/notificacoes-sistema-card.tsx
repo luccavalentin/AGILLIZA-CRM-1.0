@@ -66,10 +66,11 @@ export function NotificacoesSistemaCard() {
 
   async function testar() {
     const ok = await mostrarNotificacaoSistema({
-      titulo: "Agilliza",
-      corpo: "Notificação de teste — é assim que os avisos vão chegar.",
+      titulo: "Tudo certo por aqui",
+      corpo: "Notificação de teste. É assim que o retorno do banco vai chegar neste aparelho.",
       link: "/visao-geral/painel",
       tag: "teste",
+      acao: "Abrir",
     });
     if (!ok) toast.error("Não foi possível exibir a notificação de teste.");
   }
