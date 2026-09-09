@@ -7,7 +7,7 @@ import type { Form, Banco } from "./state";
  * (sem estado nem side-effects) para permitir uso direto em `useMemo`.
  */
 
-type BancoRef = { codigo_banco?: number | string | null; nome_banco?: string | null };
+export type BancoRef = { codigo_banco?: number | string | null; nome_banco?: string | null };
 
 /** Bancos que operam pelo sistema PRICE (Tabela Price). Hoje: Bradesco (237) e Santander (33). */
 export function aceitaPrice(b: BancoRef): boolean {

@@ -127,6 +127,10 @@ function SidebarLink({
   return (
     <Link
       to={item.to as string}
+      // `params` faltava aqui: os itens de checklist apontam para
+      // `/checklists/$id` e o link saía com `$id` sem valor, levando a
+      // /checklists/undefined — 404 em todos eles.
+      params={(item.params ?? undefined) as never}
       search={(item.search ?? undefined) as never}
       onClick={() => {
         if (isChat) stopFlash();
@@ -216,6 +220,10 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
         const Icon = item.icon;
         const active = itemAtivo(item, melhor, pasta);
         const to = item.to ?? item.children?.[0]?.to;
+        // Rota com parâmetro (`/checklists/$id`) precisa dos params do próprio
+        // item ou, quando o item é só um agrupador, os do primeiro filho.
+        const params = item.to ? item.params : (item.params ?? item.children?.[0]?.params);
+        const search = item.to ? item.search : (item.search ?? item.children?.[0]?.search);
         const isChat = ehRotaChat(to) || ehRotaChat(item.to);
         const piscar = isChat && flash && !active;
         return (
@@ -223,6 +231,8 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
             <TooltipTrigger asChild>
               <Link
                 to={to as string}
+                params={(params ?? undefined) as never}
+                search={(search ?? undefined) as never}
                 onClick={() => {
                   if (isChat) stopFlash();
                   onNavigate?.();

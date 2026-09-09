@@ -610,12 +610,25 @@ async function processarBancoIndividual(
       })
       .eq("id", b.id);
 
-    const fgFinanciarDespesas = sim.fg_financiar_despesas ? "S" : "N";
-    const valorDespesasFinanciadas = sim.fg_financiar_despesas
-      ? num(sim.valor_despesas_financiadas)
-      : 0;
-    const valorFinanciamento = num(sim.valor_financiamento);
-    const valorTotalFinanciamento = valorFinanciamento + valorDespesasFinanciadas;
+    // As custas vão para cada banco do jeito que ele entende: o Santander
+    // recalcula a integração em cima de `valorFinanciamento` e descarta as
+    // despesas, então para ele o total vai embutido. Ver `despesas-por-banco`.
+    const { despesasParaOBanco } = await import("./despesas-por-banco");
+    const despesas = despesasParaOBanco({
+      banco: b,
+      valorFinanciamento: num(sim.valor_financiamento),
+      valorDespesasFinanciadas: sim.fg_financiar_despesas ? num(sim.valor_despesas_financiadas) : 0,
+    });
+    const fgFinanciarDespesas = despesas.fgFinanciarDespesas;
+    const valorDespesasFinanciadas = despesas.valorDespesasFinanciadas;
+    const valorFinanciamento = despesas.valorFinanciamento;
+    const valorTotalFinanciamento = despesas.valorTotalFinanciamento;
+
+    if (despesas.embutidas) {
+      console.info(
+        `[SIM-DESPESAS] simulacao=${simulacaoId} banco=${b.nome_banco} custas embutidas no financiamento: valorFinanciamento=${valorFinanciamento}`,
+      );
+    }
 
     /**
      * Prazo desta simulação NESTE banco.

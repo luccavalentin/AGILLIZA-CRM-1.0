@@ -421,9 +421,18 @@ async function renovarSimulacaoSeConsumida({
   const valorDespesasFinanciadas = financiarDespesas
     ? num(simLocal?.valor_despesas_financiadas ?? sim?.valorDespesasFinanciadas)
     : 0;
+  // Mesma regra da simulação: o Santander descarta as despesas na integração,
+  // então para ele o total vai embutido em `valorFinanciamento`.
+  const { despesasParaOBanco } = await import("@/lib/simulacao/despesas-por-banco");
+  const despesasBanco = despesasParaOBanco({
+    banco: { codigo_banco: pb.codigo_banco, nome_banco: pb.nome_banco },
+    valorFinanciamento,
+    valorDespesasFinanciadas: financiarDespesas ? valorDespesasFinanciadas : 0,
+  });
+
   const payloadCompleto: Record<string, unknown> = {
     valorImovel,
-    valorFinanciamento,
+    valorFinanciamento: despesasBanco.valorFinanciamento,
     prazo,
     codigoSistemaAmortizacaoBanco: {
       id: sistemaAmortizacaoBanco(
@@ -434,9 +443,9 @@ async function renovarSimulacaoSeConsumida({
       ),
     },
 
-    fgFinanciarDespesas: financiarDespesas ? "S" : "N",
-    valorDespesasFinanciadas,
-    valorTotalFinanciamento: valorFinanciamento + valorDespesasFinanciadas,
+    fgFinanciarDespesas: despesasBanco.fgFinanciarDespesas,
+    valorDespesasFinanciadas: despesasBanco.valorDespesasFinanciadas,
+    valorTotalFinanciamento: despesasBanco.valorTotalFinanciamento,
     fgAutorizacaoDados: true,
   };
   /**
