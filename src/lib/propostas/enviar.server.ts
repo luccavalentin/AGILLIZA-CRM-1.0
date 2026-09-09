@@ -439,6 +439,44 @@ async function renovarSimulacaoSeConsumida({
     );
   }
 
+  /**
+   * Garante que a simulação tenha resultado do banco antes de virar proposta.
+   *
+   * O `PUT /simulacao/{id}` reescreve os parâmetros e, ao fazê-lo, ZERA o que o
+   * banco havia devolvido: a resposta volta com `valorParcelaBanco` e
+   * `taxaJurosAnoBanco` vazios. Faz sentido — mudaram valor, prazo ou sistema,
+   * então a cotação anterior não vale mais.
+   *
+   * Só que o envio seguia direto para `incluir-proposta-integracao`, ou seja,
+   * pedia proposta sobre uma simulação que ninguém havia mandado ao banco. O
+   * provedor recusa isso com `tipoSituacao: "E"` e sem motivo.
+   *
+   * Caso real (PRO-000268, Itaú): a simulação 90177 tinha parcela de
+   * R$ 9.355,69 no GET das 01:39:45; o PUT das 01:39:50 devolveu parcela `""`;
+   * o POST das 01:39:51 voltou "E". O mesmo padrão aparecia com Bradesco e
+   * Santander — não era problema de banco nenhum.
+   *
+   * O passo que faltava é o 6 do mapa da API: `POST /simulacao/{id}/integracao`
+   * antes de incluir a proposta.
+   */
+  const garantirSimulacaoIntegrada = async (idSim: number, respPut: any): Promise<void> => {
+    // O PUT já trouxe cotação: nada mudou a ponto de exigir nova integração.
+    if (num(respPut?.valorParcelaBanco) > 0) return;
+
+    const respInt = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}/simulacao/${idSim}/integracao`,
+      "POST",
+      {},
+      ctx,
+    );
+    const erroInt = erroRetornoIntegracaoResposta(respInt);
+    if (erroInt) throw new IntegracaoBancariaError(sanitizarMensagemErro(erroInt));
+
+    // Bancos assíncronos (Santander) respondem 200 sem valores; seguimos assim
+    // mesmo, porque a simulação FOI entregue e o resultado chega depois. O que
+    // não podia continuar é pedir proposta sem ter feito esta chamada.
+  };
+
   const criarNovaSimulacao = async (motivo: string): Promise<number> => {
     const novoPayload: Record<string, unknown> = {
       ...payloadCompleto,
@@ -470,6 +508,7 @@ async function renovarSimulacaoSeConsumida({
     if (erroPut) {
       throw new IntegracaoBancariaError(sanitizarMensagemErro(erroPut));
     }
+    await garantirSimulacaoIntegrada(novoId, putResp);
     await supabase
       .from("proposta_bancos")
       .update({ homefin_id_simulacao_banco: String(novoId) } as any)
@@ -497,6 +536,7 @@ async function renovarSimulacaoSeConsumida({
         `Nova simulação gerada para reenviar ao ${pb.nome_banco ?? "banco"} após a simulação anterior retornar validação pendente.`,
       );
     }
+    await garantirSimulacaoIntegrada(Number(idAtual), putResp);
     return Number(idAtual);
   }
 

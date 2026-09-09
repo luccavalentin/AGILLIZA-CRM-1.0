@@ -424,7 +424,19 @@ function PropostaRoute() {
 
   // O status é indexado pela chave do envio; aqui há um envio por vez, então
   // basta o do banco ocupado.
-  const statusEnvioAtual = busyBancoId ? statusPorBanco[busyBancoId] : null;
+  //
+  // Mas o hook só sai de "loading" quando a chamada inteira retorna, e ela
+  // continua rodando depois que o servidor já gravou o resultado — ainda
+  // aguardando o retorno do banco. A proposta então já aparecia como "Enviado
+  // p/ aprovação de crédito" com a barra correndo por cima, dizendo que o
+  // envio estava em andamento.
+  //
+  // O status da proposta é a fonte da verdade: assim que ele sai do estado
+  // pré-envio, o envio cumpriu seu papel e o painel se recolhe.
+  const STATUS_PRE_ENVIO = ["rascunho", "aguardando_envio", "erro_envio"];
+  const aindaNaoEnviada = STATUS_PRE_ENVIO.includes(String(data?.proposta?.status ?? ""));
+  const statusEnvioAtual =
+    busyBancoId && aindaNaoEnviada ? statusPorBanco[busyBancoId] : null;
 
   return (
     <>
