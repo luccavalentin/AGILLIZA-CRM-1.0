@@ -34,6 +34,16 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
         /** Quantas simulações órfãs (sem id na HomeFin) reenviar por rodada. */
         const MAX_ORFAS_POR_RODADA = 3;
 
+        /**
+         * Depois de tantas integrações sem o provedor sequer registrar o envio
+         * (`dataHoraEnvioIntegracao` continua nulo), insistir na MESMA
+         * simulação não leva a nada. O contrato prevê a saída: criar outra
+         * simulação (`POST /oportunidade/{id}/simulacao`) e integrar essa. É o
+         * mesmo caminho que o fluxo de proposta já usa quando a simulação
+         * anterior não presta mais.
+         */
+        const TENTATIVAS_ATE_RECRIAR = 5;
+
         // --- NOVA ROTINA DE LIMPEZA DE LOCKS E PRESAS ---
         const limite2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
         const limite30min = new Date(Date.now() - 30 * 60 * 1000).toISOString();
@@ -154,6 +164,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
             `
             id, 
             simulacao_id, 
+            banco_id,
             homefin_id_simulacao_banco, 
             nome_banco,
             created_at,
@@ -277,6 +288,55 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 // cresce a cada tentativa.
                 const podeRetentar =
                   !erroExplicito && minutosDesdeUltima >= janelaDeRetentativa(tentativas);
+
+                // Escape hatch: o provedor nunca registrou o envio desta
+                // simulação. Refaz o envio do zero para este banco, o que cria
+                // uma simulação nova na HomeFin e integra essa.
+                const nuncaEnviouAoBanco = !apiSim?.dataHoraEnvioIntegracao;
+                if (
+                  !erroExplicito &&
+                  nuncaEnviouAoBanco &&
+                  tentativas >= TENTATIVAS_ATE_RECRIAR &&
+                  minutosDesdeUltima >= 5
+                ) {
+                  try {
+                    await supabaseAdmin
+                      .from("simulacao_bancos")
+                      .update({
+                        raw_response: {
+                          ...(apiSim ?? {}),
+                          _retentativas_integracao: 0,
+                          _ultima_retentativa: new Date().toISOString(),
+                          _recriada_em: new Date().toISOString(),
+                        },
+                        mensagem_banco: `O ${b.nome_banco ?? "banco"} não registrou o envio. Refazendo a simulação...`,
+                        updated_at: new Date().toISOString(),
+                      })
+                      .eq("id", b.id);
+
+                    const { data: donoSim } = await supabaseAdmin
+                      .from("simulacoes")
+                      .select("usuario_criador_id")
+                      .eq("id", b.simulacao_id)
+                      .maybeSingle();
+
+                    const { enviarSimulacaoImpl } = await import("@/lib/simulacao/enviar.server");
+                    await enviarSimulacaoImpl({
+                      simulacaoId: b.simulacao_id,
+                      userId: (donoSim as any)?.usuario_criador_id ?? "",
+                      ip: null,
+                      supabase: supabaseAdmin,
+                      bancoIds: (b as any).banco_id ? [(b as any).banco_id] : undefined,
+                    });
+                    recuperadas++;
+                    continue;
+                  } catch (erroRecriar) {
+                    console.error(
+                      `[reconciliar-simulacoes] falha ao refazer ${b.homefin_id_simulacao_banco}:`,
+                      erroRecriar,
+                    );
+                  }
+                }
 
                 if (podeRetentar) {
                   try {
