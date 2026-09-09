@@ -150,35 +150,27 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
   async function enviarAprovacao(bancoId: string) {
     if (criandoBanco) return;
 
-    // 1. Inicia feedback visual imediato no hook (Etapa 1: Criando)
-    iniciarStatusEnvio(bancoId);
+    // A proposta é criada e o operador vai direto para a tela dela; o envio ao
+    // banco acontece lá, acompanhado pelo painel de progresso.
+    //
+    // Antes esperávamos o envio INTEIRO aqui — até dois minutos — para só
+    // então navegar. No celular isso era indistinguível de travamento: o botão
+    // ficava "Enviando…" e nada mais acontecia na tela. E o `catch` estava
+    // vazio, comentado como "erros gerenciados pelo hook", mas o status do hook
+    // não aparece nesta tela: uma falha na criação sumia sem deixar rastro.
     setCriandoBanco(bancoId);
 
     try {
-      // 2. Chama o hook que agora sabe gerenciar a criação e status
-      const res = await handleEnviarHook({
-        bancoId,
-        criarPropostaFn: async () => {
-          const { proposta_id } = await criarProposta({
-            data: {
-              simulacao_id: simulacaoId,
-              banco_id: bancoId,
-            },
-          });
-          return { proposta_id };
-        },
+      const { proposta_id } = await criarProposta({
+        data: { simulacao_id: simulacaoId, banco_id: bancoId },
       });
-
-      if (res?.proposta_id) {
-        if (!router.state.location.pathname.includes(`/propostas/${res.proposta_id}`)) {
-          router.navigate({
-            to: "/operacional/propostas/$id",
-            params: { id: res.proposta_id },
-          });
-        }
-      }
-    } catch (e) {
-      // Erros gerenciados pelo hook
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id: proposta_id },
+        search: { enviar_banco: bancoId },
+      });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível criar a proposta.", { duration: 10_000 });
     } finally {
       setCriandoBanco(null);
     }
