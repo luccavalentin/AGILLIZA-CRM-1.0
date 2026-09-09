@@ -343,18 +343,19 @@ function Pagina() {
         return;
       }
 
-      // Centraliza o envio através do hook único que cuida de validações e navegação
-      await handleEnviarHook({
-        propostaId: res.proposta_id,
-        bancoId: banco.banco_id,
-        // A lista traz uma linha por combinação de prazo e sistema, então o
-        // mesmo banco aparece várias vezes. A identidade do que está em
-        // andamento é a linha, não o banco.
-        chave: banco.id,
-      });
-
+      // A proposta já existe neste ponto. Em vez de segurar o operador no
+      // diálogo por até dois minutos olhando uma barra, levamos ele à tela da
+      // proposta e o envio acontece lá — é onde o resultado vai aparecer, e o
+      // painel de progresso central acompanha a chamada até o fim.
+      setEnvio(null);
       queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
+      router.navigate({
+        to: "/operacional/propostas/$id",
+        params: { id: res.proposta_id },
+        search: { enviar_banco: banco.banco_id },
+      });
+      return;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a proposta.");
     } finally {

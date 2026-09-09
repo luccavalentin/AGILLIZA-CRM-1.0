@@ -34,9 +34,12 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
   validateSearch: (
     search: Record<string, unknown>,
-  ): { complementar?: 1; abrir_cadastro?: string } => ({
+  ): { complementar?: 1; abrir_cadastro?: string; enviar_banco?: string } => ({
     complementar: search.complementar === 1 || search.complementar === "1" ? 1 : undefined,
     abrir_cadastro: typeof search.abrir_cadastro === "string" ? search.abrir_cadastro : undefined,
+    // Vem da lista de simulações: a proposta acabou de ser criada e o envio a
+    // este banco deve começar assim que a tela abrir.
+    enviar_banco: typeof search.enviar_banco === "string" ? search.enviar_banco : undefined,
   }),
   component: PropostaRoute,
   errorComponent: (props) => {
@@ -51,7 +54,7 @@ function PropostaErroWrapper(props: any) {
 
 function PropostaRoute() {
   const { id } = Route.useParams();
-  const { complementar, abrir_cadastro } = Route.useSearch();
+  const { complementar, abrir_cadastro, enviar_banco } = Route.useSearch();
   const router = useRouter();
   const qc = useQueryClient();
   const {
@@ -207,6 +210,42 @@ function PropostaRoute() {
   );
 
   // 4. Effects
+
+  // Envio iniciado na lista de simulações: a proposta foi criada lá e o
+   // operador foi trazido para cá em vez de esperar no diálogo. Disparamos uma
+  // única vez e limpamos o parâmetro, para um F5 não reenviar.
+  const disparouEnvioRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!enviar_banco || disparouEnvioRef.current || !data) return;
+    disparouEnvioRef.current = true;
+
+    const banco = (data.bancos ?? []).find((b: any) => b.banco_id === enviar_banco);
+    setBancoEmEnvio(banco?.nome_banco ?? null);
+
+    router.navigate({
+      to: "/operacional/propostas/$id",
+      params: { id },
+      search: (prev: any) => {
+        const { enviar_banco: _, ...resto } = prev;
+        return resto;
+      },
+      replace: true,
+    });
+
+    void handleEnviarHook({
+      propostaId: id,
+      bancoId: enviar_banco,
+      envolvidos: data.envolvidos ?? [],
+      onCadastroIncompleto,
+    })
+      .then((r) => {
+        if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
+      })
+      .catch((e: any) => {
+        toast.error(e?.message ?? "Falha ao enviar a proposta ao banco.", { duration: 12_000 });
+      })
+      .finally(() => setBancoEmEnvio(null));
+  }, [enviar_banco, data, id, handleEnviarHook, onCadastroIncompleto, router]);
   React.useEffect(() => {
     if (abrir_cadastro && envolvidos.length > 0) {
       const env = envolvidos.find((e: any) => e.id === abrir_cadastro);
