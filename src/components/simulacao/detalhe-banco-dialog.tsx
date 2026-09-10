@@ -212,9 +212,12 @@ export function DetalheBancoDialog({
                 />
                 <Destaque
                   icone={<Percent className="h-4 w-4" />}
-                   rotulo="CET a.a."
-                   valor={banco.taxa_cet_ano != null ? `${Number(banco.taxa_cet_ano).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.a.` : pct(detalhe!.cet)}
-
+                  rotulo="CET a.a."
+                  valor={
+                    banco.taxa_cet_ano != null
+                      ? `${Number(banco.taxa_cet_ano).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.a.`
+                      : pct(detalhe!.cet)
+                  }
                   cor={cor}
                 />
                 <Destaque
@@ -273,10 +276,14 @@ export function DetalheBancoDialog({
                           {banco.renda_minima_fonte === "banco" ? (
                             <>
                               <ShieldCheck className="h-3 w-3 text-emerald-500" />
-                              <span className="text-[10px] text-emerald-600 font-medium">Informado pelo banco</span>
+                              <span className="text-[10px] text-emerald-600 font-medium">
+                                Informado pelo banco
+                              </span>
                             </>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground/70 italic">Estimativa Agilliza</span>
+                            <span className="text-[10px] text-muted-foreground/70 italic">
+                              Estimativa Agilliza
+                            </span>
                           )}
                         </div>
                       </div>

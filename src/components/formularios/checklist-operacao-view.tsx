@@ -5,10 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BancoLogo } from "@/components/bancos/banco-logo";
-import {
-  type ChecklistOperacao,
-  totalItens,
-} from "@/lib/formularios/checklists-operacao";
+import { type ChecklistOperacao, totalItens } from "@/lib/formularios/checklists-operacao";
 
 /**
  * Exibe um checklist de operação (abertura de conta ou dossiê da proposta).

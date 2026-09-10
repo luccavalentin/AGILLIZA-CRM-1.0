@@ -89,7 +89,11 @@ export function GerenciadorArquivos({
   const [excluindo, setExcluindo] = useState<ArquivoNo | null>(null);
   const [movendo, setMovendo] = useState<ArquivoNo | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [visualizando, setVisualizando] = useState<{ url: string; nome: string; id?: string } | null>(null);
+  const [visualizando, setVisualizando] = useState<{
+    url: string;
+    nome: string;
+    id?: string;
+  } | null>(null);
   const [vista, setVista] = useState<"grade" | "lista">("grade");
   const [buscaGlobalAberta, setBuscaGlobalAberta] = useState(false);
   const [termoGlobal, setTermoGlobal] = useState("");
@@ -501,7 +505,7 @@ export function GerenciadorArquivos({
         ) : filtrados.length === 0 ? (
           <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/40 bg-muted/20 p-8 text-center">
             <div className="mb-4 rounded-full bg-muted p-4">
-               <FolderOpen className="h-10 w-10 text-muted-foreground/60" />
+              <FolderOpen className="h-10 w-10 text-muted-foreground/60" />
             </div>
             <h3 className="text-lg font-semibold text-foreground">Nenhum item encontrado</h3>
             <p className="max-w-xs text-sm text-muted-foreground">
@@ -525,7 +529,9 @@ export function GerenciadorArquivos({
                 onRenomear={setRenomeando}
                 onExcluir={setExcluindo}
                 onMover={setMovendo}
-                onAlternarMenu={n.tipo === "pasta" && !n.parent_id ? alternarMostrarNoMenu : undefined}
+                onAlternarMenu={
+                  n.tipo === "pasta" && !n.parent_id ? alternarMostrarNoMenu : undefined
+                }
               />
             ))}
           </div>

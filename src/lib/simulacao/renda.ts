@@ -33,8 +33,8 @@ export const COMPROMETIMENTO_MAX = 0.3;
 /** Comprometimento máx no PRICE. Padronizado em 15% conforme orientação do usuário. */
 export const COMPROMETIMENTO_MAX_PRICE = 0.15;
 
-/** 
- * Mapa de comprometimento máximo por banco e sistema. 
+/**
+ * Mapa de comprometimento máximo por banco e sistema.
  * Itaú e Santander usam 30% em ambos por padrão (sem evidência de 15% no PRICE).
  */
 export const COMPROMETIMENTO_BANCOS: Record<string, { SAC: number; PRICE: number }> = {
@@ -121,12 +121,15 @@ export function isBancoPrice(b: BancoRendaApi): boolean {
 /** Teto de comprometimento de renda aplicável ao banco conforme mapa de regras. */
 export function tetoDoBanco(b: BancoRendaApi): number {
   const nome = String(b.nome_banco ?? "").toLowerCase();
-  const cod = String(b.raw_response?.codigoBanco ?? b.raw_response?.simulacao?.banco?.codigoBanco ?? "").replace(/^0+/, "");
-  
-  const regra = COMPROMETIMENTO_BANCOS[cod] || 
-                COMPROMETIMENTO_BANCOS[nome.split(" ")[0]] || 
-                COMPROMETIMENTO_BANCOS.default;
-                
+  const cod = String(
+    b.raw_response?.codigoBanco ?? b.raw_response?.simulacao?.banco?.codigoBanco ?? "",
+  ).replace(/^0+/, "");
+
+  const regra =
+    COMPROMETIMENTO_BANCOS[cod] ||
+    COMPROMETIMENTO_BANCOS[nome.split(" ")[0]] ||
+    COMPROMETIMENTO_BANCOS.default;
+
   return isBancoPrice(b) ? regra.PRICE : regra.SAC;
 }
 
@@ -151,11 +154,12 @@ export function parcelaExigidaPeloBanco(banco: BancoRendaApi): number | null {
 export function rendaMinimaDoBanco(banco: BancoRendaApi): number | null {
   const raw = unwrapApiResponse(banco.raw_response);
   const descBco = raw?.descricaoRespostaBanco;
-  
+
   // 1. PRIORIZAR VALOR DO BANCO
-  const rendaApi = numeroPositivo(descBco?.valorRendaLiquidaMinimaExigida) ??
-                   numeroPositivo(descBco?.rendaMinimaExigida) ??
-                   numeroPositivo(raw?.rendaMinimaExigida);
+  const rendaApi =
+    numeroPositivo(descBco?.valorRendaLiquidaMinimaExigida) ??
+    numeroPositivo(descBco?.rendaMinimaExigida) ??
+    numeroPositivo(raw?.rendaMinimaExigida);
 
   if (rendaApi) return rendaApi;
 
@@ -183,7 +187,8 @@ export function rendaMinimaPelosBancos(
     .map((b) => {
       const parcela = parcelaExigidaPeloBanco(b);
       const rendaMinima = rendaMinimaDoBanco(b);
-      const fonte = b.raw_response?.renda_minima_fonte ?? (b as any).renda_minima_fonte ?? "estimativa";
+      const fonte =
+        b.raw_response?.renda_minima_fonte ?? (b as any).renda_minima_fonte ?? "estimativa";
       if (!parcela || !rendaMinima) return null;
       return {
         bancoNome: b.nome_banco ?? null,
@@ -192,8 +197,15 @@ export function rendaMinimaPelosBancos(
         fonte: fonte as "banco" | "estimativa",
       };
     })
-    .filter((v): v is { bancoNome: string | null; primeiraParcela: number; rendaMinima: number; fonte: "banco" | "estimativa" } =>
-      Boolean(v),
+    .filter(
+      (
+        v,
+      ): v is {
+        bancoNome: string | null;
+        primeiraParcela: number;
+        rendaMinima: number;
+        fonte: "banco" | "estimativa";
+      } => Boolean(v),
     )
     .sort((a, b) => b.rendaMinima - a.rendaMinima);
 
@@ -271,10 +283,10 @@ export function avaliarRendaMinima(params: {
 
   const tetoComprometimento = sistema === "P" ? COMPROMETIMENTO_MAX_PRICE : COMPROMETIMENTO_MAX;
   const rendaMinimaCrua = rendaMinimaParaParcela(prestacaoTotal, tetoComprometimento);
-  
+
   // Aplica margem de segurança de 22% (CONCEITO ÚNICO)
   let rendaComMargem = rendaMinimaCrua * (1 + MARGEM_SEGURANCA_RENDA);
-  
+
   // Renda informada para comparação
   const renda = renda_informada && renda_informada > 0 ? renda_informada : null;
 

@@ -355,9 +355,7 @@ export function FormularioSimulacao({
         </div>
 
         <div className="space-y-1.5">
-          <Label>
-            Nome do cliente
-          </Label>
+          <Label>Nome do cliente</Label>
           <Input
             value={w.nome_cliente}
             onChange={(e) => set("nome_cliente", e.target.value)}
@@ -366,9 +364,7 @@ export function FormularioSimulacao({
         </div>
 
         <div className="space-y-1.5">
-          <Label>
-            CPF/CNPJ
-          </Label>
+          <Label>CPF/CNPJ</Label>
           <Input
             value={w.cpf_cnpj}
             onChange={(e) => set("cpf_cnpj", maskCpfCnpj(e.target.value))}
@@ -422,7 +418,8 @@ export function FormularioSimulacao({
                 <div className="flex items-start gap-1.5 rounded-md bg-amber-50 p-2 text-[10px] leading-tight text-amber-800">
                   <Info className="h-3 w-3 shrink-0" />
                   <p>
-                    Prazo máximo para este cliente: <strong>{maxPrazoIdade} meses</strong> (limitado pela idade).
+                    Prazo máximo para este cliente: <strong>{maxPrazoIdade} meses</strong> (limitado
+                    pela idade).
                   </p>
                 </div>
               )}
@@ -487,16 +484,24 @@ export function FormularioSimulacao({
               <Info className="h-5 w-5" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">Deseja compor renda com outra pessoa?</p>
-              <p className="text-xs text-muted-foreground">Utilize a <strong>Simulação Completa</strong> para adicionar cônjuge ou terceiros à composição.</p>
+              <p className="text-sm font-medium text-foreground">
+                Deseja compor renda com outra pessoa?
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Utilize a <strong>Simulação Completa</strong> para adicionar cônjuge ou terceiros à
+                composição.
+              </p>
             </div>
-            <Button 
+            <Button
               type="button"
-              variant="outline" 
-              size="sm" 
+              variant="outline"
+              size="sm"
               className="shrink-0 border-primary/30 text-primary hover:bg-primary/5"
               onClick={() => {
-                sessionStorage.setItem("simulacao_wizard", JSON.stringify({ ...w, prazo: w.prazo_meses }));
+                sessionStorage.setItem(
+                  "simulacao_wizard",
+                  JSON.stringify({ ...w, prazo: w.prazo_meses }),
+                );
                 window.location.href = "/operacional/simulacoes/completa";
               }}
             >

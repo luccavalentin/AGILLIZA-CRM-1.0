@@ -32,7 +32,9 @@ describe("log da integração — encolher só o que não é lido", () => {
 
   it("não mexe no que os envios devolvem — é a trilha de auditoria", () => {
     const retorno = { idSimulacao: 1, retornoIntegracao: "ok", tudo: "preservado" };
-    expect(enxugarRespostaDeLog("/oportunidade/1/simulacao", "POST", 200, retorno)).toEqual(retorno);
+    expect(enxugarRespostaDeLog("/oportunidade/1/simulacao", "POST", 200, retorno)).toEqual(
+      retorno,
+    );
     expect(
       enxugarRespostaDeLog("/oportunidade/1/incluir-proposta-integracao", "POST", 200, retorno),
     ).toEqual(retorno);

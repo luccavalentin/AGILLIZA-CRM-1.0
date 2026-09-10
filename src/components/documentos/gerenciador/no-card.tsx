@@ -51,7 +51,12 @@ export function NoCard({
   const [carregandoPreview, setCarregandoPreview] = useState(false);
 
   const arq = no.tipo === "arquivo" ? estiloArquivo(no.content_type, no.nome) : null;
-  const isImage = no.tipo === "arquivo" && (no.content_type?.startsWith("image/") || ["png", "jpg", "jpeg", "webp", "gif"].includes(no.nome.split(".").pop()?.toLowerCase() ?? ""));
+  const isImage =
+    no.tipo === "arquivo" &&
+    (no.content_type?.startsWith("image/") ||
+      ["png", "jpg", "jpeg", "webp", "gif"].includes(
+        no.nome.split(".").pop()?.toLowerCase() ?? "",
+      ));
 
   useEffect(() => {
     if (isImage && !previewUrl && !carregandoPreview) {
@@ -131,10 +136,10 @@ export function NoCard({
       ) : (
         Icon && <Icon className={variante === "lista" ? "h-5 w-5" : "h-7 w-7 sm:h-8 sm:w-8"} />
       )}
-      
+
       {no.tipo === "arquivo" && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-           <ExternalLink className="h-5 w-5 text-white" />
+          <ExternalLink className="h-5 w-5 text-white" />
         </div>
       )}
     </div>
@@ -173,10 +178,12 @@ export function NoCard({
   }
 
   return (
-    <div className={cn(
-      "group relative flex flex-col gap-2 overflow-hidden rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl",
-      no.tipo === "pasta" ? "bg-gradient-to-b from-card to-primary/5" : ""
-    )}>
+    <div
+      className={cn(
+        "group relative flex flex-col gap-2 overflow-hidden rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl",
+        no.tipo === "pasta" ? "bg-gradient-to-b from-card to-primary/5" : "",
+      )}
+    >
       <div className="flex items-start justify-between">
         <button
           className="flex min-w-0 flex-1 items-center gap-3 text-left"
@@ -191,18 +198,18 @@ export function NoCard({
         </button>
         <div className="ml-1">{menu}</div>
       </div>
-      
+
       <div className="flex items-center justify-between border-t border-border/40 pt-2">
         {autor}
         {no.tipo === "arquivo" && (
-           <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-7 px-2 text-[10px] font-bold text-primary hover:bg-primary/10"
             onClick={() => onAbrir(no)}
-           >
-             VISUALIZAR
-           </Button>
+          >
+            VISUALIZAR
+          </Button>
         )}
       </div>
     </div>

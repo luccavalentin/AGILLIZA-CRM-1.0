@@ -97,7 +97,6 @@ export function ComparativoBancos({
 
   const ehMelhorCet = (b: any) => b.id === melhorCetId;
 
-
   return (
     <>
       <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/60 bg-border/60 shadow-sm sm:grid-cols-3 lg:grid-cols-5">
@@ -123,7 +122,10 @@ export function ComparativoBancos({
                               estimativa <Info className="h-2 w-2" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p className="text-[10px] max-w-[200px]">O banco não informa renda mínima nesta simulação. Valor calculado pela Agilliza a partir da parcela retornada.</p>
+                              <p className="text-[10px] max-w-[200px]">
+                                O banco não informa renda mínima nesta simulação. Valor calculado
+                                pela Agilliza a partir da parcela retornada.
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -152,7 +154,10 @@ export function ComparativoBancos({
                               estimativa <Info className="h-2 w-2" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p className="text-[10px] max-w-[200px]">O banco não informa renda mínima nesta simulação. Valor calculado pela Agilliza a partir da parcela retornada.</p>
+                              <p className="text-[10px] max-w-[200px]">
+                                O banco não informa renda mínima nesta simulação. Valor calculado
+                                pela Agilliza a partir da parcela retornada.
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -183,7 +188,10 @@ export function ComparativoBancos({
                             estimativa <Info className="h-2 w-2" />
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="text-[10px] max-w-[200px]">O banco não informa renda mínima nesta simulação. Valor calculado pela Agilliza a partir da parcela retornada.</p>
+                            <p className="text-[10px] max-w-[200px]">
+                              O banco não informa renda mínima nesta simulação. Valor calculado pela
+                              Agilliza a partir da parcela retornada.
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -239,7 +247,6 @@ export function ComparativoBancos({
                       </span>
                       {ehMelhorParcela(b) && <ToneBadge tone="success">Menor parcela</ToneBadge>}
                       {ehMelhorCet(b) && <ToneBadge tone="info">Menor CET</ToneBadge>}
-
                     </div>
                     <div className="mt-1">
                       <BancoStatusBadge
@@ -267,7 +274,6 @@ export function ComparativoBancos({
                     valor={b.taxa_cet_ano != null ? formatTaxa(b.taxa_cet_ano) : "—"}
                   />
                   <MobileStat
-
                     rotulo="Prazo"
                     valor={
                       b.prazo_pagamento_max != null
@@ -359,7 +365,8 @@ export function ComparativoBancos({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="text-[10px] max-w-[200px]">
-                          Custo Efetivo Total informado pelo banco. Inclui juros, seguros, tarifas e IOF. É o valor correto para comparar propostas entre bancos.
+                          Custo Efetivo Total informado pelo banco. Inclui juros, seguros, tarifas e
+                          IOF. É o valor correto para comparar propostas entre bancos.
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -408,9 +415,9 @@ export function ComparativoBancos({
                       "border-border/50 transition-colors odd:bg-card even:bg-muted/20 hover:bg-primary/5",
                       melhorParcela &&
                         "bg-success/5 even:bg-success/5 hover:bg-success/10 [box-shadow:inset_3px_0_0_var(--success)]",
-                      melhorCet && !melhorParcela &&
+                      melhorCet &&
+                        !melhorParcela &&
                         "bg-info/5 even:bg-info/5 hover:bg-info/10 [box-shadow:inset_3px_0_0_var(--info)]",
-
                     )}
                   >
                     <TableCell className="py-3 text-sm font-semibold">
@@ -419,7 +426,6 @@ export function ComparativoBancos({
                         <span style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
                         {melhorParcela && <ToneBadge tone="success">Menor parcela</ToneBadge>}
                         {melhorCet && <ToneBadge tone="info">Menor CET</ToneBadge>}
-
                       </div>
                       {b.status_banco === "erro" && b.mensagem_banco && (
                         <div className="mt-1">
@@ -432,10 +438,10 @@ export function ComparativoBancos({
                       )}
                     </TableCell>
                     <TableCell className="py-3">
-                        <BancoStatusBadge
-                          status={b.status_banco}
-                          hasId={!!b.homefin_id_simulacao_banco}
-                        />
+                      <BancoStatusBadge
+                        status={b.status_banco}
+                        hasId={!!b.homefin_id_simulacao_banco}
+                      />
                     </TableCell>
                     <TableCell className="py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
                       {formatBRL(b.valor_parcela)}
@@ -460,32 +466,32 @@ export function ComparativoBancos({
                     <TableCell className="py-3 text-right text-sm tabular-nums whitespace-nowrap text-muted-foreground">
                       {b.valor_iof != null ? formatBRL(b.valor_iof) : "—"}
                     </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <DetalheBancoDialog banco={b} simulacao={s} />
-                          {b.status_banco === "erro" ? (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-8 px-3 text-[11px]"
-                              disabled={reenviandoBanco !== null}
-                              onClick={() => onReenviarBanco(b.banco_id)}
-                            >
-                              <RefreshCw className="mr-1.5 h-3 w-3" />
-                              {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              className="h-8 px-4 text-[11px] font-semibold bg-gradient-to-b from-primary to-primary/90 shadow-sm transition-all hover:-translate-y-px hover:shadow-md active:translate-y-0"
-                              disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                              onClick={() => onCriar(b.id, b.banco_id)}
-                            >
-                              {criandoBanco === b.id ? "Enviando…" : "Enviar Aprovação"}
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <DetalheBancoDialog banco={b} simulacao={s} />
+                        {b.status_banco === "erro" ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 px-3 text-[11px]"
+                            disabled={reenviandoBanco !== null}
+                            onClick={() => onReenviarBanco(b.banco_id)}
+                          >
+                            <RefreshCw className="mr-1.5 h-3 w-3" />
+                            {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="h-8 px-4 text-[11px] font-semibold bg-gradient-to-b from-primary to-primary/90 shadow-sm transition-all hover:-translate-y-px hover:shadow-md active:translate-y-0"
+                            disabled={b.status_banco !== "simulada" || criandoBanco !== null}
+                            onClick={() => onCriar(b.id, b.banco_id)}
+                          >
+                            {criandoBanco === b.id ? "Enviando…" : "Enviar Aprovação"}
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 </Fragment>
               );

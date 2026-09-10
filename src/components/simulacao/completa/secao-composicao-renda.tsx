@@ -31,7 +31,6 @@ import { formatBRL } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
-
 export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
   const { f, set } = ctx;
   const participantes = f.participantes || [];
@@ -66,14 +65,32 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     if (!p) return;
 
     const proponenteSimulado = { ...p, [field]: value };
-    
+
     // Se mudar nascimento ou composição, verifica impacto no prazo
-    if ((field === "data_nascimento" || field === "compoe_renda") && proponenteSimulado.compoe_renda && proponenteSimulado.data_nascimento) {
+    if (
+      (field === "data_nascimento" || field === "compoe_renda") &&
+      proponenteSimulado.compoe_renda &&
+      proponenteSimulado.data_nascimento
+    ) {
       const proponentesAtuais = [
-        { nome: f.nome_cliente || "Titular", vinculo: "Titular", dataNascimento: f.data_nascimento },
+        {
+          nome: f.nome_cliente || "Titular",
+          vinculo: "Titular",
+          dataNascimento: f.data_nascimento,
+        },
         // O cônjuge entra no teto de idade mesmo sem compor renda.
-        ...(f.data_nascimento_conjuge ? [{ nome: f.nome_conjuge || "Cônjuge", vinculo: "cônjuge", dataNascimento: f.data_nascimento_conjuge }] : []),
-        ...participantes.map((part: any) => part.id === id ? proponenteSimulado : part).filter((part: any) => part.compoe_renda)
+        ...(f.data_nascimento_conjuge
+          ? [
+              {
+                nome: f.nome_conjuge || "Cônjuge",
+                vinculo: "cônjuge",
+                dataNascimento: f.data_nascimento_conjuge,
+              },
+            ]
+          : []),
+        ...participantes
+          .map((part: any) => (part.id === id ? proponenteSimulado : part))
+          .filter((part: any) => part.compoe_renda),
       ];
 
       const resNovo = prazoMaximoParaProponentes(proponentesAtuais);
@@ -83,7 +100,9 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       if (prazoNovo < prazoAtual) {
         const nascimentoDate = new Date(proponenteSimulado.data_nascimento);
         const hoje = new Date();
-        const idade = isNaN(nascimentoDate.getTime()) ? 0 : hoje.getFullYear() - nascimentoDate.getFullYear();
+        const idade = isNaN(nascimentoDate.getTime())
+          ? 0
+          : hoje.getFullYear() - nascimentoDate.getFullYear();
 
         setConfirmacaoReducao({
           callback: () => updateParticipanteExec(id, field, value),
@@ -92,7 +111,8 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           participanteNome: proponenteSimulado.nome || "Novo Participante",
           participanteIdade: idade,
           rendaAntiga: ctx.rendaConsiderada,
-          rendaNova: ctx.rendaConsiderada + (field === "compoe_renda" && value === true ? (p.renda || 0) : 0)
+          rendaNova:
+            ctx.rendaConsiderada + (field === "compoe_renda" && value === true ? p.renda || 0 : 0),
         });
         return;
       }
@@ -102,22 +122,25 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
   };
 
   const updateParticipanteExec = (id: string, field: string, value: any) => {
-    const lista = participantes.map((p: any) =>
-      p.id === id ? { ...p, [field]: value } : p,
-    );
+    const lista = participantes.map((p: any) => (p.id === id ? { ...p, [field]: value } : p));
     set("participantes", lista);
   };
 
   const updateParticipante = handleUpdateField;
 
   const removeParticipante = (id: string) => {
-    set("participantes", participantes.filter((p: any) => p.id !== id));
+    set(
+      "participantes",
+      participantes.filter((p: any) => p.id !== id),
+    );
   };
 
   const totalConsiderado =
     (Number(f.renda_total) || 0) +
     (f.compoe_renda_conjuge ? Number(f.renda_conjuge) || 0 : 0) +
-    (participantes || []).filter((p: any) => p.compoe_renda).reduce((acc: number, p: any) => acc + (Number(p.renda) || 0), 0);
+    (participantes || [])
+      .filter((p: any) => p.compoe_renda)
+      .reduce((acc: number, p: any) => acc + (Number(p.renda) || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -132,7 +155,10 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               type="button"
               variant={f.possui_participantes ? "ghost" : "secondary"}
               size="sm"
-              className={cn("h-8 px-4 text-xs font-semibold", !f.possui_participantes && "bg-white shadow-sm hover:bg-white")}
+              className={cn(
+                "h-8 px-4 text-xs font-semibold",
+                !f.possui_participantes && "bg-white shadow-sm hover:bg-white",
+              )}
               onClick={() => {
                 set("possui_participantes", false);
                 if (participantes.length > 0) {
@@ -146,7 +172,10 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               type="button"
               variant={!f.possui_participantes ? "ghost" : "secondary"}
               size="sm"
-              className={cn("h-8 px-4 text-xs font-semibold", f.possui_participantes && "bg-white shadow-sm hover:bg-white")}
+              className={cn(
+                "h-8 px-4 text-xs font-semibold",
+                f.possui_participantes && "bg-white shadow-sm hover:bg-white",
+              )}
               onClick={() => set("possui_participantes", true)}
             >
               Sim
@@ -160,10 +189,10 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               <UserPlus className="h-5 w-5" />
               Participantes Adicionais
             </h3>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               onClick={addParticipante}
               className="gap-2 border-primary/20 text-primary hover:bg-primary/5"
             >
@@ -179,7 +208,10 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           {participantes.length > 0 ? (
             <div className="space-y-8">
               {participantes.map((p: any, index: number) => (
-                <div key={p.id} className="relative p-5 border rounded-xl bg-card shadow-sm space-y-5">
+                <div
+                  key={p.id}
+                  className="relative p-5 border rounded-xl bg-card shadow-sm space-y-5"
+                >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                       <div className="flex items-center gap-2 text-primary font-bold">
@@ -212,7 +244,7 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                     <Campo label="Vínculo com o comprador *">
                       <Select
@@ -236,24 +268,26 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                     </Campo>
 
                     <Campo label="Nome completo *">
-                      <Input 
-                        value={p.nome} 
+                      <Input
+                        value={p.nome}
                         onChange={(e) => updateParticipante(p.id, "nome", e.target.value)}
                         placeholder="Nome conforme documento"
                       />
                     </Campo>
 
                     <Campo label="CPF *">
-                      <Input 
-                        value={p.cpf_cnpj} 
-                        onChange={(e) => updateParticipante(p.id, "cpf_cnpj", maskCpfCnpj(e.target.value))}
+                      <Input
+                        value={p.cpf_cnpj}
+                        onChange={(e) =>
+                          updateParticipante(p.id, "cpf_cnpj", maskCpfCnpj(e.target.value))
+                        }
                         placeholder="000.000.000-00"
                       />
                     </Campo>
 
                     <Campo label="Data de nascimento *">
-                      <DateInput 
-                        value={p.data_nascimento} 
+                      <DateInput
+                        value={p.data_nascimento}
                         onChange={(v) => updateParticipante(p.id, "data_nascimento", v)}
                       />
                     </Campo>
@@ -292,81 +326,84 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                     </Campo>
 
                     <Campo label="Renda mensal (R$) *">
-                      <CurrencyInput 
-                        value={p.renda} 
-                        onChange={(v) => updateParticipante(p.id, "renda", v)} 
+                      <CurrencyInput
+                        value={p.renda}
+                        onChange={(v) => updateParticipante(p.id, "renda", v)}
                       />
                     </Campo>
 
                     <Campo label="Nome da Mãe">
-                      <Input 
-                        value={p.nome_mae || ""} 
+                      <Input
+                        value={p.nome_mae || ""}
                         onChange={(e) => updateParticipante(p.id, "nome_mae", e.target.value)}
                         placeholder="Nome completo da mãe"
                       />
                     </Campo>
 
                     <Campo label="E-mail">
-                      <Input 
-                        value={p.email || ""} 
+                      <Input
+                        value={p.email || ""}
                         onChange={(e) => updateParticipante(p.id, "email", e.target.value)}
                         placeholder="email@exemplo.com"
                       />
                     </Campo>
 
                     <Campo label="Celular">
-                      <Input 
-                        value={p.celular || ""} 
+                      <Input
+                        value={p.celular || ""}
                         onChange={(e) => updateParticipante(p.id, "celular", e.target.value)}
                         placeholder="(00) 00000-0000"
                       />
                     </Campo>
-
                   </div>
 
                   {p.compoe_renda && (
                     <div className="mt-4 pt-4 border-t border-dashed">
-                      <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-3">Endereço Residencial (Obrigatório para Composição)</p>
+                      <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-3">
+                        Endereço Residencial (Obrigatório para Composição)
+                      </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                         <Campo label="CEP">
-                          <Input 
-                            value={p.cep || ""} 
+                          <Input
+                            value={p.cep || ""}
                             onChange={(e) => updateParticipante(p.id, "cep", e.target.value)}
                             placeholder="00000-000"
                           />
                         </Campo>
                         <Campo label="Logradouro">
-                          <Input 
-                            value={p.logradouro || ""} 
+                          <Input
+                            value={p.logradouro || ""}
                             onChange={(e) => updateParticipante(p.id, "logradouro", e.target.value)}
                             placeholder="Rua, Avenida, etc."
                           />
                         </Campo>
                         <Campo label="Número">
-                          <Input 
-                            value={p.numero || ""} 
+                          <Input
+                            value={p.numero || ""}
                             onChange={(e) => updateParticipante(p.id, "numero", e.target.value)}
                             placeholder="Nº"
                           />
                         </Campo>
                         <Campo label="Bairro">
-                          <Input 
-                            value={p.bairro || ""} 
+                          <Input
+                            value={p.bairro || ""}
                             onChange={(e) => updateParticipante(p.id, "bairro", e.target.value)}
                             placeholder="Bairro"
                           />
                         </Campo>
                         <Campo label="Município">
-                          <Input 
-                            value={p.municipio || ""} 
+                          <Input
+                            value={p.municipio || ""}
                             onChange={(e) => updateParticipante(p.id, "municipio", e.target.value)}
                             placeholder="Cidade"
                           />
                         </Campo>
                         <Campo label="UF">
-                          <Input 
-                            value={p.uf || ""} 
-                            onChange={(e) => updateParticipante(p.id, "uf", e.target.value?.toUpperCase())}
+                          <Input
+                            value={p.uf || ""}
+                            onChange={(e) =>
+                              updateParticipante(p.id, "uf", e.target.value?.toUpperCase())
+                            }
                             placeholder="UF"
                             maxLength={2}
                           />
@@ -381,10 +418,10 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             <div className="text-center py-12 border-2 border-dashed rounded-xl bg-muted/10 text-muted-foreground flex flex-col items-center gap-2">
               <UserPlus className="h-8 w-8 opacity-20" />
               <p className="text-sm">Nenhum participante adicional cadastrado.</p>
-              <Button 
-                type="button" 
-                variant="link" 
-                size="sm" 
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
                 onClick={addParticipante}
                 className="text-primary font-semibold"
               >
@@ -394,7 +431,6 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           )}
         </>
       )}
-
 
       {/* Teste automático de CPFs — só faz sentido havendo alguém para testar. */}
       {ctx.titularesTestaveis.length > 0 && (
@@ -410,8 +446,8 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               Testar CPF de todos os proponentes
             </Label>
             <p className="text-xs text-muted-foreground">
-              Repete a simulação com {ctx.titularesTestaveis.map((t: any) => t.nome).join(", ")}
-              {" "}na posição de titular e compara as taxas ao final.
+              Repete a simulação com {ctx.titularesTestaveis.map((t: any) => t.nome).join(", ")} na
+              posição de titular e compara as taxas ao final.
             </p>
             <p className="text-[11px] font-medium text-amber-600">
               Multiplica as consultas aos bancos por {ctx.titularesTestaveis.length + 1}.
@@ -464,7 +500,10 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         </dl>
       </div>
 
-      <AlertDialog open={!!confirmacaoReducao} onOpenChange={(open) => !open && setConfirmacaoReducao(null)}>
+      <AlertDialog
+        open={!!confirmacaoReducao}
+        onOpenChange={(open) => !open && setConfirmacaoReducao(null)}
+      >
         <AlertDialogContent className="max-w-[400px]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
@@ -473,13 +512,31 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3 pt-2">
               <p className="text-foreground">
-                Adicionar <strong>{confirmacaoReducao?.participanteNome}</strong> ({confirmacaoReducao?.participanteIdade} anos) 
-                reduz o prazo máximo de <strong>{confirmacaoReducao?.prazoAntigo}</strong> para <strong>{confirmacaoReducao?.prazoNovo} meses</strong>, 
-                porque a regra de idade usa o proponente mais velho.
+                Adicionar <strong>{confirmacaoReducao?.participanteNome}</strong> (
+                {confirmacaoReducao?.participanteIdade} anos) reduz o prazo máximo de{" "}
+                <strong>{confirmacaoReducao?.prazoAntigo}</strong> para{" "}
+                <strong>{confirmacaoReducao?.prazoNovo} meses</strong>, porque a regra de idade usa
+                o proponente mais velho.
               </p>
               <div className="rounded-lg bg-muted p-3 text-xs space-y-1">
-                <p>Renda considerada: <span className="line-through opacity-50">{formatBRL(confirmacaoReducao?.rendaAntiga || 0)}</span> → <span className="font-bold text-primary">{formatBRL(confirmacaoReducao?.rendaNova || 0)}</span></p>
-                <p>Prazo máximo: <span className="line-through opacity-50">{confirmacaoReducao?.prazoAntigo}</span> → <span className="font-bold text-amber-600">{confirmacaoReducao?.prazoNovo} meses</span></p>
+                <p>
+                  Renda considerada:{" "}
+                  <span className="line-through opacity-50">
+                    {formatBRL(confirmacaoReducao?.rendaAntiga || 0)}
+                  </span>{" "}
+                  →{" "}
+                  <span className="font-bold text-primary">
+                    {formatBRL(confirmacaoReducao?.rendaNova || 0)}
+                  </span>
+                </p>
+                <p>
+                  Prazo máximo:{" "}
+                  <span className="line-through opacity-50">{confirmacaoReducao?.prazoAntigo}</span>{" "}
+                  →{" "}
+                  <span className="font-bold text-amber-600">
+                    {confirmacaoReducao?.prazoNovo} meses
+                  </span>
+                </p>
               </div>
               <p className="text-[11px] text-muted-foreground italic">
                 Deseja continuar com a inclusão deste participante?
@@ -488,7 +545,7 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               className="bg-primary hover:bg-primary/90"
               onClick={() => {
                 confirmacaoReducao?.callback();

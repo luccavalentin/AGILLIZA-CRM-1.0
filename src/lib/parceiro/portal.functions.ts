@@ -16,7 +16,7 @@ interface ContextoParceiro {
  * Usa o client autenticado (RLS) para validar e o admin apenas para leitura
  * estritamente escopada ao próprio parceiro.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 async function resolverContexto(supabase: any, userId: string): Promise<ContextoParceiro> {
   const { data: profile } = await supabase
     .from("profiles")

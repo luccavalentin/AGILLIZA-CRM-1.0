@@ -31,10 +31,10 @@ export const PRAZO_MAX = 420;
  * mais restritiva), que sempre concede 3 parcelas a menos que Bradesco/Santander
  * — equivalente a 963 meses (80 anos e 6 meses menos 3) — para que o mesmo prazo
  * seja aceito por Bradesco, Santander e Itaú sem erro.
- * 
- * NOTA: O valor 963 é uma regra interna do Agilliza e não consta explicitamente no 
+ *
+ * NOTA: O valor 963 é uma regra interna do Agilliza e não consta explicitamente no
  * contrato HomeFin 1.0.1. Deve ser verificado através de logs de erro reais.
- * 
+ *
  * EVIDÊNCIA REAL BRADESCO (965 meses / 80 anos e 5 meses):
  * - idade 694 meses -> máximo 271 (soma 965)
  * - idade 742 meses -> máximo 223 (soma 965)
@@ -131,7 +131,7 @@ export function prazoMaximoParaProponentes(
   hoje: Date = new Date(),
   modo: ModoTetoIdade = "mais_velho",
 ): { prazo: number; limitador: ProponenteLimite | null } | null {
-  const validos = proponentes.filter(p => !!p.dataNascimento);
+  const validos = proponentes.filter((p) => !!p.dataNascimento);
   if (validos.length === 0) return null;
 
   let prazoEscolhido: number | null = null;
@@ -183,13 +183,21 @@ export interface AjustePrazo {
 export function ajustarPrazoPorIdade(
   prazo: number,
   titular: { nome: string; dataNascimento: string },
-  adicionais: Array<{ nome: string; vinculo: string; dataNascimento: string | null | undefined }> = [],
+  adicionais: Array<{
+    nome: string;
+    vinculo: string;
+    dataNascimento: string | null | undefined;
+  }> = [],
   modo: ModoTetoIdade = "mais_velho",
 ): AjustePrazo {
-  const res = prazoMaximoParaProponentes([
-    { nome: titular.nome, vinculo: "Titular", dataNascimento: titular.dataNascimento },
-    ...adicionais
-  ], new Date(), modo);
+  const res = prazoMaximoParaProponentes(
+    [
+      { nome: titular.nome, vinculo: "Titular", dataNascimento: titular.dataNascimento },
+      ...adicionais,
+    ],
+    new Date(),
+    modo,
+  );
 
   const maximoPermitido = res?.prazo ?? PRAZO_MAX;
   const limitador = res?.limitador;
@@ -318,6 +326,8 @@ export function avaliarNovoPrazo(params: {
  * duplicadas e cadastros antigos carregam as duas formas.
  */
 export function ehCasado(estadoCivil: string | null | undefined): boolean {
-  const v = String(estadoCivil ?? "").trim().toLowerCase();
+  const v = String(estadoCivil ?? "")
+    .trim()
+    .toLowerCase();
   return v === "ca" || v === "ue" || v === "casado" || v === "uniao_estavel";
 }

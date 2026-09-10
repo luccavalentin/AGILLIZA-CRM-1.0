@@ -210,7 +210,10 @@ export function EnviarPropostaDialog({
                                 b._prazo ??
                                 b.prazo ??
                                 "—"}
-                              {b.prazo_pagamento_max || b.prazo_pagamento_banco || b._prazo || b.prazo
+                              {b.prazo_pagamento_max ||
+                              b.prazo_pagamento_banco ||
+                              b._prazo ||
+                              b.prazo
                                 ? "m"
                                 : ""}
                             </span>

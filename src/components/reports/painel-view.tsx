@@ -369,7 +369,10 @@ export function PainelView({
                     }}
                     aria-label={`Ver detalhamento de ${data.chart.titulo}`}
                     style={{
-                      height: Math.min(420, Math.max(168, (data?.chart?.dados?.length ?? 0) * 52 + 44)),
+                      height: Math.min(
+                        420,
+                        Math.max(168, (data?.chart?.dados?.length ?? 0) * 52 + 44),
+                      ),
                     }}
                   >
                     <ReportChartView
@@ -482,9 +485,7 @@ export function PainelView({
                   subtitulo={data.porTipoSimulacao.subtitulo}
                   onOpen={() => abrirDetalhe("simulacoes_por_tipo")}
                 >
-                  <div
-                    className="h-[240px] w-full overflow-hidden rounded-lg"
-                  >
+                  <div className="h-[240px] w-full overflow-hidden rounded-lg">
                     <ReportChartView
                       chart={{
                         titulo: data.porTipoSimulacao.titulo,

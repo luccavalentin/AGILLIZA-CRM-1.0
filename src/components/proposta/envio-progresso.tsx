@@ -89,9 +89,7 @@ export function EnvioProgresso({
 
             <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
-              <span className="truncate">
-                {status.mensagem ?? ETAPAS[etapaAtual - 1]}
-              </span>
+              <span className="truncate">{status.mensagem ?? ETAPAS[etapaAtual - 1]}</span>
             </p>
 
             <div className="mt-2.5">
@@ -117,8 +115,8 @@ export function EnvioProgresso({
               <p className="mt-2 flex items-start gap-1 text-[11px] font-medium text-warning">
                 <CheckCircle2 className="mt-px h-3 w-3 shrink-0" />
                 <span>
-                  A maioria responde em cerca de 20 segundos. O envio continua mesmo se você
-                  sair desta tela.
+                  A maioria responde em cerca de 20 segundos. O envio continua mesmo se você sair
+                  desta tela.
                 </span>
               </p>
             )}

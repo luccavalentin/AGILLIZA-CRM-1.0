@@ -10,8 +10,19 @@ import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-complet
 type Banco = NonNullable<SimulacaoCompletaCtx["bancos"]>[number];
 
 export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
-  const { f, set, erros, bancos: todosBancos, bancosDisponiveis, isPJ, aceitaPrice, aceitaBancoNaOperacao, restricaoEspecial, toggleBanco, isHomeEquity } =
-    ctx;
+  const {
+    f,
+    set,
+    erros,
+    bancos: todosBancos,
+    bancosDisponiveis,
+    isPJ,
+    aceitaPrice,
+    aceitaBancoNaOperacao,
+    restricaoEspecial,
+    toggleBanco,
+    isHomeEquity,
+  } = ctx;
 
   const modoAmbos = f.sistema_amortizacao === "B";
 
@@ -23,7 +34,10 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {lista.map((b) => {
           const bloqueadoPrice = filtroSistema === "P" && !aceitaPrice(b);
-          const bloqueadoOperacao = !aceitaBancoNaOperacao(b, { isHomeEquity, restricao: restricaoEspecial });
+          const bloqueadoOperacao = !aceitaBancoNaOperacao(b, {
+            isHomeEquity,
+            restricao: restricaoEspecial,
+          });
           const bloqueado = bloqueadoPrice || bloqueadoOperacao;
           const selecionado = selecionados.includes(b.id);
           const cor = corDoBanco(b.nome_banco);
@@ -120,7 +134,7 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <header className="flex items-baseline justify-between gap-2 border-b border-border pb-2">
             <h3 className="text-sm font-semibold text-foreground">Bancos — SAC</h3>
             <span className="text-xs text-muted-foreground">
-              {(f.bancos_sac_ids?.length ?? 0)} de {bancos.length} selecionado(s)
+              {f.bancos_sac_ids?.length ?? 0} de {bancos.length} selecionado(s)
             </span>
           </header>
           {renderCards(bancos, f.bancos_sac_ids, "S")}
@@ -130,8 +144,8 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <header className="flex items-baseline justify-between gap-2 border-b border-border pb-2">
             <h3 className="text-sm font-semibold text-foreground">Bancos — PRICE</h3>
             <span className="text-xs text-muted-foreground">
-              {(f.bancos_price_ids?.length ?? 0)} de {bancosPrice.length} selecionado(s) · apenas Bradesco e
-              Santander operam PRICE
+              {f.bancos_price_ids?.length ?? 0} de {bancosPrice.length} selecionado(s) · apenas
+              Bradesco e Santander operam PRICE
             </span>
           </header>
           {renderCards(bancosPrice, f.bancos_price_ids, "P")}
@@ -167,7 +181,7 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
   return (
     <section className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        {(f.bancos_ids?.length ?? 0)} de {bancos.length} banco(s) selecionado(s)
+        {f.bancos_ids?.length ?? 0} de {bancos.length} banco(s) selecionado(s)
       </p>
 
       {restricaoEspecial.ativo && (

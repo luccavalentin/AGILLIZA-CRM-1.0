@@ -23,10 +23,11 @@ export function simulacoesDaOportunidade(resp: any): any[] {
 }
 
 /** Acha a simulação de um banco pelo id devolvido no POST /simulacao. */
-export function acharSimulacaoBanco(resp: any, idSimulacaoBanco: string | number | null): any | null {
+export function acharSimulacaoBanco(
+  resp: any,
+  idSimulacaoBanco: string | number | null,
+): any | null {
   if (idSimulacaoBanco === null || idSimulacaoBanco === undefined) return null;
   const alvo = String(idSimulacaoBanco);
-  return (
-    simulacoesDaOportunidade(resp).find((s: any) => String(s?.idSimulacao) === alvo) ?? null
-  );
+  return simulacoesDaOportunidade(resp).find((s: any) => String(s?.idSimulacao) === alvo) ?? null;
 }
