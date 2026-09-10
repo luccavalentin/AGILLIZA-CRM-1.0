@@ -7,9 +7,23 @@ import { humanizarRespostaErro } from "./bank-error-humanizer";
 export const TIPO_BANCO_SANTANDER = 33;
 
 const SENSIVEIS = new Set([
-  "secretId", "secretKey", "cpfCnpj", "cpf", "cnpj", "cpfConjuge",
-  "rendaTotal", "renda", "rendaConjuge", "email", "emailConjuge",
-  "celular", "celularConjuge", "senha", "password", "token", "jwt",
+  "secretId",
+  "secretKey",
+  "cpfCnpj",
+  "cpf",
+  "cnpj",
+  "cpfConjuge",
+  "rendaTotal",
+  "renda",
+  "rendaConjuge",
+  "email",
+  "emailConjuge",
+  "celular",
+  "celularConjuge",
+  "senha",
+  "password",
+  "token",
+  "jwt",
 ]);
 
 function mascarar(valor: unknown): unknown {
@@ -25,13 +39,21 @@ function mascarar(valor: unknown): unknown {
 }
 
 const CAMPOS_TEXTO_LIVRE_BANCO = new Set([
-  "nomeProfissao", "nomeProfissaoConjuge", "nomeEmpresaProfissao",
-  "nomeEmpresaProfissaoConjuge", "profession", "company",
+  "nomeProfissao",
+  "nomeProfissaoConjuge",
+  "nomeEmpresaProfissao",
+  "nomeEmpresaProfissaoConjuge",
+  "profession",
+  "company",
 ]);
 
 function limparTextoLivreBanco(valor: unknown): unknown {
   if (typeof valor !== "string") return valor;
-  return valor.replace(/\((?:a|o)\)/gi, "").replace(/[(){}[\]]/g, " ").replace(/\s+/g, " ").trim();
+  return valor
+    .replace(/\((?:a|o)\)/gi, "")
+    .replace(/[(){}[\]]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizarPayloadBanco(valor: unknown): unknown {
@@ -39,7 +61,9 @@ function normalizarPayloadBanco(valor: unknown): unknown {
   if (valor && typeof valor === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(valor as Record<string, unknown>)) {
-      out[k] = CAMPOS_TEXTO_LIVRE_BANCO.has(k) ? limparTextoLivreBanco(v) : normalizarPayloadBanco(v);
+      out[k] = CAMPOS_TEXTO_LIVRE_BANCO.has(k)
+        ? limparTextoLivreBanco(v)
+        : normalizarPayloadBanco(v);
     }
     return out;
   }
@@ -47,7 +71,10 @@ function normalizarPayloadBanco(valor: unknown): unknown {
 }
 
 export class IntegracaoBancariaError extends Error {
-  constructor(message: string, public statusHttp?: number) {
+  constructor(
+    message: string,
+    public statusHttp?: number,
+  ) {
     super(message);
     this.name = "IntegracaoBancariaError";
   }
@@ -147,7 +174,6 @@ async function registrarLog(entrada: {
     const { supabaseAdmin: sbAdmin } = await import("@/integrations/supabase/client.server");
     if (entrada.proposta_id) {
       await sbAdmin.from("proposta_logs_homefin").insert({
-
         proposta_id: entrada.proposta_id,
         correspondente_id: entrada.correspondente_id ?? null,
         endpoint: entrada.endpoint,
@@ -172,11 +198,11 @@ async function registrarLog(entrada: {
       status_http: entrada.status_http ?? null,
       request_masked: entrada.request ? (mascarar(entrada.request) as any) : null,
       response: enxugarRespostaDeLog(
-          entrada.endpoint,
-          entrada.metodo,
-          entrada.status_http,
-          entrada.response,
-        ) as any,
+        entrada.endpoint,
+        entrada.metodo,
+        entrada.status_http,
+        entrada.response,
+      ) as any,
       erro: entrada.erro ?? null,
     });
   } catch (e) {
@@ -248,7 +274,12 @@ async function solicitarToken(): Promise<TokenInfo> {
   }
 
   const json = (await resp.json().catch(() => ({}))) as Record<string, any>;
-  await registrarLog({ endpoint: "/auth/token", metodo: "POST", status_http: resp.status, response: { ok: resp.ok } });
+  await registrarLog({
+    endpoint: "/auth/token",
+    metodo: "POST",
+    status_http: resp.status,
+    response: { ok: resp.ok },
+  });
   if (!resp.ok) throw new IntegracaoBancariaError("Não foi possível autenticar.", resp.status);
 
   const token: string = json.jwt ?? json.token ?? "";
@@ -266,41 +297,61 @@ async function solicitarToken(): Promise<TokenInfo> {
   try {
     const { supabaseAdmin: sbAdmin } = await import("@/integrations/supabase/client.server");
     await sbAdmin.from("homefin_auth_cache").upsert({
-
-      id: CACHE_ID, token: info.token, expires_at: new Date(expiresAt).toISOString(),
-      id_regional: info.idRegional, id_parceiro: info.idParceiro, id_usuario_parceiro: info.idUsuarioParceiro,
+      id: CACHE_ID,
+      token: info.token,
+      expires_at: new Date(expiresAt).toISOString(),
+      id_regional: info.idRegional,
+      id_parceiro: info.idParceiro,
+      id_usuario_parceiro: info.idUsuarioParceiro,
     });
-  } catch (e) { console.error("[integracao] falha ao persistir cache", e); }
+  } catch (e) {
+    console.error("[integracao] falha ao persistir cache", e);
+  }
   return info;
 }
 
 export async function obterToken(forcarRenovacao = false): Promise<TokenInfo> {
   const margem = 2 * 60 * 1000;
   const agora = Date.now();
-  if (!forcarRenovacao && _tokenCache && _tokenCache.expiresAt > agora + margem) return _tokenCache.info;
-  
+  if (!forcarRenovacao && _tokenCache && _tokenCache.expiresAt > agora + margem)
+    return _tokenCache.info;
+
   if (!forcarRenovacao) {
     try {
       const { supabaseAdmin: sbAdmin } = await import("@/integrations/supabase/client.server");
-      const { data } = await sbAdmin.from("homefin_auth_cache").select("*").eq("id", CACHE_ID).maybeSingle();
+      const { data } = await sbAdmin
+        .from("homefin_auth_cache")
+        .select("*")
+        .eq("id", CACHE_ID)
+        .maybeSingle();
 
       if (data && new Date(data.expires_at).getTime() > agora + margem) {
-        const info: TokenInfo = { token: data.token, idRegional: data.id_regional, idParceiro: data.id_parceiro, idUsuarioParceiro: data.id_usuario_parceiro };
+        const info: TokenInfo = {
+          token: data.token,
+          idRegional: data.id_regional,
+          idParceiro: data.id_parceiro,
+          idUsuarioParceiro: data.id_usuario_parceiro,
+        };
         _tokenCache = { info, expiresAt: new Date(data.expires_at).getTime() };
         return info;
       }
-    } catch (e) { console.error("[integracao] erro cache L2", e); }
+    } catch (e) {
+      console.error("[integracao] erro cache L2", e);
+    }
   }
-  
+
   if (_tokenEmVoo) return _tokenEmVoo;
   if (forcarRenovacao) _tokenCache = null;
-  
+
   _tokenEmVoo = (async () => {
-    try { return await solicitarToken(); } finally { _tokenEmVoo = null; }
+    try {
+      return await solicitarToken();
+    } finally {
+      _tokenEmVoo = null;
+    }
   })();
   return _tokenEmVoo;
 }
-
 
 export interface HomefinRequestCtx {
   simulacao_id?: string | null;
@@ -381,20 +432,23 @@ export async function chamarIntegracao<T = unknown>(
   return executarChamada<T>(endpoint, method, body, ctx);
 }
 
-
 async function executarChamada<T = unknown>(
-  endpoint: string, method: "GET" | "POST" | "PUT" | "DELETE",
-  body: unknown | undefined, ctx: HomefinRequestCtx = {},
+  endpoint: string,
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  body: unknown | undefined,
+  ctx: HomefinRequestCtx = {},
 ): Promise<T> {
   const { base } = config();
   const url = `${base}${endpoint}`;
   const bodyNormalizado = body ? normalizarPayloadBanco(body) : undefined;
 
-  const executar = (token: string) => fetch(url, {
-    method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: bodyNormalizado ? JSON.stringify(bodyNormalizado) : undefined,
-    signal: AbortSignal.timeout(90_000),
-  });
+  const executar = (token: string) =>
+    fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: bodyNormalizado ? JSON.stringify(bodyNormalizado) : undefined,
+      signal: AbortSignal.timeout(90_000),
+    });
 
   let resp: Response;
   try {
@@ -411,7 +465,9 @@ async function executarChamada<T = unknown>(
       tokenAtual = tokenInfo.token;
       const tStart = performance.now();
       resp = await executar(tokenAtual);
-      console.info(`[SIM-PERF][API-RAW] ${method} ${endpoint} retry_api_duration_ms=${(performance.now() - tStart).toFixed(0)}`);
+      console.info(
+        `[SIM-PERF][API-RAW] ${method} ${endpoint} retry_api_duration_ms=${(performance.now() - tStart).toFixed(0)}`,
+      );
     }
 
     // Erro de gateway (502/503/504) é falha de trânsito, não do payload: a
@@ -423,14 +479,47 @@ async function executarChamada<T = unknown>(
     // Só repetimos o que é seguro repetir:
     //   - GET, que não altera nada;
     //   - `/integracao`, que dispara o envio de uma simulação JÁ criada e
-     //    identificada por id — é o mesmo que o botão "Reenviar" faz.
+    //    identificada por id — é o mesmo que o botão "Reenviar" faz.
     // Ficam de fora `POST /oportunidade`, `POST /simulacao` e
     // `POST /participante`: eles CRIAM registro no provedor, e num 504 não há
     // como saber se o primeiro pedido foi processado. Repetir duplicaria.
     const podeRepetir = method === "GET" || /\/integracao$/.test(endpoint);
     const ehGateway = (st: number) => st === 502 || st === 503 || st === 504;
-    for (let tentativa = 0; podeRepetir && tentativa < 2 && ehGateway(resp.status); tentativa++) {
+
+    /**
+     * O 500 do `/integracao` entra na mesma regra dos erros de trânsito.
+     *
+     * Ele volta em ~1,5 s com `{"code":"INTERNAL_ERROR"}` e sem nenhuma pista
+     * do que houve — e não é instabilidade geral do provedor: em 30 dias o
+     * Bradesco teve ZERO em 3.560 integrações, enquanto o Itaú teve 4,0% e o
+     * Santander 1,1%. A falha nasce no conector do provedor com aquele banco
+     * específico, e nada no sistema tentava de novo: dos 173 erros 500 do
+     * período, NENHUM chegou a ser reprocessado.
+     *
+     * Repetir é seguro exatamente como nos 502/504: `/integracao` não cria
+     * registro nenhum, só manda ao banco a simulação que já existe e está
+     * identificada por id. Continua de fora tudo que CRIA registro
+     * (`POST /oportunidade`, `/simulacao`, `/participante`), onde num 500 não
+     * há como saber se o primeiro pedido foi processado.
+     *
+     * MAS repetir quase não recupera. Na simulação 97540 (10/09 02:47) as três
+     * tentativas voltaram 500 — 7,5 s entre criar a simulação e desistir, dos
+     * quais 4,5 s foram só as pausas. Para o mesmo `idSimulacao` o 500 se
+     * comporta como veredito, não como soluço. Fica UMA repetição, como
+     * seguro barato contra a falha realmente passageira; recuperar de verdade
+     * é criar outra simulação, que é o que o "Reenviar" faz agora.
+     */
+    const ehIntegracao = endpoint.endsWith("/integracao");
+    const ehRepetivel = (st: number) => ehGateway(st) || (ehIntegracao && st === 500);
+    const maxRepeticoes = (st: number) => (ehIntegracao && st === 500 ? 1 : 2);
+    for (
+      let tentativa = 0;
+      podeRepetir && tentativa < maxRepeticoes(resp.status) && ehRepetivel(resp.status);
+      tentativa++
+    ) {
       const espera = 1500 * (tentativa + 1);
+      // Pausa entre as tentativas: no 500 do conector, repetir no mesmo
+      // instante costuma reencontrar o mesmo estado ruim do outro lado.
       console.warn(
         `[integracao] ${method} ${endpoint} devolveu ${resp.status}; nova tentativa em ${espera}ms`,
       );
@@ -442,18 +531,38 @@ async function executarChamada<T = unknown>(
       );
     }
   } catch (e) {
-    await registrarLog({ ...ctx, endpoint, metodo: method, request: bodyNormalizado, erro: String(e) });
+    await registrarLog({
+      ...ctx,
+      endpoint,
+      metodo: method,
+      request: bodyNormalizado,
+      erro: String(e),
+    });
     throw new IntegracaoBancariaError("O banco não respondeu no tempo esperado.");
   }
 
   const json = (await resp.json().catch(() => null)) as T;
-  await registrarLog({ ...ctx, endpoint, metodo: method, status_http: resp.status, request: bodyNormalizado, response: json as any, erro: resp.ok ? undefined : `HTTP ${resp.status}` });
-  if (!resp.ok) throw new IntegracaoBancariaError(humanizarRespostaErro(json, resp.status, endpoint), resp.status);
+  await registrarLog({
+    ...ctx,
+    endpoint,
+    metodo: method,
+    status_http: resp.status,
+    request: bodyNormalizado,
+    response: json as any,
+    erro: resp.ok ? undefined : `HTTP ${resp.status}`,
+  });
+  if (!resp.ok)
+    throw new IntegracaoBancariaError(
+      humanizarRespostaErro(json, resp.status, endpoint),
+      resp.status,
+    );
   return json;
 }
 
 export function integracaoConfigurada(): boolean {
-  return Boolean(process.env.HOMEFIN_BASE_URL && process.env.HOMEFIN_SECRET_ID && process.env.HOMEFIN_SECRET_KEY);
+  return Boolean(
+    process.env.HOMEFIN_BASE_URL && process.env.HOMEFIN_SECRET_ID && process.env.HOMEFIN_SECRET_KEY,
+  );
 }
 
 /** Busca a lista oficial de bancos no provedor de integração. */
@@ -469,7 +578,10 @@ export async function buscarOperacoesDominio(): Promise<any[]> {
 }
 
 /** Sincroniza os domínios da HomeFin com o banco local. */
-export async function sincronizarDominiosIntegracao(): Promise<{ bancos: number; operacoes: number }> {
+export async function sincronizarDominiosIntegracao(): Promise<{
+  bancos: number;
+  operacoes: number;
+}> {
   const [bancosApi, operacoesApi] = await Promise.all([
     buscarBancosDominio(),
     buscarOperacoesDominio(),
@@ -478,24 +590,29 @@ export async function sincronizarDominiosIntegracao(): Promise<{ bancos: number;
 
   // Atualiza bancos
   for (const b of bancosApi) {
-    await sbAdmin.from("homefin_bancos").upsert({
-
-      id_banco: Number(b.idBanco),
-      codigo_banco: Number(b.codigoBanco),
-      nome_banco: String(b.nomeBanco),
-      flag_simulacao: b.flagSimulacao === "S" || b.flagSimulacao === true ? "S" : "N",
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "id_banco" });
+    await sbAdmin.from("homefin_bancos").upsert(
+      {
+        id_banco: Number(b.idBanco),
+        codigo_banco: Number(b.codigoBanco),
+        nome_banco: String(b.nomeBanco),
+        flag_simulacao: b.flagSimulacao === "S" || b.flagSimulacao === true ? "S" : "N",
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id_banco" },
+    );
   }
 
   // Atualiza operações
   for (const o of operacoesApi) {
-    await sbAdmin.from("homefin_operacoes").upsert({
-      id_operacao: Number(o.idOperacao),
-      nome_operacao: String(o.nomeOperacao),
-      produto_sistema: String(o.produtoSistema || ""),
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "id_operacao" });
+    await sbAdmin.from("homefin_operacoes").upsert(
+      {
+        id_operacao: Number(o.idOperacao),
+        nome_operacao: String(o.nomeOperacao),
+        produto_sistema: String(o.produtoSistema || ""),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id_operacao" },
+    );
   }
 
   return { bancos: bancosApi.length, operacoes: operacoesApi.length };
@@ -512,7 +629,11 @@ export async function enviarArquivoIntegracao<T = unknown>(
   const { token } = await obterToken();
   const url = `${base}${endpoint}`;
   const form = new FormData();
-  form.append("arquivo", new Blob([arquivo.bytes as any], { type: arquivo.mime || "application/pdf" }), arquivo.nome);
+  form.append(
+    "arquivo",
+    new Blob([arquivo.bytes as any], { type: arquivo.mime || "application/pdf" }),
+    arquivo.nome,
+  );
   form.append("documentoAprovado", String(documentoAprovado));
 
   let resp: Response;
@@ -529,7 +650,19 @@ export async function enviarArquivoIntegracao<T = unknown>(
   }
 
   const json = (await resp.json().catch(() => null)) as T;
-  await registrarLog({ ...ctx, endpoint, metodo: "POST", status_http: resp.status, request: { arquivo: arquivo.nome, documentoAprovado }, response: json as any, erro: resp.ok ? undefined : `HTTP ${resp.status}` });
-  if (!resp.ok) throw new IntegracaoBancariaError(humanizarRespostaErro(json, resp.status, endpoint), resp.status);
+  await registrarLog({
+    ...ctx,
+    endpoint,
+    metodo: "POST",
+    status_http: resp.status,
+    request: { arquivo: arquivo.nome, documentoAprovado },
+    response: json as any,
+    erro: resp.ok ? undefined : `HTTP ${resp.status}`,
+  });
+  if (!resp.ok)
+    throw new IntegracaoBancariaError(
+      humanizarRespostaErro(json, resp.status, endpoint),
+      resp.status,
+    );
   return json;
 }

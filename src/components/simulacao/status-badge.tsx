@@ -30,13 +30,7 @@ const BANCO_MAPA: Record<string, { tone: Tone; label: string }> = {
   expirada: { tone: "muted", label: "Expirada" },
 };
 
-export function BancoStatusBadge({
-  status,
-  hasId = true,
-}: {
-  status: string;
-  hasId?: boolean;
-}) {
+export function BancoStatusBadge({ status, hasId = true }: { status: string; hasId?: boolean }) {
   let cfg = BANCO_MAPA[status] ?? { tone: "muted" as Tone, label: status };
 
   // Status Honesto: Se o status é 'aguardando' mas não temos o ID da HomeFin,

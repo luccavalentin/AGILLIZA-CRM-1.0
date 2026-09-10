@@ -25,10 +25,7 @@ import { toast } from "sonner";
 
 /** "Caixa Econômica" -> "CX"; "Inter" -> "IN". Duas letras, sem acento. */
 function monogramaBanco(nome: string): string {
-  const n = nome
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
+  const n = nome.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   if (n.includes("caixa")) return "CX";
   if (n.includes("inter")) return "IN";
   if (n.includes("banco do brasil")) return "BB";

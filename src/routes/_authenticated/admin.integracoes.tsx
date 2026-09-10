@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   XCircle,
   Trash2,
+  FileSearch,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import {
 import { listarOportunidadesOrfas, cancelarOrfaEmLote } from "@/lib/admin/orfas.functions";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BureauIntegracaoCard } from "@/components/bureau/bureau-integracao-card";
 
 export const Route = createFileRoute("/_authenticated/admin/integracoes")({
   head: () => ({ meta: [{ title: "Integrações — Agilliza" }] }),
@@ -108,6 +110,9 @@ function Pagina() {
           </TabsTrigger>
           <TabsTrigger value="apis">
             <Plug className="mr-2 size-4" /> APIs
+          </TabsTrigger>
+          <TabsTrigger value="bureau">
+            <FileSearch className="mr-2 size-4" /> Bureau
           </TabsTrigger>
           <TabsTrigger value="health">
             <Activity className="mr-2 size-4" /> Conectividade
@@ -250,6 +255,10 @@ function Pagina() {
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+
+        <TabsContent value="bureau" className="mt-4">
+          <BureauIntegracaoCard />
         </TabsContent>
 
         <TabsContent value="health" className="mt-4">

@@ -42,7 +42,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
          * mesmo caminho que o fluxo de proposta já usa quando a simulação
          * anterior não presta mais.
          */
-        const TENTATIVAS_ATE_RECRIAR = 5;
+        const TENTATIVAS_ATE_RECRIAR = 3;
 
         // --- NOVA ROTINA DE LIMPEZA DE LOCKS E PRESAS ---
         const limite2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
@@ -95,6 +95,31 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
         const { recalcularStatusSimulacao } = await import("@/lib/simulacao/simulacoes.functions");
 
         /**
+         * ORÇAMENTO DE TEMPO DA RODADA.
+         *
+         * Quem chama esta rota de dois em dois minutos é o `pg_cron` do
+         * Supabase, via `pg_net` — e o `pg_net` desiste da requisição em
+         * 5 s por padrão. Quando ele desiste, a conexão cai; no Cloudflare a
+         * queda do cliente ABORTA o handler no meio. A rodada varria até 50
+         * pendências fazendo um GET de 90 s de timeout por oportunidade, ou
+         * seja: NUNCA terminava dentro da janela. Medido em 12 h, 202 das 360
+         * chamadas do cron morreram em "Timeout of 5000 ms reached".
+         *
+         * Resultado prático: à noite, sem ninguém com o navegador aberto para
+         * empurrar a reconciliação, nada era reconciliado — a simulação ficava
+         * "Em análise" até a faxina de 24 h transformá-la em erro.
+         *
+         * A correção é dos dois lados: o job passou a esperar 25 s
+         * (`timeout_milliseconds`) e a rodada passa a caber nesse tempo. O que
+         * não couber fica para a próxima rodada, dois minutos depois — a fila
+         * anda sozinha em vez de recomeçar do zero e morrer sempre no mesmo
+         * ponto.
+         */
+        const INICIO_RODADA = Date.now();
+        const ORCAMENTO_MS = 20_000;
+        const tempoEsgotado = () => Date.now() - INICIO_RODADA > ORCAMENTO_MS;
+
+        /**
          * 0. Órfãs: bancos em "aguardando" que nunca chegaram à HomeFin.
          *
          * São as linhas que a tela mostra como "Não enviado" — sem
@@ -130,6 +155,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
             const fila = Array.from(porSimulacao.entries()).slice(0, MAX_ORFAS_POR_RODADA);
 
             for (const [simulacaoId, criadorId] of fila) {
+              if (tempoEsgotado()) break;
               try {
                 await supabaseAdmin
                   .from("simulacao_bancos")
@@ -205,7 +231,12 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
           porOportunidade.set(idOp, lista);
         }
 
+        let adiadas = 0;
         for (const [idOp, bancos] of porOportunidade.entries()) {
+          if (tempoEsgotado()) {
+            adiadas += bancos.length;
+            continue;
+          }
           try {
             // Consultar a oportunidade na HomeFin
             const resp = await chamarIntegracao<any>(`/oportunidade/${idOp}`, "GET", undefined, {
@@ -320,7 +351,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                   !erroExplicito &&
                   nuncaEnviouAoBanco &&
                   tentativas >= TENTATIVAS_ATE_RECRIAR &&
-                  minutosDesdeUltima >= 5
+                  minutosDesdeUltima >= 3
                 ) {
                   try {
                     await supabaseAdmin
@@ -344,12 +375,20 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                       .maybeSingle();
 
                     const { enviarSimulacaoImpl } = await import("@/lib/simulacao/enviar.server");
+                    // `forcarRecriacao` é o que faz esta chamada valer alguma
+                    // coisa. Sem ela, `enviarSimulacaoImpl` via que o banco já
+                    // tinha `homefin_id_simulacao_banco`, devolvia "aguardando"
+                    // e ia embora: o escape hatch era código morto. Em 7 dias,
+                    // 7 linhas do Santander passaram de 5 tentativas e NENHUMA
+                    // chegou a ser recriada (`_recriada_em` não existia em uma
+                    // linha sequer).
                     await enviarSimulacaoImpl({
                       simulacaoId: b.simulacao_id,
                       userId: (donoSim as any)?.usuario_criador_id ?? "",
                       ip: null,
                       supabase: supabaseAdmin,
                       bancoIds: (b as any).banco_id ? [(b as any).banco_id] : undefined,
+                      forcarRecriacao: true,
                     });
                     recuperadas++;
                     continue;
@@ -359,6 +398,36 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                       erroRecriar,
                     );
                   }
+                }
+
+                // CORTE HONESTO.
+                //
+                // Quando o banco responde, ele responde rápido: nas 267
+                // simulações do Santander concluídas em 7 dias a mediana é de
+                // 15 s e o percentil 90 é de 47 s. Não existe o caso "demorou
+                // três horas e voltou" — ou volta no primeiro minuto, ou não
+                // volta. Passados 25 minutos com o provedor sem sequer
+                // registrar o envio ao banco (`dataHoraEnvioIntegracao` nulo),
+                // continuar em "Em análise" é manter na tela um status que
+                // mente, e esperar a faxina de 24 h é fazer o operador perder
+                // um dia até saber que precisa reenviar.
+                if (!erroExplicito && nuncaEnviouAoBanco && minutosEspera >= 25) {
+                  await supabaseAdmin
+                    .from("simulacao_bancos")
+                    .update({
+                      status_banco: "erro" as any,
+                      mensagem_banco: `O ${b.nome_banco ?? "banco"} não processou esta simulação: o provedor não chegou a registrar o envio à instituição. Costuma ser indisponibilidade momentânea do banco — reenvie em alguns minutos.`,
+                      raw_response: {
+                        ...(apiSim ?? {}),
+                        _encerrada_por: "sem_despacho_ao_banco",
+                        _minutos_espera: Math.round(minutosEspera),
+                      },
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", b.id);
+                  await recalcularStatusSimulacao(b.simulacao_id, supabaseAdmin);
+                  erros++;
+                  continue;
                 }
 
                 if (podeRetentar) {
@@ -464,6 +533,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
           recuperadas,
           erros,
           reenviadasOrfas,
+          adiadas,
         });
       },
     },

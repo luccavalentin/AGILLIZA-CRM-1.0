@@ -43,12 +43,17 @@ export function ConsultorMessage({
       <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 ring-1 ring-primary/30">
         <Bot className="size-5" />
       </div>
-      
+
       <div className="min-w-0 flex-1 space-y-4">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-primary">Consultor IA</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-primary">
+            Consultor IA
+          </span>
           {message.sem_resposta && (
-            <Badge variant="outline" className="h-5 gap-1 border-amber-500/20 bg-amber-500/5 text-[9px] font-bold uppercase text-amber-600">
+            <Badge
+              variant="outline"
+              className="h-5 gap-1 border-amber-500/20 bg-amber-500/5 text-[9px] font-bold uppercase text-amber-600"
+            >
               <TriangleAlert className="size-2.5" />
               Conhecimento Geral
             </Badge>
@@ -61,10 +66,12 @@ export function ConsultorMessage({
 
         {message.fontes_usadas?.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 pt-2">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">Fontes:</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">
+              Fontes:
+            </span>
             {message.fontes_usadas.map((f: any) => (
-              <button 
-                key={f.id} 
+              <button
+                key={f.id}
                 onClick={() => onFonteClick(f.id)}
                 className="inline-flex items-center gap-1 rounded-full border border-primary/10 bg-primary/[0.03] px-2.5 py-0.5 text-[10px] font-medium text-primary transition-all hover:bg-primary/10 hover:border-primary/20"
               >
@@ -92,7 +99,7 @@ export function ConsultorMessage({
               size="icon"
               className={cn(
                 "size-7 rounded-md text-muted-foreground",
-                message.avaliacao === "util" && "text-emerald-600 bg-emerald-50"
+                message.avaliacao === "util" && "text-emerald-600 bg-emerald-50",
               )}
               onClick={() => onAvaliar({ mensagem_id: message.id, avaliacao: "util" })}
               title="Útil"
@@ -104,7 +111,7 @@ export function ConsultorMessage({
               size="icon"
               className={cn(
                 "size-7 rounded-md text-muted-foreground",
-                message.avaliacao === "nao_util" && "text-destructive bg-destructive/5"
+                message.avaliacao === "nao_util" && "text-destructive bg-destructive/5",
               )}
               onClick={() => onAvaliar({ mensagem_id: message.id, avaliacao: "nao_util" })}
               title="Não útil"
@@ -115,7 +122,12 @@ export function ConsultorMessage({
 
           <EbookFaqButton
             pergunta={
-              [...listaMensagens.slice(0, listaMensagens.findIndex((x) => x.id === message.id))]
+              [
+                ...listaMensagens.slice(
+                  0,
+                  listaMensagens.findIndex((x) => x.id === message.id),
+                ),
+              ]
                 .reverse()
                 .find((x) => x.papel === "usuario")?.conteudo ?? message.conteudo
             }

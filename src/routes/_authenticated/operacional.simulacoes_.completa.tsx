@@ -196,7 +196,12 @@ function Pagina() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         {/* Coluna principal — formulário */}
-        <div className={cn("min-w-0 space-y-4 transition-opacity", carregandoOrigem && "opacity-50 pointer-events-none")}>
+        <div
+          className={cn(
+            "min-w-0 space-y-4 transition-opacity",
+            carregandoOrigem && "opacity-50 pointer-events-none",
+          )}
+        >
           <Card className="overflow-hidden">
             <SecaoCabecalho
               icone={<User className="h-4 w-4" />}
@@ -217,65 +222,64 @@ function Pagina() {
               ctx.pjBloqueada && "pointer-events-none opacity-50",
             )}
           >
-          {mostraConjuge && !ctx.isPJ && (
+            {mostraConjuge && !ctx.isPJ && (
+              <Card className="overflow-hidden">
+                <SecaoCabecalho
+                  icone={<Users className="h-4 w-4" />}
+                  titulo="Cônjuge / coobrigado"
+                  descricao="Composição de renda"
+                />
+                <div className="p-4 sm:p-5 md:p-6">
+                  <SecaoConjuge ctx={ctx} />
+                </div>
+              </Card>
+            )}
+
+            {!ctx.isPJ && (
+              <Card className="overflow-hidden">
+                <SecaoCabecalho
+                  icone={<UserPlus className="h-4 w-4" />}
+                  titulo="Composição de Renda (Terceiros)"
+                  descricao="Pessoas adicionais para compor renda"
+                />
+                <div className="p-4 sm:p-5 md:p-6">
+                  <SecaoComposicaoRenda ctx={ctx} />
+                </div>
+              </Card>
+            )}
+
             <Card className="overflow-hidden">
               <SecaoCabecalho
-                icone={<Users className="h-4 w-4" />}
-                titulo="Cônjuge / coobrigado"
-                descricao="Composição de renda"
+                icone={<Home className="h-4 w-4" />}
+                titulo="Operação e imóvel"
+                descricao="Produto, características e valores"
               />
               <div className="p-4 sm:p-5 md:p-6">
-                <SecaoConjuge ctx={ctx} />
+                <SecaoOperacaoImovel ctx={ctx} />
               </div>
             </Card>
-          )}
 
-          {!ctx.isPJ && (
             <Card className="overflow-hidden">
               <SecaoCabecalho
-                icone={<UserPlus className="h-4 w-4" />}
-                titulo="Composição de Renda (Terceiros)"
-                descricao="Pessoas adicionais para compor renda"
+                icone={<Landmark className="h-4 w-4" />}
+                titulo="Bancos"
+                descricao="Selecione as instituições para consultar"
               />
               <div className="p-4 sm:p-5 md:p-6">
-                <SecaoComposicaoRenda ctx={ctx} />
+                <SecaoBancos ctx={ctx} />
               </div>
             </Card>
-          )}
 
-          <Card className="overflow-hidden">
-            <SecaoCabecalho
-              icone={<Home className="h-4 w-4" />}
-              titulo="Operação e imóvel"
-              descricao="Produto, características e valores"
-            />
-            <div className="p-4 sm:p-5 md:p-6">
-              <SecaoOperacaoImovel ctx={ctx} />
-            </div>
-          </Card>
-
-          <Card className="overflow-hidden">
-            <SecaoCabecalho
-              icone={<Landmark className="h-4 w-4" />}
-              titulo="Bancos"
-              descricao="Selecione as instituições para consultar"
-            />
-            <div className="p-4 sm:p-5 md:p-6">
-              <SecaoBancos ctx={ctx} />
-            </div>
-          </Card>
-
-          <Card className="overflow-hidden">
-            <SecaoCabecalho
-              icone={<ShieldCheck className="h-4 w-4" />}
-              titulo="Consentimentos"
-              descricao="Autorizações necessárias"
-            />
-            <div className="p-4 sm:p-5 md:p-6">
-              <SecaoConsentimentos ctx={ctx} />
-            </div>
-          </Card>
-
+            <Card className="overflow-hidden">
+              <SecaoCabecalho
+                icone={<ShieldCheck className="h-4 w-4" />}
+                titulo="Consentimentos"
+                descricao="Autorizações necessárias"
+              />
+              <div className="p-4 sm:p-5 md:p-6">
+                <SecaoConsentimentos ctx={ctx} />
+              </div>
+            </Card>
           </fieldset>
 
           {/* Ação sempre disponível no final do formulário */}
@@ -340,10 +344,14 @@ function Pagina() {
                 </div>
               </div>
 
-              <Button className="h-11 w-full gap-2" onClick={() => {
-                console.log("Clique manual no botão Resumo (Aside)");
-                enviarOriginal();
-              }} disabled={enviando || ctx.pjBloqueada}>
+              <Button
+                className="h-11 w-full gap-2"
+                onClick={() => {
+                  console.log("Clique manual no botão Resumo (Aside)");
+                  enviarOriginal();
+                }}
+                disabled={enviando || ctx.pjBloqueada}
+              >
                 <Send className="h-4 w-4" /> {modoProposta ? "Gerar Proposta" : "Gerar Simulação"}
               </Button>
             </div>
@@ -411,9 +419,10 @@ function Pagina() {
         total={totalBancosResumo}
         concluidos={concluidos}
         listaSimulacoes={listaSimulacoes}
-        onReenviar={() => { void enviar(); }}
+        onReenviar={() => {
+          void enviar();
+        }}
       />
-
 
       <EnviarPropostaDialog
         envio={ctx.envioEstado}

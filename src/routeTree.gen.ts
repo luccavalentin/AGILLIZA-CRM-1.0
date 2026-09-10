@@ -91,6 +91,7 @@ import { Route as AuthenticatedFinanceiroComissoesRouteImport } from './routes/_
 import { Route as AuthenticatedCrmScanIaRouteImport } from './routes/_authenticated/crm.scan-ia'
 import { Route as AuthenticatedCrmParceirosRouteImport } from './routes/_authenticated/crm.parceiros'
 import { Route as AuthenticatedCrmPainelRouteImport } from './routes/_authenticated/crm.painel'
+import { Route as AuthenticatedCrmFichaBureauRouteImport } from './routes/_authenticated/crm.ficha-bureau'
 import { Route as AuthenticatedCrmDocumentosRouteImport } from './routes/_authenticated/crm.documentos'
 import { Route as AuthenticatedCrmConsultorIaRouteImport } from './routes/_authenticated/crm.consultor-ia'
 import { Route as AuthenticatedCrmClientesRouteImport } from './routes/_authenticated/crm.clientes'
@@ -592,6 +593,12 @@ const AuthenticatedCrmPainelRoute = AuthenticatedCrmPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedCrmRoute,
 } as any)
+const AuthenticatedCrmFichaBureauRoute =
+  AuthenticatedCrmFichaBureauRouteImport.update({
+    id: '/ficha-bureau',
+    path: '/ficha-bureau',
+    getParentRoute: () => AuthenticatedCrmRoute,
+  } as any)
 const AuthenticatedCrmDocumentosRoute =
   AuthenticatedCrmDocumentosRouteImport.update({
     id: '/documentos',
@@ -864,6 +871,7 @@ export interface FileRoutesByFullPath {
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
   '/crm/consultor-ia': typeof AuthenticatedCrmConsultorIaRoute
   '/crm/documentos': typeof AuthenticatedCrmDocumentosRoute
+  '/crm/ficha-bureau': typeof AuthenticatedCrmFichaBureauRoute
   '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/crm/scan-ia': typeof AuthenticatedCrmScanIaRoute
@@ -983,6 +991,7 @@ export interface FileRoutesByTo {
   '/crm/clientes': typeof AuthenticatedCrmClientesRoute
   '/crm/consultor-ia': typeof AuthenticatedCrmConsultorIaRoute
   '/crm/documentos': typeof AuthenticatedCrmDocumentosRoute
+  '/crm/ficha-bureau': typeof AuthenticatedCrmFichaBureauRoute
   '/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/crm/scan-ia': typeof AuthenticatedCrmScanIaRoute
@@ -1106,6 +1115,7 @@ export interface FileRoutesById {
   '/_authenticated/crm/clientes': typeof AuthenticatedCrmClientesRoute
   '/_authenticated/crm/consultor-ia': typeof AuthenticatedCrmConsultorIaRoute
   '/_authenticated/crm/documentos': typeof AuthenticatedCrmDocumentosRoute
+  '/_authenticated/crm/ficha-bureau': typeof AuthenticatedCrmFichaBureauRoute
   '/_authenticated/crm/painel': typeof AuthenticatedCrmPainelRoute
   '/_authenticated/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/_authenticated/crm/scan-ia': typeof AuthenticatedCrmScanIaRoute
@@ -1229,6 +1239,7 @@ export interface FileRouteTypes {
     | '/crm/clientes'
     | '/crm/consultor-ia'
     | '/crm/documentos'
+    | '/crm/ficha-bureau'
     | '/crm/painel'
     | '/crm/parceiros'
     | '/crm/scan-ia'
@@ -1348,6 +1359,7 @@ export interface FileRouteTypes {
     | '/crm/clientes'
     | '/crm/consultor-ia'
     | '/crm/documentos'
+    | '/crm/ficha-bureau'
     | '/crm/painel'
     | '/crm/parceiros'
     | '/crm/scan-ia'
@@ -1470,6 +1482,7 @@ export interface FileRouteTypes {
     | '/_authenticated/crm/clientes'
     | '/_authenticated/crm/consultor-ia'
     | '/_authenticated/crm/documentos'
+    | '/_authenticated/crm/ficha-bureau'
     | '/_authenticated/crm/painel'
     | '/_authenticated/crm/parceiros'
     | '/_authenticated/crm/scan-ia'
@@ -2139,6 +2152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmPainelRouteImport
       parentRoute: typeof AuthenticatedCrmRoute
     }
+    '/_authenticated/crm/ficha-bureau': {
+      id: '/_authenticated/crm/ficha-bureau'
+      path: '/ficha-bureau'
+      fullPath: '/crm/ficha-bureau'
+      preLoaderRoute: typeof AuthenticatedCrmFichaBureauRouteImport
+      parentRoute: typeof AuthenticatedCrmRoute
+    }
     '/_authenticated/crm/documentos': {
       id: '/_authenticated/crm/documentos'
       path: '/documentos'
@@ -2413,6 +2433,7 @@ interface AuthenticatedCrmRouteChildren {
   AuthenticatedCrmClientesRoute: typeof AuthenticatedCrmClientesRoute
   AuthenticatedCrmConsultorIaRoute: typeof AuthenticatedCrmConsultorIaRoute
   AuthenticatedCrmDocumentosRoute: typeof AuthenticatedCrmDocumentosRoute
+  AuthenticatedCrmFichaBureauRoute: typeof AuthenticatedCrmFichaBureauRoute
   AuthenticatedCrmPainelRoute: typeof AuthenticatedCrmPainelRoute
   AuthenticatedCrmParceirosRoute: typeof AuthenticatedCrmParceirosRoute
   AuthenticatedCrmScanIaRoute: typeof AuthenticatedCrmScanIaRoute
@@ -2426,6 +2447,7 @@ const AuthenticatedCrmRouteChildren: AuthenticatedCrmRouteChildren = {
   AuthenticatedCrmClientesRoute: AuthenticatedCrmClientesRoute,
   AuthenticatedCrmConsultorIaRoute: AuthenticatedCrmConsultorIaRoute,
   AuthenticatedCrmDocumentosRoute: AuthenticatedCrmDocumentosRoute,
+  AuthenticatedCrmFichaBureauRoute: AuthenticatedCrmFichaBureauRoute,
   AuthenticatedCrmPainelRoute: AuthenticatedCrmPainelRoute,
   AuthenticatedCrmParceirosRoute: AuthenticatedCrmParceirosRoute,
   AuthenticatedCrmScanIaRoute: AuthenticatedCrmScanIaRoute,

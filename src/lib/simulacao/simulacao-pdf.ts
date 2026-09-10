@@ -80,7 +80,7 @@ export function gerarNomeArquivoPdf(b: any, s: any, d: DetalheBanco | null): str
   const banco = (b?.nome_banco ?? "Banco").trim();
   const cv = Math.round(s.valor_imovel ?? d?.valorImovel ?? 0);
   const finan = Math.round(
-    Number(s.valor_financiamento ?? 0) + Number(s.valor_despesas_financiadas ?? 0)
+    Number(s.valor_financiamento ?? 0) + Number(s.valor_despesas_financiadas ?? 0),
   );
   const prazo = d?.prazoMeses ?? s.prazo ?? 0;
   const sistema = sistemaDoBanco(b, s);
@@ -307,23 +307,29 @@ function drawInfoFinanciamento(
   const w = opts?.width ?? pageW - MARGIN * 2;
   const cols = opts?.cols ?? 3;
   const itens: { label: string; valor: string }[] = [
-    { label: "Tipo do imóvel", valor: ((s: any) => {
-      const map: Record<string, string> = {
-        AP: "Apartamento",
-        CS: "Casa",
-        GA: "Galpão",
-        TE: "Terreno",
-        TC: "Terreno em Condomínio"
-      };
-      return map[s.tipo_imovel] ?? "—";
-    })(s) },
-    { label: "Uso do imóvel", valor: ((s: any) => {
-      const map: Record<string, string> = {
-        R: "Residencial",
-        C: "Comercial"
-      };
-      return map[s.uso_imovel] ?? "—";
-    })(s) },
+    {
+      label: "Tipo do imóvel",
+      valor: ((s: any) => {
+        const map: Record<string, string> = {
+          AP: "Apartamento",
+          CS: "Casa",
+          GA: "Galpão",
+          TE: "Terreno",
+          TC: "Terreno em Condomínio",
+        };
+        return map[s.tipo_imovel] ?? "—";
+      })(s),
+    },
+    {
+      label: "Uso do imóvel",
+      valor: ((s: any) => {
+        const map: Record<string, string> = {
+          R: "Residencial",
+          C: "Comercial",
+        };
+        return map[s.uso_imovel] ?? "—";
+      })(s),
+    },
     { label: "Valor de compra e venda", valor: brlOuTraco(s.valor_imovel) },
     { label: "Valor da entrada", valor: brlOuTraco(s.valor_entrada) },
     { label: "Valor solicitado", valor: brlOuTraco(s.valor_financiamento) },
@@ -331,7 +337,7 @@ function drawInfoFinanciamento(
     {
       label: "Valor de financiamento total",
       valor: brlOuTraco(
-        Number(s.valor_financiamento ?? 0) + Number(s.valor_despesas_financiadas ?? 0)
+        Number(s.valor_financiamento ?? 0) + Number(s.valor_despesas_financiadas ?? 0),
       ),
     },
     { label: "Tipo da parcela", valor: d?.tipoParcela ?? d?.indexador ?? "—" },
@@ -745,7 +751,8 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
       (bancos ?? []).map((b) => sistemaDoBanco(b, s)).filter((v) => v === "SAC" || v === "PRICE"),
     ),
   );
-  const isMistaReal = s.sistema_amortizacao === "B" || sistemasBancos.length > 1 || (s._multi_prazo ?? false);
+  const isMistaReal =
+    s.sistema_amortizacao === "B" || sistemasBancos.length > 1 || (s._multi_prazo ?? false);
   const sistemaKpi = isMistaReal
     ? "Agrupada"
     : s.sistema_amortizacao === "P" || sistemasBancos[0] === "PRICE"
@@ -762,7 +769,8 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
               ...(bancos ?? []).map(
                 (b) =>
                   extrairDetalheBanco(b.raw_response)?.valorTotalFinanciamento ??
-                  (Number(s.valor_financiamento) || 0) + (Number(s.valor_despesas_financiadas) || 0),
+                  (Number(s.valor_financiamento) || 0) +
+                    (Number(s.valor_despesas_financiadas) || 0),
               ),
             )
           : (Number(s.valor_financiamento) || 0) + (Number(s.valor_despesas_financiadas) || 0),
@@ -777,9 +785,10 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
   const columns: ReportColumn[] = [
     { key: "banco", label: "Banco" },
     ...(isMistaReal ? [{ key: "tabela", label: "Tabela" } as ReportColumn] : []),
-    ...(s._multi_prazo || (bancos ?? []).some(b => b._prazo && Number(b._prazo) !== Number(s.prazo)) 
-        ? [{ key: "prazo", label: "Prazo", align: "right" } as ReportColumn] 
-        : []),
+    ...(s._multi_prazo ||
+    (bancos ?? []).some((b) => b._prazo && Number(b._prazo) !== Number(s.prazo))
+      ? [{ key: "prazo", label: "Prazo", align: "right" } as ReportColumn]
+      : []),
     { key: "parcela", label: "Parcela (1ª)", align: "right" },
     { key: "taxa", label: "Taxa a.a.", align: "right" },
     { key: "cet", label: "CET a.a.", align: "right" },
@@ -794,7 +803,8 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     return {
       banco: b.nome_banco ?? "—",
       ...(isMistaReal ? { tabela: sistemaDoBanco(b, s) } : {}),
-      ...(s._multi_prazo || (bancos ?? []).some(bx => bx._prazo && Number(bx._prazo) !== Number(s.prazo))
+      ...(s._multi_prazo ||
+      (bancos ?? []).some((bx) => bx._prazo && Number(bx._prazo) !== Number(s.prazo))
         ? { prazo: `${b._prazo ?? s.prazo} meses` }
         : {}),
       parcela: b.valor_parcela != null ? formatBRL(b.valor_parcela) : "—",
@@ -853,7 +863,7 @@ function bancosDaTabelaSolicitada(s: any, bancos: any[]): any[] {
   const lista = bancos ?? [];
   // Se a simulação tem múltiplos prazos, queremos baixar TODOS os bancos associados a este agrupador/oportunidade
   if (s._multi_prazo) return lista;
-  
+
   if (lista.length <= 1) return lista;
   const simId = s?.id;
   if (!simId) return lista;
@@ -861,7 +871,6 @@ function bancosDaTabelaSolicitada(s: any, bancos: any[]): any[] {
   if (simIds.size <= 1 || !simIds.has(simId)) return lista;
   return lista.filter((b) => b?.simulacao_id === simId);
 }
-
 
 /** Baixa o extrato simplificado: cabeçalho com CET/CESH/taxas + resumo, um banco por folha. */
 export function baixarSimulacaoSimplificadaPDF({

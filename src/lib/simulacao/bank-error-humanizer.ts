@@ -31,8 +31,10 @@ const BRADESCO: Record<string, string> = {
    */
   "121-L":
     "O Bradesco não simulou este titular com o valor financiado solicitado. O teto que o banco concede varia por proponente: reduza o valor financiado (aumentando a entrada) e reenvie, ou teste outro proponente como titular.",
-  "014": "Prazo informado acima do máximo permitido pelo Bradesco para esta operação. Reduza o prazo e reenvie.",
-  "422": "Prazo informado abaixo do mínimo aceito pelo Bradesco para esta operação. Aumente o prazo e reenvie.",
+  "014":
+    "Prazo informado acima do máximo permitido pelo Bradesco para esta operação. Reduza o prazo e reenvie.",
+  "422":
+    "Prazo informado abaixo do mínimo aceito pelo Bradesco para esta operação. Aumente o prazo e reenvie.",
 };
 
 const CAMPOS_PT: Record<string, string> = {
@@ -88,12 +90,14 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
       const interno = JSON.parse(aninhado[0]) as Record<string, any>;
       const cod = String(interno.codigo ?? interno.code ?? "");
       const msgInternaBruta = String(interno.mensagem ?? interno.message ?? "").trim();
-      
+
       // Regra geral: se o banco trouxe mensagem própria legível, usar ela.
       // Prioridade para códigos conhecidos que precisam de tradução específica.
-      
+
       const limiteMaxMatch = msgInternaBruta.match(/maximo de (\d+)/i);
-      const limiteMinMatch = msgInternaBruta.match(/superior a[:\s]+(\d+)/i) || msgInternaBruta.match(/mínimo aceito[^:]*[:\s]+(\d+)/i);
+      const limiteMinMatch =
+        msgInternaBruta.match(/superior a[:\s]+(\d+)/i) ||
+        msgInternaBruta.match(/mínimo aceito[^:]*[:\s]+(\d+)/i);
 
       // Mapeamento antecipado para evitar que o MAPA ou BRADESCO estático ignore a extração dinâmica
       if (cod === "014") {
@@ -102,7 +106,7 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
         const enviado = enviadoMatch ? enviadoMatch[1] : (ctx.valueProvided ?? "X");
         return `Prazo de ${enviado} meses acima do máximo permitido pelo Bradesco nesta operação: ${maxVal} meses. Reduza o prazo e reenvie.`;
       }
-      
+
       if (cod === "422") {
         const enviadoMatch = msgInternaBruta.match(/informado de (\d+)/i);
         const minVal = limiteMinMatch ? limiteMinMatch[1] : "Y";
@@ -116,15 +120,18 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
         }
         return BRADESCO[cod];
       }
-      
+
       if (cod === "121-L" || (cod === "0" && !msgInternaBruta)) {
         return `O banco recusou a simulação (código ${cod}) sem informar o motivo. Normalmente é relação valor x renda x prazo — revise esses campos e reenvie.`;
       }
-      
-      if (msgInternaBruta && !/erro interno|internal error|internal_error|dados cadastrais/i.test(msgInternaBruta)) {
+
+      if (
+        msgInternaBruta &&
+        !/erro interno|internal error|internal_error|dados cadastrais/i.test(msgInternaBruta)
+      ) {
         return msgInternaBruta;
       }
-      
+
       if (cod) {
         return `O banco recusou a simulação (código ${cod}) sem detalhar o motivo. Normalmente é relação valor x renda x prazo — revise esses campos e reenvie.`;
       }
@@ -167,7 +174,7 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
         : /\/oportunidade\/?$/i.test(endpoint)
           ? "ao abrir a oportunidade"
           : "durante o envio";
-    return `A integração bancária falhou ${etapa} (erro ${status || 500} no provedor). Não é problema no cadastro — os dados enviados estão íntegros. Reenvie em alguns instantes; se persistir por mais de alguns minutos, o provedor está instável.`;
+    return `A integração bancária falhou ${etapa} (erro ${status || 500} no provedor). O provedor não informou o motivo. Costuma ser falha momentânea na conexão dele com este banco — os demais bancos da mesma simulação seguem valendo. Reenvie; se repetir sempre no mesmo banco, é caso para o suporte do provedor.`;
   }
 
   if (MAPA[code]) return MAPA[code];
@@ -179,7 +186,10 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
   if (status === 404 && endpoint.includes("//simulacao")) {
     return "Falha técnica na montagem da simulação (ID da oportunidade ausente). Por favor, tente reenviar para gerar um novo ID.";
   }
-  if (bruta.includes("ID da oportunidade está ausente") || bruta.includes("ID da oportunidade ausente")) {
+  if (
+    bruta.includes("ID da oportunidade está ausente") ||
+    bruta.includes("ID da oportunidade ausente")
+  ) {
     return "Não foi possível iniciar a simulação porque o ID da oportunidade não foi gerado corretamente. Tente reenviar.";
   }
   return `A integração bancária retornou um erro (${status}). Revise os dados e tente reenviar.`;

@@ -43,8 +43,9 @@ export function ErroBancoDetalhe({
 
   const lowerMsg = mensagem.toLowerCase();
   const isRendaErro = lowerMsg.includes("renda") && !lowerMsg.includes("prazo");
-  const isPrazoErro = lowerMsg.includes("prazo") || lowerMsg.includes("parcela") || lowerMsg.includes("meses");
-  
+  const isPrazoErro =
+    lowerMsg.includes("prazo") || lowerMsg.includes("parcela") || lowerMsg.includes("meses");
+
   let displayMsg = mensagem;
   if (isRendaErro) {
     displayMsg = `Recusado — renda abaixo da exigida por esta instituição`;
@@ -91,9 +92,9 @@ export function ErroBancoDetalhe({
             <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
               {isRendaErro
                 ? "A renda informada não atingiu o mínimo exigido pelo banco para esta operação."
-                : isPrazoErro 
-                ? "O prazo solicitado não está dentro da janela operacional do banco para esta garantia e perfil de crédito."
-                : mensagem}
+                : isPrazoErro
+                  ? "O prazo solicitado não está dentro da janela operacional do banco para esta garantia e perfil de crédito."
+                  : mensagem}
             </p>
             {(isRendaErro || isPrazoErro) && (
               <p className="mt-4 border-t border-destructive/20 pt-4 text-xs text-muted-foreground italic">

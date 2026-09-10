@@ -203,7 +203,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
 
     const { prazo, ajustado, mensagem } = ajustarPrazoPorIdade(valor, {
       nome: w.nome_cliente || "Titular",
-      dataNascimento: w.data_nascimento
+      dataNascimento: w.data_nascimento,
     });
     let final = prazo;
 
@@ -220,7 +220,7 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
     if (maxPrazoIdade != null && w.prazo_meses > maxPrazoIdade) {
       const { mensagem } = ajustarPrazoPorIdade(w.prazo_meses, {
         nome: w.nome_cliente || "Titular",
-        dataNascimento: w.data_nascimento
+        dataNascimento: w.data_nascimento,
       });
       if (mensagem) toast.warning(mensagem);
       set("prazo_meses", maxPrazoIdade);

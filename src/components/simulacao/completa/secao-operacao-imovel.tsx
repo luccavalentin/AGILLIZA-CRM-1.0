@@ -74,7 +74,6 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     melhorTaxaAno,
   } = ctx;
 
-
   async function alterarCepImovel(valor: string) {
     const cep = mascararCep(valor);
     set("cep_imovel", cep);
@@ -477,7 +476,6 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               </>
             )}
           </p>
-
         </Campo>
 
         {/* DicaRendaMinima removida desta seção para evitar confusão, pois a informação já existe no dado do cliente e o ajuste é feito automaticamente se necessário. */}
@@ -509,7 +507,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                 className={cn(
                   "h-10 font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
                   Number(f.prazo) > prazoMaximoEfetivo &&
-                    "border-destructive focus-visible:ring-destructive text-destructive"
+                    "border-destructive focus-visible:ring-destructive text-destructive",
                 )}
                 aria-invalid={!!erros.prazo}
               />
@@ -559,7 +557,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                   className={cn(
                     "h-10 font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
                     Number(f.prazo_2) > prazoMaximoEfetivo &&
-                      "border-destructive focus-visible:ring-destructive text-destructive"
+                      "border-destructive focus-visible:ring-destructive text-destructive",
                   )}
                   aria-invalid={!!erros.prazo_2}
                 />
@@ -588,7 +586,6 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             <Erro erros={erros} campo="prazo_2" />
           </Campo>
         </div>
-
 
         <Campo
           label={
@@ -670,7 +667,10 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         )}
       </div>
 
-      <AlertDialog open={!!confirmarAjustePrazo} onOpenChange={(open) => !open && cancelarAjustePrazo()}>
+      <AlertDialog
+        open={!!confirmarAjustePrazo}
+        onOpenChange={(open) => !open && cancelarAjustePrazo()}
+      >
         <AlertDialogContent className="max-w-[400px]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">

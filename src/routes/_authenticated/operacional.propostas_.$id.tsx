@@ -57,11 +57,7 @@ function PropostaRoute() {
   const { complementar, abrir_cadastro, enviar_banco } = Route.useSearch();
   const router = useRouter();
   const qc = useQueryClient();
-  const {
-    enviar: handleEnviarHook,
-    statusPorBanco,
-    busyBancoId,
-  } = useEnviarProposta();
+  const { enviar: handleEnviarHook, statusPorBanco, busyBancoId } = useEnviarProposta();
 
   // 1. Hooks de dados
   const { data, isLoading, isError, error } = useQuery({
@@ -212,7 +208,7 @@ function PropostaRoute() {
   // 4. Effects
 
   // Envio iniciado na lista de simulações: a proposta foi criada lá e o
-   // operador foi trazido para cá em vez de esperar no diálogo. Disparamos uma
+  // operador foi trazido para cá em vez de esperar no diálogo. Disparamos uma
   // única vez e limpamos o parâmetro, para um F5 não reenviar.
   const disparouEnvioRef = React.useRef(false);
   React.useEffect(() => {
@@ -376,9 +372,7 @@ function PropostaRoute() {
   const inicialParticipante = React.useMemo(() => {
     if (!participanteModal) return undefined;
 
-    const ehCoproponente = ["TI", "CJ"].includes(
-      String(participanteModal.tipo_qualificacao ?? ""),
-    );
+    const ehCoproponente = ["TI", "CJ"].includes(String(participanteModal.tipo_qualificacao ?? ""));
     const titular = envolvidos.find(
       (e: any) => !e?.conjuge_de && String(e?.tipo_qualificacao ?? "") === "CO",
     );
@@ -435,8 +429,7 @@ function PropostaRoute() {
   // pré-envio, o envio cumpriu seu papel e o painel se recolhe.
   const STATUS_PRE_ENVIO = ["rascunho", "aguardando_envio", "erro_envio"];
   const aindaNaoEnviada = STATUS_PRE_ENVIO.includes(String(data?.proposta?.status ?? ""));
-  const statusEnvioAtual =
-    busyBancoId && aindaNaoEnviada ? statusPorBanco[busyBancoId] : null;
+  const statusEnvioAtual = busyBancoId && aindaNaoEnviada ? statusPorBanco[busyBancoId] : null;
 
   return (
     <>

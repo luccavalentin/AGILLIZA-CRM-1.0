@@ -55,12 +55,7 @@ export const TRANSICOES: Record<PropostaStatus, PropostaStatus[]> = {
     "erro_envio",
     "cancelada",
   ],
-  em_analise_credito: [
-    "credito_aprovado",
-    "credito_condicionado",
-    "credito_recusado",
-    "cancelada",
-  ],
+  em_analise_credito: ["credito_aprovado", "credito_condicionado", "credito_recusado", "cancelada"],
   credito_aprovado: ["aguardando_documentos", "cancelada"],
   // O condicionado segue para documentos como a aprovação plena, mas também
   // pode virar aprovação (condições cumpridas) ou recusa (não cumpridas).

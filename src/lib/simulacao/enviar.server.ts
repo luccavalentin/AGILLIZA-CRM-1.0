@@ -8,11 +8,38 @@ import {
 } from "./simulacoes.functions";
 import { SupabaseClient } from "@supabase/supabase-js";
 
+/**
+ * Empurrão imediato na reconciliação, logo após um envio que ficou aguardando.
+ *
+ * É só um atalho: quem garante o resultado é o `pg_cron` de dois em dois
+ * minutos. Em produção o Worker não tem `VITE_SITE_URL`, e o valor padrão
+ * aponta para `localhost:8080` — a chamada morria em silêncio e o log só
+ * enchia de erro. Sem URL pública configurada, não tentamos.
+ */
+function empurrarReconciliacao(chave: string) {
+  const origin = process.env.VITE_SITE_URL;
+  if (!origin || (/localhost|127\.0\.0\.1/.test(origin) && process.env.NODE_ENV === "production")) {
+    return;
+  }
+  const apiKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+  const global = globalThis as any;
+  const ultimo = global[chave] || 0;
+  if (performance.now() - ultimo <= 2000) return;
+  global[chave] = performance.now();
+  fetch(`${origin}/api/public/reconciliar-simulacoes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: apiKey || "" },
+  }).catch((e) =>
+    console.error("[reconciliar-simulacoes] falha ao disparar polling background:", e),
+  );
+}
+
 export async function enviarSimulacaoImpl({
   simulacaoId,
   userId,
   supabase,
   bancoIds,
+  forcarRecriacao = false,
 }: EnviarArgs): Promise<EnviarResultado> {
   const { supabaseAdmin: sbAdminGlobal } = await import("@/integrations/supabase/client.server");
 
@@ -487,6 +514,23 @@ export async function enviarSimulacaoImpl({
 
     // ETAPA 3: Paralelização controlada de bancos no servidor.
     // Otimização: Garantimos que cada banco use o idOportunidade cacheado.
+    /**
+     * TRÊS BANCOS EM PARALELO — a serialização foi testada e não resolveu.
+     *
+     * A hipótese era que o erro 500 do Itaú vinha de integrações concorrentes
+     * na mesma oportunidade (84% dos 500 tinham outra a menos de 3 s, contra
+     * 56% das que passavam). Baixamos para 1 e medimos.
+     *
+     * Oportunidade 29715, 10/09 02:47, com a serialização já ativa:
+     *   02:47:24  Bradesco (idBanco 45)  -> 200
+     *   02:47:33  Santander (idBanco 9)  -> 200
+     *   02:47:36  Itaú (idBanco 61)      -> 500
+     *
+     * Nove e três segundos de distância, uma de cada vez, e o Itaú falhou
+     * assim mesmo. A correlação era consequência do volume, não causa: o
+     * pedido do operador é sempre "os três bancos", então quase toda
+     * integração tem vizinha perto. Serializar só custava ~15 s por envio.
+     */
     const CONCORRENCIA_INTEGRACOES = 3;
     const processarEmLotes = async (bancos: any[], concurrency: number) => {
       const resultadosLocais: any[] = [];
@@ -504,31 +548,58 @@ export async function enviarSimulacaoImpl({
               .eq("id", b.id)
               .maybeSingle();
 
+            const jaSimulado =
+              num(bAtual?.valor_parcela) > 0 || bAtual?.status_banco === "simulada";
+
+            /**
+             * Linha em erro: a simulação que existe no provedor não presta.
+             *
+             * O botão "Reenviar" chamava esta função e ela saía fora, porque o
+             * `homefin_id_simulacao_banco` estava preenchido — o operador
+             * clicava, recebia "o banco ainda não devolveu" e a linha
+             * continuava em `erro` para sempre. A reconciliação também não
+             * alcança essas linhas: ela só varre `aguardando`. Resultado
+             * medido: dos 173 erros 500 dos últimos 30 dias, NENHUM foi
+             * reprocessado.
+             *
+             * Um id que o provedor recusou não tem valor. Reenviar, aqui,
+             * significa criar outra simulação e integrar essa.
+             */
+            const recriarPorErro = bAtual?.status_banco === "erro";
+
+            /**
+             * A simulação que existe no provedor nem sempre serve.
+             *
+             * Quando a reconciliação pede recriação, é porque o provedor
+             * aceitou a integração e nunca a despachou ao banco. Reaproveitar
+             * o id antigo aqui era o motivo de o escape hatch nunca funcionar:
+             * o bloco abaixo via o id preenchido, devolvia "aguardando" e
+             * voltava — nenhuma simulação nova era criada, e a linha ficava
+             * girando até as 24 h. Zerar o id força o `POST /simulacao` logo
+             * adiante, que é o caminho previsto no contrato.
+             */
+            if (
+              (forcarRecriacao || recriarPorErro) &&
+              bAtual?.homefin_id_simulacao_banco &&
+              !jaSimulado
+            ) {
+              console.warn(
+                `[enviar.server][${b.nome_banco}] recriando no provedor: id ${bAtual.homefin_id_simulacao_banco} ${recriarPorErro ? "foi recusado pelo provedor" : "nunca foi despachado ao banco"}`,
+              );
+              await sbAdminGlobal
+                .from("simulacao_bancos")
+                .update({ homefin_id_simulacao_banco: null })
+                .eq("id", b.id);
+              bAtual.homefin_id_simulacao_banco = null;
+            }
+
             if (bAtual?.homefin_id_simulacao_banco) {
-              if (num(bAtual.valor_parcela) > 0 || bAtual.status_banco === "simulada") {
+              if (jaSimulado) {
                 resultadosLocais.push({ banco_id: b.banco_id, status: "simulada" });
                 continue;
               }
 
-              const origin = process.env.VITE_SITE_URL || "http://localhost:8080";
-              const apiKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
-
-              const global = globalThis as any;
-              const lastRec = global[`_last_rec_${idOportunidade}`] || 0;
-              if (performance.now() - lastRec > 2000) {
-                global[`_last_rec_${idOportunidade}`] = performance.now();
-                // A reconciliação agora é disparada via fetch mas sem await,
-                // para não segurar a resposta interativa do worker.
-                fetch(`${origin}/api/public/reconciliar-simulacoes`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", apikey: apiKey || "" },
-                }).catch((e) =>
-                  console.error(
-                    "[reconciliar-simulacoes] falha ao disparar polling background:",
-                    e,
-                  ),
-                );
-              }
+              empurrarReconciliacao(`_last_rec_${idOportunidade}`);
 
               resultadosLocais.push({ banco_id: b.banco_id, status: "aguardando" });
               continue;
@@ -818,20 +889,7 @@ async function processarBancoIndividual(
         })
         .eq("id", b.id);
 
-      const origin = process.env.VITE_SITE_URL || "http://localhost:8080";
-      const apiKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
-
-      const global = globalThis as any;
-      const lastRec = global[`_last_rec_${idOportunidade}`] || 0;
-      if (performance.now() - lastRec > 2000) {
-        global[`_last_rec_${idOportunidade}`] = performance.now();
-        fetch(`${origin}/api/public/reconciliar-simulacoes`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: apiKey || "" },
-        }).catch((e) =>
-          console.error("[reconciliar-simulacoes] falha ao disparar polling background:", e),
-        );
-      }
+      empurrarReconciliacao(`_last_rec_${idOportunidade}`);
 
       return { status: "aguardando" };
     }

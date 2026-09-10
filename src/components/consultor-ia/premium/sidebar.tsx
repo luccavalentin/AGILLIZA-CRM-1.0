@@ -1,4 +1,11 @@
-import { Search, MessageSquarePlus, Trash2, PanelLeftClose, PanelLeftOpen, Calendar } from "lucide-react";
+import {
+  Search,
+  MessageSquarePlus,
+  Trash2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Calendar,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -28,8 +35,8 @@ export function ConsultorSidebar({
   isOpen,
   toggle,
 }: ConsultorSidebarProps) {
-  const conversasFiltradas = busca.trim() 
-    ? conversas.filter(c => c.titulo.toLowerCase().includes(busca.toLowerCase()))
+  const conversasFiltradas = busca.trim()
+    ? conversas.filter((c) => c.titulo.toLowerCase().includes(busca.toLowerCase()))
     : conversas;
 
   // Agrupamento temporal sutil
@@ -61,7 +68,12 @@ export function ConsultorSidebar({
         <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
           Histórico
         </h3>
-        <Button variant="ghost" size="icon" onClick={toggle} className="size-8 text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggle}
+          className="size-8 text-muted-foreground"
+        >
           <PanelLeftClose className="size-4" />
         </Button>
       </div>
@@ -79,7 +91,7 @@ export function ConsultorSidebar({
       </div>
 
       <div className="px-4 pb-2">
-        <Button 
+        <Button
           onClick={onNovaConversa}
           variant="outline"
           className="w-full justify-start gap-2 rounded-xl border-primary/10 bg-primary/[0.03] text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-white"
@@ -107,7 +119,7 @@ export function ConsultorSidebar({
                   "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs transition-all border border-transparent cursor-pointer",
                   ativa
                     ? "bg-primary/[0.06] border-primary/20 text-primary shadow-sm"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                 )}
                 onClick={() => setConversaId(c.id)}
               >
@@ -118,13 +130,13 @@ export function ConsultorSidebar({
                     {formatarData(c.created_at || c.updated_at)}
                   </div>
                 </div>
-                
+
                 <button
                   type="button"
                   aria-label="Excluir conversa"
                   className={cn(
                     "transition-opacity",
-                    ativa ? "opacity-80 hover:opacity-100" : "opacity-0 group-hover:opacity-100"
+                    ativa ? "opacity-80 hover:opacity-100" : "opacity-0 group-hover:opacity-100",
                   )}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -134,11 +146,11 @@ export function ConsultorSidebar({
                   <Trash2
                     className={cn(
                       "size-3.5",
-                      ativa ? "text-primary" : "text-muted-foreground/60 hover:text-destructive"
+                      ativa ? "text-primary" : "text-muted-foreground/60 hover:text-destructive",
                     )}
                   />
                 </button>
-                
+
                 {ativa && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 bg-primary rounded-r-full" />
                 )}

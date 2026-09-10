@@ -242,7 +242,10 @@ export function ClienteForm({
     const renda = Number(v.renda_total_declarada.replace(/\./g, "").replace(",", "."));
     /** "1.234,56" -> 1234.56; vazio/invalido -> null. */
     const numeroOuNulo = (txt?: string | null) => {
-      const limpo = String(txt ?? "").replace(/\./g, "").replace(",", ".").trim();
+      const limpo = String(txt ?? "")
+        .replace(/\./g, "")
+        .replace(",", ".")
+        .trim();
       if (!limpo) return null;
       const n = Number(limpo);
       return Number.isFinite(n) ? n : null;

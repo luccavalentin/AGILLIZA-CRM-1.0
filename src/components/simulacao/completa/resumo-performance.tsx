@@ -2,12 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Layers, CheckCircle2, AlertCircle } from "lucide-react";
 import { format, differenceInSeconds, isAfter, addSeconds } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface LinhaSimulacao {
@@ -74,18 +69,18 @@ export function ResumoPerformanceSimulacao({ linhas, className }: Props) {
     const totalSolicitadas = linhas.length;
     const retornadas = linhas.filter(linhaRetornada);
     const totalRetornadas = retornadas.length;
-    const totalErro = linhas.filter(l => l.banco.status_banco === 'erro').length;
-    const ativas = linhas.filter(l => linhaAtiva(l, agora));
+    const totalErro = linhas.filter((l) => l.banco.status_banco === "erro").length;
+    const ativas = linhas.filter((l) => linhaAtiva(l, agora));
     const processando = ativas.length > 0;
-    
+
     // Identifica se alguma linha expirou (não é simulada e passou dos 30s)
-    const totalSemRetornoNoPrazo = linhas.filter(l => 
-      !linhaRetornada(l) && !linhaAtiva(l, agora)
+    const totalSemRetornoNoPrazo = linhas.filter(
+      (l) => !linhaRetornada(l) && !linhaAtiva(l, agora),
     ).length;
 
     // Início do lote: o menor timestamp de tentativa entre todas as linhas
     const timestampsInicio = linhas.map(obterInicioTentativa);
-    const inicioLote = new Date(Math.min(...timestampsInicio.map(d => d.getTime())));
+    const inicioLote = new Date(Math.min(...timestampsInicio.map((d) => d.getTime())));
 
     // Fim do lote:
     // Se ainda processa, o fim é "agora" (limitado a 30s desde o início de cada banco)
@@ -94,24 +89,23 @@ export function ResumoPerformanceSimulacao({ linhas, className }: Props) {
     if (processando) {
       fimLote = agora;
     } else {
-      const timestampsConclusao = linhas
-        .map(l => {
-          const conclusao = obterConclusao(l);
-          if (conclusao) return conclusao;
-          // Se não concluiu (expirou), o "fim" para essa linha foi início + 30s
-          return addSeconds(obterInicioTentativa(l), JANELA_RETORNO_MS / 1000);
-        });
-      fimLote = new Date(Math.max(...timestampsConclusao.map(d => d.getTime())));
+      const timestampsConclusao = linhas.map((l) => {
+        const conclusao = obterConclusao(l);
+        if (conclusao) return conclusao;
+        // Se não concluiu (expirou), o "fim" para essa linha foi início + 30s
+        return addSeconds(obterInicioTentativa(l), JANELA_RETORNO_MS / 1000);
+      });
+      fimLote = new Date(Math.max(...timestampsConclusao.map((d) => d.getTime())));
     }
 
     const duracaoSegundos = Math.max(0, differenceInSeconds(fimLote, inicioLote));
-    // Limita a exibição visual da duração a um teto razoável se algo falhar, 
+    // Limita a exibição visual da duração a um teto razoável se algo falhar,
     // embora a lógica de linhaAtiva já controle isso.
     const duracaoExibida = processando ? Math.min(duracaoSegundos, 30) : duracaoSegundos;
 
     // Composição para Tooltip
     const composicao: Record<string, number> = {};
-    linhas.forEach(l => {
+    linhas.forEach((l) => {
       const key = `${l.sistema} · ${l.prazo}m`;
       composicao[key] = (composicao[key] || 0) + 1;
     });
@@ -125,7 +119,7 @@ export function ResumoPerformanceSimulacao({ linhas, className }: Props) {
       processando,
       inicioLote,
       fimLote: processando ? null : fimLote,
-      composicao
+      composicao,
     };
   }, [linhas, agora]);
 
@@ -133,15 +127,14 @@ export function ResumoPerformanceSimulacao({ linhas, className }: Props) {
 
   const formatarTempo = (segundos: number) => `${segundos}s`;
 
-
   const concluidoTotal = !stats.processando && stats.totalRetornadas === stats.totalSolicitadas;
 
   return (
     <TooltipProvider>
-      <div 
+      <div
         className={cn(
           "flex items-center gap-0 divide-x divide-border/40 rounded-xl border border-border/50 bg-[#FDFDFD] px-3 py-1.5 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.02)]",
-          className
+          className,
         )}
       >
         {/* Total Simulacoes (Retornadas / Solicitadas) */}
@@ -186,7 +179,9 @@ export function ResumoPerformanceSimulacao({ linhas, className }: Props) {
                   </p>
                 )}
               </div>
-              <p className="font-semibold text-[10px] uppercase text-muted-foreground/80">Composição:</p>
+              <p className="font-semibold text-[10px] uppercase text-muted-foreground/80">
+                Composição:
+              </p>
               {Object.entries(stats.composicao).map(([label, qtd]) => (
                 <div key={label} className="flex justify-between gap-4">
                   <span>{label}:</span>
@@ -225,13 +220,21 @@ export function ResumoPerformanceSimulacao({ linhas, className }: Props) {
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">
             <div className="space-y-0.5 py-0.5">
-              <p><span className="text-muted-foreground">Início do lote:</span> {format(stats.inicioLote, "HH:mm:ss", { locale: ptBR })}</p>
+              <p>
+                <span className="text-muted-foreground">Início do lote:</span>{" "}
+                {format(stats.inicioLote, "HH:mm:ss", { locale: ptBR })}
+              </p>
               {stats.fimLote && (
-                <p><span className="text-muted-foreground">Conclusão:</span> {format(stats.fimLote, "HH:mm:ss", { locale: ptBR })}</p>
+                <p>
+                  <span className="text-muted-foreground">Conclusão:</span>{" "}
+                  {format(stats.fimLote, "HH:mm:ss", { locale: ptBR })}
+                </p>
               )}
-              {!stats.processando && stats.duracaoSegundos >= 30 && stats.totalRetornadas < stats.totalSolicitadas && (
-                <p className="text-orange-500 mt-1 italic">Janela de 30s encerrada.</p>
-              )}
+              {!stats.processando &&
+                stats.duracaoSegundos >= 30 &&
+                stats.totalRetornadas < stats.totalSolicitadas && (
+                  <p className="text-orange-500 mt-1 italic">Janela de 30s encerrada.</p>
+                )}
             </div>
           </TooltipContent>
         </Tooltip>

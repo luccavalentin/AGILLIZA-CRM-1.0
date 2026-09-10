@@ -15,9 +15,7 @@ export const Route = createFileRoute("/_authenticated/checklists/$id")({
 
 /** Qual banco está por trás do checklist, para exibir a marca no cabeçalho. */
 function bancoDoChecklist(id: string): string | undefined {
-  const entrada = Object.entries(CHECKLIST_ABERTURA_CONTA).find(
-    ([, c]) => c.id === id,
-  );
+  const entrada = Object.entries(CHECKLIST_ABERTURA_CONTA).find(([, c]) => c.id === id);
   return entrada ? (entrada[0] as BancoAbertura) : undefined;
 }
 

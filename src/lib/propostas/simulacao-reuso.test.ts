@@ -12,9 +12,7 @@ function simConsumida(sim: any, erroRetorno = false): boolean {
     .charAt(0);
   const parcela = Number(sim?.valorParcelaBanco ?? 0);
   const temRetornoDoBanco = Number.isFinite(parcela) && parcela > 0;
-  return (
-    !sim || tipo === "R" || tipo === "A" || tipo === "E" || !temRetornoDoBanco || erroRetorno
-  );
+  return !sim || tipo === "R" || tipo === "A" || tipo === "E" || !temRetornoDoBanco || erroRetorno;
 }
 
 describe("reaproveitamento da simulação no envio da proposta", () => {

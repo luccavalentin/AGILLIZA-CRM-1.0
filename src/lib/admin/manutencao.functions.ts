@@ -24,7 +24,7 @@ export const destravarSimulacoes = createServerFn({ method: "POST" })
       .update({ oportunidade_lock_em: null })
       .lt("oportunidade_lock_em", new Date(Date.now() - 2 * 60 * 1000).toISOString())
       .select("id");
-    
+
     locksLiberados = locks?.length || 0;
     if (locksLiberados > 0) logs.push(`${locksLiberados} locks órfãos liberados.`);
 
@@ -34,7 +34,9 @@ export const destravarSimulacoes = createServerFn({ method: "POST" })
 
     const { data: presas } = await supabaseAdmin
       .from("simulacoes")
-      .select("id, numero_simulacao, status, created_at, codigo_oportunidade_homefin, correspondente_id, homefin_id_oportunidade")
+      .select(
+        "id, numero_simulacao, status, created_at, codigo_oportunidade_homefin, correspondente_id, homefin_id_oportunidade",
+      )
       .eq("status", "enviando")
       .lt("created_at", limite30min);
 
@@ -43,10 +45,15 @@ export const destravarSimulacoes = createServerFn({ method: "POST" })
         // Caso A: Tem ID HomeFin -> Tentar reconsultar
         if (s.homefin_id_oportunidade) {
           try {
-            const resp = await chamarIntegracao<any>(`/oportunidade/${s.homefin_id_oportunidade}`, "GET", undefined, {
-              simulacao_id: s.id,
-              correspondente_id: s.correspondente_id
-            });
+            const resp = await chamarIntegracao<any>(
+              `/oportunidade/${s.homefin_id_oportunidade}`,
+              "GET",
+              undefined,
+              {
+                simulacao_id: s.id,
+                correspondente_id: s.correspondente_id,
+              },
+            );
 
             const bancosApi = resp?.simulacoes || [];
             let algumSucesso = false;
@@ -56,13 +63,17 @@ export const destravarSimulacoes = createServerFn({ method: "POST" })
               if (valor > 0) {
                 algumSucesso = true;
                 // Atualizar o banco correspondente
-                await supabaseAdmin.from("simulacao_bancos").update({
-                  status_banco: "simulada",
-                  valor_parcela: valor,
-                  taxa_juros_ano: apiB.taxaJurosAnoBanco || apiB.taxaJurosAno,
-                  taxa_cet_ano: apiB.taxaCetAnoBanco || apiB.taxaCetAno,
-                  simulado_em: new Date().toISOString()
-                }).eq("simulacao_id", s.id).eq("homefin_id_simulacao_banco", apiB.idSimulacao);
+                await supabaseAdmin
+                  .from("simulacao_bancos")
+                  .update({
+                    status_banco: "simulada",
+                    valor_parcela: valor,
+                    taxa_juros_ano: apiB.taxaJurosAnoBanco || apiB.taxaJurosAno,
+                    taxa_cet_ano: apiB.taxaCetAnoBanco || apiB.taxaCetAno,
+                    simulado_em: new Date().toISOString(),
+                  })
+                  .eq("simulacao_id", s.id)
+                  .eq("homefin_id_simulacao_banco", apiB.idSimulacao);
               }
             }
 
@@ -71,16 +82,23 @@ export const destravarSimulacoes = createServerFn({ method: "POST" })
               simulacoesReconsultadas++;
             } else if (new Date(s.created_at) < new Date(limite24h)) {
               // Se passou 24h e nada, marca erro
-              await supabaseAdmin.from("simulacoes").update({
-                status: "erro_banco",
-                updated_at: new Date().toISOString()
-              }).eq("id", s.id);
-              
-              await supabaseAdmin.from("simulacao_bancos").update({
-                status_banco: "erro",
-                mensagem_banco: "Banco não retornou resultado em tempo hábil (24h)."
-              }).eq("simulacao_id", s.id).eq("status_banco", "enviando" as any);
-              
+              await supabaseAdmin
+                .from("simulacoes")
+                .update({
+                  status: "erro_banco",
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", s.id);
+
+              await supabaseAdmin
+                .from("simulacao_bancos")
+                .update({
+                  status_banco: "erro",
+                  mensagem_banco: "Banco não retornou resultado em tempo hábil (24h).",
+                })
+                .eq("simulacao_id", s.id)
+                .eq("status_banco", "enviando" as any);
+
               simulacoesEncerradas++;
             }
           } catch (e) {
@@ -88,15 +106,22 @@ export const destravarSimulacoes = createServerFn({ method: "POST" })
           }
         } else {
           // Caso B: Não tem ID HomeFin -> Nunca saiu do CRM
-          await supabaseAdmin.from("simulacoes").update({
-            status: "erro_banco",
-            updated_at: new Date().toISOString()
-          }).eq("id", s.id);
+          await supabaseAdmin
+            .from("simulacoes")
+            .update({
+              status: "erro_banco",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", s.id);
 
-          await supabaseAdmin.from("simulacao_bancos").update({
-            status_banco: "erro",
-            mensagem_banco: "Envio não foi concluído. Reenvie a simulação."
-          }).eq("simulacao_id", s.id).eq("status_banco", "enviando" as any);
+          await supabaseAdmin
+            .from("simulacao_bancos")
+            .update({
+              status_banco: "erro",
+              mensagem_banco: "Envio não foi concluído. Reenvie a simulação.",
+            })
+            .eq("simulacao_id", s.id)
+            .eq("status_banco", "enviando" as any);
 
           simulacoesEncerradas++;
         }
@@ -108,30 +133,36 @@ export const destravarSimulacoes = createServerFn({ method: "POST" })
       locksLiberados,
       simulacoesReconsultadas,
       simulacoesEncerradas,
-      logs
+      logs,
     };
   });
 
 /**
  * Retorna contagem de registros que seriam afetados pelo destravamento.
  */
-export const obterSumarioDestravamento = createServerFn({ method: "GET" })
-  .handler(async () => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const limite2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    const limite30min = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+export const obterSumarioDestravamento = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const limite2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const limite30min = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
-    const [locks, presas] = await Promise.all([
-      supabaseAdmin.from("simulacoes").select("id", { count: "exact", head: true }).lt("oportunidade_lock_em", limite2min),
-      supabaseAdmin.from("simulacoes").select("id, homefin_id_oportunidade", { count: "exact" }).eq("status", "enviando").lt("created_at", limite30min)
-    ]);
+  const [locks, presas] = await Promise.all([
+    supabaseAdmin
+      .from("simulacoes")
+      .select("id", { count: "exact", head: true })
+      .lt("oportunidade_lock_em", limite2min),
+    supabaseAdmin
+      .from("simulacoes")
+      .select("id, homefin_id_oportunidade", { count: "exact" })
+      .eq("status", "enviando")
+      .lt("created_at", limite30min),
+  ]);
 
-    const comId = (presas.data || []).filter(p => !!p.homefin_id_oportunidade).length;
-    const semId = (presas.data || []).filter(p => !p.homefin_id_oportunidade).length;
+  const comId = (presas.data || []).filter((p) => !!p.homefin_id_oportunidade).length;
+  const semId = (presas.data || []).filter((p) => !p.homefin_id_oportunidade).length;
 
-    return {
-      locksVencidos: locks.count || 0,
-      presasComId: comId,
-      presasSemId: semId
-    };
-  });
+  return {
+    locksVencidos: locks.count || 0,
+    presasComId: comId,
+    presasSemId: semId,
+  };
+});

@@ -15,6 +15,7 @@ import {
   Bell,
   ShieldCheck,
   ScanLine,
+  FileSearch,
   FolderTree,
   DatabaseBackup,
   UserRound,
@@ -79,6 +80,14 @@ export const navInterno: NavGroup[] = [
     items: [
       { label: "Clientes", icon: Users, to: "/crm/clientes" },
       { label: "Painel", icon: KanbanSquare, to: "/crm/painel" },
+      {
+        // Consulta a bureau de crédito (SPC/Serasa). Fica no CRM porque é
+        // decisão sobre a pessoa, e não sobre uma proposta já aberta.
+        label: "Consulta Ficha Cliente",
+        icon: FileSearch,
+        to: "/crm/ficha-bureau",
+        perm: { modulo: "crm.clientes" },
+      },
       {
         label: "Chat e Follow-up Cliente",
         icon: MessagesSquare,
@@ -301,7 +310,6 @@ export const navInterno: NavGroup[] = [
             to: "/formularios/powerpoint",
             perm: { modulo: "documentos.formularios" },
           },
-
         ],
       },
       {
