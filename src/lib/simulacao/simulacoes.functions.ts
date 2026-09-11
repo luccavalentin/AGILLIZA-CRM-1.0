@@ -136,7 +136,10 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     let query = supabase
       .from("clientes")
       .select(
-        "id, nome, documento, email, telefone_celular, data_nascimento, sexo, estado_civil, renda_total_declarada, tipo_pessoa, faturamento_empresa, imovel_cep, imovel_uf, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular",
+        // `regime_casamento` e `conjuge_sexo` faltavam aqui: o patch que
+        // preenche o formulário já os lia, mas chegavam `undefined` — regime e
+        // sexo do cônjuge vinham em branco mesmo com o cadastro completo.
+        "id, nome, documento, email, telefone_celular, data_nascimento, sexo, estado_civil, regime_casamento, renda_total_declarada, tipo_pessoa, faturamento_empresa, imovel_cep, imovel_uf, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular, conjuge_sexo",
       )
       .is("deleted_at", null)
       .limit(8);
@@ -160,7 +163,10 @@ export const obterClienteCRM = createServerFn({ method: "GET" })
     const { data: row, error } = await supabase
       .from("clientes")
       .select(
-        "id, nome, documento, email, telefone_celular, data_nascimento, sexo, estado_civil, renda_total_declarada, tipo_pessoa, faturamento_empresa, imovel_cep, imovel_uf, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular",
+        // `regime_casamento` e `conjuge_sexo` faltavam aqui: o patch que
+        // preenche o formulário já os lia, mas chegavam `undefined` — regime e
+        // sexo do cônjuge vinham em branco mesmo com o cadastro completo.
+        "id, nome, documento, email, telefone_celular, data_nascimento, sexo, estado_civil, regime_casamento, renda_total_declarada, tipo_pessoa, faturamento_empresa, imovel_cep, imovel_uf, conjuge_nome, conjuge_cpf, conjuge_renda, conjuge_data_nascimento, conjuge_email, conjuge_celular, conjuge_sexo",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -665,6 +671,10 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           celular: dd.celular ?? null,
           data_nascimento: dd.data_nascimento || null,
           renda_total: dd.renda_total ?? null,
+          // Sexo agora fica na simulação (antes só no cliente, e a simulação
+          // reaberta voltava sem ele). PJ não tem — vai nulo.
+          sexo: dd.sexo === "M" || dd.sexo === "F" ? dd.sexo : null,
+          sexo_conjuge: casado && (dd.sexo_conjuge === "M" || dd.sexo_conjuge === "F") ? dd.sexo_conjuge : null,
           estado_civil: dd.estado_civil ?? null,
           possui_conjuge: dd.possui_conjuge ?? false,
           compoe_renda: dd.compoe_renda ?? false,
@@ -856,6 +866,8 @@ export const criarSimulacao = createServerFn({ method: "POST" })
             prazo: prazoEfetivo,
             prazo_anos: Math.floor(prazoEfetivo / 12),
             estado_civil: dd.estado_civil_conjuge || dd.estado_civil,
+            sexo: dd.sexo_conjuge === "M" || dd.sexo_conjuge === "F" ? dd.sexo_conjuge : null,
+            sexo_conjuge: dd.sexo === "M" || dd.sexo === "F" ? dd.sexo : null,
 
             nome_conjuge: dd.nome_cliente || null,
             cpf_conjuge: dd.cpf_cnpj || null,
@@ -1906,7 +1918,7 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
     const { data: s, error: eSel } = await supabase
       .from("simulacoes")
       .select(
-        "id, cliente_id, possui_conjuge, nome_cliente, cpf_cnpj, email, celular, data_nascimento, renda_total, estado_civil, nome_conjuge, cpf_conjuge, email_conjuge, celular_conjuge, data_nascimento_conjuge, renda_conjuge, estado_civil_conjuge",
+        "id, cliente_id, possui_conjuge, nome_cliente, cpf_cnpj, email, celular, data_nascimento, renda_total, estado_civil, sexo, nome_conjuge, cpf_conjuge, email_conjuge, celular_conjuge, data_nascimento_conjuge, renda_conjuge, estado_civil_conjuge, sexo_conjuge",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -1929,6 +1941,7 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
         data_nascimento: r.data_nascimento_conjuge,
         renda_total: r.renda_conjuge,
         estado_civil: r.estado_civil_conjuge || r.estado_civil,
+        sexo: r.sexo_conjuge ?? null,
         nome_conjuge: r.nome_cliente,
         cpf_conjuge: r.cpf_cnpj,
         email_conjuge: r.email,
@@ -1936,6 +1949,7 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
         data_nascimento_conjuge: r.data_nascimento,
         renda_conjuge: r.renda_total,
         estado_civil_conjuge: r.estado_civil || r.estado_civil_conjuge,
+        sexo_conjuge: r.sexo ?? null,
       })
       .eq("id", data.id);
     if (error) throw error;

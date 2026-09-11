@@ -191,8 +191,9 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
             id, 
             simulacao_id, 
             banco_id,
-            homefin_id_simulacao_banco, 
+            homefin_id_simulacao_banco,
             nome_banco,
+            codigo_banco,
             created_at,
             raw_response,
             simulacoes!inner(
@@ -347,6 +348,47 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                 // simulação. Refaz o envio do zero para este banco, o que cria
                 // uma simulação nova na HomeFin e integra essa.
                 const nuncaEnviouAoBanco = !apiSim?.dataHoraEnvioIntegracao;
+
+                // FREIO POR CPF. Se este CPF já teve simulações encerradas
+                // por "sem despacho" neste banco nas últimas 48 h, insistir
+                // é repetir o que já não funcionou (medido: 22 CPFs, 86
+                // simulações, zero sucesso). Encerra agora, com a
+                // explicação, em vez de gastar 25 min e mais 3 chamadas.
+                if (!erroExplicito && nuncaEnviouAoBanco) {
+                  const { contarFalhasSemDespacho } =
+                    await import("@/lib/simulacao/bloqueio-cpf-banco.server");
+                  const { cpfBloqueadoNoBanco, mensagemCpfBloqueado, ENCERRADA_POR_CPF_BLOQUEADO } =
+                    await import("@/lib/simulacao/bloqueio-cpf-banco");
+                  const { data: simDoBanco } = await supabaseAdmin
+                    .from("simulacoes")
+                    .select("cpf_cnpj")
+                    .eq("id", b.simulacao_id)
+                    .maybeSingle();
+                  const falhas = await contarFalhasSemDespacho(supabaseAdmin, {
+                    cpfCnpj: (simDoBanco as any)?.cpf_cnpj,
+                    codigoBanco: (b as any).codigo_banco,
+                    excluirId: b.id,
+                  });
+                  if (cpfBloqueadoNoBanco(falhas)) {
+                    await supabaseAdmin
+                      .from("simulacao_bancos")
+                      .update({
+                        status_banco: "erro" as any,
+                        mensagem_banco: mensagemCpfBloqueado(b.nome_banco, falhas + 1),
+                        raw_response: {
+                          ...(apiSim ?? {}),
+                          _encerrada_por: ENCERRADA_POR_CPF_BLOQUEADO,
+                          _falhas_anteriores_cpf: falhas,
+                          _minutos_espera: Math.round(minutosEspera),
+                        },
+                        updated_at: new Date().toISOString(),
+                      })
+                      .eq("id", b.id);
+                    await recalcularStatusSimulacao(b.simulacao_id, supabaseAdmin);
+                    erros++;
+                    continue;
+                  }
+                }
                 if (
                   !erroExplicito &&
                   nuncaEnviouAoBanco &&
@@ -416,7 +458,10 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                     .from("simulacao_bancos")
                     .update({
                       status_banco: "erro" as any,
-                      mensagem_banco: `O ${b.nome_banco ?? "banco"} não processou esta simulação: o provedor não chegou a registrar o envio à instituição. Costuma ser indisponibilidade momentânea do banco — reenvie em alguns minutos.`,
+                      // Primeira ocorrência para este CPF: ainda vale um
+                      // reenvio. Se repetir, o freio por CPF (acima) encerra
+                      // na hora e explica que reenviar não resolve.
+                      mensagem_banco: `O ${b.nome_banco ?? "banco"} não processou esta simulação: o provedor não chegou a registrar o envio à instituição. Pode ser indisponibilidade momentânea — reenvie uma vez; se repetir, o caso é do provedor.`,
                       raw_response: {
                         ...(apiSim ?? {}),
                         _encerrada_por: "sem_despacho_ao_banco",

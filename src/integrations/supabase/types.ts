@@ -6584,6 +6584,8 @@ export type Database = {
           regime_casamento: string | null
           renda_conjuge: number | null
           renda_total: number | null
+          sexo: string | null
+          sexo_conjuge: string | null
           sistema_amortizacao: string | null
           situacao_imovel: string | null
           status: Database["public"]["Enums"]["simulacao_status"]
@@ -6652,6 +6654,8 @@ export type Database = {
           regime_casamento?: string | null
           renda_conjuge?: number | null
           renda_total?: number | null
+          sexo?: string | null
+          sexo_conjuge?: string | null
           sistema_amortizacao?: string | null
           situacao_imovel?: string | null
           status?: Database["public"]["Enums"]["simulacao_status"]
@@ -6720,6 +6724,8 @@ export type Database = {
           regime_casamento?: string | null
           renda_conjuge?: number | null
           renda_total?: number | null
+          sexo?: string | null
+          sexo_conjuge?: string | null
           sistema_amortizacao?: string | null
           situacao_imovel?: string | null
           status?: Database["public"]["Enums"]["simulacao_status"]

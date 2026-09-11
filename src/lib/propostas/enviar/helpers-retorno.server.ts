@@ -356,6 +356,57 @@ export function statusInternoBanco(
 }
 
 /**
+ * Status global da proposta a partir das linhas de `proposta_bancos`.
+ *
+ * Função pura para ser testada. A hierarquia é: aprovação plena > condicionada
+ * > em análise > recusa > erro de envio > enviada sem desfecho.
+ *
+ * `null` significa "nenhuma linha diz nada" — proposta ainda não enviada (só
+ * `aguardando`/`nao_enviado`). Quem chama mantém o status que já tinha.
+ *
+ * Antes, esse caso caía num `return "enviada_banco"` fixo, e o `catch` do
+ * envio grava a falha como `situacao_banco = "nao_enviado"` (com `status_banco =
+ * "erro"`). Resultado: a recusa da integração era derivada como "Enviado p/
+ * aprovação de crédito", e a sincronização seguinte a devolvia para "Erro no
+ * envio" — a PRO-000282 alternou entre os dois 25 vezes num dia.
+ */
+export function statusGlobalPorBancos(
+  bancos: ReadonlyArray<{
+    situacao_banco?: string | null;
+    status_banco?: string | null;
+    numero_proposta_banco?: string | null;
+  }>,
+): PropostaStatus | null {
+  if (!bancos || bancos.length === 0) return null;
+
+  let algumAprovado = false;
+  let algumCondicionado = false;
+  let algumEmAnalise = false;
+  let algumRecusado = false;
+  let algumErroEnvio = false;
+  let algumEnviado = false;
+
+  for (const b of bancos) {
+    const s = String(b.situacao_banco ?? "");
+    const st = String(b.status_banco ?? "");
+    if (s === "aprovado") algumAprovado = true;
+    else if (s === "condicionado") algumCondicionado = true;
+    else if (s === "em_analise") algumEmAnalise = true;
+    else if (s === "recusado") algumRecusado = true;
+    else if (s === "erro" || st === "erro") algumErroEnvio = true;
+    else if (st === "enviada" || Boolean(b.numero_proposta_banco)) algumEnviado = true;
+  }
+
+  if (algumAprovado) return "credito_aprovado";
+  if (algumCondicionado) return "credito_condicionado";
+  if (algumEmAnalise) return "em_analise_credito";
+  if (algumRecusado) return "credito_recusado";
+  if (algumErroEnvio) return "erro_envio";
+  if (algumEnviado) return "enviada_banco";
+  return null;
+}
+
+/**
  * Traduz o `tipoSituacao` cru do banco (S/P/N/A/R) para o enum interno usado
  * na coluna `proposta_bancos.situacao_banco` e no <Select> "Situação de crédito"
  * (nao_enviado/em_analise/condicionado/aprovado/recusado/cancelado).

@@ -30,6 +30,7 @@ import {
   numeroAtualEhReferenciaTecnica,
   escolherSimulacaoBanco,
   statusDaAtividade,
+  statusGlobalPorBancos,
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
 
@@ -58,39 +59,12 @@ export async function recalcularStatusGlobalProposta(
 ): Promise<PropostaStatus | null> {
   const { data: bancos } = await supabase
     .from("proposta_bancos")
-    .select("situacao_banco")
+    .select("situacao_banco, status_banco, numero_proposta_banco")
     .eq("proposta_id", propostaId);
 
-  if (!bancos || bancos.length === 0) return null;
-
-  let algumAprovado = false;
-  let algumCondicionado = false;
-  let algumEmAnalise = false;
-  let algumRecusado = false;
-  let algumErroEnvio = false;
-
-  for (const b of bancos) {
-    const s = String(b.situacao_banco);
-    if (s === "aprovado") algumAprovado = true;
-    // Condicionado deixa de ser somado ao aprovado: o cabeçalho dizia
-    // "Crédito aprovado" mesmo quando TODOS os bancos tinham imposto
-    // exigências, e o operador seguia para os documentos sem saber delas.
-    else if (s === "condicionado") algumCondicionado = true;
-    else if (s === "em_analise") algumEmAnalise = true;
-    else if (s === "recusado") algumRecusado = true;
-    else if (s === "erro") algumErroEnvio = true;
-  }
-
-  // Hierarquia de relevância para o cabeçalho
-  // Aprovação plena de um banco vale mais que a condicionada de outro — é a
-  // melhor oferta em mão.
-  if (algumAprovado) return "credito_aprovado";
-  if (algumCondicionado) return "credito_condicionado";
-  if (algumEmAnalise) return "em_analise_credito";
-  if (algumRecusado) return "credito_recusado";
-  if (algumErroEnvio) return "erro_envio";
-
-  return "enviada_banco";
+  // Regra pura em `statusGlobalPorBancos` (helpers-retorno). `null` = as
+  // linhas ainda não dizem nada; o chamador mantém o status atual.
+  return statusGlobalPorBancos(bancos ?? []);
 }
 
 export interface IntegracaoErroEstruturado {
@@ -1614,8 +1588,12 @@ async function enviarPropostaImplInner({
   // ---- 3) Recálculo do status global (propostas.status) a partir dos bancos ----
   // FONTE ÚNICA DE VERDADE: propostas.status é DERIVADO do estado atual de
   // proposta_bancos através da função centralizada.
+  // Sem desfecho nas linhas (banco aceitou e ainda não se pronunciou), a
+  // proposta fica como enviada e o polling abaixo vai atrás do retorno. Só
+  // volta ao status de antes se NENHUM banco chegou a receber.
   const novoStatusGlobal =
-    (await recalcularStatusGlobalProposta(supabase, propostaId)) || statusAtual;
+    (await recalcularStatusGlobalProposta(supabase, propostaId)) ??
+    (sucesso > 0 ? "enviada_banco" : statusAtual);
 
   // Verificação de integridade (Log de divergência)
   if (sucesso > 0 && novoStatusGlobal === "credito_recusado") {
@@ -1888,16 +1866,19 @@ export async function sincronizarPropostaImpl({
 
     const falhaIntegracao = ehFalhaIntegracaoBanco(sim) && !jaConfirmadoLocal;
     if (falhaIntegracao) {
-      // O envio já grava aqui a explicação que conseguiu apurar — inclusive a
-      // de proposta duplicada no mesmo banco. A sincronização vinha logo atrás
-      // e trocava tudo pelo texto genérico de falha de comunicação, apagando a
-      // única pista que o operador tinha.
+      // Quando o banco EXPLICA a recusa (ex.: Itaú devolvendo `fields` com
+      // "zipCode: Zip code not found"), essa explicação é o que o operador
+      // precisa ver — a PRO-000297 mostrou o texto genérico e a causa real
+      // (CEP digitado errado) só apareceu lendo o log.
       //
-      // Caso real (PRO-000272, Bradesco): recusada porque o mesmo CPF já tinha
-      // a PRO-000269 em análise no Bradesco (protocolo 5499977). O envio às
-      // 06:55 apurou o motivo; o sync às 06:56 o substituiu por "falha na
-      // comunicação", e a tela passou a não dizer nada de útil.
-      erroMsg = await motivoFalhaSemMensagem({ prop, pb, propostaId, supabase });
+      // O texto apurado por `motivoFalhaSemMensagem` (proposta duplicada no
+      // mesmo banco, recusa recente etc.) entra quando o provedor não disse
+      // nada, ou disse só o "Erro desconhecido na integração X" que ele usa
+      // como placeholder.
+      const semExplicacaoDoBanco = !erroMsg || /erro desconhecido na integra/i.test(erroMsg);
+      if (semExplicacaoDoBanco) {
+        erroMsg = await motivoFalhaSemMensagem({ prop, pb, propostaId, supabase });
+      }
       algumFalhaIntegracao = true;
       bancosComFalhaIntegracao.push(pb.nome_banco ?? "Banco");
     }
@@ -2112,9 +2093,18 @@ export async function sincronizarPropostaImpl({
     novoStatus = derivado;
   }
 
-  // ---- 2.5) Recálculo Final e Sincronização de Status Global ----
-  const statusDefinitivoBancos = await recalcularStatusGlobalProposta(supabase, propostaId);
-  const statusEfetivo = (statusDefinitivoBancos ?? novoStatus ?? prop.status) as PropostaStatus;
+  // ---- 2.5) Status final — UMA decisão, UMA escrita ----
+  //
+  // `novoStatus` já parte do recálculo pelas linhas de banco e acrescenta o que
+  // só a oportunidade sabe (T = contrato, C = cancelada, etapa do funil,
+  // falha de integração). Ele é a palavra final.
+  //
+  // Antes havia duas escritas com valores diferentes: esta gravava o recálculo
+  // cru (que devolvia "enviada_banco" para uma recusa) e a de baixo gravava
+  // `novoStatus` ("erro_envio") só quando diferia do lido no início. Numa
+  // rodada vencia uma, na seguinte a outra — a PRO-000282 alternou 25 vezes
+  // entre "Enviado p/ aprovação" e "Erro no envio" num único dia.
+  const statusEfetivo = (novoStatus ?? prop.status) as PropostaStatus;
 
   // ---- Propaga o desfecho da proposta para as linhas de banco ----
   // A lista de propostas exibe proposta_bancos.status_banco. Quando o desfecho
@@ -2229,13 +2219,12 @@ export async function sincronizarPropostaImpl({
   if (vPrazo != null) patch.prazo_aprovado = vPrazo;
   if (vTaxa != null) patch.taxa_juros_ano_aprovado = vTaxa;
 
-  const mudouStatus = novoStatus != null && novoStatus !== prop.status;
+  const mudouStatus = statusEfetivo !== prop.status;
   if (mudouStatus) {
-    patch.status = novoStatus;
-    if (novoStatus === "contrato_emitido") patch.contrato_emitido_em = new Date().toISOString();
+    if (statusEfetivo === "contrato_emitido") patch.contrato_emitido_em = new Date().toISOString();
     if (
       errosBanco.length > 0 &&
-      (novoStatus === "erro_envio" || novoStatus === "credito_recusado")
+      (statusEfetivo === "erro_envio" || statusEfetivo === "credito_recusado")
     ) {
       patch.ultimo_erro = errosBanco.join(" | ");
     }
@@ -2247,7 +2236,7 @@ export async function sincronizarPropostaImpl({
     .eq("id", propostaId);
 
   if (mudouStatus) {
-    const ehErroIntegracao = novoStatus === "erro_envio" && algumFalhaIntegracao;
+    const ehErroIntegracao = statusEfetivo === "erro_envio" && algumFalhaIntegracao;
     await supabase.from("proposta_historico").insert({
       proposta_id: propostaId,
       tipo_evento: ehErroIntegracao ? "erro_envio" : "sincronizacao",
@@ -2257,7 +2246,7 @@ export async function sincronizarPropostaImpl({
           ? `Atualização do banco: ${nomeEtapa}`
           : "Situação atualizada pelo banco",
       status_anterior: prop.status as any,
-      status_novo: novoStatus as any,
+      status_novo: statusEfetivo as any,
       ator_id: userId,
     });
     if (prop.usuario_responsavel_id) {
@@ -2271,7 +2260,7 @@ export async function sincronizarPropostaImpl({
             ? errosBanco.join(" | ")
             : nomeEtapa
               ? `Nova situação: ${nomeEtapa}.`
-              : `Status alterado para ${novoStatus}.`,
+              : `Status alterado para ${statusEfetivo}.`,
         link: `/operacional/propostas/${propostaId}`,
       } as any);
     }
@@ -2354,7 +2343,7 @@ export async function sincronizarPropostaImpl({
     console.error("[proposta] importação de follow-ups do banco falhou", e);
   }
 
-  return { status: novoStatus ?? prop.status, etapa: nomeEtapa, atualizado: mudouStatus };
+  return { status: statusEfetivo, etapa: nomeEtapa, atualizado: mudouStatus };
 }
 
 /* =========================================================================

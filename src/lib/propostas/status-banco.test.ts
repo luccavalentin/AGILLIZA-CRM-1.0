@@ -3,7 +3,50 @@ import {
   ehFalhaIntegracaoBanco,
   situacaoBancoDeTipo,
   statusInternoBanco,
+  statusGlobalPorBancos,
 } from "./enviar/helpers-retorno.server";
+
+describe("statusGlobalPorBancos — status da proposta a partir das linhas de banco", () => {
+  it("falha de envio (situacao nao_enviado + status erro) é erro_envio, não 'enviada'", () => {
+    // Era o pingue-pongue da PRO-000282: o catch do envio grava assim, o
+    // recálculo devolvia "enviada_banco" e a sincronização devolvia "erro".
+    expect(statusGlobalPorBancos([{ situacao_banco: "nao_enviado", status_banco: "erro" }])).toBe(
+      "erro_envio",
+    );
+  });
+
+  it("linhas que ainda não dizem nada devolvem null (mantém o status atual)", () => {
+    expect(
+      statusGlobalPorBancos([{ situacao_banco: "nao_enviado", status_banco: "aguardando" }]),
+    ).toBeNull();
+    expect(statusGlobalPorBancos([])).toBeNull();
+  });
+
+  it("banco que recebeu sem desfecho fica como enviada_banco", () => {
+    expect(
+      statusGlobalPorBancos([
+        { situacao_banco: "nao_enviado", status_banco: "aguardando", numero_proposta_banco: "123" },
+      ]),
+    ).toBe("enviada_banco");
+    expect(statusGlobalPorBancos([{ situacao_banco: "nao_enviado", status_banco: "enviada" }])).toBe(
+      "enviada_banco",
+    );
+  });
+
+  it("hierarquia: aprovado > condicionado > em análise > recusado > erro", () => {
+    const erro = { situacao_banco: "nao_enviado", status_banco: "erro" };
+    expect(statusGlobalPorBancos([erro, { situacao_banco: "recusado" }])).toBe("credito_recusado");
+    expect(statusGlobalPorBancos([erro, { situacao_banco: "em_analise" }])).toBe(
+      "em_analise_credito",
+    );
+    expect(statusGlobalPorBancos([{ situacao_banco: "condicionado" }, { situacao_banco: "aprovado" }])).toBe(
+      "credito_aprovado",
+    );
+    expect(statusGlobalPorBancos([{ situacao_banco: "condicionado" }, { situacao_banco: "em_analise" }])).toBe(
+      "credito_condicionado",
+    );
+  });
+});
 
 /**
  * `tipoSituacao` da integração, conforme a documentação:

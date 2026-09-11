@@ -13,6 +13,10 @@ import {
   type MotivoLimitador,
 } from "@/lib/simulacao/prazo";
 import { obterConfiguracoesModulos } from "@/lib/admin/configuracoes-modulos.functions";
+import {
+  estadoCivilCrmParaCodigo,
+  regimeCasamentoCrmParaCodigo,
+} from "@/lib/propostas/dominios";
 import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import {
@@ -610,8 +614,11 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           email: s.email || EMAIL_PADRAO,
           celular: s.celular || "",
           data_nascimento: s.data_nascimento || "",
-          sexo: s.sexo || s.dados?.sexo || prev.sexo,
-          estado_civil: s.estado_civil || "",
+          sexo: s.sexo || prev.sexo,
+          // Os <Select> só conhecem o código (CA/CP). Linhas antigas ou
+          // sincronizadas pelo CRM podem trazer "casado"/"comunhao_parcial";
+          // normalizamos na entrada para o campo não abrir vazio.
+          estado_civil: estadoCivilCrmParaCodigo(s.estado_civil) || "",
           renda_total: s.renda_total || 0,
           renda_price: rendaPrice,
 
@@ -624,9 +631,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           data_nascimento_conjuge: s.data_nascimento_conjuge || "",
           email_conjuge: s.email_conjuge || EMAIL_PADRAO,
           celular_conjuge: s.celular_conjuge || "",
-          sexo_conjuge: s.sexo_conjuge || s.dados?.sexo_conjuge || prev.sexo_conjuge,
-          estado_civil_conjuge: s.estado_civil_conjuge || "",
-          regime_casamento: s.regime_casamento || "",
+          sexo_conjuge: s.sexo_conjuge || prev.sexo_conjuge,
+          estado_civil_conjuge: estadoCivilCrmParaCodigo(s.estado_civil_conjuge) || "",
+          regime_casamento: regimeCasamentoCrmParaCodigo(s.regime_casamento) || "",
 
           // Consentimentos que o mapeamento esquecia e o usuário tinha de
           // repreencher ao editar. Editar deve devolver a simulação
