@@ -740,15 +740,13 @@ async function processarBancoIndividual(
       // é a única diferença que sobrou entre os envios que o Bradesco responde
       // e os que ele quebra sem devolver motivo. Mandamos o mesmo valor que já
       // gravamos no participante jurídico, para o payload ficar coerente.
+      // A simulação passou a guardar o próprio sexo; o cadastro do cliente é
+      // a reserva para linhas anteriores à coluna.
       tipoSexo:
+        sim.sexo ||
         sim.cliente?.sexo ||
-        (sim.dados as any)?.sexo ||
         (String(sim.cpf_cnpj ?? "").replace(/\D/g, "").length === 14 ? "M" : undefined),
-      tipoSexoConjuge:
-        sim.cliente?.conjuge_sexo ||
-        (sim.dados as any)?.conjuge_sexo ||
-        (sim.cliente?.dados as any)?.conjuge_sexo ||
-        undefined,
+      tipoSexoConjuge: sim.sexo_conjuge || sim.cliente?.conjuge_sexo || undefined,
     };
 
     const respSim = await chamarIntegracao<any>(
@@ -880,6 +878,38 @@ async function processarBancoIndividual(
         .eq("id", b.id);
       return { status: "simulada" };
     } else {
+      // Sem parcela no retorno: o banco é assíncrono (Santander) ou o
+      // provedor não despachou. Antes de deixar em "aguardando" e acionar a
+      // reconciliação, olha se este CPF já foi encerrado por "sem despacho"
+      // neste banco nas últimas 48 h — nesse caso a espera é inútil e o
+      // operador precisa saber agora (é o "reenviar não resolve").
+      const { contarFalhasSemDespacho } = await import("./bloqueio-cpf-banco.server");
+      const { cpfBloqueadoNoBanco, mensagemCpfBloqueado, ENCERRADA_POR_CPF_BLOQUEADO } =
+        await import("./bloqueio-cpf-banco");
+      const falhasCpf = await contarFalhasSemDespacho(sbAdminProc, {
+        cpfCnpj: sim.cpf_cnpj,
+        codigoBanco: b.codigo_banco,
+        excluirId: b.id,
+      });
+      if (cpfBloqueadoNoBanco(falhasCpf)) {
+        console.warn(
+          `[enviar.server][${b.nome_banco}] CPF com ${falhasCpf} encerramentos sem despacho em 48h — encerrando sem esperar (simulacao=${simulacaoId})`,
+        );
+        await sbAdminProc
+          .from("simulacao_bancos")
+          .update({
+            status_banco: "erro" as any,
+            mensagem_banco: mensagemCpfBloqueado(b.nome_banco, falhasCpf + 1),
+            raw_response: {
+              ...((fonte as any) ?? {}),
+              _encerrada_por: ENCERRADA_POR_CPF_BLOQUEADO,
+              _falhas_anteriores_cpf: falhasCpf,
+            },
+          })
+          .eq("id", b.id);
+        return { status: "erro" };
+      }
+
       await sbAdminProc
         .from("simulacao_bancos")
         .update({
