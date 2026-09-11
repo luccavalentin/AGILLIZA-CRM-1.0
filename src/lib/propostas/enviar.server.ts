@@ -1744,6 +1744,56 @@ export async function sincronizarPropostaImpl({
     throw new Error("Proposta ainda não foi enviada ao banco.");
   }
 
+  /**
+   * PROPOSTA QUE NUNCA FOI SUBMETIDA NÃO TEM O QUE SINCRONIZAR.
+   *
+   * O guarda acima supõe que ter `homefin_id_oportunidade` significa ter sido
+   * enviada. Não significa: a proposta HERDA a oportunidade da simulação de
+   * origem, então uma proposta recém-criada, ainda em rascunho, já passa por
+   * ele. A leitura seguinte encontrava a simulação em "P" sem protocolo — o
+   * estado normal de quem ainda não virou proposta — e a regra de falha de
+   * integração, feita para o RETORNO de um envio, a condenava: "o banco não
+   * aceitou esta proposta e não informou o motivo".
+   *
+   * Levantamento de 11/09: TODAS as propostas ativas sem nenhum envio
+   * registrado estavam em `erro_envio` (PRO-000252, 260, 290, 293 e 294),
+   * todas com histórico `rascunho -> erro_envio` direto. A PRO-000293 foi
+   * marcada dois segundos depois de criada. O banco não recebeu nenhuma.
+   *
+   * Pular só o banco não bastaria: com as linhas em `nao_enviado`,
+   * `recalcularStatusGlobalProposta` cai no padrão `enviada_banco`, e a
+   * rascunho viraria "Enviado p/ aprovação de crédito" — outra mentira.
+   *
+   * O marcador de envio é o `POST incluir-proposta-integracao` no log: 239 de
+   * 239 envios desde 13/07 estão lá com o `idSimulacao`, e a faxina de logs
+   * (`purgar-logs-homefin`) preserva justamente essas linhas.
+   */
+  const { data: enviosRegistrados } = await supabase
+    .from("proposta_logs_homefin")
+    .select("request_masked")
+    .eq("proposta_id", propostaId)
+    .like("endpoint", "%/incluir-proposta-integracao");
+  const idsSimulacaoSubmetidos = new Set(
+    ((enviosRegistrados ?? []) as any[])
+      .map((l) => String(l?.request_masked?.idSimulacao ?? ""))
+      .filter(Boolean),
+  );
+  if (idsSimulacaoSubmetidos.size === 0) {
+    // Sem log de envio, só um banco já confirmado (protocolo ou desfecho)
+    // justifica ler a oportunidade — é o caso de propostas anteriores ao log.
+    const { data: bancosConfirmados } = await supabase
+      .from("proposta_bancos")
+      .select("id")
+      .eq("proposta_id", propostaId)
+      .or(
+        "numero_proposta_banco.not.is.null,status_banco.in.(enviada,em_analise,aprovada,condicionada,recusada,recusado)",
+      )
+      .limit(1);
+    if (!bancosConfirmados || bancosConfirmados.length === 0) {
+      return { status: String(prop.status), etapa: null, atualizado: false };
+    }
+  }
+
   const ctx = {
     simulacao_id: prop.simulacao_id,
     proposta_id: propostaId,
@@ -1787,6 +1837,16 @@ export async function sincronizarPropostaImpl({
   let simEscolhida: any = null;
   let numeroPropostaBanco: string | null = null;
 
+  // Bancos cuja simulação foi de fato submetida, identificados pelo id que
+  // foi no POST. Cobre a simulação renovada antes do envio
+  // (`renovarSimulacaoSeConsumida` troca o id), que `escolherSimulacaoBanco`
+  // pode não apontar.
+  const bancosSubmetidos = new Set(
+    simulacoes
+      .filter((s) => idsSimulacaoSubmetidos.has(String(s?.idSimulacao ?? "")))
+      .map((s) => Number(s?.idBanco)),
+  );
+
   const patchesBanco: Array<Record<string, unknown>> = [];
   for (const pb of (bancosProp ?? []) as any[]) {
     const sim = escolherSimulacaoBanco(pb, simulacoes);
@@ -1816,6 +1876,16 @@ export async function sincronizarPropostaImpl({
     const jaConfirmadoLocal =
       STATUS_BANCO_CONFIRMADO.has(String(pb.status_banco ?? "")) ||
       Boolean(pb.numero_proposta_banco);
+    // Caso misto — outro banco desta proposta foi enviado, este não. Sem
+    // envio não há desfecho a ler; julgá-lo pelo "P" da simulação é o mesmo
+    // erro do retorno antecipado do início, só que banco a banco.
+    const foiSubmetido =
+      jaConfirmadoLocal ||
+      idsSimulacaoSubmetidos.has(String(sim.idSimulacao ?? "")) ||
+      idsSimulacaoSubmetidos.has(String(pb.homefin_id_simulacao_banco ?? "")) ||
+      bancosSubmetidos.has(Number(pb.homefin_id_banco));
+    if (!foiSubmetido) continue;
+
     const falhaIntegracao = ehFalhaIntegracaoBanco(sim) && !jaConfirmadoLocal;
     if (falhaIntegracao) {
       // O envio já grava aqui a explicação que conseguiu apurar — inclusive a
