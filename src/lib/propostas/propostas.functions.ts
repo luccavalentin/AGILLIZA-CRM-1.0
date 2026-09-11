@@ -565,11 +565,19 @@ export const criarProposta = createServerFn({ method: "POST" })
         nome_cliente: (simDeOrigem as any).nome_cliente ?? sim.nome_cliente,
         email: (simDeOrigem as any).email ?? sim.email,
         celular: (simDeOrigem as any).celular ?? sim.celular,
-        sexo: (simDeOrigem as any).sexo ?? (sim as any).sexo,
+        // `sexo` e `sexo_conjuge` NÃO entram aqui: `propostas` não tem essas
+        // colunas. O sexo da proposta vive em `proposta_envolvidos.tipo_sexo`,
+        // mantido pelo trigger `sync_cliente_derivados`.
+        //
+        // As duas linhas estavam aqui desde 20/08 sem efeito, porque
+        // `simulacoes` também não tinha a coluna: o valor era `undefined`, o
+        // JSON descartava a chave e nada chegava ao banco. A migration de
+        // 11/09 criou `simulacoes.sexo`, o valor passou a ser "F"/"M", a chave
+        // passou a ir — e toda criação de proposta a partir de simulação
+        // falhava com "Could not find the 'sexo' column of 'propostas'".
         data_nascimento: (simDeOrigem as any).data_nascimento ?? sim.data_nascimento,
         renda_total: (simDeOrigem as any).renda_total ?? sim.renda_total,
         estado_civil: (simDeOrigem as any).estado_civil ?? sim.estado_civil,
-        sexo_conjuge: (simDeOrigem as any).sexo_conjuge ?? (sim as any).sexo_conjuge,
         possui_conjuge: (simDeOrigem as any).possui_conjuge ?? sim.possui_conjuge,
         compoe_renda: (simDeOrigem as any).compoe_renda ?? sim.compoe_renda,
         utiliza_fgts: ((simDeOrigem as any).utiliza_fgts ?? sim.utiliza_fgts) === "S",
