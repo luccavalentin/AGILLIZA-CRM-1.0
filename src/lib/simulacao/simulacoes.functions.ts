@@ -1,3 +1,4 @@
+import { estadoCivilCrmParaCodigo as codigoEstadoCivilDominio } from "@/lib/propostas/dominios";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -674,7 +675,8 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           // Sexo agora fica na simulação (antes só no cliente, e a simulação
           // reaberta voltava sem ele). PJ não tem — vai nulo.
           sexo: dd.sexo === "M" || dd.sexo === "F" ? dd.sexo : null,
-          sexo_conjuge: casado && (dd.sexo_conjuge === "M" || dd.sexo_conjuge === "F") ? dd.sexo_conjuge : null,
+          sexo_conjuge:
+            casado && (dd.sexo_conjuge === "M" || dd.sexo_conjuge === "F") ? dd.sexo_conjuge : null,
           estado_civil: dd.estado_civil ?? null,
           possui_conjuge: dd.possui_conjuge ?? false,
           compoe_renda: dd.compoe_renda ?? false,
@@ -2177,17 +2179,21 @@ export function sanitizarMensagemErro(msg: string | null | undefined): string {
     .trim();
 }
 
+/**
+ * Código de estado civil da integração (S/CA/UE/DI/VI/SL) a partir do valor do
+ * CRM ("casado") OU do próprio código ("CA"). Vazio ou desconhecido vira "S" —
+ * é o padrão de que os payloads da oportunidade dependem.
+ *
+ * Esta função era uma cópia da de `propostas/dominios.ts` que só conhecia as
+ * palavras do CRM. A migration de 11/09 passou `simulacoes.estado_civil` para
+ * código, e `map["ca"]` não existia: todo casado passou a ir à HomeFin como
+ * solteiro (`tipoEstadoCivil: S`), na oportunidade e no cônjuge — o mesmo
+ * perfil que o Itaú derruba na proposta. Delegar mantém uma fonte só.
+ */
 export function estadoCivilCrmParaCodigo(v: string | null | undefined): string {
   if (!v) return "S";
-  const map: Record<string, string> = {
-    solteiro: "S",
-    casado: "CA",
-    viuvo: "VI",
-    divorciado: "DI",
-    uniao_estavel: "UE",
-    separado: "SL",
-  };
-  return map[String(v).toLowerCase()] || "S";
+  const bruto = String(v).trim();
+  return codigoEstadoCivilDominio(bruto) || codigoEstadoCivilDominio(bruto.toUpperCase()) || "S";
 }
 
 export type StatusSimulacaoCalculado =
