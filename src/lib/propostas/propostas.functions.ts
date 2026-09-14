@@ -222,7 +222,11 @@ export const listarPropostas = createServerFn({ method: "GET" })
         parceiroIds.add(pid);
         if (tipo === "imobiliaria" && !imobPorCliente.has(cid)) imobPorCliente.set(cid, pid);
         if (tipo === "corretor" && !corrPorCliente.has(cid)) corrPorCliente.set(cid, pid);
-        if (tipo === "comercial" && !comPorCliente.has(cid)) comPorCliente.set(cid, pid);
+        // O valor gravado é "comercial_agilliza" (check constraint de
+        // cliente_parceiros). Comparando só com "comercial", a coluna e o
+        // filtro de Comercial nunca eram preenchidos.
+        if ((tipo === "comercial_agilliza" || tipo === "comercial") && !comPorCliente.has(cid))
+          comPorCliente.set(cid, pid);
       }
     }
     if (parceiroIds.size) {
