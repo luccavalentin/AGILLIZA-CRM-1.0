@@ -23,7 +23,7 @@ import { ListaMobile } from "@/components/propostas/lista-page/lista-mobile";
 import { ListaDesktop } from "@/components/propostas/lista-page/lista-desktop";
 import { BarraSelecao } from "@/components/shared/barra-selecao";
 
-import { listarParceiros } from "@/lib/crm/parceiros.functions";
+import { listarOpcoesVinculoPropostas } from "@/lib/crm/parceiros.functions";
 import { intervaloMesAtual, type Escopo } from "@/components/propostas/lista-page/helpers";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas")({
@@ -62,35 +62,16 @@ function Pagina() {
     staleTime: 5 * 60_000,
   });
 
-  const { data: parceirosCadastrados } = useQuery({
-    queryKey: ["parceiros-cadastrados"],
-    queryFn: () => listarParceiros(),
+  // Opções vêm dos vínculos reais (cliente_parceiros + profiles). A fonte
+  // anterior, parceiro_detalhes, está vazia e deixava os filtros só com "Todos".
+  const { data: opcoesVinculo } = useQuery({
+    queryKey: ["opcoes-vinculo-propostas"],
+    queryFn: () => listarOpcoesVinculoPropostas(),
     staleTime: 5 * 60_000,
   });
-
-  const corretores = useMemo(() => {
-    const s = new Set<string>();
-    (parceirosCadastrados ?? [])
-      .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "corretor")
-      .forEach((p) => p.nome && s.add(p.nome));
-    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [parceirosCadastrados]);
-
-  const imobiliarias = useMemo(() => {
-    const s = new Set<string>();
-    (parceirosCadastrados ?? [])
-      .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "imobiliaria")
-      .forEach((p) => p.nome && s.add(p.nome));
-    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [parceirosCadastrados]);
-
-  const comerciais = useMemo(() => {
-    const s = new Set<string>();
-    (parceirosCadastrados ?? [])
-      .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "comercial")
-      .forEach((p) => p.nome && s.add(p.nome));
-    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [parceirosCadastrados]);
+  const corretores = opcoesVinculo?.corretores ?? [];
+  const imobiliarias = opcoesVinculo?.imobiliarias ?? [];
+  const comerciais = opcoesVinculo?.comerciais ?? [];
 
   useEffect(() => {
     const t = setTimeout(() => setBusca(q.trim()), 300);

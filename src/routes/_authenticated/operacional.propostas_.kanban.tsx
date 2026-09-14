@@ -15,7 +15,7 @@ import {
   moverStatusProposta,
   listarResponsaveisEquipe,
 } from "@/lib/propostas/propostas.functions";
-import { listarParceiros } from "@/lib/crm/parceiros.functions";
+import { listarOpcoesVinculoPropostas } from "@/lib/crm/parceiros.functions";
 import { statusProposta } from "@/components/propostas/status";
 import {
   transicaoPermitida,
@@ -238,35 +238,16 @@ function Pagina() {
     return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [equipe]);
 
-  const { data: parceirosCadastrados } = useQuery({
-    queryKey: ["parceiros-cadastrados"],
-    queryFn: () => listarParceiros(),
+  // Opções vêm dos vínculos reais (cliente_parceiros + profiles). A fonte
+  // anterior, parceiro_detalhes, está vazia e deixava os filtros só com "Todos".
+  const { data: opcoesVinculo } = useQuery({
+    queryKey: ["opcoes-vinculo-propostas"],
+    queryFn: () => listarOpcoesVinculoPropostas(),
     staleTime: 5 * 60_000,
   });
-
-  const corretores = useMemo(() => {
-    const s = new Set<string>();
-    (parceirosCadastrados ?? [])
-      .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "corretor")
-      .forEach((p) => p.nome && s.add(p.nome));
-    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [parceirosCadastrados]);
-
-  const imobiliarias = useMemo(() => {
-    const s = new Set<string>();
-    (parceirosCadastrados ?? [])
-      .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "imobiliaria")
-      .forEach((p) => p.nome && s.add(p.nome));
-    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [parceirosCadastrados]);
-
-  const comerciais = useMemo(() => {
-    const s = new Set<string>();
-    (parceirosCadastrados ?? [])
-      .filter((p) => (p.tipo_pessoa ?? "").toLowerCase() === "comercial")
-      .forEach((p) => p.nome && s.add(p.nome));
-    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [parceirosCadastrados]);
+  const corretores = opcoesVinculo?.corretores ?? [];
+  const imobiliarias = opcoesVinculo?.imobiliarias ?? [];
+  const comerciais = opcoesVinculo?.comerciais ?? [];
 
   const itensFiltrados = itens;
 
