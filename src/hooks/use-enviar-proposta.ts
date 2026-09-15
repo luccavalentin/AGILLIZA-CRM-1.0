@@ -105,6 +105,7 @@ export function useEnviarProposta() {
       enviarFn: customEnviarFn,
       criarPropostaFn,
       reiniciarSeIncompleto = true,
+      agencia,
     }: {
       propostaId?: string;
       bancoId: string;
@@ -124,9 +125,16 @@ export function useEnviarProposta() {
       chave?: string;
       envolvidos?: any[];
       onCadastroIncompleto?: (primeiroPendente: any) => void;
-      enviarFn?: (args: { data: { proposta_id: string; banco_id?: string } }) => Promise<any>;
+      enviarFn?: (args: {
+        data: { proposta_id: string; banco_id?: string; agencia?: string | null };
+      }) => Promise<any>;
       criarPropostaFn?: () => Promise<{ proposta_id: string }>;
       reiniciarSeIncompleto?: boolean;
+      /**
+       * Agência opcional para este envio. Omitida, o servidor usa a que já
+       * estiver gravada na linha do banco (ou nenhuma).
+       */
+      agencia?: string | null;
     }) => {
       // Chave de UI: a linha, quando informada; senão o banco (comportamento
       // de sempre para quem envia um banco por vez).
@@ -230,7 +238,13 @@ export function useEnviarProposta() {
           etapaNumero: 5,
           mensagem: "Enviando ao banco...",
         });
-        const r = await fnParaUsar({ data: { proposta_id: currentPropostaId, banco_id: bancoId } });
+        const r = await fnParaUsar({
+          data: {
+            proposta_id: currentPropostaId,
+            banco_id: bancoId,
+            ...(agencia !== undefined ? { agencia } : {}),
+          },
+        });
 
         // 6. Aguardar (etapa 6 de 6)
         atualizarStatus(k, {

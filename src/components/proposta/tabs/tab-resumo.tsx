@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Send, Loader2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -86,6 +87,14 @@ export function TabResumo({
     { nome_banco: string | null; status: string; mensagem?: string }[] | null
   >(null);
   const [detalheBanco, setDetalheBanco] = useState<any | null>(null);
+  /**
+   * Agência digitada antes de enviar, por linha de banco. Enquanto o operador
+   * não mexe, vale a que já está gravada na proposta (`b.agencia`).
+   */
+  const [agencias, setAgencias] = useState<Record<string, string>>({});
+  const agenciaDe = (b: any): string => agencias[b.id] ?? String(b.agencia ?? "");
+  const digitarAgencia = (pbId: string, valor: string) =>
+    setAgencias((atual) => ({ ...atual, [pbId]: valor.replace(/\D/g, "").slice(0, 5) }));
 
   async function mudarSituacao(pbId: string, situacao: SituacaoBanco) {
     try {
@@ -119,12 +128,15 @@ export function TabResumo({
 
   async function enviarBanco(pbId: string) {
     setEnviandoId(pbId);
+    const linha = (bancos || []).find((x) => x.id === pbId);
     try {
       const r = await handleEnviarHook({
         propostaId: propostaId,
         bancoId: pbId,
         envolvidos: proposta?.envolvidos,
         enviarFn: enviarPropostaFn,
+        // Opcional: vazio volta ao padrão da integração.
+        agencia: linha ? agenciaDe(linha) : undefined,
       });
       if (r && r.bancos && r.bancos.length > 0) {
         setResultadoEnvio(r.bancos);
@@ -250,6 +262,32 @@ export function TabResumo({
                 </Select>
               </div>
 
+              {!bancoJaEnviado(b) && podeEnviarBanco && (
+                <div className="border-t border-border/60 pt-3">
+                  <Label
+                    htmlFor={`agencia-m-${b.id}`}
+                    className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground"
+                  >
+                    Agência (opcional)
+                  </Label>
+                  <Input
+                    id={`agencia-m-${b.id}`}
+                    inputMode="numeric"
+                    maxLength={5}
+                    placeholder="Padrão da integração"
+                    value={agenciaDe(b)}
+                    onChange={(e) => digitarAgencia(b.id, e.target.value)}
+                    disabled={enviandoId !== null}
+                    className="mt-1.5 h-9 tabular-nums"
+                  />
+                </div>
+              )}
+              {bancoJaEnviado(b) && b.agencia && (
+                <p className="border-t border-border/60 pt-3 text-xs text-muted-foreground">
+                  Enviado pela agência <span className="font-medium tabular-nums">{b.agencia}</span>
+                </p>
+              )}
+
               <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
                 <Button
                   size="sm"
@@ -286,7 +324,7 @@ export function TabResumo({
 
         {/* Desktop: tabela */}
         <div className="hidden overflow-x-auto md:block">
-          <Table className="min-w-[880px]">
+          <Table className="min-w-[980px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10"></TableHead>
@@ -400,21 +438,37 @@ export function TabResumo({
 
                   <TableCell className="text-right">
                     {bancoJaEnviado(b) ? (
-                      <span className="text-xs text-muted-foreground">Enviado</span>
+                      <span className="flex flex-col items-end text-xs text-muted-foreground">
+                        Enviado
+                        {b.agencia && <span className="tabular-nums">Ag. {b.agencia}</span>}
+                      </span>
                     ) : podeEnviarBanco ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => enviarBanco(b.id)}
-                        disabled={enviandoId !== null}
-                      >
-                        {enviandoId === b.id ? (
-                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Send className="mr-1 h-4 w-4" />
-                        )}
-                        {b.status_banco === "erro" ? "Reenviar" : "Enviar"}
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Input
+                          aria-label={`Agência para ${b.nome_banco} (opcional)`}
+                          title="Agência (opcional). Em branco, vale o padrão da integração."
+                          inputMode="numeric"
+                          maxLength={5}
+                          placeholder="Agência"
+                          value={agenciaDe(b)}
+                          onChange={(e) => digitarAgencia(b.id, e.target.value)}
+                          disabled={enviandoId !== null}
+                          className="h-8 w-24 tabular-nums"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => enviarBanco(b.id)}
+                          disabled={enviandoId !== null}
+                        >
+                          {enviandoId === b.id ? (
+                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="mr-1 h-4 w-4" />
+                          )}
+                          {b.status_banco === "erro" ? "Reenviar" : "Enviar"}
+                        </Button>
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}

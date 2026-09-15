@@ -422,6 +422,20 @@ async function renovarSimulacaoSeConsumida({
     valorTotalFinanciamento: despesasBanco.valorTotalFinanciamento,
     fgAutorizacaoDados: true,
   };
+
+  /**
+   * Agência escolhida pelo operador no envio (opcional).
+   *
+   * O swagger só lista `agencia` na RESPOSTA da simulação, não no pedido — o
+   * mesmo acontecia com as despesas financiadas, que o PUT aceitou mesmo
+   * assim. Por isso vai no corpo da simulação e só quando foi preenchida:
+   * vazia, o payload fica idêntico ao de antes e a integração usa o padrão
+   * dela. Em todo PUT, porque o PUT substitui o registro inteiro.
+   */
+  const agenciaEscolhida = String((pb as any).agencia ?? "").replace(/\D/g, "");
+  if (agenciaEscolhida) {
+    payloadCompleto.agencia = agenciaEscolhida;
+  }
   /**
    * Cotação que o banco já devolveu, reenviada no PUT da simulação.
    *
