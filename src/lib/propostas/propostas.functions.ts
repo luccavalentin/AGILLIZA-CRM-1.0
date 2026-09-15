@@ -1615,7 +1615,16 @@ export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
     z
-      .object({ proposta_id: z.string().uuid(), banco_id: z.string().uuid().optional() })
+      .object({
+        proposta_id: z.string().uuid(),
+        banco_id: z.string().uuid().optional(),
+        /**
+         * Agência opcional escolhida na hora do envio. `undefined` = não mexe
+         * no que já está gravado; string vazia = limpa e volta ao padrão da
+         * integração.
+         */
+        agencia: z.string().max(10).nullable().optional(),
+      })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
@@ -1624,6 +1633,43 @@ export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
       getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ??
       getRequestHeader("cf-connecting-ip") ??
       null;
+
+    // A agência fica gravada na linha do banco da proposta, e não só neste
+    // envio: o PUT da simulação na integração SUBSTITUI o registro, então um
+    // reenvio posterior (botão Reenviar, sincronização) precisa encontrar o
+    // mesmo valor para não apagá-lo.
+    if (data.agencia !== undefined && data.banco_id) {
+      const digitos = String(data.agencia ?? "").replace(/\D/g, "");
+      if (digitos.length > 5) {
+        throw new Error("Agência inválida: informe até 5 dígitos, só números.");
+      }
+      const agencia = digitos.length > 0 ? digitos : null;
+
+      const { data: linha } = await supabase
+        .from("proposta_bancos")
+        .select("id, agencia, nome_banco")
+        .eq("proposta_id", data.proposta_id)
+        .or(`id.eq.${data.banco_id},banco_id.eq.${data.banco_id}`)
+        .maybeSingle();
+
+      if (linha && (linha as any).agencia !== agencia) {
+        const { error: erroAgencia } = await supabase
+          .from("proposta_bancos")
+          .update({ agencia } as any)
+          .eq("id", (linha as any).id);
+        if (erroAgencia) throw new Error("Não foi possível gravar a agência.");
+
+        await supabase.from("proposta_historico").insert({
+          proposta_id: data.proposta_id,
+          tipo_evento: "sincronizacao",
+          descricao: agencia
+            ? `Agência ${agencia} definida para o envio ao ${(linha as any).nome_banco ?? "banco"}.`
+            : `Agência removida do envio ao ${(linha as any).nome_banco ?? "banco"}; vale o padrão da integração.`,
+          ator_id: userId,
+        } as any);
+      }
+    }
+
     const { enviarPropostaImpl } = await import("./enviar.server");
     return enviarPropostaImpl({
       propostaId: data.proposta_id,
