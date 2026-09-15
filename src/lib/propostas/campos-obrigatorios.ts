@@ -87,14 +87,39 @@ function vazio(valor: unknown): boolean {
 }
 
 /**
+ * `dataExpedicao` é opcional no contrato da HomeFin, mas o backend do
+ * Santander rejeita a proposta inteira sem ela ("Favor inserir uma data de
+ * emissão do documento válida" — visto em produção em 14-15/09/2026,
+ * oportunidades 30588/30764). Por isso, quando o Santander está entre os
+ * bancos do envio, ela vira obrigatória só para essa chamada — os demais
+ * bancos continuam sem essa exigência.
+ */
+export const CAMPO_DATA_EXPEDICAO: CampoObrigatorio = {
+  chave: "data_expedicao",
+  api: "dataExpedicao",
+  label: "Data de expedição do documento",
+  apenasPF: true,
+};
+
+/**
  * Campos obrigatórios ausentes em uma linha de `proposta_envolvidos`.
  * `utiliza_fgts` é booleano com default e nunca é apontado como pendente;
  * `fg_autorizacao_dados` precisa ser `true` (é um aceite do titular).
+ *
+ * `exigirDataExpedicao` acrescenta `data_expedicao` à lista de obrigatórios
+ * — usar quando o Santander está entre os bancos do envio (ver
+ * `CAMPO_DATA_EXPEDICAO`).
  */
-export function faltantesEnvolvido(env: Record<string, any> = {}): CampoObrigatorio[] {
+export function faltantesEnvolvido(
+  env: Record<string, any> = {},
+  opts: { exigirDataExpedicao?: boolean } = {},
+): CampoObrigatorio[] {
   if (!env || typeof env !== "object") return [];
   const pf = String(env?.tipo_pessoa ?? "F") === "F";
-  return CAMPOS_OBRIGATORIOS_PARTICIPANTE.filter((c) => {
+  const campos = opts.exigirDataExpedicao
+    ? [...CAMPOS_OBRIGATORIOS_PARTICIPANTE, CAMPO_DATA_EXPEDICAO]
+    : CAMPOS_OBRIGATORIOS_PARTICIPANTE;
+  return campos.filter((c) => {
     if (c.apenasPF && !pf) return false;
     if (c.chave === "utiliza_fgts") return false; // booleano com default (S/N)
     if (c.chave === "fg_autorizacao_dados") return env?.fg_autorizacao_dados !== true;
@@ -122,11 +147,17 @@ export function ehProponenteEnviadoAoBanco(env: Record<string, any> = {}): boole
  */
 export function proponentesPendentes<T extends Record<string, any>>(
   envolvidos: readonly (T | null | undefined)[] = [],
+  opts: { exigirDataExpedicao?: boolean } = {},
 ): { env: T; faltantes: CampoObrigatorio[] }[] {
   return (envolvidos ?? [])
     .filter((e): e is T => Boolean(e) && ehProponenteEnviadoAoBanco(e as Record<string, any>))
-    .map((env) => ({ env, faltantes: faltantesEnvolvido(env) }))
+    .map((env) => ({ env, faltantes: faltantesEnvolvido(env, opts) }))
     .filter((p) => p.faltantes.length > 0);
+}
+
+/** "Banco Santander", "SANTANDER FINANCIAMENTOS" etc. — variações de nome que a HomeFin usa. */
+export function ehSantander(nomeBanco: unknown): boolean {
+  return /santander/i.test(String(nomeBanco ?? ""));
 }
 
 /** "Hércules Rodrigues de Oliveira (coobrigado)". */

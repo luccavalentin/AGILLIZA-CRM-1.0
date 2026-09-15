@@ -7,7 +7,7 @@ import {
   enviarPropostaHomeFin,
   ressincronizarDadosParticipantes,
 } from "@/lib/propostas/propostas.functions";
-import { proponentesPendentes } from "@/lib/propostas/campos-obrigatorios";
+import { proponentesPendentes, ehSantander } from "@/lib/propostas/campos-obrigatorios";
 import { propostaQueryOptions } from "@/lib/propostas/queries";
 import { playChatSound } from "@/lib/chat-sound";
 
@@ -106,6 +106,7 @@ export function useEnviarProposta() {
       criarPropostaFn,
       reiniciarSeIncompleto = true,
       agencia,
+      nomeBanco,
     }: {
       propostaId?: string;
       bancoId: string;
@@ -135,10 +136,19 @@ export function useEnviarProposta() {
        * estiver gravada na linha do banco (ou nenhuma).
        */
       agencia?: string | null;
+      /**
+       * Nome do banco de destino desta chamada (ex.: `linha.nome_banco`).
+       * Quando é o Santander, a data de expedição do documento passa a ser
+       * exigida antes do envio — ver `CAMPO_DATA_EXPEDICAO`.
+       */
+      nomeBanco?: string | null;
     }) => {
       // Chave de UI: a linha, quando informada; senão o banco (comportamento
       // de sempre para quem envia um banco por vez).
       const k = chave ?? bancoId;
+      // Usado tanto na checagem antes de enviar quanto na re-checagem após
+      // erro do servidor — precisa ficar visível para os dois blocos abaixo.
+      const exigirDataExpedicao = ehSantander(nomeBanco);
 
       // 5. TRAVA CONTRA CLIQUE DUPLO
       if (clickLock.current[k]) return;
@@ -197,7 +207,7 @@ export function useEnviarProposta() {
         }
 
         // Só bloqueia por quem realmente vira participante na API (CO/TI).
-        const pendencias = proponentesPendentes(currentEnvolvidos ?? []);
+        const pendencias = proponentesPendentes(currentEnvolvidos ?? [], { exigirDataExpedicao });
 
         if (pendencias.length > 0) {
           clearInterval(interval);
@@ -295,7 +305,9 @@ export function useEnviarProposta() {
               ...propostaQueryOptions(currentPropostaId),
               staleTime: 0,
             });
-            const pendentes = proponentesPendentes(atual?.envolvidos ?? []);
+            const pendentes = proponentesPendentes(atual?.envolvidos ?? [], {
+              exigirDataExpedicao,
+            });
             if (pendentes.length > 0) {
               erroEstruturado = {
                 codigo: "CADASTRO_INCOMPLETO",

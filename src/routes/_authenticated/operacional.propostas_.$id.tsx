@@ -14,6 +14,7 @@ import {
   faltantesEnvolvido,
   ehProponenteEnviadoAoBanco,
   proponentesPendentes,
+  ehSantander,
 } from "@/lib/propostas/campos-obrigatorios";
 import { supabase } from "@/integrations/supabase/client";
 import { envolvidoParaForm } from "@/components/proposta/participante-form";
@@ -186,6 +187,9 @@ function PropostaRoute() {
             bancoId,
             envolvidos: envolvidosAtualizados,
             onCadastroIncompleto: onCadastroIncompleto,
+            nomeBanco: bancosPendentes.some((b: any) => ehSantander(b.nome_banco))
+              ? "Banco Santander"
+              : bancosPendentes[0]?.nome_banco,
           });
           setBancoEmEnvio(null);
           if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
@@ -233,6 +237,7 @@ function PropostaRoute() {
       bancoId: enviar_banco,
       envolvidos: data.envolvidos ?? [],
       onCadastroIncompleto,
+      nomeBanco: banco?.nome_banco,
     })
       .then((r) => {
         if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
@@ -308,11 +313,17 @@ function PropostaRoute() {
 
     (async () => {
       try {
+        const bancosSelecionados = (data?.bancos ?? []).filter(
+          (b: any) => b.selecionado && !bancoJaEnviado(b),
+        );
         await handleEnviarHook({
           propostaId: id,
           bancoId: "todos",
           envolvidos,
           onCadastroIncompleto,
+          nomeBanco: bancosSelecionados.some((b: any) => ehSantander(b.nome_banco))
+            ? "Banco Santander"
+            : undefined,
         });
       } catch {
         enviouAutoRef.current = false;
