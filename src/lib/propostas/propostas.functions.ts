@@ -1639,18 +1639,19 @@ export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
     // reenvio posterior (botão Reenviar, sincronização) precisa encontrar o
     // mesmo valor para não apagá-lo.
     if (data.agencia !== undefined && data.banco_id) {
-      const digitos = String(data.agencia ?? "").replace(/\D/g, "");
-      if (digitos.length > 5) {
-        throw new Error("Agência inválida: informe até 5 dígitos, só números.");
-      }
-      const agencia = digitos.length > 0 ? digitos : null;
-
       const { data: linha } = await supabase
         .from("proposta_bancos")
         .select("id, agencia, nome_banco")
         .eq("proposta_id", data.proposta_id)
         .or(`id.eq.${data.banco_id},banco_id.eq.${data.banco_id}`)
         .maybeSingle();
+
+      // O formato depende do banco (Bradesco: 4 dígitos, com zero à esquerda).
+      const { erroAgencia, normalizarAgencia } = await import("@/lib/bancos/agencia");
+      const nomeBancoLinha = (linha as any)?.nome_banco;
+      const invalida = erroAgencia(data.agencia, nomeBancoLinha);
+      if (invalida) throw new Error(invalida);
+      const agencia = normalizarAgencia(data.agencia, nomeBancoLinha) || null;
 
       if (linha && (linha as any).agencia !== agencia) {
         const { error: erroAgencia } = await supabase
