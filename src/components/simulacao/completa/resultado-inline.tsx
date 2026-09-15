@@ -33,6 +33,7 @@ import { rendaMinimaPelosBancos, rendaMinimaDoBanco } from "@/lib/simulacao/rend
 import { cn } from "@/lib/utils";
 import { ErroBancoDetalhe } from "@/components/simulacao/erro-banco-detalhe";
 import { totalFinanciadoBanco } from "@/lib/simulacao/origem-dados";
+import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 /**
  * Só exibimos o que a IF realmente devolveu. Quando o retorno não traz o
  * campo, mostramos "—" — nunca o valor SOLICITADO na operação
@@ -150,8 +151,13 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
     }
   }
 
-  async function enviarAprovacao(bancoId: string) {
+  async function enviarAprovacao(bancoId: string, nomeBanco?: string) {
     if (criandoBanco) return;
+
+    // Bradesco: o popup de agência abre já no clique, antes de criar a proposta.
+    const resposta = await perguntarAgenciaSeBradesco(nomeBanco);
+    if (resposta.cancelado) return;
+    const agencia = resposta.agencia;
 
     // A proposta é criada e o operador vai direto para a tela dela; o envio ao
     // banco acontece lá, acompanhado pelo painel de progresso.
@@ -170,7 +176,10 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: proposta_id },
-        search: { enviar_banco: bancoId },
+        search: {
+          enviar_banco: bancoId,
+          ...(agencia !== undefined ? { agencia: agencia || "nao" } : {}),
+        },
       });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível criar a proposta.", { duration: 10_000 });
@@ -414,7 +423,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                               criandoBanco !== null ||
                               enviandoBanco
                             }
-                            onClick={() => enviarAprovacao(b.banco_id)}
+                            onClick={() => enviarAprovacao(b.banco_id, b.nome_banco)}
                           >
                             {criandoBanco === b.banco_id ||
                             (enviandoBanco && busyBancoId === b.banco_id) ? (
@@ -578,7 +587,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                                   }
                                   aria-label="Enviar aprovação"
                                   disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                                  onClick={() => enviarAprovacao(b.banco_id)}
+                                  onClick={() => enviarAprovacao(b.banco_id, b.nome_banco)}
                                 >
                                   <Send className="h-4 w-4" />
                                 </Button>

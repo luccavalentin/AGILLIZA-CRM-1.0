@@ -97,17 +97,11 @@ export function TabResumo({
     setAgencias((atual) => ({ ...atual, [pbId]: valor.replace(/\D/g, "").slice(0, 5) }));
 
   /**
-   * No Bradesco o campo de agência fica atrás de uma pergunta explícita —
-   * pedido do operador para não confundir quem não sabe/não precisa informar
-   * agência com um campo solto na tela. Nos demais bancos o input segue
-   * sempre visível, como já era.
+   * No Bradesco a agência é perguntada num popup ao clicar em Enviar (ver
+   * `AgenciaBradescoDialogHost`), então a linha não mostra campo. Nos demais
+   * bancos o input segue na tela, como já era.
    */
   const ehBradesco = (b: any) => /bradesco/i.test(String(b?.nome_banco ?? ""));
-  const [quererAgencia, setQuererAgencia] = useState<Record<string, boolean>>({});
-  const perguntarAgencia = (pbId: string, marcado: boolean) => {
-    setQuererAgencia((atual) => ({ ...atual, [pbId]: marcado }));
-    if (!marcado) digitarAgencia(pbId, "");
-  };
 
   async function mudarSituacao(pbId: string, situacao: SituacaoBanco) {
     try {
@@ -149,7 +143,8 @@ export function TabResumo({
         envolvidos: proposta?.envolvidos,
         enviarFn: enviarPropostaFn,
         // Opcional: vazio volta ao padrão da integração.
-        agencia: linha ? agenciaDe(linha) : undefined,
+        // Bradesco fica indefinida para o hook abrir o popup de agência.
+        agencia: linha && !ehBradesco(linha) ? agenciaDe(linha) : undefined,
         nomeBanco: linha?.nome_banco,
       });
       if (r && r.bancos && r.bancos.length > 0) {
@@ -276,37 +271,6 @@ export function TabResumo({
                 </Select>
               </div>
 
-              {!bancoJaEnviado(b) && podeEnviarBanco && ehBradesco(b) && (
-                <div className="border-t border-border/60 pt-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id={`quer-agencia-m-${b.id}`}
-                      checked={Boolean(quererAgencia[b.id])}
-                      onCheckedChange={(v) => perguntarAgencia(b.id, v === true)}
-                      disabled={enviandoId !== null}
-                    />
-                    <Label
-                      htmlFor={`quer-agencia-m-${b.id}`}
-                      className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground"
-                    >
-                      Definir agência para este envio
-                    </Label>
-                  </div>
-                  {quererAgencia[b.id] && (
-                    <Input
-                      id={`agencia-m-${b.id}`}
-                      inputMode="numeric"
-                      maxLength={5}
-                      placeholder="Número da agência"
-                      value={agenciaDe(b)}
-                      onChange={(e) => digitarAgencia(b.id, e.target.value)}
-                      disabled={enviandoId !== null}
-                      className="mt-2 h-9 tabular-nums"
-                      autoFocus
-                    />
-                  )}
-                </div>
-              )}
               {!bancoJaEnviado(b) && podeEnviarBanco && !ehBradesco(b) && (
                 <div className="border-t border-border/60 pt-3">
                   <Label
@@ -489,36 +453,7 @@ export function TabResumo({
                       </span>
                     ) : podeEnviarBanco ? (
                       <div className="flex items-center justify-end gap-2">
-                        {ehBradesco(b) ? (
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id={`quer-agencia-${b.id}`}
-                              checked={Boolean(quererAgencia[b.id])}
-                              onCheckedChange={(v) => perguntarAgencia(b.id, v === true)}
-                              disabled={enviandoId !== null}
-                            />
-                            <Label
-                              htmlFor={`quer-agencia-${b.id}`}
-                              className="text-xs font-normal text-muted-foreground"
-                            >
-                              Definir agência
-                            </Label>
-                            {quererAgencia[b.id] && (
-                              <Input
-                                aria-label={`Agência para ${b.nome_banco}`}
-                                title="Número da agência para este envio."
-                                inputMode="numeric"
-                                maxLength={5}
-                                placeholder="Agência"
-                                value={agenciaDe(b)}
-                                onChange={(e) => digitarAgencia(b.id, e.target.value)}
-                                disabled={enviandoId !== null}
-                                className="h-8 w-24 tabular-nums"
-                                autoFocus
-                              />
-                            )}
-                          </div>
-                        ) : (
+                        {!ehBradesco(b) && (
                           <Input
                             aria-label={`Agência para ${b.nome_banco} (opcional)`}
                             title="Agência (opcional). Em branco, vale o padrão da integração."

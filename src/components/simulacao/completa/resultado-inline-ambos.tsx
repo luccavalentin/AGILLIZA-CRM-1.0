@@ -31,6 +31,7 @@ import { ErroBancoDetalhe } from "@/components/simulacao/erro-banco-detalhe";
 import { totalFinanciadoBanco } from "@/lib/simulacao/origem-dados";
 import { pedirReconciliacao, temBancoAguardando } from "@/lib/simulacao/reconciliar";
 import { ResumoPerformanceSimulacao } from "./resumo-performance";
+import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 
 /**
  * Só exibimos o que a IF realmente devolveu; sem retorno, mostramos "—"
@@ -196,8 +197,13 @@ export function ResultadoInlineAmbos({
     }
   }
 
-  async function enviarAprovacao(simId: string, bancoId: string) {
+  async function enviarAprovacao(simId: string, bancoId: string, nomeBanco?: string) {
     if (criandoBanco) return;
+
+    // Bradesco: o popup de agência abre já no clique, antes de criar a proposta.
+    const resposta = await perguntarAgenciaSeBradesco(nomeBanco);
+    if (resposta.cancelado) return;
+    const agencia = resposta.agencia;
 
     // A proposta é criada e o operador vai direto para a tela dela; o envio ao
     // banco acontece lá, acompanhado pelo painel de progresso.
@@ -216,7 +222,10 @@ export function ResultadoInlineAmbos({
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: proposta_id },
-        search: { enviar_banco: bancoId },
+        search: {
+          enviar_banco: bancoId,
+          ...(agencia !== undefined ? { agencia: agencia || "nao" } : {}),
+        },
       });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível criar a proposta.", { duration: 10_000 });
@@ -626,7 +635,7 @@ export function ResultadoInlineAmbos({
                               criandoBanco !== null ||
                               enviandoBanco
                             }
-                            onClick={() => enviarAprovacao(l.simId, b.banco_id)}
+                            onClick={() => enviarAprovacao(l.simId, b.banco_id, b.nome_banco)}
                           >
                             {criandoBanco === b.banco_id ||
                             (enviandoBanco && busyBancoId === b.banco_id) ? (
@@ -833,7 +842,7 @@ export function ResultadoInlineAmbos({
                                   size="sm"
                                   className="bg-gradient-to-b from-primary to-primary/90 shadow-sm"
                                   disabled={b.status_banco !== "simulada" || criandoBanco !== null}
-                                  onClick={() => enviarAprovacao(l.simId, b.banco_id)}
+                                  onClick={() => enviarAprovacao(l.simId, b.banco_id, b.nome_banco)}
                                 >
                                   <Send className="mr-1 h-4 w-4" />
                                   {criandoBanco === b.banco_id ? "…" : "Enviar"}

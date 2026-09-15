@@ -20,6 +20,7 @@ import { HistoricoTimeline } from "@/components/simulacao/detalhe-page/historico
 import { HeaderAcoes } from "@/components/simulacao/detalhe-page/header-acoes";
 import { ComparativoBancos } from "@/components/simulacao/detalhe-page/comparativo-bancos";
 import { DadosEnviados } from "@/components/simulacao/detalhe-page/dados-enviados";
+import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
   head: () => ({ meta: [{ title: "Simulação — Agilliza" }] }),
@@ -214,6 +215,13 @@ function Pagina() {
   }
 
   async function criar(simulacaoBancoId: string, bancoId?: string) {
+    const linhaBanco = ((data?.bancos as any[]) ?? []).find(
+      (b: any) => b.id === simulacaoBancoId,
+    );
+    // Bradesco: o popup de agência abre já no clique, antes de criar a proposta.
+    const resposta = await perguntarAgenciaSeBradesco(linhaBanco?.nome_banco);
+    if (resposta.cancelado) return;
+    const agencia = resposta.agencia;
     setCriandoBanco(simulacaoBancoId);
     try {
       const { proposta_id, envolvido_pendente_id } = await criarProposta({
@@ -230,7 +238,10 @@ function Pagina() {
         router.navigate({
           to: "/operacional/propostas/$id",
           params: { id: proposta_id },
-          search: { abrir_cadastro: envolvido_pendente_id },
+          search: {
+            abrir_cadastro: envolvido_pendente_id,
+            ...(agencia !== undefined ? { agencia: agencia || "nao" } : {}),
+          },
         });
         return;
       }
@@ -241,6 +252,8 @@ function Pagina() {
         await handleEnviarHook({
           propostaId: proposta_id,
           bancoId: bancoId ?? "todos", // Passa o ID do banco ou "todos" se não houver
+          nomeBanco: linhaBanco?.nome_banco,
+          agencia,
         });
       } catch {
         /* mensagem já exibida pelo gate */

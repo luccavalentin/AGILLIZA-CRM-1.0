@@ -35,12 +35,23 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
   validateSearch: (
     search: Record<string, unknown>,
-  ): { complementar?: 1; abrir_cadastro?: string; enviar_banco?: string } => ({
+  ): {
+    complementar?: 1;
+    abrir_cadastro?: string;
+    enviar_banco?: string;
+    agencia?: string;
+  } => ({
     complementar: search.complementar === 1 || search.complementar === "1" ? 1 : undefined,
     abrir_cadastro: typeof search.abrir_cadastro === "string" ? search.abrir_cadastro : undefined,
     // Vem da lista de simulações: a proposta acabou de ser criada e o envio a
     // este banco deve começar assim que a tela abrir.
     enviar_banco: typeof search.enviar_banco === "string" ? search.enviar_banco : undefined,
+    // Resposta do popup de agência (Bradesco) dada na tela de origem: dígitos,
+    // ou "nao" quando o operador escolheu seguir sem agência.
+    agencia:
+      typeof search.agencia === "string" || typeof search.agencia === "number"
+        ? String(search.agencia)
+        : undefined,
   }),
   component: PropostaRoute,
   errorComponent: (props) => {
@@ -55,7 +66,10 @@ function PropostaErroWrapper(props: any) {
 
 function PropostaRoute() {
   const { id } = Route.useParams();
-  const { complementar, abrir_cadastro, enviar_banco } = Route.useSearch();
+  const { complementar, abrir_cadastro, enviar_banco, agencia: agenciaSearch } = Route.useSearch();
+  // `undefined` = ninguém perguntou ainda (o hook pergunta); "" = seguir sem.
+  const agenciaEscolhida =
+    agenciaSearch === undefined ? undefined : agenciaSearch === "nao" ? "" : agenciaSearch;
   const router = useRouter();
   const qc = useQueryClient();
   const { enviar: handleEnviarHook, statusPorBanco, busyBancoId } = useEnviarProposta();
@@ -187,9 +201,13 @@ function PropostaRoute() {
             bancoId,
             envolvidos: envolvidosAtualizados,
             onCadastroIncompleto: onCadastroIncompleto,
-            nomeBanco: bancosPendentes.some((b: any) => ehSantander(b.nome_banco))
-              ? "Banco Santander"
-              : bancosPendentes[0]?.nome_banco,
+            nomeBanco:
+              bancosPendentes.length === 1
+                ? bancosPendentes[0].nome_banco
+                : bancosPendentes.some((b: any) => ehSantander(b.nome_banco))
+                  ? "Banco Santander"
+                  : undefined,
+            agencia: agenciaEscolhida,
           });
           setBancoEmEnvio(null);
           if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
@@ -206,7 +224,15 @@ function PropostaRoute() {
         }
       }
     },
-    [participanteModal, id, qc, handleEnviarHook, onCadastroIncompleto, data?.bancos],
+    [
+      participanteModal,
+      id,
+      qc,
+      handleEnviarHook,
+      onCadastroIncompleto,
+      data?.bancos,
+      agenciaEscolhida,
+    ],
   );
 
   // 4. Effects
@@ -226,7 +252,7 @@ function PropostaRoute() {
       to: "/operacional/propostas/$id",
       params: { id },
       search: (prev: any) => {
-        const { enviar_banco: _, ...resto } = prev;
+        const { enviar_banco: _, agencia: _ag, ...resto } = prev;
         return resto;
       },
       replace: true,
@@ -238,6 +264,7 @@ function PropostaRoute() {
       envolvidos: data.envolvidos ?? [],
       onCadastroIncompleto,
       nomeBanco: banco?.nome_banco,
+      agencia: agenciaEscolhida,
     })
       .then((r) => {
         if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
@@ -246,7 +273,7 @@ function PropostaRoute() {
         toast.error(e?.message ?? "Falha ao enviar a proposta ao banco.", { duration: 12_000 });
       })
       .finally(() => setBancoEmEnvio(null));
-  }, [enviar_banco, data, id, handleEnviarHook, onCadastroIncompleto, router]);
+  }, [enviar_banco, data, id, handleEnviarHook, onCadastroIncompleto, router, agenciaEscolhida]);
   React.useEffect(() => {
     if (abrir_cadastro && envolvidos.length > 0) {
       const env = envolvidos.find((e: any) => e.id === abrir_cadastro);
@@ -302,7 +329,9 @@ function PropostaRoute() {
   }, [id, propostaStatus, temProtocoloBanco, sincronizarAutoFn, qc]);
 
   React.useEffect(() => {
-    if (complementar !== 1 || enviouAutoRef.current) return;
+    // Espera os bancos carregarem: é por eles que se sabe se o envio é a um
+    // banco só (e se ele é Bradesco/Santander).
+    if (complementar !== 1 || enviouAutoRef.current || !data) return;
     enviouAutoRef.current = true;
     router.navigate({
       to: "/operacional/propostas/$id",
@@ -316,20 +345,35 @@ function PropostaRoute() {
         const bancosSelecionados = (data?.bancos ?? []).filter(
           (b: any) => b.selecionado && !bancoJaEnviado(b),
         );
+        // Um banco só: envia por ele (e não "todos"), para a agência escolhida
+        // no popup do Bradesco ter uma linha de banco onde ser gravada.
+        const unico = bancosSelecionados.length === 1 ? bancosSelecionados[0] : null;
         await handleEnviarHook({
           propostaId: id,
-          bancoId: "todos",
+          bancoId: unico?.banco_id ?? "todos",
           envolvidos,
           onCadastroIncompleto,
-          nomeBanco: bancosSelecionados.some((b: any) => ehSantander(b.nome_banco))
-            ? "Banco Santander"
-            : undefined,
+          nomeBanco: unico
+            ? unico.nome_banco
+            : bancosSelecionados.some((b: any) => ehSantander(b.nome_banco))
+              ? "Banco Santander"
+              : undefined,
+          agencia: agenciaEscolhida,
         });
       } catch {
         enviouAutoRef.current = false;
       }
     })();
-  }, [complementar, id, router, handleEnviarHook, envolvidos, onCadastroIncompleto]);
+  }, [
+    complementar,
+    id,
+    router,
+    handleEnviarHook,
+    envolvidos,
+    onCadastroIncompleto,
+    data,
+    agenciaEscolhida,
+  ]);
 
   React.useEffect(() => {
     const invalidar = () => qc.invalidateQueries({ queryKey: ["proposta", id] });

@@ -345,7 +345,11 @@ export function PropostaView({
                               .update({ valor_financiamento: valorMax } as any)
                               .eq("id", id);
                             if (updErr) throw updErr;
-                            await handleEnviarHook({ propostaId: id, bancoId: b.banco_id });
+                            await handleEnviarHook({
+                              propostaId: id,
+                              bancoId: b.banco_id,
+                              nomeBanco: b.nome_banco,
+                            });
                             toast.success(
                               `Proposta ajustada para ${formatBRL(valorMax)} e reenviada!`,
                               { id: tid },

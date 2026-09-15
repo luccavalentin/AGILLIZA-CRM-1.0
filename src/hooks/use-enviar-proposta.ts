@@ -7,7 +7,12 @@ import {
   enviarPropostaHomeFin,
   ressincronizarDadosParticipantes,
 } from "@/lib/propostas/propostas.functions";
-import { proponentesPendentes, ehSantander } from "@/lib/propostas/campos-obrigatorios";
+import {
+  proponentesPendentes,
+  ehSantander,
+  ehBradesco,
+} from "@/lib/propostas/campos-obrigatorios";
+import { perguntarAgencia } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 import { propostaQueryOptions } from "@/lib/propostas/queries";
 import { playChatSound } from "@/lib/chat-sound";
 
@@ -154,6 +159,20 @@ export function useEnviarProposta() {
       if (clickLock.current[k]) return;
       clickLock.current[k] = true;
 
+      // Bradesco: pergunta a agência antes de qualquer etapa do envio. Quem já
+      // perguntou na própria tela passa `agencia` (mesmo vazia) e não é
+      // perguntado de novo. Envio em lote ("todos") não tem uma linha de banco
+      // para gravar a agência, então não pergunta.
+      let agenciaEnvio = agencia;
+      if (agenciaEnvio === undefined && bancoId && bancoId !== "todos" && ehBradesco(nomeBanco)) {
+        const resposta = await perguntarAgencia(String(nomeBanco));
+        if (resposta.cancelado) {
+          clickLock.current[k] = false;
+          return;
+        }
+        agenciaEnvio = resposta.agencia;
+      }
+
       const fnParaUsar = customEnviarFn || enviarFnDefault;
       setBusyBancoId(k);
 
@@ -252,7 +271,7 @@ export function useEnviarProposta() {
           data: {
             proposta_id: currentPropostaId,
             banco_id: bancoId,
-            ...(agencia !== undefined ? { agencia } : {}),
+            ...(agenciaEnvio !== undefined ? { agencia: agenciaEnvio } : {}),
           },
         });
 
