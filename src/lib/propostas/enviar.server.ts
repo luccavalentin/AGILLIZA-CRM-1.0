@@ -432,7 +432,9 @@ async function renovarSimulacaoSeConsumida({
    * vazia, o payload fica idêntico ao de antes e a integração usa o padrão
    * dela. Em todo PUT, porque o PUT substitui o registro inteiro.
    */
-  const agenciaEscolhida = String((pb as any).agencia ?? "").replace(/\D/g, "");
+  // Normaliza também o que já estava gravado sem o zero ("347" -> "0347").
+  const { normalizarAgencia } = await import("@/lib/bancos/agencia");
+  const agenciaEscolhida = normalizarAgencia((pb as any).agencia, pb.nome_banco);
   if (agenciaEscolhida) {
     payloadCompleto.agencia = agenciaEscolhida;
   }

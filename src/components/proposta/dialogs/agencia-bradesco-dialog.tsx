@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BancoLogo } from "@/components/bancos/banco-logo";
+import { DIGITOS_AGENCIA_BRADESCO, normalizarAgencia } from "@/lib/bancos/agencia";
 
 export type RespostaAgencia = { cancelado: true } | { cancelado: false; agencia: string };
 
@@ -74,7 +75,11 @@ export function AgenciaBradescoDialogHost() {
 
   function continuar() {
     if (invalida) return;
-    responder({ cancelado: false, agencia: definir ? agencia : "" });
+    // "347" segue como "0347": o Bradesco usa agência de 4 dígitos.
+    responder({
+      cancelado: false,
+      agencia: definir ? normalizarAgencia(agencia, pedido?.nomeBanco) : "",
+    });
   }
 
   return (
@@ -124,17 +129,29 @@ export function AgenciaBradescoDialogHost() {
               <Input
                 id="numero-agencia"
                 inputMode="numeric"
-                maxLength={5}
-                placeholder="Ex.: 1234"
+                maxLength={DIGITOS_AGENCIA_BRADESCO}
+                placeholder="Ex.: 0347"
                 value={agencia}
-                onChange={(e) => setAgencia(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                onChange={(e) =>
+                  setAgencia(e.target.value.replace(/\D/g, "").slice(0, DIGITOS_AGENCIA_BRADESCO))
+                }
                 className="h-10 tabular-nums"
                 autoFocus
               />
-              {invalida && (
+              {invalida ? (
                 <p className="text-[11px] text-muted-foreground">
                   Digite a agência ou desmarque a opção para seguir sem ela.
                 </p>
+              ) : (
+                agencia.length < DIGITOS_AGENCIA_BRADESCO && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Será enviada como{" "}
+                    <span className="font-medium tabular-nums text-foreground">
+                      {normalizarAgencia(agencia, pedido?.nomeBanco)}
+                    </span>{" "}
+                    (4 dígitos).
+                  </p>
+                )
               )}
             </div>
           )}
