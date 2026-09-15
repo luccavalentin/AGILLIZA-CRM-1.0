@@ -35,6 +35,7 @@ import { TabelaSimulacoes } from "@/components/simulacao/lista-page/tabela-simul
 import { CartoesSimulacoes } from "@/components/simulacao/lista-page/cartoes-simulacoes";
 import type { HandlersLinha } from "@/components/simulacao/lista-page/tipos";
 import { BarraSelecao } from "@/components/shared/barra-selecao";
+import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 
 /** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
 function intervaloMesAtual(): { inicio: string; fim: string } {
@@ -311,8 +312,15 @@ function Pagina() {
     }
   }
 
-  async function enviarBancoIndividual(banco: any) {
+  async function enviarBancoIndividual(banco: any, agenciaJaEscolhida?: string) {
     if (!envio) return;
+    // Bradesco: o popup de agência abre já no clique, antes de criar a proposta.
+    let agencia = agenciaJaEscolhida;
+    if (agencia === undefined) {
+      const resposta = await perguntarAgenciaSeBradesco(banco.nome_banco);
+      if (resposta.cancelado) return;
+      agencia = resposta.agencia;
+    }
     setEnviandoBancoId(banco.id);
     try {
       const res = await criar({
@@ -337,7 +345,10 @@ function Pagina() {
         router.navigate({
           to: "/operacional/propostas/$id",
           params: { id: res.proposta_id },
-          search: { abrir_cadastro: res.envolvido_pendente_id },
+          search: {
+            abrir_cadastro: res.envolvido_pendente_id,
+            ...(agencia !== undefined ? { agencia: agencia || "nao" } : {}),
+          },
         });
         return;
       }
@@ -352,7 +363,10 @@ function Pagina() {
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: res.proposta_id },
-        search: { enviar_banco: banco.banco_id },
+        search: {
+          enviar_banco: banco.banco_id,
+          ...(agencia !== undefined ? { agencia: agencia || "nao" } : {}),
+        },
       });
       return;
     } catch (e) {
@@ -365,7 +379,23 @@ function Pagina() {
     if (!envio) return;
     // Dispara todos em paralelo no Hook, mas aqui na UI apenas iteramos
     // O Hook useEnviarProposta agora gerencia o estado individual.
-    await Promise.allSettled(bancos.map((b) => enviarBancoIndividual(b)));
+    // Um popup só para o lote: perguntas em paralelo se atropelariam.
+    let agenciaBradesco: string | undefined;
+    const bradesco = bancos.find((b) => /bradesco/i.test(String(b?.nome_banco ?? "")));
+    if (bradesco) {
+      const resposta = await perguntarAgenciaSeBradesco(bradesco.nome_banco);
+      if (resposta.cancelado) return;
+      agenciaBradesco = resposta.agencia;
+    }
+    await Promise.allSettled(
+      bancos.map((b) =>
+        enviarBancoIndividual(
+          b,
+          // Demais bancos seguem sem agência e não abrem popup.
+          /bradesco/i.test(String(b?.nome_banco ?? "")) ? agenciaBradesco : undefined,
+        ),
+      ),
+    );
   }
 
   const itens = data?.itens ?? [];

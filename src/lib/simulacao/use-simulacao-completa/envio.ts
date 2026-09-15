@@ -18,6 +18,7 @@ import {
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { listarTitularesAlternativos, type TitularAlternativo } from "./titulares-alternativos";
 import type { Form } from "./state";
+import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 
 type Router = { navigate: (opts: any) => void };
 
@@ -881,6 +882,16 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
         const escolhido =
           simulados.find((b: any) => b.banco_id === escolhidoUsuarioId) ?? simulados[0];
         const bancoId = escolhido.banco_id as string;
+        // Bradesco: pergunta a agência antes de criar a proposta e leva a
+        // resposta para a tela da proposta, onde o envio acontece.
+        const respostaAgencia = await perguntarAgenciaSeBradesco(escolhido.nome_banco);
+        if (respostaAgencia.cancelado) {
+          setEnviando(false);
+          setConcluidos(0);
+          return;
+        }
+        const agenciaSearch =
+          respostaAgencia.agencia !== undefined ? { agencia: respostaAgencia.agencia || "nao" } : {};
         const { proposta_id, envolvido_pendente_id } = await criarProposta({
           data: { simulacao_id: id, banco_id: bancoId },
         });
@@ -915,14 +926,14 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
             router.navigate({
               to: "/operacional/propostas/$id",
               params: { id: proposta_id },
-              search: { abrir_cadastro: envolvido_pendente_id },
+              search: { abrir_cadastro: envolvido_pendente_id, ...agenciaSearch },
             });
           } else {
             toast.success("Proposta criada. Enviando ao banco…");
             router.navigate({
               to: "/operacional/propostas/$id",
               params: { id: proposta_id },
-              search: { complementar: 1 },
+              search: { complementar: 1, ...agenciaSearch },
             });
           }
         } else {

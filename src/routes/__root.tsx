@@ -16,6 +16,7 @@ import { registrarSwApp } from "@/lib/pwa/registrar-sw";
 import { RealtimeAuthSync } from "@/components/shared/realtime-auth-sync";
 import { PropostaRetornoWatcher } from "@/components/propostas/proposta-retorno-watcher";
 import { PropostaPopupHost } from "@/components/propostas/proposta-popup-host";
+import { AgenciaBradescoDialogHost } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
@@ -232,6 +233,7 @@ function RootComponent() {
       <InstallPrompt />
       <PropostaRetornoWatcher userId={userId} />
       <PropostaPopupHost />
+      <AgenciaBradescoDialogHost />
     </QueryClientProvider>
   );
 }

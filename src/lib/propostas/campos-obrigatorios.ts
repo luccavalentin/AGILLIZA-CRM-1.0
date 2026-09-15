@@ -160,6 +160,10 @@ export function ehSantander(nomeBanco: unknown): boolean {
   return /santander/i.test(String(nomeBanco ?? ""));
 }
 
+export function ehBradesco(nomeBanco: unknown): boolean {
+  return /bradesco/i.test(String(nomeBanco ?? ""));
+}
+
 /** "Hércules Rodrigues de Oliveira (coobrigado)". */
 export function descreverParticipante(env: Record<string, any>): string {
   const nome = String(env?.nome ?? "").trim() || "participante sem nome";
