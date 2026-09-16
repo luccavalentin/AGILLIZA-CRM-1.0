@@ -34,7 +34,7 @@ import {
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
 import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
-import { dadosBancariosParticipante } from "@/lib/bancos/agencia";
+import { dadosBancariosParticipante, normalizarAgencia } from "@/lib/bancos/agencia";
 
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
 const ORDEM_STATUS: PropostaStatus[] = [
@@ -425,21 +425,8 @@ async function renovarSimulacaoSeConsumida({
     fgAutorizacaoDados: true,
   };
 
-  /**
-   * Agência escolhida pelo operador no envio (opcional).
-   *
-   * ATENÇÃO: a integração IGNORA este campo — `agencia` só existe na RESPOSTA
-   * da simulação, e as propostas enviadas assim voltaram com `agencia: null`.
-   * O que de fato leva a agência ao banco é o participante (`idBanco` +
-   * `codigoAgencia`), em `garantirEnderecoParticipantes`. Mantido aqui por ser
-   * inofensivo, caso a integração passe a aceitá-lo.
-   */
-  // Normaliza também o que já estava gravado sem o zero ("347" -> "0347").
-  const { normalizarAgencia } = await import("@/lib/bancos/agencia");
-  const agenciaEscolhida = normalizarAgencia((pb as any).agencia, pb.nome_banco);
-  if (agenciaEscolhida) {
-    payloadCompleto.agencia = agenciaEscolhida;
-  }
+  // A agência NÃO vai na simulação (a integração ignorava o campo aqui): ela
+  // segue no envio da proposta, `incluir-proposta-integracao`.
   /**
    * Cotação que o banco já devolveu, reenviada no PUT da simulação.
    *
@@ -1402,10 +1389,17 @@ async function enviarPropostaImplInner({
         ctx,
         supabase,
       });
+      // A agência escolhida pelo operador vai no próprio envio da proposta ao
+      // banco (a resposta `CreateProposalOk` devolve `agencia`). O swagger só
+      // documenta `idSimulacao` no pedido; sem agência o corpo fica como antes.
+      const agenciaProposta = normalizarAgencia(b?.agencia, b?.nome_banco);
       const resp = await chamarIntegracao<any>(
         `/oportunidade/${prop.homefin_id_oportunidade}/incluir-proposta-integracao`,
         "POST",
-        { idSimulacao: idSimulacaoUsar },
+        {
+          idSimulacao: idSimulacaoUsar,
+          ...(agenciaProposta ? { agencia: agenciaProposta } : {}),
+        },
         ctx,
       );
 
