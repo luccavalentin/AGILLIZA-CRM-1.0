@@ -22,6 +22,7 @@ import { AmortizacaoTag, MobileStat, ResumoCelula } from "@/components/simulacao
 import { ShieldCheck, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { totalFinanciadoBanco } from "@/lib/simulacao/origem-dados";
+import { BotaoNovaSimulacao } from "@/components/simulacao/botao-nova-simulacao";
 
 /**
  * Só exibimos o que a IF realmente devolveu; sem retorno, "—"
@@ -299,24 +300,10 @@ export function ComparativoBancos({
                   {b.status_banco === "erro" ? (
                     <div className="mt-3 flex items-center justify-end gap-2">
                       <DetalheBancoDialog banco={b} simulacao={s} />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={onEditar}
-                        title="Abrir simulação para alterar dados"
-                      >
-                        <Pencil className="mr-1 h-4 w-4" />
-                        Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={reenviandoBanco !== null}
-                        onClick={() => onReenviarBanco(b.banco_id)}
-                      >
-                        <RefreshCw className="mr-1 h-4 w-4" />
-                        {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
-                      </Button>
+                      {/* Sem "Reenviar": repetir na mesma oportunidade não
+                          resolve quando o banco falha. "Nova simulação" é o
+                          mesmo fluxo de Editar (não herda a oportunidade). */}
+                      <BotaoNovaSimulacao simulacaoId={b.simulacao_id ?? s.id} />
                     </div>
                   ) : (
                     <div className="mt-3 flex items-center justify-end gap-2">
@@ -470,16 +457,10 @@ export function ComparativoBancos({
                       <div className="flex items-center justify-end gap-2">
                         <DetalheBancoDialog banco={b} simulacao={s} />
                         {b.status_banco === "erro" ? (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="h-8 px-3 text-[11px]"
-                            disabled={reenviandoBanco !== null}
-                            onClick={() => onReenviarBanco(b.banco_id)}
-                          >
-                            <RefreshCw className="mr-1.5 h-3 w-3" />
-                            {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
-                          </Button>
+                          <BotaoNovaSimulacao
+                            simulacaoId={b.simulacao_id ?? s.id}
+                            variante="compacto"
+                          />
                         ) : (
                           <Button
                             size="sm"

@@ -32,6 +32,7 @@ import { totalFinanciadoBanco } from "@/lib/simulacao/origem-dados";
 import { pedirReconciliacao, temBancoAguardando } from "@/lib/simulacao/reconciliar";
 import { ResumoPerformanceSimulacao } from "./resumo-performance";
 import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
+import { BotaoNovaSimulacao } from "@/components/simulacao/botao-nova-simulacao";
 
 /**
  * Só exibimos o que a IF realmente devolveu; sem retorno, mostramos "—"
@@ -610,7 +611,9 @@ export function ResultadoInlineAmbos({
                             <Download className="mr-1 h-4 w-4" /> PDF
                           </Button>
                         )}
-                        {b.status_banco !== "simulada" ? (
+                        {b.status_banco === "erro" ? (
+                          <BotaoNovaSimulacao simulacaoId={l.simId} />
+                        ) : b.status_banco !== "simulada" ? (
                           <Button
                             size="sm"
                             variant="secondary"
@@ -827,7 +830,9 @@ export function ResultadoInlineAmbos({
                                   <Download className="h-4 w-4" />
                                 </Button>
                               )}
-                              {b.status_banco !== "simulada" ? (
+                              {b.status_banco === "erro" ? (
+                                <BotaoNovaSimulacao simulacaoId={l.simId} variante="compacto" />
+                              ) : b.status_banco !== "simulada" ? (
                                 <Button
                                   size="sm"
                                   variant="secondary"
