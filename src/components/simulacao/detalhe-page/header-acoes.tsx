@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   ArrowLeftRight,
+  CopyPlus,
   RefreshCw,
   Copy,
   Download,
@@ -31,7 +32,6 @@ type Props = {
   setDetalhePdfAberto: (v: boolean) => void;
   invertendo: boolean;
   onVoltar: () => void;
-  onReenviar: () => void;
   onDuplicar: () => void;
   onEditar: () => void;
   onInverterTitular: (reenviar: boolean) => void;
@@ -47,7 +47,6 @@ export function HeaderAcoes({
   setDetalhePdfAberto,
   invertendo,
   onVoltar,
-  onReenviar,
   onDuplicar,
   onEditar,
   onInverterTitular,
@@ -89,8 +88,16 @@ export function HeaderAcoes({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="h-9" onClick={onReenviar}>
-          <RefreshCw className="mr-1.5 h-4 w-4" /> Reenviar
+        {/* Era "Reenviar": repetia o envio de todos os bancos na mesma
+            oportunidade, o que não resolve banco que falhou nela. */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9"
+          onClick={onDuplicar}
+          title="Gera uma nova simulação com os mesmos dados, em oportunidade nova"
+        >
+          <CopyPlus className="mr-1.5 h-4 w-4" /> Nova simulação
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

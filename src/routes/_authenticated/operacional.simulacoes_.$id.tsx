@@ -215,9 +215,7 @@ function Pagina() {
   }
 
   async function criar(simulacaoBancoId: string, bancoId?: string) {
-    const linhaBanco = ((data?.bancos as any[]) ?? []).find(
-      (b: any) => b.id === simulacaoBancoId,
-    );
+    const linhaBanco = ((data?.bancos as any[]) ?? []).find((b: any) => b.id === simulacaoBancoId);
     // Bradesco: o popup de agência abre já no clique, antes de criar a proposta.
     const resposta = await perguntarAgenciaSeBradesco(linhaBanco?.nome_banco);
     if (resposta.cancelado) return;
@@ -286,7 +284,6 @@ function Pagina() {
         setDetalhePdfAberto={setDetalhePdfAberto}
         invertendo={invertendo}
         onVoltar={() => router.navigate({ to: "/operacional/simulacoes" })}
-        onReenviar={reenviar}
         onDuplicar={duplicar}
         onEditar={editar}
         onInverterTitular={inverterTitular}

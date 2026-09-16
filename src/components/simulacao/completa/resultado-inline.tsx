@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { ErroBancoDetalhe } from "@/components/simulacao/erro-banco-detalhe";
 import { totalFinanciadoBanco } from "@/lib/simulacao/origem-dados";
 import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
+import { BotaoNovaSimulacao } from "@/components/simulacao/botao-nova-simulacao";
 /**
  * Só exibimos o que a IF realmente devolveu. Quando o retorno não traz o
  * campo, mostramos "—" — nunca o valor SOLICITADO na operação
@@ -405,15 +406,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                           </Button>
                         )}
                         {b.status_banco === "erro" ? (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            disabled={reenviandoBanco !== null || b.status_banco === "simulada"}
-                            onClick={() => reenviarBanco(b.banco_id, b)}
-                          >
-                            <RefreshCw className="mr-1 h-4 w-4" />
-                            {reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"}
-                          </Button>
+                          <BotaoNovaSimulacao simulacaoId={simulacaoId} />
                         ) : (
                           <Button
                             size="sm"
@@ -565,19 +558,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                                 </Button>
                               )}
                               {b.status_banco === "erro" ? (
-                                <Button
-                                  size="icon"
-                                  variant="secondary"
-                                  className="h-8 w-8"
-                                  title={
-                                    reenviandoBanco === b.banco_id ? "Reenviando…" : "Reenviar"
-                                  }
-                                  aria-label="Reenviar"
-                                  disabled={reenviandoBanco !== null}
-                                  onClick={() => reenviarBanco(b.banco_id, b)}
-                                >
-                                  <RefreshCw className="h-4 w-4" />
-                                </Button>
+                                <BotaoNovaSimulacao simulacaoId={simulacaoId} variante="icone" />
                               ) : (
                                 <Button
                                   size="icon"
