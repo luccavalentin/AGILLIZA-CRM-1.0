@@ -83,3 +83,86 @@ export const ESTADO_INICIAL: Form = {
   download_automatico: true,
   email_verificado_em: null,
 };
+
+/**
+ * Campos que um rascunho pode trazer. Lista explícita porque `Form` é um
+ * registro livre: sem ela, ou nada entrava (o estado inicial não declara
+ * `sexo`) ou qualquer chave estranha entraria.
+ */
+const CAMPOS_DO_RASCUNHO = [
+  "cliente_id",
+  "tipo_pessoa",
+  "nome_cliente",
+  "cpf_cnpj",
+  "email",
+  "celular",
+  "data_nascimento",
+  "sexo",
+  "estado_civil",
+  "regime_casamento",
+  "renda_total",
+  "possui_conjuge",
+  "compoe_renda",
+  "compoe_renda_conjuge",
+  "nome_conjuge",
+  "cpf_conjuge",
+  "renda_conjuge",
+  "data_nascimento_conjuge",
+  "email_conjuge",
+  "celular_conjuge",
+  "sexo_conjuge",
+  "estado_civil_conjuge",
+  "produto",
+  "uf",
+  "cep_imovel",
+  "tipo_imovel",
+  "uso_imovel",
+  "situacao_imovel",
+  "utiliza_fgts",
+  "valor_imovel",
+  "valor_entrada",
+  "valor_financiamento",
+  "prazo",
+  "sistema_amortizacao",
+] as const;
+
+/**
+ * Rascunho deixado por outra tela (ficha do cliente, simulação rápida) no
+ * `sessionStorage`, aplicado sobre o estado inicial.
+ *
+ * Quem grava o rascunho existia desde sempre e `envio.ts` já o limpava depois
+ * de enviar — mas ninguém o LIA: abrir "Nova simulação" pela ficha do cliente
+ * trazia a tela em branco e o operador redigitava tudo, inclusive sexo e
+ * regime de casamento. Só copiamos chaves conhecidas do formulário, para um
+ * rascunho antigo ou estranho não injetar campo inválido.
+ */
+export function estadoInicialComRascunho(): Form {
+  if (typeof sessionStorage === "undefined") return ESTADO_INICIAL;
+  let bruto: string | null = null;
+  try {
+    bruto = sessionStorage.getItem("simulacao_wizard");
+  } catch {
+    return ESTADO_INICIAL;
+  }
+  if (!bruto) return ESTADO_INICIAL;
+  // Consumido uma vez: sem isto, abrir a tela de novo no mesmo dia ressuscitaria
+  // um rascunho abandonado por cima de uma simulação nova.
+  try {
+    sessionStorage.removeItem("simulacao_wizard");
+  } catch {
+    /* storage indisponível: seguimos com o que já foi lido */
+  }
+  let dados: Record<string, unknown>;
+  try {
+    dados = JSON.parse(bruto) as Record<string, unknown>;
+  } catch {
+    return ESTADO_INICIAL;
+  }
+  const next: Record<string, unknown> = { ...ESTADO_INICIAL };
+  for (const chave of CAMPOS_DO_RASCUNHO) {
+    const valor = dados[chave];
+    if (valor === null || valor === undefined || valor === "") continue;
+    next[chave] = valor;
+  }
+  return next as Form;
+}

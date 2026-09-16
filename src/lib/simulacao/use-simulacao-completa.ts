@@ -28,6 +28,7 @@ import {
 import {
   EMAIL_PADRAO,
   ESTADO_INICIAL,
+  estadoInicialComRascunho,
   type Banco,
   type Form,
   type OpcoesHook,
@@ -72,7 +73,7 @@ export interface SimulacaoCompletaCtx extends ReturnType<typeof useSimulacaoComp
 export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   const router = useRouter();
   const ctxRef = useRef<any>(null);
-  const [f, setF] = useState<Form>(ESTADO_INICIAL);
+  const [f, setF] = useState<Form>(estadoInicialComRascunho);
   const [enviando, setEnviando] = useState(false);
   const [concluidos, setConcluidos] = useState(0);
   const [erros, setErros] = useState<Record<string, string>>({});
