@@ -36,6 +36,8 @@ import { TRANSICOES, type PropostaStatus } from "@/lib/propostas/state-machine";
 import { statusProposta } from "@/components/propostas/status";
 import { baixarPropostaDetalhadaPDF, baixarPropostaConsolidadoPDF } from "@/lib/propostas/pdf-lazy";
 import { cn } from "@/lib/utils";
+import { bancoPermiteCarta } from "@/lib/propostas/carta-analise/dados";
+import { CartaAnaliseDialog } from "@/components/proposta/carta-analise-dialog";
 
 export function AcoesTopo({
   proposta,
@@ -56,6 +58,10 @@ export function AcoesTopo({
 }) {
   const qc = useQueryClient();
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [cartaOpen, setCartaOpen] = useState(false);
+  const temAprovacao = (bancos ?? []).some(
+    (b: any) => b.selecionado !== false && bancoPermiteCarta(b),
+  );
   const [motivo, setMotivo] = useState("");
   const { enviar: handleEnviar, busy: enviarBusy } = useEnviarProposta();
   const cancelarFn = useServerFn(cancelarProposta);
@@ -271,6 +277,18 @@ export function AcoesTopo({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuLabel>Para o cliente</DropdownMenuLabel>
+            <DropdownMenuItem disabled={!temAprovacao} onSelect={() => setCartaOpen(true)}>
+              <div className="flex flex-col">
+                <span>Carta de análise de crédito</span>
+                {!temAprovacao && (
+                  <span className="text-[11px] text-muted-foreground">
+                    Disponível após aprovação do banco
+                  </span>
+                )}
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuLabel>Documentos da proposta</DropdownMenuLabel>
             <DropdownMenuItem
               onSelect={(e) => {
@@ -353,6 +371,13 @@ export function AcoesTopo({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        {cartaOpen && (
+          <CartaAnaliseDialog
+            open={cartaOpen}
+            onOpenChange={setCartaOpen}
+            propostaId={propostaId}
+          />
+        )}
       </div>
 
       {temDecisao && (
