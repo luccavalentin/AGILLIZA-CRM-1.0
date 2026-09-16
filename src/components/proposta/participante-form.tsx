@@ -17,6 +17,7 @@ import {
   camposFaltantes,
   formParaEnvolvido,
   VAZIO,
+  aplicarPadroesParticipante,
   type ParticipanteForm,
   envolvidoParaForm,
   participanteCompleto,
@@ -71,9 +72,9 @@ export function ParticipanteDialog({
 }) {
   const [salvandoInterno, setSalvandoInterno] = useState(false);
 
-  const [f, setF] = useState<ParticipanteForm>(inicial ?? VAZIO);
+  const [f, setF] = useState<ParticipanteForm>(inicial ?? aplicarPadroesParticipante(VAZIO));
   const [conjuge, setConjuge] = useState<ParticipanteForm>(
-    conjugeInicial ?? { ...VAZIO, tipo_qualificacao: "TI" },
+    conjugeInicial ?? aplicarPadroesParticipante({ ...VAZIO, tipo_qualificacao: "TI" }),
   );
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [buscandoCepC, setBuscandoCepC] = useState(false);
@@ -92,13 +93,32 @@ export function ParticipanteDialog({
       jaFocou.current = false;
       return;
     }
-    setF(inicial ?? { ...VAZIO, tipo_qualificacao: tipoQualificacaoFixo ?? "CO" });
-    setConjuge(conjugeInicial ?? { ...VAZIO, tipo_qualificacao: "TI" });
+    setF(
+      inicial ??
+        aplicarPadroesParticipante({ ...VAZIO, tipo_qualificacao: tipoQualificacaoFixo ?? "CO" }),
+    );
+    setConjuge(conjugeInicial ?? aplicarPadroesParticipante({ ...VAZIO, tipo_qualificacao: "TI" }));
     setErros(new Set());
     setErrosC(new Set());
     setTentouEnviar(Boolean(focarPendencias));
     jaFocou.current = false;
   }, [open, participanteId]);
+
+  // Participante novo: o número do documento padrão é o CPF, que só existe
+  // depois de digitado. Preenche quando o CPF fica completo e o número está
+  // vazio — digitar outro número continua valendo.
+  useEffect(() => {
+    const cpf = f.cpf_cnpj.replace(/\D/g, "");
+    if (f.tipo_pessoa !== "J" && cpf.length === 11 && !f.numero_documento.trim()) {
+      setF((prev) => ({ ...prev, numero_documento: cpf }));
+    }
+  }, [f.cpf_cnpj, f.tipo_pessoa]);
+  useEffect(() => {
+    const cpf = conjuge.cpf_cnpj.replace(/\D/g, "");
+    if (conjuge.tipo_pessoa !== "J" && cpf.length === 11 && !conjuge.numero_documento.trim()) {
+      setConjuge((prev) => ({ ...prev, numero_documento: cpf }));
+    }
+  }, [conjuge.cpf_cnpj, conjuge.tipo_pessoa]);
 
   // Após a primeira tentativa, revalida ao vivo para o vermelho sumir conforme preenche.
   useEffect(() => {
