@@ -26,7 +26,30 @@ export type TipoSituacaoSimulacao = "S" | "P" | "N" | "A" | "R" | string;
 /** Situações que significam "já tem proposta viva no banco". */
 const SIMULACAO_EM_ANDAMENTO: ReadonlySet<string> = new Set(["N", "A"]);
 
-export interface CandidataOportunidade {
+/**
+ * Valores que ficam CONGELADOS na oportunidade quando ela é criada: renda,
+ * composição de renda, sistema de amortização e valores. Reaproveitar não
+ * reenvia nada disso — por isso só vale quando a simulação nova tem exatamente
+ * os mesmos valores da simulação que CRIOU a oportunidade.
+ *
+ * Sem esta checagem, em 16/09 as simulações PRICE entraram em oportunidades
+ * criadas por simulações SAC e o Bradesco passou a recusar toda PRICE com
+ * "Renda mensal menor que renda mínima" (código 119) — no dia anterior eram
+ * 11 PRICE aceitas e nenhuma recusa.
+ */
+interface ValoresCongelados {
+  sistema_amortizacao?: string | null;
+  renda_total?: number | string | null;
+  renda_conjuge?: number | string | null;
+  compoe_renda_conjuge?: boolean | null;
+  possui_conjuge?: boolean | null;
+  valor_imovel?: number | string | null;
+  valor_financiamento?: number | string | null;
+  utiliza_fgts?: string | null;
+}
+
+/** A simulação que criou a oportunidade (a mais antiga com aquele id). */
+export interface CandidataOportunidade extends ValoresCongelados {
   /** Id da oportunidade na HomeFin. */
   homefin_id_oportunidade: string | null;
   codigo_oportunidade_homefin?: string | null;
@@ -38,7 +61,7 @@ export interface CandidataOportunidade {
   id_operacao_homefin?: number | string | null;
 }
 
-export interface SimulacaoNova {
+export interface SimulacaoNova extends ValoresCongelados {
   cliente_id: string | null;
   produto: string | null;
   tipo_pessoa?: string | null;
@@ -52,7 +75,32 @@ export interface SituacaoNaHomeFin {
 }
 
 const soDigitos = (v: unknown) => String(v ?? "").replace(/\D/g, "");
-const texto = (v: unknown) => String(v ?? "").trim().toLowerCase();
+/** Centavos, para comparar "33000" com 33000.00 sem ruído de ponto flutuante. */
+const centavos = (v: unknown) => Math.round((Number(v) || 0) * 100);
+
+/**
+ * Os valores gravados na criação da oportunidade continuam valendo para a
+ * simulação nova? Renda da composição só conta quando há composição.
+ */
+export function valoresCongeladosIguais(a: ValoresCongelados, b: ValoresCongelados): boolean {
+  const sistema = (v: unknown) => (String(v ?? "").toUpperCase() === "P" ? "P" : "S");
+  if (sistema(a.sistema_amortizacao) !== sistema(b.sistema_amortizacao)) return false;
+  if (centavos(a.renda_total) !== centavos(b.renda_total)) return false;
+  if (centavos(a.valor_imovel) !== centavos(b.valor_imovel)) return false;
+  if (centavos(a.valor_financiamento) !== centavos(b.valor_financiamento)) return false;
+  if (Boolean(a.possui_conjuge) !== Boolean(b.possui_conjuge)) return false;
+  const compoeA = Boolean(a.possui_conjuge && a.compoe_renda_conjuge);
+  const compoeB = Boolean(b.possui_conjuge && b.compoe_renda_conjuge);
+  if (compoeA !== compoeB) return false;
+  if (compoeA && centavos(a.renda_conjuge) !== centavos(b.renda_conjuge)) return false;
+  const fgts = (v: unknown) => (String(v ?? "N").toUpperCase() === "S" ? "S" : "N");
+  if (fgts(a.utiliza_fgts) !== fgts(b.utiliza_fgts)) return false;
+  return true;
+}
+const texto = (v: unknown) =>
+  String(v ?? "")
+    .trim()
+    .toLowerCase();
 
 /**
  * O mesmo negócio? Exige cliente, produto/operação, modalidade e imóvel iguais.
@@ -79,7 +127,7 @@ export function ehMesmoNegocio(candidata: CandidataOportunidade, nova: Simulacao
   const cepB = soDigitos(nova.cep_imovel);
   if (cepA && cepB && cepA !== cepB) return false;
 
-  return true;
+  return valoresCongeladosIguais(candidata, nova);
 }
 
 /**
@@ -95,7 +143,9 @@ export function oportunidadeAceitaNovaSimulacao(situacao: SituacaoNaHomeFin | nu
   const tipo = String(situacao.tipoSituacao ?? "").toUpperCase();
   if (tipo !== "A") return false;
   const simulacoes = situacao.simulacoes ?? [];
-  return !simulacoes.some((s) => SIMULACAO_EM_ANDAMENTO.has(String(s?.tipoSituacao ?? "").toUpperCase()));
+  return !simulacoes.some((s) =>
+    SIMULACAO_EM_ANDAMENTO.has(String(s?.tipoSituacao ?? "").toUpperCase()),
+  );
 }
 
 /**

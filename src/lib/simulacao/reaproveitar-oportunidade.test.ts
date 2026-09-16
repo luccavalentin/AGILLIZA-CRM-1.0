@@ -36,9 +36,9 @@ describe("ehMesmoNegocio", () => {
 
   it("recusa imóvel diferente, mas não exige CEP quando ninguém tem", () => {
     expect(ehMesmoNegocio(candidata, { ...nova, cep_imovel: "01310100" })).toBe(false);
-    expect(
-      ehMesmoNegocio({ ...candidata, cep_imovel: null }, { ...nova, cep_imovel: "" }),
-    ).toBe(true);
+    expect(ehMesmoNegocio({ ...candidata, cep_imovel: null }, { ...nova, cep_imovel: "" })).toBe(
+      true,
+    );
     // Um lado sem CEP não bloqueia: simulação costuma nascer antes do imóvel.
     expect(ehMesmoNegocio({ ...candidata, cep_imovel: null }, nova)).toBe(true);
   });
@@ -86,7 +86,73 @@ describe("decidirOportunidade", () => {
     expect(decidirOportunidade(candidata, { ...nova, cliente_id: "outro" }, ativaLivre)).toBeNull();
     expect(decidirOportunidade(candidata, nova, null)).toBeNull();
     expect(
-      decidirOportunidade(candidata, nova, { tipoSituacao: "A", simulacoes: [{ tipoSituacao: "N" }] }),
+      decidirOportunidade(candidata, nova, {
+        tipoSituacao: "A",
+        simulacoes: [{ tipoSituacao: "N" }],
+      }),
     ).toBeNull();
+  });
+});
+
+describe("valores congelados na criação da oportunidade", () => {
+  const criadoraSac = {
+    ...candidata,
+    sistema_amortizacao: "S",
+    renda_total: "33000.00",
+    renda_conjuge: "0.00",
+    possui_conjuge: true,
+    compoe_renda_conjuge: false,
+    valor_imovel: "405000.00",
+    valor_financiamento: "324000.00",
+    utiliza_fgts: "N",
+  };
+  const mesmaSac = {
+    ...nova,
+    sistema_amortizacao: "S",
+    renda_total: 33000,
+    renda_conjuge: 0,
+    possui_conjuge: true,
+    compoe_renda_conjuge: false,
+    valor_imovel: 405000,
+    valor_financiamento: 324000,
+    utiliza_fgts: "N",
+  };
+
+  it("reaproveita quando é o mesmo envio repetido (formato numérico não importa)", () => {
+    expect(decidirOportunidade(criadoraSac, mesmaSac, ativaLivre)).toBe("30915");
+  });
+
+  it("PRICE nunca entra em oportunidade criada por SAC (caso Bradesco 16/09)", () => {
+    expect(
+      decidirOportunidade(criadoraSac, { ...mesmaSac, sistema_amortizacao: "P" }, ativaLivre),
+    ).toBeNull();
+  });
+
+  it("renda, valores, FGTS ou composição diferentes criam oportunidade nova", () => {
+    expect(
+      decidirOportunidade(criadoraSac, { ...mesmaSac, renda_total: 100000 }, ativaLivre),
+    ).toBeNull();
+    expect(
+      decidirOportunidade(criadoraSac, { ...mesmaSac, valor_financiamento: 300000 }, ativaLivre),
+    ).toBeNull();
+    expect(
+      decidirOportunidade(criadoraSac, { ...mesmaSac, valor_imovel: 500000 }, ativaLivre),
+    ).toBeNull();
+    expect(
+      decidirOportunidade(criadoraSac, { ...mesmaSac, utiliza_fgts: "S" }, ativaLivre),
+    ).toBeNull();
+    expect(
+      decidirOportunidade(
+        criadoraSac,
+        { ...mesmaSac, compoe_renda_conjuge: true, renda_conjuge: 8000 },
+        ativaLivre,
+      ),
+    ).toBeNull();
+  });
+
+  it("renda do cônjuge só pesa quando ele compõe renda", () => {
+    expect(decidirOportunidade(criadoraSac, { ...mesmaSac, renda_conjuge: 5000 }, ativaLivre)).toBe(
+      "30915",
+    );
   });
 });
