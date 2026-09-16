@@ -1,6 +1,7 @@
 import { ESTADO_CIVIL_COM_REGIME } from "@/lib/propostas/dominios";
 import { faltantesEnvolvido } from "@/lib/propostas/campos-obrigatorios";
 import { maskCpfCnpj, maskCelular, apenasDigitos, validarCpfCnpj } from "@/lib/simulacao/format";
+import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 
 export type ParticipanteForm = {
   tipo_situacao: string;
@@ -67,8 +68,43 @@ export const VAZIO: ParticipanteForm = {
 };
 
 /** Converte a linha do banco (proposta_envolvidos) para o formulário. */
+const semValor = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
+
+/**
+ * Preenche com os padrões do cadastro o que estiver vazio no formulário do
+ * participante (titular, cônjuge ou comprador adicional).
+ *
+ * O cadastro do cliente já nascia com esses padrões, mas o formulário
+ * "Completar dados do participante" lê o participante gravado na proposta —
+ * e o cônjuge ali chegava em branco, cobrando do operador mãe, documento,
+ * órgão, UF e profissão. O que estiver preenchido não é tocado; o operador
+ * altera livremente. Documento de identidade só em pessoa física, e o número
+ * padrão é o próprio CPF. A autorização de consulta de dados nunca recebe
+ * padrão: é consentimento do cliente.
+ */
+export function aplicarPadroesParticipante(f: ParticipanteForm): ParticipanteForm {
+  const next = { ...f };
+  const pf = next.tipo_pessoa !== "J";
+  const comPadrao = (campo: keyof ParticipanteForm, valor: string) => {
+    if (semValor(next[campo])) (next as any)[campo] = valor;
+  };
+  comPadrao("profissao", PADROES_CADASTRO.profissao);
+  comPadrao("empresa", PADROES_CADASTRO.empresa);
+  comPadrao("email", PADROES_CADASTRO.email);
+  if (pf) {
+    comPadrao("nome_mae", PADROES_CADASTRO.mae);
+    comPadrao("tipo_documento_identidade", PADROES_CADASTRO.tipoDocumentoIdentidade);
+    comPadrao("orgao_expedidor", PADROES_CADASTRO.orgaoExpedidor);
+    comPadrao("uf_expedicao", PADROES_CADASTRO.ufExpedicao);
+    comPadrao("data_expedicao", PADROES_CADASTRO.dataExpedicao);
+    const cpf = apenasDigitos(next.cpf_cnpj);
+    if (cpf.length === 11) comPadrao("numero_documento", cpf);
+  }
+  return next;
+}
+
 export function envolvidoParaForm(e: any): ParticipanteForm {
-  return {
+  return aplicarPadroesParticipante({
     ...VAZIO,
     tipo_situacao: e.tipo_situacao ?? "A",
     tipo_qualificacao: e.tipo_qualificacao ?? "CO",
@@ -99,7 +135,7 @@ export function envolvidoParaForm(e: any): ParticipanteForm {
     uf: e.uf ?? "",
     utiliza_fgts: Boolean(e.utiliza_fgts),
     fg_autorizacao_dados: Boolean(e.fg_autorizacao_dados),
-  };
+  });
 }
 
 /** Normaliza o formulário para o payload salvo em proposta_envolvidos. */
