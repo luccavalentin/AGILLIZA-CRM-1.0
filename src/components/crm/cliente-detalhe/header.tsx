@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/crm/tone-badge";
+import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "@/lib/propostas/dominios";
 
 export function ClienteHeader({
   cliente: c,
@@ -70,6 +71,17 @@ export function ClienteHeader({
                 nome_cliente: c.nome ?? "",
                 cpf_cnpj: c.documento ?? "",
                 data_nascimento: c.data_nascimento ?? "",
+                // Sexo, estado civil e regime ficavam de fora e o operador
+                // redigitava os três a cada nova simulação do mesmo cliente.
+                sexo: (c as any).sexo ?? "",
+                estado_civil: estadoCivilCrmParaCodigo(ec) || "",
+                regime_casamento: casado
+                  ? regimeCasamentoCrmParaCodigo((c as any).regime_casamento) || ""
+                  : "",
+                sexo_conjuge: casado ? ((c as any).conjuge_sexo ?? "") : "",
+                estado_civil_conjuge: casado ? estadoCivilCrmParaCodigo(ec) || "" : "",
+                email: (c as any).email ?? "",
+                celular: (c as any).telefone_celular ?? "",
                 renda_total: Number(c.renda_total_declarada) || 0,
                 uf: c.uf_interesse ?? "",
                 possui_conjuge: casado,
