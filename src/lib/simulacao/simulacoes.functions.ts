@@ -1272,7 +1272,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
         .maybeSingle();
 
       const COLUNAS_LISTA =
-        "id, numero_simulacao, nome_cliente, cliente_id, cpf_cnpj, nome_conjuge, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id";
+        "id, numero_simulacao, nome_cliente, cliente_id, cpf_cnpj, nome_conjuge, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id, codigo_oportunidade_homefin";
 
       // Clientes vinculados: resolvido antes para que os filtros possam ser
       // aplicados a mais de uma consulta sem repetir a ida ao banco.

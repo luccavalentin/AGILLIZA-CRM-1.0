@@ -144,6 +144,16 @@ export function TabelaSimulacoes({
                     <span className="inline-flex w-fit items-center rounded-md bg-primary/5 px-1.5 py-0.5 font-mono text-[13px] font-bold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
                       {s.numero_simulacao}
                     </span>
+                    {/* Oportunidade na HomeFin: é o número que o parceiro usa
+                        para achar a operação do lado de lá. */}
+                    {s.codigo_oportunidade_homefin && (
+                      <span
+                        className="font-mono text-[10px] tabular-nums text-muted-foreground"
+                        title="Oportunidade na HomeFin"
+                      >
+                        OP {s.codigo_oportunidade_homefin}
+                      </span>
+                    )}
                     {s._multi_prazo && s._agrupadas_ids?.length > 0 && (
                       <div className="flex flex-wrap items-center gap-1 opacity-60">
                         {s._agrupadas_numeros?.map((num: string, idx: number) => (

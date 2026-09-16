@@ -75,6 +75,16 @@ export function HeaderAcoes({
           <p className="mt-0.5 truncate text-sm text-muted-foreground">
             {s.nome_cliente ?? "—"} ·{" "}
             {s.produto === "home_equity" ? "Home Equity" : "Financiamento"}
+            {/* Número da oportunidade na HomeFin: é por ele que o parceiro
+                encontra a operação do lado de lá e no atendimento do banco. */}
+            {(s as any).codigo_oportunidade_homefin && (
+              <>
+                {" · "}
+                <span className="font-medium tabular-nums text-foreground">
+                  Oportunidade {(s as any).codigo_oportunidade_homefin}
+                </span>
+              </>
+            )}
           </p>
         </div>
       </div>
