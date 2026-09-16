@@ -35,14 +35,50 @@ export const MARCADORES_SEM_DESPACHO = [
   ENCERRADA_POR_CPF_BLOQUEADO,
 ] as const;
 
+/**
+ * Quantas falhas INDEPENDENTES há nas linhas encerradas: uma por oportunidade.
+ *
+ * Duas correções sobre a contagem original (16/09/2026):
+ *
+ * - Só conta o encerramento real da reconciliação (`sem_despacho_ao_banco`).
+ *   O encerramento feito pelo próprio freio acontece na hora, sem tentar — não
+ *   é prova nova. Contá-lo fazia o freio se alimentar: uma vez travado, o CPF
+ *   não destravava mais dentro da janela.
+ * - Tentativas na MESMA oportunidade são a mesma falha. Com o reaproveitamento
+ *   de oportunidade, um cliente teve 21 tentativas presas numa oportunidade
+ *   quebrada e o freio leu isso como CPF bloqueado — mas numa oportunidade
+ *   nova o Santander respondeu na hora. O estudo que originou o freio contava
+ *   CPFs com várias oportunidades diferentes falhando, e esses seguem travados.
+ *
+ * Linha sem oportunidade conhecida conta sozinha (conservador).
+ */
+export function contarFalhasIndependentes(
+  linhas: Array<{
+    id?: string | null;
+    raw_response?: { _encerrada_por?: unknown } | null;
+    homefin_id_oportunidade?: string | number | null;
+  }>,
+): number {
+  const chaves = new Set<string>();
+  for (const l of linhas ?? []) {
+    if (String(l?.raw_response?._encerrada_por ?? "") !== ENCERRADA_POR_SEM_DESPACHO) continue;
+    const op = l?.homefin_id_oportunidade;
+    chaves.add(op != null && String(op) !== "" ? `op:${op}` : `linha:${l?.id ?? chaves.size}`);
+  }
+  return chaves.size;
+}
+
 export function cpfBloqueadoNoBanco(falhasRecentes: number): boolean {
   return Number(falhasRecentes) >= LIMITE_FALHAS_SEM_DESPACHO;
 }
 
-export function mensagemCpfBloqueado(nomeBanco: string | null | undefined, falhasRecentes: number): string {
+export function mensagemCpfBloqueado(
+  nomeBanco: string | null | undefined,
+  falhasRecentes: number,
+): string {
   const banco = nomeBanco?.trim() || "banco";
   return (
-    `O ${banco} não processou as últimas ${falhasRecentes} simulações deste CPF nas últimas ` +
+    `O ${banco} não processou este CPF em ${falhasRecentes} simulações de oportunidades diferentes nas últimas ` +
     `${JANELA_BLOQUEIO_HORAS}h: o provedor aceita o envio e não o registra na instituição. ` +
     `Reenviar não resolve — o caso precisa ser tratado com o provedor (informe o CPF e o número ` +
     `da oportunidade). Enquanto isso, simule este cliente em outro banco.`
