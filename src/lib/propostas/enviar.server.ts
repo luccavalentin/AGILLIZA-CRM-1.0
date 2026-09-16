@@ -34,6 +34,7 @@ import {
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
 import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
+import { dadosBancariosParticipante } from "@/lib/bancos/agencia";
 
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
 const ORDEM_STATUS: PropostaStatus[] = [
@@ -427,11 +428,11 @@ async function renovarSimulacaoSeConsumida({
   /**
    * Agência escolhida pelo operador no envio (opcional).
    *
-   * O swagger só lista `agencia` na RESPOSTA da simulação, não no pedido — o
-   * mesmo acontecia com as despesas financiadas, que o PUT aceitou mesmo
-   * assim. Por isso vai no corpo da simulação e só quando foi preenchida:
-   * vazia, o payload fica idêntico ao de antes e a integração usa o padrão
-   * dela. Em todo PUT, porque o PUT substitui o registro inteiro.
+   * ATENÇÃO: a integração IGNORA este campo — `agencia` só existe na RESPOSTA
+   * da simulação, e as propostas enviadas assim voltaram com `agencia: null`.
+   * O que de fato leva a agência ao banco é o participante (`idBanco` +
+   * `codigoAgencia`), em `garantirEnderecoParticipantes`. Mantido aqui por ser
+   * inofensivo, caso a integração passe a aceitá-lo.
    */
   // Normaliza também o que já estava gravado sem o zero ("347" -> "0347").
   const { normalizarAgencia } = await import("@/lib/bancos/agencia");
@@ -994,11 +995,24 @@ async function garantirEnderecoParticipantes({
     const faltaProfissao = !(part?.nomeProfissao && String(part.nomeProfissao).trim());
     const faltaEmpresa = !(part?.nomeEmpresaProfissao && String(part.nomeEmpresaProfissao).trim());
     const faltaConjuge = casado && !(part?.nomeConjuge && part?.cpfConjuge);
+    // Agência escolhida no envio: só chega ao banco pelo participante.
+    const bancarios = dadosBancariosParticipante({
+      participante: part,
+      ehPrincipal,
+      agencia: pb?.agencia,
+      nomeBanco: pb?.nome_banco,
+      idBancoDestino: pb?.homefin_id_banco,
+    });
+    const faltaAgencia =
+      Boolean(bancarios.codigoAgencia) &&
+      (String(part?.codigoAgencia ?? "").trim() !== bancarios.codigoAgencia ||
+        Number(part?.idBanco) !== bancarios.idBanco);
     // Quando temos um envolvido cadastrado no sistema, sempre sincronizamos os
     // dados complementares (documento, sexo, FGTS, endereço) com o banco.
     const temEnvolvido = Boolean(env);
     if (
       !temEnvolvido &&
+      !faltaAgencia &&
       !faltaEstadoCivil &&
       !faltaUf &&
       !faltaProfissao &&
@@ -1015,7 +1029,8 @@ async function garantirEnderecoParticipantes({
       !uf &&
       !faltaProfissao &&
       !faltaEmpresa &&
-      !faltaConjuge
+      !faltaConjuge &&
+      !faltaAgencia
     )
       continue;
 
@@ -1063,6 +1078,7 @@ async function garantirEnderecoParticipantes({
       bairro: env?.bairro ?? prop.bairro_imovel ?? undefined,
       municipio: env?.municipio ?? prop.cidade_imovel ?? undefined,
       uf: uf ?? undefined,
+      ...bancarios,
       ...dadosConjuge,
     };
 
