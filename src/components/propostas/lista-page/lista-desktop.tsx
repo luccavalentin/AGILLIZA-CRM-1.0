@@ -17,6 +17,7 @@ import {
 import { BancosProposta } from "@/components/proposta/bancos-proposta";
 import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { MenuAcoesProposta } from "./menu-acoes-proposta";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
@@ -223,11 +224,14 @@ export function ListaDesktop({
                         )}
                       </div>
                     ) : (
-                      <ConfirmDelete
-                        titulo="Excluir proposta"
-                        descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
-                        onConfirm={() => handleExcluir(p.id)}
-                      />
+                      <div className="flex items-center justify-end gap-1">
+                        <MenuAcoesProposta propostaId={p.id} bancos={p.bancos} />
+                        <ConfirmDelete
+                          titulo="Excluir proposta"
+                          descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
+                          onConfirm={() => handleExcluir(p.id)}
+                        />
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
