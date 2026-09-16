@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { mascararDocumento } from "@/lib/crm/documento";
 import { toTitleCase } from "@/lib/utils";
+import { aplicarPadroesCliente, ENDERECO_PADRAO } from "@/lib/crm/padroes-cadastro";
 
 type TipoPessoa = Database["public"]["Enums"]["tipo_pessoa"];
 type EstadoCivil = Database["public"]["Enums"]["cliente_estado_civil"];
@@ -324,8 +325,9 @@ export const criarCliente = createServerFn({ method: "POST" })
     if (!podeCriar) throw new Error("Você não tem permissão para cadastrar clientes.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Campos comuns entre criação e atualização.
-    const campos = {
+    // Campos comuns entre criação e atualização. O que ficar vazio recebe o
+    // padrão do cadastro (ver `padroes-cadastro.ts`).
+    const campos = aplicarPadroesCliente({
       tipo_pessoa: data.tipo_pessoa,
       nome: toTitleCase(data.nome),
       documento: data.documento,
@@ -380,7 +382,7 @@ export const criarCliente = createServerFn({ method: "POST" })
       conjuge_agencia: data.conjuge_agencia ?? null,
       conjuge_conta_corrente: data.conjuge_conta_corrente ?? null,
       conjuge_digito_conta: data.conjuge_digito_conta ?? null,
-    };
+    });
 
     // Se já existe um cliente com o mesmo documento neste ecossistema, reaproveita
     // o cadastro existente (evita violar a constraint clientes_doc_unico e efetivamente
@@ -533,6 +535,8 @@ export const atualizarCliente = createServerFn({ method: "POST" })
       }
     }
 
+    // Sem padrões aqui de propósito: na edição vale exatamente o que o
+    // operador salvou — inclusive apagar um campo que veio por padrão.
     const { error } = await supabase
       .from("clientes")
       .update({
@@ -862,14 +866,22 @@ export const salvarEndereco = createServerFn({ method: "POST" })
       .eq("cliente_id", data.cliente_id)
       .eq("principal", true)
       .maybeSingle();
+    // Endereço em branco recebe o padrão do cadastro; qualquer campo digitado
+    // (inclusive o CEP buscado) prevalece e é gravado como veio.
+    // Padrão só quando o endereço está nascendo em branco. Endereço que já
+    // existe guarda o que o operador salvou, inclusive apagado.
+    const informou = [data.cep, data.logradouro, data.numero, data.bairro, data.cidade].some(
+      (v) => String(v ?? "").trim() !== "",
+    );
+    const padrao = existente || informou ? null : ENDERECO_PADRAO;
     const payload = {
-      cep: data.cep ?? null,
-      logradouro: data.logradouro ?? null,
-      numero: data.numero ?? null,
+      cep: data.cep || padrao?.cep || null,
+      logradouro: data.logradouro || padrao?.logradouro || null,
+      numero: data.numero || padrao?.numero || null,
       complemento: data.complemento ?? null,
-      bairro: data.bairro ?? null,
-      cidade: data.cidade ?? null,
-      uf: data.uf ?? null,
+      bairro: data.bairro || padrao?.bairro || null,
+      cidade: data.cidade || padrao?.cidade || null,
+      uf: data.uf || padrao?.uf || null,
     };
     if (existente) {
       const { error } = await supabase

@@ -1,3 +1,4 @@
+import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 export interface ClienteFormValues {
   id?: string;
   tipo_pessoa: "PF" | "PJ";
@@ -249,7 +250,7 @@ export const emptyValues: ClienteFormValues = {
   agencia: "",
   conta_corrente: "",
   digito_conta: "",
-  email: "thiago@agilliza.net.br",
+  email: PADROES_CADASTRO.email,
   telefone_celular: "",
   renda_total_declarada: "",
   uf_interesse: "",
@@ -270,7 +271,7 @@ export const emptyValues: ClienteFormValues = {
   conjuge_profissao: "",
   conjuge_empresa: "",
   conjuge_renda: "",
-  conjuge_email: "thiago@agilliza.net.br",
+  conjuge_email: PADROES_CADASTRO.email,
   conjuge_celular: "",
   conjuge_banco_conta: "",
   conjuge_agencia: "",

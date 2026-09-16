@@ -33,6 +33,7 @@ import {
   statusGlobalPorBancos,
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
+import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
 const ORDEM_STATUS: PropostaStatus[] = [
@@ -878,16 +879,18 @@ async function garantirEnderecoParticipantes({
     // Profissão e empresa: prioriza o cadastro atual do sistema sobre o que já
     // está gravado na oportunidade bancária, pois a oportunidade pode conter um
     // valor antigo inválido (ex.: "Administrador(a)").
+    // Sem nada no cadastro vale o padrão (Administrador / Agilliza) — o texto
+    // "Não informado" que ia antes não diz nada ao analista do banco.
     const profissao =
       textoLivreParaBanco(env?.profissao) ||
       textoLivreParaBanco(src?.profissao) ||
       textoLivreParaBanco(part?.nomeProfissao) ||
-      "Não informado";
+      PADROES_CADASTRO.profissao;
     const empresa =
       textoLivreParaBanco(env?.empresa) ||
       textoLivreParaBanco(src?.empresa) ||
       textoLivreParaBanco(part?.nomeEmpresaProfissao) ||
-      "Não informado";
+      PADROES_CADASTRO.empresa;
 
     const conjuge = env
       ? (envolvidos ?? []).find((e: any) => String(e.conjuge_de ?? "") === String(env.id))
