@@ -27,6 +27,12 @@ export type TipoSituacaoSimulacao = "S" | "P" | "N" | "A" | "R" | string;
 const SIMULACAO_EM_ANDAMENTO: ReadonlySet<string> = new Set(["N", "A"]);
 
 /**
+ * Teto de simulações numa oportunidade. Em 16/09 um cliente reenviado em
+ * sequência empilhou 58 simulações numa só oportunidade.
+ */
+export const MAX_SIMULACOES_POR_OPORTUNIDADE = 20;
+
+/**
  * Valores que ficam CONGELADOS na oportunidade quando ela é criada: renda,
  * composição de renda, sistema de amortização e valores. Reaproveitar não
  * reenvia nada disso — por isso só vale quando a simulação nova tem exatamente
@@ -71,7 +77,10 @@ export interface SimulacaoNova extends ValoresCongelados {
 
 export interface SituacaoNaHomeFin {
   tipoSituacao?: TipoSituacaoOportunidade | null;
-  simulacoes?: Array<{ tipoSituacao?: TipoSituacaoSimulacao | null }> | null;
+  simulacoes?: Array<{
+    tipoSituacao?: TipoSituacaoSimulacao | null;
+    valorParcelaBanco?: number | string | null;
+  }> | null;
 }
 
 const soDigitos = (v: unknown) => String(v ?? "").replace(/\D/g, "");
@@ -135,17 +144,27 @@ export function ehMesmoNegocio(candidata: CandidataOportunidade, nova: Simulacao
  *
  * Só quando está Ativa e nenhuma simulação dela está em análise ou aprovada —
  * nesses casos o banco já está com a proposta na mão e o `PUT` da oportunidade
- * mudaria dados sob análise. Recusada (R) e erro (P) não impedem: é justamente
- * quando o operador tenta outro banco ou outra condição.
+ * mudaria dados sob análise.
+ *
+ * Também recusa quando alguma simulação ficou SEM PARCELA: o banco recusou,
+ * não respondeu ou o provedor nem despachou. "P" não serve de sinal — é o
+ * estado de toda simulação sem proposta, inclusive as que deram certo. Antes
+ * do reaproveitamento, reenviar criava oportunidade nova, e isso é o que a
+ * própria mensagem de erro recomenda ("reenvie uma vez"). Em 16/09 as 21
+ * tentativas do Santander de um cliente caíram na mesma oportunidade quebrada
+ * e nenhuma foi despachada ao banco.
  */
 export function oportunidadeAceitaNovaSimulacao(situacao: SituacaoNaHomeFin | null): boolean {
   if (!situacao) return false;
   const tipo = String(situacao.tipoSituacao ?? "").toUpperCase();
   if (tipo !== "A") return false;
   const simulacoes = situacao.simulacoes ?? [];
-  return !simulacoes.some((s) =>
-    SIMULACAO_EM_ANDAMENTO.has(String(s?.tipoSituacao ?? "").toUpperCase()),
-  );
+  if (simulacoes.length >= MAX_SIMULACOES_POR_OPORTUNIDADE) return false;
+  if (
+    simulacoes.some((s) => SIMULACAO_EM_ANDAMENTO.has(String(s?.tipoSituacao ?? "").toUpperCase()))
+  )
+    return false;
+  return simulacoes.every((s) => Number(s?.valorParcelaBanco) > 0);
 }
 
 /**

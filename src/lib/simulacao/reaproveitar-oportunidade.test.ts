@@ -20,7 +20,10 @@ const nova = {
   cep_imovel: "13416222",
   id_operacao_homefin: 1,
 };
-const ativaLivre = { tipoSituacao: "A", simulacoes: [{ tipoSituacao: "S" }] };
+const ativaLivre = {
+  tipoSituacao: "A",
+  simulacoes: [{ tipoSituacao: "P", valorParcelaBanco: 4377.59 }],
+};
 
 describe("ehMesmoNegocio", () => {
   it("aceita o mesmo cliente, produto e imóvel (CEP com máscara ou sem)", () => {
@@ -49,14 +52,29 @@ describe("ehMesmoNegocio", () => {
 });
 
 describe("oportunidadeAceitaNovaSimulacao", () => {
-  it("aceita oportunidade ativa sem proposta viva", () => {
+  it("aceita oportunidade ativa em que todas as simulações têm parcela", () => {
     expect(oportunidadeAceitaNovaSimulacao(ativaLivre)).toBe(true);
+    expect(oportunidadeAceitaNovaSimulacao({ tipoSituacao: "A", simulacoes: [] })).toBe(true);
+  });
+
+  it("recusa quando alguma simulação ficou sem parcela (falha ou sem despacho)", () => {
     expect(
       oportunidadeAceitaNovaSimulacao({
         tipoSituacao: "A",
-        simulacoes: [{ tipoSituacao: "R" }, { tipoSituacao: "P" }],
+        simulacoes: [
+          { tipoSituacao: "P", valorParcelaBanco: 4377.59 },
+          { tipoSituacao: "P", valorParcelaBanco: null },
+        ],
       }),
-    ).toBe(true);
+    ).toBe(false);
+  });
+
+  it("recusa oportunidade que já passou do teto de simulações", () => {
+    const cheia = Array.from({ length: 20 }, () => ({
+      tipoSituacao: "P",
+      valorParcelaBanco: 1000,
+    }));
+    expect(oportunidadeAceitaNovaSimulacao({ tipoSituacao: "A", simulacoes: cheia })).toBe(false);
   });
 
   it("recusa quando há proposta em análise ou aprovada", () => {
