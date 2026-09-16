@@ -33,7 +33,7 @@ import {
   statusGlobalPorBancos,
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
-import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
+import { ouPadrao, PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 import { dadosBancariosParticipante, normalizarAgencia } from "@/lib/bancos/agencia";
 
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
@@ -921,36 +921,43 @@ async function garantirEnderecoParticipantes({
             part?.dataNascimentoConjuge ??
             undefined,
           tipoEstadoCivilConjuge: estadoCivilConjuge,
+          // Documento, profissão e empresa do cônjuge recebem os mesmos padrões
+          // do titular quando o cadastro está vazio (RG = próprio CPF, SSP/SP,
+          // expedição 01/01/2026, Administrador, Agilliza). Iam ausentes em
+          // quase todo envio: a empresa em 17 de 18 propostas do Itaú com
+          // cônjuge e a data de expedição em 11.
           tipoDocumentoIdentidadeConjuge:
             enumBancoId(conjuge?.tipo_documento_identidade) ??
             enumBancoId(src?.conjuge_tipo_documento_identidade) ??
             enumBancoId(part?.tipoDocumentoIdentidadeConjuge) ??
-            undefined,
-          numeroDocumentoConjuge: sanitizarNumeroDocumento(
-            conjuge?.numero_documento ??
-              src?.conjuge_numero_documento ??
-              part?.numeroDocumentoConjuge,
+            PADROES_CADASTRO.tipoDocumentoIdentidade,
+          numeroDocumentoConjuge:
+            sanitizarNumeroDocumento(
+              conjuge?.numero_documento ??
+                src?.conjuge_numero_documento ??
+                part?.numeroDocumentoConjuge,
+            ) ??
+            (soDigitos(
+              conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? sim?.cpf_conjuge ?? part?.cpfConjuge,
+            ) ||
+              undefined),
+          dataExpedicaoConjuge: ouPadrao(
+            conjuge?.data_expedicao ?? src?.conjuge_data_expedicao ?? part?.dataExpedicaoConjuge,
+            PADROES_CADASTRO.dataExpedicao,
           ),
-          dataExpedicaoConjuge:
-            conjuge?.data_expedicao ??
-            src?.conjuge_data_expedicao ??
-            part?.dataExpedicaoConjuge ??
-            undefined,
-          orgaoExpedidorConjuge:
-            conjuge?.orgao_expedidor ??
-            src?.conjuge_orgao_expedidor ??
-            part?.orgaoExpedidorConjuge ??
-            undefined,
-          ufExpedicaoConjuge:
-            conjuge?.uf_expedicao ??
-            src?.conjuge_uf_expedicao ??
-            part?.ufExpedicaoConjuge ??
-            undefined,
+          orgaoExpedidorConjuge: ouPadrao(
+            conjuge?.orgao_expedidor ?? src?.conjuge_orgao_expedidor ?? part?.orgaoExpedidorConjuge,
+            PADROES_CADASTRO.orgaoExpedidor,
+          ),
+          ufExpedicaoConjuge: ouPadrao(
+            conjuge?.uf_expedicao ?? src?.conjuge_uf_expedicao ?? part?.ufExpedicaoConjuge,
+            PADROES_CADASTRO.ufExpedicao,
+          ),
           nomeProfissaoConjuge:
             textoLivreParaBanco(conjuge?.profissao) ||
             textoLivreParaBanco(src?.conjuge_profissao) ||
             textoLivreParaBanco(part?.nomeProfissaoConjuge) ||
-            undefined,
+            PADROES_CADASTRO.profissao,
           rendaConjuge:
             prop.compoe_renda_conjuge !== false
               ? (conjuge?.renda ??
@@ -963,7 +970,7 @@ async function garantirEnderecoParticipantes({
             textoLivreParaBanco(conjuge?.empresa) ||
             textoLivreParaBanco(src?.conjuge_empresa) ||
             textoLivreParaBanco(part?.nomeEmpresaProfissaoConjuge) ||
-            undefined,
+            PADROES_CADASTRO.empresa,
           tipoSexoConjuge:
             enumBancoId(conjuge?.tipo_sexo) ??
             (src?.conjuge_sexo
@@ -1021,6 +1028,8 @@ async function garantirEnderecoParticipantes({
     )
       continue;
 
+    const ehPessoaFisica =
+      (enumBancoId(part?.tipoPessoa) ?? ((cpf?.length ?? 0) > 11 ? "J" : "F")) === "F";
     const payload: Record<string, unknown> = {
       tipoSituacao: enumBancoId(part?.tipoSituacao) ?? "A",
       nomeParticipante: part?.nomeParticipante ?? env?.nome ?? prop.nome_cliente,
@@ -1043,12 +1052,24 @@ async function garantirEnderecoParticipantes({
           : undefined,
 
       tipoSexo: enumBancoId(part?.tipoSexo) ?? env?.tipo_sexo ?? undefined,
+      // Pessoa física sem documento no cadastro recebe o padrão (RG = CPF,
+      // SSP/SP, 01/01/2026). Empresa não tem RG: em PJ fica como veio.
       tipoDocumentoIdentidade:
-        enumBancoId(part?.tipoDocumentoIdentidade) ?? env?.tipo_documento_identidade ?? undefined,
-      numeroDocumento: sanitizarNumeroDocumento(part?.numeroDocumento ?? env?.numero_documento),
-      orgaoExpedidor: part?.orgaoExpedidor ?? env?.orgao_expedidor ?? undefined,
-      ufExpedicao: part?.ufExpedicao ?? env?.uf_expedicao ?? undefined,
-      dataExpedicao: part?.dataExpedicao ?? env?.data_expedicao ?? undefined,
+        enumBancoId(part?.tipoDocumentoIdentidade) ??
+        env?.tipo_documento_identidade ??
+        (ehPessoaFisica ? PADROES_CADASTRO.tipoDocumentoIdentidade : undefined),
+      numeroDocumento:
+        sanitizarNumeroDocumento(part?.numeroDocumento ?? env?.numero_documento) ??
+        (ehPessoaFisica && cpf ? cpf : undefined),
+      orgaoExpedidor: ehPessoaFisica
+        ? ouPadrao(part?.orgaoExpedidor ?? env?.orgao_expedidor, PADROES_CADASTRO.orgaoExpedidor)
+        : (part?.orgaoExpedidor ?? env?.orgao_expedidor ?? undefined),
+      ufExpedicao: ehPessoaFisica
+        ? ouPadrao(part?.ufExpedicao ?? env?.uf_expedicao, PADROES_CADASTRO.ufExpedicao)
+        : (part?.ufExpedicao ?? env?.uf_expedicao ?? undefined),
+      dataExpedicao: ehPessoaFisica
+        ? ouPadrao(part?.dataExpedicao ?? env?.data_expedicao, PADROES_CADASTRO.dataExpedicao)
+        : (part?.dataExpedicao ?? env?.data_expedicao ?? undefined),
       nomeProfissao: profissao,
       nomeEmpresaProfissao: empresa,
       nomeMae: part?.nomeMae ?? env?.nome_mae ?? src?.mae ?? undefined,
