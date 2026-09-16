@@ -253,19 +253,38 @@ export async function enviarSimulacaoImpl({
         if (!idOportunidade && sim.cliente_id) {
           try {
             const { decidirOportunidade } = await import("./reaproveitar-oportunidade");
-            const { data: candidatas } = await sbAdminContext
+            const COLUNAS_CANDIDATA =
+              "id, homefin_id_oportunidade, codigo_oportunidade_homefin, cliente_id, produto, tipo_pessoa, cep_imovel, id_operacao_homefin, sistema_amortizacao, renda_total, renda_conjuge, compoe_renda_conjuge, possui_conjuge, valor_imovel, valor_financiamento, utiliza_fgts";
+            const { data: recentes } = await sbAdminContext
               .from("simulacoes")
-              .select(
-                "id, homefin_id_oportunidade, codigo_oportunidade_homefin, cliente_id, produto, tipo_pessoa, cep_imovel, id_operacao_homefin",
-              )
+              .select("homefin_id_oportunidade")
               .eq("cliente_id", sim.cliente_id)
               .not("homefin_id_oportunidade", "is", null)
               .is("deleted_at", null)
               .neq("id", simulacaoId)
               .order("created_at", { ascending: false })
-              .limit(5);
+              .limit(10);
+            const idsOportunidade = [
+              ...new Set((recentes ?? []).map((r: any) => String(r.homefin_id_oportunidade))),
+            ].slice(0, 5);
 
-            for (const cand of (candidatas ?? []) as any[]) {
+            // A comparação é com a simulação que CRIOU cada oportunidade: renda,
+            // sistema e valores ficam congelados nela na criação. Comparar com
+            // uma simulação que só entrou depois repetiria o erro de 16/09 (PRICE
+            // numa oportunidade nascida SAC => Bradesco recusa por renda mínima).
+            const candidatas: any[] = [];
+            for (const idOp of idsOportunidade) {
+              const { data: criadora } = await sbAdminContext
+                .from("simulacoes")
+                .select(COLUNAS_CANDIDATA)
+                .eq("homefin_id_oportunidade", idOp)
+                .order("created_at", { ascending: true })
+                .limit(1)
+                .maybeSingle();
+              if (criadora) candidatas.push(criadora);
+            }
+
+            for (const cand of candidatas) {
               // Proposta viva na oportunidade: o banco já está com ela: não mexemos.
               const { data: props } = await sbAdminContext
                 .from("propostas")
@@ -302,6 +321,7 @@ export async function enviarSimulacaoImpl({
                     .update(updateReuso)
                     .eq("agrupador_id", sim.agrupador_id)
                     .eq("cliente_id", sim.cliente_id)
+                    .eq("sistema_amortizacao", sim.sistema_amortizacao)
                     .is("homefin_id_oportunidade", null);
                 }
                 console.info(
@@ -571,12 +591,15 @@ export async function enviarSimulacaoImpl({
             };
             await sbAdminUpdate.from("simulacoes").update(updatePayload).eq("id", simulacaoId);
 
+            // Só irmãs do MESMO sistema: a PRICE tem renda própria (renda PRICE)
+            // e a oportunidade guarda a renda e o sistema de quem a criou.
             if (sim.agrupador_id) {
               await sbAdminUpdate
                 .from("simulacoes")
                 .update(updatePayload)
                 .eq("agrupador_id", sim.agrupador_id)
                 .eq("cliente_id", sim.cliente_id)
+                .eq("sistema_amortizacao", sim.sistema_amortizacao)
                 .is("homefin_id_oportunidade", null);
             }
           }
