@@ -7,6 +7,7 @@ import { completaSchema, mapEstadoCivilEnum } from "./schemas";
 import { humanizarErroBanco } from "./bank-error-humanizer";
 import { ajustarPrazoPorIdade, modoTetoIdade } from "./prazo";
 import { bancosQueOperamPJ } from "./use-simulacao-completa/bancos-helpers";
+import { aplicarPadroesCliente, PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 
 /** ===== Tipos de saída ===== */
 export interface BancoAtivo {
@@ -520,15 +521,19 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           }
           const { data: novo, error: errCli } = await supabaseAdmin
             .from("clientes")
-            .insert({
-              correspondente_id,
-              numero_cliente: "",
-              documento,
-              origem: "direto",
-              criador_id: userId,
-              responsavel_id: userId,
-              ...campos,
-            })
+            .insert(
+              // Cadastro nascido da simulação também entra com os padrões do
+              // CRM — sem eles a proposta trava depois por campo obrigatório.
+              aplicarPadroesCliente({
+                correspondente_id,
+                numero_cliente: "",
+                documento,
+                origem: "direto",
+                criador_id: userId,
+                responsavel_id: userId,
+                ...campos,
+              }),
+            )
             .select("id")
             .maybeSingle();
           if (errCli) throw new Error(`Falha ao gravar cliente no CRM: ${errCli.message}`);
@@ -668,7 +673,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           // devolva uma simulação de empresa para as regras de pessoa física.
           tipo_pessoa: ehPJ ? "PJ" : "PF",
           nome_cliente: dd.nome_cliente ?? null,
-          email: dd.email ?? null,
+          // Sem e-mail digitado vale o da Agilliza: é obrigatório na API e o
+          // operador não tem o do cliente na mão na hora da simulação.
+          email: dd.email || PADROES_CADASTRO.email,
           celular: dd.celular ?? null,
           data_nascimento: dd.data_nascimento || null,
           renda_total: dd.renda_total ?? null,
@@ -861,7 +868,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
             cliente_id: conjugeId || cliente_id,
             cpf_cnpj: dd.cpf_conjuge || null,
             nome_cliente: dd.nome_conjuge || null,
-            email: dd.email_conjuge || null,
+            email: dd.email_conjuge || PADROES_CADASTRO.email,
             celular: dd.celular_conjuge || null,
             data_nascimento: dd.data_nascimento_conjuge || null,
             renda_total: dd.compoe_renda ? rendaTotalSoma : (dd.renda_conjuge ?? 0),
@@ -2026,16 +2033,18 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
             }
             const { data: novo, error: errInsert } = await supabaseAdmin
               .from("clientes")
-              .insert({
-                correspondente_id: correspondenteId,
-                numero_cliente: "",
-                tipo_pessoa: "PF",
-                documento,
-                origem: "direto",
-                responsavel_id: userId,
-                criador_id: userId,
-                ...campos,
-              })
+              .insert(
+                aplicarPadroesCliente({
+                  correspondente_id: correspondenteId,
+                  numero_cliente: "",
+                  tipo_pessoa: "PF",
+                  documento,
+                  origem: "direto",
+                  responsavel_id: userId,
+                  criador_id: userId,
+                  ...campos,
+                }),
+              )
               .select("id")
               .maybeSingle();
             if (errInsert) {

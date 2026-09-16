@@ -2434,11 +2434,42 @@ const CAMPOS_CLIENTE_PARA_ENVOLVIDO: MapaCampoEnvolvido[] = [
   { de: "numero_documento", para: "numero_documento" },
   { de: "orgao_expedidor", para: "orgao_expedidor" },
   { de: "uf_expedicao", para: "uf_expedicao" },
+  // Faltava na lista: o cadastro tinha a data e o participante seguia sem ela,
+  // justamente o campo que o Santander recusa em branco.
+  { de: "data_expedicao", para: "data_expedicao" },
   { de: "profissao", para: "profissao" },
   { de: "empresa", para: "empresa" },
   { de: "renda_total_declarada", para: "renda" },
   { de: "email", para: "email" },
   { de: "telefone_celular", para: "celular", normalizar: apenasDigitosOuVazio },
+];
+
+/**
+ * Mesma cópia, para a linha do CÔNJUGE (`conjuge_de` preenchido).
+ *
+ * O cônjuge é criado sem `cliente_id` — ele não é um cadastro próprio, e sim
+ * as colunas `conjuge_*` do titular. Sem este mapa a rotina pulava essas
+ * linhas inteiras e o cônjuge ia ao banco sem documento, sem data de
+ * expedição e sem endereço.
+ */
+const CAMPOS_CONJUGE_PARA_ENVOLVIDO: MapaCampoEnvolvido[] = [
+  { de: "conjuge_nome", para: "nome" },
+  { de: "conjuge_cpf", para: "cpf_cnpj", normalizar: apenasDigitosOuVazio },
+  { de: "conjuge_data_nascimento", para: "data_nascimento" },
+  { de: "conjuge_nome_mae", para: "nome_mae" },
+  { de: "conjuge_sexo", para: "tipo_sexo", normalizar: inicialMaiuscula },
+  { de: "estado_civil", para: "estado_civil", normalizar: estadoCivilCrmParaCodigo },
+  { de: "regime_casamento", para: "regime_casamento", normalizar: regimeCasamentoCrmParaCodigo },
+  { de: "conjuge_tipo_documento_identidade", para: "tipo_documento_identidade" },
+  { de: "conjuge_numero_documento", para: "numero_documento" },
+  { de: "conjuge_orgao_expedidor", para: "orgao_expedidor" },
+  { de: "conjuge_uf_expedicao", para: "uf_expedicao" },
+  { de: "conjuge_data_expedicao", para: "data_expedicao" },
+  { de: "conjuge_profissao", para: "profissao" },
+  { de: "conjuge_empresa", para: "empresa" },
+  { de: "conjuge_renda", para: "renda" },
+  { de: "conjuge_email", para: "email" },
+  { de: "conjuge_celular", para: "celular", normalizar: apenasDigitosOuVazio },
 ];
 
 const CAMPOS_ENDERECO_PARA_ENVOLVIDO: MapaCampoEnvolvido[] = [
@@ -2473,19 +2504,29 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
 
     for (const envObj of envolvidos) {
       const env = envObj as any;
-      if (!env.cliente_id) continue;
+
+      // O cônjuge não tem cadastro próprio: os dados dele são as colunas
+      // `conjuge_*` do titular, e é pelo titular que chegamos ao cliente.
+      // Sem isto a linha do cônjuge era pulada e ia ao banco sem documento,
+      // sem data de expedição e sem endereço.
+      const ehConjuge = Boolean(env.conjuge_de);
+      const titular = ehConjuge
+        ? (envolvidos as any[]).find((t: any) => t.id === env.conjuge_de)
+        : null;
+      const clienteId = ehConjuge ? (titular?.cliente_id ?? null) : env.cliente_id;
+      if (!clienteId) continue;
 
       const { data: clienteObj } = await supabase
         .from("clientes")
         .select("*")
-        .eq("id", env.cliente_id)
+        .eq("id", clienteId)
         .maybeSingle();
       const cliente = clienteObj as any;
 
       const { data: enderecoObj } = await supabase
         .from("cliente_enderecos")
         .select("*")
-        .eq("cliente_id", env.cliente_id)
+        .eq("cliente_id", clienteId)
         .order("principal", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -2494,7 +2535,8 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
       const patch: Record<string, any> = {};
       const camposCompletados: string[] = [];
 
-      for (const { de, para, normalizar } of CAMPOS_CLIENTE_PARA_ENVOLVIDO) {
+      const mapa = ehConjuge ? CAMPOS_CONJUGE_PARA_ENVOLVIDO : CAMPOS_CLIENTE_PARA_ENVOLVIDO;
+      for (const { de, para, normalizar } of mapa) {
         if (!vazioEnvolvido(env[para])) continue;
         const bruto = cliente?.[de];
         if (bruto === null || bruto === undefined || bruto === "") continue;

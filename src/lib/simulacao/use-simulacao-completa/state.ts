@@ -5,6 +5,7 @@
  * comportamento — este módulo é puramente declarativo (constantes/tipos)
  * e não deve conter lógica que dependa de estado do componente.
  */
+import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 
 export type Form = Record<string, any>;
 
@@ -25,7 +26,9 @@ export interface OpcoesHook {
  * testes e operação com atendimento centralizado. O usuário pode alterar
  * livremente.
  */
-export const EMAIL_PADRAO = "thiago@agilliza.net.br";
+// Padrão único do cadastro (ver `padroes-cadastro.ts`) — simulação e CRM não
+// podem divergir no e-mail que vai para o banco.
+export const EMAIL_PADRAO = PADROES_CADASTRO.email;
 
 export const ESTADO_INICIAL: Form = {
   produto: "financiamento_imobiliario",
