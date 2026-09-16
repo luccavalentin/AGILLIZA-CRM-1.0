@@ -241,6 +241,83 @@ export async function enviarSimulacaoImpl({
           idOportunidade = opId;
         }
 
+        // REAPROVEITAR A OPORTUNIDADE DO MESMO NEGÓCIO
+        //
+        // A HomeFin modela uma oportunidade com N simulações dentro (uma por
+        // banco). Criar uma oportunidade por envio fragmentava o negócio lá:
+        // 3.111 oportunidades para 693 clientes em 30 dias. Aqui procuramos a
+        // oportunidade do mesmo cliente/produto/imóvel que ainda aceita
+        // simulação nova. A regra está em `reaproveitar-oportunidade.ts` e é
+        // conservadora: na menor dúvida seguimos criando uma nova, que é o
+        // comportamento de sempre. Falha aqui nunca derruba o envio.
+        if (!idOportunidade && sim.cliente_id) {
+          try {
+            const { decidirOportunidade } = await import("./reaproveitar-oportunidade");
+            const { data: candidatas } = await sbAdminContext
+              .from("simulacoes")
+              .select(
+                "id, homefin_id_oportunidade, codigo_oportunidade_homefin, cliente_id, produto, tipo_pessoa, cep_imovel, id_operacao_homefin",
+              )
+              .eq("cliente_id", sim.cliente_id)
+              .not("homefin_id_oportunidade", "is", null)
+              .is("deleted_at", null)
+              .neq("id", simulacaoId)
+              .order("created_at", { ascending: false })
+              .limit(5);
+
+            for (const cand of (candidatas ?? []) as any[]) {
+              // Proposta viva na oportunidade: o banco já está com ela: não mexemos.
+              const { data: props } = await sbAdminContext
+                .from("propostas")
+                .select("status")
+                .eq("homefin_id_oportunidade", cand.homefin_id_oportunidade)
+                .is("deleted_at", null);
+              const temPropostaViva = (props ?? []).some(
+                (pr: any) => !["rascunho", "cancelada"].includes(String(pr.status ?? "")),
+              );
+              if (temPropostaViva) continue;
+
+              // Confere no provedor: ativa e sem simulação em análise/aprovada.
+              const detalhe = await chamarIntegracao<any>(
+                `/oportunidade/${cand.homefin_id_oportunidade}`,
+                "GET",
+                undefined,
+                { simulacao_id: simulacaoId },
+              );
+              const op = detalhe?.oportunidade ?? detalhe;
+              const alvo = decidirOportunidade(cand, sim as any, {
+                tipoSituacao: op?.tipoSituacao,
+                simulacoes: op?.simulacoes,
+              });
+              if (alvo) {
+                idOportunidade = alvo;
+                const updateReuso = {
+                  homefin_id_oportunidade: alvo,
+                  codigo_oportunidade_homefin: cand.codigo_oportunidade_homefin ?? null,
+                };
+                await sbAdminContext.from("simulacoes").update(updateReuso).eq("id", simulacaoId);
+                if (sim.agrupador_id) {
+                  await sbAdminContext
+                    .from("simulacoes")
+                    .update(updateReuso)
+                    .eq("agrupador_id", sim.agrupador_id)
+                    .eq("cliente_id", sim.cliente_id)
+                    .is("homefin_id_oportunidade", null);
+                }
+                console.info(
+                  `[SIM-PERF] oportunidade_reaproveitada id=${alvo} simulacao=${simulacaoId}`,
+                );
+                break;
+              }
+            }
+          } catch (e) {
+            console.warn(
+              `[enviar.server] Reaproveitamento de oportunidade falhou (segue criando nova):`,
+              e,
+            );
+          }
+        }
+
         if (!idOportunidade) {
           const { data: terceiros } = await supabase
             .from("simulacao_participantes")

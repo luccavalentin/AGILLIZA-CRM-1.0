@@ -193,6 +193,13 @@ export function PropostaView({
               {numeroBancoParaExibir(p.numero_proposta_banco) && (
                 <span className="mr-2">Interno {p.numero_proposta} ·</span>
               )}
+              {/* Oportunidade na HomeFin — a mesma pode ter várias simulações
+                  e propostas, uma por banco. */}
+              {p.codigo_oportunidade_homefin && (
+                <span className="mr-2 tabular-nums">
+                  Oportunidade {p.codigo_oportunidade_homefin} ·
+                </span>
+              )}
               {status === "cancelada" ? "Proposta cancelada" : `Ativa há ${diasDesde} dia(s)`}
             </p>
           </div>
