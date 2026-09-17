@@ -101,8 +101,12 @@ export function pontuarVaga(
   if (melhorTermo > 0) {
     pontos += melhorTermo;
   } else {
+    // Sem termo do tipo, só coincidência de palavra a palavra — e palavra que
+    // aparece em quase toda vaga não vale nada. "Comprovante de endereço" casava
+    // com "Comprovante de estado civil" só pelo "comprovante" e o arquivo ia
+    // para a vaga errada.
     const alvo = normTexto(documento.alvo);
-    const palavras = nomeItem.split(" ").filter((p) => p.length > 3);
+    const palavras = nomeItem.split(" ").filter((p) => p.length > 3 && !PALAVRAS_GENERICAS.has(p));
     const casadas = palavras.filter((p) => alvo.includes(p)).length;
     if (casadas === 0) return -1;
     pontos += casadas * 10;
@@ -112,6 +116,50 @@ export function pontuarVaga(
   if (!Array.isArray(item?.arquivos) || item.arquivos.length === 0) pontos += 15;
 
   return pontos;
+}
+
+/**
+ * Palavras que aparecem em quase toda vaga do checklist e por isso não
+ * identificam o documento: casar só por elas mandava o arquivo para a vaga
+ * errada.
+ */
+const PALAVRAS_GENERICAS = new Set([
+  "copia",
+  "comprovante",
+  "documento",
+  "documentos",
+  "legivel",
+  "atualizada",
+  "atualizado",
+  "valida",
+  "valido",
+  "frente",
+  "verso",
+  "digitalizada",
+  "digitalizado",
+  "assinado",
+  "assinada",
+]);
+
+/**
+ * Vaga para um documento que não casa com nenhum item pelo tipo: a melhor do
+ * MESMO dono (pelo `tipoDocumento` do checklist), com menos arquivos. Assim
+ * todo documento é enviado, classificado no dono certo, em vez de ficar de fora
+ * do envio — a classificação fina fica para a análise da HomeFin, que recebe o
+ * tipo no nome do arquivo.
+ */
+export function vagaDeReserva(itens: any[], categoria: string | null | undefined): any | null {
+  const cat = String(categoria ?? "outros");
+  const candidatas = (itens ?? []).filter((i) => {
+    const tipo = String(i?.tipoDocumento ?? "").toUpperCase();
+    if (!CATEGORIA_POR_TIPO_VAGA[tipo]) return false;
+    return CATEGORIA_POR_TIPO_VAGA[tipo] === cat;
+  });
+  const lista =
+    candidatas.length > 0 ? candidatas : (itens ?? []).filter((i) => vagaAceitaCategoria(i, cat));
+  if (lista.length === 0) return null;
+  const qtd = (i: any) => (Array.isArray(i?.arquivos) ? i.arquivos.length : 0);
+  return [...lista].sort((a, b) => qtd(a) - qtd(b))[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,8 +173,16 @@ export function pontuarVaga(
  * CRM — para não subir de novo o que já está lá e para o `DELETE
  * /documento/arquivo/{id}` quando o documento é excluído.
  */
-export function nomeArquivoNaHomefin(doc: { id: string; nome_arquivo: string }): string {
-  return `${prefixoDoDocumento(doc.id)}${nomeArquivoSeguro(doc.nome_arquivo, 70)}`;
+export function nomeArquivoNaHomefin(
+  doc: { id: string; nome_arquivo: string },
+  /** Tipo do documento no CRM, para a HomeFin ver a classificação no arquivo. */
+  rotuloTipo?: string | null,
+): string {
+  const bruto = String(rotuloTipo ?? "").trim();
+  // `nomeArquivoSeguro("")` devolve "arquivo": sem rótulo, nada é acrescentado.
+  const tipo = bruto ? nomeArquivoSeguro(bruto, 40).replace(/\.+$/, "") : "";
+  const arquivo = nomeArquivoSeguro(doc.nome_arquivo, 70);
+  return `${prefixoDoDocumento(doc.id)}${tipo ? `${tipo}-` : ""}${arquivo}`;
 }
 
 function prefixoDoDocumento(id: string): string {

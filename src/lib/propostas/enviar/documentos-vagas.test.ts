@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { termosDoTipoDocumento } from "@/lib/documentos/tipos-banco";
 import {
   arquivoDoDocumento,
+  vagaDeReserva,
   categoriaDaVaga,
   vagaAceitaCategoria,
   donoDoDocumento,
@@ -140,5 +141,53 @@ describe("dono da vaga pelo tipoDocumento", () => {
     expect(vagaAceitaCategoria({ tipoDocumento: "CO" }, "conjuge")).toBe(true);
     expect(vagaAceitaCategoria({ tipoDocumento: "IM" }, "outros")).toBe(true);
     expect(vagaAceitaCategoria({}, "vendedor")).toBe(true);
+  });
+});
+
+describe("classificação: nada vai para a vaga de outro tipo", () => {
+  const nomes = envolvidos.map((e) => e.nome);
+  const dono = "Cleitom de Oliveira";
+  const estadoCivil = {
+    idDocumento: "10",
+    tipoDocumento: "CO",
+    nomeDocumento: "Comprovante de estado civil",
+    referente: dono,
+    arquivos: [],
+  };
+
+  it("comprovante de endereço não entra na vaga de estado civil", () => {
+    const endereco = {
+      termos: termosDoTipoDocumento("c_comp_end"),
+      alvo: "Comprovante de endereço Endereco-Emerson.jpeg",
+    };
+    expect(pontuarVaga(estadoCivil, endereco, dono, nomes)).toBe(-1);
+  });
+
+  it("certidão de casamento continua entrando na vaga de estado civil", () => {
+    const certidao = {
+      termos: termosDoTipoDocumento("c_cert_ec"),
+      alvo: "Certidão de casamento Certidao.pdf",
+    };
+    expect(pontuarVaga(estadoCivil, certidao, dono, nomes)).toBeGreaterThan(0);
+  });
+
+  it("sem vaga do tipo, o documento vai para a do mesmo dono com menos arquivos", () => {
+    const itens = [
+      { idDocumento: "1", tipoDocumento: "CO", arquivos: [{ idArquivo: "a" }] },
+      { idDocumento: "2", tipoDocumento: "CO", arquivos: [] },
+      { idDocumento: "3", tipoDocumento: "IM", arquivos: [] },
+    ];
+    expect(vagaDeReserva(itens, "comprador")?.idDocumento).toBe("2");
+    expect(vagaDeReserva(itens, "imovel")?.idDocumento).toBe("3");
+    // Documento do vendedor não tem vaga nenhuma neste checklist.
+    expect(vagaDeReserva(itens, "vendedor")).toBeNull();
+  });
+
+  it("o nome que sobe leva o tipo, para a HomeFin ver a classificação", () => {
+    const doc = { id: "3f2a1b9c-1111", nome_arquivo: "IMG_9001.jpg" };
+    expect(nomeArquivoNaHomefin(doc, "Comprovante de endereço")).toBe(
+      "3f2a1b9c-Comprovante-de-endereco-IMG_9001.jpg",
+    );
+    expect(nomeArquivoNaHomefin(doc)).toBe("3f2a1b9c-IMG_9001.jpg");
   });
 });

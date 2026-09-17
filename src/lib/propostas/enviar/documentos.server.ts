@@ -34,6 +34,7 @@ import {
   pontuarVaga,
   situacaoDoItem,
   vagaAceitaCategoria,
+  vagaDeReserva,
 } from "./documentos-vagas";
 import { nomeDoTipoDocumento, termosDoTipoDocumento } from "@/lib/documentos/tipos-banco";
 import { ehAgenciaDoBradesco } from "@/lib/bancos/agencia";
@@ -302,19 +303,25 @@ export async function enviarDocumentosBancoImpl({
       };
       let melhor: { item: any; pontos: number } | null = null;
       for (const v of vagas) {
-        if (usados.has(String(v.idDocumento))) continue;
         // Dono pelo tipo da vaga (CO/CC/VD/CV/IM): vendedor nunca cai em vaga de comprador.
         if (!vagaAceitaCategoria(v, doc.categoria)) continue;
-        const pontos = pontuarVaga(v, documento, nomeDono, nomesParticipantes);
+        let pontos = pontuarVaga(v, documento, nomeDono, nomesParticipantes);
         if (pontos < 0) continue;
+        // A vaga aceita vários arquivos (frente/verso, titular e cônjuge no
+        // mesmo item). Uma já usada neste envio perde preferência, mas não é
+        // descartada: antes o segundo documento do mesmo tipo ficava sem vaga e
+        // não era enviado.
+        if (usados.has(String(v.idDocumento))) pontos -= 20;
         if (!melhor || pontos > melhor.pontos) melhor = { item: v, pontos };
       }
-      item = melhor?.item ?? null;
+      // Nada casou pelo tipo: vai na vaga do mesmo dono com menos arquivos, com
+      // o tipo no nome do arquivo, em vez de ficar fora do envio.
+      item = melhor?.item ?? vagaDeReserva(vagas, doc.categoria);
     }
     if (!item) {
       const motivo = nomeDono
-        ? `Sem item correspondente no checklist do banco para ${nomeDono}.`
-        : "Sem item correspondente no checklist do banco.";
+        ? `O checklist do banco não tem nenhuma pasta de ${nomeDono} para este documento.`
+        : "O checklist do banco não tem nenhuma pasta para este documento.";
       erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
       await marcarDoc(doc.id, "erro", motivo);
       continue;
@@ -345,7 +352,7 @@ export async function enviarDocumentosBancoImpl({
         `/documento/${item.idDocumento}/upload`,
         {
           bytes,
-          nome: nomeArquivoNaHomefin(doc),
+          nome: nomeArquivoNaHomefin(doc, nomeDoTipoDocumento(doc.tipo_documento)),
           mime: doc.mime_type ?? "application/octet-stream",
         },
         false,
