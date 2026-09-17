@@ -11,7 +11,7 @@ import {
   sanitizarMensagemErro,
   TIPO_BANCO_SANTANDER,
 } from "@/lib/simulacao/homefin.server";
-import { faltantesEnvolvido, ehProponenteEnviadoAoBanco } from "./campos-obrigatorios";
+import { exigeRenda, faltantesEnvolvido, ehProponenteEnviadoAoBanco } from "./campos-obrigatorios";
 import { msgCadastroIncompleto } from "./mensagens-envio";
 
 import { transicaoPermitida, type PropostaStatus } from "./state-machine";
@@ -780,11 +780,10 @@ export async function garantirEnderecoParticipantes({
   supabase: SupabaseClient<any, any, any>;
 }): Promise<void> {
   // Ressincroniza endereços de cliente_enderecos para proposta_envolvidos antes do envio
-  const { ressincronizarDadosParticipantes } = await import("./propostas.functions");
-  await ressincronizarDadosParticipantes({
-    data: { proposta_id: prop.id },
-    context: { supabase } as any,
-  } as any);
+  // Função comum, não a de servidor: chamada de dentro de outra função de
+  // servidor, ela quebrava e o envio seguia sem completar os participantes.
+  const { ressincronizarDadosParticipantesImpl } = await import("./propostas.functions");
+  await ressincronizarDadosParticipantesImpl({ supabase, data: { proposta_id: prop.id } });
 
   let participantes: any[] = [];
   try {
@@ -1076,8 +1075,14 @@ export async function garantirEnderecoParticipantes({
       nomeProfissao: profissao,
       nomeEmpresaProfissao: empresa,
       nomeMae: part?.nomeMae ?? env?.nome_mae ?? src?.mae ?? undefined,
+      // Cônjuge/coproponente sem renda (não compõe) vai com 0: o campo é
+      // obrigatório no contrato, e o comprador já é cobrado antes do envio.
       renda:
-        part?.renda ?? env?.renda ?? src?.renda_total_declarada ?? prop.renda_total ?? undefined,
+        part?.renda ??
+        env?.renda ??
+        src?.renda_total_declarada ??
+        prop.renda_total ??
+        (env && !exigeRenda(env) ? 0 : undefined),
       email: part?.email ?? env?.email ?? src?.email ?? prop.email ?? undefined,
       celular: part?.celular ?? soDigitos(env?.celular ?? src?.celular) ?? undefined,
       utilizaFgts: part?.utilizaFgts ?? (env?.utiliza_fgts ? "S" : "N"),

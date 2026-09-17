@@ -11,6 +11,9 @@ import { SecaoVendedor } from "./documentos-checklist/secao-vendedor";
 import { SecaoImovel } from "./documentos-checklist/secao-imovel";
 import { useChecklistState } from "./documentos-checklist/use-checklist-state";
 import type { Categoria } from "./documentos-checklist/types";
+import { EnviarBancoDialog } from "./documentos-checklist/enviar-banco-dialog";
+import { Landmark } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   const getDados = useServerFn(getChecklistDados);
@@ -26,6 +29,7 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   });
 
   const state = useChecklistState(clienteId, data);
+  const [envioGeral, setEnvioGeral] = useState(false);
   const {
     custom,
     grupos,
@@ -71,8 +75,38 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
     );
   }
 
+  const docsLista = (docs ?? []) as any[];
+  const preSelecionados = state.envioBanco
+    ? docsLista
+        .filter(
+          (d) =>
+            d.categoria === state.envioBanco!.cat && d.tipo_documento === state.envioBanco!.label,
+        )
+        .map((d) => String(d.id))
+    : [];
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-3">
+        <p className="text-sm text-muted-foreground">
+          Anexar salva no CRM. Para mandar ao banco, escolha a proposta.
+        </p>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setEnvioGeral(true)}>
+          <Landmark className="h-4 w-4" /> Enviar documentos ao banco
+        </Button>
+      </div>
+      <EnviarBancoDialog
+        open={envioGeral || Boolean(state.envioBanco)}
+        onOpenChange={(o) => {
+          if (!o) {
+            setEnvioGeral(false);
+            state.setEnvioBanco(null);
+          }
+        }}
+        clienteId={clienteId}
+        documentos={docsLista}
+        preSelecionados={envioGeral ? [] : preSelecionados}
+      />
       <SecaoComprador state={state} cli={cli} casado={casado} temDoc={temDoc} />
 
       {vendedores.length > 0 ? (

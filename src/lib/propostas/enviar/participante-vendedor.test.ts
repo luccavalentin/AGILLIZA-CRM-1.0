@@ -70,7 +70,9 @@ describe("vendedor como participante VD", () => {
     const faltando = pendenciasDoVendedor({ ...vendedorCompleto, nome_mae: "", renda: null })
       .map((c) => c.api)
       .sort();
-    expect(faltando).toEqual(["nomeMae", "renda"]);
+    // Renda não é cobrada do vendedor (vai 0 no payload).
+    expect(faltando).toEqual(["nomeMae"]);
+    expect(payloadParticipanteVendedor({ ...vendedorCompleto, renda: null }).renda).toBe(0);
   });
 
   it("campo vazio não vai no payload (PUT não apaga o que a HomeFin tem)", () => {

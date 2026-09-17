@@ -263,10 +263,10 @@ export async function sincronizarPropostaComCrmImpl({
   if (!prop?.cliente_id || STATUS_FECHADOS.includes(String(prop.status))) return r;
 
   // Participantes: dados, documento de identidade e endereço.
-  const { ressincronizarDadosParticipantes } = await import("./propostas.functions");
-  const part: any = await (ressincronizarDadosParticipantes as any)({
+  const { ressincronizarDadosParticipantesImpl } = await import("./propostas.functions");
+  const part = await ressincronizarDadosParticipantesImpl({
+    supabase,
     data: { proposta_id: propostaId, crm_prevalece: true },
-    context: { supabase },
   });
   r.participantes = Number(part?.alterados ?? 0);
 

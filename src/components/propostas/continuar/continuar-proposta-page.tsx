@@ -175,6 +175,18 @@ export function ContinuarPropostaPage({
     }
   }
 
+  async function autosalvar(envio: EnvioConferencia): Promise<boolean> {
+    try {
+      const r = await salvar({
+        data: { proposta_id: propostaId, ...envio, avancar: false, somente_crm: true },
+      });
+      if (r.alterou) qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function confirmarAvanco() {
     if (!avancarPara) return;
     setAvancando(true);
@@ -368,6 +380,7 @@ export function ContinuarPropostaPage({
               banco={banco}
               salvando={salvando}
               onGravar={gravar}
+              onAutosalvar={autosalvar}
             />
           </>
         )}
