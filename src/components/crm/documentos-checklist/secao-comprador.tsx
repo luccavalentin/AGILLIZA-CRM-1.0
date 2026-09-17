@@ -38,6 +38,17 @@ export function SecaoComprador({
         {casado && <DocItem {...p} itemKey="c_doc_id_conj" cat="conjuge" label={T.conjuge[0]} />}
         <DocItem {...p} itemKey="c_comp_end" cat="comprador" label={T.comprador[1]} />
         <DocItem {...p} itemKey="c_cert_ec" cat="comprador" label={T.comprador[2]} />
+        {/* Vagas do checklist do banco na HomeFin */}
+        <DocItem {...p} itemKey="c_cpf" cat="comprador" label={T.comprador[9]} />
+        <DocItem {...p} itemKey="c_prop_fin" cat="comprador" label={T.comprador[7]} />
+        <DocItem {...p} itemKey="c_dps" cat="comprador" label={T.comprador[8]} />
+        {casado && (
+          <>
+            <DocItem {...p} itemKey="c_cpf_conj" cat="conjuge" label={T.conjuge[3]} />
+            <DocItem {...p} itemKey="c_prop_fin_conj" cat="conjuge" label={T.conjuge[1]} />
+            <DocItem {...p} itemKey="c_dps_conj" cat="conjuge" label={T.conjuge[2]} />
+          </>
+        )}
         <div className="my-2 border-t border-border" />
         <AutoItem label="Profissão" ok={filled(cli?.profissao)} />
         <AutoItem label="Telefone do comprador" ok={filled(cli?.telefone_celular)} />

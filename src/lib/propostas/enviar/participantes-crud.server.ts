@@ -233,3 +233,98 @@ export async function listarUsuariosParceirosImpl(): Promise<UsuarioParceiroBanc
     throw e;
   }
 }
+
+export interface ResultadoVendedoresHomefin {
+  enviados: string[];
+  pendentes: { nome: string; faltando: string[] }[];
+  erros: { nome: string; mensagem: string }[];
+}
+
+/**
+ * Leva os vendedores da proposta à oportunidade como participantes `VD`.
+ * Vendedor já presente (mesmo CPF/CNPJ) recebe PUT; novo recebe POST.
+ * Vendedor sem os obrigatórios da documentação não é enviado — volta em
+ * `pendentes` para o operador completar, sem travar a proposta.
+ */
+export async function sincronizarVendedoresHomefinImpl({
+  propostaId,
+  supabase,
+}: {
+  propostaId: string;
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<ResultadoVendedoresHomefin> {
+  const { payloadParticipanteVendedor, pendenciasDoVendedor } =
+    await import("./participante-vendedor");
+  const resultado: ResultadoVendedoresHomefin = { enviados: [], pendentes: [], erros: [] };
+
+  const { data: prop } = await supabase
+    .from("propostas")
+    .select("homefin_id_oportunidade, simulacao_id, correspondente_id")
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (!prop?.homefin_id_oportunidade) return resultado;
+
+  const { data: envolvidos } = await supabase
+    .from("proposta_envolvidos")
+    .select("*")
+    .eq("proposta_id", propostaId);
+  const lista = (envolvidos ?? []) as any[];
+  const vendedores = lista.filter((e) => e.tipo_qualificacao === "VD" && !e.conjuge_de);
+  if (vendedores.length === 0) return resultado;
+
+  const ctx = {
+    simulacao_id: prop.simulacao_id,
+    proposta_id: propostaId,
+    correspondente_id: prop.correspondente_id,
+  };
+  const op = await chamarIntegracao<any>(
+    `/oportunidade/${prop.homefin_id_oportunidade}`,
+    "GET",
+    undefined,
+    ctx,
+  );
+  const participantes: any[] = op?.oportunidade?.participantes ?? op?.participantes ?? [];
+
+  for (const v of vendedores) {
+    const nome = String(v.nome ?? "Vendedor");
+    const faltando = pendenciasDoVendedor(v);
+    if (faltando.length > 0) {
+      resultado.pendentes.push({ nome, faltando: faltando.map((c) => c.label) });
+      continue;
+    }
+    const conjuge = lista.find((e) => e.conjuge_de === v.id) ?? null;
+    const payload = payloadParticipanteVendedor(v, conjuge);
+    const doc = soDigitosStr(v.cpf_cnpj);
+    const existente =
+      participantes.find(
+        (p) => soDigitosStr(p?.cpfCnpj) === doc && String(p?.tipoQualificacao) === "VD",
+      ) ??
+      (v.homefin_id_participante
+        ? participantes.find((p) => String(p?.idParticipante) === String(v.homefin_id_participante))
+        : null);
+    try {
+      const resp = await chamarIntegracao<any>(
+        existente
+          ? `/oportunidade/${prop.homefin_id_oportunidade}/participante/${existente.idParticipante}`
+          : `/oportunidade/${prop.homefin_id_oportunidade}/participante`,
+        existente ? "PUT" : "POST",
+        payload,
+        ctx,
+      );
+      const idParticipante = existente?.idParticipante ?? resp?.idParticipante ?? null;
+      if (idParticipante && String(idParticipante) !== String(v.homefin_id_participante ?? "")) {
+        await supabase
+          .from("proposta_envolvidos")
+          .update({ homefin_id_participante: String(idParticipante) } as any)
+          .eq("id", v.id);
+      }
+      resultado.enviados.push(nome);
+    } catch (e) {
+      resultado.erros.push({
+        nome,
+        mensagem: sanitizarMensagemErro(e instanceof Error ? e.message : String(e)),
+      });
+    }
+  }
+  return resultado;
+}

@@ -112,10 +112,13 @@ function esperadosDoGrupo(cat: Categoria, ctx: { fgts: boolean; vendedorPJ: bool
         T.comprador[0],
         T.comprador[1],
         T.comprador[2],
+        // Pedidos pelo checklist do banco (HomeFin).
+        T.comprador[7],
+        T.comprador[8],
         ...(ctx.fgts ? T.comprador.slice(3, 7) : []),
       ];
     case "conjuge":
-      return [T.conjuge[0]];
+      return [T.conjuge[0], T.conjuge[1], T.conjuge[2]];
     case "vendedor":
       return ctx.vendedorPJ ? T.vendedor.slice(3, 7) : T.vendedor.slice(0, 3);
     case "vendedor_conjuge":
