@@ -1382,6 +1382,27 @@ async function enviarPropostaImplInner({
     correspondente_id: prop.correspondente_id,
   };
 
+  // Todo participante da operação precisa existir na oportunidade: o comprador
+  // e o cônjuge nascem com ela, o VENDEDOR não. Sem o participante VD o banco
+  // não abre as vagas de documento do vendedor (PRO-000404 foi ao Bradesco com
+  // o vendedor só no nosso cadastro). Cadastro incompleto volta em `pendentes`
+  // e não trava o envio da proposta.
+  try {
+    const { sincronizarVendedoresHomefinImpl } = await import("./enviar/participantes-crud.server");
+    const v = await sincronizarVendedoresHomefinImpl({ propostaId, supabase });
+    for (const p of v.pendentes)
+      console.warn(
+        `[enviar.server] vendedor ${p.nome} não cadastrado na oportunidade — falta: ${p.faltando.join(", ")}`,
+      );
+    for (const e of v.erros)
+      console.warn(`[enviar.server] vendedor ${e.nome} não cadastrado: ${e.mensagem}`);
+  } catch (e) {
+    console.warn(
+      "[enviar.server] falha ao cadastrar vendedores na oportunidade; seguindo com o envio.",
+      e instanceof Error ? e.message : String(e),
+    );
+  }
+
   // Alguns bancos (ex.: Itaú) rejeitam a proposta quando o participante titular
   // está sem endereço (proponents[0].address.state) OU quando os campos de
   // cônjuge não acompanham o participante casado (erro "spouse: O campo deve
