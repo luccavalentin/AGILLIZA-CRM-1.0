@@ -29,8 +29,8 @@ type Tom = "ok" | "erro" | "alerta";
 
 /**
  * Selo da vaga do ponto de vista de quem opera: foi enviado ou falta enviar.
- * "Em análise" (I) é o estado normal depois do upload (`documentoAprovado=false`):
- * para o usuário o documento já foi enviado.
+ * "Em análise" (I) aparece quando a HomeFin ainda não concluiu a análise dela;
+ * o upload já sobe aprovado, então para o usuário o documento foi enviado.
  */
 function estadoDaVaga(v: any): { rotulo: string; tom?: Tom; recusado: boolean } {
   const analise = String(v.situacaoAnalise ?? "P");

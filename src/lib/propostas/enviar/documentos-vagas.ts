@@ -242,8 +242,8 @@ export type SituacaoDocumentoBanco = "enviado" | "erro" | "homefin";
 /**
  * Situação do nosso documento a partir do item do checklist da HomeFin:
  * `situacaoIntegracao` (pending/success/error) diz se chegou ao banco;
- * `tipoSituacao` (P/I/A/R/D) é a análise da HomeFin — com
- * `documentoAprovado=false` o documento fica "I" até ser aprovado lá.
+ * `tipoSituacao` (P/I/A/R/D) é a análise da HomeFin. O upload sobe com
+ * `documentoAprovado=true`, então o normal é "A"; "I" é a análise em curso.
  */
 export function situacaoDoItem(
   item: any,

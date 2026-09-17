@@ -14,11 +14,13 @@
  *   `DELETE /documento/arquivo/{idArquivo}` — ao excluir o documento no CRM, ou
  *   antes de reenviar um arquivo que o banco recusou.
  *
- * `documentoAprovado`: o swagger diz que só documentos aprovados entram no lote
- * do Bradesco e que `true` aprova no upload, mas a HomeFin orientou (16/09/2026)
- * enviar `false` — a aprovação fica com a análise deles. Documento ainda não
- * aprovado volta em `ignorados` (`documento_nao_aprovado`) e aparece aqui como
- * "na HomeFin", não como erro nem como enviado.
+ * `documentoAprovado: true`: só documento aprovado entra no lote do banco, e
+ * `true` aprova no próprio upload. A HomeFin pediu `false` em 16/09/2026, mas o
+ * primeiro envio real (17/09, oportunidades 30200 e 31430) mostrou o efeito:
+ * todos os arquivos chegaram à HomeFin e o `incluir-documentos-integracao`
+ * devolveu TODOS em `ignorados` com `documento_nao_aprovado` — nada foi
+ * espelhado ao banco. Com a autorização do Lucca (17/09), o upload passou a ir
+ * com `true`. Documento já aprovado não é rebaixado por um novo upload.
  *
  * O checklist era lido chamando `incluir-documentos-integracao` ANTES dos
  * uploads, como se fosse um GET. Não é: é a própria ação de enviar ao banco, e o
@@ -385,8 +387,9 @@ export async function enviarDocumentosBancoImpl({
     }
 
     try {
-      // `documentoAprovado: false`, conforme orientação da HomeFin (ver topo).
-      // O nome leva o prefixo do documento: é por ele que o reconhecemos no checklist.
+      // `documentoAprovado: true` — o documento sobe aprovado e entra no lote do
+      // banco na mesma hora (ver topo). O nome leva o prefixo do documento: é
+      // por ele que o reconhecemos no checklist.
       const upload = await enviarArquivoIntegracao<any>(
         `/documento/${item.idDocumento}/upload`,
         {
@@ -394,7 +397,7 @@ export async function enviarDocumentosBancoImpl({
           nome: nomeArquivoNaHomefin(doc, nomeDoTipoDocumento(doc.tipo_documento)),
           mime: doc.mime_type ?? "application/octet-stream",
         },
-        false,
+        true,
         ctx,
       );
       itemDoDoc.set(doc.id, {
