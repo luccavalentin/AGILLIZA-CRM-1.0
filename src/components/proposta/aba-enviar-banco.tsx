@@ -496,10 +496,16 @@ export function AbaEnviarBanco({
   }
 
   /** Lote completo: dados do imóvel/vistoria + todos os documentos ainda não enviados. */
+  /**
+   * Lote completo: dados do imóvel/vistoria + documentos. Com pendentes, só
+   * eles; sem pendentes, reenvia todos — o reenvio troca na HomeFin o arquivo
+   * que ainda não foi aprovado (ver `documentos.server.ts`).
+   */
   async function enviarPendentes() {
     await enviarDadosImovel(true);
-    if (naoEnviados.length > 0) await enviarDocumentos(naoEnviados.map((d) => d.id));
-    else toast.info("Todos os documentos anexados já foram enviados.");
+    const alvo = naoEnviados.length > 0 ? naoEnviados : aptos;
+    if (alvo.length > 0) await enviarDocumentos(alvo.map((d) => d.id));
+    else toast.info("Nenhum documento anexado para enviar.");
   }
 
   const alternar = (id: string) =>
@@ -627,7 +633,7 @@ export function AbaEnviarBanco({
                     ? "Nenhum documento anexado ainda. Anexe nos grupos abaixo."
                     : naoEnviados.length > 0
                       ? `${naoEnviados.length} documento(s) ainda não enviado(s).`
-                      : "Todos os documentos anexados já foram enviados."}
+                      : "Todos os documentos anexados já foram enviados. Reenviar troca o arquivo na HomeFin."}
               </p>
             </div>
           </div>
@@ -652,7 +658,11 @@ export function AbaEnviarBanco({
               ) : (
                 <Landmark className="h-4 w-4" />
               )}
-              {ocupado ? "Enviando…" : "Enviar documentos ao banco"}
+              {ocupado
+                ? "Enviando…"
+                : naoEnviados.length > 0
+                  ? "Enviar documentos ao banco"
+                  : "Reenviar documentos ao banco"}
             </Button>
           </div>
         </CardContent>
@@ -865,7 +875,7 @@ export function AbaEnviarBanco({
                         >
                           <Checkbox
                             checked={selecionados.has(d.id)}
-                            disabled={!apto || jaEnviado(d)}
+                            disabled={!apto}
                             onCheckedChange={() => alternar(d.id)}
                             aria-label={`Selecionar ${d.nome_arquivo}`}
                           />
@@ -908,22 +918,26 @@ export function AbaEnviarBanco({
                             )}
                           </div>
                           <div className="flex shrink-0 items-center gap-1">
-                            {apto && !jaEnviado(d) && (
+                            {apto && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="h-8 gap-1.5 rounded-lg px-2.5"
                                 title={
-                                  d.situacao_integracao === "erro"
-                                    ? "Enviar este documento de novo"
-                                    : "Enviar este documento"
+                                  jaEnviado(d)
+                                    ? "Enviar este documento de novo (troca o arquivo na HomeFin)"
+                                    : d.situacao_integracao === "erro"
+                                      ? "Enviar este documento de novo"
+                                      : "Enviar este documento"
                                 }
                                 disabled={ocupado || !propostaNoBanco}
                                 onClick={() => enviarDocumentos([d.id])}
                               >
                                 <Landmark className="h-3.5 w-3.5" />
                                 <span className="hidden sm:inline">
-                                  {d.situacao_integracao === "erro" ? "Enviar de novo" : "Enviar"}
+                                  {jaEnviado(d) || d.situacao_integracao === "erro"
+                                    ? "Enviar de novo"
+                                    : "Enviar"}
                                 </span>
                               </Button>
                             )}
