@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { anexarDocumento, salvarChecklist } from "@/lib/crm/clientes.functions";
+import { enviarDocumentoAnexadoAoBanco } from "@/lib/propostas/propostas.functions";
 import type { Categoria, GrupoChecklist } from "./types";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 
@@ -14,6 +15,7 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
   const qc = useQueryClient();
   const salvar = useServerFn(salvarChecklist);
   const anexar = useServerFn(anexarDocumento);
+  const enviarAoBanco = useServerFn(enviarDocumentoAnexadoAoBanco);
 
   const [check, setCheck] = useState<Record<string, any>>({});
   const [fgts, setFgts] = useState(false);
@@ -242,6 +244,36 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
     await persistir(check, v);
   }
 
+  /**
+   * Anexou no checklist, vai também para a HomeFin — em toda proposta deste
+   * cliente que já foi ao banco. Roda em segundo plano: o anexo local já está
+   * salvo, e uma falha no banco não desfaz nada.
+   */
+  async function enviarParaHomefin(documentoId: string, nome: string) {
+    const t = toast.loading(`Enviando "${nome}" ao banco…`);
+    try {
+      const { resultados } = await enviarAoBanco({ data: { documento_id: documentoId } });
+      if (resultados.length === 0) {
+        toast.info("Documento guardado. Ele vai ao banco quando a proposta for enviada.", {
+          id: t,
+        });
+      } else if (resultados.every((r) => r.enviado)) {
+        const lista = resultados.map((r) => r.numero_proposta).join(", ");
+        const aviso = resultados.find((r) => r.motivo)?.motivo;
+        toast.success(`Documento enviado (${lista}).`, { id: t, description: aviso ?? undefined });
+      } else {
+        const falhas = resultados.filter((r) => !r.enviado);
+        toast.error(
+          `Não foi ao banco em ${falhas.map((r) => `${r.numero_proposta}: ${r.motivo ?? "erro"}`).join(" · ")}`,
+          { id: t, duration: 12_000 },
+        );
+      }
+      qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Falha ao enviar o documento ao banco.", { id: t });
+    }
+  }
+
   async function enviar(e: React.ChangeEvent<HTMLInputElement>, cat: Categoria, key: string) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -252,7 +284,7 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
       const path = `${clienteId}/${crypto.randomUUID()}-${nomeArquivoSeguro(file.name)}`;
       const { error: upErr } = await supabase.storage.from("cliente-documentos").upload(path, file);
       if (upErr) throw upErr;
-      await anexar({
+      const { id } = await anexar({
         data: {
           cliente_id: clienteId,
           categoria: cat,
@@ -265,6 +297,7 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
       });
       toast.success("Documento anexado.");
       qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+      void enviarParaHomefin(id, file.name);
     } catch (err: any) {
       toast.error(err?.message ?? "Falha no upload.");
     } finally {

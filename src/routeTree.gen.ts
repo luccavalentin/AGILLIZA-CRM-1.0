@@ -130,6 +130,7 @@ import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminComprasPedidosRouteImport } from './routes/_authenticated/admin.compras.pedidos'
 import { Route as AuthenticatedAdminComprasAprovacoesRouteImport } from './routes/_authenticated/admin.compras.aprovacoes'
 import { Route as AuthenticatedAdminAuditoriaManutencaoRouteImport } from './routes/_authenticated/admin.auditoria.manutencao'
+import { Route as AuthenticatedOperacionalPropostasIdContinuarRouteImport } from './routes/_authenticated/operacional.propostas_.$id_.continuar'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -826,6 +827,12 @@ const AuthenticatedAdminAuditoriaManutencaoRoute =
     path: '/manutencao',
     getParentRoute: () => AuthenticatedAdminAuditoriaRoute,
   } as any)
+const AuthenticatedOperacionalPropostasIdContinuarRoute =
+  AuthenticatedOperacionalPropostasIdContinuarRouteImport.update({
+    id: '/operacional/propostas_/$id_/continuar',
+    path: '/operacional/propostas/$id/continuar',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -948,6 +955,7 @@ export interface FileRoutesByFullPath {
   '/rh/funcionarios/$id': typeof AuthenticatedRhFuncionariosIdRoute
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
   '/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
+  '/operacional/propostas/$id/continuar': typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -1068,6 +1076,7 @@ export interface FileRoutesByTo {
   '/rh/funcionarios/$id': typeof AuthenticatedRhFuncionariosIdRoute
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
   '/admin/compras': typeof AuthenticatedAdminComprasIndexRoute
+  '/operacional/propostas/$id/continuar': typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -1192,6 +1201,7 @@ export interface FileRoutesById {
   '/_authenticated/rh/funcionarios_/$id': typeof AuthenticatedRhFuncionariosIdRoute
   '/_authenticated/rh/funcionarios_/novo': typeof AuthenticatedRhFuncionariosNovoRoute
   '/_authenticated/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
+  '/_authenticated/operacional/propostas_/$id_/continuar': typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1316,6 +1326,7 @@ export interface FileRouteTypes {
     | '/rh/funcionarios/$id'
     | '/rh/funcionarios/novo'
     | '/admin/compras/'
+    | '/operacional/propostas/$id/continuar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1436,6 +1447,7 @@ export interface FileRouteTypes {
     | '/rh/funcionarios/$id'
     | '/rh/funcionarios/novo'
     | '/admin/compras'
+    | '/operacional/propostas/$id/continuar'
   id:
     | '__root__'
     | '/'
@@ -1559,6 +1571,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rh/funcionarios_/$id'
     | '/_authenticated/rh/funcionarios_/novo'
     | '/_authenticated/admin/compras/'
+    | '/_authenticated/operacional/propostas_/$id_/continuar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -2425,6 +2438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaManutencaoRouteImport
       parentRoute: typeof AuthenticatedAdminAuditoriaRoute
     }
+    '/_authenticated/operacional/propostas_/$id_/continuar': {
+      id: '/_authenticated/operacional/propostas_/$id_/continuar'
+      path: '/operacional/propostas/$id/continuar'
+      fullPath: '/operacional/propostas/$id/continuar'
+      preLoaderRoute: typeof AuthenticatedOperacionalPropostasIdContinuarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -2619,6 +2639,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRhFuncionariosIdRoute: typeof AuthenticatedRhFuncionariosIdRoute
   AuthenticatedRhFuncionariosNovoRoute: typeof AuthenticatedRhFuncionariosNovoRoute
   AuthenticatedAdminComprasIndexRoute: typeof AuthenticatedAdminComprasIndexRoute
+  AuthenticatedOperacionalPropostasIdContinuarRoute: typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -2711,6 +2732,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRhFuncionariosIdRoute: AuthenticatedRhFuncionariosIdRoute,
   AuthenticatedRhFuncionariosNovoRoute: AuthenticatedRhFuncionariosNovoRoute,
   AuthenticatedAdminComprasIndexRoute: AuthenticatedAdminComprasIndexRoute,
+  AuthenticatedOperacionalPropostasIdContinuarRoute:
+    AuthenticatedOperacionalPropostasIdContinuarRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

@@ -1,26 +1,40 @@
 /**
- * Envio dos documentos da proposta ao banco.
+ * Envio dos documentos da proposta à HomeFin e ao banco.
  *
  * Fluxo oficial (swagger HomeFin, tag "Documentos"):
- *   1. `GET  /oportunidade/{id}/documentos`               — checklist da oportunidade;
- *                                                           `idDocumento` é o alvo do upload.
- *   2. `POST /documento/{idDocumento}/upload`             — arquivo + `documentoAprovado=true`.
- *   3. `POST /oportunidade/{id}/incluir-documentos-integracao` — UMA vez, no fim.
+ *   1. `GET  /oportunidade/{id}/documentos` — checklist da oportunidade. `idDocumento`
+ *      é o alvo do upload; `arquivos[]` traz o que já subiu (`idArquivo`);
+ *      `situacaoIntegracao`/`mensagemIntegracao` dizem se chegou ao banco.
+ *   2. `POST /documento/{idDocumento}/upload` — multipart `arquivo` + `documentoAprovado`.
+ *      Devolve `idArquivo`.
+ *   3. `POST /oportunidade/{id}/incluir-documentos-integracao` `{ idSimulacao }` —
+ *      UMA vez, no fim, e só para Bradesco (é o único banco que o lote atende).
+ *   4. `GET  /oportunidade/{id}/documentos` de novo — a situação final de cada
+ *      documento sai daqui, não do upload.
+ *   `DELETE /documento/arquivo/{idArquivo}` — ao excluir o documento no CRM, ou
+ *   antes de reenviar um arquivo que o banco recusou.
  *
- * Dois pontos que faziam o Bradesco não receber nada:
+ * `documentoAprovado`: o swagger diz que só documentos aprovados entram no lote
+ * do Bradesco e que `true` aprova no upload, mas a HomeFin orientou (16/09/2026)
+ * enviar `false` — a aprovação fica com a análise deles. Documento ainda não
+ * aprovado volta em `ignorados` (`documento_nao_aprovado`) e aparece aqui como
+ * "na HomeFin", não como erro nem como enviado.
  *
- * - O upload subia com `documentoAprovado=false`. A documentação é explícita:
- *   "só documentos APROVADOS entram no envio ao Bradesco; sem a flag o documento
- *   fica Em Análise (I)". Ele era aceito no upload e depois descartado em silêncio
- *   do lote — hoje reaparece em `ignorados` com motivo `documento_nao_aprovado`.
- *
- * - O checklist era lido chamando `incluir-documentos-integracao` ANTES dos uploads,
- *   como se fosse um GET. Não é: é a própria ação de enviar ao banco. Isso disparava
- *   o lote duas vezes por operação — e o provedor agora serializa por oportunidade,
- *   devolvendo 400 INT-007 em chamada concorrente.
+ * O checklist era lido chamando `incluir-documentos-integracao` ANTES dos
+ * uploads, como se fosse um GET. Não é: é a própria ação de enviar ao banco, e o
+ * provedor serializa por oportunidade (400 INT-007 em chamada concorrente).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { normTexto } from "./shared-utils";
+import {
+  arquivoDoDocumento,
+  donoDoDocumento,
+  ignoradoDoItem,
+  nomeArquivoNaHomefin,
+  pontuarVaga,
+  situacaoDoItem,
+} from "./documentos-vagas";
+import { nomeDoTipoDocumento, termosDoTipoDocumento } from "@/lib/documentos/tipos-banco";
+import { ehAgenciaDoBradesco } from "@/lib/bancos/agencia";
 
 export interface EnviarDocumentosArgs {
   propostaId: string;
@@ -30,11 +44,16 @@ export interface EnviarDocumentosArgs {
   documentoIds?: string[];
 }
 
+type LinhaResultado = { nome: string; motivo: string; participante?: string | null };
+
 export interface EnviarDocumentosResultado {
   enviados: number;
   total: number;
+  /** Confirmados pelo banco (`situacaoIntegracao = success`). */
   sucesso: { nome: string; participante?: string | null }[];
-  erros: { nome: string; motivo: string; participante?: string | null }[];
+  /** Na HomeFin, fora do banco por enquanto (em análise, outro banco, fora do lote). */
+  naHomefin: LinhaResultado[];
+  erros: LinhaResultado[];
 }
 
 /** Limite aceito pelo banco (documentado no `UploadRequest`). */
@@ -62,41 +81,12 @@ function ehFormatoAceito(d: { mime_type?: string | null; nome_arquivo?: string |
   return false;
 }
 
-/**
- * Quão bem um item do checklist casa com um documento local.
- * `-1` = não serve. Empate resolve pelo item ainda sem arquivo.
- */
-function pontuarItem(item: any, alvo: string, tipoDoc: string, nomeDono: string): number {
-  const nomeItem = normTexto(item?.nomeDocumento);
-  if (!nomeItem) return -1;
-
-  let pontos = 0;
-
-  // Dono: `referente` traz o nome do participante (ou "Imóvel"/"Interveniente").
-  const referente = normTexto(item?.referente);
-  const dono = normTexto(nomeDono);
-  if (dono && referente) {
-    if (referente === dono) pontos += 100;
-    else if (referente.includes(dono) || dono.includes(referente)) pontos += 60;
-    else pontos -= 40; // é de outra pessoa — só entra se não houver nada melhor
-  }
-
-  // Tipo/nome do documento.
-  const tipo = normTexto(tipoDoc);
-  if (alvo.includes(nomeItem)) pontos += 50;
-  else if (tipo && nomeItem.includes(tipo)) pontos += 40;
-  else {
-    const palavras = nomeItem.split(" ").filter((p) => p.length > 3);
-    const casadas = palavras.filter((p) => alvo.includes(p)).length;
-    if (casadas === 0) return -1;
-    pontos += casadas * 10;
-  }
-
-  // Vaga ainda vazia é preferível a uma que já tem arquivo.
-  if (!Array.isArray(item?.arquivos) || item.arquivos.length === 0) pontos += 15;
-
-  return pontos;
-}
+const aceitaUpload = (i: any) =>
+  SITUACOES_QUE_ACEITAM_UPLOAD.has(
+    String(i?.tipoSituacao ?? "P")
+      .toUpperCase()
+      .charAt(0),
+  );
 
 export async function enviarDocumentosBancoImpl({
   propostaId,
@@ -121,37 +111,37 @@ export async function enviarDocumentosBancoImpl({
       "Proposta sem oportunidade vinculada. Envie a proposta ao banco antes de enviar os documentos.",
     );
   }
+  const idOportunidade = prop.homefin_id_oportunidade;
 
-  // idSimulacao = o banco escolhido/enviado (homefin_id_simulacao_banco).
-  const { data: bancos } = await supabase
+  // idSimulacao = a simulação do banco com proposta criada. Aprovado primeiro:
+  // é com ele que o pós-aprovação segue.
+  const { data: bancosRaw } = await supabase
     .from("proposta_bancos")
-    .select("homefin_id_simulacao_banco, selecionado")
+    .select("homefin_id_simulacao_banco, selecionado, nome_banco, status_banco")
     .eq("proposta_id", propostaId);
-  const idSimulacao =
-    (bancos ?? []).find((b: any) => b.selecionado && b.homefin_id_simulacao_banco)
-      ?.homefin_id_simulacao_banco ??
-    (bancos ?? []).find((b: any) => b.homefin_id_simulacao_banco)?.homefin_id_simulacao_banco ??
-    prop.homefin_id_simulacao;
+  const bancos = ((bancosRaw ?? []) as any[]).filter((b) => b.homefin_id_simulacao_banco);
+  const aprovado = (b: any) => ["aprovada", "aprovado", "condicionado"].includes(b.status_banco);
+  const banco =
+    bancos.find((b) => aprovado(b) && b.selecionado) ??
+    bancos.find(aprovado) ??
+    bancos.find((b) => b.selecionado) ??
+    bancos[0] ??
+    null;
+  const idSimulacao = banco?.homefin_id_simulacao_banco ?? prop.homefin_id_simulacao;
   if (!idSimulacao) {
     throw new Error(
       "Nenhuma simulação bancária vinculada. Selecione e envie um banco antes de enviar os documentos.",
     );
   }
+  const loteDoBanco = ehAgenciaDoBradesco(banco?.nome_banco);
 
   const { data: envolvidosRaw } = await supabase
     .from("proposta_envolvidos")
-    .select("cliente_id, cpf_cnpj, nome, tipo_qualificacao")
+    .select("id, cliente_id, cpf_cnpj, nome, tipo_qualificacao, conjuge_de")
     .eq("proposta_id", propostaId);
   const envolvidos = (envolvidosRaw ?? []) as any[];
-
-  // cliente_id -> nome do dono, para casar com o `referente` do checklist.
-  const donoPorCliente = new Map<string, string>();
-  for (const e of envolvidos) {
-    if (e.cliente_id && e.nome) donoPorCliente.set(String(e.cliente_id), String(e.nome));
-  }
-  if (prop.cliente_id && !donoPorCliente.has(String(prop.cliente_id)) && prop.nome_cliente) {
-    donoPorCliente.set(String(prop.cliente_id), String(prop.nome_cliente));
-  }
+  // Um documento nunca entra na vaga de outro participante (ver `documentos-vagas.ts`).
+  const nomesParticipantes = envolvidos.map((e) => String(e.nome ?? "")).filter(Boolean);
 
   const clienteIds = Array.from(
     new Set([
@@ -182,50 +172,20 @@ export async function enviarDocumentosBancoImpl({
   }
 
   const ctx = { proposta_id: propostaId, correspondente_id: prop.correspondente_id };
-  const sucesso: EnviarDocumentosResultado["sucesso"] = [];
-  const erros: EnviarDocumentosResultado["erros"] = [];
+  const erros: LinhaResultado[] = [];
 
-  // ETAPA 1 — checklist da oportunidade (GET, não dispara envio ao banco).
-  const checklist = await chamarIntegracao<any[]>(
-    `/oportunidade/${prop.homefin_id_oportunidade}/documentos`,
-    "GET",
-    undefined,
-    ctx,
-  );
-  const itens: any[] = Array.isArray(checklist) ? checklist : [];
-
-  const aceitaUpload = (i: any) =>
-    SITUACOES_QUE_ACEITAM_UPLOAD.has(
-      String(i?.tipoSituacao ?? "P")
-        .toUpperCase()
-        .charAt(0),
-    );
-  const disponiveis = itens.filter(aceitaUpload);
-
-  // `integravelBradesco` marca os tipos com código de integração Bradesco.
-  // Preferimos esses — mas NÃO exigimos: o campo é específico do Bradesco e
-  // viria falso para Itaú/Santander, e recusar o envio nesse caso deixaria os
-  // outros bancos sem documento algum. O upload em si (`/documento/{id}/upload`)
-  // vale para qualquer item do checklist; só a inclusão no lote é do Bradesco.
-  const integraveis = disponiveis.filter((i) => ehVerdadeiro(i?.integravelBradesco));
-  const vagas = integraveis.length > 0 ? integraveis : disponiveis;
-
-  if (vagas.length === 0) {
-    throw new Error(
-      itens.length === 0
-        ? "O banco ainda não gerou o checklist de documentos desta oportunidade. Envie a proposta ao banco antes de enviar os documentos."
-        : "Todos os documentos do checklist já estão dispensados ou não aceitam novo arquivo.",
-    );
-  }
-
-  const marcarDoc = async (id: string, situacao: "enviado" | "erro", erro: string | null) => {
+  const marcarDoc = async (
+    id: string,
+    situacao: "enviado" | "erro" | "homefin",
+    mensagem: string | null,
+  ) => {
     try {
       await supabase
         .from("cliente_documentos")
         .update({
           situacao_integracao: situacao,
           integrado_em: situacao === "enviado" ? new Date().toISOString() : null,
-          erro_integracao: erro,
+          erro_integracao: mensagem,
         } as any)
         .eq("id", id);
     } catch {
@@ -233,13 +193,64 @@ export async function enviarDocumentosBancoImpl({
     }
   };
 
-  // ETAPA 2 — upload de cada documento na vaga correspondente, JÁ APROVADO.
-  const usados = new Set<string>();
-  let enviouAlgum = false;
+  const lerChecklist = async (): Promise<any[]> => {
+    const r = await chamarIntegracao<any[]>(
+      `/oportunidade/${idOportunidade}/documentos`,
+      "GET",
+      undefined,
+      ctx,
+    );
+    return Array.isArray(r) ? r : [];
+  };
 
+  // ETAPA 1 — checklist da oportunidade (GET, não dispara envio ao banco).
+  const itens = await lerChecklist();
+  const disponiveis = itens.filter(aceitaUpload);
+  // `integravelBradesco` marca os tipos com código de integração Bradesco.
+  // Preferimos esses no Bradesco; nos outros bancos o campo não diz nada e
+  // qualquer item do checklist serve (o upload vale para qualquer banco).
+  const integraveis = loteDoBanco
+    ? disponiveis.filter((i) => ehVerdadeiro(i?.integravelBradesco))
+    : [];
+  const vagas = integraveis.length > 0 ? integraveis : disponiveis;
+
+  if (itens.length === 0) {
+    throw new Error(
+      "O banco ainda não gerou o checklist de documentos desta oportunidade. Envie a proposta ao banco antes de enviar os documentos.",
+    );
+  }
+
+  // Documento → item do checklist onde ele está (já estava ou acabou de subir).
+  const itemDoDoc = new Map<string, { doc: any; idDocumento: string; participante: string }>();
+  const usados = new Set<string>();
+
+  // ETAPA 2 — upload, só do que ainda não está na HomeFin.
   for (const doc of docs) {
-    const alvo = normTexto(`${doc.tipo_documento} ${doc.nome_arquivo}`);
-    const nomeDono = donoPorCliente.get(String(doc.cliente_id)) ?? "";
+    const nomeDono = donoDoDocumento(doc, envolvidos, prop.nome_cliente);
+
+    // Já carregado nesta oportunidade (reenvio): não sobe outra cópia.
+    // Arquivo recusado pelo banco é trocado — o antigo sai antes.
+    const existente = arquivoDoDocumento(itens, doc.id);
+    if (existente) {
+      const { situacao } = situacaoDoItem(existente.item);
+      const idDocumento = String(existente.item.idDocumento);
+      usados.add(idDocumento);
+      if (situacao !== "erro") {
+        itemDoDoc.set(doc.id, {
+          doc,
+          idDocumento,
+          participante: existente.item?.referente ?? nomeDono,
+        });
+        continue;
+      }
+      for (const idArquivo of existente.idArquivos) {
+        try {
+          await chamarIntegracao(`/documento/arquivo/${idArquivo}`, "DELETE", undefined, ctx);
+        } catch {
+          // Se não apagar, o novo arquivo sobe ao lado do antigo — segue.
+        }
+      }
+    }
 
     if (doc.tamanho_bytes && Number(doc.tamanho_bytes) > MAX_BYTES) {
       const motivo = "Arquivo maior que 5 MB, o limite aceito pelo banco. Reduza o tamanho.";
@@ -248,15 +259,22 @@ export async function enviarDocumentosBancoImpl({
       continue;
     }
 
-    let melhor: { item: any; pontos: number } | null = null;
-    for (const item of vagas) {
-      if (usados.has(String(item.idDocumento))) continue;
-      const pontos = pontuarItem(item, alvo, doc.tipo_documento, nomeDono);
-      if (pontos < 0) continue;
-      if (!melhor || pontos > melhor.pontos) melhor = { item, pontos };
+    let item = existente?.item ?? null;
+    if (!item) {
+      const documento = {
+        termos: termosDoTipoDocumento(doc.tipo_documento),
+        alvo: `${nomeDoTipoDocumento(doc.tipo_documento)} ${doc.nome_arquivo}`,
+      };
+      let melhor: { item: any; pontos: number } | null = null;
+      for (const v of vagas) {
+        if (usados.has(String(v.idDocumento))) continue;
+        const pontos = pontuarVaga(v, documento, nomeDono, nomesParticipantes);
+        if (pontos < 0) continue;
+        if (!melhor || pontos > melhor.pontos) melhor = { item: v, pontos };
+      }
+      item = melhor?.item ?? null;
     }
-
-    if (!melhor) {
+    if (!item) {
       const motivo = nomeDono
         ? `Sem item correspondente no checklist do banco para ${nomeDono}.`
         : "Sem item correspondente no checklist do banco.";
@@ -264,7 +282,6 @@ export async function enviarDocumentosBancoImpl({
       await marcarDoc(doc.id, "erro", motivo);
       continue;
     }
-    const item = melhor.item;
     usados.add(String(item.idDocumento));
 
     const { data: blob, error: dlErr } = await supabase.storage
@@ -285,24 +302,23 @@ export async function enviarDocumentosBancoImpl({
     }
 
     try {
-      // `documentoAprovado: true` é o que habilita o documento a entrar no
-      // lote do Bradesco. Sem isso ele fica "Em Análise" e é ignorado.
+      // `documentoAprovado: false`, conforme orientação da HomeFin (ver topo).
+      // O nome leva o prefixo do documento: é por ele que o reconhecemos no checklist.
       await enviarArquivoIntegracao(
         `/documento/${item.idDocumento}/upload`,
         {
           bytes,
-          nome: doc.nome_arquivo,
+          nome: nomeArquivoNaHomefin(doc),
           mime: doc.mime_type ?? "application/octet-stream",
         },
-        true,
+        false,
         ctx,
       );
-      enviouAlgum = true;
-      sucesso.push({
-        nome: doc.nome_arquivo,
-        participante: item?.referente ?? nomeDono ?? null,
+      itemDoDoc.set(doc.id, {
+        doc,
+        idDocumento: String(item.idDocumento),
+        participante: item?.referente ?? nomeDono,
       });
-      await marcarDoc(doc.id, "enviado", null);
     } catch (e: any) {
       const motivo = sanitizarMensagemErro(e?.message) || "Erro ao enviar o documento.";
       erros.push({
@@ -314,87 +330,72 @@ export async function enviarDocumentosBancoImpl({
     }
   }
 
-  // ETAPA 3 — inclusão no lote do banco. Uma única chamada, no fim.
-  if (enviouAlgum) {
+  // ETAPA 3 — lote do banco: uma chamada, no fim, só Bradesco.
+  let ignorados: any[] = [];
+  const naoConsultado = "O banco não confirmou este documento neste envio.";
+  let falhaLote: string | null = null;
+  if (itemDoDoc.size > 0 && loteDoBanco) {
     try {
       const resp = await chamarIntegracao<any>(
-        `/oportunidade/${prop.homefin_id_oportunidade}/incluir-documentos-integracao`,
+        `/oportunidade/${idOportunidade}/incluir-documentos-integracao`,
         "POST",
         { idSimulacao: Number(idSimulacao) },
         ctx,
       );
-
-      // `erro` no contrato atual; `error` era o nome antigo do mesmo campo.
-      const errosBanco: any[] = Array.isArray(resp?.erro)
-        ? resp.erro
-        : Array.isArray(resp?.error)
-          ? resp.error
-          : [];
-      for (const item of errosBanco) {
-        const msg = String(item?.erroIntegracao ?? "").trim();
-        erros.push({
-          nome: String(item?.nomeDocumento ?? "Documento"),
-          motivo: msg || "O banco recusou este documento.",
-          participante: item?.nomeParticipante ?? null,
-        });
-      }
-
-      // Documentos que ficaram FORA do lote — a causa mais comum do "sumiço"
-      // silencioso no Bradesco. A API diz o motivo; repassamos ao usuário.
-      const ignorados: any[] = Array.isArray(resp?.ignorados) ? resp.ignorados : [];
-      for (const item of ignorados) {
-        erros.push({
-          nome: String(item?.nomeDocumento ?? "Documento"),
-          motivo:
-            String(item?.descricaoMotivo ?? "").trim() ||
-            `Ficou fora do envio (${item?.motivo ?? "motivo não informado"}).`,
-          participante: item?.nomeParticipante ?? null,
-        });
-      }
-
-      const etapasIndisponiveis: string[] = Array.isArray(resp?.etapasChecklistIndisponiveis)
+      ignorados = Array.isArray(resp?.ignorados) ? resp.ignorados : [];
+      const etapas: string[] = Array.isArray(resp?.etapasChecklistIndisponiveis)
         ? resp.etapasChecklistIndisponiveis
         : [];
-      if (etapasIndisponiveis.length > 0) {
+      if (etapas.length > 0) {
         erros.push({
           nome: "Checklist do banco",
-          motivo: `Não foi possível consultar as etapas ${etapasIndisponiveis.join(", ")} no banco. Reenvie os documentos dessas etapas em instantes.`,
-          participante: null,
-        });
-      }
-
-      // Documentos confirmados pelo banco deixam de contar como enviados só
-      // localmente: quem não aparece em `sucesso` já foi reportado acima.
-      const confirmados: any[] = Array.isArray(resp?.sucesso) ? resp.sucesso : [];
-      const nomesComProblema = new Set(erros.map((e) => normTexto(e.nome)));
-      for (let i = sucesso.length - 1; i >= 0; i--) {
-        if (nomesComProblema.has(normTexto(sucesso[i].nome))) sucesso.splice(i, 1);
-      }
-      if (confirmados.length === 0 && ignorados.length === 0 && errosBanco.length === 0) {
-        // Resposta vazia: o upload foi aceito, mas o banco não confirmou nada.
-        erros.push({
-          nome: "Inclusão no banco",
-          motivo:
-            "O banco não confirmou nenhum documento neste envio. Verifique o checklist e reenvie.",
+          motivo: `Não foi possível consultar as etapas ${etapas.join(", ")} no banco. Reenvie os documentos dessas etapas em instantes.`,
           participante: null,
         });
       }
     } catch (e) {
       const bruto = e instanceof Error ? e.message : String(e);
-      const motivo = /INT-007/i.test(bruto)
+      falhaLote = /INT-007/i.test(bruto)
         ? "Já existe um envio de documentos em andamento para esta oportunidade. Aguarde alguns segundos e tente novamente."
         : sanitizarMensagemErro(bruto);
-      erros.push({ nome: "Finalização dos documentos", motivo, participante: null });
+      erros.push({ nome: "Envio ao banco", motivo: falhaLote, participante: null });
       try {
         await supabase.from("proposta_historico").insert({
           proposta_id: propostaId,
           tipo_evento: "erro_envio",
-          descricao: `Documentos enviados, mas a inclusão no banco retornou erro: ${motivo}`,
+          descricao: `Documentos na HomeFin, mas o envio ao banco retornou erro: ${falhaLote}`,
           ator_id: userId,
         });
       } catch {
         // Histórico é auxiliar; o retorno ao usuário já carrega o erro.
       }
+    }
+  }
+
+  // ETAPA 4 — situação final de cada documento, lida do checklist.
+  const sucesso: EnviarDocumentosResultado["sucesso"] = [];
+  const naHomefin: LinhaResultado[] = [];
+  if (itemDoDoc.size > 0) {
+    let finais: any[] = [];
+    try {
+      finais = await lerChecklist();
+    } catch {
+      finais = [];
+    }
+    for (const { doc, idDocumento, participante } of itemDoDoc.values()) {
+      const item = finais.find((i) => String(i?.idDocumento) === idDocumento);
+      let { situacao, mensagem } = item
+        ? situacaoDoItem(item, ignoradoDoItem(ignorados, item))
+        : { situacao: "homefin" as const, mensagem: naoConsultado };
+      if (situacao === "homefin" && !loteDoBanco) {
+        mensagem = `Na HomeFin. O envio automático ao banco existe só para o Bradesco; o ${banco?.nome_banco ?? "banco"} recebe pela HomeFin.`;
+      }
+      if (situacao === "homefin" && falhaLote) mensagem = falhaLote;
+      await marcarDoc(doc.id, situacao, mensagem);
+      if (situacao === "enviado") sucesso.push({ nome: doc.nome_arquivo, participante });
+      else if (situacao === "erro")
+        erros.push({ nome: doc.nome_arquivo, motivo: mensagem ?? "", participante });
+      else naHomefin.push({ nome: doc.nome_arquivo, motivo: mensagem ?? "", participante });
     }
   }
 
@@ -407,12 +408,69 @@ export async function enviarDocumentosBancoImpl({
       acao: "proposta.documentos_enviados",
       entidade: "propostas",
       entidadeId: propostaId,
-      descricao: `enviou ${sucesso.length} documento(s) ao banco`,
-      payloadNovo: { enviados: sucesso.length, erros: erros.length },
+      descricao: `enviou ${itemDoDoc.size} documento(s): ${sucesso.length} no banco, ${naHomefin.length} na HomeFin`,
+      payloadNovo: { banco: sucesso.length, homefin: naHomefin.length, erros: erros.length },
     });
   } catch {
     /* auditoria é best-effort */
   }
 
-  return { enviados: sucesso.length, total: docs.length, sucesso, erros };
+  return { enviados: sucesso.length, total: docs.length, sucesso, naHomefin, erros };
+}
+
+/**
+ * Tira da HomeFin o arquivo de um documento que foi excluído no CRM
+ * (`DELETE /documento/arquivo/{idArquivo}`), em toda oportunidade do cliente.
+ * O arquivo é reconhecido pelo prefixo do nome (`nomeArquivoNaHomefin`).
+ * Best-effort: a exclusão local não depende disto.
+ */
+export async function excluirArquivoHomefinImpl({
+  supabase,
+  documento,
+}: {
+  supabase: SupabaseClient<any, any, any>;
+  documento: { id: string; cliente_id: string };
+}): Promise<{ removidos: number; falhas: string[] }> {
+  const { chamarIntegracao, sanitizarMensagemErro } =
+    await import("@/lib/simulacao/homefin.server");
+
+  const { data: comoParticipante } = await supabase
+    .from("proposta_envolvidos")
+    .select("proposta_id")
+    .eq("cliente_id", documento.cliente_id);
+  const ids = (comoParticipante ?? []).map((e: any) => String(e.proposta_id));
+  let q = supabase
+    .from("propostas")
+    .select("id, correspondente_id, homefin_id_oportunidade")
+    .not("homefin_id_oportunidade", "is", null);
+  q =
+    ids.length > 0
+      ? q.or(`cliente_id.eq.${documento.cliente_id},id.in.(${ids.join(",")})`)
+      : q.eq("cliente_id", documento.cliente_id);
+  const { data: propostas } = await q;
+
+  let removidos = 0;
+  const falhas: string[] = [];
+  const vistas = new Set<string>();
+  for (const p of (propostas ?? []) as any[]) {
+    if (vistas.has(String(p.homefin_id_oportunidade))) continue;
+    vistas.add(String(p.homefin_id_oportunidade));
+    const ctx = { proposta_id: p.id, correspondente_id: p.correspondente_id };
+    try {
+      const itens = await chamarIntegracao<any[]>(
+        `/oportunidade/${p.homefin_id_oportunidade}/documentos`,
+        "GET",
+        undefined,
+        ctx,
+      );
+      const achado = arquivoDoDocumento(Array.isArray(itens) ? itens : [], documento.id);
+      for (const idArquivo of achado?.idArquivos ?? []) {
+        await chamarIntegracao(`/documento/arquivo/${idArquivo}`, "DELETE", undefined, ctx);
+        removidos++;
+      }
+    } catch (e) {
+      falhas.push(sanitizarMensagemErro(e instanceof Error ? e.message : String(e)));
+    }
+  }
+  return { removidos, falhas };
 }

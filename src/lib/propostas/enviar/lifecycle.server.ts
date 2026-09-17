@@ -118,15 +118,6 @@ export async function cancelarPropostaHomefinImpl({
     const msg = error?.message || "Erro desconhecido na integração";
 
     await Promise.all([
-      supabase.from("proposta_logs_homefin").insert({
-        proposta_id: propostaId,
-        endpoint: `/oportunidade/${idOp}`,
-        metodo: "PUT",
-        payload: { tipoSituacao: "C" },
-        resposta: { error: msg },
-        sucesso: false,
-        correspondente_id: prop.correspondente_id,
-      }),
       supabase.from("proposta_historico").insert({
         proposta_id: propostaId,
         tipo_evento: "erro",

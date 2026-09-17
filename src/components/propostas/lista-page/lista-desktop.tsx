@@ -225,7 +225,7 @@ export function ListaDesktop({
                       </div>
                     ) : (
                       <div className="flex items-center justify-end gap-1">
-                        <MenuAcoesProposta propostaId={p.id} bancos={p.bancos} />
+                        <MenuAcoesProposta propostaId={p.id} status={p.status} bancos={p.bancos} />
                         <ConfirmDelete
                           titulo="Excluir proposta"
                           descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}

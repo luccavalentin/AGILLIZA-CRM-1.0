@@ -104,8 +104,47 @@ export function transicaoPermitida(de: PropostaStatus, para: PropostaStatus): bo
   return validas.includes(para);
 }
 
-/** Status que ainda aceitam edição dos dados da proposta. */
-export const STATUS_EDITAVEIS: PropostaStatus[] = ["rascunho", "aguardando_documentos"];
+/**
+ * Status que ainda aceitam edição dos dados da proposta. Aprovada e
+ * condicionada entram por causa do "Continuar proposta": a conferência dos
+ * dados acontece depois da aprovação do crédito.
+ */
+export const STATUS_EDITAVEIS: PropostaStatus[] = [
+  "rascunho",
+  "credito_aprovado",
+  "credito_condicionado",
+  "aguardando_documentos",
+];
+
+/** Status em que o "Continuar proposta" aparece: aprovação e as etapas seguintes. */
+export const STATUS_CONTINUAR: PropostaStatus[] = [
+  "credito_aprovado",
+  "credito_condicionado",
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
+];
+
+/** `status_banco` de um banco que aprovou (com ou sem condições). */
+const STATUS_BANCO_APROVADO = new Set(["aprovada", "aprovado", "condicionado"]);
+
+export function bancoAprovado(b: { status_banco?: unknown } | null | undefined): boolean {
+  return STATUS_BANCO_APROVADO.has(String(b?.status_banco ?? ""));
+}
+
+/**
+ * O fluxo pós-aprovação só existe com a proposta numa das etapas acima E com
+ * ao menos um banco que aprovou — é com esse banco que o fluxo trabalha.
+ */
+export function podeContinuarProposta(
+  status: unknown,
+  bancos: { status_banco?: unknown }[] | null | undefined,
+): boolean {
+  return (
+    STATUS_CONTINUAR.includes(String(status ?? "") as PropostaStatus) &&
+    (bancos ?? []).some(bancoAprovado)
+  );
+}
 
 export const STATUS_TERMINAIS: PropostaStatus[] = [
   "contrato_emitido",
