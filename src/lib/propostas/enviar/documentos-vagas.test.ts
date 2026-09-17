@@ -115,7 +115,7 @@ describe("estado do documento na HomeFin", () => {
     );
     expect(situacaoDoItem(item, ignorado)).toEqual({
       situacao: "homefin",
-      mensagem: "Não aprovado",
+      mensagem: "Enviado à HomeFin. Segue ao banco depois da análise da HomeFin.",
     });
     expect(situacaoDoItem(item).situacao).toBe("homefin");
   });

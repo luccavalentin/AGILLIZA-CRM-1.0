@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, Loader2, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Landmark,
+  Loader2,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import {
@@ -16,7 +24,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BancoLogo } from "@/components/bancos/banco-logo";
-import { AbaEnviarBanco } from "@/components/proposta/aba-enviar-banco";
+import { mensagemBancoLegivel } from "@/lib/bancos/mensagem-banco";
+import { AbaEnviarBanco, type AcoesEnvioBanco } from "@/components/proposta/aba-enviar-banco";
 import { statusProposta } from "@/components/propostas/status";
 import { obterProposta } from "@/lib/propostas/propostas.functions";
 import {
@@ -120,6 +129,7 @@ export function ContinuarPropostaPage({
     null,
   );
   const [avancando, setAvancando] = useState(false);
+  const [envioDocs, setEnvioDocs] = useState<AcoesEnvioBanco | null>(null);
 
   const p = data?.proposta as any;
   const bancos = (data?.bancos ?? []) as any[];
@@ -280,7 +290,7 @@ export function ContinuarPropostaPage({
             <div>
               <p className="font-semibold">Aprovação condicionada</p>
               <p>
-                {banco?.mensagem_banco ||
+                {mensagemBancoLegivel(banco?.mensagem_banco, banco?.nome_banco) ||
                   "O banco aprovou com condições. Confira o retorno do banco na proposta."}
               </p>
             </div>
@@ -393,6 +403,7 @@ export function ContinuarPropostaPage({
               envolvidos={data?.envolvidos ?? []}
               proposta={p}
               onCompletar={() => setEtapa("dados")}
+              onAcoesEnvio={setEnvioDocs}
             />
           </div>
         )}
@@ -413,9 +424,26 @@ export function ContinuarPropostaPage({
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Button>
           {etapa === "documentos" && (
-            <Button className="gap-1.5" onClick={() => setEtapa("etapas")}>
-              Próximas etapas <ArrowRight className="h-4 w-4" />
-            </Button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                className="gap-1.5 border-primary/40 text-primary hover:bg-primary/5"
+                disabled={!envioDocs?.habilitado}
+                onClick={() => envioDocs?.enviar()}
+              >
+                {envioDocs?.enviando ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Landmark className="h-4 w-4" />
+                )}
+                {envioDocs?.enviando
+                  ? "Enviando…"
+                  : `Enviar documentos ao banco${envioDocs?.pendentes ? ` (${envioDocs.pendentes})` : ""}`}
+              </Button>
+              <Button className="gap-1.5" onClick={() => setEtapa("etapas")}>
+                Próximas etapas <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </div>
       )}

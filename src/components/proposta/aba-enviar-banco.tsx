@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -76,7 +76,12 @@ import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 import { donoDoDocumento } from "@/lib/propostas/enviar/documentos-vagas";
 import { VagasBanco } from "./vagas-banco";
-import { nomeDoTipoDocumento, sugerirTipoDocumento } from "@/lib/documentos/tipos-banco";
+import {
+  nomeDoTipoDocumento,
+  normalizar,
+  sugerirTipoDocumento,
+  termosDoTipoDocumento,
+} from "@/lib/documentos/tipos-banco";
 import {
   TIPOS_DOCUMENTO_POR_CATEGORIA,
   TIPO_OUTRO,
@@ -134,8 +139,24 @@ function esperadosDoGrupo(cat: Categoria, ctx: { fgts: boolean; vendedorPJ: bool
   }
 }
 
-const mesmoTipo = (a: unknown, b: string) =>
-  String(a ?? "") === b || nomeDoTipoDocumento(String(a ?? "")) === nomeDoTipoDocumento(b);
+/**
+ * O documento cobre o item esperado do checklist? Pelo tipo gravado ou pela
+ * vaga da HomeFin em que já está. O anexo feito na vaga grava o nome dela
+ * ("Declaração Pessoal de Saúde", "Comprovante de estado civil"), diferente do
+ * nome do catálogo ("Declaração Pessoal de Saúde (DPS)") — sem comparar pelos
+ * termos, o item seguia "pendente" e o operador anexava o mesmo arquivo de novo.
+ */
+function cobreTipo(d: { tipo_documento?: unknown; vagas_proposta?: string[] }, tipo: string) {
+  const a = String(d.tipo_documento ?? "");
+  if (a === tipo || nomeDoTipoDocumento(a) === nomeDoTipoDocumento(tipo)) return true;
+  const termos = termosDoTipoDocumento(tipo).map(normalizar).filter(Boolean);
+  const nomes = [a, nomeDoTipoDocumento(a), ...(d.vagas_proposta ?? [])].map(normalizar);
+  return nomes.some((n) => termos.some((t) => ` ${n} `.includes(` ${t} `)));
+}
+
+/** Já está na HomeFin (em análise ou no banco): não pede para enviar de novo. */
+const jaEnviado = (d: { situacao_integracao?: string | null }) =>
+  d.situacao_integracao === "enviado" || d.situacao_integracao === "homefin";
 
 function ehFormatoBanco(d: { mime_type?: string | null; nome_arquivo?: string | null }): boolean {
   const mime = String(d.mime_type ?? "").toLowerCase();
@@ -166,18 +187,29 @@ type ResultadoDocs = {
   erros: { nome: string; motivo: string; participante?: string | null }[];
 };
 
+/** O que o rodapé da tela precisa para oferecer o envio principal. */
+export interface AcoesEnvioBanco {
+  enviar: () => void;
+  enviando: boolean;
+  pendentes: number;
+  habilitado: boolean;
+}
+
 export function AbaEnviarBanco({
   clienteId,
   propostaId,
   envolvidos = [],
   onCompletar,
   proposta,
+  onAcoesEnvio,
 }: {
   clienteId: string | null | undefined;
   propostaId: string;
   envolvidos?: any[];
   onCompletar?: (participante: any) => void;
   proposta: any;
+  /** Avisa a tela do envio principal (o rodapé do "Continuar proposta" usa). */
+  onAcoesEnvio?: (acoes: AcoesEnvioBanco) => void;
 }) {
   const qc = useQueryClient();
   const listar = useServerFn(listarDocumentos);
@@ -192,6 +224,7 @@ export function AbaEnviarBanco({
   const { enviar: handleEnviar, busy: enviandoBanco } = useEnviarProposta();
   const [enviando, setEnviando] = useState(false);
   const [enviandoImovel, setEnviandoImovel] = useState(false);
+  const [verHomefin, setVerHomefin] = useState(false);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [resultado, setResultado] = useState<ResultadoDocs | null>(null);
   const [resultadoImovel, setResultadoImovel] = useState<any | null>(null);
@@ -270,7 +303,7 @@ export function AbaEnviarBanco({
       dono: g.categoria === "imovel" || g.categoria === "outros" ? "" : nomeDoGrupo(g.categoria),
       itens,
       esperados,
-      faltando: esperados.filter((tipo) => !itens.some((d) => mesmoTipo(d.tipo_documento, tipo))),
+      faltando: esperados.filter((tipo) => !itens.some((d) => cobreTipo(d, tipo))),
     };
   }).filter((g) => {
     if (g.itens.length > 0) return true;
@@ -280,7 +313,7 @@ export function AbaEnviarBanco({
   });
 
   const aptos = lista.filter((d) => ehFormatoBanco(d));
-  const naoEnviados = aptos.filter((d) => d.situacao_integracao !== "enviado");
+  const naoEnviados = aptos.filter((d) => !jaEnviado(d));
 
   function recarregar() {
     // `removeQueries` tirava do cache sem buscar de novo: o documento anexado
@@ -429,10 +462,10 @@ export function AbaEnviarBanco({
       const r = await enviar({ data: { proposta_id: propostaId, documento_ids: ids, vagas } });
       qc.invalidateQueries({ queryKey: ["checklist-banco", propostaId] });
       setResultado(r);
-      if (r.enviados > 0) toast.success(`${r.enviados} documento(s) confirmado(s) pelo banco.`);
+      if (r.enviados > 0) toast.success(`${r.enviados} documento(s) enviado(s) ao banco.`);
       if (r.naHomefin.length > 0)
-        toast.info(`${r.naHomefin.length} documento(s) na HomeFin, aguardando o banco.`);
-      if (r.erros.length > 0) toast.warning(`${r.erros.length} ponto(s) de atenção no envio.`);
+        toast.success(`${r.naHomefin.length} documento(s) enviado(s) à HomeFin.`);
+      if (r.erros.length > 0) toast.warning(`${r.erros.length} documento(s) não enviado(s).`);
       setSelecionados(new Set());
       recarregar();
     } catch (e) {
@@ -466,7 +499,7 @@ export function AbaEnviarBanco({
   async function enviarPendentes() {
     await enviarDadosImovel(true);
     if (naoEnviados.length > 0) await enviarDocumentos(naoEnviados.map((d) => d.id));
-    else toast.info("Todos os documentos já foram enviados ao banco.");
+    else toast.info("Todos os documentos anexados já foram enviados.");
   }
 
   const alternar = (id: string) =>
@@ -486,11 +519,28 @@ export function AbaEnviarBanco({
       return n;
     });
 
+  // O rodapé da tela chama sempre a versão mais recente do envio.
+  const enviarRef = useRef(enviarPendentes);
+  enviarRef.current = enviarPendentes;
+  const ocupadoEnvio = enviando || enviandoBanco || enviandoImovel;
+  const pendentesEnvio = naoEnviados.length;
+  useEffect(() => {
+    onAcoesEnvio?.({
+      enviar: () => void enviarRef.current(),
+      enviando: ocupadoEnvio,
+      pendentes: pendentesEnvio,
+      habilitado: Boolean(clienteId) && propostaNoBanco && !ocupadoEnvio,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ocupadoEnvio, pendentesEnvio, propostaNoBanco, clienteId]);
+
   if (!clienteId) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Vincule um cliente à proposta para enviar os documentos ao banco.
-      </div>
+      <>
+        <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          Vincule um cliente à proposta para enviar os documentos ao banco.
+        </div>
+      </>
     );
   }
 
@@ -574,10 +624,10 @@ export function AbaEnviarBanco({
                 {!propostaNoBanco
                   ? "Envie a proposta ao banco primeiro: o checklist de documentos é criado por ela."
                   : aptos.length === 0
-                    ? "Nenhum documento salvo ainda. Anexe nas vagas do banco ou nas pastas abaixo."
+                    ? "Nenhum documento anexado ainda. Anexe nos grupos abaixo."
                     : naoEnviados.length > 0
-                      ? `${naoEnviados.length} documento(s) ainda não enviado(s), cada um vai para a vaga do dono.`
-                      : "Todos os documentos salvos já foram enviados."}
+                      ? `${naoEnviados.length} documento(s) ainda não enviado(s).`
+                      : "Todos os documentos anexados já foram enviados."}
               </p>
             </div>
           </div>
@@ -602,22 +652,38 @@ export function AbaEnviarBanco({
               ) : (
                 <Landmark className="h-4 w-4" />
               )}
-              {ocupado ? "Enviando…" : "Enviar pendentes"}
+              {ocupado ? "Enviando…" : "Enviar documentos ao banco"}
             </Button>
           </div>
         </CardContent>
       </Card>
 
+      {/* Lista da própria HomeFin: consulta avançada, fechada por padrão. */}
       {propostaNoBanco && (
-        <VagasBanco
-          propostaId={propostaId}
-          clienteId={clienteId}
-          envolvidos={envolvidos}
-          docs={lista}
-          ocupado={ocupado}
-          onEnviar={enviarDocumentos}
-          onAnexado={recarregar}
-        />
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-xs text-muted-foreground"
+            onClick={() => setVerHomefin((v) => !v)}
+          >
+            <Info className="h-3.5 w-3.5" />
+            {verHomefin ? "Ocultar o que a HomeFin recebeu" : "Ver o que a HomeFin já recebeu"}
+          </Button>
+          {verHomefin && (
+            <div className="mt-2">
+              <VagasBanco
+                propostaId={propostaId}
+                clienteId={clienteId}
+                envolvidos={envolvidos}
+                docs={lista}
+                ocupado={ocupado}
+                onEnviar={enviarDocumentos}
+                onAnexado={recarregar}
+              />
+            </div>
+          )}
+        </div>
       )}
 
       {/* Resultado do último envio */}
@@ -658,22 +724,20 @@ export function AbaEnviarBanco({
                 )}
               </div>
             )}
-            {resultado?.sucesso.map((s, i) => (
+            {resultado && resultado.sucesso.length > 0 && (
               <Linha
-                key={`s-${i}`}
                 icone="ok"
-                titulo={s.nome}
-                detalhe={s.participante ?? undefined}
+                titulo={`${resultado.sucesso.length} documento(s) enviado(s) ao banco`}
+                detalhe={resultado.sucesso.map((s) => s.nome).join(", ")}
               />
-            ))}
-            {resultado?.naHomefin?.map((h, i) => (
+            )}
+            {resultado && (resultado.naHomefin?.length ?? 0) > 0 && (
               <Linha
-                key={`h-${i}`}
-                icone="alerta"
-                titulo={`${h.nome}${h.participante ? ` — ${h.participante}` : ""}`}
-                detalhe={h.motivo}
+                icone="ok"
+                titulo={`${resultado.naHomefin.length} documento(s) enviado(s) à HomeFin`}
+                detalhe={`${resultado.naHomefin.map((h) => h.nome).join(", ")}. A HomeFin analisa e repassa ao banco.`}
               />
-            ))}
+            )}
             {resultado?.erros.map((er, i) => (
               <Linha
                 key={`e-${i}`}
@@ -694,7 +758,9 @@ export function AbaEnviarBanco({
       ) : (
         grupos.map((g) => {
           const Icone = g.icone;
-          const aptosGrupo = g.itens.filter((d: any) => ehFormatoBanco(d)).map((d: any) => d.id);
+          const aptosGrupo = g.itens
+            .filter((d: any) => ehFormatoBanco(d) && !jaEnviado(d))
+            .map((d: any) => d.id);
           const todosMarcados =
             aptosGrupo.length > 0 && aptosGrupo.every((id: string) => selecionados.has(id));
           return (
@@ -752,19 +818,12 @@ export function AbaEnviarBanco({
                 {g.categoria === "vendedor" && !vendedor && (
                   <Aviso>
                     Cadastre o vendedor na aba <strong>Vendedores</strong>: os dados dele entram na
-                    proposta. As vagas de documento do vendedor são abertas pela HomeFin; até lá os
-                    arquivos ficam salvos aqui.
+                    proposta. Os documentos do vendedor ficam salvos aqui e seguem ao banco quando a
+                    HomeFin pedir.
                   </Aviso>
                 )}
 
-                {g.categoria === "imovel" && previaImovel && (
-                  <DadosImovel
-                    previa={previaImovel}
-                    enviando={enviandoImovel}
-                    habilitado={propostaNoBanco && !ocupado}
-                    onEnviar={() => enviarDadosImovel(false)}
-                  />
-                )}
+                {g.categoria === "imovel" && previaImovel && <DadosImovel previa={previaImovel} />}
 
                 {g.faltando.length > 0 && (
                   <ul className="mb-2 space-y-1 rounded-lg border border-dashed border-border p-2">
@@ -806,7 +865,7 @@ export function AbaEnviarBanco({
                         >
                           <Checkbox
                             checked={selecionados.has(d.id)}
-                            disabled={!apto}
+                            disabled={!apto || jaEnviado(d)}
                             onCheckedChange={() => alternar(d.id)}
                             aria-label={`Selecionar ${d.nome_arquivo}`}
                           />
@@ -825,53 +884,46 @@ export function AbaEnviarBanco({
                               {!apto && <Selo tom="alerta">formato não aceito</Selo>}
                               {apto && grande && <Selo tom="alerta">acima de 5 MB</Selo>}
                               {d.situacao_integracao === "enviado" && (
-                                <Selo tom="ok">enviado ao banco</Selo>
-                              )}
-                              {d.situacao_integracao === "erro" && (
-                                <Selo tom="erro" titulo={d.erro_integracao ?? undefined}>
-                                  falha no envio
+                                <Selo tom="ok">
+                                  <CheckCircle2 className="mr-0.5 inline h-3 w-3" />
+                                  Enviado ao banco
                                 </Selo>
                               )}
                               {d.situacao_integracao === "homefin" && (
-                                <Selo tom="alerta" titulo={d.erro_integracao ?? undefined}>
-                                  na HomeFin
+                                <Selo
+                                  tom="ok"
+                                  titulo="A HomeFin analisa o documento e repassa ao banco."
+                                >
+                                  <CheckCircle2 className="mr-0.5 inline h-3 w-3" />
+                                  Enviado à HomeFin
                                 </Selo>
                               )}
-                              {!d.situacao_integracao && apto && (
-                                <Selo>salvo, não enviado nesta proposta</Selo>
+                              {d.situacao_integracao === "erro" && (
+                                <Selo tom="erro">Não enviado</Selo>
                               )}
-                              {d.vagas_proposta?.length > 0 && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  vaga: {d.vagas_proposta.join(", ")}
-                                </span>
-                              )}
+                              {!d.situacao_integracao && apto && <Selo>Salvo, não enviado</Selo>}
                             </p>
                             {d.situacao_integracao === "erro" && d.erro_integracao && (
                               <p className="mt-0.5 text-xs text-destructive">{d.erro_integracao}</p>
                             )}
-                            {d.situacao_integracao === "homefin" && d.erro_integracao && (
-                              <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
-                                {d.erro_integracao}
-                              </p>
-                            )}
                           </div>
                           <div className="flex shrink-0 items-center gap-1">
-                            {apto && (
+                            {apto && !jaEnviado(d) && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="h-8 gap-1.5 rounded-lg px-2.5"
                                 title={
-                                  d.situacao_integracao === "enviado"
-                                    ? "Reenviar este documento ao banco"
-                                    : "Enviar este documento ao banco"
+                                  d.situacao_integracao === "erro"
+                                    ? "Enviar este documento de novo"
+                                    : "Enviar este documento"
                                 }
                                 disabled={ocupado || !propostaNoBanco}
                                 onClick={() => enviarDocumentos([d.id])}
                               >
                                 <Landmark className="h-3.5 w-3.5" />
                                 <span className="hidden sm:inline">
-                                  {d.situacao_integracao === "enviado" ? "Reenviar" : "Enviar"}
+                                  {d.situacao_integracao === "erro" ? "Enviar de novo" : "Enviar"}
                                 </span>
                               </Button>
                             )}
@@ -926,8 +978,7 @@ export function AbaEnviarBanco({
               {pendentesUpload && nomeDoGrupoSeguro(pendentesUpload.categoria, nomeDoGrupo)}
             </DialogTitle>
             <DialogDescription>
-              Confirme o tipo de cada arquivo. É o tipo que coloca o documento na vaga certa do
-              banco.
+              Confirme o tipo de cada arquivo: é por ele que o banco identifica o documento.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
@@ -1088,19 +1139,14 @@ function Linha({
   );
 }
 
+/** Prévia dos dados do imóvel; seguem ao banco no envio principal da tela. */
 function DadosImovel({
   previa,
-  enviando,
-  habilitado,
-  onEnviar,
 }: {
   previa: {
     campos: { campo: string; rotulo: string; valor: string }[];
     semCampoNaApi: string[];
   };
-  enviando: boolean;
-  habilitado: boolean;
-  onEnviar: () => void;
 }) {
   const vistoria = previa.campos.filter((c) => c.campo.includes("Avaliacao"));
   const endereco = previa.campos.filter(
@@ -1109,20 +1155,13 @@ function DadosImovel({
   const iq = previa.campos.filter((c) => c.campo.includes("Interveniente"));
   return (
     <div className="mb-3 space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Dados do imóvel e da vistoria
         </p>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1.5 text-xs"
-          disabled={!habilitado || enviando || previa.campos.length === 0}
-          onClick={onEnviar}
-        >
-          {enviando ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-          Enviar ao banco
-        </Button>
+        <span className="text-[11px] text-muted-foreground">
+          Vão ao banco junto com os documentos
+        </span>
       </div>
       {previa.campos.length === 0 ? (
         <p className="text-xs text-muted-foreground">
