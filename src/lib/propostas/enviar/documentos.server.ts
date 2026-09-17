@@ -310,7 +310,15 @@ export async function enviarDocumentosBancoImpl({
       const { situacao } = situacaoDoItem(existente.item);
       const idDocumento = String(existente.item.idDocumento);
       usados.add(idDocumento);
-      if (situacao !== "erro") {
+      // Arquivo que subiu antes de passarmos a aprovar no upload fica parado em
+      // análise e nunca entra no lote do banco. O reenvio troca esse arquivo:
+      // apaga o antigo e sobe de novo, já aprovado — sem deixar os dois na vaga.
+      const analise = String(existente.item?.tipoSituacao ?? "")
+        .toUpperCase()
+        .charAt(0);
+      const integracao = String(existente.item?.situacaoIntegracao ?? "").toLowerCase();
+      const precisaAprovar = analise !== "A" && analise !== "D" && integracao !== "success";
+      if (situacao !== "erro" && !precisaAprovar) {
         itemDoDoc.set(doc.id, {
           doc,
           idDocumento,
