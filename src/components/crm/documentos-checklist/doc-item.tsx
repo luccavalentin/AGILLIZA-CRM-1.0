@@ -1,4 +1,4 @@
-import { Check, Loader2, Pencil, Trash2, Upload, X } from "lucide-react";
+import { Check, Landmark, Loader2, Pencil, Trash2, Upload, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { Categoria } from "./types";
@@ -66,7 +66,17 @@ export function DocItem({
         </span>
       )}
       {has && !editing && (
-        <span className="rounded bg-success/10 px-1.5 py-0.5 text-xs text-success">anexado</span>
+        <>
+          <span className="rounded bg-success/10 px-1.5 py-0.5 text-xs text-success">anexado</span>
+          <button
+            type="button"
+            onClick={() => state.abrirEnvioBanco(cat, label)}
+            title="Enviar ao banco, escolhendo a proposta"
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-accent"
+          >
+            <Landmark className="size-3.5" /> Banco
+          </button>
+        </>
       )}
       {!editing && (
         <button
@@ -105,7 +115,7 @@ export function DocItem({
             ) : (
               <Upload className="size-3.5" />
             )}
-            Enviar
+            Anexar
             <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"

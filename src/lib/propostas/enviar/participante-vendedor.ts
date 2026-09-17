@@ -53,7 +53,8 @@ export function payloadParticipanteVendedor(
     ufExpedicao: texto(vendedor.uf_expedicao),
     nomeProfissao: texto(vendedor.profissao),
     nomeEmpresaProfissao: texto(vendedor.empresa),
-    renda: numero(vendedor.renda),
+    // Obrigatório no contrato, mas o vendedor não tem renda na operação: 0.
+    renda: numero(vendedor.renda) ?? 0,
     email: texto(vendedor.email),
     celular: digitos(vendedor.celular),
     cep: digitos(vendedor.cep),

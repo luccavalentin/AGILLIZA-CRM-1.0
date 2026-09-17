@@ -160,7 +160,8 @@ export function formParaEnvolvido(f: ParticipanteForm) {
     data_expedicao: f.data_expedicao || null,
     profissao: f.profissao.trim() || null,
     empresa: f.empresa.trim() || null,
-    renda: f.renda || null,
+    // Zero é valor válido (cônjuge que não compõe renda, vendedor): só vazio vira null.
+    renda: Number.isFinite(Number(f.renda)) ? Number(f.renda) : null,
     email: f.email.trim() || null,
     celular: apenasDigitos(f.celular) || null,
     cep: apenasDigitos(f.cep) || null,

@@ -148,6 +148,12 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
         /** Passa a proposta para "Coleta de documentos" ao gravar. */
         avancar: z.boolean().default(true),
         /**
+         * Salvamento automático: grava só no CRM (proposta, participantes,
+         * cadastro do cliente). Sem HomeFin, sem mudar etapa, sem histórico —
+         * isso fica para o "Gravar e avançar".
+         */
+        somente_crm: z.boolean().default(false),
+        /**
          * "Tentar novamente": blocos que falharam na HomeFin. O CRM já foi
          * gravado na primeira tentativa, então sem isto não haveria diferença
          * a enviar e a nova tentativa não chamaria a HomeFin.
@@ -289,6 +295,15 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
     // ida à HomeFin (o gatilho do cliente atualiza a proposta, não a HomeFin).
     // Valores só quando mudaram — mexem na aprovação.
     const paraHomefin = new Set<BlocoConferencia>([...blocos, "participantes", "imovel"]);
+    if (data.somente_crm) {
+      return {
+        alterou: blocos.size > 0,
+        blocos: Array.from(blocos),
+        errosHomefin,
+        vendedores: null,
+        status: String(prop.status),
+      };
+    }
     if (idOportunidade) {
       const { chamarIntegracao, sanitizarMensagemErro } =
         await import("@/lib/simulacao/homefin.server");

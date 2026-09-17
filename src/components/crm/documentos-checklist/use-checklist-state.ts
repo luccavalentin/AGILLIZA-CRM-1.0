@@ -5,7 +5,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { anexarDocumento, salvarChecklist } from "@/lib/crm/clientes.functions";
-import { enviarDocumentoAnexadoAoBanco } from "@/lib/propostas/propostas.functions";
 import type { Categoria, GrupoChecklist } from "./types";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 
@@ -15,7 +14,6 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
   const qc = useQueryClient();
   const salvar = useServerFn(salvarChecklist);
   const anexar = useServerFn(anexarDocumento);
-  const enviarAoBanco = useServerFn(enviarDocumentoAnexadoAoBanco);
 
   const [check, setCheck] = useState<Record<string, any>>({});
   const [fgts, setFgts] = useState(false);
@@ -245,33 +243,12 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
   }
 
   /**
-   * Anexou no checklist, vai também para a HomeFin — em toda proposta deste
-   * cliente que já foi ao banco. Roda em segundo plano: o anexo local já está
-   * salvo, e uma falha no banco não desfaz nada.
+   * Envio ao banco é escolhido pelo operador, para uma proposta: ver
+   * `EnviarBancoDialog`. O anexo só salva no CRM.
    */
-  async function enviarParaHomefin(documentoId: string, nome: string) {
-    const t = toast.loading(`Enviando "${nome}" ao banco…`);
-    try {
-      const { resultados } = await enviarAoBanco({ data: { documento_id: documentoId } });
-      if (resultados.length === 0) {
-        toast.info("Documento guardado. Ele vai ao banco quando a proposta for enviada.", {
-          id: t,
-        });
-      } else if (resultados.every((r) => r.enviado)) {
-        const lista = resultados.map((r) => r.numero_proposta).join(", ");
-        const aviso = resultados.find((r) => r.motivo)?.motivo;
-        toast.success(`Documento enviado (${lista}).`, { id: t, description: aviso ?? undefined });
-      } else {
-        const falhas = resultados.filter((r) => !r.enviado);
-        toast.error(
-          `Não foi ao banco em ${falhas.map((r) => `${r.numero_proposta}: ${r.motivo ?? "erro"}`).join(" · ")}`,
-          { id: t, duration: 12_000 },
-        );
-      }
-      qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
-    } catch (err: any) {
-      toast.error(err?.message ?? "Falha ao enviar o documento ao banco.", { id: t });
-    }
+  const [envioBanco, setEnvioBanco] = useState<{ cat: Categoria; label: string } | null>(null);
+  function abrirEnvioBanco(cat: Categoria, label: string) {
+    setEnvioBanco({ cat, label });
   }
 
   async function enviar(e: React.ChangeEvent<HTMLInputElement>, cat: Categoria, key: string) {
@@ -295,9 +272,12 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
           tamanho_bytes: file.size,
         },
       });
-      toast.success("Documento anexado.");
+      toast.success("Documento salvo no CRM.", {
+        description: "Para mandar ao banco, use “Banco” e escolha a proposta.",
+        action: { label: "Enviar ao banco", onClick: () => abrirEnvioBanco(cat, key) },
+      });
       qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
-      void enviarParaHomefin(id, file.name);
+      void id;
     } catch (err: any) {
       toast.error(err?.message ?? "Falha no upload.");
     } finally {
@@ -306,6 +286,9 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
   }
 
   return {
+    envioBanco,
+    setEnvioBanco,
+    abrirEnvioBanco,
     check,
     setCheck,
     fgts,

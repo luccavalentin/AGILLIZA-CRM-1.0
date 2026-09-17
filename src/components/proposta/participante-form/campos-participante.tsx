@@ -19,6 +19,7 @@ import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 import { Campo, Secao, SelSelect, SelUf } from "./campos-atomos";
 import { CLASSE_ERRO, mascararCep, type ParticipanteForm } from "./types";
+import { exigeRenda } from "@/lib/propostas/campos-obrigatorios";
 
 /** Conjunto de campos de um participante — reutilizado para titular e cônjuge. */
 export function CamposParticipante({
@@ -197,11 +198,12 @@ export function CamposParticipante({
           <Campo label="Empresa">
             <Input value={f.empresa} onChange={(e) => set({ empresa: e.target.value })} />
           </Campo>
-          <Campo label="Renda" obrigatorio erro={err("renda")}>
+          <Campo label="Renda" obrigatorio={exigeRenda(f)} erro={err("renda")}>
             <CurrencyInput
               value={f.renda}
               onChange={(v) => set({ renda: v })}
               className={cls("renda")}
+              mostrarZero={!exigeRenda(f)}
             />
           </Campo>
         </div>

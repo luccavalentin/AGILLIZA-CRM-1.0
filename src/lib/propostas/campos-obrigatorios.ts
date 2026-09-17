@@ -80,6 +80,17 @@ export const QUALIFICACAO_LABEL: Record<string, string> = {
   VD: "vendedor",
 };
 
+/**
+ * Renda só é cobrada de quem compra e compõe renda por conta própria: o
+ * comprador. Cônjuge/coproponente (TI) pode não compor renda — a proposta
+ * manda `rendaConjuge: 0` nesse caso — e vendedor não tem renda na operação.
+ * Para eles vale zero ou vazio (a integração recebe 0).
+ */
+export function exigeRenda(env: Record<string, any> | null | undefined): boolean {
+  const q = String(env?.tipo_qualificacao ?? "CO").toUpperCase();
+  return !env?.conjuge_de && !["VD", "TI", "CJ"].includes(q);
+}
+
 /** `tipoDocumentoIdentidade` do CreateParticipantRequest: "RG/CNH". */
 export const TIPOS_DOCUMENTO_ACEITOS = ["RG", "CNH"];
 
@@ -129,6 +140,7 @@ export function faltantesEnvolvido(
     if (c.chave === "tipo_documento_identidade" && !vazio(env?.[c.chave])) {
       return !TIPOS_DOCUMENTO_ACEITOS.includes(String(env[c.chave]).trim().toUpperCase());
     }
+    if (c.chave === "renda" && !exigeRenda(env)) return false;
     if (c.chave === "utiliza_fgts") return false; // booleano com default (S/N)
     if (c.chave === "fg_autorizacao_dados") return env?.fg_autorizacao_dados !== true;
     return vazio(env?.[c.chave]);

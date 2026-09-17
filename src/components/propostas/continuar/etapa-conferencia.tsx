@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -128,18 +128,29 @@ export function EtapaConferencia({
   banco,
   salvando,
   onGravar,
+  onAutosalvar,
 }: {
   proposta: any;
   envolvidos: any[];
   banco: any | null;
   salvando: boolean;
   onGravar: (dados: EnvioConferencia) => Promise<void>;
+  /** Grava só no CRM; `true` quando deu certo. */
+  onAutosalvar: (dados: EnvioConferencia) => Promise<boolean>;
 }) {
   const [dados, setDados] = useState<DadosProposta>(() => propostaParaForm(proposta));
   const [pessoas, setPessoas] = useState<Record<string, ParticipanteForm>>({});
   const [conta, setConta] = useState({ agencia: "", conta_corrente: "", digito_conta: "" });
   const [tentou, setTentou] = useState(false);
   const [confirmarSensiveis, setConfirmarSensiveis] = useState<string[] | null>(null);
+  // Edição ainda não salva: enquanto houver, um refetch não recarrega o formulário.
+  const edicoes = useRef(0);
+  const [sujo, setSujo] = useState(false);
+  const [autosalvo, setAutosalvo] = useState<{ quando: Date; erro?: string } | null>(null);
+  const marcarEdicao = () => {
+    edicoes.current += 1;
+    setSujo(true);
+  };
 
   // Carrega (e recarrega depois de gravar) a partir do que está salvo. A chave
   // é a versão gravada: um refetch que não mudou nada não apaga o que o
@@ -150,6 +161,7 @@ export function EtapaConferencia({
     ...envolvidos.map((e) => `${e.id}:${e.updated_at}`),
   ].join("|");
   useEffect(() => {
+    if (sujo) return;
     setDados(propostaParaForm(proposta));
     setPessoas(Object.fromEntries(envolvidos.map((e) => [e.id, envolvidoParaForm(e)])));
     setConta({
@@ -158,16 +170,55 @@ export function EtapaConferencia({
       digito_conta: banco?.digito_conta ?? "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [versao]);
+  }, [versao, sujo]);
 
   const titulares = envolvidos.filter((e) => e.tipo_qualificacao !== "VD" && !e.conjuge_de);
   const vendedores = envolvidos.filter((e) => e.tipo_qualificacao === "VD" && !e.conjuge_de);
   const conjugeDe = (id: string) => envolvidos.find((e) => e.conjuge_de === id);
 
-  const setDado = <K extends keyof DadosProposta>(k: K, v: DadosProposta[K]) =>
+  const setDado = <K extends keyof DadosProposta>(k: K, v: DadosProposta[K]) => {
+    marcarEdicao();
     setDados((d) => ({ ...d, [k]: v }));
-  const setPessoa = (id: string) => (patch: Partial<ParticipanteForm>) =>
+  };
+  const setPessoa = (id: string) => (patch: Partial<ParticipanteForm>) => {
+    marcarEdicao();
     setPessoas((p) => ({ ...p, [id]: { ...p[id], ...patch } }));
+  };
+
+  const atualizarConta = (f: (c: typeof conta) => typeof conta) => {
+    marcarEdicao();
+    setConta(f);
+  };
+
+  /**
+   * Salvamento automático, 2 s depois da última alteração: só no CRM. Valores
+   * da operação e renda ficam de fora — mexem na aprovação e só vão pelo
+   * "Gravar e avançar", com confirmação.
+   */
+  useEffect(() => {
+    if (!sujo) return;
+    const edicaoAoAgendar = edicoes.current;
+    const t = setTimeout(async () => {
+      const envio = montarEnvio();
+      const original = propostaParaForm(proposta) as Record<string, unknown>;
+      for (const k of Object.keys(CAMPOS_SENSIVEIS).concat([
+        "utiliza_fgts",
+        "financia_despesas_cartorarias",
+      ])) {
+        envio.proposta[k] = k === "prazo" && original[k] ? Number(original[k]) : original[k];
+      }
+      envio.envolvidos = envio.envolvidos.map((e) => {
+        const salvo = envolvidos.find((x) => x.id === e.id);
+        return { ...e, dados: { ...e.dados, renda: salvo?.renda ?? null } };
+      });
+      const ok = await onAutosalvar(envio);
+      setAutosalvo(ok ? { quando: new Date() } : { quando: new Date(), erro: "Não salvou" });
+      // Só libera a recarga se nada mudou enquanto salvava.
+      if (ok && edicoes.current === edicaoAoAgendar) setSujo(false);
+    }, 2000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dados, pessoas, conta, sujo]);
 
   // Só proponentes (comprador e cônjuge) têm os campos obrigatórios do banco.
   const pendencias = useMemo(() => {
@@ -246,7 +297,7 @@ export function EtapaConferencia({
     );
     if (rendaMudou) sensiveis.push("renda");
     if (sensiveis.length > 0) return setConfirmarSensiveis(sensiveis);
-    void onGravar(montarEnvio());
+    void onGravar(montarEnvio()).then(() => setSujo(false));
   }
 
   const Pessoa = ({ e, conjuge }: { e: any; conjuge?: boolean }) => {
@@ -313,7 +364,7 @@ export function EtapaConferencia({
                   inputMode="numeric"
                   value={conta.agencia}
                   onChange={(ev) =>
-                    setConta((c) => ({
+                    atualizarConta((c) => ({
                       ...c,
                       agencia: ev.target.value.replace(/\D/g, "").slice(0, 5),
                     }))
@@ -325,7 +376,7 @@ export function EtapaConferencia({
                   inputMode="numeric"
                   value={conta.conta_corrente}
                   onChange={(ev) =>
-                    setConta((c) => ({
+                    atualizarConta((c) => ({
                       ...c,
                       conta_corrente: ev.target.value.replace(/\D/g, "").slice(0, 20),
                     }))
@@ -336,7 +387,9 @@ export function EtapaConferencia({
                 <Input
                   value={conta.digito_conta}
                   maxLength={2}
-                  onChange={(ev) => setConta((c) => ({ ...c, digito_conta: ev.target.value }))}
+                  onChange={(ev) =>
+                    atualizarConta((c) => ({ ...c, digito_conta: ev.target.value }))
+                  }
                 />
               </Campo>
             </div>
@@ -539,7 +592,13 @@ export function EtapaConferencia({
 
       <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <p className="text-xs text-muted-foreground">
-          Grava no CRM e manda à HomeFin só o que mudou.
+          {autosalvo?.erro
+            ? `Salvamento automático falhou às ${autosalvo.quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Use "Gravar e avançar".`
+            : sujo
+              ? "Alterações não salvas…"
+              : autosalvo
+                ? `Salvo no CRM às ${autosalvo.quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Valores e renda vão ao gravar.`
+                : 'Salva no CRM automaticamente. "Gravar e avançar" envia à HomeFin.'}
         </p>
         <Button onClick={gravar} disabled={salvando} className="gap-2">
           {salvando && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -564,7 +623,7 @@ export function EtapaConferencia({
             <AlertDialogAction
               onClick={() => {
                 setConfirmarSensiveis(null);
-                void onGravar(montarEnvio());
+                void onGravar(montarEnvio()).then(() => setSujo(false));
               }}
             >
               Gravar mesmo assim

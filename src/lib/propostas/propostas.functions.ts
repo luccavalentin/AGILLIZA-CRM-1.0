@@ -1883,77 +1883,47 @@ export const dadosImovelBanco = createServerFn({ method: "POST" })
   });
 
 /**
- * Envia à HomeFin um documento recém-anexado no checklist do cliente, em toda
- * proposta dele que já foi ao banco.
- *
- * O documento é da oportunidade: um cliente com propostas em mais de um banco
- * (oportunidades diferentes) precisa dele em cada uma. Proposta ainda não
- * enviada fica de fora — o checklist dela no banco nem existe; esses
- * documentos seguem pelo "Enviar ao banco" quando a proposta for enviada.
+ * Propostas do cliente que podem receber documentos: já têm oportunidade na
+ * HomeFin e não estão encerradas. Inclui aquelas em que ele é participante.
  */
-export const enviarDocumentoAnexadoAoBanco = createServerFn({ method: "POST" })
+export const propostasParaEnvioDocumentos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ documento_id: z.string().uuid() }).parse(data))
+  .inputValidator((data) => z.object({ cliente_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
-    const { supabase, userId } = context;
-    const { data: doc, error } = await supabase
-      .from("cliente_documentos")
-      .select("id, cliente_id, nome_arquivo")
-      .eq("id", data.documento_id)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!doc) throw new Error("Documento não encontrado.");
-
+    const { supabase } = context;
     const { data: comoParticipante } = await supabase
       .from("proposta_envolvidos")
       .select("proposta_id")
-      .eq("cliente_id", doc.cliente_id);
-    const idsPorEnvolvido = (comoParticipante ?? []).map((e: any) => String(e.proposta_id));
-
+      .eq("cliente_id", data.cliente_id);
+    const ids = (comoParticipante ?? []).map((e: any) => String(e.proposta_id));
     let q = supabase
       .from("propostas")
-      .select("id, numero_proposta, status, enviada_em, homefin_id_oportunidade")
+      .select(
+        "id, numero_proposta, status, updated_at, proposta_bancos(nome_banco, status_banco, selecionado)",
+      )
       .is("deleted_at", null)
       .not("homefin_id_oportunidade", "is", null)
-      .not("enviada_em", "is", null)
-      .neq("status", "cancelada");
+      .not("status", "in", "(cancelada,credito_recusado,contrato_emitido,rascunho)")
+      .order("updated_at", { ascending: false });
     q =
-      idsPorEnvolvido.length > 0
-        ? q.or(`cliente_id.eq.${doc.cliente_id},id.in.(${idsPorEnvolvido.join(",")})`)
-        : q.eq("cliente_id", doc.cliente_id);
-    const { data: propostas, error: propErr } = await q;
-    if (propErr) throw new Error(propErr.message);
-
-    const { enviarDocumentosBancoImpl } = await import("./enviar.server");
-    const resultados: {
-      numero_proposta: string;
-      enviado: boolean;
-      motivo: string | null;
-    }[] = [];
-    // Sequencial: a HomeFin serializa o envio de documentos por oportunidade.
-    for (const p of propostas ?? []) {
-      try {
-        const r = await enviarDocumentosBancoImpl({
-          propostaId: p.id,
-          userId,
-          supabase,
-          documentoIds: [doc.id],
-        });
-        const erro = r.erros[0]?.motivo ?? null;
-        resultados.push({
-          numero_proposta: p.numero_proposta,
-          enviado: !erro && (r.enviados > 0 || r.naHomefin.length > 0),
-          motivo: erro ?? r.naHomefin[0]?.motivo ?? null,
-        });
-      } catch (e) {
-        resultados.push({
-          numero_proposta: p.numero_proposta,
-          enviado: false,
-          motivo: e instanceof Error ? e.message : String(e),
-        });
-      }
-    }
-    return { documento: doc.nome_arquivo, resultados };
+      ids.length > 0
+        ? q.or(`cliente_id.eq.${data.cliente_id},id.in.(${ids.join(",")})`)
+        : q.eq("cliente_id", data.cliente_id);
+    const { data: propostas, error } = await q;
+    if (error) throw new Error(error.message);
+    return ((propostas ?? []) as any[]).map((p) => {
+      const bancos = (p.proposta_bancos ?? []) as any[];
+      const aprovado = bancos.find((b) =>
+        ["aprovada", "aprovado", "condicionado"].includes(b.status_banco),
+      );
+      const banco = aprovado ?? bancos.find((b) => b.selecionado) ?? bancos[0] ?? null;
+      return {
+        id: String(p.id),
+        numero_proposta: String(p.numero_proposta),
+        status: String(p.status),
+        nome_banco: (banco?.nome_banco as string | null) ?? null,
+      };
+    });
   });
 
 /** Exclui uma proposta (e registros dependentes via cascata). Registra um
@@ -2687,122 +2657,136 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
       })
       .parse(data),
   )
-  .handler(async ({ context, data }) => {
-    const { supabase } = context;
-    const { data: envolvidos, error } = await supabase
-      .from("proposta_envolvidos")
+  .handler(async ({ context, data }) =>
+    ressincronizarDadosParticipantesImpl({ supabase: context.supabase, data }),
+  );
+
+/**
+ * Corpo de `ressincronizarDadosParticipantes`, chamável de outro código do
+ * servidor. Chamar a função de servidor de dentro de outra quebra no TanStack
+ * Start ("Cannot read properties of undefined (reading 'method')").
+ */
+export async function ressincronizarDadosParticipantesImpl({
+  supabase,
+  data,
+}: {
+  supabase: SupabaseClient<any, any, any>;
+  data: { proposta_id: string; crm_prevalece?: boolean };
+}): Promise<{ alterados: number }> {
+  const { data: envolvidos, error } = await supabase
+    .from("proposta_envolvidos")
+    .select("*")
+    .eq("proposta_id", data.proposta_id);
+
+  if (error || !envolvidos) throw new Error(error?.message ?? "Participantes não encontrados.");
+
+  let alteradosTotal = 0;
+  const logs = [];
+
+  for (const envObj of envolvidos) {
+    const env = envObj as any;
+
+    // O cônjuge não tem cadastro próprio: os dados dele são as colunas
+    // `conjuge_*` do titular, e é pelo titular que chegamos ao cliente.
+    // Sem isto a linha do cônjuge era pulada e ia ao banco sem documento,
+    // sem data de expedição e sem endereço.
+    const ehConjuge = Boolean(env.conjuge_de);
+    const titular = ehConjuge
+      ? (envolvidos as any[]).find((t: any) => t.id === env.conjuge_de)
+      : null;
+    const clienteId = ehConjuge ? (titular?.cliente_id ?? null) : env.cliente_id;
+    if (!clienteId) continue;
+
+    const { data: clienteObj } = await supabase
+      .from("clientes")
       .select("*")
-      .eq("proposta_id", data.proposta_id);
+      .eq("id", clienteId)
+      .maybeSingle();
+    const cliente = clienteObj as any;
 
-    if (error || !envolvidos) throw new Error(error?.message ?? "Participantes não encontrados.");
+    const { data: enderecoObj } = await supabase
+      .from("cliente_enderecos")
+      .select("*")
+      .eq("cliente_id", clienteId)
+      .order("principal", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const endereco = enderecoObj as any;
 
-    let alteradosTotal = 0;
-    const logs = [];
+    const patch: Record<string, any> = {};
+    const camposCompletados: string[] = [];
 
-    for (const envObj of envolvidos) {
-      const env = envObj as any;
+    // `>=`: o gatilho `sync_cliente_derivados` grava o participante na mesma
+    // transação da alteração do cliente, com o mesmo `now()`.
+    const maisNovo = (fonte: any) =>
+      data.crm_prevalece &&
+      new Date(fonte?.updated_at ?? 0).getTime() >= new Date(env.updated_at ?? 0).getTime();
+    const deveCopiar = (atual: unknown, valor: unknown, fonte: any) =>
+      vazioEnvolvido(atual) || (maisNovo(fonte) && String(atual) !== String(valor));
 
-      // O cônjuge não tem cadastro próprio: os dados dele são as colunas
-      // `conjuge_*` do titular, e é pelo titular que chegamos ao cliente.
-      // Sem isto a linha do cônjuge era pulada e ia ao banco sem documento,
-      // sem data de expedição e sem endereço.
-      const ehConjuge = Boolean(env.conjuge_de);
-      const titular = ehConjuge
-        ? (envolvidos as any[]).find((t: any) => t.id === env.conjuge_de)
-        : null;
-      const clienteId = ehConjuge ? (titular?.cliente_id ?? null) : env.cliente_id;
-      if (!clienteId) continue;
+    const mapa = ehConjuge ? CAMPOS_CONJUGE_PARA_ENVOLVIDO : CAMPOS_CLIENTE_PARA_ENVOLVIDO;
+    for (const { de, para, normalizar } of mapa) {
+      if (!vazioEnvolvido(env[para]) && !maisNovo(cliente)) continue;
+      const bruto = cliente?.[de];
+      if (bruto === null || bruto === undefined || bruto === "") continue;
+      const valor = normalizar ? normalizar(bruto) : bruto;
+      if (valor === null || valor === undefined || valor === "") continue;
+      if (!deveCopiar(env[para], valor, cliente)) continue;
+      patch[para] = valor;
+      camposCompletados.push(para);
+    }
 
-      const { data: clienteObj } = await supabase
-        .from("clientes")
-        .select("*")
-        .eq("id", clienteId)
-        .maybeSingle();
-      const cliente = clienteObj as any;
-
-      const { data: enderecoObj } = await supabase
-        .from("cliente_enderecos")
-        .select("*")
-        .eq("cliente_id", clienteId)
-        .order("principal", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const endereco = enderecoObj as any;
-
-      const patch: Record<string, any> = {};
-      const camposCompletados: string[] = [];
-
-      // `>=`: o gatilho `sync_cliente_derivados` grava o participante na mesma
-      // transação da alteração do cliente, com o mesmo `now()`.
-      const maisNovo = (fonte: any) =>
-        data.crm_prevalece &&
-        new Date(fonte?.updated_at ?? 0).getTime() >= new Date(env.updated_at ?? 0).getTime();
-      const deveCopiar = (atual: unknown, valor: unknown, fonte: any) =>
-        vazioEnvolvido(atual) || (maisNovo(fonte) && String(atual) !== String(valor));
-
-      const mapa = ehConjuge ? CAMPOS_CONJUGE_PARA_ENVOLVIDO : CAMPOS_CLIENTE_PARA_ENVOLVIDO;
-      for (const { de, para, normalizar } of mapa) {
-        if (!vazioEnvolvido(env[para]) && !maisNovo(cliente)) continue;
-        const bruto = cliente?.[de];
+    if (endereco) {
+      for (const { de, para, normalizar } of CAMPOS_ENDERECO_PARA_ENVOLVIDO) {
+        if (!vazioEnvolvido(env[para]) && !maisNovo(endereco)) continue;
+        const bruto = endereco[de];
         if (bruto === null || bruto === undefined || bruto === "") continue;
         const valor = normalizar ? normalizar(bruto) : bruto;
         if (valor === null || valor === undefined || valor === "") continue;
-        if (!deveCopiar(env[para], valor, cliente)) continue;
+        if (!deveCopiar(env[para], valor, endereco)) continue;
         patch[para] = valor;
         camposCompletados.push(para);
       }
+    }
 
-      if (endereco) {
-        for (const { de, para, normalizar } of CAMPOS_ENDERECO_PARA_ENVOLVIDO) {
-          if (!vazioEnvolvido(env[para]) && !maisNovo(endereco)) continue;
-          const bruto = endereco[de];
-          if (bruto === null || bruto === undefined || bruto === "") continue;
-          const valor = normalizar ? normalizar(bruto) : bruto;
-          if (valor === null || valor === undefined || valor === "") continue;
-          if (!deveCopiar(env[para], valor, endereco)) continue;
-          patch[para] = valor;
-          camposCompletados.push(para);
-        }
-      }
-
-      // Saneamento dos valores JÁ gravados que estão no formato do CRM
-      // ("casado", "comunhao_parcial") em vez do código do swagger ("CA", "CP").
-      // Sem isto o <Select> do formulário abre vazio e o dado segue divergente
-      // do que a integração espera.
-      for (const [coluna, paraCodigo] of [
-        ["estado_civil", estadoCivilCrmParaCodigo],
-        ["regime_casamento", regimeCasamentoCrmParaCodigo],
-      ] as const) {
-        const atual = patch[coluna] ?? env[coluna];
-        if (!atual) continue;
-        const codigo = paraCodigo(String(atual));
-        if (codigo && codigo !== atual) {
-          patch[coluna] = codigo;
-          if (!camposCompletados.includes(coluna)) camposCompletados.push(coluna);
-        }
-      }
-
-      if (Object.keys(patch).length > 0) {
-        const { error: updErr } = await supabase
-          .from("proposta_envolvidos")
-          .update(patch as any)
-          .eq("id", env.id);
-
-        if (!updErr) {
-          alteradosTotal++;
-          const nome = env.nome || "Participante";
-          logs.push({
-            proposta_id: data.proposta_id,
-            tipo_evento: "sincronizacao",
-            descricao: `Dados de ${nome} atualizados pelo cadastro do CRM: ${camposCompletados.join(", ")}.`,
-          });
-        }
+    // Saneamento dos valores JÁ gravados que estão no formato do CRM
+    // ("casado", "comunhao_parcial") em vez do código do swagger ("CA", "CP").
+    // Sem isto o <Select> do formulário abre vazio e o dado segue divergente
+    // do que a integração espera.
+    for (const [coluna, paraCodigo] of [
+      ["estado_civil", estadoCivilCrmParaCodigo],
+      ["regime_casamento", regimeCasamentoCrmParaCodigo],
+    ] as const) {
+      const atual = patch[coluna] ?? env[coluna];
+      if (!atual) continue;
+      const codigo = paraCodigo(String(atual));
+      if (codigo && codigo !== atual) {
+        patch[coluna] = codigo;
+        if (!camposCompletados.includes(coluna)) camposCompletados.push(coluna);
       }
     }
 
-    if (logs.length > 0) {
-      await supabase.from("proposta_historico").insert(logs);
-    }
+    if (Object.keys(patch).length > 0) {
+      const { error: updErr } = await supabase
+        .from("proposta_envolvidos")
+        .update(patch as any)
+        .eq("id", env.id);
 
-    return { alterados: alteradosTotal };
-  });
+      if (!updErr) {
+        alteradosTotal++;
+        const nome = env.nome || "Participante";
+        logs.push({
+          proposta_id: data.proposta_id,
+          tipo_evento: "sincronizacao",
+          descricao: `Dados de ${nome} atualizados pelo cadastro do CRM: ${camposCompletados.join(", ")}.`,
+        });
+      }
+    }
+  }
+
+  if (logs.length > 0) {
+    await supabase.from("proposta_historico").insert(logs);
+  }
+
+  return { alterados: alteradosTotal };
+}
