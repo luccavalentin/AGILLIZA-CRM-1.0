@@ -24,6 +24,7 @@ import {
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { Paperclip } from "lucide-react";
 import { hojeISO, formatBRL } from "@/lib/financeiro/format";
+import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 
 interface Props {
   tipo: ContaTipo;
@@ -85,7 +86,7 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
         const sessao = await getMinhaSessao();
         const cid = sessao?.profile?.correspondente_id;
         if (!cid) throw new Error("Correspondente não identificado.");
-        const p = `${cid}/${crypto.randomUUID()}-${file.name}`;
+        const p = `${cid}/${crypto.randomUUID()}-${nomeArquivoSeguro(file.name)}`;
         const { error } = await supabase.storage.from("financeiro-comprovantes").upload(p, file);
         if (error) throw error;
         path = p;

@@ -91,6 +91,33 @@ const REGIME_CRM_PARA_CODIGO: Record<string, string> = {
   separacao_obrigatoria: "SO",
 };
 
+/**
+ * Regime em código (CP/CU/PA/SC/SO) para o enum `clientes.regime_casamento`.
+ * `null` para vazio; `undefined` quando o enum não tem equivalente (SO) — quem
+ * grava deve omitir o campo em vez de sobrescrever.
+ */
+export function regimeCasamentoCodigoParaCrm(
+  v: string | null | undefined,
+): string | null | undefined {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  const crm = [
+    "comunhao_parcial",
+    "comunhao_universal",
+    "separacao_total",
+    "participacao_final",
+    "nao_aplicavel",
+  ];
+  if (crm.includes(s.toLowerCase())) return s.toLowerCase();
+  const porCodigo: Record<string, string> = {
+    CP: "comunhao_parcial",
+    CU: "comunhao_universal",
+    PA: "participacao_final",
+    SC: "separacao_total",
+  };
+  return porCodigo[s.toUpperCase()];
+}
+
 /** Retorna o código de estado civil (S/CA/...) a partir do valor do CRM ou do próprio código. */
 export function estadoCivilCrmParaCodigo(v: string | null | undefined): string {
   if (!v) return "";

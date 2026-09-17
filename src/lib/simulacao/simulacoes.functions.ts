@@ -1,4 +1,7 @@
-import { estadoCivilCrmParaCodigo as codigoEstadoCivilDominio } from "@/lib/propostas/dominios";
+import {
+  estadoCivilCrmParaCodigo as codigoEstadoCivilDominio,
+  regimeCasamentoCodigoParaCrm,
+} from "@/lib/propostas/dominios";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -478,7 +481,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
             data_nascimento: params.dataNascimento || null,
             sexo: enumOuNulo(params.sexo),
             estado_civil: mapEstadoCivilEnum(params.estadoCivil),
-            regime_casamento: enumOuNulo(params.regimeCasamento),
+            // O formulário manda o código (CP); o enum do CRM é por extenso.
+            // "CP" derrubava a atualização inteira do cliente.
+            regime_casamento: regimeCasamentoCodigoParaCrm(params.regimeCasamento),
             renda_total_declarada: params.renda ?? null,
             uf_interesse: params.ufInteresse ?? null,
             utiliza_fgts: params.utilizaFgts ?? false,
@@ -574,31 +579,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         ) => {
           if (!titularId || !conjugeId || titularId === conjugeId) return;
 
-          // Vincula o titular ao cônjuge com tipo_vinculo 'conjuge'
-          const { error: err1 } = await supabaseAdmin.from("cliente_parceiros").upsert(
-            {
-              cliente_id: titularId,
-              parceiro_id: conjugeId,
-              tipo_vinculo: "conjuge",
-              correspondente_id,
-            },
-            { onConflict: "cliente_id,parceiro_id,tipo_vinculo" },
-          );
-
-          // Vincula o cônjuge ao titular com tipo_vinculo 'conjuge'
-          const { error: err2 } = await supabaseAdmin.from("cliente_parceiros").upsert(
-            {
-              cliente_id: conjugeId,
-              parceiro_id: titularId,
-              tipo_vinculo: "conjuge",
-              correspondente_id,
-            },
-            { onConflict: "cliente_id,parceiro_id,tipo_vinculo" },
-          );
-
-          if (err1 || err2) {
-            console.error("Falha ao vincular cônjuges:", err1?.message || err2?.message);
-          }
+          // Cônjuge não é parceiro: `cliente_parceiros` só aceita imobiliária,
+          // corretor e comercial (o vínculo "conjuge" era recusado sempre).
+          // A relação fica no cadastro do titular (`clientes.conjuge_*`).
 
           // Além do vínculo mútuo, garante que ambos compartilhem os mesmos parceiros (imobiliárias, etc)
           await replicarVinculos(titularId, [conjugeId]);

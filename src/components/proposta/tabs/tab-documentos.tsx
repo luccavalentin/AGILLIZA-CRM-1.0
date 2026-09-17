@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 
 const TIPOS_DOC = [
   "RG",
@@ -93,7 +94,7 @@ export function TabDocumentos({
     }
     setUploading(true);
     try {
-      const path = `${propostaId}/${crypto.randomUUID()}-${file.name}`;
+      const path = `${propostaId}/${crypto.randomUUID()}-${nomeArquivoSeguro(file.name)}`;
       const { error } = await supabase.storage.from("documentos-proposta").upload(path, file);
       if (error) throw new Error(error.message);
       await registrarFn({

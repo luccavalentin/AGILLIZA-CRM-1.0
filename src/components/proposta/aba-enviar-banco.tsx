@@ -51,6 +51,7 @@ import {
 } from "@/lib/crm/clientes.functions";
 import { enviarDocumentosBanco } from "@/lib/propostas/propostas.functions";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
+import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 
 type Categoria = "comprador" | "conjuge" | "vendedor" | "vendedor_conjuge" | "imovel" | "outros";
 
@@ -210,7 +211,7 @@ export function AbaEnviarBanco({
     let falhas = 0;
     for (const file of files) {
       try {
-        const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
+        const path = `${clienteId}/${crypto.randomUUID()}-${nomeArquivoSeguro(file.name)}`;
         const { error } = await supabase.storage.from("cliente-documentos").upload(path, file);
         if (error) throw error;
         await anexar({
