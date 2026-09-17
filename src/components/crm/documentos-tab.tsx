@@ -39,6 +39,7 @@ import {
   ExcluirDocumentoDialog,
 } from "./documentos-tab/editar-documento-dialog";
 import { categoriasDaPasta, docNaPasta, type Categoria } from "./documentos-tab/types";
+import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 
 export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const qc = useQueryClient();
@@ -128,7 +129,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   }
 
   async function enviarUm(file: File, pastaDestinoId: string, cat: Categoria, tipoDoc: string) {
-    const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
+    const path = `${clienteId}/${crypto.randomUUID()}-${nomeArquivoSeguro(file.name)}`;
     const { error: upErr } = await supabase.storage.from("cliente-documentos").upload(path, file);
     if (upErr) throw upErr;
     await anexar({

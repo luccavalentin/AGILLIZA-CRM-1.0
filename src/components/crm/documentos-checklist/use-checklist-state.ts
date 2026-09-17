@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { anexarDocumento, salvarChecklist } from "@/lib/crm/clientes.functions";
 import type { Categoria, GrupoChecklist } from "./types";
+import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 
 type Dados = { cliente?: { documentos_checklist?: unknown; utiliza_fgts?: boolean | null } | null };
 
@@ -248,7 +249,7 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
     if (file.size > 10 * 1024 * 1024) return toast.error("Arquivo acima de 10 MB.");
     setSubindo(key);
     try {
-      const path = `${clienteId}/${crypto.randomUUID()}-${file.name}`;
+      const path = `${clienteId}/${crypto.randomUUID()}-${nomeArquivoSeguro(file.name)}`;
       const { error: upErr } = await supabase.storage.from("cliente-documentos").upload(path, file);
       if (upErr) throw upErr;
       await anexar({

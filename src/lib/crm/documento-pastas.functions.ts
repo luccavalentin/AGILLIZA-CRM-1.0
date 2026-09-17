@@ -101,18 +101,19 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
     if (faltantes.length > 0) {
       const corr = await correspondenteDoUsuario(supabase, userId);
       if (corr) {
-        // Upsert com ignoreDuplicates + unique index parcial em (cliente_id, slug)
-        // evita corrida entre requisições concorrentes (StrictMode, duas abas).
-        await supabase.from("cliente_documento_pastas").upsert(
-          faltantes.map((p) => ({
+        // Uma a uma: o índice único em (cliente_id, slug) é parcial e o
+        // Postgres não o aceita em ON CONFLICT (o upsert voltava 400 e
+        // nenhuma pasta era criada). Duplicata de corrida (duas abas) só
+        // falha naquela linha, com 23505, e é ignorada.
+        for (const p of faltantes) {
+          await supabase.from("cliente_documento_pastas").insert({
             cliente_id: data.cliente_id,
             correspondente_id: corr,
             nome: p.nome,
             slug: p.slug,
             ordem: p.ordem,
-          })),
-          { onConflict: "cliente_id,slug", ignoreDuplicates: true },
-        );
+          });
+        }
         pastas = await recarregar();
       }
     }

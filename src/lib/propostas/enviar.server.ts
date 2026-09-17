@@ -1796,7 +1796,13 @@ export async function sincronizarPropostaImpl({
    * 239 envios desde 13/07 estão lá com o `idSimulacao`, e a faxina de logs
    * (`purgar-logs-homefin`) preserva justamente essas linhas.
    */
-  const { data: enviosRegistrados } = await supabase
+  // Pelo cliente administrativo: a proposta já foi lida com a sessão do usuário
+  // (acesso validado). Com RLS, a checagem de acesso rodava para cada uma das
+  // até 5 mil linhas de log da proposta e a consulta estourava os 8 s do
+  // `statement_timeout` — voltava vazia, como se a proposta nunca tivesse ido
+  // ao banco (5.235 timeouts em 16/09/2026).
+  const { supabaseAdmin: logsAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: enviosRegistrados } = await logsAdmin
     .from("proposta_logs_homefin")
     .select("request_masked")
     .eq("proposta_id", propostaId)
@@ -1972,7 +1978,9 @@ export async function sincronizarPropostaImpl({
     // ou simulação são referências técnicas e não devem aparecer como "Nº banco".
     // Em falha de integração, NUNCA gravar protocolo.
     // Buscamos se existe log de sucesso 2xx para esta proposta
-    const { count: countEnvio } = await supabase
+    // Cliente administrativo pelo mesmo motivo de `enviosRegistrados`.
+    const { supabaseAdmin: logsAdminBanco } = await import("@/integrations/supabase/client.server");
+    const { count: countEnvio } = await logsAdminBanco
       .from("proposta_logs_homefin")
       .select("id", { count: "exact", head: true })
       .eq("proposta_id", propostaId)
@@ -2300,7 +2308,10 @@ export async function sincronizarPropostaImpl({
       ator_id: userId,
     });
     if (prop.usuario_responsavel_id) {
-      await supabase.from("notificacoes").insert({
+      // A tabela só tem política de leitura/alteração do próprio usuário: quem
+      // sincroniza a proposta de outra pessoa não consegue avisá-la (403).
+      const { supabaseAdmin: notifAdmin } = await import("@/integrations/supabase/client.server");
+      await notifAdmin.from("notificacoes").insert({
         user_id: prop.usuario_responsavel_id,
         correspondente_id: prop.correspondente_id,
         tipo: "proposta",
