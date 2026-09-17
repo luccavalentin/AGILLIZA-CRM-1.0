@@ -50,6 +50,8 @@ export function montarDadosImovelOportunidade(
     uf?: unknown;
     iq_nome?: unknown;
     iq_comentario?: unknown;
+    contato_avaliacao_nome?: unknown;
+    contato_avaliacao_telefone?: unknown;
   },
   checklist: Record<string, unknown> | null | undefined,
 ): DadosImovelOportunidade {
@@ -69,8 +71,10 @@ export function montarDadosImovelOportunidade(
   const uf = texto(proposta.uf).toUpperCase();
   if (/^[A-Z]{2}$/.test(uf)) por("uf", uf);
 
-  por("contatoAvaliacao", texto(c.i_vistoria_nome));
-  const tel = digitos(c.i_vistoria_tel);
+  // A conferência da proposta grava nos dois lugares; o checklist do CRM é a
+  // reserva para propostas que ainda não passaram por ela.
+  por("contatoAvaliacao", texto(proposta.contato_avaliacao_nome) || texto(c.i_vistoria_nome));
+  const tel = digitos(proposta.contato_avaliacao_telefone) || digitos(c.i_vistoria_tel);
   if (tel.length >= 10) por("telefoneContatoAvaliacao", tel);
 
   // IQ: o nome vem da aba IQ da proposta. "IQ? Não" no checklist não envia nada.

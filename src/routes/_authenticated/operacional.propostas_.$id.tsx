@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { propostaQueryOptions } from "@/lib/propostas/queries";
+import { sincronizarPropostaComCrm } from "@/lib/propostas/continuar.functions";
 import {
   sincronizarProposta,
   atualizarEnvolvido,
@@ -87,6 +88,29 @@ function PropostaRoute() {
   });
 
   const sincronizarAutoFn = useServerFn(sincronizarProposta);
+  const sincronizarComCrmFn = useServerFn(sincronizarPropostaComCrm);
+
+  // O que mudou no cadastro do cliente no CRM depois da proposta entra nela ao
+  // abrir (participantes, documento, endereço, vendedores, imóvel).
+  React.useEffect(() => {
+    let ativo = true;
+    sincronizarComCrmFn({ data: { proposta_id: id } })
+      .then((r) => {
+        const mudou =
+          r.participantes +
+            r.vendedoresIncluidos +
+            r.vendedoresAtualizados +
+            r.vendedoresRemovidos >
+            0 || r.imovel.length > 0;
+        if (ativo && mudou) qc.invalidateQueries({ queryKey: ["proposta", id] });
+      })
+      .catch(() => {
+        /* a proposta abre com o que já tem */
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [id, sincronizarComCrmFn, qc]);
 
   // 2. Estados de controle de dados
   const [participanteModal, setParticipanteModal] = React.useState<any>(null);

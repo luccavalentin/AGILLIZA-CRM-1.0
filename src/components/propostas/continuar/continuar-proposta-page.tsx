@@ -22,7 +22,7 @@ import { obterProposta } from "@/lib/propostas/propostas.functions";
 import {
   avancarEtapaContinuar,
   salvarConferenciaProposta,
-  sincronizarVendedoresProposta,
+  sincronizarPropostaComCrm,
   type ResultadoConferencia,
 } from "@/lib/propostas/continuar.functions";
 import { bancoAprovado, podeContinuarProposta } from "@/lib/propostas/state-machine";
@@ -70,15 +70,21 @@ export function ContinuarPropostaPage({
   const obter = useServerFn(obterProposta);
   const salvar = useServerFn(salvarConferenciaProposta);
   const avancar = useServerFn(avancarEtapaContinuar);
-  const sincronizarVendedores = useServerFn(sincronizarVendedoresProposta);
+  const sincronizarComCrm = useServerFn(sincronizarPropostaComCrm);
 
-  // Vendedor cadastrado ou alterado no CRM depois da criação da proposta entra
-  // aqui antes da conferência.
+  // O que mudou no CRM depois da proposta (participantes, vendedores, imóvel)
+  // entra aqui antes da conferência.
   useEffect(() => {
     let ativo = true;
-    sincronizarVendedores({ data: { proposta_id: propostaId } })
+    sincronizarComCrm({ data: { proposta_id: propostaId } })
       .then((r) => {
-        if (ativo && (r.incluidos > 0 || r.atualizados > 0)) {
+        const mudou =
+          r.participantes +
+            r.vendedoresIncluidos +
+            r.vendedoresAtualizados +
+            r.vendedoresRemovidos >
+            0 || r.imovel.length > 0;
+        if (ativo && mudou) {
           qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
         }
       })
@@ -133,12 +139,14 @@ export function ContinuarPropostaPage({
     qc.invalidateQueries({ queryKey: ["propostas"] });
   }
 
-  async function gravar(envio: EnvioConferencia) {
+  async function gravar(envio: EnvioConferencia, reenviar: ResultadoConferencia["blocos"] = []) {
     setSalvando(true);
     setFalhaHomefin(null);
     setUltimoEnvio(envio);
     try {
-      const r = await salvar({ data: { proposta_id: propostaId, ...envio, avancar: true } });
+      const r = await salvar({
+        data: { proposta_id: propostaId, ...envio, avancar: true, reenviar },
+      });
       recarregar();
       if (r.errosHomefin.length > 0) {
         // O CRM ficou gravado; a HomeFin não. Não avança até resolver.
@@ -340,7 +348,13 @@ export function ContinuarPropostaPage({
                     size="sm"
                     variant="outline"
                     disabled={salvando || !ultimoEnvio}
-                    onClick={() => ultimoEnvio && gravar(ultimoEnvio)}
+                    onClick={() =>
+                      ultimoEnvio &&
+                      gravar(
+                        ultimoEnvio,
+                        falhaHomefin.map((f) => f.bloco),
+                      )
+                    }
                   >
                     {salvando && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                     Tentar novamente

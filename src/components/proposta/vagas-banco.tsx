@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Landmark, Loader2, RefreshCw, Upload } from "lucide-react";
+import { Landmark, Loader2, RefreshCw, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -14,7 +14,10 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { anexarDocumento } from "@/lib/crm/clientes.functions";
-import { checklistBancoProposta } from "@/lib/propostas/propostas.functions";
+import {
+  checklistBancoProposta,
+  removerArquivoVagaBanco,
+} from "@/lib/propostas/propostas.functions";
 import { ROTULO_TIPO_VAGA, vagaAceitaCategoria } from "@/lib/propostas/enviar/documentos-vagas";
 import { nomeDoTipoDocumento } from "@/lib/documentos/tipos-banco";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
@@ -59,6 +62,7 @@ export function VagasBanco({
 }) {
   const buscar = useServerFn(checklistBancoProposta);
   const anexar = useServerFn(anexarDocumento);
+  const removerArquivo = useServerFn(removerArquivoVagaBanco);
   const inputRef = useRef<HTMLInputElement>(null);
   const [vagaDoUpload, setVagaDoUpload] = useState<any | null>(null);
   const [trabalhando, setTrabalhando] = useState<string | null>(null);
@@ -136,6 +140,33 @@ export function VagasBanco({
       await onEnviar([id], { [id]: vaga.idDocumento });
     } catch (err) {
       toast.error(mensagemDeErro(err, "Falha ao enviar o arquivo."));
+    } finally {
+      setTrabalhando(null);
+      refetch();
+    }
+  }
+
+  async function remover(vaga: any, arquivo: any) {
+    if (
+      !window.confirm(
+        `Tirar "${semPrefixo(arquivo.nomeArquivo)}" desta vaga no banco? O documento continua salvo no CRM.`,
+      )
+    ) {
+      return;
+    }
+    setTrabalhando(vaga.idDocumento);
+    try {
+      await removerArquivo({
+        data: {
+          proposta_id: propostaId,
+          id_arquivo: arquivo.idArquivo,
+          documento_crm_id: arquivo.documentoCrmId,
+        },
+      });
+      toast.success("Arquivo retirado da vaga do banco.");
+      onAnexado();
+    } catch (err) {
+      toast.error(mensagemDeErro(err, "Não foi possível retirar o arquivo."));
     } finally {
       setTrabalhando(null);
       refetch();
@@ -234,9 +265,29 @@ export function VagasBanco({
                       {v.situacaoIntegracao === "error" && <Selo tom="erro">banco recusou</Selo>}
                     </div>
                     {v.arquivos.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Arquivos: {v.arquivos.map((a: any) => semPrefixo(a.nomeArquivo)).join(", ")}
-                      </p>
+                      <ul className="space-y-1">
+                        {v.arquivos.map((a: any) => (
+                          <li
+                            key={a.idArquivo}
+                            className="flex items-center gap-2 text-xs text-muted-foreground"
+                          >
+                            <span className="min-w-0 flex-1 truncate">
+                              {semPrefixo(a.nomeArquivo)}
+                            </span>
+                            {v.situacaoIntegracao !== "success" && (
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                                disabled={ocupado || busy}
+                                onClick={() => remover(v, a)}
+                                title="Tirar este arquivo da vaga no banco"
+                              >
+                                <X className="h-3 w-3" /> Remover da vaga
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
                     )}
                     {(v.mensagemIntegracao || v.comentarioAnalise) && (
                       <p className="text-xs text-amber-700 dark:text-amber-400">

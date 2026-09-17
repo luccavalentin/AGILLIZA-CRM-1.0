@@ -1312,12 +1312,11 @@ export const adicionarEnvolvido = createServerFn({ method: "POST" })
     const { data: row, error } = await supabase
       .from("proposta_envolvidos")
       .insert({ proposta_id: data.proposta_id, ...data.dados } as any)
-      .select("id, cliente_id")
+      .select("*")
       .single();
     if (error) throw new Error(error.message);
-    if (row.cliente_id) {
-      await sincronizarEnvolvidoParaCliente(supabase, row.cliente_id as string, data.dados);
-    }
+    const { espelharEnvolvidoNoCrm } = await import("./espelho-crm.server");
+    await espelharEnvolvidoNoCrm({ supabase, envolvido: row, antes: null });
     return { id: row.id };
   });
 
@@ -1331,19 +1330,22 @@ export const atualizarEnvolvido = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: env } = await supabase
       .from("proposta_envolvidos")
-      .select("proposta_id, cliente_id")
+      .select("*")
       .eq("id", data.id)
       .maybeSingle();
     if (!env) throw new Error("Registro não encontrado.");
     await assertPropostaEditavel(supabase, env.proposta_id);
-    const { error } = await supabase
+    const { data: depois, error } = await supabase
       .from("proposta_envolvidos")
       .update({ ...data.dados } as any)
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("*")
+      .single();
     if (error) throw new Error(error.message);
-    if (env.cliente_id) {
-      await sincronizarEnvolvidoParaCliente(supabase, env.cliente_id as string, data.dados);
-    }
+    // Titular no cadastro dele, cônjuge nas colunas conjuge_* do titular,
+    // vendedor em cliente_vendedores.
+    const { espelharEnvolvidoNoCrm } = await import("./espelho-crm.server");
+    await espelharEnvolvidoNoCrm({ supabase, envolvido: depois, antes: env });
     return { ok: true };
   });
 
@@ -1773,6 +1775,55 @@ export const enviarDocumentosBanco = createServerFn({ method: "POST" })
       documentoIds: data.documento_ids,
       vagas: data.vagas,
     });
+  });
+
+/**
+ * Tira um arquivo de uma vaga do checklist na HomeFin
+ * (`DELETE /documento/arquivo/{id}`), sem apagar o documento do CRM. Serve
+ * para arquivo que foi para a vaga errada.
+ */
+export const removerArquivoVagaBanco = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        id_arquivo: z.string().min(1),
+        documento_crm_id: z.string().uuid().nullable().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("id, correspondente_id, homefin_id_oportunidade")
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (!prop?.homefin_id_oportunidade) throw new Error("Proposta sem oportunidade no banco.");
+    const { chamarIntegracao, sanitizarMensagemErro } =
+      await import("@/lib/simulacao/homefin.server");
+    try {
+      await chamarIntegracao(`/documento/arquivo/${data.id_arquivo}`, "DELETE", undefined, {
+        proposta_id: prop.id,
+        correspondente_id: prop.correspondente_id,
+      });
+    } catch (e) {
+      throw new Error(sanitizarMensagemErro(e instanceof Error ? e.message : String(e)));
+    }
+    if (data.documento_crm_id) {
+      await supabase
+        .from("cliente_documentos")
+        .update({ situacao_integracao: null, integrado_em: null, erro_integracao: null } as any)
+        .eq("id", data.documento_crm_id);
+    }
+    await supabase.from("proposta_historico").insert({
+      proposta_id: prop.id,
+      tipo_evento: "sincronizacao",
+      descricao: "Arquivo removido de uma vaga do checklist de documentos no banco.",
+      ator_id: userId,
+    } as any);
+    return { ok: true };
   });
 
 /** Vagas do checklist de documentos da oportunidade na HomeFin (só leitura). */
@@ -2593,7 +2644,20 @@ function vazioEnvolvido(v: unknown): boolean {
 
 export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        /**
+         * `true`: o valor do CRM também substitui o do participante quando o
+         * cadastro (ou o endereço) foi alterado depois dele. Sem isto só os
+         * campos vazios eram completados, e o que se corrigia no CRM depois de
+         * criada a proposta nunca chegava a ela.
+         */
+        crm_prevalece: z.boolean().default(false),
+      })
+      .parse(data),
+  )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const { data: envolvidos, error } = await supabase
@@ -2639,24 +2703,34 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
       const patch: Record<string, any> = {};
       const camposCompletados: string[] = [];
 
+      // `>=`: o gatilho `sync_cliente_derivados` grava o participante na mesma
+      // transação da alteração do cliente, com o mesmo `now()`.
+      const maisNovo = (fonte: any) =>
+        data.crm_prevalece &&
+        new Date(fonte?.updated_at ?? 0).getTime() >= new Date(env.updated_at ?? 0).getTime();
+      const deveCopiar = (atual: unknown, valor: unknown, fonte: any) =>
+        vazioEnvolvido(atual) || (maisNovo(fonte) && String(atual) !== String(valor));
+
       const mapa = ehConjuge ? CAMPOS_CONJUGE_PARA_ENVOLVIDO : CAMPOS_CLIENTE_PARA_ENVOLVIDO;
       for (const { de, para, normalizar } of mapa) {
-        if (!vazioEnvolvido(env[para])) continue;
+        if (!vazioEnvolvido(env[para]) && !maisNovo(cliente)) continue;
         const bruto = cliente?.[de];
         if (bruto === null || bruto === undefined || bruto === "") continue;
         const valor = normalizar ? normalizar(bruto) : bruto;
         if (valor === null || valor === undefined || valor === "") continue;
+        if (!deveCopiar(env[para], valor, cliente)) continue;
         patch[para] = valor;
         camposCompletados.push(para);
       }
 
       if (endereco) {
         for (const { de, para, normalizar } of CAMPOS_ENDERECO_PARA_ENVOLVIDO) {
-          if (!vazioEnvolvido(env[para])) continue;
+          if (!vazioEnvolvido(env[para]) && !maisNovo(endereco)) continue;
           const bruto = endereco[de];
           if (bruto === null || bruto === undefined || bruto === "") continue;
           const valor = normalizar ? normalizar(bruto) : bruto;
           if (valor === null || valor === undefined || valor === "") continue;
+          if (!deveCopiar(env[para], valor, endereco)) continue;
           patch[para] = valor;
           camposCompletados.push(para);
         }
@@ -2691,7 +2765,7 @@ export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" 
           logs.push({
             proposta_id: data.proposta_id,
             tipo_evento: "sincronizacao",
-            descricao: `Dados de ${nome} completados via cadastro: ${camposCompletados.join(", ")}.`,
+            descricao: `Dados de ${nome} atualizados pelo cadastro do CRM: ${camposCompletados.join(", ")}.`,
           });
         }
       }

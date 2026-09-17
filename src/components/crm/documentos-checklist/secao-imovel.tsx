@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TIPOS_DOCUMENTO_POR_CATEGORIA } from "@/lib/crm/documento-tipos";
+import { mascararTelefone } from "@/lib/crm/documento";
 import { AdicionarItem } from "./AdicionarItem";
 import { DocItem } from "./doc-item";
 import type { Categoria } from "./types";
@@ -63,8 +64,16 @@ export function SecaoImovel({
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Contato da vistoria — Telefone</Label>
             <Input
-              value={check["i_vistoria_tel"] ?? ""}
-              onChange={(e) => setCheck((p) => ({ ...p, i_vistoria_tel: e.target.value }))}
+              inputMode="tel"
+              placeholder="(00) 00000-0000"
+              value={mascararTelefone(String(check["i_vistoria_tel"] ?? ""))}
+              onChange={(e) =>
+                setCheck((p) => ({
+                  ...p,
+                  // Guarda só os dígitos: é o formato da HomeFin (telefoneContatoAvaliacao).
+                  i_vistoria_tel: e.target.value.replace(/\D/g, "").slice(0, 11),
+                }))
+              }
               onBlur={() => persistir(check)}
             />
           </div>

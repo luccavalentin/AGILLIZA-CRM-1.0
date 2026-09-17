@@ -608,6 +608,10 @@ export const atualizarCliente = createServerFn({ method: "POST" })
       entidadeId: id,
       payloadNovo: { nome: campos.nome },
     });
+    {
+      const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
+      await propagarClienteParaPropostas({ supabase, clienteId: id });
+    }
     return { ok: true };
   });
 
@@ -895,6 +899,10 @@ export const salvarEndereco = createServerFn({ method: "POST" })
         .insert({ cliente_id: data.cliente_id, principal: true, ...payload });
       if (error) throw error;
     }
+    {
+      const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
+      await propagarClienteParaPropostas({ supabase, clienteId: data.cliente_id });
+    }
     return { ok: true };
   });
 
@@ -1000,6 +1008,10 @@ export const salvarVendedor = createServerFn({ method: "POST" })
         .update(payload as any)
         .eq("id", id);
       if (error) throw error;
+      {
+        const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
+        await propagarClienteParaPropostas({ supabase, clienteId: cliente_id });
+      }
       return { ok: true, id };
     }
     const { data: inserted, error } = await supabase
@@ -1008,6 +1020,10 @@ export const salvarVendedor = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw error;
+    {
+      const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
+      await propagarClienteParaPropostas({ supabase, clienteId: cliente_id });
+    }
     return { ok: true, id: inserted.id };
   });
 
@@ -1015,8 +1031,45 @@ export const removerVendedor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase.from("cliente_vendedores").delete().eq("id", data.id);
+    const { supabase } = context;
+    const { data: vendedor } = await supabase
+      .from("cliente_vendedores")
+      .select("cliente_id, documento")
+      .eq("id", data.id)
+      .maybeSingle();
+    const { error } = await supabase.from("cliente_vendedores").delete().eq("id", data.id);
     if (error) throw error;
+    // O vendedor também sai das propostas abertas do cliente. Quem já foi à
+    // HomeFin (participante criado lá) fica: a exclusão no banco é outra
+    // operação e não é feita sem o operador.
+    const doc = String(vendedor?.documento ?? "").replace(/\D/g, "");
+    if (vendedor?.cliente_id && doc) {
+      const { data: propostas } = await supabase
+        .from("propostas")
+        .select("id")
+        .eq("cliente_id", vendedor.cliente_id)
+        .not("status", "in", "(contrato_emitido,cancelada,credito_recusado)");
+      const ids = ((propostas ?? []) as any[]).map((p) => p.id);
+      if (ids.length > 0) {
+        const { data: envs } = await supabase
+          .from("proposta_envolvidos")
+          .select("id, cpf_cnpj, homefin_id_participante")
+          .in("proposta_id", ids)
+          .eq("tipo_qualificacao", "VD");
+        const remover = ((envs ?? []) as any[])
+          .filter(
+            (e) =>
+              !e.homefin_id_participante && String(e.cpf_cnpj ?? "").replace(/\D/g, "") === doc,
+          )
+          .map((e) => e.id);
+        if (remover.length > 0)
+          await supabase.from("proposta_envolvidos").delete().in("id", remover);
+      }
+    }
+    if (vendedor?.cliente_id) {
+      const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
+      await propagarClienteParaPropostas({ supabase, clienteId: vendedor.cliente_id });
+    }
     return { ok: true };
   });
 
@@ -2062,6 +2115,11 @@ export const salvarChecklist = createServerFn({ method: "POST" })
     if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
       throw new Error("Você não tem permissão para editar o checklist.");
     }
+    const { data: anterior } = await supabase
+      .from("clientes")
+      .select("documentos_checklist")
+      .eq("id", data.cliente_id)
+      .maybeSingle();
     const patch: Record<string, unknown> = { documentos_checklist: data.checklist };
     if (typeof data.utiliza_fgts === "boolean") patch.utiliza_fgts = data.utiliza_fgts;
     const { error } = await supabase
@@ -2069,6 +2127,15 @@ export const salvarChecklist = createServerFn({ method: "POST" })
       .update(patch as never)
       .eq("id", data.cliente_id);
     if (error) throw error;
+    // Contato da vistoria e IQ vão à HomeFin; o resto do checklist é só do CRM.
+    const antes = ((anterior as any)?.documentos_checklist ?? {}) as Record<string, unknown>;
+    const mudouParaBanco = ["i_vistoria_nome", "i_vistoria_tel", "i_iq"].some(
+      (k) => String(antes[k] ?? "") !== String(data.checklist[k] ?? ""),
+    );
+    if (mudouParaBanco) {
+      const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
+      await propagarClienteParaPropostas({ supabase, clienteId: data.cliente_id });
+    }
     return { ok: true };
   });
 
@@ -2107,6 +2174,10 @@ export const salvarImovelIq = createServerFn({ method: "POST" })
       .update(patch as never)
       .eq("id", cliente_id);
     if (error) throw error;
+    {
+      const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
+      await propagarClienteParaPropostas({ supabase, clienteId: cliente_id });
+    }
     return { ok: true };
   });
 

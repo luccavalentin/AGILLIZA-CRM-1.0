@@ -248,7 +248,11 @@ export function AbaEnviarBanco({
   const naoEnviados = aptos.filter((d) => d.situacao_integracao !== "enviado");
 
   function recarregar() {
-    qc.removeQueries({ queryKey: ["cliente-docs", clienteId] });
+    // `removeQueries` tirava do cache sem buscar de novo: o documento anexado
+    // ou excluído só aparecia depois de sair e voltar da tela.
+    qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
+    qc.invalidateQueries({ queryKey: ["cliente-checklist", clienteId] });
+    qc.invalidateQueries({ queryKey: ["checklist-banco", propostaId] });
   }
 
   async function visualizar(storage_path: string, nome: string) {
@@ -365,16 +369,20 @@ export function AbaEnviarBanco({
   }
 
   // ---------------------------------------------------------------- envio
-  function exigirCadastroCompleto(): boolean {
-    if (!bloqueado) return false;
-    const pendente = proponentesPendentes(envolvidos)[0]?.env;
-    onCompletar?.(pendente || envolvidos[0]);
-    toast.error("Complete os dados dos participantes antes de enviar.");
-    return true;
+  /**
+   * O upload de documento na HomeFin não depende do cadastro dos
+   * participantes: só avisa. Antes o envio era bloqueado e, pelas vagas do
+   * banco, o arquivo ficava salvo no CRM sem ir a lugar nenhum.
+   */
+  function avisarCadastroIncompleto() {
+    if (!bloqueado) return;
+    toast.warning("Há participantes com dados obrigatórios faltando. Complete-os na conferência.", {
+      duration: 8000,
+    });
   }
 
   async function enviarDocumentos(ids: string[], vagas?: Record<string, string>) {
-    if (exigirCadastroCompleto()) return;
+    avisarCadastroIncompleto();
     if (ids.length === 0) {
       toast.info("Nenhum documento selecionado.");
       return;
@@ -420,7 +428,6 @@ export function AbaEnviarBanco({
 
   /** Lote completo: dados do imóvel/vistoria + todos os documentos ainda não enviados. */
   async function enviarPendentes() {
-    if (exigirCadastroCompleto()) return;
     await enviarDadosImovel(true);
     if (naoEnviados.length > 0) await enviarDocumentos(naoEnviados.map((d) => d.id));
     else toast.info("Todos os documentos já foram enviados ao banco.");
@@ -559,11 +566,7 @@ export function AbaEnviarBanco({
               ) : (
                 <Landmark className="h-4 w-4" />
               )}
-              {ocupado
-                ? "Enviando…"
-                : bloqueado
-                  ? "Completar cadastro e enviar"
-                  : "Enviar pendentes"}
+              {ocupado ? "Enviando…" : "Enviar pendentes"}
             </Button>
           </div>
         </CardContent>
