@@ -3,6 +3,7 @@ import {
   Check,
   Download,
   FileText,
+  Landmark,
   MessageSquareWarning,
   Pencil,
   Trash2,
@@ -31,6 +32,7 @@ export function LinhaDocumento({
   onMarcar,
   onSolicitarCorrecao,
   onExcluir,
+  onEnviarBanco,
 }: {
   doc: any;
   onBaixar: (storage_path: string, nome: string) => void;
@@ -38,6 +40,8 @@ export function LinhaDocumento({
   onMarcar: (id: string, status: "aprovado" | "reprovado") => void;
   onSolicitarCorrecao: (d: any) => void;
   onExcluir: (d: any) => void;
+  /** Abre o envio ao banco com este documento marcado (escolhe a proposta lá). */
+  onEnviarBanco?: (d: any) => void;
 }) {
   const vencido = doc.expira_em ? estaVencido(doc.expira_em) : false;
   return (
@@ -80,6 +84,17 @@ export function LinhaDocumento({
 
       <div className="flex shrink-0 items-center justify-end gap-0.5 border-t border-border/60 pt-2 sm:border-0 sm:pt-0">
         <ToneBadge tone={statusTone[doc.status] ?? "muted"}>{doc.status}</ToneBadge>
+        {onEnviarBanco && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => onEnviarBanco(doc)}
+            title="Enviar ao banco (vincular a uma proposta)"
+            aria-label="Enviar documento ao banco"
+          >
+            <Landmark className="size-4 text-primary" />
+          </Button>
+        )}
         <Button
           size="icon"
           variant="ghost"

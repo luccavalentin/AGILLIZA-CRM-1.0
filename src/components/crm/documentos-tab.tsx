@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DocumentosChecklist } from "@/components/crm/documentos-checklist";
+import { EnviarBancoDialog } from "@/components/crm/documentos-checklist/enviar-banco-dialog";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -25,6 +26,7 @@ import {
 } from "@/lib/crm/documento-pastas.functions";
 import { tiposParaCategorias } from "@/lib/crm/documento-tipos";
 import { AbaBar } from "./documentos-tab/aba-bar";
+import { SecaoEnvioBanco } from "./documentos-tab/secao-envio-banco";
 import { CardPasta } from "./documentos-tab/card-pasta";
 import { Trilha } from "./documentos-tab/trilha";
 import { UploadBar } from "./documentos-tab/upload-bar";
@@ -76,6 +78,8 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const [delPasta, setDelPasta] = useState<DocumentoPasta | null>(null);
   const [excluindoPasta, setExcluindoPasta] = useState(false);
   const [visualizando, setVisualizando] = useState<{ url: string; nome: string } | null>(null);
+  // Envio ao banco a partir das pastas: null = fechado; lista = documentos já marcados.
+  const [envioBanco, setEnvioBanco] = useState<string[] | null>(null);
 
   const { data: docs, isLoading } = useQuery({
     queryKey: ["cliente-docs", clienteId],
@@ -401,6 +405,15 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     </>
   );
 
+  const envioBancoDialog = (
+    <EnviarBancoDialog
+      open={envioBanco !== null}
+      onOpenChange={(o) => !o && setEnvioBanco(null)}
+      clienteId={clienteId}
+      documentos={(docs ?? []) as any[]}
+      preSelecionados={envioBanco ?? undefined}
+    />
+  );
   function abrirRenomear(p: DocumentoPasta) {
     setRenomearAlvo(p);
     setRenomearNome(p.nome);
@@ -417,6 +430,13 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
             Nova pasta
           </Button>
         </div>
+        <SecaoEnvioBanco
+          titulo="Enviar documentos ao banco"
+          descricao="Anexar salva só no CRM. Para mandar ao banco, clique ao lado, escolha a proposta e marque os documentos — cada um vai no nome do dono (comprador, cônjuge, vendedor, imóvel)."
+          rotulo="Enviar ao banco / vincular proposta"
+          desabilitado={(docs ?? []).length === 0}
+          onEnviar={() => setEnvioBanco([])}
+        />
         <div className="grid gap-3 sm:grid-cols-2">
           {subpastas.map((p) => (
             <CardPasta
@@ -429,6 +449,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           ))}
         </div>
         {pastaDialogs}
+        {envioBancoDialog}
       </div>
     );
   }
@@ -445,6 +466,14 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           Nova subpasta
         </Button>
       </div>
+
+      <SecaoEnvioBanco
+        titulo={`Enviar documentos de "${pasta.nome}" ao banco`}
+        descricao="Os documentos desta pasta já vêm marcados. Escolha a proposta e confirme. Em cada documento, o ícone do banco envia só aquele arquivo."
+        rotulo="Enviar ao banco / vincular proposta"
+        desabilitado={(docs ?? []).length === 0}
+        onEnviar={() => setEnvioBanco(docsPasta.map((d: any) => String(d.id)))}
+      />
 
       {subpastas.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -490,6 +519,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
               onMarcar={marcar}
               onSolicitarCorrecao={solicitarCorrecao}
               onExcluir={setDelDoc}
+              onEnviarBanco={(d) => setEnvioBanco([String(d.id)])}
             />
           ))}
         </div>
@@ -518,6 +548,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       />
 
       {pastaDialogs}
+      {envioBancoDialog}
 
       <VisualizadorArquivo
         arquivo={visualizando}

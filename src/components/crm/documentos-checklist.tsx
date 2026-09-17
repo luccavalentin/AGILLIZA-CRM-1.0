@@ -12,8 +12,7 @@ import { SecaoImovel } from "./documentos-checklist/secao-imovel";
 import { useChecklistState } from "./documentos-checklist/use-checklist-state";
 import type { Categoria } from "./documentos-checklist/types";
 import { EnviarBancoDialog } from "./documentos-checklist/enviar-banco-dialog";
-import { Landmark } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { SecaoEnvioBanco } from "./documentos-tab/secao-envio-banco";
 
 const SEM_PRE_SELECAO: string[] = [];
 
@@ -91,14 +90,12 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-3">
-        <p className="text-sm text-muted-foreground">
-          Anexar salva no CRM. Para mandar ao banco, escolha a proposta.
-        </p>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setEnvioGeral(true)}>
-          <Landmark className="h-4 w-4" /> Enviar documentos ao banco
-        </Button>
-      </div>
+      <SecaoEnvioBanco
+        titulo="Enviar documentos ao banco"
+        descricao="Anexar salva só no CRM. Para mandar ao banco, clique ao lado, escolha a proposta e marque os documentos. No item do checklist, o botão Banco envia só aquele documento."
+        rotulo="Enviar ao banco / vincular proposta"
+        onEnviar={() => setEnvioGeral(true)}
+      />
       <EnviarBancoDialog
         open={envioGeral || Boolean(state.envioBanco)}
         onOpenChange={(o) => {
