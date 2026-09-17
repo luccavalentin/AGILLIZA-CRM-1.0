@@ -220,6 +220,21 @@ export function VagasBanco({
           </Button>
         </div>
 
+        {data?.resumo && vagas.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 text-xs">
+            <Selo tom={data.resumo.semArquivo > 0 ? "alerta" : "ok"}>
+              {data.resumo.semArquivo} sem arquivo
+            </Selo>
+            {data.resumo.recusados > 0 && (
+              <Selo tom="erro">{data.resumo.recusados} recusado(s)</Selo>
+            )}
+            {data.resumo.emAnalise > 0 && (
+              <Selo tom="alerta">{data.resumo.emAnalise} em análise na HomeFin</Selo>
+            )}
+            {data.resumo.noBanco > 0 && <Selo tom="ok">{data.resumo.noBanco} no banco</Selo>}
+          </div>
+        )}
+
         {isLoading && (
           <p className="flex items-center text-xs text-muted-foreground">
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Consultando o checklist no

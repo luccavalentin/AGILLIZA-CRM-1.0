@@ -67,7 +67,11 @@ import {
   urlDocumento,
   excluirDocumento,
 } from "@/lib/crm/clientes.functions";
-import { dadosImovelBanco, enviarDocumentosBanco } from "@/lib/propostas/propostas.functions";
+import {
+  dadosImovelBanco,
+  documentosHomefinProposta,
+  enviarDocumentosBanco,
+} from "@/lib/propostas/propostas.functions";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 import { donoDoDocumento } from "@/lib/propostas/enviar/documentos-vagas";
@@ -210,6 +214,14 @@ export function AbaEnviarBanco({
     enabled: Boolean(clienteId),
   });
 
+  // Situação do envio DESTA proposta (o documento é do cliente; o envio, da proposta).
+  const documentosHomefinFn = useServerFn(documentosHomefinProposta);
+  const { data: enviosDaProposta } = useQuery({
+    queryKey: ["documentos-homefin-proposta", propostaId],
+    queryFn: () => documentosHomefinFn({ data: { proposta_id: propostaId } }),
+    enabled: propostaNoBanco,
+  });
+
   const { data: previaImovel } = useQuery({
     queryKey: ["dados-imovel-banco", propostaId],
     queryFn: () => dadosImovelFn({ data: { proposta_id: propostaId, enviar: false } }),
@@ -222,7 +234,30 @@ export function AbaEnviarBanco({
   const vendedor = envolvidos.find((e) => e.tipo_qualificacao === "VD");
   const conjugeVendedor = vendedor ? envolvidos.find((e) => e.conjuge_de === vendedor.id) : null;
 
-  const lista = (docs ?? []) as any[];
+  // `situacao_integracao`/`erro_integracao` passam a ser os desta proposta:
+  // no cadastro do cliente eles guardam o último envio de qualquer proposta.
+  const lista = useMemo(() => {
+    const porDoc = new Map<string, any[]>();
+    for (const e of enviosDaProposta ?? []) {
+      const l = porDoc.get(e.cliente_documento_id) ?? [];
+      l.push(e);
+      porDoc.set(e.cliente_documento_id, l);
+    }
+    return ((docs ?? []) as any[]).map((d) => {
+      const envios = porDoc.get(d.id) ?? [];
+      const pior =
+        envios.find((e) => e.situacao === "erro") ??
+        envios.find((e) => e.situacao === "homefin") ??
+        envios.find((e) => e.situacao === "enviado") ??
+        null;
+      return {
+        ...d,
+        situacao_integracao: pior?.situacao ?? null,
+        erro_integracao: pior?.mensagem ?? null,
+        vagas_proposta: envios.map((e) => e.nome_vaga).filter(Boolean),
+      };
+    });
+  }, [docs, enviosDaProposta]);
   const ctxEsperados = {
     fgts: Boolean(proposta?.utiliza_fgts),
     vendedorPJ: vendedor?.tipo_pessoa === "J",
@@ -253,6 +288,7 @@ export function AbaEnviarBanco({
     qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
     qc.invalidateQueries({ queryKey: ["cliente-checklist", clienteId] });
     qc.invalidateQueries({ queryKey: ["checklist-banco", propostaId] });
+    qc.invalidateQueries({ queryKey: ["documentos-homefin-proposta", propostaId] });
   }
 
   async function visualizar(storage_path: string, nome: string) {
@@ -801,7 +837,14 @@ export function AbaEnviarBanco({
                                   na HomeFin
                                 </Selo>
                               )}
-                              {!d.situacao_integracao && apto && <Selo>salvo, não enviado</Selo>}
+                              {!d.situacao_integracao && apto && (
+                                <Selo>salvo, não enviado nesta proposta</Selo>
+                              )}
+                              {d.vagas_proposta?.length > 0 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  vaga: {d.vagas_proposta.join(", ")}
+                                </span>
+                              )}
                             </p>
                             {d.situacao_integracao === "erro" && d.erro_integracao && (
                               <p className="mt-0.5 text-xs text-destructive">{d.erro_integracao}</p>
