@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { avaliarRendaMinima, limitesLtv } from "@/lib/simulacao/renda";
+import { decidirRendaDoCrm } from "@/lib/simulacao/renda-crm";
 import { validarCamposSimulacao } from "@/lib/simulacao/campos-obrigatorios";
 import { completaSchema } from "@/lib/simulacao/schemas";
 import {
@@ -13,10 +14,7 @@ import {
   type MotivoLimitador,
 } from "@/lib/simulacao/prazo";
 import { obterConfiguracoesModulos } from "@/lib/admin/configuracoes-modulos.functions";
-import {
-  estadoCivilCrmParaCodigo,
-  regimeCasamentoCrmParaCodigo,
-} from "@/lib/propostas/dominios";
+import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "@/lib/propostas/dominios";
 import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import {
@@ -350,6 +348,72 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
   }, [podePuxarConjugeCrm, crmData, f]);
   const podeInverter = Boolean(f.nome_conjuge && f.cpf_conjuge);
 
+  /**
+   * Renda do CRM x renda necessária. Enquanto a renda é a do cadastro (o
+   * usuário não digitou), ela fica na simulação só se cobrir a renda
+   * necessária das tabelas simuladas; senão o campo é limpo para o usuário
+   * informar a renda desta simulação, que é a que vai ao banco.
+   */
+  const rendaCrm = useMemo(() => {
+    if (!crmData || !f.cliente_id) return null;
+    return decidirRendaDoCrm({
+      rendaTitularCrm: crmData.renda_total_declarada,
+      rendaConjugeCrm: crmData.conjuge_renda,
+      temConjuge: casado,
+      valor_financiamento: Number(f.valor_financiamento) || 0,
+      valor_imovel: Number(f.valor_imovel) || 0,
+      prazo: Number(f.prazo) || 0,
+      taxa_ano: melhorTaxaAno,
+      sistema: f.sistema_amortizacao,
+    });
+  }, [
+    crmData,
+    f.cliente_id,
+    casado,
+    f.valor_financiamento,
+    f.valor_imovel,
+    f.prazo,
+    melhorTaxaAno,
+    f.sistema_amortizacao,
+  ]);
+  useEffect(() => {
+    if (!rendaCrm || f.renda_origem !== "crm") return;
+    setF((prev) => {
+      if (prev.renda_origem !== "crm") return prev;
+      const titular = rendaCrm.suficiente ? rendaCrm.rendaTitularCrm : 0;
+      const conjuge = rendaCrm.rendaConjugeCrm;
+      const next: Form = { ...prev, renda_total: titular, renda_price: titular };
+      if (rendaCrm.suficiente && conjuge > 0) {
+        next.renda_conjuge = conjuge;
+        next.compoe_renda = true;
+        next.compoe_renda_conjuge = true;
+      }
+      const igual =
+        Number(prev.renda_total) === next.renda_total &&
+        Number(prev.renda_price) === next.renda_price &&
+        Number(prev.renda_conjuge) === Number(next.renda_conjuge) &&
+        prev.compoe_renda === next.compoe_renda;
+      return igual ? prev : next;
+    });
+  }, [rendaCrm, f.renda_origem]);
+  /** Usa a renda do CRM mesmo abaixo da necessária (decisão do usuário). */
+  const usarRendaDoCrm = () => {
+    if (!rendaCrm) return;
+    setF((prev) => ({
+      ...prev,
+      renda_total: rendaCrm.rendaTitularCrm,
+      renda_price: rendaCrm.rendaTitularCrm,
+      ...(rendaCrm.rendaConjugeCrm > 0
+        ? {
+            renda_conjuge: rendaCrm.rendaConjugeCrm,
+            compoe_renda: true,
+            compoe_renda_conjuge: true,
+          }
+        : {}),
+      renda_origem: "manual",
+    }));
+  };
+
   const set = (k: string, v: any) => {
     if (k === "valor_entrada") setEntradaTocada(true);
     setF((prev) => {
@@ -390,6 +454,11 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           next.email_conjuge = EMAIL_PADRAO;
           next.celular_conjuge = "";
         }
+      }
+
+      // Renda digitada pelo usuário vale sobre a do CRM daqui em diante.
+      if (k === "renda_total" || k === "renda_price" || k === "renda_conjuge") {
+        next.renda_origem = "manual";
       }
 
       // REMOVIDO: A RENDA INTELIGENTE NÃO DEVE MAIS PREENCHER OS CAMPOS AUTOMATICAMENTE.
@@ -738,6 +807,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
       msgPjEmConstrucao: MSG_PJ_EM_CONSTRUCAO,
       bancosDisponiveis,
       rendaConsiderada,
+      rendaCrm,
+      usarRendaDoCrm,
       mostraConjuge,
       puxarConjugeDoCRM,
       inverterPrincipal,
@@ -838,6 +909,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     podeInverter,
     melhorTaxaAno,
     rendaConsiderada,
+    rendaCrm,
+    usarRendaDoCrm,
     mostraConjuge,
     puxarConjugeDoCRM,
     inverterPrincipal,

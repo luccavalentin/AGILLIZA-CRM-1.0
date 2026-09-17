@@ -52,6 +52,10 @@ export function patchSelecionarClienteCRM(
       ? regimeCasamentoCrmParaCodigo(c.regime_casamento) || prev.regime_casamento
       : "",
     renda_total: c.renda_total_declarada ?? prev.renda_total,
+    renda_price: c.renda_total_declarada ?? prev.renda_price,
+    // Renda veio do CRM: a simulação confere se ela cobre a renda necessária
+    // e, se não cobrir, pede que o usuário digite (ver `decidirRendaDoCrm`).
+    renda_origem: "crm",
     cep_imovel: c.imovel_cep ?? prev.cep_imovel,
     uf: c.imovel_uf ?? prev.uf,
     possui_conjuge: temConjuge,
@@ -86,6 +90,7 @@ export function patchLimparTitular(prev: Form): Form {
     data_nascimento: "",
     estado_civil: "",
     renda_total: 0,
+    renda_origem: null,
     possui_conjuge: false,
     compoe_renda: false,
     compoe_renda_conjuge: false,
@@ -170,6 +175,8 @@ export function patchInverterPrincipal(prev: Form): Form {
     nome_conjuge: prev.nome_cliente ?? "",
     cpf_conjuge: prev.cpf_cnpj ?? "",
     renda_conjuge: Number(prev.renda_total) || 0,
+    // Titular trocado: a renda do CRM do titular anterior não vale mais.
+    renda_origem: "manual",
     data_nascimento_conjuge: prev.data_nascimento ?? "",
     estado_civil_conjuge: prev.estado_civil || prev.estado_civil_conjuge,
     sexo_conjuge: prev.sexo || prev.sexo_conjuge,

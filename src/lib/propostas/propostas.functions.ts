@@ -645,6 +645,26 @@ export const criarProposta = createServerFn({ method: "POST" })
     // Preenche o participante titular a partir do cadastro completo do cliente,
     // trazendo os campos exigidos pelos bancos (documento, filiação, profissão, banco).
     const clienteId = snapshot.cliente_id as string | null;
+    // Renda da operação = renda da simulação (a que o usuário conferiu ou
+    // digitou e que foi ao banco), não a declarada no CRM.
+    let rendaSim: { titular: number | null; conjuge: number | null } = {
+      titular: null,
+      conjuge: null,
+    };
+    if (snapshot.simulacao_id) {
+      const { data: s } = await supabaseAdmin
+        .from("simulacoes")
+        .select("renda_total, renda_conjuge, compoe_renda_conjuge")
+        .eq("id", snapshot.simulacao_id as string)
+        .maybeSingle();
+      if (s) {
+        const r = s as any;
+        rendaSim = {
+          titular: Number(r.renda_total) > 0 ? Number(r.renda_total) : null,
+          conjuge: Number(r.renda_conjuge) > 0 ? Number(r.renda_conjuge) : null,
+        };
+      }
+    }
     if (clienteId) {
       const { data: cli } = await supabase
         .from("clientes")
@@ -681,7 +701,7 @@ export const criarProposta = createServerFn({ method: "POST" })
             uf_expedicao: c.uf_expedicao,
             profissao: c.profissao,
             empresa: c.empresa,
-            renda: c.renda_total_declarada,
+            renda: rendaSim.titular ?? c.renda_total_declarada,
             agencia: c.agencia,
             conta_corrente: c.conta_corrente,
             digito_conta: c.digito_conta,
@@ -745,7 +765,7 @@ export const criarProposta = createServerFn({ method: "POST" })
             uf_expedicao: c.conjuge_uf_expedicao,
             profissao: c.conjuge_profissao,
             empresa: c.conjuge_empresa,
-            renda: c.conjuge_renda,
+            renda: rendaSim.conjuge ?? c.conjuge_renda,
             agencia: c.conjuge_agencia,
             conta_corrente: c.conjuge_conta_corrente,
             digito_conta: c.conjuge_digito_conta,
@@ -1256,7 +1276,8 @@ export async function sincronizarEnvolvidoParaCliente(
   if (has("data_expedicao")) patch.data_expedicao = dados.data_expedicao;
   if (has("profissao")) patch.profissao = dados.profissao;
   if (has("empresa")) patch.empresa = dados.empresa;
-  if (has("renda")) patch.renda_total_declarada = dados.renda;
+  // Renda não vai ao CRM: a da proposta é a da operação (simulação) e a
+  // declarada no cadastro é preservada.
   if (has("email")) patch.email = String(dados.email).toLowerCase();
   if (has("celular")) patch.telefone_celular = String(dados.celular).replace(/\D/g, "");
   if (dados.utiliza_fgts !== undefined) patch.utiliza_fgts = Boolean(dados.utiliza_fgts);
@@ -2726,7 +2747,9 @@ export async function ressincronizarDadosParticipantesImpl({
       new Date(fonte?.updated_at ?? 0).getTime() >= new Date(env.updated_at ?? 0).getTime();
     // Estado civil e regime só completam vazio: o CRM não tem "separado" nem
     // "separação obrigatória", e o valor antigo dele apagaria o da proposta.
-    const SO_COMPLETA = ["estado_civil", "regime_casamento"];
+    // Renda também: a da proposta vem da simulação e não pode ser trocada
+    // pela declarada no CRM.
+    const SO_COMPLETA = ["estado_civil", "regime_casamento", "renda"];
     const deveCopiar = (atual: unknown, valor: unknown, fonte: any, coluna?: string) =>
       vazioEnvolvido(atual) ||
       (!SO_COMPLETA.includes(String(coluna)) && maisNovo(fonte) && String(atual) !== String(valor));

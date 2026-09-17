@@ -48,7 +48,6 @@ export function conjugeParaClienteCrm(dados: Record<string, any>): Record<string
     conjuge_data_expedicao: dados.data_expedicao,
     conjuge_profissao: dados.profissao,
     conjuge_empresa: dados.empresa,
-    conjuge_renda: dados.renda,
     conjuge_email: tem(dados.email) ? String(dados.email).toLowerCase() : undefined,
     conjuge_celular: tem(dados.celular) ? digitos(dados.celular) : undefined,
   });
