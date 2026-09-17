@@ -22,6 +22,7 @@ import { obterProposta } from "@/lib/propostas/propostas.functions";
 import {
   avancarEtapaContinuar,
   salvarConferenciaProposta,
+  sincronizarVendedoresProposta,
   type ResultadoConferencia,
 } from "@/lib/propostas/continuar.functions";
 import { bancoAprovado, podeContinuarProposta } from "@/lib/propostas/state-machine";
@@ -69,6 +70,26 @@ export function ContinuarPropostaPage({
   const obter = useServerFn(obterProposta);
   const salvar = useServerFn(salvarConferenciaProposta);
   const avancar = useServerFn(avancarEtapaContinuar);
+  const sincronizarVendedores = useServerFn(sincronizarVendedoresProposta);
+
+  // Vendedor cadastrado ou alterado no CRM depois da criação da proposta entra
+  // aqui antes da conferência.
+  useEffect(() => {
+    let ativo = true;
+    sincronizarVendedores({ data: { proposta_id: propostaId } })
+      .then((r) => {
+        if (ativo && (r.incluidos > 0 || r.atualizados > 0)) {
+          qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+        }
+      })
+      .catch(() => {
+        /* a tela segue com o que a proposta já tem */
+      });
+    return () => {
+      ativo = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propostaId]);
 
   // Sem refetch no foco: recarregar no meio da conferência apagaria o que foi digitado.
   const { data, isLoading, error } = useQuery({

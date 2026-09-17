@@ -1758,6 +1758,8 @@ export const enviarDocumentosBanco = createServerFn({ method: "POST" })
       .object({
         proposta_id: z.string().uuid(),
         documento_ids: z.array(z.string().uuid()).optional(),
+        /** documento do CRM → idDocumento da vaga no checklist da HomeFin. */
+        vagas: z.record(z.string().uuid(), z.string().min(1)).optional(),
       })
       .parse(data),
   )
@@ -1769,7 +1771,17 @@ export const enviarDocumentosBanco = createServerFn({ method: "POST" })
       userId,
       supabase,
       documentoIds: data.documento_ids,
+      vagas: data.vagas,
     });
+  });
+
+/** Vagas do checklist de documentos da oportunidade na HomeFin (só leitura). */
+export const checklistBancoProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { checklistBancoImpl } = await import("./enviar.server");
+    return checklistBancoImpl({ propostaId: data.proposta_id, supabase: context.supabase });
   });
 
 /**

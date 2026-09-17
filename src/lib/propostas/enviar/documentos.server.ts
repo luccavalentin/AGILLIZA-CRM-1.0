@@ -27,11 +27,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   arquivoDoDocumento,
+  categoriaDaVaga,
   donoDoDocumento,
   ignoradoDoItem,
   nomeArquivoNaHomefin,
   pontuarVaga,
   situacaoDoItem,
+  vagaAceitaCategoria,
 } from "./documentos-vagas";
 import { nomeDoTipoDocumento, termosDoTipoDocumento } from "@/lib/documentos/tipos-banco";
 import { ehAgenciaDoBradesco } from "@/lib/bancos/agencia";
@@ -42,6 +44,11 @@ export interface EnviarDocumentosArgs {
   supabase: SupabaseClient<any, any, any>;
   /** IDs de cliente_documentos selecionados para envio (opcional = todos os aceitos). */
   documentoIds?: string[];
+  /**
+   * Vaga escolhida pelo operador: id do documento no CRM → `idDocumento` do
+   * checklist da HomeFin. Sem isso a vaga é deduzida pelo dono e pelo tipo.
+   */
+  vagas?: Record<string, string>;
 }
 
 type LinhaResultado = { nome: string; motivo: string; participante?: string | null };
@@ -93,6 +100,7 @@ export async function enviarDocumentosBancoImpl({
   userId,
   supabase,
   documentoIds,
+  vagas: vagasEscolhidas,
 }: EnviarDocumentosArgs): Promise<EnviarDocumentosResultado> {
   const { chamarIntegracao, enviarArquivoIntegracao, sanitizarMensagemErro } =
     await import("@/lib/simulacao/homefin.server");
@@ -230,7 +238,30 @@ export async function enviarDocumentosBancoImpl({
 
     // Já carregado nesta oportunidade (reenvio): não sobe outra cópia.
     // Arquivo recusado pelo banco é trocado — o antigo sai antes.
-    const existente = arquivoDoDocumento(itens, doc.id);
+    const idEscolhido = vagasEscolhidas?.[doc.id] ? String(vagasEscolhidas[doc.id]) : null;
+    const itemEscolhido = idEscolhido
+      ? (itens.find((i) => String(i?.idDocumento) === idEscolhido) ?? null)
+      : null;
+    if (idEscolhido && (!itemEscolhido || !aceitaUpload(itemEscolhido))) {
+      const motivo = itemEscolhido
+        ? "Esta vaga está dispensada no banco e não aceita arquivo."
+        : "A vaga escolhida não existe mais no checklist do banco. Atualize a tela.";
+      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
+      await marcarDoc(doc.id, "erro", motivo);
+      continue;
+    }
+    if (itemEscolhido && !vagaAceitaCategoria(itemEscolhido, doc.categoria)) {
+      const motivo = `Documento de ${doc.categoria} não pode ir para a vaga de ${categoriaDaVaga(itemEscolhido)}.`;
+      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
+      await marcarDoc(doc.id, "erro", motivo);
+      continue;
+    }
+
+    // Já carregado nesta oportunidade — na mesma vaga, se o operador escolheu
+    // uma — não sobe outra cópia.
+    const achado = arquivoDoDocumento(itens, doc.id);
+    const existente =
+      achado && (!idEscolhido || String(achado.item.idDocumento) === idEscolhido) ? achado : null;
     if (existente) {
       const { situacao } = situacaoDoItem(existente.item);
       const idDocumento = String(existente.item.idDocumento);
@@ -259,7 +290,7 @@ export async function enviarDocumentosBancoImpl({
       continue;
     }
 
-    let item = existente?.item ?? null;
+    let item = itemEscolhido ?? existente?.item ?? null;
     if (!item) {
       const documento = {
         termos: termosDoTipoDocumento(doc.tipo_documento),
@@ -268,6 +299,8 @@ export async function enviarDocumentosBancoImpl({
       let melhor: { item: any; pontos: number } | null = null;
       for (const v of vagas) {
         if (usados.has(String(v.idDocumento))) continue;
+        // Dono pelo tipo da vaga (CO/CC/VD/CV/IM): vendedor nunca cai em vaga de comprador.
+        if (!vagaAceitaCategoria(v, doc.categoria)) continue;
         const pontos = pontuarVaga(v, documento, nomeDono, nomesParticipantes);
         if (pontos < 0) continue;
         if (!melhor || pontos > melhor.pontos) melhor = { item: v, pontos };
@@ -473,4 +506,100 @@ export async function excluirArquivoHomefinImpl({
     }
   }
   return { removidos, falhas };
+}
+
+export interface VagaBanco {
+  idDocumento: string;
+  nomeDocumento: string;
+  referente: string | null;
+  tipoDocumento: string | null;
+  categoria: string;
+  /** P/I/A/R/D — análise na HomeFin. */
+  situacaoAnalise: string;
+  comentarioAnalise: string | null;
+  situacaoIntegracao: string | null;
+  mensagemIntegracao: string | null;
+  aceitaArquivo: boolean;
+  integravelBradesco: boolean;
+  arquivos: { idArquivo: string; nomeArquivo: string; documentoCrmId: string | null }[];
+}
+
+/**
+ * Checklist de documentos da oportunidade como a tela precisa: cada vaga com o
+ * dono (`tipoDocumento` + `referente`), a situação na HomeFin/banco e os
+ * arquivos já carregados, ligados ao documento do CRM quando foram enviados
+ * por aqui (prefixo do nome).
+ */
+export async function checklistBancoImpl({
+  propostaId,
+  supabase,
+}: {
+  propostaId: string;
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<{ vagas: VagaBanco[]; nomeBanco: string | null; loteAutomatico: boolean }> {
+  const { chamarIntegracao } = await import("@/lib/simulacao/homefin.server");
+  const { data: prop, error } = await supabase
+    .from("propostas")
+    .select("id, cliente_id, correspondente_id, homefin_id_oportunidade")
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!prop?.homefin_id_oportunidade) return { vagas: [], nomeBanco: null, loteAutomatico: false };
+
+  const [{ data: bancos }, { data: docs }] = await Promise.all([
+    supabase
+      .from("proposta_bancos")
+      .select("nome_banco, status_banco, selecionado")
+      .eq("proposta_id", propostaId),
+    prop.cliente_id
+      ? supabase.from("cliente_documentos").select("id").eq("cliente_id", prop.cliente_id)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+  const aprovados = ((bancos ?? []) as any[]).filter((b) =>
+    ["aprovada", "aprovado", "condicionado"].includes(b.status_banco),
+  );
+  const banco = aprovados.find((b) => b.selecionado) ?? aprovados[0] ?? (bancos ?? [])[0] ?? null;
+
+  const itens = await chamarIntegracao<any[]>(
+    `/oportunidade/${prop.homefin_id_oportunidade}/documentos`,
+    "GET",
+    undefined,
+    { proposta_id: propostaId, correspondente_id: prop.correspondente_id },
+  );
+  const prefixos = ((docs ?? []) as any[]).map((d) => ({
+    id: String(d.id),
+    prefixo: `${String(d.id).replace(/-/g, "").slice(0, 8).toLowerCase()}-`,
+  }));
+
+  const vagas = (Array.isArray(itens) ? itens : []).map(
+    (i): VagaBanco => ({
+      idDocumento: String(i?.idDocumento),
+      nomeDocumento: String(i?.nomeDocumento ?? "Documento"),
+      referente: i?.referente ?? null,
+      tipoDocumento: i?.tipoDocumento ?? null,
+      categoria: categoriaDaVaga(i),
+      situacaoAnalise: String(i?.tipoSituacao ?? "P")
+        .toUpperCase()
+        .charAt(0),
+      comentarioAnalise: i?.comentarioAnalise ?? null,
+      situacaoIntegracao: i?.situacaoIntegracao ?? null,
+      mensagemIntegracao: i?.mensagemIntegracao ?? null,
+      aceitaArquivo: aceitaUpload(i),
+      integravelBradesco: ehVerdadeiro(i?.integravelBradesco),
+      arquivos: (Array.isArray(i?.arquivos) ? i.arquivos : []).map((a: any) => {
+        const nome = String(a?.nomeArquivo ?? "");
+        const dono = prefixos.find((p) => nome.toLowerCase().startsWith(p.prefixo));
+        return {
+          idArquivo: String(a?.idArquivo),
+          nomeArquivo: nome,
+          documentoCrmId: dono?.id ?? null,
+        };
+      }),
+    }),
+  );
+  return {
+    vagas,
+    nomeBanco: banco?.nome_banco ?? null,
+    loteAutomatico: ehAgenciaDoBradesco(banco?.nome_banco),
+  };
 }
