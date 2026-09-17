@@ -299,6 +299,7 @@ export async function enviarDocumentosBancoImpl({
     if (!item) {
       const documento = {
         termos: termosDoTipoDocumento(doc.tipo_documento),
+        nomeTipo: nomeDoTipoDocumento(doc.tipo_documento),
         alvo: `${nomeDoTipoDocumento(doc.tipo_documento)} ${doc.nome_arquivo}`,
       };
       let melhor: { item: any; pontos: number } | null = null;

@@ -65,7 +65,7 @@ export function donoDoDocumento(
  */
 export function pontuarVaga(
   item: any,
-  documento: { termos: string[]; alvo: string },
+  documento: { termos: string[]; alvo: string; nomeTipo?: string | null },
   nomeDono: string,
   outrosParticipantes: string[] = [],
 ): number {
@@ -98,16 +98,29 @@ export function pontuarVaga(
     else if (nomeItem.length > 3 && t.includes(nomeItem))
       melhorTermo = Math.max(melhorTermo, 35 + Math.min(nomeItem.length, 15));
   }
-  if (melhorTermo > 0) {
-    pontos += melhorTermo;
+  // O tipo do documento no CRM costuma ser o próprio nome da vaga ("Cópia
+  // legível CPF"): nome igual (ou um contido no outro) vale como termo.
+  const nomeTipo = normTexto(documento.nomeTipo);
+  const nomeCasa =
+    nomeTipo.length > 3 &&
+    (nomeItem === nomeTipo || nomeTipo.includes(nomeItem) || nomeItem.includes(nomeTipo));
+
+  if (melhorTermo > 0 || nomeCasa) {
+    pontos += Math.max(melhorTermo, nomeCasa ? (nomeItem === nomeTipo ? 75 : 45) : 0);
   } else {
-    // Sem termo do tipo, só coincidência de palavra a palavra — e palavra que
+    // Sem termo nem nome, só coincidência de palavra a palavra — e palavra que
     // aparece em quase toda vaga não vale nada. "Comprovante de endereço" casava
     // com "Comprovante de estado civil" só pelo "comprovante" e o arquivo ia
-    // para a vaga errada.
-    const alvo = normTexto(documento.alvo);
-    const palavras = nomeItem.split(" ").filter((p) => p.length > 3 && !PALAVRAS_GENERICAS.has(p));
-    const casadas = palavras.filter((p) => alvo.includes(p)).length;
+    // para a vaga errada. Siglas curtas (RG, CPF, CNH) contam.
+    const tokens = new Set(
+      normTexto(documento.alvo)
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean),
+    );
+    const palavras = nomeItem
+      .split(" ")
+      .filter((p) => (p.length > 3 || SIGLAS.has(p)) && !PALAVRAS_GENERICAS.has(p));
+    const casadas = palavras.filter((p) => tokens.has(p)).length;
     if (casadas === 0) return -1;
     pontos += casadas * 10;
   }
@@ -117,6 +130,9 @@ export function pontuarVaga(
 
   return pontos;
 }
+
+/** Siglas curtas que identificam o documento e não podem ser descartadas. */
+const SIGLAS = new Set(["rg", "cpf", "cnh", "rne", "dps", "iq", "cnd", "itbi", "iptu"]);
 
 /**
  * Palavras que aparecem em quase toda vaga do checklist e por isso não
