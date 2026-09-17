@@ -14,7 +14,9 @@ export async function listarClienteIdsParceiroDoUsuario(
   const { data, error } = await supabase
     .from("cliente_parceiros")
     .select("cliente_id")
-    .eq("user_id", userId);
+    // A coluna é `parceiro_id`. Com `user_id` a consulta falhava sempre (662
+    // erros/dia) e o parceiro não enxergava nada fora do cadastro do cliente.
+    .eq("parceiro_id", userId);
   if (error) return [];
   const ids = new Set<string>();
   for (const r of (data ?? []) as any[]) {

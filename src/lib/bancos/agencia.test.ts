@@ -54,13 +54,46 @@ describe("dadosBancariosParticipante", () => {
     });
   });
 
+  it("usa a conta conferida quando informada", () => {
+    expect(
+      dadosBancariosParticipante({
+        ...base,
+        participante: { idBanco: 1, codigoContaCorrente: "999" },
+        ehPrincipal: true,
+        agencia: "145",
+        contaCorrente: "12.345",
+        digitoConta: "6",
+      }),
+    ).toEqual({
+      idBanco: 45,
+      codigoAgencia: "0145",
+      codigoContaCorrente: "12345",
+      digitoContaCorrente: "6",
+    });
+  });
+
   it("mantém a conta só quando já era do mesmo banco", () => {
-    const participante = { idBanco: 45, codigoAgencia: "9999", codigoContaCorrente: "123", digitoContaCorrente: "4" };
+    const participante = {
+      idBanco: 45,
+      codigoAgencia: "9999",
+      codigoContaCorrente: "123",
+      digitoContaCorrente: "4",
+    };
     expect(
       dadosBancariosParticipante({ ...base, participante, ehPrincipal: true, agencia: "0145" }),
-    ).toMatchObject({ idBanco: 45, codigoAgencia: "0145", codigoContaCorrente: "123", digitoContaCorrente: "4" });
+    ).toMatchObject({
+      idBanco: 45,
+      codigoAgencia: "0145",
+      codigoContaCorrente: "123",
+      digitoContaCorrente: "4",
+    });
     expect(
-      dadosBancariosParticipante({ ...base, participante: { ...participante, idBanco: 33 }, ehPrincipal: true, agencia: "0145" }),
+      dadosBancariosParticipante({
+        ...base,
+        participante: { ...participante, idBanco: 33 },
+        ehPrincipal: true,
+        agencia: "0145",
+      }),
     ).toMatchObject({ idBanco: 45, codigoContaCorrente: undefined });
   });
 
@@ -74,6 +107,11 @@ describe("dadosBancariosParticipante", () => {
     ).toMatchObject({ idBanco: 341, codigoAgencia: "0500" });
     expect(
       dadosBancariosParticipante({ ...base, participante: {}, ehPrincipal: true, agencia: null }),
-    ).toEqual({ idBanco: undefined, codigoAgencia: undefined, codigoContaCorrente: undefined, digitoContaCorrente: undefined });
+    ).toEqual({
+      idBanco: undefined,
+      codigoAgencia: undefined,
+      codigoContaCorrente: undefined,
+      digitoContaCorrente: undefined,
+    });
   });
 });

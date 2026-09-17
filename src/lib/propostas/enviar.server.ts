@@ -766,7 +766,7 @@ async function sincronizarSnapshotFamiliarLocal({
  * proponente principal com dados mínimos; aqui completamos a partir dos
  * envolvidos da proposta, do próprio cadastro do cliente e, por fim, do imóvel.
  */
-async function garantirEnderecoParticipantes({
+export async function garantirEnderecoParticipantes({
   prop,
   pb,
   idOportunidade,
@@ -996,11 +996,14 @@ async function garantirEnderecoParticipantes({
       agencia: pb?.agencia,
       nomeBanco: pb?.nome_banco,
       idBancoDestino: pb?.homefin_id_banco,
+      contaCorrente: pb?.conta_corrente,
+      digitoConta: pb?.digito_conta,
     });
     const faltaAgencia =
       Boolean(bancarios.codigoAgencia) &&
       (String(part?.codigoAgencia ?? "").trim() !== bancarios.codigoAgencia ||
-        Number(part?.idBanco) !== bancarios.idBanco);
+        Number(part?.idBanco) !== bancarios.idBanco ||
+        String(part?.codigoContaCorrente ?? "").trim() !== (bancarios.codigoContaCorrente ?? ""));
     // Quando temos um envolvido cadastrado no sistema, sempre sincronizamos os
     // dados complementares (documento, sexo, FGTS, endereço) com o banco.
     const temEnvolvido = Boolean(env);
@@ -2417,6 +2420,7 @@ export async function sincronizarPropostaImpl({
  * ========================================================================= */
 export {
   enviarDocumentosBancoImpl,
+  excluirArquivoHomefinImpl,
   type EnviarDocumentosArgs,
   type EnviarDocumentosResultado,
 } from "./enviar/documentos.server";

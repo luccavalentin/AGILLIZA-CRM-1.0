@@ -398,6 +398,30 @@ async function todasAsLinhas<T = any>(
   return { data: acumulado, error: null };
 }
 
+/**
+ * Linhas do pipeline no formato que o painel já consome
+ * (`cliente_id`, `pipeline_stages`, `clientes`), em três consultas simples.
+ */
+async function carregarPipelinePainel(supabase: any) {
+  const [pipe, etapas, donos] = await Promise.all([
+    supabase.from("cliente_pipeline").select("cliente_id,stage_id").limit(5000),
+    supabase.from("pipeline_stages").select("id,codigo,nome,ordem"),
+    supabase.from("clientes").select("id,responsavel_id,criador_id").limit(5000),
+  ]);
+  const erro = pipe.error ?? etapas.error ?? donos.error;
+  if (erro) return { data: null, error: erro };
+  const etapaPorId = new Map((etapas.data ?? []).map((e: any) => [e.id, e]));
+  const donoPorId = new Map((donos.data ?? []).map((c: any) => [c.id, c]));
+  const data = (pipe.data ?? [])
+    .filter((r: any) => donoPorId.has(r.cliente_id))
+    .map((r: any) => ({
+      cliente_id: r.cliente_id,
+      pipeline_stages: etapaPorId.get(r.stage_id) ?? null,
+      clientes: donoPorId.get(r.cliente_id),
+    }));
+  return { data, error: null };
+}
+
 export const getPanelDados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(schema)
@@ -524,12 +548,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
               "criador_id",
             ),
 
-            supabase
-              .from("cliente_pipeline")
-              .select(
-                "cliente_id,pipeline_stages(codigo,nome,ordem),clientes!inner(id,responsavel_id,criador_id)",
-              )
-              .limit(5000),
+            // Sem joins embutidos: com `clientes!inner` e `pipeline_stages(...)`
+            // a RLS rodava nas três tabelas para cada linha e a consulta
+            // estourava o statement_timeout (88 vezes em 16/09). As etapas e o
+            // dono do cliente são buscados à parte e cruzados em memória.
+            carregarPipelinePainel(supabase),
           ]);
         } catch (err) {
           console.error("[panel:visao-geral] Erro crítico no Promise.all:", err);

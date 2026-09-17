@@ -6,39 +6,9 @@
 import type { PropostaStatus } from "../state-machine";
 import { normalizarTexto } from "./shared-utils";
 
-/** Deriva o status interno a partir do nome da etapa ativa retornada pelo banco. */
-export function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
-  if (!nomeEtapa) return null;
-  const n = nomeEtapa.toLowerCase();
-  // Recusa/negativa de crédito encerra o fluxo — checar ANTES de "aprov"/"análise"
-  // para o status não ficar preso em "em_analise_credito" (polling infinito).
-  if (
-    n.includes("recus") ||
-    n.includes("negad") ||
-    n.includes("negat") ||
-    n.includes("reprov") ||
-    n.includes("indefer") ||
-    n.includes("nao aprov") ||
-    n.includes("não aprov")
-  )
-    return "credito_recusado";
-  if (n.includes("contrato") || n.includes("registr")) return "contrato_emitido";
-  if (n.includes("juríd") || n.includes("jurid") || n.includes("emiss")) return "analise_juridica";
-  if (n.includes("vistoria") || n.includes("engenharia") || n.includes("avaliaç"))
-    return "engenharia_vistoria";
-  if (n.includes("document")) return "aguardando_documentos";
-  // Antes de "aprov": "aprovado com condições" contém as duas palavras.
-  if (n.includes("condicion") || n.includes("ressalva")) return "credito_condicionado";
-  if (n.includes("aprov")) return "credito_aprovado";
-  if (
-    n.includes("análise") ||
-    n.includes("analise") ||
-    n.includes("crédito") ||
-    n.includes("credito")
-  )
-    return "em_analise_credito";
-  return null;
-}
+// `statusDaEtapa` é puro e também usado na tela (kanban do "Continuar
+// proposta"); mora num módulo sem `.server` para poder ir ao cliente.
+export { statusDaEtapa } from "../etapa-banco";
 
 /**
  * Detecta o cenário em que a integração devolveu "erro" mas a proposta

@@ -51,12 +51,17 @@ export function dadosBancariosParticipante({
   agencia,
   nomeBanco,
   idBancoDestino,
+  contaCorrente,
+  digitoConta,
 }: {
   participante: any;
   ehPrincipal: boolean;
   agencia: unknown;
   nomeBanco?: unknown;
   idBancoDestino: unknown;
+  /** Conta conferida no "Continuar proposta"; vazia mantém a da integração. */
+  contaCorrente?: unknown;
+  digitoConta?: unknown;
 }): {
   idBanco?: number;
   codigoAgencia?: string;
@@ -84,6 +89,15 @@ export function dadosBancariosParticipante({
 
   // A conta só continua valendo se já era deste mesmo banco.
   const mesmoBanco = atuais.idBanco === idBanco;
+  const conta = String(contaCorrente ?? "").replace(/\D/g, "");
+  if (conta) {
+    return {
+      idBanco,
+      codigoAgencia: agenciaEnvio,
+      codigoContaCorrente: conta,
+      digitoContaCorrente: texto(digitoConta),
+    };
+  }
   return {
     idBanco,
     codigoAgencia: agenciaEnvio,

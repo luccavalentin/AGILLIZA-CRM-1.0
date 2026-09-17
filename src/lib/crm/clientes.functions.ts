@@ -1111,7 +1111,7 @@ export const anexarDocumento = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+  .handler(async ({ data, context }): Promise<{ ok: true; id: string }> => {
     const { supabase, userId } = context;
     if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
       throw new Error("Sem permissão para anexar documentos deste cliente.");
@@ -1122,19 +1122,23 @@ export const anexarDocumento = createServerFn({ method: "POST" })
       .eq("cliente_id", data.cliente_id)
       .eq("categoria", data.categoria)
       .eq("tipo_documento", data.tipo_documento);
-    const { error } = await supabase.from("cliente_documentos").insert({
-      cliente_id: data.cliente_id,
-      categoria: data.categoria,
-      pasta_id: data.pasta_id ?? null,
-      tipo_documento: data.tipo_documento,
-      nome_arquivo: data.nome_arquivo,
-      storage_path: data.storage_path,
-      mime_type: data.mime_type ?? null,
-      tamanho_bytes: data.tamanho_bytes ?? null,
-      versao: (count ?? 0) + 1,
-      status: "recebido",
-      enviado_por: userId,
-    });
+    const { data: inserido, error } = await supabase
+      .from("cliente_documentos")
+      .insert({
+        cliente_id: data.cliente_id,
+        categoria: data.categoria,
+        pasta_id: data.pasta_id ?? null,
+        tipo_documento: data.tipo_documento,
+        nome_arquivo: data.nome_arquivo,
+        storage_path: data.storage_path,
+        mime_type: data.mime_type ?? null,
+        tamanho_bytes: data.tamanho_bytes ?? null,
+        versao: (count ?? 0) + 1,
+        status: "recebido",
+        enviado_por: userId,
+      })
+      .select("id")
+      .single();
     if (error) throw error;
     await supabase.from("cliente_historico").insert({
       cliente_id: data.cliente_id,
@@ -1153,7 +1157,7 @@ export const anexarDocumento = createServerFn({ method: "POST" })
       descricao: `anexou o documento "${data.nome_arquivo}"`,
       payloadNovo: { nome_arquivo: data.nome_arquivo, tipo: data.tipo_documento },
     });
-    return { ok: true };
+    return { ok: true, id: String(inserido.id) };
   });
 
 export const listarDocumentos = createServerFn({ method: "GET" })
@@ -1358,10 +1362,23 @@ export const excluirDocumento = createServerFn({ method: "POST" })
     }
     const { data: doc } = await supabase
       .from("cliente_documentos")
-      .select("id, cliente_id, storage_path, nome_arquivo")
+      .select("id, cliente_id, storage_path, nome_arquivo, situacao_integracao")
       .eq("id", data.id)
       .maybeSingle();
     if (!doc) throw new Error("Documento não encontrado.");
+    // Já foi à HomeFin: tira o arquivo de lá também (DELETE /documento/arquivo/{id}).
+    // Best-effort — a HomeFin fora do ar não impede excluir no CRM.
+    if ((doc as any).situacao_integracao) {
+      try {
+        const { excluirArquivoHomefinImpl } = await import("@/lib/propostas/enviar.server");
+        await excluirArquivoHomefinImpl({
+          supabase,
+          documento: { id: String(doc.id), cliente_id: String(doc.cliente_id) },
+        });
+      } catch (e) {
+        console.warn("[excluirDocumento] não removeu da HomeFin", e);
+      }
+    }
     if (doc.storage_path) {
       await supabase.storage.from("cliente-documentos").remove([doc.storage_path]);
     }

@@ -1313,15 +1313,26 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       const idsPorGrupo = new Map<string, string[]>();
       const LOTE = 1000; // teto de linhas por resposta do PostgREST
       const MAX_LOTES = 25; // 25 mil simulações; além disso a lista precisaria de cursor
+      // Cursor por `created_at` em vez de offset: com `range(4000, 4999)` o
+      // Postgres relia as 4 mil linhas anteriores aplicando a RLS em cada uma,
+      // e os lotes do fim estouravam os 8 s do statement_timeout. O cursor é
+      // inclusivo (`lte`), então as linhas da fronteira repetem e são puladas.
+      const vistos = new Set<string>();
+      let cursor: string | null = null;
       for (let lote = 0; lote < MAX_LOTES; lote++) {
-        const ini = lote * LOTE;
-        const { data: chaves, error: errChaves } = await aplicarFiltros(
+        let consulta = aplicarFiltros(
           supabase.from("simulacoes").select("id, agrupador_id, cliente_id, created_at"),
-        )
+        );
+        if (cursor) consulta = consulta.lte("created_at", cursor);
+        const { data: chaves, error: errChaves } = await consulta
           .order("created_at", { ascending: false })
-          .range(ini, ini + LOTE - 1);
+          .limit(LOTE);
         if (errChaves) throw new Error(errChaves.message);
+        let novas = 0;
         for (const r of chaves ?? []) {
+          if (vistos.has((r as any).id)) continue;
+          vistos.add((r as any).id);
+          novas++;
           const k = chaveDoGrupo(r);
           const atual = idsPorGrupo.get(k);
           if (atual) atual.push((r as any).id);
@@ -1330,6 +1341,9 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
             ordemGrupos.push(k);
           }
         }
+        const ultima = (chaves ?? [])[(chaves ?? []).length - 1] as any;
+        if (ultima) cursor = ultima.created_at;
+        if (novas === 0) break;
         if (!chaves || chaves.length < LOTE) break;
       }
 

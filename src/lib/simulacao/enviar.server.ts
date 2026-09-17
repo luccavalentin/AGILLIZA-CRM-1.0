@@ -7,6 +7,8 @@ import {
   recalcularStatusSimulacao,
 } from "./simulacoes.functions";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
+import { codigoTipoImovel } from "./dominios-homefin";
 
 /**
  * Empurrão imediato na reconciliação, logo após um envio que ficou aguardando.
@@ -381,7 +383,9 @@ export async function enviarSimulacaoImpl({
             prazo: num(sim.prazo),
             uf: { codigo: sim.uf },
             tipoEstadoCivil: { id: estadoCivilCrmParaCodigo(sim.estado_civil) },
-            tipoImovel: { id: sim.tipo_imovel === "CS" ? "CS" : "AP" },
+            // AP/CS/GA/TE/TC no contrato. Galpão, terreno e terreno em
+            // condomínio iam como apartamento.
+            tipoImovel: { id: codigoTipoImovel(sim.tipo_imovel) },
             situacaoImovel: { codigo: sim.situacao_imovel === "N" ? "N" : "U" },
             usoImovel: { id: sim.uso_imovel === "R" ? "R" : "C" },
             operacao: { idOperacao: String(sim.id_operacao_homefin || "1") },
@@ -535,7 +539,24 @@ export async function enviarSimulacaoImpl({
                 if (p.homefin_id_participante) continue;
                 try {
                   const dados = (p.dados as any) || {};
+                  // Campos "S" do CreateParticipantRequest: sem tipoSituacao,
+                  // documento, profissão, FGTS e autorização o participante
+                  // nascia incompleto. O PUT do envio da proposta completa o
+                  // resto com o cadastro.
+                  const docPart = (p.cpf_cnpj || "").replace(/\D/g, "");
+                  const pfPart = docPart.length <= 11;
                   const payloadPart = {
+                    tipoSituacao: "A",
+                    tipoDocumentoIdentidade:
+                      dados.tipo_documento_identidade || PADROES_CADASTRO.tipoDocumentoIdentidade,
+                    numeroDocumento: dados.numero_documento || docPart,
+                    orgaoExpedidor:
+                      dados.orgao_expedidor ||
+                      (pfPart ? PADROES_CADASTRO.orgaoExpedidor : "JUCESP"),
+                    ufExpedicao: dados.uf_expedicao || PADROES_CADASTRO.ufExpedicao,
+                    nomeProfissao: dados.profissao || PADROES_CADASTRO.profissao,
+                    utilizaFgts: dados.utiliza_fgts ? "S" : "N",
+                    fgAutorizacaoDados: true,
                     tipoQualificacao: "CO",
                     tipoPessoa: (p.cpf_cnpj || "").replace(/\D/g, "").length > 11 ? "J" : "F",
                     nomeParticipante: p.nome,

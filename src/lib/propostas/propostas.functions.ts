@@ -1215,7 +1215,7 @@ export const definirSituacaoBanco = createServerFn({ method: "POST" })
  * para o cadastro do cliente, garantindo que proposta e CRM fiquem sincronizados.
  * Só escreve valores presentes, para nunca apagar dados já existentes no cliente.
  */
-async function sincronizarEnvolvidoParaCliente(
+export async function sincronizarEnvolvidoParaCliente(
   supabase: any,
   clienteId: string,
   dados: Record<string, unknown>,
@@ -1770,6 +1770,98 @@ export const enviarDocumentosBanco = createServerFn({ method: "POST" })
       supabase,
       documentoIds: data.documento_ids,
     });
+  });
+
+/**
+ * Dados do imóvel, contato da vistoria e interveniente quitante da proposta:
+ * `enviar: false` só mostra o que iria; `true` envia à oportunidade.
+ */
+export const dadosImovelBanco = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ proposta_id: z.string().uuid(), enviar: z.boolean().default(false) }).parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { dadosImovelOportunidadeImpl } = await import("./enviar/imovel-oportunidade.server");
+    return dadosImovelOportunidadeImpl({
+      propostaId: data.proposta_id,
+      supabase: context.supabase,
+      enviar: data.enviar,
+    });
+  });
+
+/**
+ * Envia à HomeFin um documento recém-anexado no checklist do cliente, em toda
+ * proposta dele que já foi ao banco.
+ *
+ * O documento é da oportunidade: um cliente com propostas em mais de um banco
+ * (oportunidades diferentes) precisa dele em cada uma. Proposta ainda não
+ * enviada fica de fora — o checklist dela no banco nem existe; esses
+ * documentos seguem pelo "Enviar ao banco" quando a proposta for enviada.
+ */
+export const enviarDocumentoAnexadoAoBanco = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ documento_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { data: doc, error } = await supabase
+      .from("cliente_documentos")
+      .select("id, cliente_id, nome_arquivo")
+      .eq("id", data.documento_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!doc) throw new Error("Documento não encontrado.");
+
+    const { data: comoParticipante } = await supabase
+      .from("proposta_envolvidos")
+      .select("proposta_id")
+      .eq("cliente_id", doc.cliente_id);
+    const idsPorEnvolvido = (comoParticipante ?? []).map((e: any) => String(e.proposta_id));
+
+    let q = supabase
+      .from("propostas")
+      .select("id, numero_proposta, status, enviada_em, homefin_id_oportunidade")
+      .is("deleted_at", null)
+      .not("homefin_id_oportunidade", "is", null)
+      .not("enviada_em", "is", null)
+      .neq("status", "cancelada");
+    q =
+      idsPorEnvolvido.length > 0
+        ? q.or(`cliente_id.eq.${doc.cliente_id},id.in.(${idsPorEnvolvido.join(",")})`)
+        : q.eq("cliente_id", doc.cliente_id);
+    const { data: propostas, error: propErr } = await q;
+    if (propErr) throw new Error(propErr.message);
+
+    const { enviarDocumentosBancoImpl } = await import("./enviar.server");
+    const resultados: {
+      numero_proposta: string;
+      enviado: boolean;
+      motivo: string | null;
+    }[] = [];
+    // Sequencial: a HomeFin serializa o envio de documentos por oportunidade.
+    for (const p of propostas ?? []) {
+      try {
+        const r = await enviarDocumentosBancoImpl({
+          propostaId: p.id,
+          userId,
+          supabase,
+          documentoIds: [doc.id],
+        });
+        const erro = r.erros[0]?.motivo ?? null;
+        resultados.push({
+          numero_proposta: p.numero_proposta,
+          enviado: !erro && (r.enviados > 0 || r.naHomefin.length > 0),
+          motivo: erro ?? r.naHomefin[0]?.motivo ?? null,
+        });
+      } catch (e) {
+        resultados.push({
+          numero_proposta: p.numero_proposta,
+          enviado: false,
+          motivo: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+    return { documento: doc.nome_arquivo, resultados };
   });
 
 /** Exclui uma proposta (e registros dependentes via cascata). Registra um
