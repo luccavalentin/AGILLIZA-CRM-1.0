@@ -146,7 +146,9 @@ export async function enviarDocumentosBancoImpl({
 
   const { data: envolvidosRaw } = await supabase
     .from("proposta_envolvidos")
-    .select("id, cliente_id, cpf_cnpj, nome, tipo_qualificacao, conjuge_de")
+    .select(
+      "id, cliente_id, cpf_cnpj, nome, tipo_qualificacao, conjuge_de, homefin_id_participante",
+    )
     .eq("proposta_id", propostaId);
   const envolvidos = (envolvidosRaw ?? []) as any[];
   // Um documento nunca entra na vaga de outro participante (ver `documentos-vagas.ts`).
@@ -211,6 +213,42 @@ export async function enviarDocumentosBancoImpl({
     );
     return Array.isArray(r) ? r : [];
   };
+
+  // ETAPA 0 — vendedor cadastrado na oportunidade. Sem participante VD a
+  // HomeFin não cria as vagas do vendedor, e os documentos dele ficavam sem
+  // vaga (PRO-000404: vendedor nunca cadastrado, 3 documentos fora do envio).
+  const temDocDeVenda = docs.some((d: any) =>
+    ["vendedor", "vendedor_conjuge"].includes(String(d.categoria ?? "")),
+  );
+  const vendedorSemHomefin = envolvidos.some(
+    (e) => e.tipo_qualificacao === "VD" && !e.conjuge_de && !e.homefin_id_participante,
+  );
+  if (temDocDeVenda && vendedorSemHomefin) {
+    try {
+      const { sincronizarVendedoresHomefinImpl } = await import("./participantes-crud.server");
+      const r = await sincronizarVendedoresHomefinImpl({ propostaId, supabase });
+      for (const pend of r.pendentes ?? []) {
+        erros.push({
+          nome: `Vendedor ${pend.nome ?? ""}`.trim(),
+          motivo: `Cadastro do vendedor incompleto, então o banco não abre as vagas dele. Falta: ${(pend.faltando ?? []).join(", ") || "verifique os dados"}.`,
+          participante: pend.nome ?? null,
+        });
+      }
+      for (const err of r.erros ?? []) {
+        erros.push({
+          nome: `Vendedor ${err.nome ?? ""}`.trim(),
+          motivo: err.mensagem,
+          participante: err.nome ?? null,
+        });
+      }
+    } catch (e) {
+      erros.push({
+        nome: "Vendedor",
+        motivo: `Não foi possível cadastrar o vendedor na oportunidade: ${sanitizarMensagemErro(e instanceof Error ? e.message : String(e))}`,
+        participante: null,
+      });
+    }
+  }
 
   // ETAPA 1 — checklist da oportunidade (GET, não dispara envio ao banco).
   const itens = await lerChecklist();
