@@ -60,11 +60,13 @@ export function EnviarBancoDialog({
     [documentos],
   );
 
+  // Reinicia só ao abrir ou quando a pré-seleção muda de conteúdo.
+  const chavePre = (preSelecionados ?? []).join(",");
   useEffect(() => {
     if (!open) return;
-    setMarcados(new Set(preSelecionados ?? []));
+    setMarcados(new Set(chavePre ? chavePre.split(",") : []));
     setResultado(null);
-  }, [open, preSelecionados]);
+  }, [open, chavePre]);
 
   const { data: propostas, isLoading } = useQuery({
     queryKey: ["propostas-envio-documentos", clienteId],

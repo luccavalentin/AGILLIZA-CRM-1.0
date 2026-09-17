@@ -222,7 +222,15 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
         .select("*")
         .eq("proposta_id", prop.id);
       const { espelharEnvolvidoNoCrm } = await import("./espelho-crm.server");
-      for (const e of data.envolvidos) {
+      // Titular antes do cônjuge: gravar o cônjuge no CRM dispara o gatilho do
+      // cliente, que apaga o cônjuge da proposta se o CRM ainda estiver com o
+      // estado civil antigo (solteiro) — e só a gravação do titular o corrige.
+      const ordem = (id: string) => {
+        const a = ((atuais ?? []) as any[]).find((x) => x.id === id);
+        return a?.cliente_id ? 0 : a?.conjuge_de ? 2 : 1;
+      };
+      const envolvidosOrdenados = [...data.envolvidos].sort((x, y) => ordem(x.id) - ordem(y.id));
+      for (const e of envolvidosOrdenados) {
         const atual = ((atuais ?? []) as any[]).find((a) => a.id === e.id);
         if (!atual) throw new Error("Participante não pertence a esta proposta.");
         const dados = pick(e.dados, CAMPOS_ENVOLVIDO);

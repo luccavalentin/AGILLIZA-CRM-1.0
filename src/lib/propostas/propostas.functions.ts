@@ -1220,12 +1220,15 @@ export async function sincronizarEnvolvidoParaCliente(
   clienteId: string,
   dados: Record<string, unknown>,
 ) {
+  // Só valores que existem nos enums de `clientes` (cliente_estado_civil,
+  // regime_casamento). "separado" e "separacao_obrigatoria" não existem: com
+  // eles o UPDATE inteiro falhava em silêncio e nada do titular chegava ao
+  // CRM. Sem equivalente, o campo não é gravado (o CRM mantém o que tem).
   const ESTADO_CIVIL_MAP: Record<string, string> = {
     S: "solteiro",
     CA: "casado",
     VI: "viuvo",
     DI: "divorciado",
-    SL: "separado",
     UE: "uniao_estavel",
   };
   const REGIME_MAP: Record<string, string> = {
@@ -1233,7 +1236,6 @@ export async function sincronizarEnvolvidoParaCliente(
     CU: "comunhao_universal",
     PA: "participacao_final",
     SC: "separacao_total",
-    SO: "separacao_obrigatoria",
   };
   const has = (k: string) => dados[k] !== undefined && dados[k] !== null && dados[k] !== "";
   const patch: Record<string, unknown> = {};
@@ -1263,10 +1265,11 @@ export async function sincronizarEnvolvidoParaCliente(
   // Remove chaves que ficaram undefined após o mapeamento de enum.
   for (const k of Object.keys(patch)) if (patch[k] === undefined) delete patch[k];
   if (Object.keys(patch).length > 0) {
-    await supabase
+    const { error } = await supabase
       .from("clientes")
       .update(patch as any)
       .eq("id", clienteId);
+    if (error) console.error("[espelho-crm] cliente não atualizado", clienteId, error.message);
   }
 
   // Endereço: grava no endereço principal do cliente.
@@ -2721,8 +2724,12 @@ export async function ressincronizarDadosParticipantesImpl({
     const maisNovo = (fonte: any) =>
       data.crm_prevalece &&
       new Date(fonte?.updated_at ?? 0).getTime() >= new Date(env.updated_at ?? 0).getTime();
-    const deveCopiar = (atual: unknown, valor: unknown, fonte: any) =>
-      vazioEnvolvido(atual) || (maisNovo(fonte) && String(atual) !== String(valor));
+    // Estado civil e regime só completam vazio: o CRM não tem "separado" nem
+    // "separação obrigatória", e o valor antigo dele apagaria o da proposta.
+    const SO_COMPLETA = ["estado_civil", "regime_casamento"];
+    const deveCopiar = (atual: unknown, valor: unknown, fonte: any, coluna?: string) =>
+      vazioEnvolvido(atual) ||
+      (!SO_COMPLETA.includes(String(coluna)) && maisNovo(fonte) && String(atual) !== String(valor));
 
     const mapa = ehConjuge ? CAMPOS_CONJUGE_PARA_ENVOLVIDO : CAMPOS_CLIENTE_PARA_ENVOLVIDO;
     for (const { de, para, normalizar } of mapa) {
@@ -2731,7 +2738,7 @@ export async function ressincronizarDadosParticipantesImpl({
       if (bruto === null || bruto === undefined || bruto === "") continue;
       const valor = normalizar ? normalizar(bruto) : bruto;
       if (valor === null || valor === undefined || valor === "") continue;
-      if (!deveCopiar(env[para], valor, cliente)) continue;
+      if (!deveCopiar(env[para], valor, cliente, para)) continue;
       patch[para] = valor;
       camposCompletados.push(para);
     }
@@ -2743,7 +2750,7 @@ export async function ressincronizarDadosParticipantesImpl({
         if (bruto === null || bruto === undefined || bruto === "") continue;
         const valor = normalizar ? normalizar(bruto) : bruto;
         if (valor === null || valor === undefined || valor === "") continue;
-        if (!deveCopiar(env[para], valor, endereco)) continue;
+        if (!deveCopiar(env[para], valor, endereco, para)) continue;
         patch[para] = valor;
         camposCompletados.push(para);
       }
