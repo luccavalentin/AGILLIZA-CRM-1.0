@@ -247,14 +247,14 @@ export async function enviarDocumentosBancoImpl({
       : null;
     if (idEscolhido && (!itemEscolhido || !aceitaUpload(itemEscolhido))) {
       const motivo = itemEscolhido
-        ? "Esta vaga está dispensada no banco e não aceita arquivo."
-        : "A vaga escolhida não existe mais no checklist do banco. Atualize a tela.";
+        ? "O banco dispensou este documento: não precisa enviar."
+        : "O banco não pede mais este documento. Atualize a tela.";
       erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
       await marcarDoc(doc.id, "erro", motivo);
       continue;
     }
     if (itemEscolhido && !vagaAceitaCategoria(itemEscolhido, doc.categoria)) {
-      const motivo = `Documento de ${doc.categoria} não pode ir para a vaga de ${categoriaDaVaga(itemEscolhido)}.`;
+      const motivo = `Documento de ${doc.categoria} não pode ser enviado como documento de ${categoriaDaVaga(itemEscolhido)}.`;
       erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
       await marcarDoc(doc.id, "erro", motivo);
       continue;
@@ -427,7 +427,7 @@ export async function enviarDocumentosBancoImpl({
         ? situacaoDoItem(item, ignoradoDoItem(ignorados, item))
         : { situacao: "homefin" as const, mensagem: naoConsultado };
       if (situacao === "homefin" && !loteDoBanco) {
-        mensagem = `Na HomeFin. O envio automático ao banco existe só para o Bradesco; o ${banco?.nome_banco ?? "banco"} recebe pela HomeFin.`;
+        mensagem = `Enviado à HomeFin, que repassa ao ${banco?.nome_banco ?? "banco"}.`;
       }
       if (situacao === "homefin" && falhaLote) mensagem = falhaLote;
       await marcarDoc(doc.id, situacao, mensagem);

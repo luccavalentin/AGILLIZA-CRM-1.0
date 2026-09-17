@@ -115,8 +115,9 @@ export function EnviarBancoDialog({
             <Landmark className="h-4 w-4 text-primary" /> Enviar documentos ao banco
           </DialogTitle>
           <DialogDescription>
-            Escolha a proposta: os documentos vão para a oportunidade dela na HomeFin, cada um na
-            vaga do dono, e o envio fica registrado na proposta e no cliente.
+            Escolha a proposta: os documentos vão para ela na HomeFin, cada um no nome do dono
+            (comprador, cônjuge, vendedor ou imóvel), e o envio fica registrado na proposta e no
+            cliente.
           </DialogDescription>
         </DialogHeader>
 

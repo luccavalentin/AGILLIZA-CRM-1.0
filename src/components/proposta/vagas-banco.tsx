@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Landmark, Loader2, RefreshCw, Upload, X } from "lucide-react";
+import { CheckCircle2, Landmark, Loader2, RefreshCw, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -25,13 +25,26 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { normTexto } from "@/lib/propostas/enviar/shared-utils";
 import { cn } from "@/lib/utils";
 
-const ANALISE: Record<string, { rotulo: string; tom?: "ok" | "erro" | "alerta" }> = {
-  P: { rotulo: "pendente" },
-  I: { rotulo: "em análise na HomeFin", tom: "alerta" },
-  A: { rotulo: "aprovado na HomeFin", tom: "ok" },
-  R: { rotulo: "recusado na HomeFin", tom: "erro" },
-  D: { rotulo: "dispensado" },
-};
+type Tom = "ok" | "erro" | "alerta";
+
+/**
+ * Selo da vaga do ponto de vista de quem opera: foi enviado ou falta enviar.
+ * "Em análise" (I) é o estado normal depois do upload (`documentoAprovado=false`):
+ * para o usuário o documento já foi enviado.
+ */
+function estadoDaVaga(v: any): { rotulo: string; tom?: Tom; recusado: boolean } {
+  const analise = String(v.situacaoAnalise ?? "P");
+  if (v.situacaoIntegracao === "error") {
+    return { rotulo: "Recusado pelo banco", tom: "erro", recusado: true };
+  }
+  if (analise === "R") return { rotulo: "Recusado pela HomeFin", tom: "erro", recusado: true };
+  if (analise === "D") return { rotulo: "Dispensado", recusado: false };
+  if (v.situacaoIntegracao === "success") {
+    return { rotulo: "Enviado ao banco", tom: "ok", recusado: false };
+  }
+  if (v.arquivos.length > 0) return { rotulo: "Enviado à HomeFin", tom: "ok", recusado: false };
+  return { rotulo: "Pendente", recusado: false };
+}
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -149,7 +162,7 @@ export function VagasBanco({
   async function remover(vaga: any, arquivo: any) {
     if (
       !window.confirm(
-        `Tirar "${semPrefixo(arquivo.nomeArquivo)}" desta vaga no banco? O documento continua salvo no CRM.`,
+        `Excluir "${semPrefixo(arquivo.nomeArquivo)}" da HomeFin? O arquivo continua salvo no cadastro do cliente.`,
       )
     ) {
       return;
@@ -163,10 +176,10 @@ export function VagasBanco({
           documento_crm_id: arquivo.documentoCrmId,
         },
       });
-      toast.success("Arquivo retirado da vaga do banco.");
+      toast.success("Arquivo excluído da HomeFin.");
       onAnexado();
     } catch (err) {
-      toast.error(mensagemDeErro(err, "Não foi possível retirar o arquivo."));
+      toast.error(mensagemDeErro(err, "Não foi possível excluir o arquivo."));
     } finally {
       setTrabalhando(null);
       refetch();
@@ -199,12 +212,14 @@ export function VagasBanco({
               <Landmark className="h-4 w-4" />
             </span>
             <div className="text-sm">
-              <p className="font-semibold text-foreground">Vagas do banco</p>
+              <p className="font-semibold text-foreground">
+                Documentos na HomeFin{data?.nomeBanco ? ` · ${data.nomeBanco}` : ""}
+              </p>
               <p className="text-xs text-muted-foreground">
-                Checklist da oportunidade na HomeFin{data?.nomeBanco ? ` (${data.nomeBanco})` : ""}.
-                Cada arquivo vai para a vaga escolhida e fica salvo no CRM.
+                O que a HomeFin pediu e o que já recebeu. Arquivo enviado por aqui também fica salvo
+                no cadastro do cliente.
                 {data && !data.loteAutomatico
-                  ? " Este banco recebe os documentos pela HomeFin, sem envio automático."
+                  ? " A HomeFin repassa estes documentos ao banco."
                   : ""}
               </p>
             </div>
@@ -229,9 +244,11 @@ export function VagasBanco({
               <Selo tom="erro">{data.resumo.recusados} recusado(s)</Selo>
             )}
             {data.resumo.emAnalise > 0 && (
-              <Selo tom="alerta">{data.resumo.emAnalise} em análise na HomeFin</Selo>
+              <Selo tom="ok">{data.resumo.emAnalise} enviado(s) à HomeFin</Selo>
             )}
-            {data.resumo.noBanco > 0 && <Selo tom="ok">{data.resumo.noBanco} no banco</Selo>}
+            {data.resumo.noBanco > 0 && (
+              <Selo tom="ok">{data.resumo.noBanco} enviado(s) ao banco</Selo>
+            )}
           </div>
         )}
 
@@ -248,7 +265,7 @@ export function VagasBanco({
         )}
         {data && vagas.length === 0 && (
           <p className="text-xs text-muted-foreground">
-            O banco ainda não abriu o checklist de documentos desta oportunidade.
+            A HomeFin ainda não pediu documentos para esta proposta.
           </p>
         )}
 
@@ -262,22 +279,26 @@ export function VagasBanco({
             </p>
             <ul className="divide-y divide-border">
               {g.vagas.map((v: any) => {
-                const analise = ANALISE[v.situacaoAnalise] ?? ANALISE.P;
+                const estado = estadoDaVaga(v);
                 const compativeis = docs.filter(
                   (d) =>
                     vagaAceitaCategoria(v, d.categoria) &&
                     /pdf|png|jpe?g/i.test(`${d.mime_type ?? ""} ${d.nome_arquivo ?? ""}`),
                 );
                 const busy = trabalhando === v.idDocumento;
+                // Vaga já preenchida e não recusada: nada a enviar. Para trocar o
+                // arquivo, exclui e anexa outro.
+                const pedeArquivo = v.aceitaArquivo && (v.arquivos.length === 0 || estado.recusado);
                 return (
                   <li key={v.idDocumento} className="space-y-1.5 px-3 py-2.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
                         {v.nomeDocumento}
                       </span>
-                      <Selo tom={analise.tom}>{analise.rotulo}</Selo>
-                      {v.situacaoIntegracao === "success" && <Selo tom="ok">no banco</Selo>}
-                      {v.situacaoIntegracao === "error" && <Selo tom="erro">banco recusou</Selo>}
+                      <Selo tom={estado.tom}>
+                        {estado.tom === "ok" && <CheckCircle2 className="mr-0.5 inline h-3 w-3" />}
+                        {estado.rotulo}
+                      </Selo>
                     </div>
                     {v.arquivos.length > 0 && (
                       <ul className="space-y-1">
@@ -295,21 +316,21 @@ export function VagasBanco({
                                 className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-destructive hover:bg-destructive/10 disabled:opacity-50"
                                 disabled={ocupado || busy}
                                 onClick={() => remover(v, a)}
-                                title="Tirar este arquivo da vaga no banco"
+                                title="Excluir este arquivo da HomeFin"
                               >
-                                <X className="h-3 w-3" /> Remover da vaga
+                                <Trash2 className="h-3 w-3" /> Excluir
                               </button>
                             )}
                           </li>
                         ))}
                       </ul>
                     )}
-                    {(v.mensagemIntegracao || v.comentarioAnalise) && (
-                      <p className="text-xs text-amber-700 dark:text-amber-400">
-                        {v.mensagemIntegracao || v.comentarioAnalise}
+                    {estado.recusado && (v.mensagemIntegracao || v.comentarioAnalise) && (
+                      <p className="text-xs text-destructive">
+                        Motivo: {v.mensagemIntegracao || v.comentarioAnalise}. Envie outro arquivo.
                       </p>
                     )}
-                    {v.aceitaArquivo && (
+                    {pedeArquivo && (
                       <div className="flex flex-wrap items-center gap-2 pt-0.5">
                         <Button
                           size="sm"
@@ -354,9 +375,10 @@ export function VagasBanco({
 
         {data && vagas.length > 0 && (!temVendedor || !temImovel) && (
           <p className="rounded-md border border-dashed border-border p-2 text-xs text-muted-foreground">
-            {[!temVendedor && "vendedor", !temImovel && "imóvel"].filter(Boolean).join(" e ")}: o
-            banco ainda não abriu vagas nesta etapa. Esses documentos ficam salvos no CRM (abaixo) e
-            podem ser enviados quando a HomeFin liberar as vagas.
+            Documentos de{" "}
+            {[!temVendedor && "vendedor", !temImovel && "imóvel"].filter(Boolean).join(" e ")}: a
+            HomeFin ainda não pediu nesta etapa. Eles ficam salvos no cadastro e seguem ao banco
+            quando forem pedidos.
           </p>
         )}
       </CardContent>

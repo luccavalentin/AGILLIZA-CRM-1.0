@@ -157,9 +157,9 @@ Atualizar a partir de `GET /oportunidade/{id}/documentos` (`situacaoIntegracao`,
 **Limites da API a deixar claros na UI**
 - `incluir-documentos-integracao` só envia ao **Bradesco**. Para Itaú/Santander mostrar
   **"Enviado à HomeFin"** (não "Enviado ao banco").
-- O lote do banco considera **todos** os documentos aprovados pendentes da oportunidade; um envio
+- O lote do banco considera **todos** os documentos pendentes da oportunidade; um envio
   "individual" pode levar junto outro documento pendente — exibir isso no resumo.
-- Documentos ignorados com motivo `documento_nao_aprovado` → mostrar o aviso "Aguardando aprovação na HomeFin".
+- `documentoAprovado=false` é decisão fechada (orientação da HomeFin). Não alterar.
 
 **Avançar para ③**: habilitado quando todos os documentos **obrigatórios** estiverem ao menos na HomeFin.
 Usar `moverStatusProposta` → `aguardando_documentos` → `engenharia_vistoria`.
@@ -211,5 +211,4 @@ Usar `moverStatusProposta` → `aguardando_documentos` → `engenharia_vistoria`
 
 1. Os PUTs de participante/oportunidade refletem no banco após a proposta enviada, ou é preciso reenviar?
 2. `PUT /oportunidade {tipoSituacao:"C"}` cancela de fato e comunica o banco?
-3. Quem aprova os documentos enviados com `documentoAprovado=false` antes do lote do Bradesco?
-4. Há previsão de envio de documentos para Itaú e Santander?
+3. Há previsão de envio de documentos para Itaú e Santander?

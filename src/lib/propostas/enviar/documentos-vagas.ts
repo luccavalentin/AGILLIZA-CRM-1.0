@@ -195,16 +195,25 @@ export function situacaoDoItem(
       mensagem: `Recusado na análise da HomeFin${comentario ? `: ${comentario}` : "."}`,
     };
   }
-  const motivo = String(ignorado?.descricaoMotivo ?? "").trim();
-  if (motivo) return { situacao: "homefin", mensagem: motivo };
-  if (analise === "I") {
+  // O texto da HomeFin é técnico ("use documentoAprovado=true…"): o usuário vê
+  // só o que aconteceu com o documento.
+  if (ignorado) {
     return {
       situacao: "homefin",
-      mensagem: "Na HomeFin, em análise: entra no envio ao banco depois de aprovado.",
+      mensagem: MENSAGEM_IGNORADO[String(ignorado?.motivo ?? "")] ?? MENSAGEM_HOMEFIN,
     };
   }
-  return { situacao: "homefin", mensagem: "Na HomeFin, aguardando o envio ao banco." };
+  if (analise === "I") return { situacao: "homefin", mensagem: MENSAGEM_EM_ANALISE };
+  return { situacao: "homefin", mensagem: MENSAGEM_HOMEFIN };
 }
+
+const MENSAGEM_EM_ANALISE = "Enviado à HomeFin. Segue ao banco depois da análise da HomeFin.";
+const MENSAGEM_HOMEFIN = "Enviado à HomeFin.";
+const MENSAGEM_IGNORADO: Record<string, string> = {
+  documento_nao_aprovado: MENSAGEM_EM_ANALISE,
+  sem_codigo_integracao_bradesco: "Enviado à HomeFin, que repassa este documento ao banco.",
+  sem_correspondencia_checklist_banco: "Enviado à HomeFin. O banco ainda não pediu este documento.",
+};
 
 // ---------------------------------------------------------------------------
 // Dono da vaga pelo `tipoDocumento` do checklist (swagger: CO/VD/CC/CV/RC/RV/IM/IQ)

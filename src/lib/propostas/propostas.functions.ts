@@ -1849,7 +1849,7 @@ export const removerArquivoVagaBanco = createServerFn({ method: "POST" })
     await supabase.from("proposta_historico").insert({
       proposta_id: prop.id,
       tipo_evento: "sincronizacao",
-      descricao: "Arquivo removido de uma vaga do checklist de documentos no banco.",
+      descricao: "Arquivo excluído da HomeFin.",
       ator_id: userId,
     } as any);
     return { ok: true };
