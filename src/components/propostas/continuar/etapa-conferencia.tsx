@@ -196,7 +196,7 @@ export function EtapaConferencia({
    * "Gravar e avançar", com confirmação.
    */
   useEffect(() => {
-    if (!sujo) return;
+    if (!sujo || salvando) return;
     const edicaoAoAgendar = edicoes.current;
     const t = setTimeout(async () => {
       const envio = montarEnvio();
@@ -218,7 +218,7 @@ export function EtapaConferencia({
     }, 2000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dados, pessoas, conta, sujo]);
+  }, [dados, pessoas, conta, sujo, salvando]);
 
   // Só proponentes (comprador e cônjuge) têm os campos obrigatórios do banco.
   const pendencias = useMemo(() => {

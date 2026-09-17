@@ -15,6 +15,8 @@ import { EnviarBancoDialog } from "./documentos-checklist/enviar-banco-dialog";
 import { Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const SEM_PRE_SELECAO: string[] = [];
+
 export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   const getDados = useServerFn(getChecklistDados);
   const listar = useServerFn(listarDocumentos);
@@ -76,14 +78,16 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   }
 
   const docsLista = (docs ?? []) as any[];
-  const preSelecionados = state.envioBanco
+  const preSelecionadosCalculados = state.envioBanco
     ? docsLista
         .filter(
           (d) =>
             d.categoria === state.envioBanco!.cat && d.tipo_documento === state.envioBanco!.label,
         )
         .map((d) => String(d.id))
-    : [];
+    : SEM_PRE_SELECAO;
+  // A janela reinicia a seleção pelo conteúdo (ids), não pela referência do array.
+  const preSelecionados = preSelecionadosCalculados;
 
   return (
     <div className="space-y-4">
@@ -105,7 +109,7 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
         }}
         clienteId={clienteId}
         documentos={docsLista}
-        preSelecionados={envioGeral ? [] : preSelecionados}
+        preSelecionados={envioGeral ? SEM_PRE_SELECAO : preSelecionados}
       />
       <SecaoComprador state={state} cli={cli} casado={casado} temDoc={temDoc} />
 

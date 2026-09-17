@@ -68,4 +68,15 @@ describe("espelho proposta ↔ CRM", () => {
     expect(mesmoDocumento("123.456.789-09", "12345678909")).toBe(true);
     expect(mesmoDocumento("", "")).toBe(false);
   });
+  it("vendedor separado e separação obrigatória vão e voltam sem virar outro valor", () => {
+    for (const [estado, regime] of [
+      ["SL", "SO"],
+      ["CA", "CP"],
+      ["DI", "SC"],
+    ]) {
+      const crm = envolvidoParaVendedorCrm({ estado_civil: estado, regime_casamento: regime });
+      const volta = vendedorCrmParaEnvolvido(crm);
+      expect([volta.estado_civil, volta.regime_casamento]).toEqual([estado, regime]);
+    }
+  });
 });

@@ -16,13 +16,14 @@ const ESTADO_CIVIL_PARA_CRM: Record<string, string> = {
   UE: "uniao_estavel",
   DI: "divorciado",
   VI: "viuvo",
-  SL: "divorciado",
+  SL: "separado",
 };
 const REGIME_PARA_CRM: Record<string, string> = {
   CP: "comunhao_parcial",
   CU: "comunhao_universal",
   PA: "participacao_final",
   SC: "separacao_total",
+  SO: "separacao_obrigatoria",
 };
 
 const tem = (v: unknown) => v !== undefined && v !== null && String(v).trim() !== "";
