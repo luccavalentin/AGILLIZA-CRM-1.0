@@ -148,6 +148,17 @@ describe("contrato HomeFin — campos", () => {
     expect(schemas.UploadOk.properties).toHaveProperty("idArquivo");
   });
 
+  // Só documento aprovado entra no lote do banco: com `false` o
+  // `incluir-documentos-integracao` devolveu tudo em `ignorados`
+  // (`documento_nao_aprovado`) no primeiro envio real, 17/09/2026.
+  it("upload sobe o documento já aprovado", () => {
+    const envio = readFileSync(join(RAIZ, "lib/propostas/enviar/documentos.server.ts"), "utf-8");
+    const inicio = envio.indexOf("enviarArquivoIntegracao<any>(");
+    const chamada = envio.slice(inicio, envio.indexOf(");", inicio));
+    expect(chamada).toContain("true,");
+    expect(chamada).not.toContain("false,");
+  });
+
   it("checklist de documentos: todo campo lido pelo sistema existe na resposta", () => {
     const item = schemas.OpportunityDocumentsResponse.items.properties;
     for (const campo of [
