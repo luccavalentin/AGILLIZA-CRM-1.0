@@ -14,6 +14,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  conjugeParaClienteCrm,
+  envolvidoParaVendedorCrm,
+  imovelParaClienteCrm,
+  mesmoDocumento,
+  vendedorCrmParaEnvolvido,
+} from "./sincronizar-crm";
+import {
   bancoAprovado,
   podeContinuarProposta,
   transicaoPermitida,
@@ -214,11 +221,36 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
           .update(patch as any)
           .eq("id", e.id);
         if (error) throw new Error(error.message);
+        // Espelho no CRM: titular pelo próprio cadastro; cônjuge nas colunas
+        // `conjuge_*` do titular; vendedor em `cliente_vendedores`.
         if (atual.cliente_id) {
           await sincronizarEnvolvidoParaCliente(supabase, String(atual.cliente_id), patch);
+        } else if (atual.conjuge_de && atual.tipo_qualificacao !== "VD") {
+          const titular = ((atuais ?? []) as any[]).find((a) => a.id === atual.conjuge_de);
+          const clienteTitular = titular?.cliente_id ?? prop.cliente_id;
+          const crm = conjugeParaClienteCrm({ ...atual, ...patch });
+          if (clienteTitular && Object.keys(crm).length > 0) {
+            await supabase
+              .from("clientes")
+              .update(crm as any)
+              .eq("id", clienteTitular);
+          }
+        } else if (atual.tipo_qualificacao === "VD" && prop.cliente_id) {
+          await espelharVendedorNoCrm(supabase, prop.cliente_id, atual, { ...atual, ...patch });
         }
         blocos.add("participantes");
         descricao.push(`${atual.nome ?? "participante"} (${campos.join(", ")})`);
+      }
+    }
+
+    // Imóvel conferido também no cadastro do cliente (`clientes.imovel_*`).
+    if (prop.cliente_id && (imovelMudado.length > 0 || valoresMudados.includes("valor_imovel"))) {
+      const crm = imovelParaClienteCrm({ ...prop, ...patchProposta });
+      if (Object.keys(crm).length > 0) {
+        await supabase
+          .from("clientes")
+          .update(crm as any)
+          .eq("id", prop.cliente_id);
       }
     }
 
@@ -354,6 +386,85 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
     }
 
     return { alterou: blocos.size > 0, blocos: Array.from(blocos), errosHomefin, status };
+  });
+
+/** Vendedor editado na proposta → `cliente_vendedores` (casado pelo documento). */
+async function espelharVendedorNoCrm(
+  supabase: any,
+  clienteId: string,
+  antes: any,
+  depois: any,
+): Promise<void> {
+  const { data: vendedores } = await supabase
+    .from("cliente_vendedores")
+    .select("id, documento, nome")
+    .eq("cliente_id", clienteId);
+  const alvo =
+    ((vendedores ?? []) as any[]).find(
+      (v) =>
+        mesmoDocumento(v.documento, antes.cpf_cnpj) || mesmoDocumento(v.documento, depois.cpf_cnpj),
+    ) ?? null;
+  const patch = envolvidoParaVendedorCrm(depois);
+  if (Object.keys(patch).length === 0) return;
+  if (alvo) {
+    await supabase.from("cliente_vendedores").update(patch).eq("id", alvo.id);
+  } else if (patch.nome) {
+    await supabase.from("cliente_vendedores").insert({ cliente_id: clienteId, ...patch });
+  }
+}
+
+/**
+ * Traz para a proposta os vendedores cadastrados (ou alterados) no CRM depois
+ * que ela foi criada. A cópia acontecia só na criação: vendedor cadastrado na
+ * aba "Vendedores" depois disso nunca chegava à proposta.
+ *
+ * Casamento pelo documento. O CRM vence quando foi alterado depois do
+ * envolvido; a conferência da proposta escreve de volta no CRM.
+ */
+export const sincronizarVendedoresProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("id, cliente_id")
+      .eq("id", data.proposta_id)
+      .maybeSingle();
+    if (!prop?.cliente_id) return { incluidos: 0, atualizados: 0 };
+
+    const [{ data: vendedores }, { data: envolvidos }] = await Promise.all([
+      supabase.from("cliente_vendedores").select("*").eq("cliente_id", prop.cliente_id),
+      supabase
+        .from("proposta_envolvidos")
+        .select("id, cpf_cnpj, nome, updated_at")
+        .eq("proposta_id", prop.id)
+        .eq("tipo_qualificacao", "VD"),
+    ]);
+
+    let incluidos = 0;
+    let atualizados = 0;
+    for (const v of (vendedores ?? []) as any[]) {
+      const env = ((envolvidos ?? []) as any[]).find(
+        (e) =>
+          mesmoDocumento(e.cpf_cnpj, v.documento) ||
+          (!e.cpf_cnpj && String(e.nome ?? "").trim() === String(v.nome ?? "").trim()),
+      );
+      const linha = vendedorCrmParaEnvolvido(v);
+      if (!env) {
+        const { error } = await supabase
+          .from("proposta_envolvidos")
+          .insert({ proposta_id: prop.id, cliente_id: null, ...linha } as any);
+        if (!error) incluidos++;
+      } else if (new Date(v.updated_at ?? 0).getTime() > new Date(env.updated_at ?? 0).getTime()) {
+        const { error } = await supabase
+          .from("proposta_envolvidos")
+          .update(linha as any)
+          .eq("id", env.id);
+        if (!error) atualizados++;
+      }
+    }
+    return { incluidos, atualizados };
   });
 
 /** Avança a proposta para a próxima etapa do fluxo pós-aprovação. */

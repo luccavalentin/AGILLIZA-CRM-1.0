@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { termosDoTipoDocumento } from "@/lib/documentos/tipos-banco";
 import {
   arquivoDoDocumento,
+  categoriaDaVaga,
+  vagaAceitaCategoria,
   donoDoDocumento,
   ignoradoDoItem,
   nomeArquivoNaHomefin,
@@ -116,5 +118,27 @@ describe("estado do documento na HomeFin", () => {
       mensagem: "Não aprovado",
     });
     expect(situacaoDoItem(item).situacao).toBe("homefin");
+  });
+});
+
+describe("dono da vaga pelo tipoDocumento", () => {
+  it("mapeia a vaga para a pasta do CRM", () => {
+    expect(categoriaDaVaga({ tipoDocumento: "CO" })).toBe("comprador");
+    expect(categoriaDaVaga({ tipoDocumento: "CC" })).toBe("conjuge");
+    expect(categoriaDaVaga({ tipoDocumento: "VD" })).toBe("vendedor");
+    expect(categoriaDaVaga({ tipoDocumento: "CV" })).toBe("vendedor_conjuge");
+    expect(categoriaDaVaga({ tipoDocumento: "IM" })).toBe("imovel");
+    expect(categoriaDaVaga({})).toBe("outros");
+  });
+
+  it("não mistura comprador, vendedor e imóvel", () => {
+    expect(vagaAceitaCategoria({ tipoDocumento: "CO" }, "vendedor")).toBe(false);
+    expect(vagaAceitaCategoria({ tipoDocumento: "VD" }, "comprador")).toBe(false);
+    expect(vagaAceitaCategoria({ tipoDocumento: "IM" }, "conjuge")).toBe(false);
+    expect(vagaAceitaCategoria({ tipoDocumento: "CV" }, "vendedor")).toBe(true);
+    // cônjuge que compõe renda tem vagas CO com o próprio nome
+    expect(vagaAceitaCategoria({ tipoDocumento: "CO" }, "conjuge")).toBe(true);
+    expect(vagaAceitaCategoria({ tipoDocumento: "IM" }, "outros")).toBe(true);
+    expect(vagaAceitaCategoria({}, "vendedor")).toBe(true);
   });
 });

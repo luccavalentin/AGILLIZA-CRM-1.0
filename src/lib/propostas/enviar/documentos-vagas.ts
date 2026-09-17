@@ -205,3 +205,60 @@ export function situacaoDoItem(
   }
   return { situacao: "homefin", mensagem: "Na HomeFin, aguardando o envio ao banco." };
 }
+
+// ---------------------------------------------------------------------------
+// Dono da vaga pelo `tipoDocumento` do checklist (swagger: CO/VD/CC/CV/RC/RV/IM/IQ)
+// ---------------------------------------------------------------------------
+
+type CategoriaCrm = "comprador" | "conjuge" | "vendedor" | "vendedor_conjuge" | "imovel" | "outros";
+
+const CATEGORIA_POR_TIPO_VAGA: Record<string, CategoriaCrm> = {
+  CO: "comprador",
+  RC: "comprador",
+  CC: "conjuge",
+  VD: "vendedor",
+  RV: "vendedor",
+  CV: "vendedor_conjuge",
+  IM: "imovel",
+  IQ: "imovel",
+};
+
+export const ROTULO_TIPO_VAGA: Record<string, string> = {
+  CO: "Comprador",
+  CC: "Cônjuge do comprador",
+  RC: "Representante do comprador",
+  VD: "Vendedor",
+  CV: "Cônjuge do vendedor",
+  RV: "Representante do vendedor",
+  IM: "Imóvel",
+  IQ: "Interveniente quitante",
+};
+
+/** Pasta do CRM onde um arquivo desta vaga deve ficar guardado. */
+export function categoriaDaVaga(item: any): CategoriaCrm {
+  return CATEGORIA_POR_TIPO_VAGA[String(item?.tipoDocumento ?? "").toUpperCase()] ?? "outros";
+}
+
+const LADO: Record<CategoriaCrm, "compra" | "venda" | "imovel" | null> = {
+  comprador: "compra",
+  conjuge: "compra",
+  vendedor: "venda",
+  vendedor_conjuge: "venda",
+  imovel: "imovel",
+  outros: null,
+};
+
+/**
+ * Um documento do CRM pode ocupar esta vaga? Documento do vendedor nunca vai
+ * para vaga de comprador (nem o contrário), e documento do imóvel só vai para
+ * vaga de imóvel. O cônjuge do comprador pode ocupar vaga CO: na HomeFin o
+ * cônjuge que compõe renda é também um comprador (vagas CO com o nome dele).
+ * "Outros" e vagas sem `tipoDocumento` não restringem.
+ */
+export function vagaAceitaCategoria(item: any, categoria: string | null | undefined): boolean {
+  const tipo = String(item?.tipoDocumento ?? "").toUpperCase();
+  if (!tipo || !CATEGORIA_POR_TIPO_VAGA[tipo]) return true;
+  const ladoDoc = LADO[(categoria ?? "outros") as CategoriaCrm] ?? null;
+  if (!ladoDoc) return true;
+  return LADO[CATEGORIA_POR_TIPO_VAGA[tipo]] === ladoDoc;
+}

@@ -2421,6 +2421,8 @@ export async function sincronizarPropostaImpl({
 export {
   enviarDocumentosBancoImpl,
   excluirArquivoHomefinImpl,
+  checklistBancoImpl,
+  type VagaBanco,
   type EnviarDocumentosArgs,
   type EnviarDocumentosResultado,
 } from "./enviar/documentos.server";

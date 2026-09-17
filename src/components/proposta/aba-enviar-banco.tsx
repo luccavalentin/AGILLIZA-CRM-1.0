@@ -71,6 +71,7 @@ import { dadosImovelBanco, enviarDocumentosBanco } from "@/lib/propostas/propost
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 import { donoDoDocumento } from "@/lib/propostas/enviar/documentos-vagas";
+import { VagasBanco } from "./vagas-banco";
 import { nomeDoTipoDocumento, sugerirTipoDocumento } from "@/lib/documentos/tipos-banco";
 import {
   TIPOS_DOCUMENTO_POR_CATEGORIA,
@@ -369,7 +370,7 @@ export function AbaEnviarBanco({
     return true;
   }
 
-  async function enviarDocumentos(ids: string[]) {
+  async function enviarDocumentos(ids: string[], vagas?: Record<string, string>) {
     if (exigirCadastroCompleto()) return;
     if (ids.length === 0) {
       toast.info("Nenhum documento selecionado.");
@@ -378,7 +379,8 @@ export function AbaEnviarBanco({
     setEnviando(true);
     setResultado(null);
     try {
-      const r = await enviar({ data: { proposta_id: propostaId, documento_ids: ids } });
+      const r = await enviar({ data: { proposta_id: propostaId, documento_ids: ids, vagas } });
+      qc.invalidateQueries({ queryKey: ["checklist-banco", propostaId] });
       setResultado(r);
       if (r.enviados > 0) toast.success(`${r.enviados} documento(s) confirmado(s) pelo banco.`);
       if (r.naHomefin.length > 0)
@@ -525,9 +527,11 @@ export function AbaEnviarBanco({
               <p className="text-muted-foreground">
                 {!propostaNoBanco
                   ? "Envie a proposta ao banco primeiro: o checklist de documentos é criado por ela."
-                  : naoEnviados.length > 0
-                    ? `${naoEnviados.length} documento(s) ainda não enviado(s), cada um vai para a vaga do dono.`
-                    : "Todos os documentos aceitos já foram enviados."}
+                  : aptos.length === 0
+                    ? "Nenhum documento salvo ainda. Anexe nas vagas do banco ou nas pastas abaixo."
+                    : naoEnviados.length > 0
+                      ? `${naoEnviados.length} documento(s) ainda não enviado(s), cada um vai para a vaga do dono.`
+                      : "Todos os documentos salvos já foram enviados."}
               </p>
             </div>
           </div>
@@ -547,12 +551,32 @@ export function AbaEnviarBanco({
               disabled={ocupado || !propostaNoBanco}
               className="h-11 gap-2 rounded-xl px-6 font-semibold shadow-md shadow-primary/20"
             >
-              {ocupado ? <Loader2 className="h-4 w-4 animate-spin" /> : <Landmark className="h-4 w-4" />}
-              {ocupado ? "Enviando…" : bloqueado ? "Completar cadastro e enviar" : "Enviar pendentes"}
+              {ocupado ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Landmark className="h-4 w-4" />
+              )}
+              {ocupado
+                ? "Enviando…"
+                : bloqueado
+                  ? "Completar cadastro e enviar"
+                  : "Enviar pendentes"}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {propostaNoBanco && (
+        <VagasBanco
+          propostaId={propostaId}
+          clienteId={clienteId}
+          envolvidos={envolvidos}
+          docs={lista}
+          ocupado={ocupado}
+          onEnviar={enviarDocumentos}
+          onAnexado={recarregar}
+        />
+      )}
 
       {/* Resultado do último envio */}
       {(resultado || resultadoImovel) && (
@@ -564,7 +588,11 @@ export function AbaEnviarBanco({
             {resultadoImovel && (
               <div className="space-y-1">
                 {resultadoImovel.erro ? (
-                  <Linha icone="erro" titulo="Dados do imóvel e vistoria" detalhe={resultadoImovel.erro} />
+                  <Linha
+                    icone="erro"
+                    titulo="Dados do imóvel e vistoria"
+                    detalhe={resultadoImovel.erro}
+                  />
                 ) : (
                   <>
                     {resultadoImovel.confirmados.length > 0 && (
@@ -589,7 +617,12 @@ export function AbaEnviarBanco({
               </div>
             )}
             {resultado?.sucesso.map((s, i) => (
-              <Linha key={`s-${i}`} icone="ok" titulo={s.nome} detalhe={s.participante ?? undefined} />
+              <Linha
+                key={`s-${i}`}
+                icone="ok"
+                titulo={s.nome}
+                detalhe={s.participante ?? undefined}
+              />
             ))}
             {resultado?.naHomefin?.map((h, i) => (
               <Linha
@@ -676,8 +709,9 @@ export function AbaEnviarBanco({
 
                 {g.categoria === "vendedor" && !vendedor && (
                   <Aviso>
-                    Cadastre o vendedor na aba <strong>Vendedores</strong>: é o cadastro dele que cria
-                    as vagas de documento do vendedor no banco.
+                    Cadastre o vendedor na aba <strong>Vendedores</strong>: os dados dele entram na
+                    proposta. As vagas de documento do vendedor são abertas pela HomeFin; até lá os
+                    arquivos ficam salvos aqui.
                   </Aviso>
                 )}
 
@@ -724,7 +758,10 @@ export function AbaEnviarBanco({
                       const apto = ehFormatoBanco(d);
                       const grande = Number(d.tamanho_bytes) > MAX_BYTES_BANCO;
                       return (
-                        <li key={d.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                        <li
+                          key={d.id}
+                          className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+                        >
                           <Checkbox
                             checked={selecionados.has(d.id)}
                             disabled={!apto}
@@ -732,7 +769,10 @@ export function AbaEnviarBanco({
                             aria-label={`Selecionar ${d.nome_arquivo}`}
                           />
                           <FileText
-                            className={cn("h-4 w-4 shrink-0", apto ? "text-primary" : "text-muted-foreground")}
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              apto ? "text-primary" : "text-muted-foreground",
+                            )}
                           />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium text-foreground">
@@ -742,7 +782,9 @@ export function AbaEnviarBanco({
                               <span className="truncate">{d.nome_arquivo}</span>
                               {!apto && <Selo tom="alerta">formato não aceito</Selo>}
                               {apto && grande && <Selo tom="alerta">acima de 5 MB</Selo>}
-                              {d.situacao_integracao === "enviado" && <Selo tom="ok">enviado ao banco</Selo>}
+                              {d.situacao_integracao === "enviado" && (
+                                <Selo tom="ok">enviado ao banco</Selo>
+                              )}
                               {d.situacao_integracao === "erro" && (
                                 <Selo tom="erro" titulo={d.erro_integracao ?? undefined}>
                                   falha no envio
@@ -784,16 +826,31 @@ export function AbaEnviarBanco({
                                 </span>
                               </Button>
                             )}
-                            <Button size="icon" variant="ghost" className="h-8 w-8" title="Visualizar"
-                              onClick={() => visualizar(d.storage_path, d.nome_arquivo)}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              title="Visualizar"
+                              onClick={() => visualizar(d.storage_path, d.nome_arquivo)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8" title="Baixar"
-                              onClick={() => baixar(d.storage_path, d.nome_arquivo)}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              title="Baixar"
+                              onClick={() => baixar(d.storage_path, d.nome_arquivo)}
+                            >
                               <Download className="h-4 w-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive"
-                              title="Excluir" onClick={() => setExcluindo({ id: d.id, nome: d.nome_arquivo })}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              title="Excluir"
+                              onClick={() => setExcluindo({ id: d.id, nome: d.nome_arquivo })}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -809,7 +866,10 @@ export function AbaEnviarBanco({
       )}
 
       {/* Confirmação do tipo antes de anexar */}
-      <Dialog open={!!pendentesUpload} onOpenChange={(o) => !o && !subindo && setPendentesUpload(null)}>
+      <Dialog
+        open={!!pendentesUpload}
+        onOpenChange={(o) => !o && !subindo && setPendentesUpload(null)}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
@@ -817,7 +877,8 @@ export function AbaEnviarBanco({
               {pendentesUpload && nomeDoGrupoSeguro(pendentesUpload.categoria, nomeDoGrupo)}
             </DialogTitle>
             <DialogDescription>
-              Confirme o tipo de cada arquivo. É o tipo que coloca o documento na vaga certa do banco.
+              Confirme o tipo de cada arquivo. É o tipo que coloca o documento na vaga certa do
+              banco.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
@@ -825,13 +886,20 @@ export function AbaEnviarBanco({
               const opcoes = TIPOS_DOCUMENTO_POR_CATEGORIA[pendentesUpload.categoria] ?? [];
               const atualizar = (patch: Partial<ArquivoPendente>) =>
                 setPendentesUpload((p) =>
-                  p ? { ...p, arquivos: p.arquivos.map((x, j) => (j === i ? { ...x, ...patch } : x)) } : p,
+                  p
+                    ? {
+                        ...p,
+                        arquivos: p.arquivos.map((x, j) => (j === i ? { ...x, ...patch } : x)),
+                      }
+                    : p,
                 );
               return (
                 <div key={i} className="space-y-2 rounded-lg border border-border p-3">
                   <p className="flex items-center gap-2 truncate text-sm font-medium">
                     <FileText className="h-4 w-4 shrink-0 text-primary" /> {a.file.name}
-                    {a.file.size > MAX_BYTES_BANCO && <Selo tom="alerta">acima de 5 MB: o banco recusa</Selo>}
+                    {a.file.size > MAX_BYTES_BANCO && (
+                      <Selo tom="alerta">acima de 5 MB: o banco recusa</Selo>
+                    )}
                   </p>
                   <Select value={a.tipo} onValueChange={(v) => atualizar({ tipo: v })}>
                     <SelectTrigger>
@@ -866,7 +934,8 @@ export function AbaEnviarBanco({
               {subindo && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />} Salvar
             </Button>
             <Button disabled={subindo || !propostaNoBanco} onClick={() => confirmarUpload(true)}>
-              {subindo && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />} Salvar e enviar ao banco
+              {subindo && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />} Salvar e enviar ao
+              banco
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -883,8 +952,8 @@ export function AbaEnviarBanco({
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir documento?</AlertDialogTitle>
             <AlertDialogDescription>
-              O documento “{excluindo?.nome}” será removido do cadastro e, se já foi enviado,
-              também da HomeFin.
+              O documento “{excluindo?.nome}” será removido do cadastro e, se já foi enviado, também
+              da HomeFin.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -995,7 +1064,13 @@ function DadosImovel({
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Dados do imóvel e da vistoria
         </p>
-        <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" disabled={!habilitado || enviando || previa.campos.length === 0} onClick={onEnviar}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1.5 text-xs"
+          disabled={!habilitado || enviando || previa.campos.length === 0}
+          onClick={onEnviar}
+        >
           {enviando ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
           Enviar ao banco
         </Button>
