@@ -80,6 +80,9 @@ export const QUALIFICACAO_LABEL: Record<string, string> = {
   VD: "vendedor",
 };
 
+/** `tipoDocumentoIdentidade` do CreateParticipantRequest: "RG/CNH". */
+export const TIPOS_DOCUMENTO_ACEITOS = ["RG", "CNH"];
+
 function vazio(valor: unknown): boolean {
   if (valor === null || valor === undefined) return true;
   if (typeof valor === "number") return !(valor > 0);
@@ -121,6 +124,11 @@ export function faltantesEnvolvido(
     : CAMPOS_OBRIGATORIOS_PARTICIPANTE;
   return campos.filter((c) => {
     if (c.apenasPF && !pf) return false;
+    // O contrato aceita só RG ou CNH; o CRM também oferece RNE, Passaporte e
+    // CTPS, que a HomeFin não recebe.
+    if (c.chave === "tipo_documento_identidade" && !vazio(env?.[c.chave])) {
+      return !TIPOS_DOCUMENTO_ACEITOS.includes(String(env[c.chave]).trim().toUpperCase());
+    }
     if (c.chave === "utiliza_fgts") return false; // booleano com default (S/N)
     if (c.chave === "fg_autorizacao_dados") return env?.fg_autorizacao_dados !== true;
     return vazio(env?.[c.chave]);

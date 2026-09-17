@@ -66,7 +66,7 @@ export function DocItem({
         </span>
       )}
       {has && !editing && (
-        <span className="rounded bg-success/10 px-1.5 py-0.5 text-xs text-success">enviado</span>
+        <span className="rounded bg-success/10 px-1.5 py-0.5 text-xs text-success">anexado</span>
       )}
       {!editing && (
         <button

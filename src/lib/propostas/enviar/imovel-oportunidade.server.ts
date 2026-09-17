@@ -37,7 +37,7 @@ export async function dadosImovelOportunidadeImpl({
   const { data: prop, error } = await supabase
     .from("propostas")
     .select(
-      "id, cliente_id, correspondente_id, homefin_id_oportunidade, cep_imovel, endereco_imovel, numero_imovel, complemento_imovel, bairro_imovel, cidade_imovel, uf, iq_nome, iq_comentario",
+      "id, cliente_id, correspondente_id, homefin_id_oportunidade, cep_imovel, endereco_imovel, numero_imovel, complemento_imovel, bairro_imovel, cidade_imovel, uf, iq_nome, iq_comentario, contato_avaliacao_nome, contato_avaliacao_telefone",
     )
     .eq("id", propostaId)
     .maybeSingle();

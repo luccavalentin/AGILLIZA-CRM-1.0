@@ -42,6 +42,7 @@ import {
 import { QUALIFICACAO_LABEL } from "@/lib/propostas/campos-obrigatorios";
 import { LABEL_POR_CHAVE } from "@/lib/propostas/campos-obrigatorios";
 import { erroAgencia } from "@/lib/bancos/agencia";
+import { mascararTelefone } from "@/lib/crm/documento";
 import { SITUACOES_IMOVEL, TIPOS_IMOVEL, USOS_IMOVEL } from "@/lib/simulacao/schemas";
 import { cn } from "@/lib/utils";
 
@@ -140,7 +141,14 @@ export function EtapaConferencia({
   const [tentou, setTentou] = useState(false);
   const [confirmarSensiveis, setConfirmarSensiveis] = useState<string[] | null>(null);
 
-  // Carrega (e recarrega depois de gravar) a partir do que está salvo.
+  // Carrega (e recarrega depois de gravar) a partir do que está salvo. A chave
+  // é a versão gravada: um refetch que não mudou nada não apaga o que o
+  // operador está digitando.
+  const versao = [
+    proposta?.updated_at,
+    banco?.updated_at,
+    ...envolvidos.map((e) => `${e.id}:${e.updated_at}`),
+  ].join("|");
   useEffect(() => {
     setDados(propostaParaForm(proposta));
     setPessoas(Object.fromEntries(envolvidos.map((e) => [e.id, envolvidoParaForm(e)])));
@@ -149,7 +157,8 @@ export function EtapaConferencia({
       conta_corrente: banco?.conta_corrente ?? "",
       digito_conta: banco?.digito_conta ?? "",
     });
-  }, [proposta, envolvidos, banco]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versao]);
 
   const titulares = envolvidos.filter((e) => e.tipo_qualificacao !== "VD" && !e.conjuge_de);
   const vendedores = envolvidos.filter((e) => e.tipo_qualificacao === "VD" && !e.conjuge_de);
@@ -442,8 +451,14 @@ export function EtapaConferencia({
                 <Campo label="Telefone">
                   <Input
                     inputMode="tel"
-                    value={dados.contato_avaliacao_telefone}
-                    onChange={(ev) => setDado("contato_avaliacao_telefone", ev.target.value)}
+                    placeholder="(00) 00000-0000"
+                    value={mascararTelefone(dados.contato_avaliacao_telefone)}
+                    onChange={(ev) =>
+                      setDado(
+                        "contato_avaliacao_telefone",
+                        ev.target.value.replace(/\D/g, "").slice(0, 11),
+                      )
+                    }
                   />
                 </Campo>
               </div>

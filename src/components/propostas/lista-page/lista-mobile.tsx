@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { MenuAcoesProposta } from "./menu-acoes-proposta";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
@@ -114,11 +115,14 @@ export function ListaMobile({
                       )}
                     </div>
                   ) : (
-                    <ConfirmDelete
-                      titulo="Excluir proposta"
-                      descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
-                      onConfirm={() => handleExcluir(p.id)}
-                    />
+                    <div className="flex items-center gap-1">
+                      <MenuAcoesProposta propostaId={p.id} status={p.status} bancos={p.bancos} />
+                      <ConfirmDelete
+                        titulo="Excluir proposta"
+                        descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
+                        onConfirm={() => handleExcluir(p.id)}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
