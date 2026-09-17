@@ -1811,6 +1811,11 @@ export const removerArquivoVagaBanco = createServerFn({ method: "POST" })
     } catch (e) {
       throw new Error(sanitizarMensagemErro(e instanceof Error ? e.message : String(e)));
     }
+    await supabase
+      .from("proposta_documentos_homefin" as any)
+      .delete()
+      .eq("proposta_id", prop.id)
+      .eq("homefin_id_arquivo", data.id_arquivo);
     if (data.documento_crm_id) {
       await supabase
         .from("cliente_documentos")
@@ -1824,6 +1829,30 @@ export const removerArquivoVagaBanco = createServerFn({ method: "POST" })
       ator_id: userId,
     } as any);
     return { ok: true };
+  });
+
+/** Situação dos documentos enviados à HomeFin por ESTA proposta. */
+export const documentosHomefinProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { data: linhas, error } = await context.supabase
+      .from("proposta_documentos_homefin" as any)
+      .select(
+        "cliente_documento_id, homefin_id_documento, nome_vaga, dono_vaga, tipo_vaga, situacao, mensagem, atualizado_em",
+      )
+      .eq("proposta_id", data.proposta_id);
+    if (error) throw new Error(error.message);
+    return (linhas ?? []) as unknown as {
+      cliente_documento_id: string;
+      homefin_id_documento: string;
+      nome_vaga: string | null;
+      dono_vaga: string | null;
+      tipo_vaga: string | null;
+      situacao: "enviado" | "homefin" | "erro";
+      mensagem: string | null;
+      atualizado_em: string;
+    }[];
   });
 
 /** Vagas do checklist de documentos da oportunidade na HomeFin (só leitura). */

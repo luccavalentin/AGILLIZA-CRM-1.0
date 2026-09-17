@@ -2407,6 +2407,26 @@ export async function sincronizarPropostaImpl({
     console.error("[proposta] importação de follow-ups do banco falhou", e);
   }
 
+  // Retorno dos documentos desta proposta (análise da HomeFin, integração com o
+  // banco, arquivo removido lá). Só a partir da aprovação: antes não há
+  // documentação a acompanhar.
+  if (
+    [
+      "credito_aprovado",
+      "credito_condicionado",
+      "aguardando_documentos",
+      "engenharia_vistoria",
+      "analise_juridica",
+    ].includes(String(statusEfetivo))
+  ) {
+    try {
+      const { atualizarSituacaoDocumentosImpl } = await import("./enviar/documentos.server");
+      await atualizarSituacaoDocumentosImpl({ supabase, propostaId });
+    } catch (e) {
+      console.error("[proposta] retorno dos documentos falhou", e);
+    }
+  }
+
   return { status: statusEfetivo, etapa: nomeEtapa, atualizado: mudouStatus };
 }
 
@@ -2422,6 +2442,7 @@ export {
   enviarDocumentosBancoImpl,
   excluirArquivoHomefinImpl,
   checklistBancoImpl,
+  atualizarSituacaoDocumentosImpl,
   type VagaBanco,
   type EnviarDocumentosArgs,
   type EnviarDocumentosResultado,

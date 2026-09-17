@@ -229,7 +229,10 @@ export async function enviarDocumentosBancoImpl({
   }
 
   // Documento → item do checklist onde ele está (já estava ou acabou de subir).
-  const itemDoDoc = new Map<string, { doc: any; idDocumento: string; participante: string }>();
+  const itemDoDoc = new Map<
+    string,
+    { doc: any; idDocumento: string; participante: string; idArquivo?: string | null }
+  >();
   const usados = new Set<string>();
 
   // ETAPA 2 — upload, só do que ainda não está na HomeFin.
@@ -271,6 +274,7 @@ export async function enviarDocumentosBancoImpl({
           doc,
           idDocumento,
           participante: existente.item?.referente ?? nomeDono,
+          idArquivo: existente.idArquivos[0] ?? null,
         });
         continue;
       }
@@ -337,7 +341,7 @@ export async function enviarDocumentosBancoImpl({
     try {
       // `documentoAprovado: false`, conforme orientação da HomeFin (ver topo).
       // O nome leva o prefixo do documento: é por ele que o reconhecemos no checklist.
-      await enviarArquivoIntegracao(
+      const upload = await enviarArquivoIntegracao<any>(
         `/documento/${item.idDocumento}/upload`,
         {
           bytes,
@@ -351,6 +355,8 @@ export async function enviarDocumentosBancoImpl({
         doc,
         idDocumento: String(item.idDocumento),
         participante: item?.referente ?? nomeDono,
+        // `UploadOk.idArquivo`: é por ele que o arquivo sai da HomeFin depois.
+        idArquivo: upload?.idArquivo != null ? String(upload.idArquivo) : null,
       });
     } catch (e: any) {
       const motivo = sanitizarMensagemErro(e?.message) || "Erro ao enviar o documento.";
@@ -415,7 +421,7 @@ export async function enviarDocumentosBancoImpl({
     } catch {
       finais = [];
     }
-    for (const { doc, idDocumento, participante } of itemDoDoc.values()) {
+    for (const { doc, idDocumento, participante, idArquivo } of itemDoDoc.values()) {
       const item = finais.find((i) => String(i?.idDocumento) === idDocumento);
       let { situacao, mensagem } = item
         ? situacaoDoItem(item, ignoradoDoItem(ignorados, item))
@@ -425,10 +431,50 @@ export async function enviarDocumentosBancoImpl({
       }
       if (situacao === "homefin" && falhaLote) mensagem = falhaLote;
       await marcarDoc(doc.id, situacao, mensagem);
+      // Vínculo com ESTA proposta: a situação do cliente_documentos é só o
+      // último envio, de qualquer proposta do cliente.
+      try {
+        await supabase.from("proposta_documentos_homefin" as any).upsert(
+          {
+            proposta_id: propostaId,
+            cliente_documento_id: doc.id,
+            homefin_id_oportunidade: String(idOportunidade),
+            homefin_id_documento: idDocumento,
+            homefin_id_arquivo:
+              idArquivo ??
+              (item ? (arquivoDoDocumento([item], doc.id)?.idArquivos[0] ?? null) : null),
+            nome_vaga: item?.nomeDocumento ?? null,
+            dono_vaga: item?.referente ?? participante ?? null,
+            tipo_vaga: item?.tipoDocumento ?? null,
+            situacao,
+            mensagem,
+            enviado_por: userId,
+            atualizado_em: new Date().toISOString(),
+          } as any,
+          { onConflict: "proposta_id,cliente_documento_id,homefin_id_documento" },
+        );
+      } catch {
+        /* o envio já aconteceu; o vínculo é refeito na próxima sincronização */
+      }
       if (situacao === "enviado") sucesso.push({ nome: doc.nome_arquivo, participante });
       else if (situacao === "erro")
         erros.push({ nome: doc.nome_arquivo, motivo: mensagem ?? "", participante });
       else naHomefin.push({ nome: doc.nome_arquivo, motivo: mensagem ?? "", participante });
+    }
+  }
+
+  if (itemDoDoc.size > 0 || erros.length > 0) {
+    try {
+      await supabase.from("proposta_historico").insert({
+        proposta_id: propostaId,
+        tipo_evento: erros.length > 0 ? "erro_envio" : "sincronizacao",
+        descricao: `Documentos: ${sucesso.length} no banco, ${naHomefin.length} na HomeFin, ${erros.length} com erro.${
+          erros.length > 0 ? ` ${erros.map((e) => `${e.nome}: ${e.motivo}`).join(" · ")}` : ""
+        }`,
+        ator_id: userId,
+      } as any);
+    } catch {
+      /* histórico é auxiliar */
     }
   }
 
@@ -536,7 +582,12 @@ export async function checklistBancoImpl({
 }: {
   propostaId: string;
   supabase: SupabaseClient<any, any, any>;
-}): Promise<{ vagas: VagaBanco[]; nomeBanco: string | null; loteAutomatico: boolean }> {
+}): Promise<{
+  vagas: VagaBanco[];
+  resumo: ResumoDocumentosBanco | null;
+  nomeBanco: string | null;
+  loteAutomatico: boolean;
+}> {
   const { chamarIntegracao } = await import("@/lib/simulacao/homefin.server");
   const { data: prop, error } = await supabase
     .from("propostas")
@@ -544,7 +595,9 @@ export async function checklistBancoImpl({
     .eq("id", propostaId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!prop?.homefin_id_oportunidade) return { vagas: [], nomeBanco: null, loteAutomatico: false };
+  if (!prop?.homefin_id_oportunidade) {
+    return { vagas: [], resumo: null, nomeBanco: null, loteAutomatico: false };
+  }
 
   const [{ data: bancos }, { data: docs }] = await Promise.all([
     supabase
@@ -597,9 +650,175 @@ export async function checklistBancoImpl({
       }),
     }),
   );
+  let resumo: ResumoDocumentosBanco | null = null;
+  try {
+    resumo = (await atualizarSituacaoDocumentosImpl({ supabase, propostaId, itens })).resumo;
+  } catch {
+    resumo = resumoDoChecklist(Array.isArray(itens) ? itens : []);
+  }
   return {
     vagas,
+    resumo,
     nomeBanco: banco?.nome_banco ?? null,
     loteAutomatico: ehAgenciaDoBradesco(banco?.nome_banco),
   };
+}
+
+export interface ResumoDocumentosBanco {
+  /** Vagas que aceitam arquivo e ainda não têm nenhum. */
+  semArquivo: number;
+  /** Recusadas na análise da HomeFin ou pelo banco. */
+  recusados: number;
+  emAnalise: number;
+  noBanco: number;
+}
+
+/** Resumo de pendências do checklist da oportunidade. */
+export function resumoDoChecklist(itens: any[]): ResumoDocumentosBanco {
+  const r: ResumoDocumentosBanco = { semArquivo: 0, recusados: 0, emAnalise: 0, noBanco: 0 };
+  for (const i of itens ?? []) {
+    if (!aceitaUpload(i)) continue;
+    const temArquivo = Array.isArray(i?.arquivos) && i.arquivos.length > 0;
+    const { situacao } = situacaoDoItem(i);
+    if (!temArquivo) r.semArquivo++;
+    else if (situacao === "erro") r.recusados++;
+    else if (situacao === "enviado") r.noBanco++;
+    else if (
+      String(i?.tipoSituacao ?? "")
+        .toUpperCase()
+        .startsWith("I")
+    )
+      r.emAnalise++;
+  }
+  return r;
+}
+
+/**
+ * Retorno da HomeFin/banco para os documentos DESTA proposta: relê o checklist
+ * e atualiza `proposta_documentos_homefin` (análise, integração, arquivo
+ * removido lá). Recusa nova gera histórico e aviso ao responsável.
+ * Chamada ao abrir as vagas do banco e na sincronização automática.
+ */
+export async function atualizarSituacaoDocumentosImpl({
+  supabase,
+  propostaId,
+  itens: itensLidos,
+}: {
+  supabase: SupabaseClient<any, any, any>;
+  propostaId: string;
+  itens?: any[];
+}): Promise<{ atualizados: number; recusados: string[]; resumo: ResumoDocumentosBanco | null }> {
+  const { data: prop } = await supabase
+    .from("propostas")
+    .select(
+      "id, numero_proposta, correspondente_id, homefin_id_oportunidade, usuario_responsavel_id",
+    )
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (!prop?.homefin_id_oportunidade) return { atualizados: 0, recusados: [], resumo: null };
+
+  const { data: linhas } = await supabase
+    .from("proposta_documentos_homefin" as any)
+    .select(
+      "id, cliente_documento_id, homefin_id_oportunidade, homefin_id_documento, homefin_id_arquivo, situacao, mensagem, nome_vaga",
+    )
+    .eq("proposta_id", propostaId);
+
+  // Sincronização automática sem nada enviado por esta proposta: não consulta
+  // a HomeFin à toa (a tela passa `itens` e sempre recebe o resumo).
+  if (!itensLidos && (linhas ?? []).length === 0) {
+    return { atualizados: 0, recusados: [], resumo: null };
+  }
+
+  let itens = itensLidos;
+  if (!itens) {
+    const { chamarIntegracao } = await import("@/lib/simulacao/homefin.server");
+    const r = await chamarIntegracao<any[]>(
+      `/oportunidade/${prop.homefin_id_oportunidade}/documentos`,
+      "GET",
+      undefined,
+      { proposta_id: propostaId, correspondente_id: prop.correspondente_id },
+    );
+    itens = Array.isArray(r) ? r : [];
+  }
+  const resumo = resumoDoChecklist(itens);
+
+  let atualizados = 0;
+  const recusados: string[] = [];
+  for (const l of (linhas ?? []) as any[]) {
+    // Oportunidade trocada (reenvio criou outra): o vínculo antigo não vale mais.
+    if (String(l.homefin_id_oportunidade) !== String(prop.homefin_id_oportunidade)) {
+      await supabase
+        .from("proposta_documentos_homefin" as any)
+        .delete()
+        .eq("id", l.id);
+      atualizados++;
+      continue;
+    }
+    const item = itens.find((i) => String(i?.idDocumento) === String(l.homefin_id_documento));
+    // Pelo idArquivo devolvido no upload; o prefixo do nome é a reserva.
+    const porId =
+      item && l.homefin_id_arquivo
+        ? (item.arquivos ?? []).find(
+            (x: any) => String(x?.idArquivo) === String(l.homefin_id_arquivo),
+          )
+        : null;
+    const arquivo = porId
+      ? { item, idArquivos: [String(porId.idArquivo)] }
+      : item
+        ? arquivoDoDocumento([item], l.cliente_documento_id)
+        : null;
+    if (!item || !arquivo) {
+      // O arquivo não está mais na vaga (removido na HomeFin ou vaga extinta).
+      await supabase
+        .from("proposta_documentos_homefin" as any)
+        .delete()
+        .eq("id", l.id);
+      atualizados++;
+      continue;
+    }
+    const { situacao, mensagem } = situacaoDoItem(item);
+    if (situacao === l.situacao && (mensagem ?? null) === (l.mensagem ?? null)) continue;
+    await supabase
+      .from("proposta_documentos_homefin" as any)
+      .update({
+        situacao,
+        mensagem,
+        homefin_id_arquivo: arquivo.idArquivos[0] ?? null,
+        atualizado_em: new Date().toISOString(),
+      } as any)
+      .eq("id", l.id);
+    await supabase
+      .from("cliente_documentos")
+      .update({
+        situacao_integracao: situacao,
+        integrado_em: situacao === "enviado" ? new Date().toISOString() : null,
+        erro_integracao: mensagem,
+      } as any)
+      .eq("id", l.cliente_documento_id);
+    atualizados++;
+    if (situacao === "erro" && l.situacao !== "erro") {
+      recusados.push(`${item.nomeDocumento}${mensagem ? `: ${mensagem}` : ""}`);
+    }
+  }
+
+  if (recusados.length > 0) {
+    await supabase.from("proposta_historico").insert({
+      proposta_id: propostaId,
+      tipo_evento: "erro_envio",
+      descricao: `Documento recusado: ${recusados.join(" · ")}`,
+    } as any);
+    if (prop.usuario_responsavel_id) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.from("notificacoes").insert({
+        user_id: prop.usuario_responsavel_id,
+        correspondente_id: prop.correspondente_id,
+        tipo: "proposta",
+        titulo: "Documento recusado",
+        corpo: `${prop.numero_proposta}: ${recusados.join(" · ")}`,
+        link: `/operacional/propostas/${propostaId}/continuar?etapa=documentos`,
+      } as any);
+    }
+  }
+  return { atualizados, recusados, resumo };
 }
