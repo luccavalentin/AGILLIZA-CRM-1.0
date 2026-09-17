@@ -3,6 +3,7 @@
  */
 
 import { humanizarRespostaErro } from "./bank-error-humanizer";
+import { mensagemBancoLegivel } from "@/lib/bancos/mensagem-banco";
 
 export const TIPO_BANCO_SANTANDER = 33;
 
@@ -94,7 +95,8 @@ export function sanitizarMensagemErro(msg: string | null | undefined): string {
   const fallback = "O banco não respondeu corretamente. Tente novamente em instantes.";
   if (!msg) return fallback;
   if (/supabase|service[_ ]role|environment variable|cloud/i.test(msg)) return fallback;
-  return msg;
+  // JSON/stack do provedor nunca vai para a tela: vira frase ou orientação curta.
+  return mensagemBancoLegivel(msg) || fallback;
 }
 
 /**

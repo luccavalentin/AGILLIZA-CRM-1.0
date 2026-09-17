@@ -30,6 +30,7 @@ import {
   type SituacaoBanco,
 } from "@/components/proposta/situacao-banco-labels";
 import { formatBRL } from "@/lib/simulacao/format";
+import { mensagemBancoLegivel } from "@/lib/bancos/mensagem-banco";
 import { cn } from "@/lib/utils";
 import { type PropostaStatus } from "@/lib/propostas/state-machine";
 import { TabResumo } from "@/components/proposta/tabs/tab-resumo";
@@ -286,7 +287,7 @@ export function PropostaView({
 
         {/* Banco feedback / Error messages */}
         {(data.bancos ?? []).map((b: any) => {
-          const erroMsg = b.mensagem_banco || b.mensagem;
+          const erroMsg = mensagemBancoLegivel(b.mensagem_banco || b.mensagem, b.nome_banco);
           if (!erroMsg && !b.retorno_integracao) return null;
 
           const originalMsg = String(b.retorno_integracao || "");

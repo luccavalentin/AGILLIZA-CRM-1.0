@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { BancoLogo } from "@/components/bancos/banco-logo";
+import { mensagemBancoLegivel } from "@/lib/bancos/mensagem-banco";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
 import { SITUACOES_BANCO } from "@/lib/propostas/propostas.functions";
@@ -88,7 +89,9 @@ export function DetalhamentoBancoDialog({
           {banco?.mensagem_banco && (
             <div className="rounded-md border border-border bg-muted/40 p-3">
               <p className="mb-1 text-xs font-medium text-muted-foreground">Retorno do banco</p>
-              <p className="whitespace-pre-wrap text-foreground">{banco.mensagem_banco}</p>
+              <p className="whitespace-pre-wrap break-words text-foreground">
+                {mensagemBancoLegivel(banco.mensagem_banco, banco.nome_banco)}
+              </p>
             </div>
           )}
           {(() => {
