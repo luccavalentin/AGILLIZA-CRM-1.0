@@ -23,6 +23,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { BancoLogo } from "@/components/bancos/banco-logo";
+import { mensagemBancoLegivel } from "@/lib/bancos/mensagem-banco";
 import { useState, useEffect } from "react";
 
 /**
@@ -334,7 +335,7 @@ export function PropostaPopupHost() {
                     Motivo informado pelo banco
                   </p>
                   <p className="text-xs text-destructive font-medium italic">
-                    {atual.mensagem_banco}
+                    {mensagemBancoLegivel(atual.mensagem_banco, atual.banco)}
                   </p>
                 </div>
               )}

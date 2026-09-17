@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { mensagemBancoLegivel } from "@/lib/bancos/mensagem-banco";
 
 interface Props {
   mensagem: string;
@@ -27,13 +28,14 @@ interface Props {
  * motivo real da recusa fique cortado nas tabelas e cartões.
  */
 export function ErroBancoDetalhe({
-  mensagem,
+  mensagem: mensagemBruta,
   rendaEstimada,
   nomeBanco,
   linhas = 2,
   className,
 }: Props) {
   const [aberto, setAberto] = useState(false);
+  const mensagem = mensagemBancoLegivel(mensagemBruta, nomeBanco);
   if (!mensagem) return null;
 
   const clamp = linhas === 1 ? "line-clamp-1" : linhas === 3 ? "line-clamp-3" : "line-clamp-2";
