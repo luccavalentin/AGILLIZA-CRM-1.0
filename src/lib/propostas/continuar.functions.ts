@@ -91,6 +91,15 @@ export interface ResultadoConferencia {
   blocos: BlocoConferencia[];
   /** Falhas ao repassar à HomeFin, por bloco. O CRM já está gravado. */
   errosHomefin: { bloco: BlocoConferencia; mensagem: string }[];
+  /**
+   * Vendedores na oportunidade (participante VD). Não trava a proposta: o
+   * vendedor incompleto só não vai, e a tela mostra o que falta.
+   */
+  vendedores: {
+    enviados: string[];
+    pendentes: { nome: string; faltando: string[] }[];
+    erros: { nome: string; mensagem: string }[];
+  } | null;
   status: string;
 }
 
@@ -346,6 +355,21 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
       }
     }
 
+    // ---- HomeFin: vendedores como participantes VD (donos das vagas do vendedor)
+    let vendedores: ResultadoConferencia["vendedores"] = null;
+    if (idOportunidade) {
+      try {
+        const { sincronizarVendedoresHomefinImpl } = await import("./enviar.server");
+        vendedores = await sincronizarVendedoresHomefinImpl({ propostaId: prop.id, supabase });
+      } catch (e) {
+        vendedores = {
+          enviados: [],
+          pendentes: [],
+          erros: [{ nome: "Vendedores", mensagem: e instanceof Error ? e.message : String(e) }],
+        };
+      }
+    }
+
     // ---- Etapa: aprovada/condicionada → coleta de documentos
     let status = String(prop.status);
     const podeAvancar =
@@ -385,7 +409,13 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
       } as any);
     }
 
-    return { alterou: blocos.size > 0, blocos: Array.from(blocos), errosHomefin, status };
+    return {
+      alterou: blocos.size > 0,
+      blocos: Array.from(blocos),
+      errosHomefin,
+      vendedores,
+      status,
+    };
   });
 
 /** Vendedor editado na proposta → `cliente_vendedores` (casado pelo documento). */

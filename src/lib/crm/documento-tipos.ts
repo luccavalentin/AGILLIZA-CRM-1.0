@@ -22,8 +22,18 @@ export const TIPOS_DOCUMENTO_POR_CATEGORIA: Record<CategoriaDocumento, string[]>
     "IRPF completo com recibo",
     "CTPS digital completa",
     "Extrato atualizado do FGTS",
+    // Pedidos pelo checklist do banco na HomeFin (vagas do comprador). Entram
+    // no fim da lista: as seções usam os índices acima.
+    "Proposta de Financiamento Imobiliário assinada",
+    "Declaração Pessoal de Saúde (DPS)",
+    "CPF",
   ],
-  conjuge: ["Documento de identidade do cônjuge (RG, CPF ou CNH)"],
+  conjuge: [
+    "Documento de identidade do cônjuge (RG, CPF ou CNH)",
+    "Proposta de Financiamento Imobiliário assinada pelo cônjuge",
+    "Declaração Pessoal de Saúde (DPS) do cônjuge",
+    "CPF do cônjuge",
+  ],
   vendedor: [
     "Documento de identidade (RG ou CNH)",
     "Comprovante de endereço atualizado",

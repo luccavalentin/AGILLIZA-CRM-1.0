@@ -149,6 +149,16 @@ export function ContinuarPropostaPage({
       toast.success(
         r.alterou ? "Dados gravados no CRM e na HomeFin." : "Dados conferidos, nada foi alterado.",
       );
+      const v = r.vendedores;
+      if (v?.enviados.length) toast.success(`Vendedor na HomeFin: ${v.enviados.join(", ")}.`);
+      for (const p of v?.pendentes ?? []) {
+        toast.warning(`Vendedor ${p.nome} não foi à HomeFin. Falta: ${p.faltando.join(", ")}.`, {
+          duration: 12_000,
+        });
+      }
+      for (const e of v?.erros ?? []) {
+        toast.error(`Vendedor ${e.nome}: ${e.mensagem}`, { duration: 12_000 });
+      }
       setEtapa("documentos");
     } catch (e) {
       toast.error(mensagemDeErro(e, "Falha ao gravar os dados."));

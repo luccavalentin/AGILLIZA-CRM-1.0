@@ -18,6 +18,9 @@ interface TipoConhecido {
 }
 
 const IDENTIDADE = ["identidade", "rg", "cnh", "identificacao", "documento pessoal"];
+const PROPOSTA = ["proposta de financiamento", "proposta"];
+const DPS = ["declaracao pessoal de saude", "saude", "dps"];
+const CPF = ["cpf"];
 const ENDERECO = ["comprovante de residencia", "comprovante de endereco", "residencia", "endereco"];
 const ESTADO_CIVIL = [
   "certidao de casamento",
@@ -32,6 +35,15 @@ const POR_CHAVE: Record<string, TipoConhecido> = {
   c_doc_id: { nome: "Documento de identidade (RG, CPF ou CNH)", termos: IDENTIDADE },
   c_doc_id_conj: { nome: "Documento de identidade do cônjuge", termos: IDENTIDADE },
   c_comp_end: { nome: "Comprovante de endereço atualizado", termos: ENDERECO },
+  c_prop_fin: { nome: "Proposta de Financiamento Imobiliário assinada", termos: PROPOSTA },
+  c_dps: { nome: "Declaração Pessoal de Saúde (DPS)", termos: DPS },
+  c_cpf: { nome: "CPF", termos: CPF },
+  c_prop_fin_conj: {
+    nome: "Proposta de Financiamento Imobiliário assinada pelo cônjuge",
+    termos: PROPOSTA,
+  },
+  c_dps_conj: { nome: "Declaração Pessoal de Saúde (DPS) do cônjuge", termos: DPS },
+  c_cpf_conj: { nome: "CPF do cônjuge", termos: CPF },
   c_cert_ec: { nome: "Certidão de estado civil", termos: ESTADO_CIVIL },
   fgts_end: { nome: "Comprovante de endereço (FGTS)", termos: ENDERECO },
   fgts_irpf: {
@@ -119,6 +131,9 @@ const PISTAS: { termos: RegExp; tipoIndice: Partial<Record<CategoriaDocumento, n
     termos: /(certidao|casamento|nascimento|estado civil|averbacao)/,
     tipoIndice: { comprador: 2, vendedor: 2 },
   },
+  { termos: /(proposta de financiamento|proposta)/, tipoIndice: { comprador: 7, conjuge: 1 } },
+  { termos: /(\bdps\b|saude)/, tipoIndice: { comprador: 8, conjuge: 2 } },
+  { termos: /\bcpf\b/, tipoIndice: { comprador: 9, conjuge: 3 } },
   { termos: /(irpf|imposto|declaracao)/, tipoIndice: { comprador: 4 } },
   { termos: /(ctps|carteira de trabalho)/, tipoIndice: { comprador: 5 } },
   { termos: /\bfgts\b/, tipoIndice: { comprador: 6 } },

@@ -28,4 +28,18 @@ describe("tipos de documento", () => {
     );
     expect(sugerirTipoDocumento("scan001.pdf", "comprador")).toBe("");
   });
+
+  it("reconhece os documentos pedidos pelas vagas do banco", () => {
+    expect(termosDoTipoDocumento("c_dps")).toContain("declaracao pessoal de saude");
+    expect(termosDoTipoDocumento("Proposta de Financiamento Imobiliário assinada")).toContain(
+      "proposta de financiamento",
+    );
+    expect(sugerirTipoDocumento("DPS assinada.pdf", "comprador")).toBe(
+      "Declaração Pessoal de Saúde (DPS)",
+    );
+    expect(sugerirTipoDocumento("proposta banco.pdf", "conjuge")).toBe(
+      "Proposta de Financiamento Imobiliário assinada pelo cônjuge",
+    );
+    expect(sugerirTipoDocumento("cpf.jpg", "comprador")).toBe("CPF");
+  });
 });

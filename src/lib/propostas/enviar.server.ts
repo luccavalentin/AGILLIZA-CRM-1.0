@@ -2428,6 +2428,8 @@ export {
 } from "./enviar/documentos.server";
 export {
   adicionarParticipanteImpl,
+  sincronizarVendedoresHomefinImpl,
+  type ResultadoVendedoresHomefin,
   removerParticipanteImpl,
   listarUsuariosParceirosImpl,
   type ParticipantePayload,
