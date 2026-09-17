@@ -55,6 +55,19 @@ const ORDEM_STATUS: PropostaStatus[] = [
  * a partir do estado das suas linhas de banco (proposta_bancos).
  * Garante que propostas.status nunca divirja do desfecho dos bancos.
  */
+
+/** Texto preenchido (sem espaços nas pontas) ou undefined. */
+function textoOuNada(v: unknown): string | undefined {
+  const t = String(v ?? "").trim();
+  return t || undefined;
+}
+/** Número finito (inclusive 0) ou undefined — vazio não conta como zero. */
+function numeroOuNada(v: unknown): number | undefined {
+  if (v === null || v === undefined || String(v).trim() === "") return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export async function recalcularStatusGlobalProposta(
   supabase: SupabaseClient<any, any, any>,
   propostaId: string,
@@ -846,8 +859,11 @@ export async function garantirEnderecoParticipantes({
     const cpf = soDigitos(part?.cpfCnpj);
     const env = (envolvidos ?? []).find((e: any) => soDigitos(e.cpf_cnpj) === cpf);
 
-    // Fontes de dados em ordem de prioridade: participante da API > envolvido >
+    // Fontes de dados em ordem de prioridade: envolvido da proposta (o que foi
+    // conferido/editado no sistema) > participante já gravado na HomeFin >
     // cadastro do cliente (só para o proponente principal) > proposta/imóvel.
+    // Antes a HomeFin vinha primeiro: renda, documento e contato corrigidos no
+    // CRM nunca chegavam ao banco no reenvio.
     const ehPrincipal = soDigitos(prop.cpf_cnpj) === cpf;
     const src = ehPrincipal ? cliente : null;
 
@@ -862,7 +878,7 @@ export async function garantirEnderecoParticipantes({
     const estadoCivil = estadoCivilAtualSistema || estadoCivilBanco(part?.tipoEstadoCivil) || null;
     const regimeCasamento = prop.regime_casamento || part?.tipoRegimeCasamento || null;
 
-    const uf = part?.uf || env?.uf || src?.uf || prop.uf || null;
+    const uf = env?.uf || part?.uf || src?.uf || prop.uf || null;
     // Profissão e empresa: prioriza o cadastro atual do sistema sobre o que já
     // está gravado na oportunidade bancária, pois a oportunidade pode conter um
     // valor antigo inválido (ex.: "Administrador(a)").
@@ -1034,13 +1050,13 @@ export async function garantirEnderecoParticipantes({
       (enumBancoId(part?.tipoPessoa) ?? ((cpf?.length ?? 0) > 11 ? "J" : "F")) === "F";
     const payload: Record<string, unknown> = {
       tipoSituacao: enumBancoId(part?.tipoSituacao) ?? "A",
-      nomeParticipante: part?.nomeParticipante ?? env?.nome ?? prop.nome_cliente,
+      nomeParticipante: textoOuNada(env?.nome) ?? part?.nomeParticipante ?? prop.nome_cliente,
       tipoQualificacao: enumBancoId(part?.tipoQualificacao) ?? "CO",
       tipoPessoa: enumBancoId(part?.tipoPessoa) ?? ((cpf?.length ?? 0) > 11 ? "J" : "F"),
       cpfCnpj: cpf,
       dataNascimento:
-        part?.dataNascimento ??
         env?.data_nascimento ??
+        part?.dataNascimento ??
         src?.data_nascimento ??
         prop.data_nascimento ??
         undefined,
@@ -1053,39 +1069,40 @@ export async function garantirEnderecoParticipantes({
             enumBancoId(part?.tipoRegimeCasamento))
           : undefined,
 
-      tipoSexo: enumBancoId(part?.tipoSexo) ?? env?.tipo_sexo ?? undefined,
+      tipoSexo: textoOuNada(env?.tipo_sexo) ?? enumBancoId(part?.tipoSexo) ?? undefined,
       // Pessoa física sem documento no cadastro recebe o padrão (RG = CPF,
       // SSP/SP, 01/01/2026). Empresa não tem RG: em PJ fica como veio.
       tipoDocumentoIdentidade:
+        textoOuNada(env?.tipo_documento_identidade) ??
         enumBancoId(part?.tipoDocumentoIdentidade) ??
-        env?.tipo_documento_identidade ??
         (ehPessoaFisica ? PADROES_CADASTRO.tipoDocumentoIdentidade : undefined),
       numeroDocumento:
-        sanitizarNumeroDocumento(part?.numeroDocumento ?? env?.numero_documento) ??
+        sanitizarNumeroDocumento(env?.numero_documento) ??
+        sanitizarNumeroDocumento(part?.numeroDocumento) ??
         (ehPessoaFisica && cpf ? cpf : undefined),
       orgaoExpedidor: ehPessoaFisica
-        ? ouPadrao(part?.orgaoExpedidor ?? env?.orgao_expedidor, PADROES_CADASTRO.orgaoExpedidor)
-        : (part?.orgaoExpedidor ?? env?.orgao_expedidor ?? undefined),
+        ? ouPadrao(env?.orgao_expedidor || part?.orgaoExpedidor, PADROES_CADASTRO.orgaoExpedidor)
+        : env?.orgao_expedidor || part?.orgaoExpedidor || undefined,
       ufExpedicao: ehPessoaFisica
-        ? ouPadrao(part?.ufExpedicao ?? env?.uf_expedicao, PADROES_CADASTRO.ufExpedicao)
-        : (part?.ufExpedicao ?? env?.uf_expedicao ?? undefined),
+        ? ouPadrao(env?.uf_expedicao || part?.ufExpedicao, PADROES_CADASTRO.ufExpedicao)
+        : env?.uf_expedicao || part?.ufExpedicao || undefined,
       dataExpedicao: ehPessoaFisica
-        ? ouPadrao(part?.dataExpedicao ?? env?.data_expedicao, PADROES_CADASTRO.dataExpedicao)
-        : (part?.dataExpedicao ?? env?.data_expedicao ?? undefined),
+        ? ouPadrao(env?.data_expedicao || part?.dataExpedicao, PADROES_CADASTRO.dataExpedicao)
+        : env?.data_expedicao || part?.dataExpedicao || undefined,
       nomeProfissao: profissao,
       nomeEmpresaProfissao: empresa,
-      nomeMae: part?.nomeMae ?? env?.nome_mae ?? src?.mae ?? undefined,
+      nomeMae: textoOuNada(env?.nome_mae) ?? part?.nomeMae ?? src?.mae ?? undefined,
       // Cônjuge/coproponente sem renda (não compõe) vai com 0: o campo é
       // obrigatório no contrato, e o comprador já é cobrado antes do envio.
       renda:
+        numeroOuNada(env?.renda) ??
         part?.renda ??
-        env?.renda ??
         src?.renda_total_declarada ??
         prop.renda_total ??
         (env && !exigeRenda(env) ? 0 : undefined),
-      email: part?.email ?? env?.email ?? src?.email ?? prop.email ?? undefined,
-      celular: part?.celular ?? soDigitos(env?.celular ?? src?.celular) ?? undefined,
-      utilizaFgts: part?.utilizaFgts ?? (env?.utiliza_fgts ? "S" : "N"),
+      email: textoOuNada(env?.email) ?? part?.email ?? src?.email ?? prop.email ?? undefined,
+      celular: soDigitos(env?.celular) || part?.celular || soDigitos(src?.celular) || undefined,
+      utilizaFgts: env ? (env.utiliza_fgts ? "S" : "N") : (part?.utilizaFgts ?? "N"),
       fgAutorizacaoDados: env?.fg_autorizacao_dados ?? true,
       cep: soDigitos(env?.cep ?? prop.cep_imovel),
       logradouro: env?.logradouro ?? prop.endereco_imovel ?? undefined,
