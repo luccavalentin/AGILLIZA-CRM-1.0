@@ -13,6 +13,17 @@ import { bancosQueOperamPJ } from "./use-simulacao-completa/bancos-helpers";
 import { aplicarPadroesCliente, PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 
 /** ===== Tipos de saída ===== */
+
+/**
+ * A renda digitada na simulação é da simulação (é a que vai ao banco) e não
+ * substitui a renda declarada no CRM. O cadastro só recebe a renda quando
+ * ainda não tem nenhuma.
+ */
+function preservarRendaDoCrm(campos: Record<string, unknown>, crm: any) {
+  if (Number(crm?.renda_total_declarada) > 0) delete campos.renda_total_declarada;
+  if (Number(crm?.conjuge_renda) > 0) delete campos.conjuge_renda;
+}
+
 export interface BancoAtivo {
   id: string;
   codigo_banco: number;
@@ -511,12 +522,13 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           }
           const { data: existente, error: errBusca } = await supabaseAdmin
             .from("clientes")
-            .select("id")
+            .select("id, renda_total_declarada, conjuge_renda")
             .eq("correspondente_id", correspondente_id)
             .eq("documento", documento)
             .maybeSingle();
           if (errBusca) throw new Error(`Falha ao localizar cliente no CRM: ${errBusca.message}`);
           if (existente?.id) {
+            preservarRendaDoCrm(campos, existente);
             const { error: errUpd } = await supabaseAdmin
               .from("clientes")
               .update(campos)
@@ -2014,11 +2026,12 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
             };
             const { data: existente } = await supabaseAdmin
               .from("clientes")
-              .select("id")
+              .select("id, renda_total_declarada, conjuge_renda")
               .eq("correspondente_id", correspondenteId)
               .eq("documento", documento)
               .maybeSingle();
             if (existente?.id) {
+              preservarRendaDoCrm(campos, existente);
               const { error: errUpdate } = await supabaseAdmin
                 .from("clientes")
                 .update(campos)

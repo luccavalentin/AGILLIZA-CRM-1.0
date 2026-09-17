@@ -16,7 +16,7 @@ import { DateInput } from "@/components/shared/date-input";
 import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
 
 import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
-import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
+import { maskCpfCnpj, maskCelular, formatBRL } from "@/lib/simulacao/format";
 import { avaliarRendaMinima } from "@/lib/simulacao/renda";
 import { ESTADOS_CIVIS } from "@/lib/simulacao/schemas";
 import { REGIMES } from "@/components/crm/cliente-form/constants";
@@ -215,6 +215,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                 )}
               </div>
               <Erro erros={erros} campo="renda_total" />
+              {!isPJ && <AvisoRendaCrm ctx={ctx} />}
 
               {f.valor_financiamento > 0 &&
                 (f.sistema_amortizacao === "S" || f.sistema_amortizacao === "B") && (
@@ -436,5 +437,56 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         </div>
       </fieldset>
     </section>
+  );
+}
+
+/**
+ * Renda do CRM x renda necessária. Cobre: a renda do cadastro fica (editável).
+ * Não cobre: o campo vem vazio para o usuário digitar a renda da simulação,
+ * que é a enviada ao banco — ou usar a do CRM mesmo assim.
+ */
+function AvisoRendaCrm({ ctx }: { ctx: SimulacaoCompletaCtx }) {
+  const { f, rendaCrm, usarRendaDoCrm } = ctx as any;
+  if (!rendaCrm) return null;
+  const tabelas =
+    f.sistema_amortizacao === "B" ? "SAC e PRICE" : f.sistema_amortizacao === "P" ? "PRICE" : "SAC";
+  const composicao =
+    rendaCrm.rendaConjugeCrm > 0
+      ? ` (titular ${formatBRL(rendaCrm.rendaTitularCrm)} + cônjuge ${formatBRL(rendaCrm.rendaConjugeCrm)})`
+      : "";
+  if (rendaCrm.suficiente) {
+    if (f.renda_origem !== "crm") return null;
+    return (
+      <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+        Renda do CRM: {formatBRL(rendaCrm.rendaCrm)}
+        {composicao} — cobre a renda necessária para {tabelas} ({formatBRL(rendaCrm.necessaria)}).
+        Pode alterar se precisar.
+      </p>
+    );
+  }
+  if (f.renda_origem === "manual") {
+    return (
+      <p className="text-[11px] text-muted-foreground">
+        Renda informada nesta simulação. No CRM: {formatBRL(rendaCrm.rendaCrm)}
+        {composicao}.
+      </p>
+    );
+  }
+  return (
+    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] text-amber-800 dark:text-amber-300">
+      <p>
+        A renda do CRM ({formatBRL(rendaCrm.rendaCrm)}
+        {composicao}) não cobre a renda necessária para {tabelas} ({formatBRL(rendaCrm.necessaria)}
+        ). Digite a renda desta simulação — é ela que vai ao banco.
+      </p>
+      <Button
+        type="button"
+        variant="link"
+        className="h-auto p-0 text-[11px] text-amber-800 dark:text-amber-300"
+        onClick={usarRendaDoCrm}
+      >
+        Usar a renda do CRM mesmo assim
+      </Button>
+    </div>
   );
 }
