@@ -24,6 +24,7 @@ import {
 } from "@/lib/simulacao/simulacoes.functions";
 
 import {
+  EMAIL_CONJUGE_PADRAO,
   EMAIL_PADRAO,
   ESTADO_INICIAL,
   estadoInicialComRascunho,
@@ -451,7 +452,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           // enum de sexo e vira "Falta preencher: Sexo do cônjuge".
           next.sexo_conjuge = null;
           next.estado_civil_conjuge = "";
-          next.email_conjuge = EMAIL_PADRAO;
+          next.email_conjuge = EMAIL_CONJUGE_PADRAO;
           next.celular_conjuge = "";
         }
       }
@@ -699,7 +700,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           cpf_conjuge: s.cpf_conjuge || "",
           renda_conjuge: s.renda_conjuge || 0,
           data_nascimento_conjuge: s.data_nascimento_conjuge || "",
-          email_conjuge: s.email_conjuge || EMAIL_PADRAO,
+          email_conjuge: s.email_conjuge || EMAIL_CONJUGE_PADRAO,
           celular_conjuge: s.celular_conjuge || "",
           sexo_conjuge: s.sexo_conjuge || prev.sexo_conjuge,
           estado_civil_conjuge: estadoCivilCrmParaCodigo(s.estado_civil_conjuge) || "",

@@ -21,6 +21,8 @@ export const PADROES_CADASTRO = {
   naturalidade: "São Paulo/SP",
   /** Celular do cônjuge quando vazio ou igual ao do titular (ver `celularConjugeOuPadrao`). */
   celularConjuge: "19998710032",
+  /** E-mail do cônjuge quando vazio ou igual ao do titular (ver `emailConjugeOuPadrao`). */
+  emailConjuge: "thiago@agilliza1.net.br",
 } as const;
 
 /** Endereço padrão — só o cadastro do cliente usa; a simulação não mexe em endereço. */
@@ -55,10 +57,25 @@ export function celularConjugeOuPadrao(celularConjuge: unknown, celularTitular: 
 }
 
 /**
+ * E-mail do cônjuge: vazio ou igual ao do titular vira o e-mail padrão do
+ * cônjuge. Mesmo motivo do celular: os dois proponentes iam ao banco com o
+ * mesmo contato (o padrão do titular). E-mail próprio e diferente é mantido.
+ */
+export function emailConjugeOuPadrao(emailConjuge: unknown, emailTitular: unknown): string {
+  const conj = String(emailConjuge ?? "")
+    .trim()
+    .toLowerCase();
+  const tit = String(emailTitular ?? "")
+    .trim()
+    .toLowerCase();
+  return !conj || conj === tit ? PADROES_CADASTRO.emailConjuge : conj;
+}
+
+/**
  * Nacionalidade, naturalidade e RG de pessoa física: valem na criação E na
  * edição do cadastro (ao contrário dos demais padrões, que só entram na
- * criação). Vazio vira Brasileira / São Paulo-SP / o próprio CPF; o celular
- * do cônjuge segue `celularConjugeOuPadrao`.
+ * criação). Vazio vira Brasileira / São Paulo-SP / o próprio CPF; celular e
+ * e-mail do cônjuge seguem `celularConjugeOuPadrao` / `emailConjugeOuPadrao`.
  *
  * Naturalidade é gravada como "Cidade/UF". Só o estado ("/SP") conta como
  * vazia e recebe São Paulo; estado diferente de SP sem cidade fica como está,
@@ -93,6 +110,7 @@ export function aplicarPadroesIdentificacao<T extends Record<string, any>>(campo
       c.conjuge_numero_documento = String(c.conjuge_cpf);
     }
     c.conjuge_celular = celularConjugeOuPadrao(c.conjuge_celular, c.telefone_celular);
+    c.conjuge_email = emailConjugeOuPadrao(c.conjuge_email, c.email);
   }
   return campos;
 }
@@ -133,7 +151,7 @@ export function aplicarPadroesCliente<T extends Record<string, any>>(campos: T):
   // Cônjuge: só quando existe cônjuge no cadastro, para não criar um cônjuge
   // fantasma só de padrão em cliente solteiro.
   if (!vazio(campos.conjuge_nome) || !vazio(campos.conjuge_cpf)) {
-    comPadrao("conjuge_email", p.email);
+    comPadrao("conjuge_email", p.emailConjuge);
     comPadrao("conjuge_nome_mae", p.mae);
     comPadrao("conjuge_profissao", p.profissao);
     comPadrao("conjuge_empresa", p.empresa);

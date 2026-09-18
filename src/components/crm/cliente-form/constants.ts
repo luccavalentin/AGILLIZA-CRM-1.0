@@ -271,7 +271,7 @@ export const emptyValues: ClienteFormValues = {
   conjuge_profissao: "",
   conjuge_empresa: "",
   conjuge_renda: "",
-  conjuge_email: PADROES_CADASTRO.email,
+  conjuge_email: PADROES_CADASTRO.emailConjuge,
   conjuge_celular: "",
   conjuge_banco_conta: "",
   conjuge_agencia: "",

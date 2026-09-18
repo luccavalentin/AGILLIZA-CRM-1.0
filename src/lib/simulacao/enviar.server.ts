@@ -7,7 +7,11 @@ import {
   recalcularStatusSimulacao,
 } from "./simulacoes.functions";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { celularConjugeOuPadrao, PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
+import {
+  celularConjugeOuPadrao,
+  emailConjugeOuPadrao,
+  PADROES_CADASTRO,
+} from "@/lib/crm/padroes-cadastro";
 import { codigoTipoImovel } from "./dominios-homefin";
 
 /**
@@ -416,7 +420,7 @@ export async function enviarSimulacaoImpl({
             payloadOp.nomeConjuge = sim.nome_conjuge;
             payloadOp.cpfConjuge = String(sim.cpf_conjuge || "").replace(/\D/g, "");
             payloadOp.dataNascimentoConjuge = sim.data_nascimento_conjuge;
-            payloadOp.emailConjuge = sim.email_conjuge;
+            payloadOp.emailConjuge = emailConjugeOuPadrao(sim.email_conjuge, sim.email);
             payloadOp.celularConjuge = celularConjugeOuPadrao(sim.celular_conjuge, sim.celular);
             payloadOp.rendaConjuge = num(sim.renda_conjuge);
             // Usa o estado civil do próprio cônjuge; só cai no do titular

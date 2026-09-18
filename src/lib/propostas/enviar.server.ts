@@ -33,7 +33,12 @@ import {
   statusGlobalPorBancos,
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
-import { celularConjugeOuPadrao, ouPadrao, PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
+import {
+  celularConjugeOuPadrao,
+  emailConjugeOuPadrao,
+  ouPadrao,
+  PADROES_CADASTRO,
+} from "@/lib/crm/padroes-cadastro";
 import { dadosBancariosParticipante, normalizarAgencia } from "@/lib/bancos/agencia";
 
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
@@ -1146,7 +1151,14 @@ export async function garantirEnderecoParticipantes({
         src?.renda_total_declarada ??
         prop.renda_total ??
         (env && !exigeRenda(env) ? 0 : undefined),
-      email: textoOuNada(env?.email) ?? part?.email ?? src?.email ?? prop.email ?? undefined,
+      // Cônjuge/coproponente: e-mail vazio ou igual ao do titular vai com o
+      // e-mail padrão do cônjuge, como o celular.
+      email: ehPrincipal
+        ? (textoOuNada(env?.email) ?? part?.email ?? src?.email ?? prop.email ?? undefined)
+        : emailConjugeOuPadrao(
+            textoOuNada(env?.email) ?? part?.email,
+            cliente?.email ?? prop.email,
+          ),
       // Cônjuge/coproponente: vazio ou igual ao do titular vai com o celular
       // padrão (os dois proponentes iam ao banco com o mesmo contato).
       celular: ehPrincipal

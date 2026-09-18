@@ -3,6 +3,7 @@ import {
   aplicarPadroesCliente,
   aplicarPadroesIdentificacao,
   celularConjugeOuPadrao,
+  emailConjugeOuPadrao,
   PADROES_CADASTRO,
 } from "./padroes-cadastro";
 
@@ -149,5 +150,29 @@ describe("celularConjugeOuPadrao", () => {
       conjuge_celular: "19991586355",
     } as Record<string, any>);
     expect(r.conjuge_celular).toBe("19998710032");
+  });
+});
+
+describe("emailConjugeOuPadrao", () => {
+  it("vazio ou igual ao do titular vira o e-mail padrão do cônjuge", () => {
+    expect(emailConjugeOuPadrao("", "thiago@agilliza.net.br")).toBe("thiago@agilliza1.net.br");
+    expect(emailConjugeOuPadrao(" Thiago@Agilliza.net.br ", "thiago@agilliza.net.br")).toBe(
+      "thiago@agilliza1.net.br",
+    );
+  });
+
+  it("e-mail próprio do cônjuge é mantido", () => {
+    expect(emailConjugeOuPadrao("maria@gmail.com", "thiago@agilliza.net.br")).toBe(
+      "maria@gmail.com",
+    );
+  });
+
+  it("cadastro com cônjuge recebe o e-mail padrão do cônjuge", () => {
+    const r = aplicarPadroesCliente({
+      documento: "111",
+      conjuge_nome: "Fulana",
+      conjuge_cpf: "22233344455",
+    } as Record<string, any>);
+    expect(r.conjuge_email).toBe("thiago@agilliza1.net.br");
   });
 });
