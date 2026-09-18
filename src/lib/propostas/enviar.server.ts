@@ -870,11 +870,13 @@ export async function garantirEnderecoParticipantes({
     // O cadastro atual do sistema é a fonte de verdade. O participante já salvo
     // no banco pode estar com estado civil antigo (ex.: antes era casado e virou
     // solteiro); se priorizarmos a API, o envio continua exigindo CPF do cônjuge.
+    // Estado civil da proposta/simulação é o do TITULAR: não vale para outro
+    // participante (um coproponente solteiro herdava "casado" e vice-versa).
     const estadoCivilAtualSistema =
       estadoCivilBanco(src?.estado_civil) ||
       estadoCivilBanco(env?.estado_civil) ||
-      estadoCivilBanco(prop.estado_civil) ||
-      estadoCivilBanco(sim?.estado_civil);
+      (ehPrincipal ? estadoCivilBanco(prop.estado_civil) : undefined) ||
+      (ehPrincipal ? estadoCivilBanco(sim?.estado_civil) : undefined);
     const estadoCivil = estadoCivilAtualSistema || estadoCivilBanco(part?.tipoEstadoCivil) || null;
     const regimeCasamento = prop.regime_casamento || part?.tipoRegimeCasamento || null;
 
@@ -895,23 +897,34 @@ export async function garantirEnderecoParticipantes({
       textoLivreParaBanco(part?.nomeEmpresaProfissao) ||
       PADROES_CADASTRO.empresa;
 
-    const conjuge = env
-      ? (envolvidos ?? []).find((e: any) => String(e.conjuge_de ?? "") === String(env.id))
-      : (envolvidos ?? []).find((e: any) => e.conjuge_de);
+    // O parceiro de quem é casado: para o titular, o envolvido marcado como
+    // cônjuge dele; para o cônjuge, o próprio titular. Antes só o titular
+    // levava os dados do parceiro — o cônjuge ia ao banco "casado" sem nome,
+    // CPF nem documento de quem é casado com ele, e o Itaú recusava todo casal
+    // com "Erro desconhecido na integração Itaú".
+    const conjuge = env?.conjuge_de
+      ? (envolvidos ?? []).find((e: any) => String(e.id) === String(env.conjuge_de))
+      : env
+        ? (envolvidos ?? []).find((e: any) => String(e.conjuge_de ?? "") === String(env.id))
+        : ehPrincipal
+          ? (envolvidos ?? []).find((e: any) => e.conjuge_de)
+          : undefined;
+    // `sim.*_conjuge` e `cliente.conjuge_*` descrevem o cônjuge do TITULAR.
+    const simConj = ehPrincipal ? sim : null;
     const estadoCivilConjuge =
-      estadoCivilBanco(sim?.estado_civil_conjuge) ||
+      estadoCivilBanco(simConj?.estado_civil_conjuge) ||
       estadoCivilBanco(conjuge?.estado_civil) ||
       estadoCivilBanco(part?.tipoEstadoCivilConjuge) ||
       estadoCivil ||
       undefined;
 
-    // Dados do cônjuge — obrigatórios em alguns bancos quando o proponente
-    // principal está casado ou em união estável. Sempre reenviamos, pois a
-    // oportunidade pode ter sido criada sem esses campos.
-    const casado = ehPrincipal && exigeConjugePorEstadoCivil(estadoCivil);
+    // Dados do cônjuge — exigidos pelos bancos de quem está casado ou em união
+    // estável, seja o titular ou o cônjuge que também é proponente. Sempre
+    // reenviamos, pois a oportunidade pode ter sido criada sem esses campos.
+    const casado = exigeConjugePorEstadoCivil(estadoCivil) && (ehPrincipal || Boolean(conjuge));
     if (casado) {
-      const cpfTit = soDigitos(env?.cpf_cnpj ?? src?.documento ?? prop.cpf_cnpj);
-      const cpfConj = soDigitos(conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? sim?.cpf_conjuge);
+      const cpfTit = soDigitos(env?.cpf_cnpj ?? src?.documento ?? cpf);
+      const cpfConj = soDigitos(conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? simConj?.cpf_conjuge);
       if (cpfTit && cpfConj && cpfTit === cpfConj) {
         throw new Error(
           `O CPF do titular e do cônjuge não podem ser iguais (${cpfTit}). Por favor, corrija o cadastro.`,
@@ -923,16 +936,16 @@ export async function garantirEnderecoParticipantes({
           nomeConjuge:
             conjuge?.nome ??
             src?.conjuge_nome ??
-            sim?.nome_conjuge ??
+            simConj?.nome_conjuge ??
             part?.nomeConjuge ??
             undefined,
           cpfConjuge: soDigitos(
-            conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? sim?.cpf_conjuge ?? part?.cpfConjuge,
+            conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? simConj?.cpf_conjuge ?? part?.cpfConjuge,
           ),
           dataNascimentoConjuge:
             conjuge?.data_nascimento ??
             src?.conjuge_data_nascimento ??
-            sim?.data_nascimento_conjuge ??
+            simConj?.data_nascimento_conjuge ??
             part?.dataNascimentoConjuge ??
             undefined,
           tipoEstadoCivilConjuge: estadoCivilConjuge,
@@ -953,7 +966,7 @@ export async function garantirEnderecoParticipantes({
                 part?.numeroDocumentoConjuge,
             ) ??
             (soDigitos(
-              conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? sim?.cpf_conjuge ?? part?.cpfConjuge,
+              conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? simConj?.cpf_conjuge ?? part?.cpfConjuge,
             ) ||
               undefined),
           dataExpedicaoConjuge: ouPadrao(
@@ -974,10 +987,11 @@ export async function garantirEnderecoParticipantes({
             textoLivreParaBanco(part?.nomeProfissaoConjuge) ||
             PADROES_CADASTRO.profissao,
           rendaConjuge:
-            prop.compoe_renda_conjuge !== false
+            // O titular sempre compõe renda; `compoe_renda_conjuge` fala do cônjuge dele.
+            !ehPrincipal || prop.compoe_renda_conjuge !== false
               ? (conjuge?.renda ??
                 src?.conjuge_renda ??
-                sim?.renda_conjuge ??
+                simConj?.renda_conjuge ??
                 part?.rendaConjuge ??
                 undefined)
               : 0,
@@ -1004,6 +1018,16 @@ export async function garantirEnderecoParticipantes({
     const faltaProfissao = !(part?.nomeProfissao && String(part.nomeProfissao).trim());
     const faltaEmpresa = !(part?.nomeEmpresaProfissao && String(part.nomeEmpresaProfissao).trim());
     const faltaConjuge = casado && !(part?.nomeConjuge && part?.cpfConjuge);
+    // Proponente sem endereço completo na HomeFin: o banco recusa (Itaú).
+    const faltaEnderecoHomefin =
+      (enumBancoId(part?.tipoQualificacao) ?? "CO") !== "VD" &&
+      !(
+        (soDigitos(part?.cep) ?? "").length === 8 &&
+        part?.logradouro &&
+        part?.numeroLogradouro &&
+        part?.bairro &&
+        part?.municipio
+      );
     // Agência escolhida no envio: só chega ao banco pelo participante.
     const bancarios = dadosBancariosParticipante({
       participante: part,
@@ -1029,7 +1053,8 @@ export async function garantirEnderecoParticipantes({
       !faltaUf &&
       !faltaProfissao &&
       !faltaEmpresa &&
-      !faltaConjuge
+      !faltaConjuge &&
+      !faltaEnderecoHomefin
     )
       continue;
     // Sem meios de preencher estado civil ou UF, não adianta chamar a API —
@@ -1042,9 +1067,30 @@ export async function garantirEnderecoParticipantes({
       !faltaProfissao &&
       !faltaEmpresa &&
       !faltaConjuge &&
-      !faltaAgencia
+      !faltaAgencia &&
+      !faltaEnderecoHomefin
     )
       continue;
+
+    // Endereço: cadastro do participante > o que já está na HomeFin > o do
+    // cônjuge (o casal mora junto). O 2º proponente ia com CEP, rua e cidade
+    // nulos quando não tinha cadastro na proposta, e o Itaú recusava com
+    // "proponents[1].address.zipCode: O campo com caracteres inválidos".
+    const enderecoHomefin: Record<string, unknown> = {
+      cep: part?.cep,
+      logradouro: part?.logradouro,
+      numero_logradouro: part?.numeroLogradouro,
+      complemento: part?.complementoLogradouro,
+      bairro: part?.bairro,
+      municipio: part?.municipio,
+    };
+    const doEndereco = (campo: string): string | undefined => {
+      for (const fonte of [env, enderecoHomefin, conjuge]) {
+        const v = textoOuNada(fonte?.[campo]);
+        if (v) return v;
+      }
+      return undefined;
+    };
 
     const ehPessoaFisica =
       (enumBancoId(part?.tipoPessoa) ?? ((cpf?.length ?? 0) > 11 ? "J" : "F")) === "F";
@@ -1104,13 +1150,20 @@ export async function garantirEnderecoParticipantes({
       celular: soDigitos(env?.celular) || part?.celular || soDigitos(src?.celular) || undefined,
       utilizaFgts: env ? (env.utiliza_fgts ? "S" : "N") : (part?.utilizaFgts ?? "N"),
       fgAutorizacaoDados: env?.fg_autorizacao_dados ?? true,
-      cep: soDigitos(env?.cep ?? prop.cep_imovel),
-      logradouro: env?.logradouro ?? prop.endereco_imovel ?? undefined,
-      numeroLogradouro: env?.numero_logradouro ?? undefined,
-      complementoLogradouro: env?.complemento ?? undefined,
-      bairro: env?.bairro ?? prop.bairro_imovel ?? undefined,
-      municipio: env?.municipio ?? prop.cidade_imovel ?? undefined,
-      uf: uf ?? undefined,
+      cep: soDigitos(doEndereco("cep") ?? (ehPrincipal ? prop.cep_imovel : undefined)) || undefined,
+      logradouro:
+        doEndereco("logradouro") ?? (ehPrincipal ? textoOuNada(prop.endereco_imovel) : undefined),
+      numeroLogradouro: doEndereco("numero_logradouro"),
+      complementoLogradouro: doEndereco("complemento"),
+      bairro: doEndereco("bairro") ?? (ehPrincipal ? textoOuNada(prop.bairro_imovel) : undefined),
+      municipio:
+        doEndereco("municipio") ?? (ehPrincipal ? textoOuNada(prop.cidade_imovel) : undefined),
+      uf:
+        textoOuNada(env?.uf) ??
+        textoOuNada(part?.uf) ??
+        textoOuNada(conjuge?.uf) ??
+        uf ??
+        undefined,
       ...bancarios,
       ...dadosConjuge,
     };
@@ -1123,10 +1176,42 @@ export async function garantirEnderecoParticipantes({
     // de qualquer participante criado direto na oportunidade. O vendedor (VD)
     // não é enviado por este fluxo e também não deve bloquear.
     if (env && ehProponenteEnviadoAoBanco(env)) {
-      const faltantes = faltantesEnvolvido(env);
+      // Endereço conferido é o que vai no envio (o do cônjuge entra quando o
+      // cadastro do participante não tem).
+      const faltantes = faltantesEnvolvido({
+        ...env,
+        cep: payload.cep,
+        logradouro: payload.logradouro,
+        numero_logradouro: payload.numeroLogradouro,
+        bairro: payload.bairro,
+        municipio: payload.municipio,
+        uf: payload.uf,
+      });
       if (faltantes.length > 0) {
         const msg = msgCadastroIncompleto(pb?.nome_banco ?? "banco", env, faltantes);
         throw new IntegracaoBancariaError(msg.texto);
+      }
+    }
+
+    // Proponente sem endereço completo não vai ao banco: o banco recusa com um
+    // erro técnico que não diz quem nem o quê. Vendedor não entra nesta regra.
+    const ehProponente = (enumBancoId(part?.tipoQualificacao) ?? "CO") !== "VD";
+    if (ehProponente && ehPessoaFisica) {
+      const faltaEndereco = [
+        String(payload.cep ?? "").length !== 8 && "CEP",
+        !payload.logradouro && "rua",
+        !payload.numeroLogradouro && "número",
+        !payload.bairro && "bairro",
+        !payload.municipio && "cidade",
+        !payload.uf && "UF",
+      ].filter(Boolean) as string[];
+      if (faltaEndereco.length > 0) {
+        const nome = String(payload.nomeParticipante ?? "participante");
+        throw new IntegracaoBancariaError(
+          env
+            ? `Endereço de ${nome} incompleto (falta ${faltaEndereco.join(", ")}). Complete na conferência de dados e envie de novo.`
+            : `${nome} está na oportunidade da HomeFin, mas não nos participantes desta proposta, e está sem endereço (falta ${faltaEndereco.join(", ")}). Inclua ${nome} na proposta com o endereço completo e envie de novo.`,
+        );
       }
     }
 
