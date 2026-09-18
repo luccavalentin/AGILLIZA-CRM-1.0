@@ -18,39 +18,6 @@ export const GRUPOS_PROPOSTA: Array<{
   { id: "canceladas", label: "Canceladas", tone: "danger" },
 ];
 
-/**
- * Status de cada grupo, para filtrar no banco em vez de na página. A lista sai
- * do próprio `grupoDoStatus`, então não há como os dois divergirem.
- */
-export function statusDoGrupo(grupo: GrupoProposta): PropostaStatus[] {
-  return TODOS_OS_STATUS.filter((s) => grupoDoStatus(s) === grupo);
-}
-
-const TODOS_OS_STATUS: PropostaStatus[] = [
-  "rascunho",
-  "enviada_banco",
-  "em_analise_credito",
-  "credito_aprovado",
-  "credito_condicionado",
-  "credito_recusado",
-  "checklist_documentacao",
-  "cadastro_complementar",
-  "dossie_completo",
-  "formularios",
-  "envio_documentos_banco",
-  "vistoria_agendamento",
-  "vistoria_concluida",
-  "emissao_contrato",
-  "contrato_emitido",
-  "erro_envio",
-  "aguardando_envio",
-  "cancelada",
-  "aguardando_documentos",
-  "engenharia_vistoria",
-  "analise_juridica",
-  "registrado",
-];
-
 /** Mapa status -> grupo. Retorna null para status que não se encaixam. */
 export function grupoDoStatus(status: string | null | undefined): GrupoProposta | null {
   const s = (status ?? "") as PropostaStatus;

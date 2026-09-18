@@ -16,7 +16,7 @@ import { propostaQueryOptions } from "@/lib/propostas/queries";
 
 import { Button } from "@/components/ui/button";
 import { listarColegas } from "@/lib/operacional/shared.functions";
-import { GRUPOS_PROPOSTA, type GrupoProposta } from "@/lib/propostas/status-grupos";
+import { GRUPOS_PROPOSTA, grupoDoStatus, type GrupoProposta } from "@/lib/propostas/status-grupos";
 import { StatusCard, VolumeCard } from "@/components/propostas/lista-page/cards-status";
 import { FiltrosPropostas } from "@/components/propostas/lista-page/filtros";
 import { ListaMobile } from "@/components/propostas/lista-page/lista-mobile";
@@ -156,7 +156,6 @@ function Pagina() {
       corretorFiltro,
       imobFiltro,
       comercialFiltro,
-      grupo,
     ],
     queryFn: () =>
       listarPropostas({
@@ -166,7 +165,6 @@ function Pagina() {
           responsavel: escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
           data_inicio: dataInicio ? `${dataInicio}T00:00:00` : undefined,
           data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
-          grupo: grupo ?? undefined,
           pagina: 1,
           porPagina: 100,
           apenas_excluidas: verExcluidas,
@@ -182,18 +180,31 @@ function Pagina() {
     [data?.itens, verExcluidas],
   );
 
-  // Cards e totais vêm do servidor: contam TODO o resultado do filtro, não só
-  // as 100 linhas desta página. O grupo escolhido também filtra no banco.
-  const resumo = data?.resumo;
-  const estatisticasGrupo = resumo?.grupos ?? {
-    enviadas: { count: 0, volume: 0 },
-    aprovadas: { count: 0, volume: 0 },
-    recusadas: { count: 0, volume: 0 },
-    canceladas: { count: 0, volume: 0 },
-  };
-  const itens = todosItens;
-  const totalItens = data?.total ?? itens.length;
-  const volumeTotal = resumo?.total.volume ?? 0;
+  const estatisticasGrupo = useMemo(() => {
+    const base: Record<GrupoProposta, { count: number; volume: number }> = {
+      enviadas: { count: 0, volume: 0 },
+      aprovadas: { count: 0, volume: 0 },
+      recusadas: { count: 0, volume: 0 },
+      canceladas: { count: 0, volume: 0 },
+    };
+    for (const p of todosItens) {
+      const g = grupoDoStatus(p.status);
+      if (!g) continue;
+      base[g].count += 1;
+      base[g].volume += p.valor_financiamento ?? 0;
+    }
+    return base;
+  }, [todosItens]);
+
+  const itens = useMemo(
+    () => (grupo ? todosItens.filter((p) => grupoDoStatus(p.status) === grupo) : todosItens),
+    [todosItens, grupo],
+  );
+  const totalItens = itens.length;
+  const volumeTotal = useMemo(
+    () => itens.reduce((acc, p) => acc + (p.valor_financiamento ?? 0), 0),
+    [itens],
+  );
 
   function limparFiltros() {
     setQ("");
@@ -320,8 +331,8 @@ function Pagina() {
         <StatusCard
           ativo={grupo === null}
           label="Todas"
-          count={resumo?.total.count ?? 0}
-          volume={resumo?.total.volume ?? 0}
+          count={todosItens.length}
+          volume={todosItens.reduce((a, p) => a + (p.valor_financiamento ?? 0), 0)}
           tone="info"
           loading={isLoading}
           onClick={() => setGrupo(null)}
