@@ -1703,7 +1703,14 @@ export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
     z
       .object({
         proposta_id: z.string().uuid(),
-        banco_id: z.string().uuid().optional(),
+        /**
+         * Linha do banco (uuid) ou `"todos"` = todos os selecionados ainda não
+         * enviados. `enviarPropostaImpl` sempre tratou o `"todos"`, mas o
+         * validador só aceitava uuid: o "Enviar ao banco" do topo da proposta
+         * e o "salvar e enviar" do cadastro morriam aqui, antes de qualquer
+         * chamada ao banco, e a proposta ficava parada em rascunho.
+         */
+        banco_id: z.union([z.string().uuid(), z.literal("todos")]).optional(),
         /**
          * Agência opcional escolhida na hora do envio. `undefined` = não mexe
          * no que já está gravado; string vazia = limpa e volta ao padrão da
@@ -1724,7 +1731,7 @@ export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
     // envio: o PUT da simulação na integração SUBSTITUI o registro, então um
     // reenvio posterior (botão Reenviar, sincronização) precisa encontrar o
     // mesmo valor para não apagá-lo.
-    if (data.agencia !== undefined && data.banco_id) {
+    if (data.agencia !== undefined && data.banco_id && data.banco_id !== "todos") {
       const { data: linha } = await supabase
         .from("proposta_bancos")
         .select("id, agencia, nome_banco")
