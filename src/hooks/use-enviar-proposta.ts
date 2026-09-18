@@ -343,6 +343,8 @@ export function useEnviarProposta() {
               });
               abrirFormularioPendencias(currentPropostaId, pendentes[0].env, onCadastroIncompleto);
               playChatSound();
+              // O formulário já abriu: quem chama não deve mostrar erro também.
+              if (e && typeof e === "object") (e as any).cadastroIncompleto = true;
               throw e;
             }
           } catch (erroAoConferir) {
