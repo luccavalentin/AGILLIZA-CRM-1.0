@@ -175,6 +175,30 @@ async function registrarLog(entrada: {
   try {
     const { supabaseAdmin: sbAdmin } = await import("@/integrations/supabase/client.server");
     if (entrada.proposta_id) {
+      // Consulta de acompanhamento bem-sucedida com a MESMA resposta da anterior
+      // não vai para o log: eram ~93% das linhas (99,8% idênticas à anterior),
+      // e a tabela chegou a 936 MB (18/09/2026). Envios, erros e respostas
+      // diferentes continuam registrados por completo.
+      const deuCerto =
+        typeof entrada.status_http === "number" &&
+        entrada.status_http >= 200 &&
+        entrada.status_http < 300;
+      if (
+        deuCerto &&
+        entrada.metodo === "GET" &&
+        /^\/oportunidade\/[^/]+$/.test(entrada.endpoint)
+      ) {
+        const { resumoMudou, estavel } = await import("@/lib/propostas/sync-estado.server");
+        const resumo = estavel(
+          enxugarRespostaDeLog(
+            entrada.endpoint,
+            entrada.metodo,
+            entrada.status_http,
+            entrada.response,
+          ),
+        );
+        if (!(await resumoMudou(entrada.proposta_id, resumo))) return;
+      }
       await sbAdmin.from("proposta_logs_homefin").insert({
         proposta_id: entrada.proposta_id,
         correspondente_id: entrada.correspondente_id ?? null,

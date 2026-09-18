@@ -37,28 +37,17 @@ export const Route = createFileRoute("/api/public/sync-propostas")({
           "analise_juridica",
         ];
 
-        const { data: candidatas, error } = await supabaseAdmin
-          .from("propostas")
-          .select("id, ultima_sincronizacao_em, status_atualizado_em, enviada_em, created_at")
-          .in("status", STATUS_ATIVOS as any)
-          .not("homefin_id_oportunidade", "is", null)
-          // Proposta na lixeira não tem retorno para receber. Sem este filtro,
-          // duas propostas excluídas em 10/08 continuaram sendo consultadas de
-          // 2 em 2 minutos por 20 dias (26 mil GETs numa única oportunidade).
-          .is("deleted_at", null)
-          .order("ultima_sincronizacao_em", { ascending: true, nullsFirst: true } as any)
-          .limit(200);
-
-        if (error) {
-          return Response.json({ ok: false, error: error.message }, { status: 500 });
+        // Só as vencidas pelo ritmo de `sync-backoff.ts` (banco, fase e horário
+        // comercial), contando consultas feitas por qualquer origem. Proposta
+        // na lixeira fica de fora (26 mil GETs numa única oportunidade em 08/26).
+        const { selecionarParaSincronizar } = await import("@/lib/propostas/sync-estado.server");
+        let propostas: { id: string }[];
+        try {
+          propostas = await selecionarParaSincronizar(supabaseAdmin as any, STATUS_ATIVOS, 200);
+        } catch (e) {
+          return Response.json({ ok: false, error: String(e) }, { status: 500 });
         }
-
-        // Backoff: sem webhook na API, o polling é obrigatório — mas uma
-        // proposta parada em análise não precisa ser consultada a cada 2 min
-        // para sempre. Ver `sync-backoff.ts`.
-        const { filtrarParaSincronizar } = await import("@/lib/propostas/sync-backoff");
-        const propostas = filtrarParaSincronizar(candidatas ?? []);
-        const adiadas = (candidatas ?? []).length - propostas.length;
+        const adiadas = 0;
 
         let processadas = 0;
         let atualizadas = 0;
