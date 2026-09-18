@@ -112,7 +112,8 @@ export function AcoesTopo({
         },
       });
     } catch (e) {
-      if (!abriuCadastro) toast.error(mensagemDeErro(e, "Falha ao enviar a proposta ao banco."));
+      if (!abriuCadastro && !(e as any)?.cadastroIncompleto)
+        toast.error(mensagemDeErro(e, "Falha ao enviar a proposta ao banco."));
     }
   }
 

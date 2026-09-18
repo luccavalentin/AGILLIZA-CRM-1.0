@@ -150,8 +150,13 @@ export function TabResumo({
       if (r && r.bancos && r.bancos.length > 0) {
         setResultadoEnvio(r.bancos);
       }
-    } catch (e) {
-      // Erros já mostrados pelo hook/toast
+    } catch (e: any) {
+      // O hook não mostra toast de erro; sem isto a falha sumia em silêncio.
+      if (!e?.cadastroIncompleto) {
+        toast.error(mensagemDeErro(e, "Falha ao enviar a proposta ao banco."), {
+          duration: 12_000,
+        });
+      }
     } finally {
       setEnviandoId(null);
     }

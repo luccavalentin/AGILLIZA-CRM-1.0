@@ -253,8 +253,14 @@ function Pagina() {
           nomeBanco: linhaBanco?.nome_banco,
           agencia,
         });
-      } catch {
-        /* mensagem já exibida pelo gate */
+      } catch (e: any) {
+        // O hook não mostra toast de erro. Seguimos para a proposta mesmo
+        // assim (ela já foi criada), mas avisando que o envio não aconteceu.
+        if (!e?.cadastroIncompleto) {
+          toast.error(mensagemDeErro(e, "A proposta foi criada, mas o envio ao banco falhou."), {
+            duration: 12_000,
+          });
+        }
       }
       router.navigate({
         to: "/operacional/propostas/$id",

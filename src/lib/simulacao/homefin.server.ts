@@ -221,6 +221,7 @@ interface TokenInfo {
 
 let _tokenCache: { info: TokenInfo; expiresAt: number } | null = null;
 let _tokenEmVoo: Promise<TokenInfo> | null = null;
+let _tokenEmVooDesde = 0;
 const CACHE_ID = "00000000-0000-0000-0000-000000000000";
 
 /** Validade assumida quando o token não traz `exp` legível. */
@@ -342,17 +343,32 @@ export async function obterToken(forcarRenovacao = false): Promise<TokenInfo> {
     }
   }
 
-  if (_tokenEmVoo) return _tokenEmVoo;
+  // O pedido de token em voo é compartilhado entre requisições. Se a
+  // requisição que o disparou for cancelada, o `finally` pode não rodar e a
+  // promessa nunca terminar — e todo mundo que esperasse por ela travaria.
+  // Quem espera tem prazo; passado o prazo, pede o próprio token.
+  const PRAZO_TOKEN_MS = 35_000;
+  if (_tokenEmVoo && Date.now() - _tokenEmVooDesde < PRAZO_TOKEN_MS) {
+    const restante = PRAZO_TOKEN_MS - (Date.now() - _tokenEmVooDesde);
+    const venceu = Symbol("venceu");
+    const r = await Promise.race([
+      _tokenEmVoo.catch(() => venceu),
+      new Promise<typeof venceu>((ok) => setTimeout(() => ok(venceu), restante)),
+    ]);
+    if (r !== venceu) return r as TokenInfo;
+  }
   if (forcarRenovacao) _tokenCache = null;
 
-  _tokenEmVoo = (async () => {
+  const emVoo = (async () => {
     try {
       return await solicitarToken();
     } finally {
-      _tokenEmVoo = null;
+      if (_tokenEmVoo === emVoo) _tokenEmVoo = null;
     }
   })();
-  return _tokenEmVoo;
+  _tokenEmVoo = emVoo;
+  _tokenEmVooDesde = Date.now();
+  return emVoo;
 }
 
 export interface HomefinRequestCtx {
@@ -390,42 +406,41 @@ export async function chamarIntegracao<T = unknown>(
   const LIMITE = { leitura: 2, escrita: 3 } as const;
   const deveSerializar = !isAuth && !isDominio;
 
+  /**
+   * A fila é compartilhada pela instância do Worker, isto é, entre
+   * requisições de usuários diferentes. Antes, quem liberava a vaga disparava
+   * a tarefa do próximo da fila de dentro da PRÓPRIA requisição, e o contador
+   * só descia no `finally`. No Cloudflare Workers as duas coisas falham:
+   *  - requisição cancelada (aba fechada, tela recarregada) pode não chegar ao
+   *    `finally`, e a vaga fica ocupada para sempre naquela instância;
+   *  - a chamada disparada no contexto de outra requisição morre junto com ela.
+   * Com as 2 vagas de leitura presas, todo envio que caía na instância parava
+   * no primeiro `GET /oportunidade` e a proposta ficava em "aguardando envio"
+   * (PRO-000459, 18/09 14:36: agência gravada, nenhuma chamada à HomeFin por
+   * 4,5 min até a operadora clicar de novo).
+   *
+   * Agora cada chamada espera a sua vez por no máximo `ESPERA_MAX_MS`,
+   * consultando o contador, e executa ela mesma, no próprio contexto. Uma vaga
+   * presa custa no máximo essa espera, nunca um envio travado.
+   */
   if (deveSerializar) {
     const global = globalThis as any;
     const chaveAtivos = `_hfActive_${faixa}`;
-    const chaveFila = `_hfQueue_${faixa}`;
     global[chaveAtivos] = global[chaveAtivos] || 0;
-    global[chaveFila] = global[chaveFila] || [];
-
-    return new Promise<T>((resolve, reject) => {
-      const task = async () => {
-        global[chaveAtivos]++;
-        const startedAt = performance.now();
-        const queue_wait_ms = (startedAt - queuedAt).toFixed(0);
-        console.info(
-          `[SIM-PERF][API] ${method} ${endpoint} faixa=${faixa} queue_wait_ms=${queue_wait_ms}`,
-        );
-
-        try {
-          const result = await executarChamada<T>(endpoint, method, body, ctx);
-          resolve(result);
-        } catch (e) {
-          reject(e);
-        } finally {
-          global[chaveAtivos]--;
-          if (global[chaveFila].length > 0) {
-            const nextTask = global[chaveFila].shift();
-            nextTask();
-          }
-        }
-      };
-
-      if (global[chaveAtivos] < LIMITE[faixa]) {
-        task();
-      } else {
-        global[chaveFila].push(task);
-      }
-    });
+    const ESPERA_MAX_MS = 3_000;
+    while (global[chaveAtivos] >= LIMITE[faixa] && performance.now() - queuedAt < ESPERA_MAX_MS) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    global[chaveAtivos]++;
+    const startedAt = performance.now();
+    console.info(
+      `[SIM-PERF][API] ${method} ${endpoint} faixa=${faixa} queue_wait_ms=${(startedAt - queuedAt).toFixed(0)}`,
+    );
+    try {
+      return await executarChamada<T>(endpoint, method, body, ctx);
+    } finally {
+      global[chaveAtivos] = Math.max(0, global[chaveAtivos] - 1);
+    }
   }
 
   const startedAt = performance.now();

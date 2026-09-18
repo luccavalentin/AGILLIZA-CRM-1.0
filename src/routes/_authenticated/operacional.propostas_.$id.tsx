@@ -237,9 +237,11 @@ function PropostaRoute() {
           if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
         } catch (erroEnvio: any) {
           setBancoEmEnvio(null);
-          toast.error(erroEnvio?.message ?? "Falha ao enviar a proposta ao banco.", {
-            duration: 12_000,
-          });
+          if (!erroEnvio?.cadastroIncompleto) {
+            toast.error(erroEnvio?.message ?? "Falha ao enviar a proposta ao banco.", {
+              duration: 12_000,
+            });
+          }
           throw erroEnvio;
         }
       } catch (e: any) {
@@ -294,6 +296,7 @@ function PropostaRoute() {
         if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
       })
       .catch((e: any) => {
+        if (e?.cadastroIncompleto) return;
         toast.error(e?.message ?? "Falha ao enviar a proposta ao banco.", { duration: 12_000 });
       })
       .finally(() => setBancoEmEnvio(null));
@@ -384,8 +387,13 @@ function PropostaRoute() {
               : undefined,
           agencia: agenciaEscolhida,
         });
-      } catch {
+      } catch (e: any) {
         enviouAutoRef.current = false;
+        // O hook não mostra toast de erro; sem isto o envio automático falhava
+        // em silêncio e a proposta ficava em "aguardando envio".
+        if (!e?.cadastroIncompleto) {
+          toast.error(e?.message ?? "Falha ao enviar a proposta ao banco.", { duration: 12_000 });
+        }
       }
     })();
   }, [
