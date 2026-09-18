@@ -81,3 +81,18 @@ describe("vendedor como participante VD", () => {
     expect(payload).not.toHaveProperty("codigoAgencia");
   });
 });
+
+describe("RG padrão do vendedor", () => {
+  it("sem número do documento, pessoa física vai com o CPF", () => {
+    const p = payloadParticipanteVendedor({ ...vendedorCompleto, numero_documento: "" });
+    expect(p.numeroDocumento).toBe("12345678909");
+  });
+
+  it("cônjuge do vendedor sem documento vai com o CPF dele", () => {
+    const p = payloadParticipanteVendedor(vendedorCompleto, {
+      nome: "Ana",
+      cpf_cnpj: "987.654.321-00",
+    });
+    expect(p.numeroDocumentoConjuge).toBe("98765432100");
+  });
+});

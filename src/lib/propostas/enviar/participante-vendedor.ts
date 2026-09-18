@@ -47,7 +47,10 @@ export function payloadParticipanteVendedor(
     tipoEstadoCivil: texto(vendedor.estado_civil),
     tipoRegimeCasamento: texto(vendedor.regime_casamento),
     tipoDocumentoIdentidade: texto(vendedor.tipo_documento_identidade),
-    numeroDocumento: texto(vendedor.numero_documento),
+    // Sem RG no cadastro, pessoa física vai com o próprio CPF — o mesmo
+    // padrão do comprador (ver enviar.server.ts).
+    numeroDocumento:
+      texto(vendedor.numero_documento) ?? (pf ? digitos(vendedor.cpf_cnpj) : undefined),
     dataExpedicao: texto(vendedor.data_expedicao),
     orgaoExpedidor: texto(vendedor.orgao_expedidor),
     ufExpedicao: texto(vendedor.uf_expedicao),
@@ -78,7 +81,7 @@ export function payloadParticipanteVendedor(
       dataNascimentoConjuge: texto(conjuge.data_nascimento),
       tipoEstadoCivilConjuge: texto(conjuge.estado_civil ?? vendedor.estado_civil),
       tipoDocumentoIdentidadeConjuge: texto(conjuge.tipo_documento_identidade),
-      numeroDocumentoConjuge: texto(conjuge.numero_documento),
+      numeroDocumentoConjuge: texto(conjuge.numero_documento) ?? digitos(conjuge.cpf_cnpj),
       dataExpedicaoConjuge: texto(conjuge.data_expedicao),
       orgaoExpedidorConjuge: texto(conjuge.orgao_expedidor),
       ufExpedicaoConjuge: texto(conjuge.uf_expedicao),

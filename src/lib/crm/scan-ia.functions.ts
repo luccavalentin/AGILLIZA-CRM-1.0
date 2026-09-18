@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { aplicarPadroesCliente } from "@/lib/crm/padroes-cadastro";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -857,15 +858,17 @@ export const criarClienteParaLeitura = createServerFn({ method: "POST" })
     if (!clienteId) {
       const { data: novo, error } = await supabase
         .from("clientes")
-        .insert({
-          correspondente_id: corr,
-          numero_cliente: "",
-          nome: data.nome.trim(),
-          documento,
-          tipo_pessoa: documento.length === 14 ? "PJ" : "PF",
-          criador_id: userId,
-          responsavel_id: userId,
-        })
+        .insert(
+          aplicarPadroesCliente({
+            correspondente_id: corr,
+            numero_cliente: "",
+            nome: data.nome.trim(),
+            documento,
+            tipo_pessoa: (documento.length === 14 ? "PJ" : "PF") as "PJ" | "PF",
+            criador_id: userId,
+            responsavel_id: userId,
+          }),
+        )
         .select("id")
         .single();
       if (error) throw error;
