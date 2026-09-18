@@ -98,15 +98,21 @@ export function AcoesTopo({
       return;
     }
 
+    // O hook não mostra toast de erro: sem este aviso, qualquer recusa do
+    // servidor sumia em silêncio e o botão parecia não fazer nada.
+    let abriuCadastro = false;
     try {
       await handleEnviar({
         propostaId,
         bancoId: "todos",
         envolvidos,
-        onCadastroIncompleto: () => onCadastroIncompleto?.(),
+        onCadastroIncompleto: () => {
+          abriuCadastro = true;
+          onCadastroIncompleto?.();
+        },
       });
     } catch (e) {
-      // toast já mostrado pelo hook
+      if (!abriuCadastro) toast.error(mensagemDeErro(e, "Falha ao enviar a proposta ao banco."));
     }
   }
 
