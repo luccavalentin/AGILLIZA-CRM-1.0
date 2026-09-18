@@ -1,6 +1,12 @@
-/** Converte o cliente em `inicial` para o `<ClienteForm />`. */
+import { aplicarPadroesIdentificacao } from "@/lib/crm/padroes-cadastro";
+
+/**
+ * Converte o cliente em `inicial` para o `<ClienteForm />`. Nacionalidade,
+ * naturalidade e RG vazios já aparecem com o padrão (Brasileira, São Paulo/SP,
+ * CPF) — é o que será gravado ao salvar.
+ */
 export function clienteParaFormInicial(c: any) {
-  return {
+  return aplicarPadroesIdentificacao({
     id: c.id,
     tipo_pessoa: c.tipo_pessoa,
     nome: c.nome,
@@ -52,5 +58,5 @@ export function clienteParaFormInicial(c: any) {
     conjuge_agencia: c.conjuge_agencia ?? "",
     conjuge_conta_corrente: c.conjuge_conta_corrente ?? "",
     conjuge_digito_conta: c.conjuge_digito_conta ?? "",
-  };
+  });
 }

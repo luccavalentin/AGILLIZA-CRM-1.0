@@ -136,7 +136,7 @@ export function DadosBasicosSection({
               set("documento_secundario", e.target.value);
               set("numero_documento", e.target.value);
             }}
-            placeholder="Opcional"
+            placeholder="Se ficar vazio, usa o CPF"
           />
         </div>
 

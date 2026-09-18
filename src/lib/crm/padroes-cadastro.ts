@@ -17,6 +17,8 @@ export const PADROES_CADASTRO = {
   orgaoExpedidor: "SSP",
   ufExpedicao: "SP",
   dataExpedicao: "2026-01-01",
+  nacionalidade: "Brasileira",
+  naturalidade: "São Paulo/SP",
 } as const;
 
 /** Endereço padrão — só o cadastro do cliente usa; a simulação não mexe em endereço. */
@@ -34,6 +36,47 @@ const vazio = (v: unknown) => v === null || v === undefined || String(v).trim() 
 /** Devolve `padrao` quando o valor está vazio; senão devolve o próprio valor. */
 export function ouPadrao<T>(valor: T, padrao: string): T | string {
   return vazio(valor) ? padrao : valor;
+}
+
+/**
+ * Nacionalidade, naturalidade e RG de pessoa física: valem na criação E na
+ * edição do cadastro (ao contrário dos demais padrões, que só entram na
+ * criação). Vazio vira Brasileira / São Paulo-SP / o próprio CPF.
+ *
+ * Naturalidade é gravada como "Cidade/UF". Só o estado ("/SP") conta como
+ * vazia e recebe São Paulo; estado diferente de SP sem cidade fica como está,
+ * para não trocar o estado que o operador escolheu.
+ */
+export function aplicarPadroesIdentificacao<T extends Record<string, any>>(campos: T): T {
+  if (campos.tipo_pessoa === "PJ") return campos;
+  const c = campos as Record<string, any>;
+
+  if (vazio(c.nacionalidade)) c.nacionalidade = PADROES_CADASTRO.nacionalidade;
+
+  const nat = String(c.naturalidade ?? "").trim();
+  const barra = nat.lastIndexOf("/");
+  const cidade = barra === -1 ? nat : nat.slice(0, barra).trim();
+  const uf =
+    barra === -1
+      ? ""
+      : nat
+          .slice(barra + 1)
+          .trim()
+          .toUpperCase();
+  if (!cidade && (!uf || uf === "SP")) c.naturalidade = PADROES_CADASTRO.naturalidade;
+
+  if (!vazio(c.documento)) {
+    if (vazio(c.documento_secundario)) c.documento_secundario = String(c.documento);
+    if (vazio(c.numero_documento)) c.numero_documento = String(c.documento);
+  }
+
+  if (!vazio(c.conjuge_nome) || !vazio(c.conjuge_cpf)) {
+    if (vazio(c.conjuge_nacionalidade)) c.conjuge_nacionalidade = PADROES_CADASTRO.nacionalidade;
+    if (vazio(c.conjuge_numero_documento) && !vazio(c.conjuge_cpf)) {
+      c.conjuge_numero_documento = String(c.conjuge_cpf);
+    }
+  }
+  return campos;
 }
 
 /**
@@ -77,5 +120,5 @@ export function aplicarPadroesCliente<T extends Record<string, any>>(campos: T):
     }
   }
 
-  return campos;
+  return aplicarPadroesIdentificacao(campos);
 }
