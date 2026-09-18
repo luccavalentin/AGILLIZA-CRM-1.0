@@ -18,6 +18,11 @@ import {
   ESTADO_CIVIL_COM_REGIME,
 } from "./dominios";
 import { propostaQueryOptions } from "./queries";
+import { grupoDoStatus, statusDoGrupo, type GrupoProposta } from "./status-grupos";
+import { clausulasDeBusca } from "./lista-filtros";
+
+/** UUID que nunca existe: filtro sem resultado precisa devolver lista vazia. */
+const VAZIO = "00000000-0000-0000-0000-000000000000";
 
 /** ===== Tipos de saída ===== */
 export interface PropostaBancoResumo {
@@ -83,6 +88,32 @@ async function assertPropostaEditavel(supabase: any, propostaId: string): Promis
   }
 }
 
+/**
+ * Clientes ligados a um parceiro com este nome e este tipo de vínculo.
+ *
+ * Os filtros de Corretor/Imobiliária/Comercial eram aplicados em memória, DEPOIS
+ * da paginação: o total e os cards continuavam contando o que o filtro tirou, e
+ * quem estava fora da primeira leva sumia. Resolvendo os ids aqui, o filtro
+ * passa a ser do banco, como os demais.
+ */
+async function clientesDoParceiro(supabase: any, nome: string, tipos: string[]): Promise<string[]> {
+  const { data: perfis } = await supabase.from("profiles").select("id").eq("nome", nome);
+  const ids = (perfis ?? []).map((p: any) => String(p.id));
+  if (ids.length === 0) return [];
+  const { data: vinc } = await supabase
+    .from("cliente_parceiros")
+    .select("cliente_id")
+    .in("parceiro_id", ids)
+    .in("tipo_vinculo", tipos);
+  return Array.from(new Set((vinc ?? []).map((v: any) => String(v.cliente_id)).filter(Boolean)));
+}
+
+/** Contagem e volume por grupo, sobre TODO o resultado do filtro. */
+export interface ResumoPropostas {
+  total: { count: number; volume: number };
+  grupos: Record<GrupoProposta, { count: number; volume: number }>;
+}
+
 /** ===== Listagem ===== */
 export const listarPropostas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -100,180 +131,219 @@ export const listarPropostas = createServerFn({ method: "GET" })
         data_inicio: z.string().optional(),
         data_fim: z.string().optional(),
 
+        grupo: z.enum(["enviadas", "aprovadas", "recusadas", "canceladas"]).optional(),
         pagina: z.number().int().min(1).default(1),
         porPagina: z.number().int().min(1).max(500).default(30),
         apenas_excluidas: z.boolean().default(false),
       })
       .parse(data),
   )
-  .handler(async ({ context, data }): Promise<{ itens: PropostaListaItem[]; total: number }> => {
-    const { supabase, userId } = context;
-    let query = supabase
-      .from("propostas")
-      .select(
-        "id, cliente_id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
-        { count: "exact" },
+  .handler(
+    async ({
+      context,
+      data,
+    }): Promise<{ itens: PropostaListaItem[]; total: number; resumo: ResumoPropostas }> => {
+      const { supabase, userId } = context;
+
+      // Os mesmos filtros valem para a página de resultados e para os cards —
+      // por isso ficam numa função só. Antes os cards contavam apenas as 100
+      // linhas carregadas, e o total da tela não batia com o do banco.
+      const aplicarFiltros = async (q0: any) => {
+        let query = q0;
+        if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
+        else query = query.is("deleted_at", null);
+
+        if (data.escopo === "minhas") {
+          // Inclui propostas onde o usuário é responsável/criador OU está vinculado
+          // ao cliente como parceiro (imobiliária, corretor, comercial).
+          const { data: vinc } = await supabase
+            .from("cliente_parceiros")
+            .select("cliente_id")
+            .eq("parceiro_id", userId);
+          const ids = Array.from(
+            new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)),
+          );
+          const partes = [`usuario_responsavel_id.eq.${userId}`, `usuario_criador_id.eq.${userId}`];
+          if (ids.length) partes.push(`cliente_id.in.(${ids.join(",")})`);
+          query = query.or(partes.join(","));
+        }
+        if (data.responsavel) {
+          query = query.or(
+            `usuario_responsavel_id.eq.${data.responsavel},usuario_criador_id.eq.${data.responsavel}`,
+          );
+        }
+        if (data.responsavel_nome && data.responsavel_nome !== "todos") {
+          const { data: perfis } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("nome", data.responsavel_nome);
+          const ids = (perfis ?? []).map((p: any) => String(p.id));
+          query = ids.length
+            ? query.or(
+                `usuario_responsavel_id.in.(${ids.join(",")}),usuario_criador_id.in.(${ids.join(",")})`,
+              )
+            : query.eq("id", VAZIO);
+        }
+        for (const [nome, tipos] of [
+          [data.corretor_nome, ["corretor"]],
+          [data.imobiliaria_nome, ["imobiliaria"]],
+          [data.comercial_nome, ["comercial_agilliza", "comercial"]],
+        ] as [string | undefined, string[]][]) {
+          if (!nome || nome === "todos") continue;
+          const clientes = await clientesDoParceiro(supabase, nome, tipos);
+          // Sem cliente nenhum, o filtro não pode devolver a lista inteira.
+          query = clientes.length ? query.in("cliente_id", clientes) : query.eq("id", VAZIO);
+        }
+        if (data.status) query = query.eq("status", data.status as any);
+        if (data.grupo) query = query.in("status", statusDoGrupo(data.grupo) as any);
+        if (data.data_inicio) query = query.gte("created_at", data.data_inicio);
+        if (data.data_fim) query = query.lte("created_at", data.data_fim);
+
+        const busca = clausulasDeBusca(data.q ?? "");
+        if (busca.length) query = query.or(busca.join(","));
+        return query;
+      };
+
+      let query = await aplicarFiltros(
+        supabase
+          .from("propostas")
+          .select(
+            "id, cliente_id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
+            { count: "exact" },
+          ),
       );
 
-    if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
-    else query = query.is("deleted_at", null);
+      const from = (data.pagina - 1) * data.porPagina;
+      const to = from + data.porPagina - 1;
 
-    if (data.escopo === "minhas") {
-      // Inclui propostas onde o usuário é responsável/criador OU está vinculado
-      // ao cliente como parceiro (imobiliária, corretor, comercial).
-      const { data: vinc } = await supabase
-        .from("cliente_parceiros")
-        .select("cliente_id")
-        .eq("parceiro_id", userId);
-      const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
-      const partes = [`usuario_responsavel_id.eq.${userId}`, `usuario_criador_id.eq.${userId}`];
-      if (ids.length) partes.push(`cliente_id.in.(${ids.join(",")})`);
-      query = query.or(partes.join(","));
-    }
-    if (data.responsavel) {
-      query = query.or(
-        `usuario_responsavel_id.eq.${data.responsavel},usuario_criador_id.eq.${data.responsavel}`,
-      );
-    }
-    if (data.status) query = query.eq("status", data.status as any);
-    if (data.data_inicio) query = query.gte("created_at", data.data_inicio);
-    if (data.data_fim) query = query.lte("created_at", data.data_fim);
+      query = query.order("created_at", { ascending: false }).range(from, to);
 
-    // Filtros de nomes (Parceiros/Responsáveis) baseados nos nomes pré-carregados no hook,
-    // mas agora aplicados no servidor para garantir que "todos" os dados sejam buscados corretamente.
-    // O backend irá filtrar após resolver as tabelas de junção (profiles/parceiros).
+      const { data: itens, count, error } = await query;
+      if (error) throw new Error(error.message);
 
-    if (data.q) {
-      const q = data.q.trim();
-      query = query.or(
-        `numero_proposta.ilike.%${q}%,numero_proposta_banco.ilike.%${q}%,nome_cliente.ilike.%${q}%,cpf_cnpj.ilike.%${q.replace(/\D/g, "")}%`,
-      );
-    }
-
-    const from = (data.pagina - 1) * data.porPagina;
-    const to = from + data.porPagina - 1;
-
-    // Se houver filtros de nome de parceiro, precisamos buscar uma gama maior no banco
-    // para compensar o filtro manual em memória feito logo abaixo.
-    const temFiltroNome =
-      data.responsavel_nome || data.corretor_nome || data.imobiliaria_nome || data.comercial_nome;
-    const finalTo = temFiltroNome ? Math.max(to, 5000) : to;
-
-    query = query.order("created_at", { ascending: false }).range(from, finalTo);
-
-    const { data: itens, count, error } = await query;
-    if (error) throw new Error(error.message);
-
-    const rows = (itens ?? []) as any[];
-    const ids = rows.map((r) => r.id);
-    const bancosPorProp = new Map<string, PropostaBancoResumo[]>();
-    if (ids.length) {
-      const { data: bancos } = await supabase
-        .from("proposta_bancos")
-        .select("proposta_id, nome_banco, status_banco")
-        .in("proposta_id", ids)
-        .order("nome_banco", { ascending: true });
-      for (const b of bancos ?? []) {
-        const lista = bancosPorProp.get((b as any).proposta_id) ?? [];
-        lista.push({ nome_banco: (b as any).nome_banco, status_banco: (b as any).status_banco });
-        bancosPorProp.set((b as any).proposta_id, lista);
+      // Cards: contagem e volume de TODO o filtro, não só da página.
+      const resumo: ResumoPropostas = {
+        total: { count: count ?? 0, volume: 0 },
+        grupos: {
+          enviadas: { count: 0, volume: 0 },
+          aprovadas: { count: 0, volume: 0 },
+          recusadas: { count: 0, volume: 0 },
+          canceladas: { count: 0, volume: 0 },
+        },
+      };
+      {
+        const qResumo = await aplicarFiltros(
+          supabase.from("propostas").select("status, valor_financiamento"),
+        );
+        const { data: linhas } = await qResumo.range(0, 4999);
+        for (const l of (linhas ?? []) as any[]) {
+          const valor = Number(l.valor_financiamento) || 0;
+          resumo.total.volume += valor;
+          const g = grupoDoStatus(l.status);
+          if (!g) continue;
+          resumo.grupos[g].count += 1;
+          resumo.grupos[g].volume += valor;
+        }
       }
-    }
 
-    // Resolve nomes dos responsáveis + de quem excluiu (para escopo "Todas" e aba "Excluídas").
-    const donoIds = Array.from(
-      new Set(
-        rows
-          .map((r) => r.usuario_responsavel_id ?? r.usuario_criador_id)
-          .filter((v): v is string => Boolean(v)),
-      ),
-    );
-    const excluidorIds = Array.from(
-      new Set(rows.map((r: any) => r.deleted_by).filter((v: any): v is string => Boolean(v))),
-    );
-    const perfilIds = Array.from(new Set([...donoIds, ...excluidorIds]));
-    const nomesPerfis = new Map<string, string>();
-    if (perfilIds.length) {
-      const { data: perfis } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", perfilIds);
-      for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
-    }
-
-    // Vínculos de imobiliária/corretor via cliente_parceiros (por cliente_id da proposta).
-    const clienteIds = Array.from(
-      new Set(rows.map((r: any) => r.cliente_id).filter((v: any): v is string => Boolean(v))),
-    );
-    const imobPorCliente = new Map<string, string>();
-    const corrPorCliente = new Map<string, string>();
-    const comPorCliente = new Map<string, string>();
-    const parceiroIds = new Set<string>();
-    if (clienteIds.length) {
-      const { data: vinc } = await supabase
-        .from("cliente_parceiros")
-        .select("cliente_id, parceiro_id, tipo_vinculo")
-        .in("cliente_id", clienteIds);
-      for (const v of vinc ?? []) {
-        const cid = (v as any).cliente_id as string;
-        const pid = (v as any).parceiro_id as string | null;
-        const tipo = (v as any).tipo_vinculo as string;
-        if (!pid) continue;
-        parceiroIds.add(pid);
-        if (tipo === "imobiliaria" && !imobPorCliente.has(cid)) imobPorCliente.set(cid, pid);
-        if (tipo === "corretor" && !corrPorCliente.has(cid)) corrPorCliente.set(cid, pid);
-        // O valor gravado é "comercial_agilliza" (check constraint de
-        // cliente_parceiros). Comparando só com "comercial", a coluna e o
-        // filtro de Comercial nunca eram preenchidos.
-        if ((tipo === "comercial_agilliza" || tipo === "comercial") && !comPorCliente.has(cid))
-          comPorCliente.set(cid, pid);
+      const rows = (itens ?? []) as any[];
+      const ids = rows.map((r) => r.id);
+      const bancosPorProp = new Map<string, PropostaBancoResumo[]>();
+      if (ids.length) {
+        const { data: bancos } = await supabase
+          .from("proposta_bancos")
+          .select("proposta_id, nome_banco, status_banco")
+          .in("proposta_id", ids)
+          .order("nome_banco", { ascending: true });
+        for (const b of bancos ?? []) {
+          const lista = bancosPorProp.get((b as any).proposta_id) ?? [];
+          lista.push({ nome_banco: (b as any).nome_banco, status_banco: (b as any).status_banco });
+          bancosPorProp.set((b as any).proposta_id, lista);
+        }
       }
-    }
-    if (parceiroIds.size) {
-      const faltantes = Array.from(parceiroIds).filter((id) => !nomesPerfis.has(id));
-      if (faltantes.length) {
+
+      // Resolve nomes dos responsáveis + de quem excluiu (para escopo "Todas" e aba "Excluídas").
+      const donoIds = Array.from(
+        new Set(
+          rows
+            .map((r) => r.usuario_responsavel_id ?? r.usuario_criador_id)
+            .filter((v): v is string => Boolean(v)),
+        ),
+      );
+      const excluidorIds = Array.from(
+        new Set(rows.map((r: any) => r.deleted_by).filter((v: any): v is string => Boolean(v))),
+      );
+      const perfilIds = Array.from(new Set([...donoIds, ...excluidorIds]));
+      const nomesPerfis = new Map<string, string>();
+      if (perfilIds.length) {
         const { data: perfis } = await supabase
           .from("profiles")
           .select("id, nome")
-          .in("id", faltantes);
+          .in("id", perfilIds);
         for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
       }
-    }
 
-    const lista = rows.map((r: any) => {
-      const responsavel_id = r.usuario_responsavel_id ?? r.usuario_criador_id ?? null;
-      const imobId = r.cliente_id ? (imobPorCliente.get(r.cliente_id) ?? null) : null;
-      const corrId = r.cliente_id ? (corrPorCliente.get(r.cliente_id) ?? null) : null;
-      const comId = r.cliente_id ? (comPorCliente.get(r.cliente_id) ?? null) : null;
-      return {
-        ...r,
-        responsavel_id,
-        nome_responsavel: responsavel_id ? (nomesPerfis.get(responsavel_id) ?? null) : null,
-        imobiliaria_nome: imobId ? (nomesPerfis.get(imobId) ?? null) : null,
-        corretor_nome: corrId ? (nomesPerfis.get(corrId) ?? null) : null,
-        comercial_nome: comId ? (nomesPerfis.get(comId) ?? null) : null,
-        nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
-        bancos: bancosPorProp.get(r.id) ?? [],
-      };
-    });
+      // Vínculos de imobiliária/corretor via cliente_parceiros (por cliente_id da proposta).
+      const clienteIds = Array.from(
+        new Set(rows.map((r: any) => r.cliente_id).filter((v: any): v is string => Boolean(v))),
+      );
+      const imobPorCliente = new Map<string, string>();
+      const corrPorCliente = new Map<string, string>();
+      const comPorCliente = new Map<string, string>();
+      const parceiroIds = new Set<string>();
+      if (clienteIds.length) {
+        const { data: vinc } = await supabase
+          .from("cliente_parceiros")
+          .select("cliente_id, parceiro_id, tipo_vinculo")
+          .in("cliente_id", clienteIds);
+        for (const v of vinc ?? []) {
+          const cid = (v as any).cliente_id as string;
+          const pid = (v as any).parceiro_id as string | null;
+          const tipo = (v as any).tipo_vinculo as string;
+          if (!pid) continue;
+          parceiroIds.add(pid);
+          if (tipo === "imobiliaria" && !imobPorCliente.has(cid)) imobPorCliente.set(cid, pid);
+          if (tipo === "corretor" && !corrPorCliente.has(cid)) corrPorCliente.set(cid, pid);
+          // O valor gravado é "comercial_agilliza" (check constraint de
+          // cliente_parceiros). Comparando só com "comercial", a coluna e o
+          // filtro de Comercial nunca eram preenchidos.
+          if ((tipo === "comercial_agilliza" || tipo === "comercial") && !comPorCliente.has(cid))
+            comPorCliente.set(cid, pid);
+        }
+      }
+      if (parceiroIds.size) {
+        const faltantes = Array.from(parceiroIds).filter((id) => !nomesPerfis.has(id));
+        if (faltantes.length) {
+          const { data: perfis } = await supabase
+            .from("profiles")
+            .select("id, nome")
+            .in("id", faltantes);
+          for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
+        }
+      }
 
-    // Aplica filtros de nome no servidor se solicitados
-    let listaFiltrada = lista;
-    if (data.responsavel_nome && data.responsavel_nome !== "todos") {
-      listaFiltrada = listaFiltrada.filter((i) => i.nome_responsavel === data.responsavel_nome);
-    }
-    if (data.corretor_nome && data.corretor_nome !== "todos") {
-      listaFiltrada = listaFiltrada.filter((i) => i.corretor_nome === data.corretor_nome);
-    }
-    if (data.imobiliaria_nome && data.imobiliaria_nome !== "todos") {
-      listaFiltrada = listaFiltrada.filter((i) => i.imobiliaria_nome === data.imobiliaria_nome);
-    }
-    if (data.comercial_nome && data.comercial_nome !== "todos") {
-      listaFiltrada = listaFiltrada.filter((i) => i.comercial_nome === data.comercial_nome);
-    }
+      const lista = rows.map((r: any) => {
+        const responsavel_id = r.usuario_responsavel_id ?? r.usuario_criador_id ?? null;
+        const imobId = r.cliente_id ? (imobPorCliente.get(r.cliente_id) ?? null) : null;
+        const corrId = r.cliente_id ? (corrPorCliente.get(r.cliente_id) ?? null) : null;
+        const comId = r.cliente_id ? (comPorCliente.get(r.cliente_id) ?? null) : null;
+        return {
+          ...r,
+          responsavel_id,
+          nome_responsavel: responsavel_id ? (nomesPerfis.get(responsavel_id) ?? null) : null,
+          imobiliaria_nome: imobId ? (nomesPerfis.get(imobId) ?? null) : null,
+          corretor_nome: corrId ? (nomesPerfis.get(corrId) ?? null) : null,
+          comercial_nome: comId ? (nomesPerfis.get(comId) ?? null) : null,
+          nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
+          bancos: bancosPorProp.get(r.id) ?? [],
+        };
+      });
 
-    return { itens: listaFiltrada as PropostaListaItem[], total: count ?? 0 };
-  });
+      // Corretor, imobiliária, comercial e responsável já foram filtrados no
+      // banco (ver `aplicarFiltros`), então a lista da página sai inteira.
+      return { itens: lista as PropostaListaItem[], total: count ?? 0, resumo };
+    },
+  );
 
 /** ===== Detalhe ===== */
 export const obterProposta = createServerFn({ method: "GET" })
