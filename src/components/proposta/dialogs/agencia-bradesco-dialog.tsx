@@ -71,14 +71,16 @@ export function AgenciaBradescoDialogHost() {
     atual?.resolver(r);
   }
 
-  const invalida = definir && agencia.length === 0;
+  // Agência é opcional: marcar a opção e deixar o campo vazio NÃO trava o
+  // envio — segue sem agência, como se a opção estivesse desmarcada. Antes o
+  // botão ficava desabilitado e a proposta não era enviada de jeito nenhum.
+  const semAgencia = agencia.length === 0;
 
   function continuar() {
-    if (invalida) return;
     // "347" segue como "0347": o Bradesco usa agência de 4 dígitos.
     responder({
       cancelado: false,
-      agencia: definir ? normalizarAgencia(agencia, pedido?.nomeBanco) : "",
+      agencia: definir && !semAgencia ? normalizarAgencia(agencia, pedido?.nomeBanco) : "",
     });
   }
 
@@ -90,9 +92,7 @@ export function AgenciaBradescoDialogHost() {
             {pedido && <BancoLogo nome={pedido.nomeBanco} size="md" className="shrink-0" />}
             <div>
               <DialogTitle>Envio ao {pedido?.nomeBanco ?? "banco"}</DialogTitle>
-              <DialogDescription>
-                Deseja definir a agência para esta proposta?
-              </DialogDescription>
+              <DialogDescription>Deseja definir a agência para esta proposta?</DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -105,65 +105,65 @@ export function AgenciaBradescoDialogHost() {
           }}
         >
           <div className="space-y-4 px-6 pb-4">
-          <label
-            htmlFor="definir-agencia"
-            className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/40"
-          >
-            <Checkbox
-              id="definir-agencia"
-              checked={definir}
-              onCheckedChange={(v) => {
-                setDefinir(v === true);
-                if (v !== true) setAgencia("");
-              }}
-            />
-            <span className="text-sm font-medium text-foreground">Sim, quero definir a agência</span>
-          </label>
-
-          {definir && (
-            <div className="space-y-1.5">
-              <Label htmlFor="numero-agencia" className="flex items-center gap-1.5 text-xs">
-                <Building2 className="size-3.5 text-muted-foreground" />
-                Número da agência
-              </Label>
-              <Input
-                id="numero-agencia"
-                inputMode="numeric"
-                maxLength={DIGITOS_AGENCIA_BRADESCO}
-                placeholder="Ex.: 0347"
-                value={agencia}
-                onChange={(e) =>
-                  setAgencia(e.target.value.replace(/\D/g, "").slice(0, DIGITOS_AGENCIA_BRADESCO))
-                }
-                className="h-10 tabular-nums"
-                autoFocus
+            <label
+              htmlFor="definir-agencia"
+              className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/40"
+            >
+              <Checkbox
+                id="definir-agencia"
+                checked={definir}
+                onCheckedChange={(v) => {
+                  setDefinir(v === true);
+                  if (v !== true) setAgencia("");
+                }}
               />
-              {invalida ? (
-                <p className="text-[11px] text-muted-foreground">
-                  Digite a agência ou desmarque a opção para seguir sem ela.
-                </p>
-              ) : (
-                agencia.length < DIGITOS_AGENCIA_BRADESCO && (
+              <span className="text-sm font-medium text-foreground">
+                Sim, quero definir a agência
+              </span>
+            </label>
+
+            {definir && (
+              <div className="space-y-1.5">
+                <Label htmlFor="numero-agencia" className="flex items-center gap-1.5 text-xs">
+                  <Building2 className="size-3.5 text-muted-foreground" />
+                  Número da agência
+                </Label>
+                <Input
+                  id="numero-agencia"
+                  inputMode="numeric"
+                  maxLength={DIGITOS_AGENCIA_BRADESCO}
+                  placeholder="Ex.: 0347"
+                  value={agencia}
+                  onChange={(e) =>
+                    setAgencia(e.target.value.replace(/\D/g, "").slice(0, DIGITOS_AGENCIA_BRADESCO))
+                  }
+                  className="h-10 tabular-nums"
+                  autoFocus
+                />
+                {semAgencia ? (
                   <p className="text-[11px] text-muted-foreground">
-                    Será enviada como{" "}
-                    <span className="font-medium tabular-nums text-foreground">
-                      {normalizarAgencia(agencia, pedido?.nomeBanco)}
-                    </span>{" "}
-                    (4 dígitos).
+                    Sem agência, o envio segue com a agência padrão da integração.
                   </p>
-                )
-              )}
-            </div>
-          )}
+                ) : (
+                  agencia.length < DIGITOS_AGENCIA_BRADESCO && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Será enviada como{" "}
+                      <span className="font-medium tabular-nums text-foreground">
+                        {normalizarAgencia(agencia, pedido?.nomeBanco)}
+                      </span>{" "}
+                      (4 dígitos).
+                    </p>
+                  )
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => responder({ cancelado: true })}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={invalida}>
-              Continuar envio
-            </Button>
+            <Button type="submit">Continuar envio</Button>
           </DialogFooter>
         </form>
       </DialogContent>
