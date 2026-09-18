@@ -140,6 +140,15 @@ export function faltantesEnvolvido(
     if (c.chave === "tipo_documento_identidade" && !vazio(env?.[c.chave])) {
       return !TIPOS_DOCUMENTO_ACEITOS.includes(String(env[c.chave]).trim().toUpperCase());
     }
+    // RG vazio de pessoa física vai ao banco como o próprio CPF (padrão do
+    // cadastro), então não trava o envio.
+    if (
+      c.chave === "numero_documento" &&
+      pf &&
+      String(env?.cpf_cnpj ?? "").replace(/\D/g, "").length === 11
+    ) {
+      return false;
+    }
     if (c.chave === "renda" && !exigeRenda(env)) return false;
     if (c.chave === "utiliza_fgts") return false; // booleano com default (S/N)
     if (c.chave === "fg_autorizacao_dados") return env?.fg_autorizacao_dados !== true;

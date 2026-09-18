@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
+import { aplicarPadroesCliente, comPadroesIdentificacao } from "@/lib/crm/padroes-cadastro";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -755,7 +756,7 @@ export const criarProposta = createServerFn({ method: "POST" })
             estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
             regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
             tipo_documento_identidade: c.tipo_documento_identidade,
-            numero_documento: c.numero_documento,
+            numero_documento: comPadroesIdentificacao(c).numero_documento,
             data_expedicao: c.data_expedicao,
             orgao_expedidor: c.orgao_expedidor,
             uf_expedicao: c.uf_expedicao,
@@ -778,8 +779,8 @@ export const criarProposta = createServerFn({ method: "POST" })
             fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
             dados: {
               pai: c.pai ?? null,
-              nacionalidade: c.nacionalidade ?? null,
-              naturalidade: c.naturalidade ?? null,
+              nacionalidade: comPadroesIdentificacao(c).nacionalidade ?? null,
+              naturalidade: comPadroesIdentificacao(c).naturalidade ?? null,
               banco_conta: c.banco_conta ?? null,
             },
           } as any)
@@ -819,7 +820,7 @@ export const criarProposta = createServerFn({ method: "POST" })
             estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
             regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
             tipo_documento_identidade: c.conjuge_tipo_documento_identidade,
-            numero_documento: c.conjuge_numero_documento,
+            numero_documento: comPadroesIdentificacao(c).conjuge_numero_documento,
             data_expedicao: c.conjuge_data_expedicao,
             orgao_expedidor: c.conjuge_orgao_expedidor,
             uf_expedicao: c.conjuge_uf_expedicao,
@@ -839,7 +840,7 @@ export const criarProposta = createServerFn({ method: "POST" })
             municipio: e.cidade ?? null,
             uf: e.uf ?? c.uf_interesse ?? null,
             dados: {
-              nacionalidade: c.conjuge_nacionalidade ?? null,
+              nacionalidade: comPadroesIdentificacao(c).conjuge_nacionalidade ?? null,
               banco_conta: c.conjuge_banco_conta ?? null,
             },
           } as any);
@@ -977,7 +978,7 @@ export const obterConjugeCliente = createServerFn({ method: "GET" })
       estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
       regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
       tipo_documento_identidade: c.conjuge_tipo_documento_identidade,
-      numero_documento: c.conjuge_numero_documento,
+      numero_documento: comPadroesIdentificacao(c).conjuge_numero_documento,
       orgao_expedidor: c.conjuge_orgao_expedidor,
       uf_expedicao: c.conjuge_uf_expedicao,
       data_expedicao: c.conjuge_data_expedicao,
@@ -2281,23 +2282,25 @@ export const cadastrarClienteDaProposta = createServerFn({ method: "POST" })
 
     const { data: novo, error: insErr } = await supabase
       .from("clientes")
-      .insert({
-        correspondente_id: corr,
-        numero_cliente: "",
-        tipo_pessoa: tipoPessoa,
-        nome: prop.nome_cliente,
-        documento,
-        data_nascimento: prop.data_nascimento || null,
-        estado_civil: estadoCivil,
-        email: (prop.email ?? "").toString().toLowerCase() || null,
-        telefone_celular: prop.celular ?? null,
-        renda_total_declarada: prop.renda_total ?? null,
-        uf_interesse: prop.uf ?? null,
-        utiliza_fgts: Boolean(prop.utiliza_fgts),
-        origem: "direto",
-        responsavel_id: userId,
-        criador_id: userId,
-      } as any)
+      .insert(
+        aplicarPadroesCliente({
+          correspondente_id: corr,
+          numero_cliente: "",
+          tipo_pessoa: tipoPessoa,
+          nome: prop.nome_cliente,
+          documento,
+          data_nascimento: prop.data_nascimento || null,
+          estado_civil: estadoCivil,
+          email: (prop.email ?? "").toString().toLowerCase() || null,
+          telefone_celular: prop.celular ?? null,
+          renda_total_declarada: prop.renda_total ?? null,
+          uf_interesse: prop.uf ?? null,
+          utiliza_fgts: Boolean(prop.utiliza_fgts),
+          origem: "direto",
+          responsavel_id: userId,
+          criador_id: userId,
+        }) as any,
+      )
       .select("id")
       .single();
     if (insErr) throw new Error(insErr.message);
@@ -2434,7 +2437,7 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
       estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
       regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
       tipo_documento_identidade: c.tipo_documento_identidade,
-      numero_documento: c.numero_documento,
+      numero_documento: comPadroesIdentificacao(c).numero_documento,
       data_expedicao: c.data_expedicao,
       orgao_expedidor: c.orgao_expedidor,
       uf_expedicao: c.uf_expedicao,
@@ -2457,8 +2460,8 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
       fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
       dados: {
         pai: c.pai ?? null,
-        nacionalidade: c.nacionalidade ?? null,
-        naturalidade: c.naturalidade ?? null,
+        nacionalidade: comPadroesIdentificacao(c).nacionalidade ?? null,
+        naturalidade: comPadroesIdentificacao(c).naturalidade ?? null,
         banco_conta: c.banco_conta ?? null,
       },
     };
@@ -2504,7 +2507,7 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
         estado_civil: estadoCivilCrmParaCodigo(c.estado_civil) || null,
         regime_casamento: regimeCasamentoCrmParaCodigo(c.regime_casamento) || null,
         tipo_documento_identidade: c.conjuge_tipo_documento_identidade,
-        numero_documento: c.conjuge_numero_documento,
+        numero_documento: comPadroesIdentificacao(c).conjuge_numero_documento,
         data_expedicao: c.conjuge_data_expedicao,
         orgao_expedidor: c.conjuge_orgao_expedidor,
         uf_expedicao: c.conjuge_uf_expedicao,
@@ -2526,7 +2529,7 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
         utiliza_fgts: false,
         fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
         dados: {
-          nacionalidade: c.conjuge_nacionalidade ?? null,
+          nacionalidade: comPadroesIdentificacao(c).conjuge_nacionalidade ?? null,
           banco_conta: c.conjuge_banco_conta ?? null,
         },
       };

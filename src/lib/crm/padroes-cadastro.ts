@@ -80,6 +80,14 @@ export function aplicarPadroesIdentificacao<T extends Record<string, any>>(campo
 }
 
 /**
+ * Cópia do cadastro com nacionalidade, naturalidade e RG padrão, sem alterar
+ * o original — para quem só lê o cliente (ex.: copiar para a proposta).
+ */
+export function comPadroesIdentificacao<T extends Record<string, any>>(campos: T): T {
+  return aplicarPadroesIdentificacao({ ...campos });
+}
+
+/**
  * Aplica os padrões sobre as colunas de `clientes`.
  *
  * `documento` (CPF) entra como número do documento de identidade quando ele

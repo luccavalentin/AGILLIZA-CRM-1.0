@@ -116,3 +116,15 @@ describe("aderência ao contrato da API", () => {
     }
   });
 });
+
+describe("RG padrão = CPF", () => {
+  it("pessoa física sem número do documento não fica pendente (vai o CPF)", () => {
+    const f = faltantesEnvolvido({ ...COMPRADOR_COMPLETO, numero_documento: "" });
+    expect(f.map((c) => c.chave)).not.toContain("numero_documento");
+  });
+
+  it("sem CPF válido, o número do documento continua obrigatório", () => {
+    const f = faltantesEnvolvido({ ...COMPRADOR_COMPLETO, numero_documento: "", cpf_cnpj: "" });
+    expect(f.map((c) => c.chave)).toContain("numero_documento");
+  });
+});
