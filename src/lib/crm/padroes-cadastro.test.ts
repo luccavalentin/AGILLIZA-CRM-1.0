@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aplicarPadroesCliente,
   aplicarPadroesIdentificacao,
+  celularConjugeOuPadrao,
   PADROES_CADASTRO,
 } from "./padroes-cadastro";
 
@@ -126,5 +127,27 @@ describe("aplicarPadroesIdentificacao", () => {
     } as Record<string, any>);
     expect(r.conjuge_nacionalidade).toBe("Brasileira");
     expect(r.conjuge_numero_documento).toBe("22233344455");
+  });
+});
+
+describe("celularConjugeOuPadrao", () => {
+  it("vazio ou igual ao do titular vira o padrão", () => {
+    expect(celularConjugeOuPadrao("", "19997750050")).toBe("19998710032");
+    expect(celularConjugeOuPadrao(null, "19997750050")).toBe("19998710032");
+    expect(celularConjugeOuPadrao("(19) 99775-0050", "19997750050")).toBe("19998710032");
+  });
+
+  it("número próprio do cônjuge é mantido (só dígitos)", () => {
+    expect(celularConjugeOuPadrao("(19) 98326-0000", "19983260031")).toBe("19983260000");
+  });
+
+  it("cadastro com cônjuge recebe o celular padrão quando repete o do titular", () => {
+    const r = aplicarPadroesIdentificacao({
+      telefone_celular: "19991586355",
+      conjuge_nome: "Débora",
+      conjuge_cpf: "26900000075",
+      conjuge_celular: "19991586355",
+    } as Record<string, any>);
+    expect(r.conjuge_celular).toBe("19998710032");
   });
 });

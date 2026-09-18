@@ -198,7 +198,7 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
             value={v.conjuge_celular}
             onChange={(e) => set("conjuge_celular", mascararTelefone(e.target.value))}
             inputMode="numeric"
-            placeholder="(11) 99999-9999"
+            placeholder="Vazio ou igual ao do titular: (19) 99871-0032"
           />
         </div>
 

@@ -33,7 +33,7 @@ import {
   statusGlobalPorBancos,
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
-import { ouPadrao, PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
+import { celularConjugeOuPadrao, ouPadrao, PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 import { dadosBancariosParticipante, normalizarAgencia } from "@/lib/bancos/agencia";
 
 /** Ordem de progressão do funil (para sincronização vinda do banco). */
@@ -1147,7 +1147,14 @@ export async function garantirEnderecoParticipantes({
         prop.renda_total ??
         (env && !exigeRenda(env) ? 0 : undefined),
       email: textoOuNada(env?.email) ?? part?.email ?? src?.email ?? prop.email ?? undefined,
-      celular: soDigitos(env?.celular) || part?.celular || soDigitos(src?.celular) || undefined,
+      // Cônjuge/coproponente: vazio ou igual ao do titular vai com o celular
+      // padrão (os dois proponentes iam ao banco com o mesmo contato).
+      celular: ehPrincipal
+        ? soDigitos(env?.celular) || part?.celular || soDigitos(src?.celular) || undefined
+        : celularConjugeOuPadrao(
+            soDigitos(env?.celular) || part?.celular,
+            soDigitos(cliente?.telefone_celular) || soDigitos(prop.celular),
+          ),
       utilizaFgts: env ? (env.utiliza_fgts ? "S" : "N") : (part?.utilizaFgts ?? "N"),
       fgAutorizacaoDados: env?.fg_autorizacao_dados ?? true,
       cep: soDigitos(doEndereco("cep") ?? (ehPrincipal ? prop.cep_imovel : undefined)) || undefined,
