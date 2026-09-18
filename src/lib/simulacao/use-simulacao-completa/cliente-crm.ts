@@ -5,7 +5,7 @@
  */
 import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "@/lib/propostas/dominios";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
-import { EMAIL_PADRAO, type Form } from "./state";
+import { EMAIL_CONJUGE_PADRAO, EMAIL_PADRAO, type Form } from "./state";
 
 /** Aplica dados de um cliente do CRM ao titular (e cônjuge, se houver). */
 export function patchSelecionarClienteCRM(
@@ -69,7 +69,7 @@ export function patchSelecionarClienteCRM(
     data_nascimento_conjuge: c.conjuge_data_nascimento ?? "",
     sexo_conjuge:
       c.conjuge_sexo === "M" || c.conjuge_sexo === "F" ? c.conjuge_sexo : prev.sexo_conjuge,
-    email_conjuge: c.conjuge_email || EMAIL_PADRAO,
+    email_conjuge: c.conjuge_email || EMAIL_CONJUGE_PADRAO,
     celular_conjuge: c.conjuge_celular ? maskCelular(c.conjuge_celular) : "",
     estado_civil_conjuge: temConjuge ? ec : (prev.estado_civil_conjuge ?? ""),
   };
@@ -98,7 +98,7 @@ export function patchLimparTitular(prev: Form): Form {
     cpf_conjuge: "",
     renda_conjuge: 0,
     data_nascimento_conjuge: "",
-    email_conjuge: EMAIL_PADRAO,
+    email_conjuge: EMAIL_CONJUGE_PADRAO,
     celular_conjuge: "",
   };
 }
@@ -139,10 +139,11 @@ export function patchPuxarConjugeCRM(prev: Form, crm: any): Form {
   };
   for (const [k, v] of Object.entries(doCrm)) {
     const atual = (prev as any)[k];
-    const ehEmailPadrao = k === "email_conjuge" && atual === EMAIL_PADRAO;
+    const ehEmailPadrao =
+      k === "email_conjuge" && (atual === EMAIL_PADRAO || atual === EMAIL_CONJUGE_PADRAO);
     if (!vazio(v) && (vazio(atual) || ehEmailPadrao)) (next as any)[k] = v;
   }
-  if (vazio(next.email_conjuge)) next.email_conjuge = EMAIL_PADRAO;
+  if (vazio(next.email_conjuge)) next.email_conjuge = EMAIL_CONJUGE_PADRAO;
   return next;
 }
 

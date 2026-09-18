@@ -830,7 +830,7 @@ export const criarProposta = createServerFn({ method: "POST" })
             agencia: c.conjuge_agencia,
             conta_corrente: c.conjuge_conta_corrente,
             digito_conta: c.conjuge_digito_conta,
-            email: c.conjuge_email,
+            email: comPadroesIdentificacao(c).conjuge_email,
             celular: comPadroesIdentificacao(c).conjuge_celular,
             cep: e.cep ?? null,
             logradouro: e.logradouro ?? null,
@@ -985,7 +985,7 @@ export const obterConjugeCliente = createServerFn({ method: "GET" })
       profissao: toTitleCase(c.conjuge_profissao),
       empresa: toTitleCase(c.conjuge_empresa),
       renda: c.conjuge_renda,
-      email: c.conjuge_email,
+      email: comPadroesIdentificacao(c).conjuge_email,
       celular: comPadroesIdentificacao(c).conjuge_celular,
     };
   });
@@ -2517,7 +2517,7 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
         agencia: c.conjuge_agencia,
         conta_corrente: c.conjuge_conta_corrente,
         digito_conta: c.conjuge_digito_conta,
-        email: c.conjuge_email,
+        email: comPadroesIdentificacao(c).conjuge_email,
         celular: comPadroesIdentificacao(c).conjuge_celular,
         cep: e.cep ?? null,
         logradouro: e.logradouro ?? null,

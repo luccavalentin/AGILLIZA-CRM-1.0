@@ -13,6 +13,7 @@ import { bancosQueOperamPJ } from "./use-simulacao-completa/bancos-helpers";
 import {
   aplicarPadroesCliente,
   celularConjugeOuPadrao,
+  emailConjugeOuPadrao,
   PADROES_CADASTRO,
 } from "@/lib/crm/padroes-cadastro";
 
@@ -387,10 +388,11 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           dd.estado_civil === "UE" ||
           dd.estado_civil === "casado" ||
           dd.estado_civil === "uniao_estavel";
-        // Celular do cônjuge vazio ou repetido do titular vira o padrão —
+        // Celular e e-mail do cônjuge vazios ou repetidos do titular viram o padrão —
         // vale para a simulação, o cadastro no CRM e a simulação invertida.
         if (casado && (dd.nome_conjuge || dd.cpf_conjuge)) {
           dd.celular_conjuge = celularConjugeOuPadrao(dd.celular_conjuge, dd.celular);
+          dd.email_conjuge = emailConjugeOuPadrao(dd.email_conjuge, dd.email);
         }
         // NORMALIZAÇÃO DE PRAZO ANTES DO INSERT (SERVER-SIDE DETERMINISTIC)
         const { prazoMaximoParaProponentes } = await import("./prazo");

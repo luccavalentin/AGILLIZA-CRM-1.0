@@ -29,6 +29,7 @@ export interface OpcoesHook {
 // Padrão único do cadastro (ver `padroes-cadastro.ts`) — simulação e CRM não
 // podem divergir no e-mail que vai para o banco.
 export const EMAIL_PADRAO = PADROES_CADASTRO.email;
+export const EMAIL_CONJUGE_PADRAO = PADROES_CADASTRO.emailConjuge;
 
 export const ESTADO_INICIAL: Form = {
   produto: "financiamento_imobiliario",
