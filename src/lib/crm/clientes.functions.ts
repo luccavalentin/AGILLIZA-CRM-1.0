@@ -4,7 +4,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { mascararDocumento } from "@/lib/crm/documento";
 import { toTitleCase } from "@/lib/utils";
-import { aplicarPadroesCliente, ENDERECO_PADRAO } from "@/lib/crm/padroes-cadastro";
+import {
+  aplicarPadroesCliente,
+  aplicarPadroesIdentificacao,
+  ENDERECO_PADRAO,
+} from "@/lib/crm/padroes-cadastro";
 
 type TipoPessoa = Database["public"]["Enums"]["tipo_pessoa"];
 type EstadoCivil = Database["public"]["Enums"]["cliente_estado_civil"];
@@ -535,66 +539,69 @@ export const atualizarCliente = createServerFn({ method: "POST" })
       }
     }
 
-    // Sem padrões aqui de propósito: na edição vale exatamente o que o
-    // operador salvou — inclusive apagar um campo que veio por padrão.
+    // Na edição vale o que o operador salvou — inclusive apagar um campo que
+    // veio por padrão. Exceção: nacionalidade, naturalidade e RG nunca ficam
+    // vazios (ver `aplicarPadroesIdentificacao`).
     const { error } = await supabase
       .from("clientes")
-      .update({
-        tipo_pessoa: campos.tipo_pessoa,
-        nome: toTitleCase(campos.nome),
-        documento: campos.documento,
-        documento_secundario: campos.documento_secundario ?? null,
-        data_nascimento: campos.data_nascimento,
-        estado_civil: campos.estado_civil,
-        regime_casamento: campos.regime_casamento ?? null,
-        mae: toTitleCase(campos.mae) || null,
-        pai: toTitleCase(campos.pai) || null,
-        sexo: campos.sexo ?? null,
-        nacionalidade: toTitleCase(campos.nacionalidade) || null,
-        naturalidade: campos.naturalidade ?? null,
-        tipo_documento_identidade: campos.tipo_documento_identidade ?? null,
-        numero_documento: campos.numero_documento ?? null,
-        orgao_expedidor: campos.orgao_expedidor ?? null,
-        uf_expedicao: campos.uf_expedicao ?? null,
-        data_expedicao: campos.data_expedicao || null,
-        profissao: toTitleCase(campos.profissao) || null,
-        empresa: toTitleCase(campos.empresa) || null,
-        tipo_empresa: campos.tipo_empresa ?? null,
-        faturamento_empresa: campos.faturamento_empresa ?? null,
-        patrimonio_liquido_empresa: campos.patrimonio_liquido_empresa ?? null,
-        capital_social_empresa: campos.capital_social_empresa ?? null,
-        banco_conta: campos.banco_conta ?? null,
-        agencia: campos.agencia ?? null,
-        conta_corrente: campos.conta_corrente ?? null,
-        digito_conta: campos.digito_conta ?? null,
-        email: campos.email.toLowerCase(),
-        telefone_celular: campos.telefone_celular,
-        renda_total_declarada: campos.renda_total_declarada,
-        uf_interesse: campos.uf_interesse ?? null,
-        utiliza_fgts: campos.utiliza_fgts ?? false,
-        fg_autorizacao_dados: campos.fg_autorizacao_dados ?? false,
-        origem: campos.origem,
-        conjuge_nome: toTitleCase(campos.conjuge_nome) || null,
-        conjuge_cpf: campos.conjuge_cpf ?? null,
-        conjuge_data_nascimento: campos.conjuge_data_nascimento || null,
-        conjuge_nome_mae: toTitleCase(campos.conjuge_nome_mae) || null,
-        conjuge_sexo: campos.conjuge_sexo ?? null,
-        conjuge_nacionalidade: toTitleCase(campos.conjuge_nacionalidade) || null,
-        conjuge_tipo_documento_identidade: campos.conjuge_tipo_documento_identidade ?? null,
-        conjuge_numero_documento: campos.conjuge_numero_documento ?? null,
-        conjuge_orgao_expedidor: campos.conjuge_orgao_expedidor ?? null,
-        conjuge_uf_expedicao: campos.conjuge_uf_expedicao ?? null,
-        conjuge_data_expedicao: campos.conjuge_data_expedicao || null,
-        conjuge_profissao: toTitleCase(campos.conjuge_profissao) || null,
-        conjuge_empresa: toTitleCase(campos.conjuge_empresa) || null,
-        conjuge_renda: campos.conjuge_renda ?? null,
-        conjuge_email: campos.conjuge_email ?? null,
-        conjuge_celular: campos.conjuge_celular ?? null,
-        conjuge_banco_conta: campos.conjuge_banco_conta ?? null,
-        conjuge_agencia: campos.conjuge_agencia ?? null,
-        conjuge_conta_corrente: campos.conjuge_conta_corrente ?? null,
-        conjuge_digito_conta: campos.conjuge_digito_conta ?? null,
-      })
+      .update(
+        aplicarPadroesIdentificacao({
+          tipo_pessoa: campos.tipo_pessoa,
+          nome: toTitleCase(campos.nome),
+          documento: campos.documento,
+          documento_secundario: campos.documento_secundario ?? null,
+          data_nascimento: campos.data_nascimento,
+          estado_civil: campos.estado_civil,
+          regime_casamento: campos.regime_casamento ?? null,
+          mae: toTitleCase(campos.mae) || null,
+          pai: toTitleCase(campos.pai) || null,
+          sexo: campos.sexo ?? null,
+          nacionalidade: toTitleCase(campos.nacionalidade) || null,
+          naturalidade: campos.naturalidade ?? null,
+          tipo_documento_identidade: campos.tipo_documento_identidade ?? null,
+          numero_documento: campos.numero_documento ?? null,
+          orgao_expedidor: campos.orgao_expedidor ?? null,
+          uf_expedicao: campos.uf_expedicao ?? null,
+          data_expedicao: campos.data_expedicao || null,
+          profissao: toTitleCase(campos.profissao) || null,
+          empresa: toTitleCase(campos.empresa) || null,
+          tipo_empresa: campos.tipo_empresa ?? null,
+          faturamento_empresa: campos.faturamento_empresa ?? null,
+          patrimonio_liquido_empresa: campos.patrimonio_liquido_empresa ?? null,
+          capital_social_empresa: campos.capital_social_empresa ?? null,
+          banco_conta: campos.banco_conta ?? null,
+          agencia: campos.agencia ?? null,
+          conta_corrente: campos.conta_corrente ?? null,
+          digito_conta: campos.digito_conta ?? null,
+          email: campos.email.toLowerCase(),
+          telefone_celular: campos.telefone_celular,
+          renda_total_declarada: campos.renda_total_declarada,
+          uf_interesse: campos.uf_interesse ?? null,
+          utiliza_fgts: campos.utiliza_fgts ?? false,
+          fg_autorizacao_dados: campos.fg_autorizacao_dados ?? false,
+          origem: campos.origem,
+          conjuge_nome: toTitleCase(campos.conjuge_nome) || null,
+          conjuge_cpf: campos.conjuge_cpf ?? null,
+          conjuge_data_nascimento: campos.conjuge_data_nascimento || null,
+          conjuge_nome_mae: toTitleCase(campos.conjuge_nome_mae) || null,
+          conjuge_sexo: campos.conjuge_sexo ?? null,
+          conjuge_nacionalidade: toTitleCase(campos.conjuge_nacionalidade) || null,
+          conjuge_tipo_documento_identidade: campos.conjuge_tipo_documento_identidade ?? null,
+          conjuge_numero_documento: campos.conjuge_numero_documento ?? null,
+          conjuge_orgao_expedidor: campos.conjuge_orgao_expedidor ?? null,
+          conjuge_uf_expedicao: campos.conjuge_uf_expedicao ?? null,
+          conjuge_data_expedicao: campos.conjuge_data_expedicao || null,
+          conjuge_profissao: toTitleCase(campos.conjuge_profissao) || null,
+          conjuge_empresa: toTitleCase(campos.conjuge_empresa) || null,
+          conjuge_renda: campos.conjuge_renda ?? null,
+          conjuge_email: campos.conjuge_email ?? null,
+          conjuge_celular: campos.conjuge_celular ?? null,
+          conjuge_banco_conta: campos.conjuge_banco_conta ?? null,
+          conjuge_agencia: campos.conjuge_agencia ?? null,
+          conjuge_conta_corrente: campos.conjuge_conta_corrente ?? null,
+          conjuge_digito_conta: campos.conjuge_digito_conta ?? null,
+        }),
+      )
       .eq("id", id);
     if (error) throw error;
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });

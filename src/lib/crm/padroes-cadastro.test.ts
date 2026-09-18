@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { aplicarPadroesCliente, PADROES_CADASTRO } from "./padroes-cadastro";
+import {
+  aplicarPadroesCliente,
+  aplicarPadroesIdentificacao,
+  PADROES_CADASTRO,
+} from "./padroes-cadastro";
 
 describe("aplicarPadroesCliente", () => {
   it("preenche o que está vazio", () => {
@@ -67,5 +71,60 @@ describe("aplicarPadroesCliente", () => {
     const r = aplicarPadroesCliente({ documento: "111" } as Record<string, any>);
     expect(r.conjuge_nome_mae).toBeUndefined();
     expect(r.conjuge_profissao).toBeUndefined();
+  });
+});
+
+describe("aplicarPadroesIdentificacao", () => {
+  it("vazio vira Brasileira, São Paulo/SP e RG = CPF", () => {
+    const r = aplicarPadroesIdentificacao({
+      tipo_pessoa: "PF",
+      documento: "12345678909",
+      nacionalidade: "",
+      naturalidade: null,
+      documento_secundario: "",
+    } as Record<string, any>);
+    expect(r.nacionalidade).toBe("Brasileira");
+    expect(r.naturalidade).toBe("São Paulo/SP");
+    expect(r.documento_secundario).toBe("12345678909");
+    expect(r.numero_documento).toBe("12345678909");
+  });
+
+  it("só o estado SP, sem cidade, também recebe São Paulo", () => {
+    const r = aplicarPadroesIdentificacao({ naturalidade: "/SP" } as Record<string, any>);
+    expect(r.naturalidade).toBe("São Paulo/SP");
+  });
+
+  it("não troca estado escolhido nem valores informados", () => {
+    const r = aplicarPadroesIdentificacao({
+      documento: "12345678909",
+      nacionalidade: "Portuguesa",
+      naturalidade: "LIMEIRA/SP",
+      documento_secundario: "445566",
+    } as Record<string, any>);
+    expect(r).toMatchObject({
+      nacionalidade: "Portuguesa",
+      naturalidade: "LIMEIRA/SP",
+      documento_secundario: "445566",
+    });
+    expect(aplicarPadroesIdentificacao({ naturalidade: "/RJ" } as any).naturalidade).toBe("/RJ");
+  });
+
+  it("não mexe em pessoa jurídica", () => {
+    const r = aplicarPadroesIdentificacao({
+      tipo_pessoa: "PJ",
+      documento: "11222333000181",
+    } as Record<string, any>);
+    expect(r.nacionalidade).toBeUndefined();
+    expect(r.naturalidade).toBeUndefined();
+    expect(r.documento_secundario).toBeUndefined();
+  });
+
+  it("cônjuge existente recebe nacionalidade e RG = CPF dele", () => {
+    const r = aplicarPadroesIdentificacao({
+      conjuge_nome: "Fulana",
+      conjuge_cpf: "22233344455",
+    } as Record<string, any>);
+    expect(r.conjuge_nacionalidade).toBe("Brasileira");
+    expect(r.conjuge_numero_documento).toBe("22233344455");
   });
 });
