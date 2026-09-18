@@ -168,7 +168,7 @@ function Pagina() {
           data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
           grupo: grupo ?? undefined,
           pagina: 1,
-          porPagina: 100,
+          porPagina: 500,
           apenas_excluidas: verExcluidas,
           corretor_nome: corretorFiltro !== "todos" ? corretorFiltro : undefined,
           imobiliaria_nome: imobFiltro !== "todos" ? imobFiltro : undefined,
@@ -192,7 +192,8 @@ function Pagina() {
     canceladas: { count: 0, volume: 0 },
   };
   const itens = todosItens;
-  const totalItens = data?.total ?? itens.length;
+  // Estado vazio olha o que está na tela; os cards olham o total do servidor.
+  const totalItens = itens.length;
   const volumeTotal = resumo?.total.volume ?? 0;
 
   function limparFiltros() {

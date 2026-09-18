@@ -19,10 +19,7 @@ import {
 } from "./dominios";
 import { propostaQueryOptions } from "./queries";
 import { grupoDoStatus, statusDoGrupo, type GrupoProposta } from "./status-grupos";
-import { clausulasDeBusca } from "./lista-filtros";
-
-/** UUID que nunca existe: filtro sem resultado precisa devolver lista vazia. */
-const VAZIO = "00000000-0000-0000-0000-000000000000";
+import { aplicarFiltrosPropostas } from "./lista-filtros";
 
 /** ===== Tipos de saída ===== */
 export interface PropostaBancoResumo {
@@ -148,63 +145,56 @@ export const listarPropostas = createServerFn({ method: "GET" })
       // Os mesmos filtros valem para a página de resultados e para os cards —
       // por isso ficam numa função só. Antes os cards contavam apenas as 100
       // linhas carregadas, e o total da tela não batia com o do banco.
-      const aplicarFiltros = async (q0: any) => {
-        let query = q0;
-        if (data.apenas_excluidas) query = query.not("deleted_at", "is", null);
-        else query = query.is("deleted_at", null);
+      // As buscas auxiliares ficam AQUI, antes de montar a consulta. O
+      // `aplicarFiltros` é síncrono de propósito: o builder do Supabase é um
+      // thenable, e `await` numa função que o devolvesse executava a consulta
+      // ali mesmo — sem ordem nem paginação — e derrubava a listagem inteira.
+      const clientesDoUsuario: string[] = [];
+      if (data.escopo === "minhas") {
+        // Inclui propostas onde o usuário é responsável/criador OU está vinculado
+        // ao cliente como parceiro (imobiliária, corretor, comercial).
+        const { data: vinc } = await supabase
+          .from("cliente_parceiros")
+          .select("cliente_id")
+          .eq("parceiro_id", userId);
+        for (const id of new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)))
+          clientesDoUsuario.push(String(id));
+      }
+      let perfisDoResponsavelNome: string[] | null = null;
+      if (data.responsavel_nome && data.responsavel_nome !== "todos") {
+        const { data: perfis } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("nome", data.responsavel_nome);
+        perfisDoResponsavelNome = (perfis ?? []).map((p: any) => String(p.id));
+      }
+      const clientesPorParceiro: string[][] = [];
+      for (const [nome, tipos] of [
+        [data.corretor_nome, ["corretor"]],
+        [data.imobiliaria_nome, ["imobiliaria"]],
+        [data.comercial_nome, ["comercial_agilliza", "comercial"]],
+      ] as [string | undefined, string[]][]) {
+        if (!nome || nome === "todos") continue;
+        clientesPorParceiro.push(await clientesDoParceiro(supabase, nome, tipos));
+      }
 
-        if (data.escopo === "minhas") {
-          // Inclui propostas onde o usuário é responsável/criador OU está vinculado
-          // ao cliente como parceiro (imobiliária, corretor, comercial).
-          const { data: vinc } = await supabase
-            .from("cliente_parceiros")
-            .select("cliente_id")
-            .eq("parceiro_id", userId);
-          const ids = Array.from(
-            new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)),
-          );
-          const partes = [`usuario_responsavel_id.eq.${userId}`, `usuario_criador_id.eq.${userId}`];
-          if (ids.length) partes.push(`cliente_id.in.(${ids.join(",")})`);
-          query = query.or(partes.join(","));
-        }
-        if (data.responsavel) {
-          query = query.or(
-            `usuario_responsavel_id.eq.${data.responsavel},usuario_criador_id.eq.${data.responsavel}`,
-          );
-        }
-        if (data.responsavel_nome && data.responsavel_nome !== "todos") {
-          const { data: perfis } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("nome", data.responsavel_nome);
-          const ids = (perfis ?? []).map((p: any) => String(p.id));
-          query = ids.length
-            ? query.or(
-                `usuario_responsavel_id.in.(${ids.join(",")}),usuario_criador_id.in.(${ids.join(",")})`,
-              )
-            : query.eq("id", VAZIO);
-        }
-        for (const [nome, tipos] of [
-          [data.corretor_nome, ["corretor"]],
-          [data.imobiliaria_nome, ["imobiliaria"]],
-          [data.comercial_nome, ["comercial_agilliza", "comercial"]],
-        ] as [string | undefined, string[]][]) {
-          if (!nome || nome === "todos") continue;
-          const clientes = await clientesDoParceiro(supabase, nome, tipos);
-          // Sem cliente nenhum, o filtro não pode devolver a lista inteira.
-          query = clientes.length ? query.in("cliente_id", clientes) : query.eq("id", VAZIO);
-        }
-        if (data.status) query = query.eq("status", data.status as any);
-        if (data.grupo) query = query.in("status", statusDoGrupo(data.grupo) as any);
-        if (data.data_inicio) query = query.gte("created_at", data.data_inicio);
-        if (data.data_fim) query = query.lte("created_at", data.data_fim);
+      const aplicarFiltros = (q0: any) =>
+        aplicarFiltrosPropostas(q0, {
+          apenas_excluidas: data.apenas_excluidas,
+          escopo: data.escopo,
+          userId,
+          clientesDoUsuario,
+          responsavel: data.responsavel,
+          perfisDoResponsavel: perfisDoResponsavelNome,
+          clientesPorParceiro,
+          status: data.status,
+          statusDoGrupo: data.grupo ? statusDoGrupo(data.grupo) : null,
+          data_inicio: data.data_inicio,
+          data_fim: data.data_fim,
+          q: data.q,
+        });
 
-        const busca = clausulasDeBusca(data.q ?? "");
-        if (busca.length) query = query.or(busca.join(","));
-        return query;
-      };
-
-      let query = await aplicarFiltros(
+      let query = aplicarFiltros(
         supabase
           .from("propostas")
           .select(
@@ -232,7 +222,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
         },
       };
       {
-        const qResumo = await aplicarFiltros(
+        const qResumo = aplicarFiltros(
           supabase.from("propostas").select("status, valor_financiamento"),
         );
         const { data: linhas } = await qResumo.range(0, 4999);
