@@ -27,6 +27,8 @@ export const TIPOS_DOCUMENTO_POR_CATEGORIA: Record<CategoriaDocumento, string[]>
     "Proposta de Financiamento Imobiliário assinada",
     "Declaração Pessoal de Saúde (DPS)",
     "CPF",
+    // Pedido pelo Bradesco na análise (pendência da PRO-000404, 18/09).
+    "Formulário de Autorização",
   ],
   conjuge: [
     "Documento de identidade do cônjuge (RG, CPF ou CNH)",

@@ -38,7 +38,11 @@ import {
   vagaAceitaCategoria,
   vagaDeReserva,
 } from "./documentos-vagas";
-import { nomeDoTipoDocumento, termosDoTipoDocumento } from "@/lib/documentos/tipos-banco";
+import {
+  exigeVagaPropria,
+  nomeDoTipoDocumento,
+  termosDoTipoDocumento,
+} from "@/lib/documentos/tipos-banco";
 import { ehAgenciaDoBradesco } from "@/lib/bancos/agencia";
 
 export interface EnviarDocumentosArgs {
@@ -365,7 +369,15 @@ export async function enviarDocumentosBancoImpl({
       }
       // Nada casou pelo tipo: vai na vaga do mesmo dono com menos arquivos, com
       // o tipo no nome do arquivo, em vez de ficar fora do envio.
-      item = melhor?.item ?? vagaDeReserva(vagas, doc.categoria);
+      item =
+        melhor?.item ??
+        (exigeVagaPropria(doc.tipo_documento) ? null : vagaDeReserva(vagas, doc.categoria));
+    }
+    if (!item && exigeVagaPropria(doc.tipo_documento)) {
+      const motivo = `A HomeFin não tem a vaga "${nomeDoTipoDocumento(doc.tipo_documento)}" nesta oportunidade, e a API não permite criá-la. Peça à HomeFin para incluir a vaga no checklist (ou envie pelo portal).`;
+      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
+      await marcarDoc(doc.id, "erro", motivo);
+      continue;
     }
     if (!item) {
       const motivo = nomeDono
@@ -756,6 +768,91 @@ export function resumoDoChecklist(itens: any[]): ResumoDocumentosBanco {
  * removido lá). Recusa nova gera histórico e aviso ao responsável.
  * Chamada ao abrir as vagas do banco e na sincronização automática.
  */
+/** Intervalo mínimo entre duas novas tentativas automáticas de repasse. */
+const INTERVALO_REPASSE_MS = 30 * 60 * 1000;
+
+/**
+ * Documento aprovado na HomeFin que ainda não chegou ao banco.
+ *
+ * O `incluir-documentos-integracao` só leva o que casa com o checklist da
+ * proposta no Bradesco NAQUELE momento. Na PRO-000404 (op 31430, 17/09) IPTU e
+ * Matrícula subiram, voltaram "sem correspondência no checklist da proposta no
+ * Bradesco" e ficaram `pending` para sempre: o banco passou a pedi-los depois
+ * (pendência de 18/09) e ninguém chamou o repasse de novo.
+ */
+export function itemAguardandoRepasse(item: any): boolean {
+  const temArquivo = Array.isArray(item?.arquivos) && item.arquivos.length > 0;
+  const aprovado =
+    String(item?.tipoSituacao ?? "")
+      .toUpperCase()
+      .charAt(0) === "A";
+  const integravel = item?.integravelBradesco !== false;
+  const pendente = String(item?.situacaoIntegracao ?? "").toLowerCase() === "pending";
+  return temArquivo && aprovado && integravel && pendente;
+}
+
+/**
+ * Nova tentativa automática de repasse ao banco dos documentos pendentes.
+ * Só Bradesco (único banco atendido pelo lote), no máximo a cada 30 min por
+ * proposta. Devolve `true` quando chamou o repasse (o checklist deve ser
+ * relido). O que passar entra no histórico da proposta.
+ */
+async function repassarPendentesAoBanco({
+  supabase,
+  prop,
+  itens,
+}: {
+  supabase: SupabaseClient<any, any, any>;
+  prop: { id: string; correspondente_id: string | null; homefin_id_oportunidade: string };
+  itens: any[];
+}): Promise<boolean> {
+  const pendentes = itens.filter(itemAguardandoRepasse);
+  if (pendentes.length === 0) return false;
+
+  const { data: bancosRaw } = await supabase
+    .from("proposta_bancos")
+    .select("homefin_id_simulacao_banco, selecionado, nome_banco, status_banco")
+    .eq("proposta_id", prop.id);
+  const bancos = ((bancosRaw ?? []) as any[]).filter((b) => b.homefin_id_simulacao_banco);
+  const aprovado = (b: any) => ["aprovada", "aprovado", "condicionado"].includes(b.status_banco);
+  const banco = bancos.find((b) => aprovado(b) && b.selecionado) ?? bancos.find(aprovado) ?? null;
+  if (!banco || !ehAgenciaDoBradesco(banco.nome_banco)) return false;
+
+  const { data: ultimo } = await supabase
+    .from("proposta_logs_homefin")
+    .select("created_at")
+    .eq("proposta_id", prop.id)
+    .like("endpoint", "%/incluir-documentos-integracao")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (
+    ultimo?.created_at &&
+    Date.now() - new Date(ultimo.created_at).getTime() < INTERVALO_REPASSE_MS
+  ) {
+    return false;
+  }
+
+  const { chamarIntegracao } = await import("@/lib/simulacao/homefin.server");
+  const resp = await chamarIntegracao<any>(
+    `/oportunidade/${prop.homefin_id_oportunidade}/incluir-documentos-integracao`,
+    "POST",
+    { idSimulacao: Number(banco.homefin_id_simulacao_banco) },
+    { proposta_id: prop.id, correspondente_id: prop.correspondente_id },
+  );
+  const sucesso = (Array.isArray(resp?.sucesso) ? resp.sucesso : [])
+    .map((s: any) => pendentes.find((p) => String(p.idDocumento) === String(s?.id))?.nomeDocumento)
+    .filter(Boolean);
+  if (sucesso.length > 0) {
+    await supabase.from("proposta_historico").insert({
+      proposta_id: prop.id,
+      tipo_evento: "sincronizacao",
+      descricao: `Documentos repassados ao banco automaticamente (o banco passou a pedi-los): ${sucesso.join(", ")}.`,
+    } as any);
+  }
+  return true;
+}
+
 export async function atualizarSituacaoDocumentosImpl({
   supabase,
   propostaId,
@@ -790,13 +887,22 @@ export async function atualizarSituacaoDocumentosImpl({
   let itens = itensLidos;
   if (!itens) {
     const { chamarIntegracao } = await import("@/lib/simulacao/homefin.server");
-    const r = await chamarIntegracao<any[]>(
-      `/oportunidade/${prop.homefin_id_oportunidade}/documentos`,
-      "GET",
-      undefined,
-      { proposta_id: propostaId, correspondente_id: prop.correspondente_id },
-    );
-    itens = Array.isArray(r) ? r : [];
+    const lerItens = async () => {
+      const r = await chamarIntegracao<any[]>(
+        `/oportunidade/${prop.homefin_id_oportunidade}/documentos`,
+        "GET",
+        undefined,
+        { proposta_id: propostaId, correspondente_id: prop.correspondente_id },
+      );
+      return Array.isArray(r) ? r : [];
+    };
+    itens = await lerItens();
+    // Só na sincronização automática (a tela já chama o envio quando quer).
+    try {
+      if (await repassarPendentesAoBanco({ supabase, prop, itens })) itens = await lerItens();
+    } catch (e) {
+      console.error("[documentos] nova tentativa de repasse ao banco falhou", e);
+    }
   }
   const resumo = resumoDoChecklist(itens);
 

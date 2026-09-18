@@ -38,6 +38,10 @@ const POR_CHAVE: Record<string, TipoConhecido> = {
   c_prop_fin: { nome: "Proposta de Financiamento Imobiliário assinada", termos: PROPOSTA },
   c_dps: { nome: "Declaração Pessoal de Saúde (DPS)", termos: DPS },
   c_cpf: { nome: "CPF", termos: CPF },
+  c_form_aut: {
+    nome: "Formulário de Autorização",
+    termos: ["formulario de autorizacao", "autorizacao"],
+  },
   c_prop_fin_conj: {
     nome: "Proposta de Financiamento Imobiliário assinada pelo cônjuge",
     termos: PROPOSTA,
@@ -109,6 +113,17 @@ export function nomeDoTipoDocumento(tipo: unknown): string {
   return t.startsWith("custom_") ? "Documento adicional" : t;
 }
 
+/**
+ * Tipos que só podem subir na vaga do próprio tipo. Sem ela, o documento NÃO
+ * vai para a vaga de reserva: subiria com o código de outro documento (ex.:
+ * como "estado civil") e poderia ser repassado ao banco com o tipo errado.
+ */
+const SO_VAGA_PROPRIA = new Set(["formulario de autorizacao"]);
+
+export function exigeVagaPropria(tipo: unknown): boolean {
+  return SO_VAGA_PROPRIA.has(normalizar(nomeDoTipoDocumento(tipo)));
+}
+
 /** Termos que identificam a vaga do banco para este tipo. */
 export function termosDoTipoDocumento(tipo: unknown): string[] {
   const k = conhecido(tipo);
@@ -134,6 +149,7 @@ const PISTAS: { termos: RegExp; tipoIndice: Partial<Record<CategoriaDocumento, n
   { termos: /(proposta de financiamento|proposta)/, tipoIndice: { comprador: 7, conjuge: 1 } },
   { termos: /(\bdps\b|saude)/, tipoIndice: { comprador: 8, conjuge: 2 } },
   { termos: /\bcpf\b/, tipoIndice: { comprador: 9, conjuge: 3 } },
+  { termos: /(formulario de autorizacao|autorizacao)/, tipoIndice: { comprador: 10 } },
   { termos: /(irpf|imposto|declaracao)/, tipoIndice: { comprador: 4 } },
   { termos: /(ctps|carteira de trabalho)/, tipoIndice: { comprador: 5 } },
   { termos: /\bfgts\b/, tipoIndice: { comprador: 6 } },

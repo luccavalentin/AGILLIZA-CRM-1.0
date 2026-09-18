@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { nomeDoTipoDocumento, sugerirTipoDocumento, termosDoTipoDocumento } from "./tipos-banco";
+import {
+  exigeVagaPropria,
+  nomeDoTipoDocumento,
+  sugerirTipoDocumento,
+  termosDoTipoDocumento,
+} from "./tipos-banco";
 
 describe("tipos de documento", () => {
   it("chave interna do checklist vira nome legível", () => {
@@ -41,5 +46,14 @@ describe("tipos de documento", () => {
       "Proposta de Financiamento Imobiliário assinada pelo cônjuge",
     );
     expect(sugerirTipoDocumento("cpf.jpg", "comprador")).toBe("CPF");
+  });
+});
+
+describe("Formulário de Autorização", () => {
+  it("é reconhecido pelo nome e só aceita vaga própria", () => {
+    expect(nomeDoTipoDocumento("Formulário de Autorização")).toBe("Formulário de Autorização");
+    expect(termosDoTipoDocumento("Formulário de Autorização")).toContain("autorizacao");
+    expect(exigeVagaPropria("Formulário de Autorização")).toBe(true);
+    expect(exigeVagaPropria("Capa do IPTU ou Certidão de Valor Venal")).toBe(false);
   });
 });
