@@ -27,7 +27,6 @@ import { listarColegas } from "@/lib/operacional/shared.functions";
 import { DetalheSimulacoes, statusLabel } from "@/components/simulacao/lista-detalhe";
 import { EnviarPropostaDialog } from "@/components/simulacao/enviar-proposta-dialog";
 import { EncaminharSimulacaoDialog } from "@/components/simulacao/encaminhar-simulacao-dialog";
-import { baixarSimulacaoDetalhadaPDF } from "@/lib/simulacao/simulacao-pdf";
 import { KpiDetalheDialog } from "@/components/simulacao/kpi-detalhe-dialog";
 import { FiltrosLista } from "@/components/simulacao/lista-page/filtros-lista";
 import { AvisoReenvioAutomatico } from "@/components/simulacao/aviso-reenvio-automatico";
@@ -585,6 +584,7 @@ function Pagina() {
           return;
         }
         // Gera o PDF real com layout profissional para compartilhamento
+        const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
         baixarSimulacaoDetalhadaPDF({ simulacao: sim, bancos: bancosParaPdf });
         toast.success("PDF gerado com sucesso! Agora você pode compartilhá-lo.");
         return;

@@ -19,7 +19,6 @@ import {
 import { CHECKLISTS_BANCOS } from "@/lib/formularios/checklists.functions";
 import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
 import { corDoBanco } from "@/lib/bancos/cores";
-import { gerarChecklistBancoPDF } from "@/lib/formularios/checklist-pdf";
 import { EncaminharChecklistDialog } from "./encaminhar-checklist-dialog";
 import { toast } from "sonner";
 
@@ -82,6 +81,7 @@ export function ChecklistBancosView() {
       const nomesSelecionados = selecionados[bancoId] || [];
       const itemsParaPdf = todosItems.filter((item) => nomesSelecionados.includes(item.nome));
 
+      const { gerarChecklistBancoPDF } = await import("@/lib/formularios/checklist-pdf");
       await gerarChecklistBancoPDF(bancoId, undefined, itemsParaPdf);
       toast.success("Checklist gerado com sucesso!");
     } catch (error) {
