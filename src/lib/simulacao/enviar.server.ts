@@ -9,6 +9,7 @@ import {
 import { SupabaseClient } from "@supabase/supabase-js";
 import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 import { codigoTipoImovel } from "./dominios-homefin";
+import { montarParticipantesSimulacao, type EnderecoCadastro } from "./participantes-simulacao";
 
 /**
  * Empurrão imediato na reconciliação, logo após um envio que ficou aguardando.
@@ -631,6 +632,12 @@ export async function enviarSimulacaoImpl({
       if (!idOportunidade) throw e;
     }
 
+    // Titular e cônjuge completos na HomeFin ANTES de simular nos bancos: o
+    // `POST /oportunidade` só leva nome, CPF, nascimento, contato e renda.
+    if (idOportunidade) {
+      await completarParticipantesOportunidade(idOportunidade, sim, supabase);
+    }
+
     const resultados: EnviarResultado["bancos"] = [];
 
     // ETAPA 3: Paralelização controlada de bancos no servidor.
@@ -770,6 +777,66 @@ export async function enviarSimulacaoImpl({
   } catch (e: any) {
     console.error(`[enviarSimulacaoImpl] Erro fatal:`, e);
     throw e;
+  }
+}
+
+/**
+ * Completa titular e cônjuge (pessoa física) na oportunidade com todos os
+ * dados cadastrais — o que o cadastro tem, e o padrão onde falta (ver
+ * `participantes-simulacao.ts`). Antes os dois seguiam para a simulação dos
+ * bancos sem mãe, sexo, documento, profissão, endereço e com
+ * `fgAutorizacaoDados: false`. Falha aqui não derruba a simulação.
+ */
+async function completarParticipantesOportunidade(
+  idOportunidade: string,
+  sim: any,
+  supabase: SupabaseClient,
+): Promise<void> {
+  const doc = String(sim?.cpf_cnpj ?? "").replace(/\D/g, "");
+  if (doc.length !== 11) return; // pessoa jurídica tem fluxo próprio
+  const ctx = { simulacao_id: sim.id };
+  try {
+    let endereco: EnderecoCadastro | null = null;
+    if (sim.cliente_id) {
+      const { data } = await supabase
+        .from("cliente_enderecos")
+        .select("cep, logradouro, numero, complemento, bairro, cidade, uf")
+        .eq("cliente_id", sim.cliente_id)
+        .order("principal", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      endereco = (data as EnderecoCadastro | null) ?? null;
+    }
+    const { titular, conjuge } = montarParticipantesSimulacao({
+      sim,
+      cliente: sim.cliente,
+      endereco,
+    });
+
+    const resp = await chamarIntegracao<any>(
+      `/oportunidade/${idOportunidade}`,
+      "GET",
+      undefined,
+      ctx,
+    );
+    const participantes: any[] = (resp?.oportunidade ?? resp)?.participantes ?? [];
+    for (const p of participantes) {
+      const cpf = String(p?.cpfCnpj ?? "").replace(/\D/g, "");
+      const payload =
+        cpf === titular.cpfCnpj ? titular : conjuge && cpf === conjuge.cpfCnpj ? conjuge : null;
+      if (!payload || !p?.idParticipante) continue;
+      await chamarIntegracao(
+        `/oportunidade/${idOportunidade}/participante/${p.idParticipante}`,
+        "PUT",
+        payload,
+        ctx,
+      );
+    }
+  } catch (e) {
+    console.warn(
+      `[enviar.server] Não foi possível completar os participantes da oportunidade ${idOportunidade}:`,
+      e,
+    );
   }
 }
 
