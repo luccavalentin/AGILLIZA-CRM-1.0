@@ -19,6 +19,8 @@ export const PADROES_CADASTRO = {
   dataExpedicao: "2026-01-01",
   nacionalidade: "Brasileira",
   naturalidade: "São Paulo/SP",
+  /** Celular do cônjuge quando vazio ou igual ao do titular (ver `celularConjugeOuPadrao`). */
+  celularConjuge: "19998710032",
 } as const;
 
 /** Endereço padrão — só o cadastro do cliente usa; a simulação não mexe em endereço. */
@@ -39,9 +41,24 @@ export function ouPadrao<T>(valor: T, padrao: string): T | string {
 }
 
 /**
+ * Celular do cônjuge: vazio ou igual ao do titular vira o número padrão.
+ *
+ * O envio cobra celular de cada participante e a simulação deixa o do cônjuge
+ * opcional, então a equipe repetia o do titular — os dois proponentes iam ao
+ * banco com o mesmo contato. Um número próprio e diferente, digitado para o
+ * cônjuge, é mantido. Devolve só dígitos.
+ */
+export function celularConjugeOuPadrao(celularConjuge: unknown, celularTitular: unknown): string {
+  const conj = String(celularConjuge ?? "").replace(/\D/g, "");
+  const tit = String(celularTitular ?? "").replace(/\D/g, "");
+  return !conj || conj === tit ? PADROES_CADASTRO.celularConjuge : conj;
+}
+
+/**
  * Nacionalidade, naturalidade e RG de pessoa física: valem na criação E na
  * edição do cadastro (ao contrário dos demais padrões, que só entram na
- * criação). Vazio vira Brasileira / São Paulo-SP / o próprio CPF.
+ * criação). Vazio vira Brasileira / São Paulo-SP / o próprio CPF; o celular
+ * do cônjuge segue `celularConjugeOuPadrao`.
  *
  * Naturalidade é gravada como "Cidade/UF". Só o estado ("/SP") conta como
  * vazia e recebe São Paulo; estado diferente de SP sem cidade fica como está,
@@ -75,6 +92,7 @@ export function aplicarPadroesIdentificacao<T extends Record<string, any>>(campo
     if (vazio(c.conjuge_numero_documento) && !vazio(c.conjuge_cpf)) {
       c.conjuge_numero_documento = String(c.conjuge_cpf);
     }
+    c.conjuge_celular = celularConjugeOuPadrao(c.conjuge_celular, c.telefone_celular);
   }
   return campos;
 }

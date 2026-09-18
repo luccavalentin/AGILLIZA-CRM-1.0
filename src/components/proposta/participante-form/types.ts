@@ -100,6 +100,8 @@ export function aplicarPadroesParticipante(f: ParticipanteForm): ParticipanteFor
     const cpf = apenasDigitos(next.cpf_cnpj);
     if (cpf.length === 11) comPadrao("numero_documento", cpf);
   }
+  // Cônjuge/coproponente sem celular: vai o número padrão do cônjuge.
+  if (next.tipo_qualificacao === "TI") comPadrao("celular", PADROES_CADASTRO.celularConjuge);
   return next;
 }
 

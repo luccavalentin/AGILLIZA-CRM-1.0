@@ -299,6 +299,7 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             <Input
               value={f.celular_conjuge ?? ""}
               onChange={(e) => set("celular_conjuge", maskCelular(e.target.value))}
+              placeholder="Vazio ou igual ao do titular: (19) 99871-0032"
             />
           </Campo>
         </div>

@@ -149,6 +149,14 @@ export function faltantesEnvolvido(
     ) {
       return false;
     }
+    // Celular vazio do cônjuge/coproponente vai com o número padrão do
+    // cônjuge (ver `celularConjugeOuPadrao`), então não trava o envio.
+    if (
+      c.chave === "celular" &&
+      (env?.conjuge_de || String(env?.tipo_qualificacao ?? "") === "TI")
+    ) {
+      return false;
+    }
     if (c.chave === "renda" && !exigeRenda(env)) return false;
     if (c.chave === "utiliza_fgts") return false; // booleano com default (S/N)
     if (c.chave === "fg_autorizacao_dados") return env?.fg_autorizacao_dados !== true;
