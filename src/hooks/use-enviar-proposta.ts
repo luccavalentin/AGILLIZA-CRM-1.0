@@ -7,11 +7,7 @@ import {
   enviarPropostaHomeFin,
   ressincronizarDadosParticipantes,
 } from "@/lib/propostas/propostas.functions";
-import {
-  proponentesPendentes,
-  ehSantander,
-  ehBradesco,
-} from "@/lib/propostas/campos-obrigatorios";
+import { proponentesPendentes, ehSantander, ehBradesco } from "@/lib/propostas/campos-obrigatorios";
 import { perguntarAgencia } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 import { propostaQueryOptions } from "@/lib/propostas/queries";
 import { playChatSound } from "@/lib/chat-sound";
@@ -167,6 +163,8 @@ export function useEnviarProposta() {
       if (agenciaEnvio === undefined && bancoId && bancoId !== "todos" && ehBradesco(nomeBanco)) {
         const resposta = await perguntarAgencia(String(nomeBanco));
         if (resposta.cancelado) {
+          // Sem aviso, fechar a janela parecia "o botão não faz nada".
+          toast.info("Envio cancelado.");
           clickLock.current[k] = false;
           return;
         }
