@@ -1,36 +1,36 @@
 /**
- * Escalonamento do polling de propostas.
+ * Ritmo do polling de propostas.
  *
- * A integração não tem webhook — a documentação não prevê callback, então a
- * única forma de saber o desfecho é consultar `GET /oportunidade/{id}`. O cron
- * roda de 2 em 2 minutos, mas consultar TODA proposta ativa a cada rodada faz
- * uma proposta parada em análise ser consultada ~720x por dia, indefinidamente
- * (foi o que aconteceu: 26 mil GETs numa única oportunidade).
+ * A integração não tem webhook — a única forma de saber o andamento é
+ * consultar `GET /oportunidade/{id}`. Consultar toda proposta ativa o tempo
+ * todo custava ~110 mil chamadas por semana com 6 usuários, 99,8% delas com a
+ * resposta idêntica à anterior (levantamento de 18/09/2026).
  *
- * Aqui a frequência acompanha a idade da última mudança de status: proposta
- * recém-enviada é consultada de perto, proposta parada há semanas é consultada
- * de hora em hora. Nenhuma deixa de ser consultada — só param de ser
- * consultadas na mesma cadência de uma que acabou de sair.
+ * Regras (definidas com o Lucca em 18/09/2026), em horário comercial:
+ *
+ * | Fase                                      | Itaú / Santander | Bradesco                     |
+ * |-------------------------------------------|------------------|------------------------------|
+ * | Análise de crédito (enviada, em análise)  | 1 min            | 5 min após o envio, depois 3 |
+ * | Aprovada / condicionada / etapas seguintes| 2 min            | 10 min                       |
+ *
+ * Fora do horário comercial (antes das 8h, depois das 20h, sábado e domingo):
+ * análise a cada 15 min, demais fases a cada 1 h. O Bradesco leva ~8 min para
+ * responder o crédito (mediana de 30 dias), Itaú e Santander menos de 1 min.
+ *
+ * Proposta sem nenhuma mudança há mais de 30 dias: no máximo de hora em hora
+ * (foi o caso das 26 mil consultas numa única oportunidade parada).
+ *
+ * Encerradas (cancelada, recusada, contrato, registrado) nem chegam aqui: quem
+ * seleciona as candidatas já as exclui. Abrir a proposta e o botão "Atualizar
+ * status" continuam consultando na hora.
  */
 
-/** Faixas de idade (desde a última mudança) e o intervalo mínimo entre consultas. */
-export const FAIXAS_BACKOFF: { ateHoras: number; intervaloMinutos: number }[] = [
-  // As primeiras 24 h são quando o banco decide, e é aí que o retorno importa.
-  // A faixa anterior abria para 15 min já com 2 h de vida, e uma recusa levava
-  // até um quarto de hora para aparecer — as PRO-000269 e PRO-000270 estavam
-  // recusadas no provedor enquanto a tela ainda dizia "em análise". Com quatro
-  // propostas ativas, consultar de 2 em 2 min custa pouco e devolve o retorno
-  // quase na hora.
-  { ateHoras: 24, intervaloMinutos: 2 },
-  { ateHoras: 24 * 7, intervaloMinutos: 15 },
-  { ateHoras: 24 * 30, intervaloMinutos: 60 },
-  // Parada há mais de um mês: consulta esparsa, só para não ficar órfã. Era
-  // este o caso que gerou 26 mil GETs numa única oportunidade.
-  { ateHoras: Infinity, intervaloMinutos: 360 },
-];
-
 export interface PropostaParaSincronizar {
-  /** Última vez que consultamos o banco por esta proposta. */
+  status?: string | null;
+  nome_banco?: string | null;
+  /** Última vez que consultamos o banco por esta proposta (estado do servidor). */
+  ultima_consulta_em?: string | null;
+  /** Última leitura gravada na proposta (pode ficar até 15 min para trás). */
   ultima_sincronizacao_em?: string | null;
   /** Última vez que o status mudou de fato. */
   status_atualizado_em?: string | null;
@@ -39,19 +39,48 @@ export interface PropostaParaSincronizar {
   created_at?: string | null;
 }
 
+const FASE_ANALISE = new Set(["rascunho", "enviada_banco", "em_analise_credito"]);
+
 function paraMs(v: string | null | undefined): number | null {
   if (!v) return null;
   const t = new Date(v).getTime();
   return Number.isFinite(t) ? t : null;
 }
 
+function normalizar(v: unknown): string {
+  return String(v ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
+type Banco = "bradesco" | "itau" | "santander" | "outro";
+
+function bancoDe(nome: unknown): Banco {
+  const n = normalizar(nome);
+  if (n.includes("bradesco")) return "bradesco";
+  if (n.includes("itau")) return "itau";
+  if (n.includes("santander")) return "santander";
+  return "outro";
+}
+
+/** Dias úteis das 8h às 20h, no horário de Brasília. */
+export function emHorarioComercial(agora = Date.now()): boolean {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    weekday: "short",
+    hour: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(new Date(agora));
+  const dia = partes.find((p) => p.type === "weekday")?.value ?? "";
+  const hora = Number(partes.find((p) => p.type === "hour")?.value ?? "0");
+  if (dia === "Sat" || dia === "Sun") return false;
+  return hora >= 8 && hora < 20;
+}
+
 /**
- * Marco mais recente de atividade da proposta.
- *
- * Precisa ser o MAIOR entre os três: o envio ao banco não grava
- * `status_atualizado_em` (só a sincronização grava). Usando apenas esse campo,
- * uma proposta criada há semanas e enviada hoje cairia direto na faixa de 6
- * horas — justamente quando o retorno do banco é mais provável.
+ * Marco mais recente de atividade da proposta: o MAIOR entre mudança de
+ * status, envio e criação (o envio não grava `status_atualizado_em`).
  */
 function marcoDeAtividade(p: PropostaParaSincronizar): number | null {
   const candidatos = [
@@ -64,23 +93,49 @@ function marcoDeAtividade(p: PropostaParaSincronizar): number | null {
 
 /** Intervalo mínimo, em minutos, entre duas consultas desta proposta. */
 export function intervaloMinimoMinutos(p: PropostaParaSincronizar, agora = Date.now()): number {
-  const referencia = marcoDeAtividade(p);
-  if (referencia === null) return FAIXAS_BACKOFF[0].intervaloMinutos;
-  const horasParada = (agora - referencia) / 3_600_000;
-  const faixa =
-    FAIXAS_BACKOFF.find((f) => horasParada <= f.ateHoras) ??
-    FAIXAS_BACKOFF[FAIXAS_BACKOFF.length - 1];
-  return faixa.intervaloMinutos;
+  const analise = FASE_ANALISE.has(String(p.status ?? ""));
+  const banco = bancoDe(p.nome_banco);
+
+  let intervalo: number;
+  if (!emHorarioComercial(agora)) {
+    intervalo = analise ? 15 : 60;
+  } else if (analise) {
+    intervalo = banco === "bradesco" ? 3 : 1;
+  } else {
+    intervalo = banco === "bradesco" ? 10 : 2;
+  }
+
+  const marco = marcoDeAtividade(p);
+  if (marco !== null && agora - marco > 30 * 24 * 3_600_000) {
+    intervalo = Math.max(intervalo, 60);
+  }
+  return intervalo;
 }
 
 /**
  * A proposta já pode ser consultada de novo?
- * Nunca consultada (`ultima_sincronizacao_em` nulo) sempre pode.
+ * Nunca consultada sempre pode. O Bradesco em análise espera 5 min após o
+ * envio antes da primeira consulta (ele não responde antes disso).
  */
 export function devesincronizar(p: PropostaParaSincronizar, agora = Date.now()): boolean {
-  const ultima = paraMs(p.ultima_sincronizacao_em);
-  if (ultima === null) return true;
-  return agora - ultima >= intervaloMinimoMinutos(p, agora) * 60_000;
+  const analise = FASE_ANALISE.has(String(p.status ?? ""));
+  const enviada = paraMs(p.enviada_em);
+  if (
+    analise &&
+    bancoDe(p.nome_banco) === "bradesco" &&
+    enviada !== null &&
+    agora - enviada < 5 * 60_000
+  ) {
+    return false;
+  }
+  const leituras = [paraMs(p.ultima_consulta_em), paraMs(p.ultima_sincronizacao_em)].filter(
+    (v): v is number => v !== null,
+  );
+  if (leituras.length === 0) return true;
+  const ultima = Math.max(...leituras);
+  // Tolerância de 10 s: o agendador roda de minuto em minuto e a consulta
+  // anterior leva alguns segundos — sem ela, "1 min" viraria 2 na prática.
+  return agora - ultima >= intervaloMinimoMinutos(p, agora) * 60_000 - 10_000;
 }
 
 /** Filtra a lista de candidatas, mantendo só as que estão no prazo de consulta. */

@@ -1809,15 +1809,12 @@ export const sincronizarPropostasAtivas = createServerFn({ method: "POST" })
       "analise_juridica",
     ];
 
-    const { data: rows, error } = await supabase
-      .from("propostas")
-      .select("id")
-      .in("status", STATUS_ATIVOS as any)
-      .not("homefin_id_oportunidade", "is", null)
-      .is("deleted_at", null)
-      .order("ultima_sincronizacao_em", { ascending: true, nullsFirst: true } as any)
-      .limit(data.limite);
-    if (error) throw new Error(error.message);
+    // A lista de propostas chama isto a cada 20 s em cada aba aberta. Antes
+    // consultava o provedor para as 40 mais antigas toda vez, ignorando o
+    // ritmo de `sync-backoff.ts` — a maior fonte de consultas do sistema.
+    // Agora só as vencidas (o mesmo ritmo do agendador, visto pelo usuário).
+    const { selecionarParaSincronizar } = await import("./sync-estado.server");
+    const rows = await selecionarParaSincronizar(supabase, STATUS_ATIVOS, data.limite);
     const { sincronizarPropostaImpl } = await import("./enviar.server");
     const fila = [...(rows ?? [])];
     let processadas = 0;

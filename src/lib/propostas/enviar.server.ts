@@ -1954,7 +1954,7 @@ export async function sincronizarPropostaImpl({
   const { supabaseAdmin: logsAdmin } = await import("@/integrations/supabase/client.server");
   const { data: enviosRegistrados } = await logsAdmin
     .from("proposta_logs_homefin")
-    .select("request_masked")
+    .select("request_masked, status_http")
     .eq("proposta_id", propostaId)
     .like("endpoint", "%/incluir-proposta-integracao");
   const idsSimulacaoSubmetidos = new Set(
@@ -1962,6 +1962,14 @@ export async function sincronizarPropostaImpl({
       .map((l) => String(l?.request_masked?.idSimulacao ?? ""))
       .filter(Boolean),
   );
+  // Algum envio com resposta 2xx. Antes era uma contagem repetida DENTRO do
+  // laço de bancos, com o mesmo filtro desta busca — a consulta mais cara do
+  // sistema (1,8 s em média, 18/09/2026). Mesmo resultado, sem a repetição.
+  const enviouReal = ((enviosRegistrados ?? []) as any[]).some(
+    (l) => Number(l?.status_http) >= 200 && Number(l?.status_http) < 300,
+  );
+  const { marcarConsulta, camposQueMudam } = await import("./sync-estado.server");
+  await marcarConsulta(propostaId);
   if (idsSimulacaoSubmetidos.size === 0) {
     // Sem log de envio, só um banco já confirmado (protocolo ou desfecho)
     // justifica ler a oportunidade — é o caso de propostas anteriores ao log.
@@ -2127,18 +2135,7 @@ export async function sincronizarPropostaImpl({
     // Salva apenas o número REAL da proposta no banco. Códigos de oportunidade
     // ou simulação são referências técnicas e não devem aparecer como "Nº banco".
     // Em falha de integração, NUNCA gravar protocolo.
-    // Buscamos se existe log de sucesso 2xx para esta proposta
-    // Cliente administrativo pelo mesmo motivo de `enviosRegistrados`.
-    const { supabaseAdmin: logsAdminBanco } = await import("@/integrations/supabase/client.server");
-    const { count: countEnvio } = await logsAdminBanco
-      .from("proposta_logs_homefin")
-      .select("id", { count: "exact", head: true })
-      .eq("proposta_id", propostaId)
-      .like("endpoint", "%/incluir-proposta-integracao")
-      .gte("status_http", 200)
-      .lt("status_http", 300);
-
-    const enviouReal = (countEnvio ?? 0) > 0;
+    // `enviouReal` (log de envio 2xx) vem da busca do início da função.
     const numeroReal = falhaIntegracao ? null : numeroPropostaBancoReal(sim, enviouReal);
     const refIntegracao = referenciaIntegracaoBanco(sim);
 
@@ -2217,13 +2214,22 @@ export async function sincronizarPropostaImpl({
   // Como o id de cada linha é conhecido, o certo é UPDATE — que não passa por
   // validação de inserção e não corre o risco de criar linha órfã. São uma a
   // três linhas por proposta; o custo do lote não se justificava.
-  if (patchesBanco.length > 0) {
+  // Só grava o que mudou: a linha está no realtime, e regravar o mesmo valor
+  // a cada consulta fazia todas as telas inscritas recarregarem (18/09/2026).
+  const bancosPorId = new Map(((bancosProp ?? []) as any[]).map((pb) => [String(pb.id), pb]));
+  const alteracoesBanco = patchesBanco
+    .map(({ id, ...campos }) => ({
+      id: String(id),
+      campos: camposQueMudam(bancosPorId.get(String(id)) ?? {}, campos),
+    }))
+    .filter((a) => Object.keys(a.campos).length > 0);
+  if (alteracoesBanco.length > 0) {
     const resultados = await Promise.all(
-      patchesBanco.map(({ id, ...campos }) =>
+      alteracoesBanco.map(({ id, campos }) =>
         supabase
           .from("proposta_bancos")
           .update(campos as any)
-          .eq("id", id as string),
+          .eq("id", id),
       ),
     );
     for (const r of resultados) {
@@ -2438,10 +2444,26 @@ export async function sincronizarPropostaImpl({
     }
   }
 
-  await supabase
-    .from("propostas")
-    .update(patch as any)
-    .eq("id", propostaId);
+  // Só grava o que mudou. `propostas` está no realtime: regravar a proposta a
+  // cada consulta (só para renovar `ultima_sincronizacao_em`) fazia todas as
+  // telas inscritas recarregarem — ~21 mil gravações/dia com 6 usuários
+  // (18/09/2026). A "Última leitura do banco" exibida na tela é renovada
+  // quando algo muda ou, sem mudança, no máximo a cada 15 minutos; o ritmo das
+  // consultas usa `proposta_sync_estado`, que é gravado a cada consulta.
+  {
+    const { ultima_sincronizacao_em, ...restante } = patch;
+    const mudancas = camposQueMudam(prop as Record<string, unknown>, restante);
+    const ultimaGravada = prop.ultima_sincronizacao_em
+      ? new Date(prop.ultima_sincronizacao_em).getTime()
+      : 0;
+    const leituraVelha = !ultimaGravada || Date.now() - ultimaGravada >= 15 * 60_000;
+    if (Object.keys(mudancas).length > 0 || leituraVelha) {
+      await supabase
+        .from("propostas")
+        .update({ ...mudancas, ultima_sincronizacao_em } as any)
+        .eq("id", propostaId);
+    }
+  }
 
   if (mudouStatus) {
     const ehErroIntegracao = statusEfetivo === "erro_envio" && algumFalhaIntegracao;
