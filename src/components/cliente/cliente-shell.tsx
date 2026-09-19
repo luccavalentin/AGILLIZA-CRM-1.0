@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Menu,
   PanelLeft,
@@ -28,7 +28,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/app-shell/theme-toggle";
-import { clienteListarNotificacoes, clienteListarAtendentes } from "@/lib/portal/cliente.functions";
+import {
+  clienteListarNotificacoes,
+  clienteListarAtendentes,
+  clienteMarcarNotificacaoLida,
+  type NotificacaoCliente,
+} from "@/lib/portal/cliente.functions";
 import { ClienteChatWatcher } from "@/components/cliente/cliente-chat-watcher";
 import { ClienteChatFlutuante } from "@/components/cliente/cliente-chat-flutuante";
 import { cn } from "@/lib/utils";
@@ -195,12 +200,26 @@ function SidebarLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigat
 }
 
 function NotificacoesBell() {
+  const queryClient = useQueryClient();
+  const navegar = useNavigate();
   const { data: notificacoes } = useQuery({
     queryKey: ["cliente", "notificacoes"],
     queryFn: () => clienteListarNotificacoes(),
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 20000),
   });
   const naoLidas = (notificacoes ?? []).filter((n) => !n.lida).length;
+
+  // Sem isto o aviso nunca saía de "não lido": o selo vermelho ficava no sino
+  // para sempre, mesmo o cliente tendo aberto e lido (QA 19/09/2026).
+  const marcarLida = useMutation({
+    mutationFn: (id: string) => clienteMarcarNotificacaoLida({ data: { id } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cliente", "notificacoes"] }),
+  });
+
+  function aoClicar(n: NotificacaoCliente) {
+    if (!n.lida) marcarLida.mutate(n.id);
+    if (n.link) navegar({ to: n.link as string });
+  }
 
   return (
     <DropdownMenu>
@@ -228,10 +247,18 @@ function NotificacoesBell() {
           </p>
         ) : (
           (notificacoes ?? []).slice(0, 8).map((n) => (
-            <div key={n.id} className={cn("rounded-md px-2 py-2 text-sm", !n.lida && "bg-accent")}>
+            <button
+              key={n.id}
+              type="button"
+              onClick={() => aoClicar(n)}
+              className={cn(
+                "w-full rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
+                !n.lida && "bg-accent",
+              )}
+            >
               <p className="font-medium text-foreground">{n.titulo}</p>
               {n.corpo && <p className="text-muted-foreground">{n.corpo}</p>}
-            </div>
+            </button>
           ))
         )}
       </DropdownMenuContent>
