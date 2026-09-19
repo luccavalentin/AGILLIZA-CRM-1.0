@@ -61,8 +61,10 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     queryKey,
     queryFn: () => adapter.listar(),
     // Fallback: garante entrega de mensagens, respostas e reações mesmo que
-    // algum evento realtime se perca.
-    refetchInterval: 4000,
+    // algum evento realtime se perca. As mudanças chegam pelo Realtime (efeito
+    // abaixo: mensagens, reações e a conversa em cada adaptador); este poll só
+    // pesa se o websocket cair. Eram 4 s por conversa aberta.
+    refetchInterval: 15_000,
     refetchIntervalInBackground: false,
   });
 
