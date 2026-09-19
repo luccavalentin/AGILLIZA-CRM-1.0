@@ -327,7 +327,7 @@ export function HeroMetric({
           <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
         )}
       </div>
-      <p className="relative mt-2.5 min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:text-[11px] sm:tracking-[0.14em]">
+      <p className="relative mt-2.5 line-clamp-2 min-w-0 break-words text-[10px] font-semibold uppercase leading-snug tracking-[0.1em] text-muted-foreground sm:text-[11px] sm:tracking-[0.14em]">
         {label}
       </p>
       <p className="relative mt-0.5 min-w-0 truncate font-mono text-[clamp(1.2rem,5vw,1.5rem)] font-semibold leading-none tracking-tight tabular-nums text-foreground">
