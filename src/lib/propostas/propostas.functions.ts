@@ -223,11 +223,17 @@ export const listarPropostas = createServerFn({ method: "GET" })
         },
       };
       {
-        const qResumo = aplicarFiltros(
-          supabase.from("propostas").select("status, valor_financiamento"),
-        );
-        const { data: linhas } = await qResumo.range(0, 4999);
-        for (const l of (linhas ?? []) as any[]) {
+        // Em lotes de 1.000 (o teto do PostgREST): `range(0, 4999)` devolvia
+        // só as primeiras 1.000 e os cards ficariam cortados acima disso.
+        const linhas: any[] = [];
+        for (let ini = 0; ini < 50_000; ini += 1000) {
+          const { data: lote } = await aplicarFiltros(
+            supabase.from("propostas").select("status, valor_financiamento").order("id"),
+          ).range(ini, ini + 999);
+          linhas.push(...((lote ?? []) as any[]));
+          if (!lote || lote.length < 1000) break;
+        }
+        for (const l of linhas) {
           const valor = Number(l.valor_financiamento) || 0;
           resumo.total.volume += valor;
           const g = grupoDoStatus(l.status);
