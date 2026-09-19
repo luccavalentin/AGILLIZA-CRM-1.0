@@ -32,13 +32,22 @@ export function useRealtimeInvalidate(
     const alvos: string[][] = JSON.parse(chavesKey);
     if (!lista.length || !alvos.length) return;
 
+    // No máximo uma recarga a cada 30 s. As tabelas ouvidas mudam o tempo todo
+    // (cada envio de simulação gera várias alterações) e cada recarga refaz o
+    // painel inteiro para cada pessoa com ele aberto. A primeira alteração
+    // recarrega em 0,4 s, como antes; as que chegam dentro da janela viram
+    // uma recarga só ao fim dela — nenhuma alteração fica de fora.
+    const INTERVALO_MINIMO_MS = 30_000;
+    let ultimaRecarga = 0;
     let pendente: ReturnType<typeof setTimeout> | null = null;
     const invalidar = () => {
-      if (pendente) clearTimeout(pendente);
-      // Debounce: várias alterações seguidas geram um único refetch.
+      if (pendente) return;
+      const espera = Math.max(400, ultimaRecarga + INTERVALO_MINIMO_MS - Date.now());
       pendente = setTimeout(() => {
+        pendente = null;
+        ultimaRecarga = Date.now();
         alvos.forEach((queryKey) => qc.invalidateQueries({ queryKey }));
-      }, 400);
+      }, espera);
     };
 
     const channel = supabase.channel(`rt-${canal}`);

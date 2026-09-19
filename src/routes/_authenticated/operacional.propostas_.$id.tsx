@@ -78,11 +78,14 @@ function PropostaRoute() {
   // 1. Hooks de dados
   const { data, isLoading, isError, error } = useQuery({
     ...propostaQueryOptions(id),
+    // Rede de segurança: as mudanças chegam pelo Realtime (efeito mais abaixo).
+    // Eram 15 s — 8 consultas a cada 15 s por aba aberta, por meses, enquanto
+    // a proposta não chega a um status final.
     refetchInterval: (q: any) => {
       const st = q.state.data?.proposta?.status as string | undefined;
       if (!st) return 30_000;
       const terminais = ["contrato_emitido", "cancelada", "credito_recusado"];
-      return terminais.includes(st) ? false : 15_000;
+      return terminais.includes(st) ? false : 60_000;
     },
     refetchOnWindowFocus: true,
   });
@@ -408,31 +411,43 @@ function PropostaRoute() {
   ]);
 
   React.useEffect(() => {
-    const invalidar = () => qc.invalidateQueries({ queryKey: ["proposta", id] });
-    const channel = supabase
+    // Uma sincronização mexe em várias tabelas de uma vez; agrupa a rajada
+    // numa recarga só.
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const invalidar = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        qc.invalidateQueries({ queryKey: ["proposta", id] });
+      }, 300);
+    };
+    let channel = supabase
       .channel(`proposta-${id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "propostas", filter: `id=eq.${id}` },
         invalidar,
-      )
-      .on(
+      );
+    // Tudo o que a tela mostra da proposta avisa quando muda (as quatro
+    // últimas entraram no Realtime em 20260919031000) — a recarga periódica
+    // acima virou só rede de segurança.
+    for (const table of [
+      "proposta_bancos",
+      "proposta_historico",
+      "proposta_documentos",
+      "proposta_documentos_homefin",
+      "proposta_envolvidos",
+      "proposta_followups",
+    ]) {
+      channel = channel.on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "proposta_bancos", filter: `proposta_id=eq.${id}` },
+        { event: "*", schema: "public", table, filter: `proposta_id=eq.${id}` },
         invalidar,
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "proposta_historico",
-          filter: `proposta_id=eq.${id}`,
-        },
-        invalidar,
-      )
-      .subscribe();
+      );
+    }
+    channel.subscribe();
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [id, qc]);

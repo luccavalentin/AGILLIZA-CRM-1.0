@@ -79,13 +79,16 @@ function Pagina() {
   }, [q]);
 
   useEffect(() => {
-    let raf: number | null = null;
+    // Agrupa a rajada de eventos (uma sincronização mexe em propostas e
+    // proposta_bancos de várias propostas) numa recarga só. Antes recarregava
+    // a cada quadro de animação, ou seja, praticamente a cada evento.
+    let raf: ReturnType<typeof setTimeout> | null = null;
     const invalidar = () => {
       if (raf !== null) return;
-      raf = requestAnimationFrame(() => {
+      raf = setTimeout(() => {
         raf = null;
         queryClient.invalidateQueries({ queryKey: ["propostas"] });
-      });
+      }, 1000);
     };
     let cancelado = false;
     let canalRef: any = null;
@@ -107,7 +110,7 @@ function Pagina() {
     });
     return () => {
       cancelado = true;
-      if (raf !== null) cancelAnimationFrame(raf);
+      if (raf !== null) clearTimeout(raf);
       if (canalRef) {
         import("@/integrations/supabase/client").then(({ supabase }) =>
           supabase.removeChannel(canalRef),
