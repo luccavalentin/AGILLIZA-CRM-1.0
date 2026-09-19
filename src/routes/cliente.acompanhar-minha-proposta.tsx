@@ -567,7 +567,9 @@ function MiniStat({
             {valor}
           </p>
 
-          <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="line-clamp-2 break-words text-xs font-medium leading-snug text-muted-foreground">
+            {label}
+          </p>
           {hint && <p className="mt-0.5 truncate text-[11px] text-muted-foreground/80">{hint}</p>}
           {linkLabel && to && (
             <Link
@@ -598,7 +600,7 @@ function ResumoLinha({
     <div className="flex items-start gap-2.5">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-xs text-muted-foreground">{label}</p>
+        <p className="line-clamp-2 break-words text-xs leading-snug text-muted-foreground">{label}</p>
       </div>
       <div className="min-w-0 text-right">
         <div className="truncate text-sm font-semibold text-foreground">{value}</div>

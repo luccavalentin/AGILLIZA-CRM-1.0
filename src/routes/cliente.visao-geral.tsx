@@ -70,11 +70,13 @@ function StatCard({
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-2xl font-bold leading-tight text-foreground">{valor}</p>
-        <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="line-clamp-2 break-words text-xs font-medium leading-snug text-muted-foreground">
+          {label}
+        </p>
         {hint && (
           <p
             className={cn(
-              "truncate text-[11px] font-medium",
+              "line-clamp-2 break-words text-[11px] font-medium leading-snug",
               hintTone === "primary" && "text-primary",
               hintTone === "success" && "text-success",
               hintTone === "muted" && "text-muted-foreground/80",
