@@ -1419,58 +1419,64 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         const LIMITE = 5000;
 
         async function propostasNoPeriodo(): Promise<any[]> {
-          const res = await escopoEq(
-            supabase
-              .from("propostas")
-              .select(
-                "id,numero_proposta,status,simulacao_id,nome_banco,valor_financiamento,valor_financiamento_aprovado,created_at,contrato_emitido_em,clientes(nome)",
-              )
-              .is("deleted_at", null)
-              .or(
-                `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
-              )
-              .order("created_at", { ascending: false })
-              .limit(LIMITE * 2),
-            "usuario_responsavel_id",
-            "usuario_criador_id",
-            "@cli:cliente_id",
+          const res = await todasAsLinhas(() =>
+            escopoEq(
+              supabase
+                .from("propostas")
+                .select(
+                  "id,numero_proposta,status,simulacao_id,nome_banco,valor_financiamento,valor_financiamento_aprovado,created_at,contrato_emitido_em,clientes(nome)",
+                )
+                .is("deleted_at", null)
+                .or(
+                  `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
+                )
+                .order("created_at", { ascending: false })
+                .order("id"),
+              "usuario_responsavel_id",
+              "usuario_criador_id",
+              "@cli:cliente_id",
+            ),
           );
           if (res.error) throw new Error(res.error.message);
           return (res.data ?? []) as any[];
         }
         async function simulacoesNoPeriodo(): Promise<any[]> {
-          const res = await escopoEq(
-            supabase
-              .from("simulacoes")
-              .select(
-                "id,numero_simulacao,status,tipo_simulacao,valor_financiamento,created_at,clientes(nome),simulacao_bancos(nome_banco,selecionado,status_banco)",
-              )
-              .is("deleted_at", null)
-              .gte("created_at", deIni)
-              .lte("created_at", ateFim)
-              .order("created_at", { ascending: false })
-              .limit(LIMITE),
-            "usuario_responsavel_id",
-            "usuario_criador_id",
-            "@cli:cliente_id",
+          const res = await todasAsLinhas(() =>
+            escopoEq(
+              supabase
+                .from("simulacoes")
+                .select(
+                  "id,numero_simulacao,status,tipo_simulacao,valor_financiamento,created_at,clientes(nome),simulacao_bancos(nome_banco,selecionado,status_banco)",
+                )
+                .is("deleted_at", null)
+                .gte("created_at", deIni)
+                .lte("created_at", ateFim)
+                .order("created_at", { ascending: false })
+                .order("id"),
+              "usuario_responsavel_id",
+              "usuario_criador_id",
+              "@cli:cliente_id",
+            ),
           );
           if (res.error) throw new Error(res.error.message);
           return (res.data ?? []) as any[];
         }
         async function contratosDetalhados(): Promise<{ cliente: any; prop: any }[]> {
-          const cliRes = await escopoEq(
-            supabase
-              .from("clientes")
-              .select("id,nome,contrato_emitido_em,imovel_valor")
-              .is("deleted_at", null)
-              .not("contrato_emitido_em", "is", null)
-              .gte("contrato_emitido_em", de)
-              .lte("contrato_emitido_em", ate)
-              .order("contrato_emitido_em", { ascending: false })
-              .limit(LIMITE),
-            "responsavel_id",
-            "criador_id",
-            "@cli:id",
+          const cliRes = await todasAsLinhas(() =>
+            escopoEq(
+              supabase
+                .from("clientes")
+                .select("id,nome,contrato_emitido_em,imovel_valor")
+                .is("deleted_at", null)
+                .not("contrato_emitido_em", "is", null)
+                .gte("contrato_emitido_em", de)
+                .lte("contrato_emitido_em", ate)
+                .order("contrato_emitido_em", { ascending: false })
+                .order("id"),
+              "responsavel_id",
+              "criador_id",
+              "@cli:id",
+            ),
           );
           if (cliRes.error) throw new Error(cliRes.error.message);
           const cliRows = (cliRes.data ?? []) as any[];
@@ -1788,18 +1794,20 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         }
 
         if (chave === "clientes novos") {
-          const res = await escopoEq(
-            supabase
-              .from("clientes")
-              .select("id,nome,documento,created_at,telefone_celular")
-              .is("deleted_at", null)
-              .gte("created_at", deIni)
-              .lte("created_at", ateFim)
-              .order("created_at", { ascending: false })
-              .limit(LIMITE),
-            "responsavel_id",
-            "criador_id",
-            "@cli:id",
+          const res = await todasAsLinhas(() =>
+            escopoEq(
+              supabase
+                .from("clientes")
+                .select("id,nome,documento,created_at,telefone_celular")
+                .is("deleted_at", null)
+                .gte("created_at", deIni)
+                .lte("created_at", ateFim)
+                .order("created_at", { ascending: false })
+                .order("id"),
+              "responsavel_id",
+              "criador_id",
+              "@cli:id",
+            ),
           );
           if (res.error) throw new Error(res.error.message);
           const rows = (res.data ?? []) as any[];
@@ -1837,15 +1845,19 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         }
 
         if (chave === "demandas abertas" || chave === "sla vencido") {
-          const res = await escopoEq(
-            supabase
-              .from("demandas")
-              .select("id,numero,titulo,status,prazo_sla,created_at,descricao,prioridade,sla_horas")
-              .is("deleted_at", null)
-              .limit(LIMITE * 2),
-            "responsavel_id",
-            "criador_id",
-            "@cli:cliente_id",
+          const res = await todasAsLinhas(() =>
+            escopoEq(
+              supabase
+                .from("demandas")
+                .select(
+                  "id,numero,titulo,status,prazo_sla,created_at,descricao,prioridade,sla_horas",
+                )
+                .is("deleted_at", null)
+                .order("id"),
+              "responsavel_id",
+              "criador_id",
+              "@cli:cliente_id",
+            ),
           );
           if (res.error) throw new Error(res.error.message);
           const agora = new Date();
@@ -1877,14 +1889,16 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         }
 
         if (chave === "tarefas abertas" || chave === "tarefas atrasadas") {
-          const res = await escopoEq(
-            supabase
-              .from("tasks")
-              .select("id,numero,titulo,status,prazo,created_at,descricao")
-              .limit(LIMITE * 2),
-            "responsavel_id",
-            "criador_id",
-            "@cli:cliente_id",
+          const res = await todasAsLinhas(() =>
+            escopoEq(
+              supabase
+                .from("tasks")
+                .select("id,numero,titulo,status,prazo,created_at,descricao")
+                .order("id"),
+              "responsavel_id",
+              "criador_id",
+              "@cli:cliente_id",
+            ),
           );
           if (res.error) throw new Error(res.error.message);
           const agora = new Date();
@@ -1913,14 +1927,16 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         }
 
         if (chave === "sla em dia") {
-          const res = await escopoEq(
-            supabase
-              .from("demandas")
-              .select("id,numero,titulo,status,prazo_sla,created_at")
-              .limit(LIMITE * 2),
-            "responsavel_id",
-            "criador_id",
-            "@cli:cliente_id",
+          const res = await todasAsLinhas(() =>
+            escopoEq(
+              supabase
+                .from("demandas")
+                .select("id,numero,titulo,status,prazo_sla,created_at")
+                .order("id"),
+              "responsavel_id",
+              "criador_id",
+              "@cli:cliente_id",
+            ),
           );
           if (res.error) throw new Error(res.error.message);
           const agora = new Date();
@@ -1955,16 +1971,18 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         }
 
         if (chave === "conclusao de tarefas") {
-          const res = await escopoEq(
-            supabase
-              .from("tasks")
-              .select("id,numero,titulo,status,prazo,created_at")
-              .gte("created_at", deIni)
-              .lte("created_at", ateFim)
-              .limit(LIMITE * 2),
-            "responsavel_id",
-            "criador_id",
-            "@cli:cliente_id",
+          const res = await todasAsLinhas(() =>
+            escopoEq(
+              supabase
+                .from("tasks")
+                .select("id,numero,titulo,status,prazo,created_at")
+                .gte("created_at", deIni)
+                .lte("created_at", ateFim)
+                .order("id"),
+              "responsavel_id",
+              "criador_id",
+              "@cli:cliente_id",
+            ),
           );
           if (res.error) throw new Error(res.error.message);
           const rows = (res.data ?? []) as any[];
@@ -2256,18 +2274,20 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
         }
 
         if (chave === "clientes por etapa" || chave === "clientes_por_etapa") {
-          const res = await escopoEq(
-            supabase
-              .from("clientes")
-              .select("id, nome, documento, created_at, etapa_id, etapas_esteira(nome)")
-              .is("deleted_at", null)
-              .gte("created_at", deIni)
-              .lte("created_at", ateFim)
-              .order("created_at", { ascending: false })
-              .limit(LIMITE),
-            "responsavel_id",
-            "criador_id",
-            "@cli:id",
+          const res = await todasAsLinhas(() =>
+            escopoEq(
+              supabase
+                .from("clientes")
+                .select("id, nome, documento, created_at, etapa_id, etapas_esteira(nome)")
+                .is("deleted_at", null)
+                .gte("created_at", deIni)
+                .lte("created_at", ateFim)
+                .order("created_at", { ascending: false })
+                .order("id"),
+              "responsavel_id",
+              "criador_id",
+              "@cli:id",
+            ),
           );
           if (res.error) throw new Error(res.error.message);
           let rows = (res.data ?? []) as any[];
