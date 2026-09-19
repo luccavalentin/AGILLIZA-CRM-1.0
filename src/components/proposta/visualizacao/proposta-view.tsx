@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
+import { PRODUTOS } from "@/lib/simulacao/schemas";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { PipelineStepper } from "@/components/propostas/pipeline-stepper";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
@@ -182,7 +183,9 @@ export function PropostaView({
         <div className="flex flex-col gap-4 border-b border-border p-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              {p.produto ?? "Operação"}
+              {/* Rótulo legível do produto (antes aparecia o código,
+                  "financiamento_imobiliario"). */}
+              {PRODUTOS.find((x) => x.value === p.produto)?.label ?? p.produto ?? "Operação"}
             </span>
             <h1 className="mt-2 truncate text-2xl font-semibold text-foreground">
               {(() => {

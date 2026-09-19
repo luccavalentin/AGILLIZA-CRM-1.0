@@ -18,6 +18,7 @@ import { iniciais } from "../utils";
 import { BotaoAcao, LinhaResumo } from "./painel-primitivos";
 import { Stepper } from "./painel-stepper";
 import { formatarBRL } from "./painel-utils";
+import { PRODUTOS } from "@/lib/simulacao/schemas";
 
 interface PropostaResumo {
   id: string;
@@ -143,7 +144,14 @@ export function AbaCliente({
               rotulo="Banco"
               valor={data.proposta.banco ? <BancoChip nome={data.proposta.banco} /> : "—"}
             />
-            <LinhaResumo rotulo="Produto" valor={data.proposta.produto ?? "—"} />
+            <LinhaResumo
+              rotulo="Produto"
+              valor={
+                PRODUTOS.find((x) => x.value === data.proposta.produto)?.label ??
+                data.proposta.produto ??
+                "—"
+              }
+            />
             <LinhaResumo rotulo="Valor solicitado" valor={formatarBRL(data.proposta.valor)} />
             <LinhaResumo rotulo="Responsável" valor={data.responsavel_nome ?? "—"} />
             <div className="pt-3">

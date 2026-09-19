@@ -68,7 +68,7 @@ export function ReportView({
   const filtros = parseReportSearch(search);
 
   const escopoFn = useServerFn(getEscopoRelatorios);
-  const { data: escopo } = useQuery({
+  const { data: escopo, isError: escopoFalhou } = useQuery({
     queryKey: ["report-escopo"],
     queryFn: () => escopoFn(),
     staleTime: 5 * 60_000,
@@ -77,6 +77,11 @@ export function ReportView({
   // "Painel geral" deve mostrar toda a operação: se o usuário pode ver geral/equipe
   // e não escolheu um escopo na URL, amplia o escopo automaticamente.
   const escopoInformadoNaUrl = ESCOPOS.includes(search.escopo as Escopo);
+  // Sem escopo na URL, espera saber o escopo do usuário antes de rodar o
+  // relatório: antes rodava com "minha", o escopo chegava, virava "geral" e
+  // rodava tudo de novo — duas consultas de ~3 s por abertura, a primeira
+  // descartada. Se a busca do escopo falhar, roda com o padrão, como antes.
+  const pronto = escopoInformadoNaUrl || escopo !== undefined || escopoFalhou;
   const filtrosEfetivos: ReportFiltros =
     !escopoInformadoNaUrl && escopo
       ? { ...filtros, escopo: escopo.podeGeral ? "geral" : "minha" }
@@ -99,6 +104,7 @@ export function ReportView({
     <GenericReportPage
       codigo={codigo}
       filtros={filtrosEfetivos}
+      pronto={pronto}
       onFiltros={onFiltros}
       podeEquipe={escopo?.podeEquipe ?? false}
       podeGeral={escopo?.podeGeral ?? false}
