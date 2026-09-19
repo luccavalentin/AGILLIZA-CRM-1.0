@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
+  estatisticasAuditoria,
   listarAuditoria,
   opcoesAuditoria,
   type AuditoriaLinha,
@@ -14,7 +15,6 @@ import {
 import {
   chaveDia,
   FILTROS_VAZIOS,
-  isHoje,
   type Filtros,
 } from "@/components/admin/auditoria-page/helpers";
 import { Kpi } from "@/components/admin/auditoria-page/kpi";
@@ -59,26 +59,18 @@ function Pagina() {
     queryFn: () => listarAuditoria({ data: params }),
   });
 
+  // Os números do topo vêm contados do banco: a lista traz só as 200 linhas
+  // mais recentes, e contar em cima delas travava "Eventos no período" em 200.
+  const stats = useQuery({
+    queryKey: ["admin-auditoria-kpis", params],
+    queryFn: () => estatisticasAuditoria({ data: params }),
+  });
+
   const registros = (q.data ?? []) as AuditoriaLinha[];
   const temFiltro = Object.values(aplicados).some((v) => v);
   const qtdFiltros = Object.values(aplicados).filter((v) => v).length;
 
-  const kpis = useMemo(() => {
-    const total = registros.length;
-    const hoje = registros.filter((r) => isHoje(r.created_at)).length;
-    const usuarios = new Set(registros.map((r) => r.user_id).filter(Boolean)).size;
-    const contagem = new Map<string, number>();
-    registros.forEach((r) => contagem.set(r.acao_label, (contagem.get(r.acao_label) ?? 0) + 1));
-    let topAcao = "—";
-    let topN = 0;
-    contagem.forEach((n, k) => {
-      if (n > topN) {
-        topN = n;
-        topAcao = k;
-      }
-    });
-    return { total, hoje, usuarios, topAcao };
-  }, [registros]);
+  const kpis = stats.data ?? { total: 0, hoje: 0, usuarios: 0, topAcao: "—" };
 
   const grupos = useMemo(() => {
     const mapa = new Map<string, AuditoriaLinha[]>();
@@ -116,7 +108,7 @@ function Pagina() {
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {q.isLoading ? (
+        {q.isLoading || stats.isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-[76px] w-full rounded-xl" />
           ))

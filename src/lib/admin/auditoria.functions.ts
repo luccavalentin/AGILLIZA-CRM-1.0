@@ -21,6 +21,13 @@ export interface AuditoriaLinha {
   created_at: string;
 }
 
+export interface EstatisticasAuditoria {
+  total: number;
+  hoje: number;
+  usuarios: number;
+  topAcao: string;
+}
+
 export interface OpcoesAuditoria {
   atores: { id: string; nome: string }[];
   acoes: { valor: string; rotulo: string }[];
@@ -145,19 +152,11 @@ export const opcoesAuditoria = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return { atores: [], acoes: [], entidades: [] };
 
-    const { data: rows } = await supabase
-      .from("admin_audit_logs")
-      .select("acao, entidade, user_id")
-      .eq("correspondente_id", corr)
-      .order("created_at", { ascending: false })
-      .limit(2000);
-
-    const acoes = new Set<string>();
-    const entidades = new Set<string>();
-    (rows ?? []).forEach((r: any) => {
-      if (r.acao) acoes.add(r.acao);
-      if (r.entidade) entidades.add(r.entidade);
-    });
+    // Distintos calculados no banco: `.limit(2000)` parava nas 1.000 linhas
+    // do PostgREST e as ações mais antigas sumiam do filtro.
+    const { data: distintos } = await (supabase as any).rpc("admin_auditoria_opcoes");
+    const acoes = new Set<string>(((distintos?.acoes ?? []) as string[]).filter(Boolean));
+    const entidades = new Set<string>(((distintos?.entidades ?? []) as string[]).filter(Boolean));
 
     // Listar TODOS os usuários do correspondente (ativos + inativos),
     // não apenas os que já apareceram no log.
@@ -173,5 +172,51 @@ export const opcoesAuditoria = createServerFn({ method: "GET" })
       atores,
       acoes: [...acoes].sort().map((valor) => ({ valor, rotulo: rotuloAcao(valor) })),
       entidades: [...entidades].sort(),
+    };
+  });
+
+/**
+ * Números do topo da tela, contados no banco.
+ *
+ * A tela somava em cima das 200 linhas que a lista baixa: "Eventos no
+ * período" empacava em 200 com 5.617 registros no log, e "Usuários
+ * envolvidos"/"Operação mais frequente" saíam da mesma amostra
+ * (QA 19/09/2026). Os filtros são os mesmos da lista.
+ */
+export const estatisticasAuditoria = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        dataInicio: z.string().optional(),
+        dataFim: z.string().optional(),
+        userId: z.string().optional(),
+        acao: z.string().optional(),
+        entidade: z.string().optional(),
+        busca: z.string().optional(),
+      })
+      .optional()
+      .parse(data),
+  )
+  .handler(async ({ data, context }): Promise<EstatisticasAuditoria> => {
+    const { supabase, userId } = context;
+    const vazio: EstatisticasAuditoria = { total: 0, hoje: 0, usuarios: 0, topAcao: "—" };
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) return vazio;
+
+    const { data: linha, error } = await (supabase as any).rpc("admin_auditoria_kpis", {
+      _ini: data?.dataInicio ?? null,
+      _fim: data?.dataFim ?? null,
+      _user: data?.userId ?? null,
+      _acao: data?.acao ?? null,
+      _entidade: data?.entidade ?? null,
+      _busca: data?.busca?.trim() || null,
+    });
+    if (error) throw new Error(error.message);
+    return {
+      total: Number(linha?.total ?? 0),
+      hoje: Number(linha?.hoje ?? 0),
+      usuarios: Number(linha?.usuarios ?? 0),
+      topAcao: linha?.top_acao ? rotuloAcao(String(linha.top_acao)) : "—",
     };
   });
