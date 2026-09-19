@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { LogOut } from "lucide-react";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/Logo";
@@ -118,6 +118,7 @@ export function AppShell({
             className="app-sidebar flex w-[86vw] max-w-xs flex-col border-sidebar-border p-0 text-sidebar-foreground sm:w-80"
           >
             <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+            <SheetDescription className="sr-only">Páginas do sistema.</SheetDescription>
             <div className="flex h-16 shrink-0 items-center border-b border-sidebar-border px-4">
               <Logo variant="light" className="h-7" />
             </div>
