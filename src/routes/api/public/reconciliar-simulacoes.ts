@@ -105,6 +105,22 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
             .in("simulacao_id", ids)
             .eq("status_banco", "aguardando");
         }
+
+        // 4. Banco ENVIADO (tem id na HomeFin) aguardando há mais de 24 h, em
+        // simulação que já saiu de "enviando" (parcial, reaberta em rascunho…).
+        // A regra 3 só olha simulações em "enviando", então esses ficavam
+        // "aguardando" para sempre (16 em 19/09/2026). Banco de rascunho nunca
+        // enviado (sem id na HomeFin) não entra: é só um banco escolhido.
+        await supabaseAdmin
+          .from("simulacao_bancos")
+          .update({
+            status_banco: "erro" as any,
+            mensagem_banco: "Banco não retornou resultado em tempo hábil (24h).",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("status_banco", "aguardando")
+          .not("homefin_id_simulacao_banco", "is", null)
+          .lt("created_at", limite24h_limpeza);
         // --- FIM DA LIMPEZA ---
 
         const { chamarIntegracao } = await import("@/lib/simulacao/homefin.server");
