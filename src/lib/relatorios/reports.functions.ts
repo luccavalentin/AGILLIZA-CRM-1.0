@@ -133,6 +133,54 @@ function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }
   }
 }
 
+/** Teto de linhas por resposta do PostgREST: `.limit(20000)` não passa disso. */
+const LOTE_PGRST = 1000;
+
+/**
+ * Todas as páginas de uma consulta. `montar` devolve um builder NOVO a cada
+ * chamada (o builder guarda o `range`) e com ordem estável — sem ela, os lotes
+ * podem repetir ou pular linhas.
+ */
+async function todasPaginas(
+  montar: () => any,
+  maxLotes = 50,
+): Promise<{ data: any[]; error: { message: string } | null }> {
+  const acumulado: any[] = [];
+  for (let i = 0; i < maxLotes; i++) {
+    const ini = i * LOTE_PGRST;
+    const { data, error } = await montar().range(ini, ini + LOTE_PGRST - 1);
+    if (error) return { data: acumulado, error };
+    const linhas = (data ?? []) as any[];
+    acumulado.push(...linhas);
+    if (linhas.length < LOTE_PGRST) break;
+  }
+  return { data: acumulado, error: null };
+}
+
+/**
+ * `.in(coluna, ids)` em blocos: com milhares de ids a URL passaria do limite.
+ * Cada bloco é paginado; até 6 blocos correm juntos.
+ */
+async function porIdsEmBlocos(
+  ids: string[],
+  montar: (bloco: string[]) => any,
+  tamanho = 150,
+): Promise<{ data: any[]; error: { message: string } | null }> {
+  const blocos: string[][] = [];
+  for (let i = 0; i < ids.length; i += tamanho) blocos.push(ids.slice(i, i + tamanho));
+  const acumulado: any[] = [];
+  for (let i = 0; i < blocos.length; i += 6) {
+    const rodada = await Promise.all(
+      blocos.slice(i, i + 6).map((b) => todasPaginas(() => montar(b))),
+    );
+    for (const r of rodada) {
+      if (r.error) return { data: acumulado, error: r.error };
+      acumulado.push(...r.data);
+    }
+  }
+  return { data: acumulado, error: null };
+}
+
 async function temPii(supabase: any, userId: string): Promise<boolean> {
   const { data: tudo } = await supabase.rpc("has_any_role", {
     _user_id: userId,
@@ -334,16 +382,18 @@ export const runReport = createServerFn({ method: "POST" })
 
       const colsCmp =
         "status,nome_banco,created_at,analista_id,comercial_id,parceiro_id,usuario_responsavel_id";
-      let q = (supabase as any)
-        .from("propostas")
-        .select(colsCmp)
-        .gte("created_at", isoDia(inicio))
-        .order("created_at", { ascending: true })
-        .limit(20000);
-      q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
-      if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
-      q = aplicarFiltrosPessoa(q, filtros, colsCmp, "usuario_responsavel_id");
-      const { data: rows } = await q;
+      const { data: rows } = await todasPaginas(() => {
+        let q = (supabase as any)
+          .from("propostas")
+          .select(colsCmp)
+          .gte("created_at", isoDia(inicio))
+          .order("created_at", { ascending: true })
+          .order("id");
+        q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
+        if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
+        q = aplicarFiltrosPessoa(q, filtros, colsCmp, "usuario_responsavel_id");
+        return q;
+      });
       const props = ((rows ?? []) as any[]).filter((p) => p.status !== "rascunho");
       if (!props.length) return undefined;
 
@@ -406,33 +456,37 @@ export const runReport = createServerFn({ method: "POST" })
     ) {
       const colsCompact = `,${cols.replace(/\s/g, "")},`;
       const temCol = (c: string) => colsCompact.includes(`,${c},`);
-      let q = (supabase as any)
-        .from(table)
-        .select(cols)
-        .gte(dateCol, deIni)
-        .lte(dateCol, ateFim)
-        .order(dateCol, { ascending: false })
-        .limit(5000);
-      // Ignora registros soft-deleted em tabelas que suportam exclusão lógica.
-      const TEM_SOFT_DELETE = new Set(["simulacoes", "propostas", "clientes", "tasks", "demandas"]);
-      if (TEM_SOFT_DELETE.has(table)) q = q.is("deleted_at", null);
-      q = aplicarEscopo(q, filtros, userId, colResp);
-      if (filtros.responsavel && colResp) q = q.eq(colResp, filtros.responsavel);
-      if (filtros.banco && temCol("nome_banco")) q = q.eq("nome_banco", filtros.banco);
-      if (filtros.produto && temCol("produto")) q = q.eq("produto", filtros.produto);
-      if (filtros.valorMin != null && temCol("valor_financiamento"))
-        q = q.gte("valor_financiamento", filtros.valorMin);
-      if (filtros.valorMax != null && temCol("valor_financiamento"))
-        q = q.lte("valor_financiamento", filtros.valorMax);
-      q = aplicarFiltrosPessoa(q, filtros, cols, colResp);
       // Filtro por status: usa a coluna informada ou "status" quando presente no select.
       const statusCol =
         opts?.statusCol === false
           ? undefined
           : (opts?.statusCol ??
             (`,${cols.replace(/\s/g, "")},`.includes(",status,") ? "status" : undefined));
-      if (filtros.status && statusCol) q = q.eq(statusCol, filtros.status);
-      const { data: rows, error } = await q;
+      // Ignora registros soft-deleted em tabelas que suportam exclusão lógica.
+      const TEM_SOFT_DELETE = new Set(["simulacoes", "propostas", "clientes", "tasks", "demandas"]);
+      // Paginado: o `.limit(5000)` anterior parava nas 1.000 linhas do PostgREST.
+      const montar = () => {
+        let q = (supabase as any)
+          .from(table)
+          .select(cols)
+          .gte(dateCol, deIni)
+          .lte(dateCol, ateFim)
+          .order(dateCol, { ascending: false })
+          .order("id");
+        if (TEM_SOFT_DELETE.has(table)) q = q.is("deleted_at", null);
+        q = aplicarEscopo(q, filtros, userId, colResp);
+        if (filtros.responsavel && colResp) q = q.eq(colResp, filtros.responsavel);
+        if (filtros.banco && temCol("nome_banco")) q = q.eq("nome_banco", filtros.banco);
+        if (filtros.produto && temCol("produto")) q = q.eq("produto", filtros.produto);
+        if (filtros.valorMin != null && temCol("valor_financiamento"))
+          q = q.gte("valor_financiamento", filtros.valorMin);
+        if (filtros.valorMax != null && temCol("valor_financiamento"))
+          q = q.lte("valor_financiamento", filtros.valorMax);
+        q = aplicarFiltrosPessoa(q, filtros, cols, colResp);
+        if (filtros.status && statusCol) q = q.eq(statusCol, filtros.status);
+        return q;
+      };
+      const { data: rows, error } = await todasPaginas(montar);
       if (error) throw new Error(error.message);
       const buscaLc = [filtros.busca, filtros.cliente]
         .filter(Boolean)
@@ -457,9 +511,13 @@ export const runReport = createServerFn({ method: "POST" })
             .select("nome_banco")
             .eq("ativo", true)
             .order("nome_banco", { ascending: true }),
-          supabase.from("simulacao_bancos").select("nome_banco").limit(20000),
-          supabase.from("propostas").select("produto").limit(20000),
-          supabase.from("simulacoes").select("produto").limit(20000),
+          // Paginadas: `.limit(20000)` parava em 1.000 linhas e as opções
+          // de banco/produto vinham só das primeiras.
+          todasPaginas(() =>
+            (supabase as any).from("simulacao_bancos").select("nome_banco").order("id"),
+          ),
+          todasPaginas(() => (supabase as any).from("propostas").select("produto").order("id")),
+          todasPaginas(() => (supabase as any).from("simulacoes").select("produto").order("id")),
         ]);
       const bancos = [
         ...new Set(
@@ -504,11 +562,16 @@ export const runReport = createServerFn({ method: "POST" })
       if (!sims.length) return sims;
 
       const ids = sims.map((s) => s.id).filter(Boolean);
-      const { data: bancosRows } = await supabase
-        .from("simulacao_bancos")
-        .select("simulacao_id,nome_banco,status_banco,valor_financiamento_max,valor_parcela")
-        .in("simulacao_id", ids)
-        .limit(20000);
+      // Em blocos de ids e paginado: com o `.limit(20000)` só vinham 1.000
+      // bancos, e a URL com milhares de ids passaria do limite.
+      const { data: bancosLista, error: bancosErro } = await porIdsEmBlocos(ids, (bloco) =>
+        (supabase as any)
+          .from("simulacao_bancos")
+          .select("simulacao_id,nome_banco,status_banco,valor_financiamento_max,valor_parcela")
+          .in("simulacao_id", bloco)
+          .order("id"),
+      );
+      const bancosRows = bancosErro ? null : bancosLista;
       if (bancosRows === null) {
         const { data: bancoTeste, error: bancoError } = await supabase
           .from("simulacao_bancos")
@@ -1077,38 +1140,43 @@ export const runReport = createServerFn({ method: "POST" })
         ].join(",");
 
         // Busca por período em created_at OU em contrato_emitido_em (para contratos emitidos no período).
-        let q = (supabase as any)
-          .from("propostas")
-          .select(cols)
-          .or(
-            `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
-          )
-          .order("created_at", { ascending: false })
-          .limit(10000);
-        q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
-        if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
-        if (filtros.produto) q = q.eq("produto", filtros.produto);
-        if (filtros.status && !statusSimulacao) q = q.eq("status", filtros.status);
         // Banco é filtrado após enriquecer com proposta_bancos; aqui removemos só o filtro de banco.
         const filtrosSemBanco = {
           ...filtros,
           banco: undefined,
           bancos: undefined,
         } as ReportFiltros;
-        q = aplicarFiltrosPessoa(q, filtrosSemBanco, cols, "usuario_responsavel_id");
-        const { data: rowsRaw, error } = await q;
+        // Paginado: `.limit(10000)` parava nas 1.000 linhas do PostgREST.
+        const { data: rowsRaw, error } = await todasPaginas(() => {
+          let q = (supabase as any)
+            .from("propostas")
+            .select(cols)
+            .or(
+              `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
+            )
+            .order("created_at", { ascending: false })
+            .order("id");
+          q = aplicarEscopo(q, filtros, userId, "usuario_responsavel_id");
+          if (filtros.responsavel) q = q.eq("usuario_responsavel_id", filtros.responsavel);
+          if (filtros.produto) q = q.eq("produto", filtros.produto);
+          if (filtros.status && !statusSimulacao) q = q.eq("status", filtros.status);
+          q = aplicarFiltrosPessoa(q, filtrosSemBanco, cols, "usuario_responsavel_id");
+          return q;
+        });
         if (error) throw new Error(error.message);
         const propsBase = (rowsRaw ?? []) as any[];
         if (!propsBase.length) return propsBase;
 
         const ids = propsBase.map((p) => p.id).filter(Boolean);
-        const { data: bancosRows, error: bancosError } = await supabase
-          .from("proposta_bancos")
-          .select(
-            "proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela",
-          )
-          .in("proposta_id", ids)
-          .limit(20000);
+        const { data: bancosRows, error: bancosError } = await porIdsEmBlocos(ids, (bloco) =>
+          (supabase as any)
+            .from("proposta_bancos")
+            .select(
+              "proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela",
+            )
+            .in("proposta_id", bloco)
+            .order("id"),
+        );
         if (bancosError) throw new Error(bancosError.message);
 
         const porProposta = new Map<string, any[]>();
@@ -1186,18 +1254,20 @@ export const runReport = createServerFn({ method: "POST" })
       }
 
       async function carregarContratosGerenciais() {
-        let q = (supabase as any)
-          .from("clientes")
-          .select("id,nome,documento,responsavel_id,contrato_emitido_em,imovel_valor")
-          .is("deleted_at", null)
-          .not("contrato_emitido_em", "is", null)
-          .gte("contrato_emitido_em", de)
-          .lte("contrato_emitido_em", ate)
-          .order("contrato_emitido_em", { ascending: false })
-          .limit(10000);
-        q = aplicarEscopo(q, filtros, userId, "responsavel_id");
-        if (filtros.responsavel) q = q.eq("responsavel_id", filtros.responsavel);
-        const { data: clientesRaw, error } = await q;
+        const { data: clientesRaw, error } = await todasPaginas(() => {
+          let q = (supabase as any)
+            .from("clientes")
+            .select("id,nome,documento,responsavel_id,contrato_emitido_em,imovel_valor")
+            .is("deleted_at", null)
+            .not("contrato_emitido_em", "is", null)
+            .gte("contrato_emitido_em", de)
+            .lte("contrato_emitido_em", ate)
+            .order("contrato_emitido_em", { ascending: false })
+            .order("id");
+          q = aplicarEscopo(q, filtros, userId, "responsavel_id");
+          if (filtros.responsavel) q = q.eq("responsavel_id", filtros.responsavel);
+          return q;
+        });
         if (error) throw new Error(error.message);
         const clientes = (clientesRaw ?? []) as any[];
         if (!clientes.length) return [] as any[];
@@ -1225,25 +1295,33 @@ export const runReport = createServerFn({ method: "POST" })
           "created_at",
           "contrato_emitido_em",
         ].join(",");
-        const { data: propsRaw, error: propsError } = await supabase
-          .from("propostas")
-          .select(propCols)
-          .in("cliente_id", clienteIds)
-          .order("created_at", { ascending: false })
-          .limit(10000);
+        const { data: propsRaw, error: propsError } = await porIdsEmBlocos(clienteIds, (bloco) =>
+          (supabase as any)
+            .from("propostas")
+            .select(propCols)
+            .in("cliente_id", bloco)
+            .order("created_at", { ascending: false })
+            .order("id"),
+        );
         if (propsError) throw new Error(propsError.message);
 
-        const propsBase = (propsRaw ?? []) as any[];
+        // Os blocos vêm cada um em ordem; reordena o conjunto (mais recente
+        // primeiro), como a consulta única fazia.
+        const propsBase = ((propsRaw ?? []) as any[]).sort((a, b) =>
+          String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")),
+        );
         const propIds = propsBase.map((p) => p.id).filter(Boolean);
         const porPropostaBanco = new Map<string, any[]>();
         if (propIds.length) {
-          const { data: bancosRows, error: bancosError } = await supabase
-            .from("proposta_bancos")
-            .select(
-              "proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela",
-            )
-            .in("proposta_id", propIds)
-            .limit(20000);
+          const { data: bancosRows, error: bancosError } = await porIdsEmBlocos(propIds, (bloco) =>
+            (supabase as any)
+              .from("proposta_bancos")
+              .select(
+                "proposta_id,nome_banco,numero_proposta_banco,status_banco,valor_financiamento_max,valor_parcela",
+              )
+              .in("proposta_id", bloco)
+              .order("id"),
+          );
           if (bancosError) throw new Error(bancosError.message);
           ((bancosRows ?? []) as any[]).forEach((b) => {
             const k = String(b.proposta_id ?? "");
