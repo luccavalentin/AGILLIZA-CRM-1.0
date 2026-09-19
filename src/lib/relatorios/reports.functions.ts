@@ -893,7 +893,15 @@ export const runReport = createServerFn({ method: "POST" })
           "created_at",
           "usuario_responsavel_id",
         ),
-        fetchAll("contas", "valor_previsto,usuario_id", "data_vencimento", "usuario_id"),
+        // A tabela "contas" não existe no banco (conferido em 19/09/2026): a
+        // consulta falhava e derrubava o relatório comercial inteiro dentro do
+        // Promise.all. Sem a tabela, repasse é zero — o resto do relatório abre.
+        fetchAll("contas", "valor_previsto,usuario_id", "data_vencimento", "usuario_id").catch(
+          (e: unknown) => {
+            console.error("[relComerciais] repasses indisponíveis:", e);
+            return [] as any[];
+          },
+        ),
         listarOpcoesOperacionais(),
       ]);
       const somenteSimulacoes = statusEhFiltroSimulacao(filtros.status);
@@ -2718,41 +2726,48 @@ export const runReport = createServerFn({ method: "POST" })
 
     async function relFinanceiro(): Promise<ReportResult> {
       const filtrarStatus = (q: any) => (filtros.status ? q.eq("status", filtros.status) : q);
+      // Paginadas (o `.limit(5000)` parava em 1.000 linhas); ordem estável por id.
       const [pag, rec, repasses, comUsr] = await Promise.all([
-        filtrarStatus(
-          supabase
-            .from("financial_payables")
-            .select("valor,valor_pago,status,vencimento,descricao,created_at,data_pagamento")
+        todasPaginas(() =>
+          filtrarStatus(
+            supabase
+              .from("financial_payables")
+              .select("valor,valor_pago,status,vencimento,descricao,created_at,data_pagamento")
+              .gte("created_at", deIni)
+              .lte("created_at", ateFim)
+              .order("id"),
+          ),
+        ).then((r) => r.data ?? []),
+        todasPaginas(() =>
+          filtrarStatus(
+            supabase
+              .from("financial_receivables")
+              .select("valor,valor_recebido,status,vencimento,descricao,created_at,data_pagamento")
+              .gte("created_at", deIni)
+              .lte("created_at", ateFim)
+              .order("id"),
+          ),
+        ).then((r) => r.data ?? []),
+        todasPaginas(() =>
+          (supabase as any)
+            .from("comissoes")
+            .select(
+              "valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,nome_banco,created_at",
+            )
             .gte("created_at", deIni)
             .lte("created_at", ateFim)
-            .limit(5000),
-        ).then((r: any) => r.data ?? []),
-        filtrarStatus(
-          supabase
-            .from("financial_receivables")
-            .select("valor,valor_recebido,status,vencimento,descricao,created_at,data_pagamento")
+            .order("id"),
+        ).then((r) => r.data ?? []),
+        todasPaginas(() =>
+          (supabase as any)
+            .from("comissoes_usuario")
+            .select(
+              "valor_comissao,valor_base,percentual,status,usuario_id,tipo_vinculo,banco_nome,numero_proposta,created_at",
+            )
             .gte("created_at", deIni)
             .lte("created_at", ateFim)
-            .limit(5000),
-        ).then((r: any) => r.data ?? []),
-        (supabase as any)
-          .from("comissoes")
-          .select(
-            "valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,nome_banco,created_at",
-          )
-          .gte("created_at", deIni)
-          .lte("created_at", ateFim)
-          .limit(5000)
-          .then((r: any) => r.data ?? []),
-        (supabase as any)
-          .from("comissoes_usuario")
-          .select(
-            "valor_comissao,valor_base,percentual,status,usuario_id,tipo_vinculo,banco_nome,numero_proposta,created_at",
-          )
-          .gte("created_at", deIni)
-          .lte("created_at", ateFim)
-          .limit(5000)
-          .then((r: any) => r.data ?? []),
+            .order("id"),
+        ).then((r) => r.data ?? []),
       ]);
       const hoje = new Date();
       const hojeStr = hoje.toISOString().slice(0, 10);
@@ -3123,16 +3138,19 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function relComissoes(): Promise<ReportResult> {
-      let cq = (supabase as any)
-        .from("comissoes")
-        .select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,created_at")
-        .gte("created_at", deIni)
-        .lte("created_at", ateFim)
-        .limit(5000);
-      cq = aplicarEscopo(cq, filtros, userId, "usuario_responsavel_id");
-      if (filtros.responsavel) cq = cq.eq("usuario_responsavel_id", filtros.responsavel);
-      if (filtros.status) cq = cq.eq("status", filtros.status);
-      const coms = await cq.then((r: any) => r.data ?? []);
+      // Paginada (o `.limit(5000)` parava em 1.000 linhas).
+      const coms = await todasPaginas(() => {
+        let cq = (supabase as any)
+          .from("comissoes")
+          .select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,created_at")
+          .gte("created_at", deIni)
+          .lte("created_at", ateFim)
+          .order("id");
+        cq = aplicarEscopo(cq, filtros, userId, "usuario_responsavel_id");
+        if (filtros.responsavel) cq = cq.eq("usuario_responsavel_id", filtros.responsavel);
+        if (filtros.status) cq = cq.eq("status", filtros.status);
+        return cq;
+      }).then((r) => r.data ?? []);
       const prevista = coms.reduce((s: number, c: any) => s + (c.valor_bruto ?? 0), 0);
       const paga = coms
         .filter((c: any) => c.status === "paga_parceiro" || c.status === "encerrada")

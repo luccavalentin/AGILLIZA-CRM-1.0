@@ -1117,17 +1117,33 @@ export const obterFluxoCaixa = createServerFn({ method: "GET" })
   .handler(async ({ context, data }): Promise<FluxoPonto[]> => {
     const { supabase } = context;
     const abertos = ["aberta", "parcial"] as any;
+    // Em lotes de 1.000 (teto do PostgREST): o `.limit(50000)` devolvia só as
+    // primeiras 1.000 contas abertas e o fluxo de caixa sairia incompleto.
+    const todas = async (montar: () => any) => {
+      const linhas: any[] = [];
+      for (let ini = 0; ini < 100_000; ini += 1000) {
+        const { data: lote, error } = await montar().range(ini, ini + 999);
+        if (error) return { data: null, error };
+        linhas.push(...((lote ?? []) as any[]));
+        if (!lote || lote.length < 1000) break;
+      }
+      return { data: linhas, error: null };
+    };
     const [rec, pay] = await Promise.all([
-      supabase
-        .from("financial_receivables")
-        .select("valor, valor_pago, vencimento")
-        .in("status", abertos)
-        .limit(50000),
-      supabase
-        .from("financial_payables")
-        .select("valor, valor_pago, vencimento")
-        .in("status", abertos)
-        .limit(50000),
+      todas(() =>
+        supabase
+          .from("financial_receivables")
+          .select("valor, valor_pago, vencimento")
+          .in("status", abertos)
+          .order("id"),
+      ),
+      todas(() =>
+        supabase
+          .from("financial_payables")
+          .select("valor, valor_pago, vencimento")
+          .in("status", abertos)
+          .order("id"),
+      ),
     ]);
     if (rec.error) throw new Error(`Falha ao carregar fluxo de caixa: ${rec.error.message}`);
     if (pay.error) throw new Error(`Falha ao carregar fluxo de caixa: ${pay.error.message}`);
