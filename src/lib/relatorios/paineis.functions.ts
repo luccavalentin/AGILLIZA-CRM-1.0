@@ -214,18 +214,20 @@ async function carregarContratosCliente(
   de: string,
   ate: string,
 ) {
-  const cliRes = await escopoEq(
-    supabase
-      .from("clientes")
-      .select("id,contrato_emitido_em,imovel_valor")
-      .is("deleted_at", null)
-      .not("contrato_emitido_em", "is", null)
-      .gte("contrato_emitido_em", de)
-      .lte("contrato_emitido_em", ate)
-      .limit(5000),
-    "responsavel_id",
-    "criador_id",
-    "@cli:id",
+  const cliRes = await todasAsLinhas(() =>
+    escopoEq(
+      supabase
+        .from("clientes")
+        .select("id,contrato_emitido_em,imovel_valor")
+        .is("deleted_at", null)
+        .not("contrato_emitido_em", "is", null)
+        .gte("contrato_emitido_em", de)
+        .lte("contrato_emitido_em", ate)
+        .order("id"),
+      "responsavel_id",
+      "criador_id",
+      "@cli:id",
+    ),
   );
   if (cliRes.error) throw new Error(cliRes.error.message);
   const cliRowsAll = (cliRes.data ?? []) as any[];
@@ -237,16 +239,18 @@ async function carregarContratosCliente(
   // uma movimentação manual da esteira (que também popula contrato_emitido_em)
   // conte como contrato no painel sem que exista contrato real.
   const contratoStatus = Array.from(CONTRATO_STATUS) as string[];
-  const propRes = await supabase
-    .from("propostas")
-    .select("cliente_id,status")
-    .in(
-      "cliente_id",
-      cliRowsAll.map((c) => c.id),
-    )
-    .in("status", contratoStatus as any)
-    .is("deleted_at", null)
-    .limit(5000);
+  const propRes = await todasAsLinhas(() =>
+    supabase
+      .from("propostas")
+      .select("cliente_id,status")
+      .in(
+        "cliente_id",
+        cliRowsAll.map((c) => c.id),
+      )
+      .in("status", contratoStatus as any)
+      .is("deleted_at", null)
+      .order("id"),
+  );
   if (propRes.error) throw new Error(propRes.error.message);
   const clientesComContratoReal = new Set<string>(
     (propRes.data ?? []).map((p: any) => p.cliente_id),
@@ -258,12 +262,14 @@ async function carregarContratosCliente(
   const semValor = cliRows.filter((c) => !c.imovel_valor).map((c) => c.id);
   const simMap = new Map<string, number>();
   if (semValor.length) {
-    const simRes = await supabase
-      .from("simulacoes")
-      .select("cliente_id,valor_financiamento,valor_imovel")
-      .in("cliente_id", semValor)
-      .is("deleted_at", null)
-      .limit(5000);
+    const simRes = await todasAsLinhas(() =>
+      supabase
+        .from("simulacoes")
+        .select("cliente_id,valor_financiamento,valor_imovel")
+        .in("cliente_id", semValor)
+        .is("deleted_at", null)
+        .order("id"),
+    );
     for (const s of (simRes.data ?? []) as any[]) {
       const v = Number(s.valor_financiamento ?? s.valor_imovel ?? 0) || 0;
       if (v > (simMap.get(s.cliente_id) ?? 0)) simMap.set(s.cliente_id, v);
@@ -314,29 +320,33 @@ async function carregarAnterior(
   const deIni = inicioDiaBR(de);
   const ateFim = fimDiaBR(ate);
   const [sims, props, contratosInfo] = await Promise.all([
-    escopoEq(
-      supabase
-        .from("simulacoes")
-        .select("status,valor_financiamento,created_at")
-        .is("deleted_at", null)
-        .gte("created_at", deIni)
-        .lte("created_at", ateFim)
-        .limit(5000),
-      "usuario_responsavel_id",
-      "usuario_criador_id",
-      "@cli:cliente_id",
+    todasAsLinhas(() =>
+      escopoEq(
+        supabase
+          .from("simulacoes")
+          .select("status,valor_financiamento,created_at")
+          .is("deleted_at", null)
+          .gte("created_at", deIni)
+          .lte("created_at", ateFim)
+          .order("id"),
+        "usuario_responsavel_id",
+        "usuario_criador_id",
+        "@cli:cliente_id",
+      ),
     ),
-    escopoEq(
-      supabase
-        .from("propostas")
-        .select("status,created_at")
-        .is("deleted_at", null)
-        .gte("created_at", deIni)
-        .lte("created_at", ateFim)
-        .limit(5000),
-      "usuario_responsavel_id",
-      "usuario_criador_id",
-      "@cli:cliente_id",
+    todasAsLinhas(() =>
+      escopoEq(
+        supabase
+          .from("propostas")
+          .select("status,created_at")
+          .is("deleted_at", null)
+          .gte("created_at", deIni)
+          .lte("created_at", ateFim)
+          .order("id"),
+        "usuario_responsavel_id",
+        "usuario_criador_id",
+        "@cli:cliente_id",
+      ),
     ),
     carregarContratosCliente(supabase, escopoEq, de, ate),
   ]);
@@ -404,9 +414,13 @@ async function todasAsLinhas<T = any>(
  */
 async function carregarPipelinePainel(supabase: any) {
   const [pipe, etapas, donos] = await Promise.all([
-    supabase.from("cliente_pipeline").select("cliente_id,stage_id").limit(5000),
+    todasAsLinhas(() =>
+      supabase.from("cliente_pipeline").select("cliente_id,stage_id").order("cliente_id"),
+    ),
     supabase.from("pipeline_stages").select("id,codigo,nome,ordem"),
-    supabase.from("clientes").select("id,responsavel_id,criador_id").limit(5000),
+    todasAsLinhas(() =>
+      supabase.from("clientes").select("id,responsavel_id,criador_id").order("id"),
+    ),
   ]);
   const erro = pipe.error ?? etapas.error ?? donos.error;
   if (erro) return { data: null, error: erro };
@@ -483,7 +497,8 @@ export const getPanelDados = createServerFn({ method: "POST" })
                   )
                   .is("deleted_at", null)
                   .gte("created_at", deIni)
-                  .lte("created_at", ateFim),
+                  .lte("created_at", ateFim)
+                  .order("id"),
                 "usuario_responsavel_id",
                 "usuario_criador_id",
                 "@cli:cliente_id",
@@ -499,7 +514,8 @@ export const getPanelDados = createServerFn({ method: "POST" })
                   .is("deleted_at", null)
                   .or(
                     `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
-                  ),
+                  )
+                  .order("id"),
                 "usuario_responsavel_id",
                 "usuario_criador_id",
                 "@cli:cliente_id",
@@ -507,45 +523,55 @@ export const getPanelDados = createServerFn({ method: "POST" })
             ),
             carregarContratosCliente(supabase, escopoEq, de, ate),
             carregarAnterior(supabase, escopoEq, de, ate),
-            escopoEq(
-              supabase
-                .from("clientes")
-                .select("id,created_at,contrato_emitido_em,responsavel_id")
-                .is("deleted_at", null)
-                .gte("created_at", deIni)
-                .lte("created_at", ateFim)
-                .limit(5000),
-              "responsavel_id",
-              "criador_id",
-              "@cli:id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase
+                  .from("clientes")
+                  .select("id,created_at,contrato_emitido_em,responsavel_id")
+                  .is("deleted_at", null)
+                  .gte("created_at", deIni)
+                  .lte("created_at", ateFim)
+                  .order("id"),
+                "responsavel_id",
+                "criador_id",
+                "@cli:id",
+              ),
             ),
-            escopoEq(
-              supabase.from("demandas").select("status,prazo_sla").limit(5000),
-              "responsavel_id",
-              "criador_id",
-              "@cli:cliente_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase.from("demandas").select("status,prazo_sla").order("id"),
+                "responsavel_id",
+                "criador_id",
+                "@cli:cliente_id",
+              ),
             ),
-            escopoEq(
-              supabase.from("tasks").select("status,prazo").limit(5000),
-              "responsavel_id",
-              "criador_id",
-              "@cli:cliente_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase.from("tasks").select("status,prazo").order("id"),
+                "responsavel_id",
+                "criador_id",
+                "@cli:cliente_id",
+              ),
             ),
-            escopoEq(
-              supabase
-                .from("financial_receivables")
-                .select("valor,valor_pago,status,vencimento,criador_id")
-                .in("status", ["aberta", "parcial"] as any)
-                .limit(5000),
-              "criador_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase
+                  .from("financial_receivables")
+                  .select("valor,valor_pago,status,vencimento,criador_id")
+                  .in("status", ["aberta", "parcial"] as any)
+                  .order("id"),
+                "criador_id",
+              ),
             ),
-            escopoEq(
-              supabase
-                .from("financial_payables")
-                .select("valor,valor_pago,status,vencimento,criador_id")
-                .in("status", ["aberta", "parcial"] as any)
-                .limit(5000),
-              "criador_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase
+                  .from("financial_payables")
+                  .select("valor,valor_pago,status,vencimento,criador_id")
+                  .in("status", ["aberta", "parcial"] as any)
+                  .order("id"),
+                "criador_id",
+              ),
             ),
 
             // Sem joins embutidos: com `clientes!inner` e `pipeline_stages(...)`
@@ -951,54 +977,62 @@ export const getPanelDados = createServerFn({ method: "POST" })
       if (data.modulo === "operacional") {
         try {
           const [sims, props, dem, tk, contratosInfo, ant] = await Promise.all([
-            escopoEq(
-              supabase
-                .from("simulacoes")
-                .select("id,status,valor_financiamento,created_at")
-                .is("deleted_at", null)
-                .gte("created_at", deIni)
-                .lte("created_at", ateFim)
-                .limit(5000),
-              "usuario_responsavel_id",
-              "usuario_criador_id",
-              "@cli:cliente_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase
+                  .from("simulacoes")
+                  .select("id,status,valor_financiamento,created_at")
+                  .is("deleted_at", null)
+                  .gte("created_at", deIni)
+                  .lte("created_at", ateFim)
+                  .order("id"),
+                "usuario_responsavel_id",
+                "usuario_criador_id",
+                "@cli:cliente_id",
+              ),
             ),
-            escopoEq(
-              supabase
-                .from("propostas")
-                .select(
-                  "status,simulacao_id,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
-                )
-                .is("deleted_at", null)
-                .or(
-                  `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
-                )
-                .limit(5000),
-              "usuario_responsavel_id",
-              "usuario_criador_id",
-              "@cli:cliente_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase
+                  .from("propostas")
+                  .select(
+                    "status,simulacao_id,valor_financiamento_aprovado,valor_financiamento,nome_banco,created_at,contrato_emitido_em",
+                  )
+                  .is("deleted_at", null)
+                  .or(
+                    `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
+                  )
+                  .order("id"),
+                "usuario_responsavel_id",
+                "usuario_criador_id",
+                "@cli:cliente_id",
+              ),
             ),
-            escopoEq(
-              supabase
-                .from("demandas")
-                .select("status,prazo_sla,titulo,id")
-                .gte("created_at", deIni)
-                .lte("created_at", ateFim)
-                .limit(5000),
-              "responsavel_id",
-              "criador_id",
-              "@cli:cliente_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase
+                  .from("demandas")
+                  .select("status,prazo_sla,titulo,id")
+                  .gte("created_at", deIni)
+                  .lte("created_at", ateFim)
+                  .order("id"),
+                "responsavel_id",
+                "criador_id",
+                "@cli:cliente_id",
+              ),
             ),
-            escopoEq(
-              supabase
-                .from("tasks")
-                .select("status,prazo,id")
-                .gte("created_at", deIni)
-                .lte("created_at", ateFim)
-                .limit(5000),
-              "responsavel_id",
-              "criador_id",
-              "@cli:cliente_id",
+            todasAsLinhas(() =>
+              escopoEq(
+                supabase
+                  .from("tasks")
+                  .select("status,prazo,id")
+                  .gte("created_at", deIni)
+                  .lte("created_at", ateFim)
+                  .order("id"),
+                "responsavel_id",
+                "criador_id",
+                "@cli:cliente_id",
+              ),
             ),
             carregarContratosCliente(supabase, escopoEq, de, ate),
             carregarAnterior(supabase, escopoEq, de, ate),
