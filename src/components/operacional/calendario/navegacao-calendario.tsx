@@ -117,6 +117,10 @@ export function NavegacaoCalendario({
           variant="outline"
           size="icon"
           className="h-8 w-8"
+          // Sem nome acessível, as setas ficavam mudas para leitor de tela
+          // (QA 19/09/2026).
+          aria-label={`Anterior (${ROTULO[visao].toLowerCase()})`}
+          title={`Anterior (${ROTULO[visao].toLowerCase()})`}
           onClick={() => onChange(passo(ref, visao, -1))}
         >
           <ChevronLeft className="h-4 w-4" />
@@ -128,6 +132,8 @@ export function NavegacaoCalendario({
           variant="outline"
           size="icon"
           className="h-8 w-8"
+          aria-label={`Próximo (${ROTULO[visao].toLowerCase()})`}
+          title={`Próximo (${ROTULO[visao].toLowerCase()})`}
           onClick={() => onChange(passo(ref, visao, 1))}
         >
           <ChevronRight className="h-4 w-4" />

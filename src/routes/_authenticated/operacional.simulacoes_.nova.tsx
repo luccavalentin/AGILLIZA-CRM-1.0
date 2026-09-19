@@ -245,10 +245,18 @@ function Pagina() {
               className="h-12 w-full max-w-xs gap-2 rounded-2xl bg-primary text-sm font-bold shadow-lg ring-1 ring-primary/20 transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98] md:w-64"
               disabled={!valido}
               onClick={simularRapida}
+              // Botão desabilitado sem explicação deixava o clique sem
+              // resposta nenhuma; a dica diz o que falta (QA 19/09/2026).
+              title={valido ? undefined : "Preencha os campos obrigatórios (*) para simular"}
             >
               Simular
             </Button>
           </div>
+          {!valido && (
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Preencha os campos obrigatórios (*) para simular.
+            </p>
+          )}
         </div>
 
         {mostrarRapida && (
