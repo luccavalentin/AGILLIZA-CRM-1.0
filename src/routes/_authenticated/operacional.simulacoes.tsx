@@ -74,8 +74,10 @@ function Pagina() {
   const [pagina, setPagina] = useState(1);
   const porPagina = 20;
 
-  // Debounce manual para não sobrecarregar o servidor em cada tecla
-  useMemo(() => {
+  // Debounce para não sobrecarregar o servidor em cada tecla. Era `useMemo`,
+  // que não roda a limpeza: cada tecla deixava um timer vivo e a lista (que é
+  // pesada) era buscada uma vez por letra digitada.
+  useEffect(() => {
     const timer = setTimeout(() => {
       setBusca(q);
     }, 400);
@@ -414,7 +416,9 @@ function Pagina() {
       bancosUnicos.add(String(b.nome_banco ?? b.nome ?? b.banco_nome ?? "Banco"));
     });
   });
-  const kpiBancos = bancosUnicos.size;
+  // Do filtro inteiro (servidor); os bancos da página ficam só como reserva.
+  const cotacoesFiltro = data?.stats?.cotacoesPorBanco;
+  const kpiBancos = cotacoesFiltro ? Object.keys(cotacoesFiltro).length : bancosUnicos.size;
   const prazos = itens.map((s) => Number(s.prazo)).filter((n) => n > 0);
   const kpiPrazo =
     data?.stats?.prazoMedio ??
@@ -426,7 +430,7 @@ function Pagina() {
     acc[st] = (acc[st] ?? 0) + 1;
     return acc;
   }, {});
-  const porBanco = itens.reduce<Record<string, number>>((acc, s) => {
+  const porBanco = cotacoesFiltro ?? itens.reduce<Record<string, number>>((acc, s) => {
     (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
       const nome = b.nome_banco ?? b.nome ?? b.banco_nome ?? "Banco";
       acc[nome] = (acc[nome] ?? 0) + 1;
@@ -696,7 +700,12 @@ function Pagina() {
       {/* Barra de filtros */}
       <FiltrosLista
         escopo={escopo}
-        setEscopo={setEscopo}
+        // Todo filtro volta para a página 1 (antes só a busca voltava: na
+        // página 3, trocar o filtro podia mostrar a lista vazia).
+        setEscopo={(v) => {
+          setEscopo(v);
+          setPagina(1);
+        }}
         q={q}
         setQ={(val) => {
           setQ(val);
@@ -707,12 +716,21 @@ function Pagina() {
           setPagina(1);
         }}
         responsavel={responsavel}
-        setResponsavel={setResponsavel}
+        setResponsavel={(v) => {
+          setResponsavel(v);
+          setPagina(1);
+        }}
         colegas={colegas}
         desde={desde}
-        setDesde={setDesde}
+        setDesde={(v) => {
+          setDesde(v);
+          setPagina(1);
+        }}
         ate={ate}
-        setAte={setAte}
+        setAte={(v) => {
+          setAte(v);
+          setPagina(1);
+        }}
         onLimpar={() => {
           setDesde("");
           setAte("");
@@ -720,7 +738,10 @@ function Pagina() {
           setPagina(1);
         }}
         verExcluidas={verExcluidas}
-        toggleExcluidas={() => setVerExcluidas((v) => !v)}
+        toggleExcluidas={() => {
+          setVerExcluidas((v) => !v);
+          setPagina(1);
+        }}
       />
 
       {/* Enquanto houver banco sem retorno, o cron reenvia sozinho; a tela
