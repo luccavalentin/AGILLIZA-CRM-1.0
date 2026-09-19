@@ -182,41 +182,20 @@ export const estatisticasClientes = createServerFn({ method: "GET" })
       em_andamento: number;
       cadastro_completo: number;
     }> => {
-      const { supabase, userId } = context;
-      let orMinhas: string | null = null;
-      if (data?.escopo === "minhas") {
-        const { data: vinc } = await supabase
-          .from("cliente_parceiros")
-          .select("cliente_id")
-          .eq("parceiro_id", userId);
-        const ids = Array.from(new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)));
-        const partes = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
-        if (ids.length) partes.push(`id.in.(${ids.join(",")})`);
-        orMinhas = partes.join(",");
-      }
-      let q = supabase
-        .from("clientes")
-        .select("id, portal_acesso_ativo, cliente_pipeline(pipeline_stages(codigo, ordem))", {
-          count: "exact",
-        })
-        .eq("ativo", true);
-      if (orMinhas) q = q.or(orMinhas);
-      const { data: rows, count } = await q.limit(10000);
-      const list = (rows ?? []) as any[];
-      const portal_ativo = list.filter((r) => r.portal_acesso_ativo).length;
-      const em_andamento = list.filter((r) => {
-        const cod = r.cliente_pipeline?.pipeline_stages?.codigo;
-        return cod && cod !== "cadastro_basico" && cod !== "contrato_emitido";
-      }).length;
-      const cadastro_completo = list.filter((r) => {
-        const ord = r.cliente_pipeline?.pipeline_stages?.ordem ?? 0;
-        return ord >= 4;
-      }).length;
+      const { supabase } = context;
+      // Contagem feita no banco (crm_estatisticas_clientes, mesma regra). Antes
+      // os clientes vinham para cá e eram contados aqui, mas o PostgREST
+      // devolve no máximo 1.000 linhas: com mais clientes que isso, os cards
+      // "Portal ativo", "Em andamento" e "Cadastro completo" saíam cortados.
+      const { data: r, error } = await (supabase as any).rpc("crm_estatisticas_clientes", {
+        _somente_minhas: data?.escopo === "minhas",
+      });
+      if (error) throw new Error(error.message);
       return {
-        total: count ?? list.length,
-        portal_ativo,
-        em_andamento,
-        cadastro_completo,
+        total: Number(r?.total ?? 0),
+        portal_ativo: Number(r?.portal_ativo ?? 0),
+        em_andamento: Number(r?.em_andamento ?? 0),
+        cadastro_completo: Number(r?.cadastro_completo ?? 0),
       };
     },
   );
@@ -670,57 +649,30 @@ export const listarPainel = createServerFn({ method: "GET" })
         .parse(d) ?? {},
   )
   .handler(async ({ data, context }): Promise<PainelStage[]> => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
     const desde = data?.desde ? new Date(data.desde).getTime() : null;
     const ate = data?.ate ? new Date(`${data.ate}T23:59:59.999`).getTime() : null;
     const soMinhas = data?.escopo === "minhas";
 
-    // Etapas + (quando "minhas") ids de clientes onde eu sou parceiro (imob/corretor).
-    const [stagesRes, parceirosVinc] = await Promise.all([
+    // A esteira vem montada do banco (crm_painel_clientes): por cliente, só a
+    // última proposta e a última simulação, com os totais. Antes vinham TODAS
+    // as propostas e simulações de cada cliente numa resposta só, e o PostgREST
+    // cortava em 1.000 linhas — os últimos clientes em ordem alfabética sumiam
+    // da esteira. A função devolve um único jsonb, sem esse teto.
+    const [stagesRes, painelRes] = await Promise.all([
       supabase.from("pipeline_stages").select("codigo, nome, ordem").order("ordem"),
-      soMinhas
-        ? supabase.from("cliente_parceiros").select("cliente_id").eq("parceiro_id", userId)
-        : Promise.resolve({ data: [] as { cliente_id: string }[] }),
+      (supabase as any).rpc("crm_painel_clientes", { _somente_minhas: soMinhas }),
     ]);
     if (stagesRes.error) throw stagesRes.error;
+    if (painelRes.error) throw painelRes.error;
     const stages = stagesRes.data ?? [];
-    const idsPorParceria = new Set(
-      ((parceirosVinc.data as { cliente_id: string }[] | null) ?? []).map((r) => r.cliente_id),
-    );
+    const rows = ((painelRes.data as any[] | null) ?? []) as any[];
 
-    // Uma única query: cliente + responsável + analista + pipeline + propostas + simulações + parceiros.
-    // Reduz round-trips do Worker→Supabase de ~4 para 1 no caminho crítico.
-    const sel = (s: string): string => s;
-    let q = supabase
-      .from("clientes")
-      .select(
-        sel(`id, nome, numero_cliente, responsavel_id, criador_id, created_at,
-             vistoria_agendada_em, vistoria_concluida_em, contrato_emitido_em,
-             responsavel:profiles!clientes_responsavel_id_fkey(nome),
-             analista:profiles!clientes_criador_id_fkey(nome),
-             cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo)),
-             propostas!propostas_cliente_id_fkey(id, numero_proposta, status, nome_banco, created_at, deleted_at),
-             simulacoes!simulacoes_cliente_id_fkey(id, numero_simulacao, status, created_at, deleted_at),
-             cliente_parceiros!cliente_parceiros_cliente_id_fkey(tipo_vinculo, parceiro:profiles!cliente_parceiros_parceiro_id_fkey(nome))`),
-      )
-      .eq("ativo", true)
-      .is("deleted_at", null)
-      .is("contrato_arquivado_em", null);
-    if (soMinhas) {
-      const partes: string[] = [`responsavel_id.eq.${userId}`, `criador_id.eq.${userId}`];
-      if (idsPorParceria.size > 0) {
-        partes.push(`id.in.(${Array.from(idsPorParceria).join(",")})`);
-      }
-      q = q.or(partes.join(","));
-    }
-    const { data: rows, error: e2 } = await q.order("nome").limit(10000).returns<any[]>();
-    if (e2) throw e2;
-
-    const filtradas = (rows ?? []).filter((r: any) => {
+    const filtradas = rows.filter((r: any) => {
       if (!desde && !ate) return true;
       // Usa a última atualização da esteira; sem histórico, cai para created_at
       // do cliente para não ocultar cadastros recém-criados no filtro por período.
-      const atualizado = r.cliente_pipeline?.ultima_atualizacao_em ?? r.created_at ?? null;
+      const atualizado = r.pipeline_atualizado_em ?? r.created_at ?? null;
       if (!atualizado) return false;
       const t = new Date(atualizado).getTime();
       if (desde && t < desde) return false;
@@ -728,49 +680,34 @@ export const listarPainel = createServerFn({ method: "GET" })
       return true;
     });
 
-    const cmpDesc = (a: string | null, b: string | null) => (b ?? "").localeCompare(a ?? "");
-
     return stages.map((s) => ({
       codigo: s.codigo,
       nome: s.nome,
       ordem: s.ordem,
       clientes: filtradas
-        .filter((r: any) => r.cliente_pipeline?.pipeline_stages?.codigo === s.codigo)
-        .map((r: any) => {
-          const propostas = ((r.propostas ?? []) as any[])
-            .filter((p) => p.deleted_at == null)
-            .sort((a, b) => cmpDesc(a.created_at, b.created_at));
-          const simulacoes = ((r.simulacoes ?? []) as any[])
-            .filter((sm) => sm.deleted_at == null)
-            .sort((a, b) => cmpDesc(a.created_at, b.created_at));
-          const prop = propostas[0] ?? null;
-          const sim = simulacoes[0] ?? null;
-          const parceiros = (r.cliente_parceiros ?? []) as any[];
-          const imob = parceiros.find((v) => v.tipo_vinculo === "imobiliaria");
-          const corr = parceiros.find((v) => v.tipo_vinculo === "corretor");
-          return {
-            id: r.id,
-            nome: toTitleCase(r.nome),
-            numero_cliente: r.numero_cliente,
-            vistoria_agendada_em: r.vistoria_agendada_em ?? null,
-            vistoria_concluida_em: r.vistoria_concluida_em ?? null,
-            pipeline_atualizado_em: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
-            contrato_emitido_em: r.contrato_emitido_em ?? null,
-            numero_proposta: prop?.numero_proposta ?? null,
-            proposta_id: prop?.id ?? null,
-            proposta_status: prop?.status ?? null,
-            nome_banco: prop?.nome_banco ?? null,
-            numero_simulacao: sim?.numero_simulacao ?? null,
-            simulacao_id: sim?.id ?? null,
-            simulacao_status: sim?.status ?? null,
-            total_propostas: propostas.length,
-            total_simulacoes: simulacoes.length,
-            responsavel_nome: r.responsavel?.nome ?? null,
-            imobiliaria_nome: imob?.parceiro?.nome ?? null,
-            corretor_nome: corr?.parceiro?.nome ?? null,
-            analista_nome: r.analista?.nome ?? null,
-          };
-        }),
+        .filter((r: any) => r.stage_codigo === s.codigo)
+        .map((r: any) => ({
+          id: r.id,
+          nome: toTitleCase(r.nome),
+          numero_cliente: r.numero_cliente,
+          vistoria_agendada_em: r.vistoria_agendada_em ?? null,
+          vistoria_concluida_em: r.vistoria_concluida_em ?? null,
+          pipeline_atualizado_em: r.pipeline_atualizado_em ?? null,
+          contrato_emitido_em: r.contrato_emitido_em ?? null,
+          numero_proposta: r.numero_proposta ?? null,
+          proposta_id: r.proposta_id ?? null,
+          proposta_status: r.proposta_status ?? null,
+          nome_banco: r.nome_banco ?? null,
+          numero_simulacao: r.numero_simulacao ?? null,
+          simulacao_id: r.simulacao_id ?? null,
+          simulacao_status: r.simulacao_status ?? null,
+          total_propostas: Number(r.total_propostas ?? 0),
+          total_simulacoes: Number(r.total_simulacoes ?? 0),
+          responsavel_nome: r.responsavel_nome ?? null,
+          imobiliaria_nome: r.imobiliaria_nome ?? null,
+          corretor_nome: r.corretor_nome ?? null,
+          analista_nome: r.analista_nome ?? null,
+        })),
     }));
   });
 
