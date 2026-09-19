@@ -25,29 +25,71 @@ export const buscaGlobal = createServerFn({ method: "GET" })
   .handler(async ({ data, context }): Promise<RespostaBusca> => {
     const { supabase } = context;
     const termo = data.termo;
-    const like = `%${termo.replace(/[%_]/g, (m) => `\\${m}`)}%`;
+    // Valor entre aspas no filtro `or` do PostgREST: vírgula ou parêntese no
+    // termo quebravam a consulta. Aspas, barra e `%` saem do termo (`_` fica:
+    // como curinga de um caractere, ainda casa com o próprio `_`).
+    const limpo = termo.replace(/["\\%]/g, "");
+    const like = `%${limpo}%`;
+    const ilike = (col: string) => `${col}.ilike."${like}"`;
+    // CPF/CNPJ digitado com pontuação ("123.456.789-00"): o gravado é só dígito.
+    const digitos = limpo.replace(/\D/g, "");
+    const porDoc = (col: string) =>
+      digitos.length >= 3 && digitos !== limpo ? [`${col}.ilike."%${digitos}%"`] : [];
 
     const resultados: ResultadoBusca[] = [];
 
+    // Também pelo número (CLI-, SIM-, PRO-, número da proposta no banco e da
+    // tarefa): antes a busca só olhava nome/CPF/e-mail e não achava nada
+    // procurando o número que aparece em todas as telas.
     const [clientes, simulacoes, propostas, tarefas] = await Promise.all([
       supabase
         .from("clientes")
         .select("id, nome, documento, numero_cliente, email")
         .is("deleted_at", null)
-        .or(`nome.ilike.${like},documento.ilike.${like},email.ilike.${like}`)
+        .or(
+          [
+            ilike("nome"),
+            ilike("documento"),
+            ilike("email"),
+            ilike("numero_cliente"),
+            ...porDoc("documento"),
+          ].join(","),
+        )
         .limit(6),
       supabase
         .from("simulacoes")
         .select("id, nome_cliente, cpf_cnpj, numero_simulacao")
         .is("deleted_at", null)
-        .or(`nome_cliente.ilike.${like},cpf_cnpj.ilike.${like}`)
+        .or(
+          [
+            ilike("nome_cliente"),
+            ilike("cpf_cnpj"),
+            ilike("numero_simulacao"),
+            ...porDoc("cpf_cnpj"),
+          ].join(","),
+        )
         .limit(6),
       supabase
         .from("propostas")
         .select("id, nome_cliente, cpf_cnpj, numero_proposta, nome_banco")
-        .or(`nome_cliente.ilike.${like},cpf_cnpj.ilike.${like}`)
+        // Proposta na lixeira não aparece na busca (antes aparecia).
+        .is("deleted_at", null)
+        .or(
+          [
+            ilike("nome_cliente"),
+            ilike("cpf_cnpj"),
+            ilike("numero_proposta"),
+            ilike("numero_proposta_banco"),
+            ...porDoc("cpf_cnpj"),
+          ].join(","),
+        )
         .limit(6),
-      supabase.from("tasks").select("id, titulo, numero").ilike("titulo", like).limit(6),
+      supabase
+        .from("tasks")
+        .select("id, titulo, numero")
+        .is("deleted_at", null)
+        .or([ilike("titulo"), ilike("numero")].join(","))
+        .limit(6),
     ]);
 
     for (const c of clientes.data ?? []) {
