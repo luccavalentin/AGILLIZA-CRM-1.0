@@ -1341,10 +1341,21 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       // e os lotes do fim estouravam os 8 s do statement_timeout. O cursor é
       // inclusivo (`lte`), então as linhas da fronteira repetem e são puladas.
       const vistos = new Set<string>();
+      // Volume e prazo médio do filtro inteiro, somados nesta mesma passada.
+      // Antes vinham de uma consulta à parte, sem paginação, que o PostgREST
+      // cortava em 1.000 linhas: o card mostrava ~R$ 411 mi em vez de
+      // ~R$ 2,43 bi (18/09/2026).
+      let totalVolume = 0;
+      let somaPrazos = 0;
+      let qtdPrazos = 0;
       let cursor: string | null = null;
       for (let lote = 0; lote < MAX_LOTES; lote++) {
         let consulta = aplicarFiltros(
-          supabase.from("simulacoes").select("id, agrupador_id, cliente_id, created_at"),
+          supabase
+            .from("simulacoes")
+            .select(
+              "id, agrupador_id, cliente_id, created_at, valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo",
+            ),
         );
         if (cursor) consulta = consulta.lte("created_at", cursor);
         const { data: chaves, error: errChaves } = await consulta
@@ -1356,6 +1367,15 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
           if (vistos.has((r as any).id)) continue;
           vistos.add((r as any).id);
           novas++;
+          const s = r as any;
+          totalVolume +=
+            (Number(s.valor_financiamento) || 0) +
+            (s.fg_financiar_despesas ? Number(s.valor_despesas_financiadas) || 0 : 0);
+          const prazo = Number(s.prazo);
+          if (prazo > 0) {
+            somaPrazos += prazo;
+            qtdPrazos++;
+          }
           const k = chaveDoGrupo(r);
           const atual = idsPorGrupo.get(k);
           if (atual) atual.push((r as any).id);
@@ -1446,14 +1466,10 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       // Carrega bancos de TODAS as simulações paginadas para consolidar a exibição.
       const idsTodos = paginadas.flatMap((r: any) => [r.id, ...(r._agrupadas_ids || [])]);
 
+      // As simulações da página (inclusive as agrupadas) já vieram completas em
+      // `rows`; não é preciso buscá-las de novo só pelo sistema de amortização.
       const simulacoesMap = new Map();
-      if (idsTodos.length) {
-        const { data: todasSims } = await supabase
-          .from("simulacoes")
-          .select("id, sistema_amortizacao")
-          .in("id", idsTodos);
-        todasSims?.forEach((s) => simulacoesMap.set(s.id, s.sistema_amortizacao));
-      }
+      for (const s of rows ?? []) simulacoesMap.set((s as any).id, (s as any).sistema_amortizacao);
 
       const bancosPorSim = new Map<string, SimulacaoBancoResumo[]>();
       if (idsTodos.length) {
@@ -1586,26 +1602,9 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
           bancos: todosBancos,
         };
       }) as SimulacaoListaItem[];
-      // Carrega estatísticas totais (Volume e Prazo Médio) do banco de dados baseadas nos mesmos filtros,
-      // já que itens.reduce() só pega os itens da página atual (limit 50).
-      const { data: stats } = await aplicarFiltros(
-        supabase
-          .from("simulacoes")
-          .select("valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo"),
-      );
-      const totalVolume = ((stats ?? []) as any[]).reduce(
-        (acc: number, s: any) =>
-          acc +
-          (Number(s.valor_financiamento) || 0) +
-          (s.fg_financiar_despesas ? Number(s.valor_despesas_financiadas) || 0 : 0),
-        0,
-      );
-      const validPrazos = ((stats ?? []) as any[])
-        .map((s: any) => Number(s.prazo))
-        .filter((n: number) => n > 0);
-      const totalPrazoMedio = validPrazos.length
-        ? Math.round(validPrazos.reduce((a, b) => a + b, 0) / validPrazos.length)
-        : 0;
+      // Volume e prazo médio já foram somados sobre o filtro inteiro na passada
+      // das chaves de grupo, acima.
+      const totalPrazoMedio = qtdPrazos ? Math.round(somaPrazos / qtdPrazos) : 0;
 
       return {
         itens,
