@@ -1809,7 +1809,7 @@ export const sincronizarPropostasAtivas = createServerFn({ method: "POST" })
       "analise_juridica",
     ];
 
-    // A lista de propostas chama isto a cada 20 s em cada aba aberta. Antes
+    // A lista de propostas chama isto ao abrir (antes: a cada 20 s por aba). Antes
     // consultava o provedor para as 40 mais antigas toda vez, ignorando o
     // ritmo de `sync-backoff.ts` — a maior fonte de consultas do sistema.
     // Agora só as vencidas (o mesmo ritmo do agendador, visto pelo usuário).
