@@ -147,7 +147,7 @@ export function AbaCliente({
             <LinhaResumo
               rotulo="Produto"
               valor={
-                PRODUTOS.find((x) => x.value === data.proposta.produto)?.label ??
+                PRODUTOS.find((x) => x.value === data.proposta?.produto)?.label ??
                 data.proposta.produto ??
                 "—"
               }

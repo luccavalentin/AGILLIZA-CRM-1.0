@@ -19,7 +19,7 @@ export function Kpi({
           <p className="text-xl font-bold leading-none tracking-tight text-foreground tabular-nums">
             {valor}
           </p>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{rotulo}</p>
+          <p className="mt-1 line-clamp-2 break-words text-xs leading-snug text-muted-foreground">{rotulo}</p>
         </div>
       </div>
     </div>

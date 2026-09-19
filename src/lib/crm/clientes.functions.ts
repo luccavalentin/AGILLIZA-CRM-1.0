@@ -942,6 +942,7 @@ export const removerVendedor = createServerFn({ method: "POST" })
       const { data: propostas } = await supabase
         .from("propostas")
         .select("id")
+        .is("deleted_at", null)
         .eq("cliente_id", vendedor.cliente_id)
         .not("status", "in", "(contrato_emitido,cancelada,credito_recusado)");
       const ids = ((propostas ?? []) as any[]).map((p) => p.id);
@@ -2147,6 +2148,7 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
     const { data: clientes, error } = await supabase
       .from("clientes")
       .select("id, nome, numero_cliente, contrato_emitido_em, contrato_arquivado_em")
+      .is("deleted_at", null)
       .not("contrato_arquivado_em", "is", null)
       .order("contrato_arquivado_em", { ascending: false });
     if (error) throw error;
@@ -2156,6 +2158,7 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
     const { data: propostas } = await supabase
       .from("propostas")
       .select("id, cliente_id, numero_proposta, nome_banco, valor_financiamento, created_at")
+      .is("deleted_at", null)
       .in("cliente_id", ids)
       .order("created_at", { ascending: false });
     const propostasLista = propostas ?? [];

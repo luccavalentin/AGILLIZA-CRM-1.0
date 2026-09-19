@@ -5,8 +5,8 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 export const Route = createFileRoute("/_authenticated/relatorios/")({
   // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
   // item escondido no menu (QA 19/09/2026).
-  beforeLoad: () => assertModuloPermitido("relatorios.geral"),
   beforeLoad: () => {
+    assertModuloPermitido("relatorios.geral");
     throw redirect({ to: "/relatorios/gerencial" });
   },
 });

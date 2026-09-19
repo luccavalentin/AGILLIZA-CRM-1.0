@@ -419,7 +419,11 @@ async function carregarPipelinePainel(supabase: any) {
     ),
     supabase.from("pipeline_stages").select("id,codigo,nome,ordem"),
     todasAsLinhas(() =>
-      supabase.from("clientes").select("id,responsavel_id,criador_id").order("id"),
+      supabase
+        .from("clientes")
+        .select("id,responsavel_id,criador_id")
+        .is("deleted_at", null)
+        .order("id"),
     ),
   ]);
   const erro = pipe.error ?? etapas.error ?? donos.error;
@@ -1372,6 +1376,7 @@ async function carregarVariaveisDrilldown(supabase: any, de: string, ate: string
     supabase
       .from("simulacoes")
       .select("id, status, valor_financiamento, created_at")
+      .is("deleted_at", null)
       .gte("created_at", inicioDiaBR(de))
       .lte("created_at", fimDiaBR(ate)),
   ]);

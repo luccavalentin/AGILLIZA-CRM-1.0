@@ -383,7 +383,11 @@ export async function obterToken(forcarRenovacao = false): Promise<TokenInfo> {
   }
   if (forcarRenovacao) _tokenCache = null;
 
-  const emVoo = (async () => {
+  // `let` (e não `const`) porque o próprio corpo se compara com a promessa
+  // ainda em voo no `finally` — com `const` o compilador acusa uso antes da
+  // atribuição, embora o `finally` só rode depois.
+  let emVoo: Promise<TokenInfo> | null = null;
+  emVoo = (async () => {
     try {
       return await solicitarToken();
     } finally {

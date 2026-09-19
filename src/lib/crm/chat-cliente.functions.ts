@@ -270,6 +270,7 @@ export const buscarClientesApp = createServerFn({ method: "GET" })
     let query = supabase
       .from("clientes")
       .select("id, nome, documento, cliente_pipeline(pipeline_stages(nome))")
+      .is("deleted_at", null)
       .eq("portal_acesso_ativo", true)
       .order("nome", { ascending: true })
       .limit(50);

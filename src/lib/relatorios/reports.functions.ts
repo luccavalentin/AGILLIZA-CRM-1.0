@@ -386,6 +386,7 @@ export const runReport = createServerFn({ method: "POST" })
         let q = (supabase as any)
           .from("propostas")
           .select(colsCmp)
+          .is("deleted_at", null)
           .gte("created_at", isoDia(inicio))
           .order("created_at", { ascending: true })
           .order("id");
@@ -516,8 +517,16 @@ export const runReport = createServerFn({ method: "POST" })
           todasPaginas(() =>
             (supabase as any).from("simulacao_bancos").select("nome_banco").order("id"),
           ),
-          todasPaginas(() => (supabase as any).from("propostas").select("produto").order("id")),
-          todasPaginas(() => (supabase as any).from("simulacoes").select("produto").order("id")),
+          todasPaginas(() =>
+            (supabase as any).from("propostas").select("produto").is("deleted_at", null).order("id"),
+          ),
+          todasPaginas(() =>
+            (supabase as any)
+              .from("simulacoes")
+              .select("produto")
+              .is("deleted_at", null)
+              .order("id"),
+          ),
         ]);
       const bancos = [
         ...new Set(
@@ -1159,6 +1168,7 @@ export const runReport = createServerFn({ method: "POST" })
           let q = (supabase as any)
             .from("propostas")
             .select(cols)
+            .is("deleted_at", null)
             .or(
               `and(created_at.gte."${deIni}",created_at.lte."${ateFim}"),and(contrato_emitido_em.gte."${deIni}",contrato_emitido_em.lte."${ateFim}")`,
             )
@@ -1307,6 +1317,7 @@ export const runReport = createServerFn({ method: "POST" })
           (supabase as any)
             .from("propostas")
             .select(propCols)
+            .is("deleted_at", null)
             .in("cliente_id", bloco)
             .order("created_at", { ascending: false })
             .order("id"),

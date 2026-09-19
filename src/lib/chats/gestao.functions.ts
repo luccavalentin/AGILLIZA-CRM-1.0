@@ -325,6 +325,7 @@ export const pesquisarConversas = createServerFn({ method: "POST" })
     const { data: clientesLike } = await supabase
       .from("clientes")
       .select("id, nome")
+      .is("deleted_at", null)
       .ilike("nome", like)
       .limit(15);
     for (const c of (clientesLike ?? []) as any[]) {

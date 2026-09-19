@@ -258,6 +258,7 @@ export const listarPropostasOpcoes = createServerFn({ method: "GET" })
     let query = supabase
       .from("propostas")
       .select("id, numero_proposta, cliente_id, clientes(nome)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(50);
     if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
@@ -279,6 +280,7 @@ export const listarSimulacoesOpcoes = createServerFn({ method: "GET" })
     let query = supabase
       .from("simulacoes")
       .select("id, numero_simulacao, cliente_id, clientes(nome)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(50);
     if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
