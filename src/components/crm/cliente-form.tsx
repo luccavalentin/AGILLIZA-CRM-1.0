@@ -126,6 +126,11 @@ export function ClienteForm({
     Array<{ parceiro_id: string; tipo_vinculo: TipoVinculo }>
   >([]);
   const [vinculoSel, setVinculoSel] = useState<Record<string, string>>({});
+  /** Campo recusado na última tentativa de salvar; some quando o cadastro muda. */
+  const [campoComErro, setCampoComErro] = useState<string | null>(null);
+  useEffect(() => {
+    setCampoComErro(null);
+  }, [v]);
   const [criarTipo, setCriarTipo] = useState<TipoVinculo | null>(null);
   const parceiros = useQuery({
     queryKey: ["parceiros-disponiveis"],
@@ -209,35 +214,47 @@ export function ClienteForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const ehPF = v.tipo_pessoa === "PF";
+    setCampoComErro(null);
+    /** Avisa e marca o campo em vermelho, levando o cursor até ele. */
+    const falhar = (campo: string, msg: string) => {
+      setCampoComErro(campo);
+      toast.error(msg);
+    };
 
     // Nome / razão social
     if (!v.nome.trim()) {
-      return toast.error(ehPF ? "Informe o nome completo." : "Informe a razão social.");
+      return falhar("nome", ehPF ? "Informe o nome completo." : "Informe a razão social.");
     }
 
     // Documento: CPF (11 dígitos) para PF, CNPJ (14 dígitos) para PJ
     const docDigitos = soDigitos(v.documento);
     if (!docDigitos) {
-      return toast.error(ehPF ? "Informe o CPF." : "Informe o CNPJ.");
+      return falhar("documento", ehPF ? "Informe o CPF." : "Informe o CNPJ.");
     }
     if (ehPF && docDigitos.length !== 11) {
-      return toast.error("O CPF deve conter 11 dígitos.");
+      return falhar("documento", "O CPF deve conter 11 dígitos.");
     }
     if (!ehPF && docDigitos.length !== 14) {
-      return toast.error("O CNPJ deve conter 14 dígitos.");
+      return falhar("documento", "O CNPJ deve conter 14 dígitos.");
     }
     if (!validarDocumento(docDigitos, v.tipo_pessoa)) {
-      return toast.error(ehPF ? "CPF inválido." : "CNPJ inválido.");
+      return falhar("documento", ehPF ? "CPF inválido." : "CNPJ inválido.");
     }
 
     // Data de nascimento (PF) / abertura (PJ)
     if (!v.data_nascimento) {
-      return toast.error(ehPF ? "Informe a data de nascimento." : "Informe a data de abertura.");
+      return falhar(
+        "data_nascimento",
+        ehPF ? "Informe a data de nascimento." : "Informe a data de abertura.",
+      );
     }
 
-    if (!validarEmail(v.email)) return toast.error("E-mail inválido.");
+    if (!validarEmail(v.email)) return falhar("email", "E-mail inválido.");
     if (!validarTelefone(v.telefone_celular)) {
-      return toast.error("Celular inválido. Informe DDD + número (ex.: (11) 99999-9999).");
+      return falhar(
+        "telefone_celular",
+        "Celular inválido. Informe DDD + número (ex.: (11) 99999-9999).",
+      );
     }
     const renda = Number(v.renda_total_declarada.replace(/\./g, "").replace(",", "."));
     /** "1.234,56" -> 1234.56; vazio/invalido -> null. */
@@ -250,7 +267,7 @@ export function ClienteForm({
       const n = Number(limpo);
       return Number.isFinite(n) ? n : null;
     };
-    if (isNaN(renda) || renda < 0) return toast.error("Renda inválida.");
+    if (isNaN(renda) || renda < 0) return falhar("renda_total_declarada", "Renda inválida.");
 
     // Estado civil e cônjuge só se aplicam a Pessoa Física.
     const casado = ehPF && (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel");
@@ -420,6 +437,8 @@ export function ClienteForm({
   // Campos obrigatórios pendentes para envio da proposta ao banco (destaque em vermelho).
   const erros = useMemo(() => {
     const s = new Set<string>();
+    // Campo recusado na última tentativa de salvar (vale sempre).
+    if (campoComErro) s.add(campoComErro);
     if (!destacarObrigatorios) return s;
     const vazio = (x?: string | null) => !x || !String(x).trim();
     // Dados básicos / contato
@@ -462,7 +481,7 @@ export function ClienteForm({
       if (vazio(v.sexo)) s.add("sexo");
     }
     return s;
-  }, [destacarObrigatorios, v, end, ehPF]);
+  }, [destacarObrigatorios, v, end, ehPF, campoComErro]);
 
   // Ao acionar o destaque de obrigatórios (envio bloqueado por cadastro
   // incompleto), rola até o primeiro campo pendente e o foca, para que o
@@ -490,6 +509,23 @@ export function ClienteForm({
     }, 150);
     return () => clearTimeout(t);
   }, [destacarObrigatorios, erros.size]);
+
+  // Ao salvar com erro, leva o cursor ao campo recusado (antes só aparecia a
+  // mensagem flutuante e a pessoa tinha que procurar o campo no formulário).
+  useEffect(() => {
+    if (!campoComErro) return;
+    const t = setTimeout(() => {
+      const alvo = formRef.current?.querySelector<HTMLElement>(".border-destructive");
+      if (!alvo) return;
+      alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+      try {
+        alvo.focus({ preventScroll: true });
+      } catch {
+        /* ignora se o elemento não for focável */
+      }
+    }, 100);
+    return () => clearTimeout(t);
+  }, [campoComErro]);
 
   return (
     <form ref={formRef} onSubmit={submit} className="space-y-6 form-cadastro-upper">

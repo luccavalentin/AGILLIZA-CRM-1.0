@@ -1259,7 +1259,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
     }): Promise<{
       itens: SimulacaoListaItem[];
       total: number;
-      stats?: { volumeTotal: number; prazoMedio: number };
+      stats?: { volumeTotal: number; prazoMedio: number; cotacoesPorBanco?: Record<string, number> };
     }> => {
       const { supabase, userId } = context;
       const from = (data.pagina - 1) * data.porPagina;
@@ -1336,8 +1336,10 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       // offset, com a RLS antiga (checagem por linha), estourava o
       // statement_timeout; com a RLS por consulta o lote mais fundo leva ~50 ms
       // (19/09/2026). O conjunto, a ordem e o agrupamento não mudam.
+      // `simulacao_bancos(nome_banco)`: o card "Bancos cotados" contava só os
+      // bancos da página; agora conta o filtro inteiro, como os outros cards.
       const colunasChave =
-        "id, agrupador_id, cliente_id, created_at, valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo";
+        "id, agrupador_id, cliente_id, created_at, valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo, simulacao_bancos(nome_banco)";
       const { count: totalFiltro, error: errCount } = await aplicarFiltros(
         supabase.from("simulacoes").select("id", { count: "exact", head: true }),
       );
@@ -1364,6 +1366,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       let totalVolume = 0;
       let somaPrazos = 0;
       let qtdPrazos = 0;
+      const cotacoesPorBanco = new Map<string, number>();
       for (const chaves of lotesChaves) {
         for (const r of chaves) {
           // Uma simulação criada entre um lote e outro desloca o offset; a
@@ -1378,6 +1381,10 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
           if (prazo > 0) {
             somaPrazos += prazo;
             qtdPrazos++;
+          }
+          for (const b of (s.simulacao_bancos ?? []) as any[]) {
+            const nome = String(b?.nome_banco ?? "Banco");
+            cotacoesPorBanco.set(nome, (cotacoesPorBanco.get(nome) ?? 0) + 1);
           }
           const k = chaveDoGrupo(r);
           const atual = idsPorGrupo.get(k);
@@ -1618,6 +1625,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
         stats: {
           volumeTotal: totalVolume,
           prazoMedio: totalPrazoMedio,
+          cotacoesPorBanco: Object.fromEntries(cotacoesPorBanco),
         },
       };
     },

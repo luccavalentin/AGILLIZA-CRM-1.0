@@ -82,7 +82,7 @@ export function FiltrosLista({
             aria-label="De"
             value={desde}
             onChange={(e) => setDesde(e.target.value)}
-            className="h-8 w-[44%] shrink-0 sm:w-28 xl:w-30 text-xs"
+            className="h-8 w-[44%] shrink-0 sm:w-36 text-xs"
           />
           <span className="text-xs text-muted-foreground">até</span>
           <Input
@@ -90,7 +90,7 @@ export function FiltrosLista({
             aria-label="Até"
             value={ate}
             onChange={(e) => setAte(e.target.value)}
-            className="h-8 w-[44%] shrink-0 sm:w-28 xl:w-30 text-xs"
+            className="h-8 w-[44%] shrink-0 sm:w-36 text-xs"
           />
           <Button variant="ghost" size="sm" className="h-8 shrink-0 text-xs" onClick={onLimpar}>
             Limpar
