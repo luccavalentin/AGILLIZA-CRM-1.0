@@ -17,6 +17,22 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        // Uma rodada por vez para o sistema todo. Esta rota é chamada pelo
+        // agendador e pelo navegador de cada usuário logado (a cada 12 s
+        // enquanto houver banco aguardando): sem trava, N usuários faziam N
+        // rodadas completas, com limpezas repetidas e risco de reenviar a mesma
+        // simulação em paralelo. Quem chega dentro dos 20 s sai sem fazer nada.
+        // Se a trava falhar, segue como antes — melhor rodar a mais que parar.
+        {
+          const { data: reservou, error: erroTrava } = await (supabaseAdmin as any).rpc(
+            "rotina_reservar",
+            { _nome: "reconciliar-simulacoes", _intervalo_segundos: 20 },
+          );
+          if (!erroTrava && reservou !== true) {
+            return Response.json({ ok: true, pulada: true });
+          }
+        }
+
         /**
          * Bancos assíncronos são reenviados até responderem.
          *
