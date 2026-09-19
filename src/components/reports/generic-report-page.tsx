@@ -32,9 +32,12 @@ export function GenericReportPage({
   comFiltroBanco,
   comFiltroStatus,
   typeSelector,
+  pronto = true,
 }: {
   codigo: string;
   filtros: ReportFiltros;
+  /** Falso enquanto os filtros efetivos ainda vão mudar (ex.: escopo carregando). */
+  pronto?: boolean;
   onFiltros: (f: ReportFiltros) => void;
   podeEquipe: boolean;
   podeGeral: boolean;
@@ -46,6 +49,7 @@ export function GenericReportPage({
   const { data, isLoading, isError } = useQuery({
     queryKey: ["report", codigo, filtros],
     queryFn: () => run({ data: { codigo, filtros } }),
+    enabled: pronto,
     staleTime: 15_000,
     refetchOnWindowFocus: true,
   });
@@ -145,7 +149,7 @@ export function GenericReportPage({
         />
       }
     >
-      {isLoading ? (
+      {isLoading || !pronto ? (
         <div className="space-y-4">
           <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
             {Array.from({ length: 6 }).map((_, i) => (
