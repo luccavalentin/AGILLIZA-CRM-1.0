@@ -2483,19 +2483,21 @@ export async function sincronizarPropostaImpl({
       // A tabela só tem política de leitura/alteração do próprio usuário: quem
       // sincroniza a proposta de outra pessoa não consegue avisá-la (403).
       const { supabaseAdmin: notifAdmin } = await import("@/integrations/supabase/client.server");
-      await notifAdmin.from("notificacoes").insert({
-        user_id: prop.usuario_responsavel_id,
-        correspondente_id: prop.correspondente_id,
-        tipo: "proposta",
-        titulo: "Atualização de proposta",
-        corpo:
+      // Pela função do banco: se já há aviso não lido desta proposta, ele é
+      // atualizado e sobe, em vez de empilhar outro (20260919040000).
+      await (notifAdmin as any).rpc("emitir_notificacao", {
+        _user_id: prop.usuario_responsavel_id,
+        _corr: prop.correspondente_id,
+        _tipo: "proposta",
+        _titulo: "Atualização de proposta",
+        _corpo:
           errosBanco.length > 0
             ? errosBanco.join(" | ")
             : nomeEtapa
               ? `Nova situação: ${nomeEtapa}.`
               : `Status alterado para ${statusEfetivo}.`,
-        link: `/operacional/propostas/${propostaId}`,
-      } as any);
+        _link: `/operacional/propostas/${propostaId}`,
+      });
     }
   }
 
