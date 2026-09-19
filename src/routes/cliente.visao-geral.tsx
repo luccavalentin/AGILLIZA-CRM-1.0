@@ -187,7 +187,9 @@ function VisaoGeral() {
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-2xl font-bold tracking-tight sm:text-4xl">{progresso}%</span>
-                <span className="text-[10px] font-medium opacity-80 sm:text-xs">concluído</span>
+                {/* "concluído" confundia: este número inclui a etapa em andamento e
+                    batia de frente com "3/9 etapas concluídas" logo abaixo. */}
+                <span className="text-[10px] font-medium opacity-80 sm:text-xs">do processo</span>
               </div>
             </div>
             {/* Título ao lado no mobile */}
@@ -311,7 +313,7 @@ function VisaoGeral() {
                   </ResponsiveContainer>
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-2xl font-bold text-primary">{progresso}%</span>
-                    <span className="text-[11px] text-muted-foreground">concluído</span>
+                    <span className="text-[11px] text-muted-foreground">do processo</span>
                   </div>
                 </div>
 

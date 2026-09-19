@@ -296,8 +296,10 @@ function Acompanhar() {
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-xl font-bold text-primary sm:text-2xl">{progresso}%</span>
+                  {/* O número inclui a etapa em andamento; "Concluído" batia de
+                      frente com a legenda "Concluído (3) 33%" ao lado. */}
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Concluído
+                    do processo
                   </span>
                 </div>
               </div>
