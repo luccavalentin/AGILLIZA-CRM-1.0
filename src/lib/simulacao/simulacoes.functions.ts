@@ -1271,27 +1271,21 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
 
       // Para usuários com visibilidade restrita (RLS), o Supabase já aplica o filtro.
       // Garantimos que o correspondente_id seja filtrado se não formos admin total.
-      const { data: me } = await supabase
-        .from("profiles")
-        .select("correspondente_id")
-        .eq("id", userId)
-        .maybeSingle();
+      // Perfil e (em "minhas") clientes vinculados saem juntos. Os vinculados
+      // são resolvidos antes para que os filtros possam ser aplicados a mais
+      // de uma consulta sem repetir a ida ao banco.
+      const [{ data: me }, { data: vinc }] = await Promise.all([
+        supabase.from("profiles").select("correspondente_id").eq("id", userId).maybeSingle(),
+        data.escopo === "minhas"
+          ? supabase.from("cliente_parceiros").select("cliente_id").eq("parceiro_id", userId)
+          : Promise.resolve({ data: [] as any[] }),
+      ] as any[]);
+      const idsVinculados: string[] = Array.from(
+        new Set(((vinc ?? []) as any[]).map((v: any) => v.cliente_id).filter(Boolean)),
+      ) as string[];
 
       const COLUNAS_LISTA =
         "id, numero_simulacao, nome_cliente, cliente_id, cpf_cnpj, nome_conjuge, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id, codigo_oportunidade_homefin";
-
-      // Clientes vinculados: resolvido antes para que os filtros possam ser
-      // aplicados a mais de uma consulta sem repetir a ida ao banco.
-      let idsVinculados: string[] = [];
-      if (data.escopo === "minhas") {
-        const { data: vinc } = await supabase
-          .from("cliente_parceiros")
-          .select("cliente_id")
-          .eq("parceiro_id", userId);
-        idsVinculados = Array.from(
-          new Set((vinc ?? []).map((v: any) => v.cliente_id).filter(Boolean)),
-        ) as string[];
-      }
 
       /** Aplica os filtros da tela a qualquer consulta sobre `simulacoes`. */
       const aplicarFiltros = (q: any) => {
@@ -1336,10 +1330,32 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       const idsPorGrupo = new Map<string, string[]>();
       const LOTE = 1000; // teto de linhas por resposta do PostgREST
       const MAX_LOTES = 25; // 25 mil simulações; além disso a lista precisaria de cursor
-      // Cursor por `created_at` em vez de offset: com `range(4000, 4999)` o
-      // Postgres relia as 4 mil linhas anteriores aplicando a RLS em cada uma,
-      // e os lotes do fim estouravam os 8 s do statement_timeout. O cursor é
-      // inclusivo (`lte`), então as linhas da fronteira repetem e são puladas.
+      // Conta o filtro e busca todos os lotes EM PARALELO (ordem estável por
+      // created_at e id). Antes era um cursor por `created_at`, lote após lote:
+      // 7 idas em sequência com 6,5 mil simulações. O cursor existia porque o
+      // offset, com a RLS antiga (checagem por linha), estourava o
+      // statement_timeout; com a RLS por consulta o lote mais fundo leva ~50 ms
+      // (19/09/2026). O conjunto, a ordem e o agrupamento não mudam.
+      const colunasChave =
+        "id, agrupador_id, cliente_id, created_at, valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo";
+      const { count: totalFiltro, error: errCount } = await aplicarFiltros(
+        supabase.from("simulacoes").select("id", { count: "exact", head: true }),
+      );
+      if (errCount) throw new Error(errCount.message);
+      const qtdLotes = Math.min(MAX_LOTES, Math.ceil((totalFiltro ?? 0) / LOTE));
+      const respostasLotes = await Promise.all(
+        Array.from({ length: qtdLotes }, (_, i) =>
+          aplicarFiltros(supabase.from("simulacoes").select(colunasChave))
+            .order("created_at", { ascending: false })
+            .order("id")
+            .range(i * LOTE, i * LOTE + LOTE - 1),
+        ),
+      );
+      const lotesChaves: any[][] = [];
+      for (const r of respostasLotes as any[]) {
+        if (r.error) throw new Error(r.error.message);
+        lotesChaves.push((r.data ?? []) as any[]);
+      }
       const vistos = new Set<string>();
       // Volume e prazo médio do filtro inteiro, somados nesta mesma passada.
       // Antes vinham de uma consulta à parte, sem paginação, que o PostgREST
@@ -1348,25 +1364,12 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       let totalVolume = 0;
       let somaPrazos = 0;
       let qtdPrazos = 0;
-      let cursor: string | null = null;
-      for (let lote = 0; lote < MAX_LOTES; lote++) {
-        let consulta = aplicarFiltros(
-          supabase
-            .from("simulacoes")
-            .select(
-              "id, agrupador_id, cliente_id, created_at, valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo",
-            ),
-        );
-        if (cursor) consulta = consulta.lte("created_at", cursor);
-        const { data: chaves, error: errChaves } = await consulta
-          .order("created_at", { ascending: false })
-          .limit(LOTE);
-        if (errChaves) throw new Error(errChaves.message);
-        let novas = 0;
-        for (const r of chaves ?? []) {
+      for (const chaves of lotesChaves) {
+        for (const r of chaves) {
+          // Uma simulação criada entre um lote e outro desloca o offset; a
+          // mesma linha pode vir em dois lotes e é contada uma vez só.
           if (vistos.has((r as any).id)) continue;
           vistos.add((r as any).id);
-          novas++;
           const s = r as any;
           totalVolume +=
             (Number(s.valor_financiamento) || 0) +
@@ -1384,10 +1387,6 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
             ordemGrupos.push(k);
           }
         }
-        const ultima = (chaves ?? [])[(chaves ?? []).length - 1] as any;
-        if (ultima) cursor = ultima.created_at;
-        if (novas === 0) break;
-        if (!chaves || chaves.length < LOTE) break;
       }
 
       const totalGrupos = ordemGrupos.length;
@@ -1471,13 +1470,42 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       const simulacoesMap = new Map();
       for (const s of rows ?? []) simulacoesMap.set((s as any).id, (s as any).sistema_amortizacao);
 
+      // Bancos, nomes e simulações irmãs dependem só da página: as três
+      // consultas saem juntas (antes, uma depois da outra).
+      const donoIds = Array.from(
+        new Set(paginadas.map((r: any) => r.usuario_criador_id).filter(Boolean)),
+      ) as string[];
+      const excluidorIds = Array.from(
+        new Set(paginadas.map((r: any) => r.deleted_by).filter(Boolean)),
+      ) as string[];
+      const perfilIds = Array.from(new Set([...donoIds, ...excluidorIds]));
+      const agrupadoresDaPagina = Array.from(
+        new Set(paginadas.map((r: any) => r.agrupador_id).filter(Boolean)),
+      ) as string[];
+      const vazio = Promise.resolve({ data: [] as any[] });
+      const [{ data: bancos }, { data: perfis }, { data: irmas }] = await Promise.all([
+        idsTodos.length
+          ? supabase
+              .from("simulacao_bancos")
+              .select("id, simulacao_id, banco_id, nome_banco, status_banco")
+              .in("simulacao_id", idsTodos)
+              .order("nome_banco", { ascending: true })
+          : vazio,
+        perfilIds.length
+          ? supabase.from("profiles").select("id, nome").in("id", perfilIds)
+          : vazio,
+        agrupadoresDaPagina.length
+          ? supabase
+              .from("simulacoes")
+              .select("id, agrupador_id, cliente_id, cpf_cnpj, created_at")
+              .in("agrupador_id", agrupadoresDaPagina)
+              .is("deleted_at", null)
+              .order("created_at", { ascending: true })
+          : vazio,
+      ] as any[]);
+
       const bancosPorSim = new Map<string, SimulacaoBancoResumo[]>();
       if (idsTodos.length) {
-        const { data: bancos } = await supabase
-          .from("simulacao_bancos")
-          .select("id, simulacao_id, banco_id, nome_banco, status_banco")
-          .in("simulacao_id", idsTodos)
-          .order("nome_banco", { ascending: true });
         for (const b of bancos ?? []) {
           const lista = bancosPorSim.get((b as any).simulacao_id) ?? [];
           lista.push({
@@ -1491,40 +1519,18 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
         }
       }
 
-      // Resolve nomes dos criadores + de quem excluiu.
-      const donoIds = Array.from(
-        new Set(paginadas.map((r: any) => r.usuario_criador_id).filter(Boolean)),
-      ) as string[];
-      const excluidorIds = Array.from(
-        new Set(paginadas.map((r: any) => r.deleted_by).filter(Boolean)),
-      ) as string[];
-      const perfilIds = Array.from(new Set([...donoIds, ...excluidorIds]));
+      // Nomes dos criadores + de quem excluiu.
       const nomesPerfis = new Map<string, string>();
-      if (perfilIds.length) {
-        const { data: perfis } = await supabase
-          .from("profiles")
-          .select("id, nome")
-          .in("id", perfilIds);
-        for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
-      }
+      for (const p of perfis ?? []) nomesPerfis.set((p as any).id, (p as any).nome ?? "");
 
       // Testagem de casal: o mesmo agrupador rodado com titulares diferentes,
       // para comparar as taxas com cada cônjuge na ponta. A consulta é feita no
       // servidor (e não sobre a página) porque as simulações do par podem cair
       // em páginas distintas — aí a marcação sumiria justamente onde importa.
-      const agrupadoresDaPagina = Array.from(
-        new Set(paginadas.map((r: any) => r.agrupador_id).filter(Boolean)),
-      ) as string[];
       const agrupadoresComTesteCasal = new Set<string>();
       /** agrupador -> (titular -> simulação mais recente daquele titular). */
       const simPorTitularNoAgrupador = new Map<string, Map<string, string>>();
       if (agrupadoresDaPagina.length) {
-        const { data: irmas } = await supabase
-          .from("simulacoes")
-          .select("id, agrupador_id, cliente_id, cpf_cnpj, created_at")
-          .in("agrupador_id", agrupadoresDaPagina)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: true });
         const titularesPorAgrupador = new Map<string, Set<string>>();
         for (const s of irmas ?? []) {
           const ag = (s as any).agrupador_id;
