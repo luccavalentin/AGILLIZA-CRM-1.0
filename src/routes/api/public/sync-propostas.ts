@@ -25,6 +25,10 @@ export const Route = createFileRoute("/api/public/sync-propostas")({
         // Propostas que ainda podem receber retorno do banco (não terminais)
         // e que já foram efetivamente enviadas (têm oportunidade vinculada).
         const STATUS_ATIVOS = [
+          // Rascunho com oportunidade já criada na HomeFin (ex.: envio que
+          // ficou "aguardando envio"): antes só a lista de propostas aberta a
+          // acompanhava, a cada 20 s por aba. Agora o agendador cobre sozinho.
+          "rascunho",
           "enviada_banco",
           "em_analise_credito",
           "credito_aprovado",

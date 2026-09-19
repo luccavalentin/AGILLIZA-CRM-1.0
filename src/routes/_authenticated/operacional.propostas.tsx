@@ -116,31 +116,22 @@ function Pagina() {
     };
   }, [queryClient]);
 
-  // Sincronização automática em lote: consulta o banco para todas as propostas
-  // ativas visíveis e atualiza status instantaneamente, sem precisar abrir cada
-  // proposta. Executa ao montar e a cada 45s. Como a atualização toca a tabela
-  // `propostas`, o realtime acima invalida a lista automaticamente.
+  // Sincronização em lote ao abrir a lista: consulta o banco para as propostas
+  // ativas visíveis que já venceram o ritmo de `sync-backoff.ts`. Depois disso
+  // o agendador (`/api/public/sync-propostas`, a cada 1 min, mesmos status
+  // incluindo rascunho) mantém tudo em dia — repetir aqui a cada 20 s por aba
+  // não adiantava nada (o ritmo mínimo é 1 min) e multiplicava a carga pelo
+  // número de abas abertas. Como a atualização toca a tabela `propostas`, o
+  // realtime acima invalida a lista automaticamente.
   useEffect(() => {
     let cancelado = false;
-    let falhas = 0;
-    const tick = async () => {
+    const t0 = setTimeout(() => {
       if (cancelado) return;
-      try {
-        await sincronizarLoteFn({ data: { limite: 40 } });
-        falhas = 0;
-      } catch {
-        falhas++;
-      }
-    };
-    const t0 = setTimeout(tick, 1_500);
-    const iv = setInterval(() => {
-      if (falhas >= 3) return;
-      tick();
-    }, 20_000);
+      sincronizarLoteFn({ data: { limite: 40 } }).catch(() => {});
+    }, 1_500);
     return () => {
       cancelado = true;
       clearTimeout(t0);
-      clearInterval(iv);
     };
   }, [sincronizarLoteFn]);
 
