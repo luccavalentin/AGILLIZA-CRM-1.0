@@ -1,4 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { assertModuloPermitido } from "@/lib/route-guards";
 import { FormulariosView } from "@/components/formularios/formularios-view";
 import { PapelTimbradoView } from "@/components/formularios/papel-timbrado-view";
 import { PowerPointModelosView } from "@/components/formularios/powerpoint-modelos-view";
@@ -8,6 +9,8 @@ import { BANCOS_FORMULARIO, type BancoFormulario } from "@/lib/formularios/formu
 import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/formularios/$banco")({
+  // Mesma permissão do item no menu (QA 19/09/2026).
+  beforeLoad: () => assertModuloPermitido("crm.clientes"),
   validateSearch: (search: Record<string, unknown>) => {
     return z
       .object({

@@ -1,5 +1,6 @@
 import { AdminHero } from "@/components/admin/admin-hero";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { assertModuloPermitido } from "@/lib/route-guards";
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -33,6 +34,8 @@ import {
 } from "@/lib/notificacoes.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/notificacoes")({
+  // Mesma permissão do item no menu (QA 19/09/2026).
+  beforeLoad: () => assertModuloPermitido("admin.notificacoes"),
   head: () => ({ meta: [{ title: "Notificações — Agilliza" }] }),
   component: Pagina,
 });

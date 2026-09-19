@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { assertModuloPermitido } from "@/lib/route-guards";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -17,6 +18,8 @@ import { Solicitacoes } from "@/components/matriculas/solicitacoes";
 import { Creditos } from "@/components/matriculas/creditos";
 
 export const Route = createFileRoute("/_authenticated/matriculas")({
+  // Mesma permissão do item no menu (QA 19/09/2026).
+  beforeLoad: () => assertModuloPermitido("documentos.matriculas"),
   head: () => ({ meta: [{ title: "Controle de Matrículas — Agilliza" }] }),
   component: Pagina,
 });

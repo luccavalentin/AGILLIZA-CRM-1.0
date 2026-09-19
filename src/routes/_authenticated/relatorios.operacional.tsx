@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { assertModuloPermitido } from "@/lib/route-guards";
 import { ReportView } from "@/components/reports/report-view";
 import {
   Select,
@@ -30,6 +31,9 @@ const OPCOES: { value: TipoRelatorio; label: string; comStatus?: boolean; comBan
 ];
 
 export const Route = createFileRoute("/_authenticated/relatorios/operacional")({
+  // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
+  // item escondido no menu (QA 19/09/2026).
+  beforeLoad: () => assertModuloPermitido("relatorios.geral"),
   head: () => ({ meta: [{ title: "Relatórios operacionais — Agilliza" }] }),
   validateSearch: (s: Record<string, unknown>) => s,
   component: Pagina,

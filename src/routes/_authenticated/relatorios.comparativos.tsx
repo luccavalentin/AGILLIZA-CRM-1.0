@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { createFileRoute } from "@tanstack/react-router";
+import { assertModuloPermitido } from "@/lib/route-guards";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -22,6 +23,9 @@ import {
 import { BANCOS_CONCILIACAO } from "@/lib/conciliacao/bancos";
 
 export const Route = createFileRoute("/_authenticated/relatorios/comparativos")({
+  // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
+  // item escondido no menu (QA 19/09/2026).
+  beforeLoad: () => assertModuloPermitido("relatorios.geral"),
   head: () => ({
     meta: [
       { title: "Comparativo de dados — Agilliza" },
