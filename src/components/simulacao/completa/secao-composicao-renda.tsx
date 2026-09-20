@@ -222,6 +222,7 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                       </div>
                       <div className="flex items-center gap-2">
                         <Switch
+                          aria-label="Participante compõe renda"
                           id={`compoe-${p.id}`}
                           checked={p.compoe_renda}
                           onCheckedChange={(v) => updateParticipante(p.id, "compoe_renda", v)}
@@ -454,6 +455,7 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             </p>
           </div>
           <Switch
+            aria-label="Testar CPF de todos os proponentes"
             id="testar-cpfs"
             checked={Boolean(f.testar_cpfs)}
             onCheckedChange={(v) => set("testar_cpfs", v)}

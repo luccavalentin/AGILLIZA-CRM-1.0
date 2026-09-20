@@ -329,6 +329,7 @@ export function CartaAnaliseDialog({
                         </p>
                       </div>
                       <Switch
+                        aria-label="Incluir página de observações"
                         id="carta-incluir-obs"
                         checked={incluirObservacoes}
                         onCheckedChange={setIncluirObservacoes}

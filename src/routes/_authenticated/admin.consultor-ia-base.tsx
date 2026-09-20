@@ -777,6 +777,7 @@ function BibliotecaPage() {
               <div className="flex flex-wrap gap-6">
                 <label className="flex items-center gap-2 text-sm">
                   <Switch
+                    aria-label="Conteúdo ativo"
                     checked={editando.ativo}
                     onCheckedChange={(v) => setEditando({ ...editando, ativo: v })}
                   />
@@ -784,6 +785,7 @@ function BibliotecaPage() {
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <Switch
+                    aria-label="Conteúdo global (vale para todos)"
                     checked={editando.global}
                     onCheckedChange={(v) => setEditando({ ...editando, global: v })}
                   />

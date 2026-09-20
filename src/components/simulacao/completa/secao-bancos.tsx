@@ -169,6 +169,7 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             </p>
           </div>
           <Switch
+            aria-label="Baixar PDF automaticamente"
             id="download-automatico-ambos"
             checked={f.download_automatico !== false}
             onCheckedChange={(checked) => set("download_automatico", checked)}
@@ -222,6 +223,7 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           </p>
         </div>
         <Switch
+          aria-label="Baixar PDF automaticamente"
           id="download-automatico"
           checked={f.download_automatico !== false}
           onCheckedChange={(checked) => set("download_automatico", checked)}

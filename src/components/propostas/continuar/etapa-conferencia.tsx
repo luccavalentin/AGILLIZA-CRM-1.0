@@ -665,7 +665,7 @@ function Interruptor({
   return (
     <Campo label={label}>
       <div className="flex h-9 items-center">
-        <Switch checked={checked} onCheckedChange={onChange} />
+        <Switch aria-label={label} checked={checked} onCheckedChange={onChange} />
       </div>
     </Campo>
   );

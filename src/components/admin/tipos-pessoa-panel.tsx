@@ -262,6 +262,7 @@ export function TiposPessoaPanel({ podeGerenciar }: { podeGerenciar: boolean }) 
                   </p>
                 </div>
                 <Switch
+                  aria-label="Login por padrão"
                   checked={form.login_padrao}
                   onCheckedChange={(v) => setForm({ ...form, login_padrao: v })}
                 />
@@ -274,6 +275,7 @@ export function TiposPessoaPanel({ podeGerenciar }: { podeGerenciar: boolean }) 
                   </p>
                 </div>
                 <Switch
+                  aria-label="Tipo de pessoa ativo"
                   checked={form.ativo}
                   onCheckedChange={(v) => setForm({ ...form, ativo: v })}
                 />

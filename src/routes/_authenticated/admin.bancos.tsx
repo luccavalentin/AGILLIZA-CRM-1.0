@@ -98,6 +98,7 @@ function Pagina() {
                   </p>
                 </div>
                 <Switch
+                  aria-label={`Ativar ${b.nome_banco}`}
                   checked={b.ativo}
                   disabled={toggle.isPending}
                   onCheckedChange={(v) => toggle.mutate({ id: b.id, ativo: v })}
@@ -192,6 +193,7 @@ function Pagina() {
                   </TableCell>
                   <TableCell>
                     <Switch
+                      aria-label={`Ativar ${b.nome_banco}`}
                       checked={b.ativo}
                       disabled={toggle.isPending}
                       onCheckedChange={(v) => toggle.mutate({ id: b.id, ativo: v })}
@@ -276,7 +278,12 @@ function EditarBancoDialog({ banco, onClose }: { banco: BancoAdmin; onClose: () 
           </div>
           <div className="flex items-center justify-between rounded-md border border-border p-3">
             <Label htmlFor="padrao">Banco padrão nos multi-selects</Label>
-            <Switch id="padrao" checked={padrao} onCheckedChange={setPadrao} />
+            <Switch
+              aria-label="Banco padrão nos multi-selects"
+              id="padrao"
+              checked={padrao}
+              onCheckedChange={setPadrao}
+            />
           </div>
 
           <div className="space-y-3 rounded-md border border-border p-3">

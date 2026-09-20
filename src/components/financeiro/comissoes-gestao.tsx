@@ -416,6 +416,7 @@ export function SecaoRegrasComissao() {
             <div className="flex items-center justify-between rounded-md border border-border p-3">
               <Label htmlFor="regra-ativa">Regra ativa</Label>
               <Switch
+                aria-label="Regra ativa"
                 id="regra-ativa"
                 checked={form.ativo}
                 onCheckedChange={(v) => setForm((f) => ({ ...f, ativo: v }))}

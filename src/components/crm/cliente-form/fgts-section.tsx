@@ -40,6 +40,7 @@ export function FgtsSection({
               </p>
             </div>
             <Switch
+              aria-label="Utiliza FGTS na operação"
               id="utiliza_fgts"
               checked={v.utiliza_fgts}
               onCheckedChange={(x) => set("utiliza_fgts", x)}

@@ -166,7 +166,11 @@ export function JogadaNumerosDialog({
           <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
             <div className="flex items-center justify-between gap-3">
               <Label className="text-sm">Incluir custas</Label>
-              <Switch checked={incluirCustas} onCheckedChange={alternarCustas} />
+              <Switch
+                aria-label="Incluir custas"
+                checked={incluirCustas}
+                onCheckedChange={alternarCustas}
+              />
             </div>
             {incluirCustas && (
               <div className="space-y-1.5">

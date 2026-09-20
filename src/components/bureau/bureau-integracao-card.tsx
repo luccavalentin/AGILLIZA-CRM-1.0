@@ -174,7 +174,12 @@ export function BureauIntegracaoCard() {
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Switch id="bureau-ativo" checked={ativo} onCheckedChange={setAtivo} />
+                <Switch
+                  aria-label="Consulta habilitada"
+                  id="bureau-ativo"
+                  checked={ativo}
+                  onCheckedChange={setAtivo}
+                />
                 <Label htmlFor="bureau-ativo" className="text-sm">
                   Consulta habilitada
                 </Label>

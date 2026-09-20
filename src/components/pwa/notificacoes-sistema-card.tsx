@@ -97,6 +97,7 @@ export function NotificacoesSistemaCard() {
             </p>
           </div>
           <Switch
+            aria-label="Avisar fora do app"
             id="notif-sistema"
             checked={ligado}
             disabled={!suporte || pedindo}

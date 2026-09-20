@@ -189,7 +189,11 @@ export function SolicitacaoDialog({
             <Input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" />
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3">
-            <Switch checked={reembolsado} onCheckedChange={setReembolsado} />
+            <Switch
+              aria-label="Reembolso recebido do corretor"
+              checked={reembolsado}
+              onCheckedChange={setReembolsado}
+            />
             <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>
               Reembolso recebido do corretor
             </Label>

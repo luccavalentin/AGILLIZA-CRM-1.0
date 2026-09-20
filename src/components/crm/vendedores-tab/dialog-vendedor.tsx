@@ -424,6 +424,7 @@ export function DialogVendedor({
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 text-sm">
               <Switch
+                aria-label="Utiliza FGTS"
                 checked={form.utiliza_fgts}
                 onCheckedChange={(v) => set({ utiliza_fgts: v })}
               />
@@ -431,6 +432,7 @@ export function DialogVendedor({
             </label>
             <label className="flex items-center gap-2 text-sm">
               <Switch
+                aria-label="Autoriza uso de dados"
                 checked={form.fg_autorizacao_dados}
                 onCheckedChange={(v) => set({ fg_autorizacao_dados: v })}
               />

@@ -61,7 +61,7 @@ export function SecaoComprador({
         />
         <div className="mt-3 flex items-center justify-between rounded-lg border border-border p-3">
           <Label className="text-sm">Irá utilizar FGTS?</Label>
-          <Switch checked={fgts} onCheckedChange={toggleFgts} />
+          <Switch aria-label="Irá utilizar FGTS?" checked={fgts} onCheckedChange={toggleFgts} />
         </div>
         {fgts && (
           <div className="mt-2 space-y-1 rounded-lg border border-dashed border-border p-3">

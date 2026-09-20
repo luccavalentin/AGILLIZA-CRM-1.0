@@ -42,6 +42,7 @@ export function SecaoImovel({
         <div className="mt-2 flex items-center justify-between rounded-lg border border-border p-3">
           <Label className="text-sm">O imóvel fica em condomínio?</Label>
           <Switch
+            aria-label="O imóvel fica em condomínio?"
             checked={check["i_condominio"] === true}
             onCheckedChange={(v) => setManual("i_condominio", v)}
           />

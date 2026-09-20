@@ -65,7 +65,12 @@ export function NotificationSettings() {
                 Desligue para silenciar todos os alertas (menu piscando, sons e avisos).
               </p>
             </div>
-            <Switch id="notif-mestra" checked={prefs.ativo} onCheckedChange={alternarMestra} />
+            <Switch
+              aria-label="Ativar notificações"
+              id="notif-mestra"
+              checked={prefs.ativo}
+              onCheckedChange={alternarMestra}
+            />
           </div>
         </CardContent>
       </Card>
@@ -101,6 +106,7 @@ export function NotificationSettings() {
                       Exibir
                     </Label>
                     <Switch
+                      aria-label="Exibir este aviso"
                       id={`notif-${t.id}-ativo`}
                       checked={p.ativo}
                       disabled={desativado}
@@ -112,6 +118,7 @@ export function NotificationSettings() {
                       Som
                     </Label>
                     <Switch
+                      aria-label="Tocar som deste aviso"
                       id={`notif-${t.id}-som`}
                       checked={p.som}
                       disabled={desativado || !p.ativo}

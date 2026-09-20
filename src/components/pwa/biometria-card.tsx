@@ -109,6 +109,7 @@ export function BiometriaCard() {
           <div className="flex shrink-0 items-center gap-2">
             {ocupado && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
             <Switch
+              aria-label="Pedir digital ou rosto ao abrir o app"
               id="biometria"
               checked={ativa}
               disabled={!disponivel || Boolean(impedimento) || !userId || ocupado}

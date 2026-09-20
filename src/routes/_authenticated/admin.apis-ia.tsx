@@ -186,7 +186,12 @@ function Pagina() {
         <div className="space-y-5 rounded-lg border border-border p-4 md:p-6">
           <div className="flex items-center justify-between rounded-md border border-border p-3">
             <Label htmlFor="ativo">Integração de IA ativa</Label>
-            <Switch id="ativo" checked={ativo} onCheckedChange={setAtivo} />
+            <Switch
+              aria-label="Integração de IA ativa"
+              id="ativo"
+              checked={ativo}
+              onCheckedChange={setAtivo}
+            />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

@@ -280,7 +280,12 @@ export function NovaPessoaInline({
             <div className="space-y-2">
               <Label>Acesso ao sistema</Label>
               <div className="flex items-center gap-3 rounded-md border px-3 py-2">
-                <Switch id="np-login" checked={comLogin} onCheckedChange={setComLogin} />
+                <Switch
+                  aria-label="Acesso ao sistema"
+                  id="np-login"
+                  checked={comLogin}
+                  onCheckedChange={setComLogin}
+                />
                 <Label htmlFor="np-login" className="cursor-pointer text-sm font-normal">
                   {comLogin
                     ? "Com login (acessa o Portal do Parceiro)"

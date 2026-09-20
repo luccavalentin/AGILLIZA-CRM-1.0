@@ -297,7 +297,11 @@ export function CamposParticipante({
         <div className="space-y-3">
           <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
             <Label className="cursor-pointer">Utiliza FGTS?</Label>
-            <Switch checked={f.utiliza_fgts} onCheckedChange={(v) => set({ utiliza_fgts: v })} />
+            <Switch
+              aria-label="Utiliza FGTS?"
+              checked={f.utiliza_fgts}
+              onCheckedChange={(v) => set({ utiliza_fgts: v })}
+            />
           </div>
           <label
             className={cn(

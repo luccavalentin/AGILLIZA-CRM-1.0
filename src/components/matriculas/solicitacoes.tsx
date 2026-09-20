@@ -182,7 +182,11 @@ export function Solicitacoes({
                 <TableCell className="text-right tabular-nums">{formatBRL(s.valor)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Switch checked={s.reembolsado} onCheckedChange={(v) => toggle(s.id, v)} />
+                    <Switch
+                      aria-label="Reembolso recebido"
+                      checked={s.reembolsado}
+                      onCheckedChange={(v) => toggle(s.id, v)}
+                    />
                     {s.reembolsado ? (
                       <Badge variant="secondary" className="gap-1">
                         <CheckCircle2 className="h-3 w-3" /> Recebido

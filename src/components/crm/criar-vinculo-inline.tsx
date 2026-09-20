@@ -158,7 +158,12 @@ export function CriarVinculoInline({
           </div>
 
           <div className="flex items-center gap-3 rounded-md border border-border px-3 py-2">
-            <Switch id="cv-login" checked={comLogin} onCheckedChange={setComLogin} />
+            <Switch
+              aria-label="Criar com login no Portal do Parceiro"
+              id="cv-login"
+              checked={comLogin}
+              onCheckedChange={setComLogin}
+            />
             <Label htmlFor="cv-login" className="cursor-pointer text-sm font-normal">
               {comLogin
                 ? "Com login (acessa o Portal do Parceiro)"

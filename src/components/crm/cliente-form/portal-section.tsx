@@ -34,6 +34,7 @@ export function PortalSection({
         <div className="flex items-center gap-2">
           {portalSalvando && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
           <Switch
+            aria-label="Acesso do cliente ao portal"
             id="portal"
             checked={portal}
             onCheckedChange={alternarPortal}

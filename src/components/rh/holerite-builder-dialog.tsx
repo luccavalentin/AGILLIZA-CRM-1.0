@@ -380,6 +380,7 @@ export function HoleriteBuilderDialog({
                         <p className="text-xs text-muted-foreground">Sobre o salário base</p>
                       </div>
                       <Switch
+                        aria-label="Periculosidade (30%)"
                         checked={e.periculosidade}
                         onCheckedChange={(v) => set("periculosidade", v)}
                       />
@@ -457,6 +458,7 @@ export function HoleriteBuilderDialog({
                         </p>
                       </div>
                       <Switch
+                        aria-label="Descontar vale-transporte"
                         checked={e.desconta_vt}
                         onCheckedChange={(v) => set("desconta_vt", v)}
                       />
@@ -474,6 +476,7 @@ export function HoleriteBuilderDialog({
                         <p className="text-xs text-muted-foreground">Coparticipação do empregado</p>
                       </div>
                       <Switch
+                        aria-label="Descontar vale-refeição"
                         checked={e.desconta_vr}
                         onCheckedChange={(v) => set("desconta_vr", v)}
                       />
@@ -491,6 +494,7 @@ export function HoleriteBuilderDialog({
                         <p className="text-xs text-muted-foreground">Coparticipação do empregado</p>
                       </div>
                       <Switch
+                        aria-label="Descontar vale-alimentação"
                         checked={e.desconta_va}
                         onCheckedChange={(v) => set("desconta_va", v)}
                       />

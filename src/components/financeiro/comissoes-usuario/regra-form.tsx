@@ -402,7 +402,7 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
                 Se desligada, deixa de gerar novos lançamentos.
               </div>
             </div>
-            <Switch checked={ativo} onCheckedChange={setAtivo} />
+            <Switch aria-label="Regra ativa" checked={ativo} onCheckedChange={setAtivo} />
           </div>
         </div>
 
