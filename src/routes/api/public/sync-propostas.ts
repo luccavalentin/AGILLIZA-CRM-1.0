@@ -20,6 +20,22 @@ export const Route = createFileRoute("/api/public/sync-propostas")({
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        // Uma rodada por vez, como já valia para a reconciliação de simulações.
+        // O agendador chama de minuto em minuto e uma rodada com 200 propostas
+        // pode passar disso: sem trava, duas rodadas consultavam as mesmas
+        // propostas na HomeFin ao mesmo tempo (a marcação da consulta só é
+        // gravada depois da resposta). Falhando a trava, segue como antes.
+        {
+          const { data: reservou, error: erroTrava } = await (supabaseAdmin as any).rpc(
+            "rotina_reservar",
+            { _nome: "sync-propostas", _intervalo_segundos: 45 },
+          );
+          if (!erroTrava && reservou !== true) {
+            return Response.json({ ok: true, pulada: true });
+          }
+        }
+
         const { sincronizarPropostaImpl } = await import("@/lib/propostas/enviar.server");
 
         // Propostas que ainda podem receber retorno do banco (não terminais)
