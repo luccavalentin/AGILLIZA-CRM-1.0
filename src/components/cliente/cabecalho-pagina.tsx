@@ -40,8 +40,15 @@ export function CabecalhoPagina({
           <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
             {titulo}
           </h1>
+          {/*
+            O subtítulo quebra em até duas linhas: com `truncate`, "Preferências
+            de aparência, som e privacidade dos seus dados" parava em "…som e"
+            no celular — 261 px para um texto de 405 (QA 19/09/2026).
+          */}
           {subtitulo && (
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">{subtitulo}</p>
+            <p className="mt-0.5 line-clamp-2 break-words text-sm leading-snug text-muted-foreground">
+              {subtitulo}
+            </p>
           )}
         </div>
         {acao && <div className="col-span-2 sm:col-span-1 sm:ml-auto">{acao}</div>}

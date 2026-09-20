@@ -63,10 +63,14 @@ function StatCard({
   hintTone?: "muted" | "primary" | "success";
   to?: string;
 }) {
+  // No celular o ícone de 44 px, a seta e o respiro de 16 px deixavam só 56 px
+  // para o texto: "Documentos pendentes" quebrava no meio da palavra
+  // ("Documen/tos"). Ícone menor, respiro menor e seta escondida — a mesma
+  // medida que a tela de acompanhamento já usava (QA 19/09/2026).
   const inner = (
-    <CardContent className="flex items-center gap-3 p-4">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-        <Icon className="h-5 w-5" strokeWidth={2} />
+    <CardContent className="flex items-center gap-2 p-3 sm:gap-3 sm:p-4">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground sm:h-11 sm:w-11">
+        <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-2xl font-bold leading-tight text-foreground">{valor}</p>
@@ -87,7 +91,7 @@ function StatCard({
         )}
       </div>
       {to && (
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+        <ChevronRight className="hidden h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary sm:block" />
       )}
     </CardContent>
   );

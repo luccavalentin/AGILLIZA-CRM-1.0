@@ -510,7 +510,10 @@ export function ThreadChat({
                   ? "digitando…"
                   : peerOnline
                     ? "Atendimento ativo"
-                    : "Atendente indisponível no momento"}
+                    : // "Atendente indisponível no momento" não cabia na faixa do
+                      // celular e saía cortado ("...no mo"); o nome do atendente
+                      // está logo acima, então basta o estado (QA 19/09/2026).
+                      "Indisponível no momento"}
               </span>
             </span>
           </div>

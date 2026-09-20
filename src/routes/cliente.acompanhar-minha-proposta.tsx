@@ -572,7 +572,15 @@ function MiniStat({
           <p className="line-clamp-2 break-words text-xs font-medium leading-snug text-muted-foreground">
             {label}
           </p>
-          {hint && <p className="mt-0.5 truncate text-[11px] text-muted-foreground/80">{hint}</p>}
+          {/*
+            `truncate` cortava o nome da etapa no celular ("Enviado p/ apro…"):
+            109 px para um texto que precisa de 165 (QA 19/09/2026).
+          */}
+          {hint && (
+            <p className="mt-0.5 line-clamp-2 break-words text-[11px] leading-snug text-muted-foreground/80">
+              {hint}
+            </p>
+          )}
           {linkLabel && to && (
             <Link
               to={to}

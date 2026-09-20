@@ -59,7 +59,17 @@ export function ChatSoundSetting() {
               Um alerta sonoro toca quando você recebe uma nova mensagem no chat, em qualquer tela.
             </p>
           </div>
-          <Switch id="chat-som" checked={ativo} onCheckedChange={alternar} />
+          {/*
+            O `htmlFor` do rótulo não nomeia o interruptor: o Radix renderiza um
+            <button role="switch">, e <label for> só nomeia campos de formulário.
+            Sem o aria-label o leitor de tela anunciava só "ativado" (QA 19/09/2026).
+          */}
+          <Switch
+            id="chat-som"
+            aria-label="Tocar som ao receber mensagens"
+            checked={ativo}
+            onCheckedChange={alternar}
+          />
         </div>
 
         {ativo && (
