@@ -894,9 +894,12 @@ export function ThreadChat({
               submeter();
             }
           }}
-          placeholder="Escreva sua mensagem…"
+          // "Escreva sua mensagem…" pedia 193 px e o campo tem 166 no celular:
+          // o texto quebrava em duas linhas e a segunda ficava cortada pela
+          // altura de uma linha só (QA 19/09/2026).
+          placeholder="Sua mensagem…"
           rows={1}
-          className="max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-2xl bg-muted/50 px-4 py-2.5"
+          className="max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-2xl bg-muted/50 px-3 py-2.5 sm:px-4"
         />
 
         <Button
