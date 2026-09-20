@@ -209,6 +209,39 @@ export function extrairErroRetorno(
   return null;
 }
 
+/**
+ * O banco recusou o ENVIO porque já tem uma proposta em análise para o CPF.
+ *
+ * Não é falha de integração: a proposta está no banco (deste envio ou de um
+ * anterior). Reenviar só gera a mesma recusa — foi o que aconteceu na
+ * PRO-000471 (Bradesco, código 103), em que o operador definiu a agência,
+ * reenviou e recebeu "já existe proposta em análise para o cpf informado".
+ */
+export function ehPropostaJaNoBanco(retorno: unknown): boolean {
+  let obj: any = retorno;
+  if (typeof retorno === "string") {
+    try {
+      obj = JSON.parse(retorno);
+    } catch {
+      obj = { mensagem: retorno };
+    }
+  }
+  const codigo = String(obj?.codigo ?? obj?.code ?? "").trim();
+  if (codigo === "103") return true;
+  const texto = normalizarTexto(
+    [obj?.mensagem, obj?.message, obj?.erro, obj?.error_description, obj?.error?.message]
+      .filter(Boolean)
+      .join(" "),
+  );
+  if (!texto) return false;
+  return (
+    (texto.includes("ja existe proposta") ||
+      texto.includes("ja possui proposta") ||
+      texto.includes("proposta ja existente")) &&
+    (texto.includes("analise") || texto.includes("cpf"))
+  );
+}
+
 /** Traduz o tipoSituacao da proposta (por banco) para status interno do banco. */
 export function statusInternoBanco(
   tipo: string,

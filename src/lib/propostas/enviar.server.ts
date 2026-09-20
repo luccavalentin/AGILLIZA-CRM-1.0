@@ -20,6 +20,7 @@ import {
   statusDaEtapa,
   ehFalhaIntegracaoBanco,
   MSG_FALHA_INTEGRACAO,
+  ehPropostaJaNoBanco,
   extrairErroRetorno,
   statusInternoBanco,
   situacaoBancoDeTipo,
@@ -1599,6 +1600,66 @@ async function enviarPropostaImplInner({
       const falhaEnvioReal =
         !temProtocoloBanco &&
         (situacaoTipoResp === "P" || situacaoTipoResp === "E" || ehFalhaIntegracaoBanco(resp));
+
+      // O banco já tem proposta em análise para este CPF: a proposta ESTÁ lá,
+      // então isto não é erro de envio nem convite a reenviar — reenviar só
+      // repete a recusa (PRO-000471, Bradesco código 103). Fica aguardando o
+      // retorno do banco, com o motivo à vista.
+      if (falhaEnvioReal && ehPropostaJaNoBanco(resp?.retornoIntegracao)) {
+        const banco = b.nome_banco ?? "banco";
+        const aviso = `A proposta está em análise no ${banco}: ele não abre uma segunda para o mesmo CPF. Acompanhe o retorno aqui — abrimos um follow-up na HomeFin pedindo a posição.`;
+        // O banco confirmou que TEM a proposta em análise. O estado honesto é
+        // "em análise de crédito": o polling segue lendo a oportunidade e o
+        // desfecho (aprovada/recusada) cai aqui como em qualquer outra.
+        await supabase
+          .from("proposta_bancos")
+          .update({
+            status_banco: "enviada",
+            situacao_banco: "em_analise",
+            selecionado: true,
+            mensagem_banco: aviso,
+            raw_response: resp,
+          } as any)
+          .eq("id", b.id);
+        await supabase
+          .from("propostas")
+          .update({
+            status: "em_analise_credito",
+            status_atualizado_em: new Date().toISOString(),
+            ultimo_erro: null,
+          } as any)
+          .eq("id", propostaId);
+        await supabase.from("proposta_historico").insert({
+          proposta_id: propostaId,
+          tipo_evento: "sincronizacao",
+          descricao: aviso,
+          ator_id: userId,
+        } as any);
+        // Follow-up na HomeFin: é por ele que a equipe devolve a posição da
+        // proposta que já está no banco.
+        try {
+          const { enviarFollowupHomefinImpl } = await import("./enviar/lifecycle.server");
+          await enviarFollowupHomefinImpl({
+            propostaId,
+            titulo: `Proposta já em análise no ${banco}`,
+            comentario: `Ao enviar, o ${banco} respondeu que já existe proposta em análise para o CPF ${prop.cpf_cnpj ?? ""}. Por favor, informem a posição e o protocolo da proposta em andamento. Retorno do banco: ${String(extrairErroRetorno(resp?.retornoIntegracao, { codigoApenasComoErro: false }) ?? "").slice(0, 300)}`,
+            supabase,
+          });
+        } catch (e) {
+          console.warn(
+            "[proposta] follow-up de proposta duplicada não registrado na HomeFin",
+            e instanceof Error ? e.message : String(e),
+          );
+        }
+        return {
+          banco_id: b.banco_id,
+          nome_banco: b.nome_banco,
+          status: "enviada",
+          numero_proposta_banco: null,
+          mensagem: aviso,
+        };
+      }
+
       if (falhaEnvioReal) {
         // A recusa da integração NÃO depende de haver mensagem.
         //
