@@ -22,27 +22,38 @@ export function PropostaRetornoWatcher({ userId }: Props) {
   useEffect(() => {
     if (!userId) return;
 
-    // Monitora alterações em simulacao_historico para testes de CPF
+    // Retorno de simulação: avisa quando TODOS os bancos escolhidos terminaram.
+    //
+    // Antes isto ouvia `simulacao_historico` esperando uma linha "Comparativo de
+    // taxas concluído". Essa linha nunca foi gravada por ninguém (0 em 13.038
+    // registros) e a tabela sequer está publicada no realtime — ou seja, o aviso
+    // de simulação pronta nunca aparecia para quem estava em outra tela
+    // (QA 19/09/2026). `simulacao_bancos` é publicada e é onde o retorno cai.
+    const TERMINAIS = ["simulada", "erro"];
     const channelSim = supabase
-      .channel("rt-simulacao-historico")
+      .channel("rt-simulacao-retorno")
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "UPDATE",
           schema: "public",
-          table: "simulacao_historico",
+          table: "simulacao_bancos",
         },
         async (payload) => {
           const row = payload.new as any;
-          if (row.tipo === "info" && row.descricao.includes("Comparativo de taxas concluído")) {
-            const { data: sim } = await supabase
-              .from("simulacoes")
-              .select(
-                `
-                id, 
-                numero_simulacao, 
-                nome_cliente, 
-                usuario_responsavel_id, 
+          const old = payload.old as any;
+          if (!row?.simulacao_id) return;
+          if (old && old.status_banco === row.status_banco) return;
+          if (!TERMINAIS.includes(String(row.status_banco ?? "").toLowerCase())) return;
+
+          const { data: sim } = await supabase
+            .from("simulacoes")
+            .select(
+              `
+                id,
+                numero_simulacao,
+                nome_cliente,
+                usuario_responsavel_id,
                 usuario_criador_id,
                 renda_total,
                 compoe_renda,
@@ -54,47 +65,53 @@ export function PropostaRetornoWatcher({ userId }: Props) {
                   valor_parcela,
                   taxa_juros_ano,
                   selecionado,
-                  _sistema,
+                  sistema_amortizacao_banco,
                   prazo_pagamento_max,
                   valor_financiamento_max,
                   valor_iof
                 )
               `,
-              )
-              .eq("id", row.simulacao_id)
-              .maybeSingle();
-
-            if (
-              !sim ||
-              (sim.usuario_responsavel_id !== userId && sim.usuario_criador_id !== userId)
             )
-              return;
+            .eq("id", row.simulacao_id)
+            .maybeSingle();
 
-            const uniqueKey = `sim-info-${row.id}`;
-            if (seenSimIds.current.has(uniqueKey)) return;
-            seenSimIds.current.add(uniqueKey);
+          if (!sim) return;
+          if (sim.usuario_responsavel_id !== userId && sim.usuario_criador_id !== userId) return;
 
-            if (!tipoAtivo("retorno_simulacao")) return;
+          const escolhidos = (sim.bancos ?? []).filter((b: any) => b.selecionado);
+          if (!escolhidos.length) return;
+          // Ainda falta banco respondendo: espera o último para avisar uma vez só.
+          if (
+            escolhidos.some(
+              (b: any) => !TERMINAIS.includes(String(b.status_banco ?? "").toLowerCase()),
+            )
+          )
+            return;
 
-            if (tipoComSom("retorno_simulacao")) {
-              previewChatSound("tri"); // Som positivo para conclusão
-            }
+          const prontos = escolhidos.filter((b: any) => b.status_banco === "simulada");
+          const uniqueKey = `sim-${sim.id}-${escolhidos.length}`;
+          if (seenSimIds.current.has(uniqueKey)) return;
+          seenSimIds.current.add(uniqueKey);
 
-            adicionarPopup({
-              id: sim.id,
-              tipo: "simulacao",
-              numero: sim.numero_simulacao,
-              status: "Comparativo de Taxas Concluído",
-              nome_cliente: sim.nome_cliente || "—",
-              banco: "Multi-proponente",
-              dados_adicionais: {
-                bancos: (sim.bancos || []).filter(
-                  (b: any) => b.selecionado && b.status_banco === "simulada",
-                ),
-                simulacao: sim,
-              },
-            });
+          if (!tipoAtivo("retorno_simulacao")) return;
+
+          if (tipoComSom("retorno_simulacao")) {
+            previewChatSound(prontos.length ? "tri" : "suave");
           }
+
+          adicionarPopup({
+            id: sim.id,
+            tipo: "simulacao",
+            numero: sim.numero_simulacao,
+            status: prontos.length ? "Comparativo de Taxas Concluído" : "Sem retorno dos bancos",
+            nome_cliente: sim.nome_cliente || "—",
+            banco:
+              escolhidos.length > 1 ? `${escolhidos.length} bancos` : escolhidos[0]?.nome_banco,
+            dados_adicionais: {
+              bancos: prontos,
+              simulacao: sim,
+            },
+          });
         },
       )
       .subscribe();
