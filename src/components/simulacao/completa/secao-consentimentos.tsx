@@ -10,6 +10,7 @@ export function SecaoConsentimentos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       <div className="space-y-3">
         <label className="flex items-start gap-2 text-sm">
           <Checkbox
+            aria-label="Autorizo o tratamento dos meus dados pessoais conforme a LGPD"
             checked={f.consentimento_lgpd}
             onCheckedChange={(c) => set("consentimento_lgpd", Boolean(c))}
             className={erros.consentimento_lgpd ? "border-destructive" : ""}
@@ -23,6 +24,7 @@ export function SecaoConsentimentos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
         <label className="flex items-start gap-2 text-sm">
           <Checkbox
+            aria-label="Autorizo a consulta ao SCR/Bacen"
             checked={f.consentimento_scr}
             onCheckedChange={(c) => set("consentimento_scr", Boolean(c))}
             className={erros.consentimento_scr ? "border-destructive" : ""}

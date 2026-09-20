@@ -177,7 +177,11 @@ export function EnviarBancoDialog({
             <ul className="divide-y divide-border rounded-lg border border-border">
               {aptos.map((d) => (
                 <li key={d.id} className="flex items-center gap-2.5 px-3 py-2 text-sm">
-                  <Checkbox checked={marcados.has(d.id)} onCheckedChange={() => alternar(d.id)} />
+                  <Checkbox
+                    aria-label={nomeDoTipoDocumento(d.tipo_documento)}
+                    checked={marcados.has(d.id)}
+                    onCheckedChange={() => alternar(d.id)}
+                  />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-foreground">
                       {nomeDoTipoDocumento(d.tipo_documento)}

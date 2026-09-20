@@ -106,6 +106,7 @@ function ConsentimentoLGPD() {
 
         <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-card p-4">
           <Checkbox
+            aria-label="Li e concordo com o Termo de Consentimento"
             checked={aceito}
             onCheckedChange={(v) => setAceito(v === true)}
             className="mt-0.5"

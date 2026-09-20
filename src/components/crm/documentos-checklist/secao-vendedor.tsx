@@ -127,6 +127,7 @@ export function SecaoVendedor({
             {vendCasado && (
               <div className="flex items-center gap-3 py-1.5">
                 <Checkbox
+                  aria-label="Dados bancários do cônjuge do vendedor"
                   checked={check[`${itemPrefix}v_dados_banc_conj`] === true}
                   onCheckedChange={(v) => setManual(`${itemPrefix}v_dados_banc_conj`, v === true)}
                 />

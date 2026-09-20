@@ -631,6 +631,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         <Campo label="Financiar despesas?">
           <label className="flex items-center gap-2 py-2 text-sm text-foreground">
             <Checkbox
+              aria-label="Incluir as despesas no valor financiado"
               checked={!!f.fg_financiar_despesas}
               onCheckedChange={() => alternarFinanciarDespesas()}
             />

@@ -53,6 +53,7 @@ export function DialogAlvos({
                 {PAPEIS_ALVO.map((p) => (
                   <label key={p.value} className="flex items-center gap-2 text-sm">
                     <Checkbox
+                      aria-label={p.label}
                       checked={alvoAtivo(moduloAtivo, {
                         alvo_tipo: "papel",
                         alvo_valor: p.value,
@@ -77,6 +78,7 @@ export function DialogAlvos({
                 {tipos.map((t) => (
                   <label key={t.id} className="flex items-center gap-2 text-sm">
                     <Checkbox
+                      aria-label={t.nome}
                       checked={alvoAtivo(moduloAtivo, {
                         alvo_tipo: "tipo_pessoa",
                         alvo_valor: t.slug,
@@ -104,6 +106,7 @@ export function DialogAlvos({
                 {pessoas.map((u) => (
                   <label key={u.id} className="flex items-center gap-2 text-sm">
                     <Checkbox
+                      aria-label={u.nome ?? u.email ?? "Usuário"}
                       checked={alvoAtivo(moduloAtivo, {
                         alvo_tipo: "usuario",
                         alvo_id: u.id,

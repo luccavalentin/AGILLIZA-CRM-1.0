@@ -310,6 +310,7 @@ export function CamposParticipante({
             )}
           >
             <Checkbox
+              aria-label="Autorizo a consulta e o tratamento dos meus dados para análise de crédito"
               checked={f.fg_autorizacao_dados}
               onCheckedChange={(v) => set({ fg_autorizacao_dados: Boolean(v) })}
               className="mt-0.5"

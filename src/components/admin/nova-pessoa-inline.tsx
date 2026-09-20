@@ -448,6 +448,7 @@ export function NovaPessoaInline({
                               <span className="text-sm font-medium">{mod.label}</span>
                               <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Checkbox
+                                  aria-label={`Marcar tudo em ${mod.label}`}
                                   checked={todasMarcadas}
                                   onCheckedChange={(c) => marcarTodoModulo(mod.modulo, c === true)}
                                 />
@@ -476,6 +477,7 @@ export function NovaPessoaInline({
                               return (
                                 <label key={a.acao} className="flex items-center gap-2 text-sm">
                                   <Checkbox
+                                    aria-label={a.label}
                                     checked={estado[k]?.permitido ?? false}
                                     onCheckedChange={(c) => toggle(mod.modulo, a.acao, c === true)}
                                   />

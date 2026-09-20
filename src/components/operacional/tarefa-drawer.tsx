@@ -509,6 +509,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                           {(todasTags ?? []).map((tg: any) => (
                             <label key={tg.id} className="flex items-center gap-2 text-sm">
                               <Checkbox
+                                aria-label={tg.nome}
                                 checked={tagIds.has(tg.id)}
                                 onCheckedChange={(v) => toggleTag(tg.id, !!v)}
                               />
@@ -602,6 +603,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                       {data!.checklist.map((it: any) => (
                         <label key={it.id} className="flex items-center gap-2 text-sm">
                           <Checkbox
+                            aria-label={it.descricao}
                             checked={it.concluido}
                             onCheckedChange={async (v) => {
                               await toggleFn({ data: { id: it.id, concluido: !!v } });

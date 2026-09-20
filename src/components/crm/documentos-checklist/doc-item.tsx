@@ -43,7 +43,11 @@ export function DocItem({
 
   return (
     <div className="flex items-center gap-3 py-1.5">
-      <Checkbox checked={checked} onCheckedChange={(v) => setManual(itemKey, v === true)} />
+      <Checkbox
+        aria-label={label}
+        checked={checked}
+        onCheckedChange={(v) => setManual(itemKey, v === true)}
+      />
       {editing ? (
         <Input
           autoFocus

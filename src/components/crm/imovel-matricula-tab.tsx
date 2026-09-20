@@ -440,6 +440,7 @@ export function MatriculaTab({
           {AVERBACOES_CHECKS.map(([k, l]) => (
             <label key={k} className="flex items-center gap-2 text-sm">
               <Checkbox
+                aria-label={l}
                 checked={ehVerdadeiro(m[k])}
                 onCheckedChange={(v) => set(k, Boolean(v) as never)}
               />
@@ -456,6 +457,7 @@ export function MatriculaTab({
           {ONUS_CHECKS.map(([k, l]) => (
             <label key={k} className="flex items-center gap-2 text-sm">
               <Checkbox
+                aria-label={l}
                 checked={ehVerdadeiro(m[k])}
                 onCheckedChange={(v) => set(k, Boolean(v) as never)}
               />
@@ -591,6 +593,7 @@ export function MatriculaTab({
           <div className="flex flex-col justify-end gap-2">
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
+                aria-label="CND de IPTU disponível"
                 checked={ehVerdadeiro(m.cnd_iptu)}
                 onCheckedChange={(v) => set("cnd_iptu", Boolean(v))}
               />
@@ -598,6 +601,7 @@ export function MatriculaTab({
             </label>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
+                aria-label="Nada consta do condomínio"
                 checked={ehVerdadeiro(m.cnd_condominio)}
                 onCheckedChange={(v) => set("cnd_condominio", Boolean(v))}
               />

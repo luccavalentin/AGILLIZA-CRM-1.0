@@ -117,7 +117,11 @@ export function SelecionarBancosPdfDialog({
 
         <div className="brand-scroll scroll-shadow-bottom flex-1 space-y-1 overflow-y-auto px-6 py-4">
           <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2">
-            <Checkbox checked={todosMarcados} onCheckedChange={alternarTodos} />
+            <Checkbox
+              aria-label="Selecionar todos"
+              checked={todosMarcados}
+              onCheckedChange={alternarTodos}
+            />
             <span className="text-sm font-medium text-foreground">Selecionar todos</span>
           </label>
           {(bancosExibidos ?? []).map((b, i) => {
@@ -130,6 +134,7 @@ export function SelecionarBancosPdfDialog({
               >
                 <label className="flex flex-1 cursor-pointer items-center gap-3">
                   <Checkbox
+                    aria-label={b.nome_banco ?? "Banco"}
                     checked={!!selecionados[key]}
                     onCheckedChange={(v) => setSelecionados((prev) => ({ ...prev, [key]: !!v }))}
                   />

@@ -121,6 +121,7 @@ export function ChecklistOperacaoView({
                   <li key={chave}>
                     <label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-accent/40">
                       <Checkbox
+                        aria-label={item}
                         checked={marcado}
                         onCheckedChange={() => alternar(chave)}
                         className="mt-0.5 shrink-0"

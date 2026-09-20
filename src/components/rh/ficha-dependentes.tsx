@@ -272,6 +272,7 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
               <div className="flex flex-wrap gap-4 rounded-md border border-border/60 p-3">
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
+                    aria-label="Dedução de IRRF"
                     checked={form.ir}
                     onCheckedChange={(v) => setForm((p) => ({ ...p, ir: v === true }))}
                   />
@@ -279,6 +280,7 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
+                    aria-label="Plano de saúde"
                     checked={form.plano_saude}
                     onCheckedChange={(v) => setForm((p) => ({ ...p, plano_saude: v === true }))}
                   />
@@ -286,6 +288,7 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
+                    aria-label="Salário-família"
                     checked={form.salario_familia}
                     onCheckedChange={(v) => setForm((p) => ({ ...p, salario_familia: v === true }))}
                   />

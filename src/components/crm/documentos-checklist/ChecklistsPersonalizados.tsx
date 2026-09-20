@@ -302,7 +302,11 @@ function ItemGrupo({
       }`}
     >
       <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground/60 active:cursor-grabbing" />
-      <Checkbox checked={item.feito} onCheckedChange={(v) => onToggle(v === true)} />
+      <Checkbox
+        aria-label={item.label}
+        checked={item.feito}
+        onCheckedChange={(v) => onToggle(v === true)}
+      />
       {editando ? (
         <Input
           autoFocus
