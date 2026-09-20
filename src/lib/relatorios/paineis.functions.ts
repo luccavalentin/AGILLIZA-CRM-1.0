@@ -543,7 +543,11 @@ export const getPanelDados = createServerFn({ method: "POST" })
             ),
             todasAsLinhas(() =>
               escopoEq(
-                supabase.from("demandas").select("status,prazo_sla").order("id"),
+                supabase
+                  .from("demandas")
+                  .select("status,prazo_sla")
+                  .is("deleted_at", null)
+                  .order("id"),
                 "responsavel_id",
                 "criador_id",
                 "@cli:cliente_id",
@@ -551,7 +555,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
             ),
             todasAsLinhas(() =>
               escopoEq(
-                supabase.from("tasks").select("status,prazo").order("id"),
+                supabase.from("tasks").select("status,prazo").is("deleted_at", null).order("id"),
                 "responsavel_id",
                 "criador_id",
                 "@cli:cliente_id",
@@ -1017,6 +1021,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
                 supabase
                   .from("demandas")
                   .select("status,prazo_sla,titulo,id")
+                  .is("deleted_at", null)
                   .gte("created_at", deIni)
                   .lte("created_at", ateFim)
                   .order("id"),
@@ -1030,6 +1035,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
                 supabase
                   .from("tasks")
                   .select("status,prazo,id")
+                  .is("deleted_at", null)
                   .gte("created_at", deIni)
                   .lte("created_at", ateFim)
                   .order("id"),
@@ -1899,6 +1905,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
               supabase
                 .from("tasks")
                 .select("id,numero,titulo,status,prazo,created_at,descricao")
+                .is("deleted_at", null)
                 .order("id"),
               "responsavel_id",
               "criador_id",
@@ -1937,6 +1944,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
               supabase
                 .from("demandas")
                 .select("id,numero,titulo,status,prazo_sla,created_at")
+                .is("deleted_at", null)
                 .order("id"),
               "responsavel_id",
               "criador_id",
@@ -1981,6 +1989,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
               supabase
                 .from("tasks")
                 .select("id,numero,titulo,status,prazo,created_at")
+                .is("deleted_at", null)
                 .gte("created_at", deIni)
                 .lte("created_at", ateFim)
                 .order("id"),
