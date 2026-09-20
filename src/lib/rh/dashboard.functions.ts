@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todasAsLinhas } from "@/lib/paginar";
 import { calcularFeriasCLT } from "@/lib/rh/ferias-clt";
 
 export interface RhKpis {
@@ -90,19 +91,26 @@ export const obterKpisRh = createServerFn({ method: "GET" })
     let ocorr: any[] = [];
     let feriasProgramadas = 0;
     if (ids.length > 0) {
+      // Paginadas: `.limit(5000)` parava nas 1.000 linhas do PostgREST, então
+      // os números de férias e ocorrências saíam menores que o real assim que
+      // a equipe crescesse (QA 19/09/2026).
       const [g, o] = await Promise.all([
-        supabase
-          .from("rh_ferias")
-          .select(
-            "funcionario_id, periodo_aquisitivo_inicio, dias_gozados, abono_dias, status, data_inicio",
-          )
-          .in("funcionario_id", ids)
-          .limit(5000),
-        supabase
-          .from("rh_ocorrencias")
-          .select("funcionario_id, data_inicio, dias, abonada, tipo")
-          .in("funcionario_id", ids)
-          .limit(5000),
+        todasAsLinhas(() =>
+          supabase
+            .from("rh_ferias")
+            .select(
+              "funcionario_id, periodo_aquisitivo_inicio, dias_gozados, abono_dias, status, data_inicio",
+            )
+            .in("funcionario_id", ids)
+            .order("id"),
+        ),
+        todasAsLinhas(() =>
+          supabase
+            .from("rh_ocorrencias")
+            .select("funcionario_id, data_inicio, dias, abonada, tipo")
+            .in("funcionario_id", ids)
+            .order("id"),
+        ),
       ]);
       gozos = g.data ?? [];
       ocorr = o.data ?? [];

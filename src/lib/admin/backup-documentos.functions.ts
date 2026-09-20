@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todasAsLinhas } from "@/lib/paginar";
 
 export interface ItemBackupDoc {
   pasta: string;
@@ -48,11 +49,13 @@ export const montarInventarioDocumentos = createServerFn({ method: "GET" })
 
     // 1. Documentos de clientes
     {
-      const { data } = await supabase
-        .from("cliente_documentos")
-        .select("storage_path, nome_arquivo, clientes!inner(nome, correspondente_id)")
-        .eq("clientes.correspondente_id", corr)
-        .limit(5000);
+      const { data } = await todasAsLinhas(() =>
+        supabase
+          .from("cliente_documentos")
+          .select("storage_path, nome_arquivo, clientes!inner(nome, correspondente_id)")
+          .eq("clientes.correspondente_id", corr)
+          .order("id"),
+      );
       for (const d of (data ?? []) as any[]) {
         if (!d.storage_path) continue;
         brutos.push({
@@ -66,11 +69,15 @@ export const montarInventarioDocumentos = createServerFn({ method: "GET" })
 
     // 2. Documentos de propostas
     {
-      const { data } = await supabase
-        .from("proposta_documentos")
-        .select("storage_path, nome_documento, propostas!inner(numero_proposta, correspondente_id)")
-        .eq("propostas.correspondente_id", corr)
-        .limit(5000);
+      const { data } = await todasAsLinhas(() =>
+        supabase
+          .from("proposta_documentos")
+          .select(
+            "storage_path, nome_documento, propostas!inner(numero_proposta, correspondente_id)",
+          )
+          .eq("propostas.correspondente_id", corr)
+          .order("id"),
+      );
       for (const d of (data ?? []) as any[]) {
         if (!d.storage_path) continue;
         brutos.push({
@@ -84,11 +91,13 @@ export const montarInventarioDocumentos = createServerFn({ method: "GET" })
 
     // 3. Anexos de tarefas
     {
-      const { data } = await supabase
-        .from("task_attachments")
-        .select("storage_path, nome, tasks!inner(numero, correspondente_id)")
-        .eq("tasks.correspondente_id", corr)
-        .limit(5000);
+      const { data } = await todasAsLinhas(() =>
+        supabase
+          .from("task_attachments")
+          .select("storage_path, nome, tasks!inner(numero, correspondente_id)")
+          .eq("tasks.correspondente_id", corr)
+          .order("id"),
+      );
       for (const d of (data ?? []) as any[]) {
         if (!d.storage_path) continue;
         brutos.push({
@@ -102,11 +111,13 @@ export const montarInventarioDocumentos = createServerFn({ method: "GET" })
 
     // 4. Anexos de demandas
     {
-      const { data } = await supabase
-        .from("demanda_anexos")
-        .select("storage_path, nome, demandas!inner(numero, correspondente_id)")
-        .eq("demandas.correspondente_id", corr)
-        .limit(5000);
+      const { data } = await todasAsLinhas(() =>
+        supabase
+          .from("demanda_anexos")
+          .select("storage_path, nome, demandas!inner(numero, correspondente_id)")
+          .eq("demandas.correspondente_id", corr)
+          .order("id"),
+      );
       for (const d of (data ?? []) as any[]) {
         if (!d.storage_path) continue;
         brutos.push({
@@ -120,12 +131,14 @@ export const montarInventarioDocumentos = createServerFn({ method: "GET" })
 
     // 5. Comprovantes financeiros (contas a pagar/receber)
     {
-      const { data: pag } = await supabase
-        .from("financial_payables")
-        .select("comprovante_path, numero")
-        .eq("correspondente_id", corr)
-        .not("comprovante_path", "is", null)
-        .limit(5000);
+      const { data: pag } = await todasAsLinhas(() =>
+        supabase
+          .from("financial_payables")
+          .select("comprovante_path, numero")
+          .eq("correspondente_id", corr)
+          .not("comprovante_path", "is", null)
+          .order("id"),
+      );
       for (const d of (pag ?? []) as any[]) {
         if (!d.comprovante_path) continue;
         brutos.push({
@@ -135,12 +148,14 @@ export const montarInventarioDocumentos = createServerFn({ method: "GET" })
           nome: nomeDoPath(d.comprovante_path, d.numero ? `${d.numero}` : null),
         });
       }
-      const { data: rec } = await supabase
-        .from("financial_receivables")
-        .select("comprovante_path, numero")
-        .eq("correspondente_id", corr)
-        .not("comprovante_path", "is", null)
-        .limit(5000);
+      const { data: rec } = await todasAsLinhas(() =>
+        supabase
+          .from("financial_receivables")
+          .select("comprovante_path, numero")
+          .eq("correspondente_id", corr)
+          .not("comprovante_path", "is", null)
+          .order("id"),
+      );
       for (const d of (rec ?? []) as any[]) {
         if (!d.comprovante_path) continue;
         brutos.push({
@@ -154,11 +169,13 @@ export const montarInventarioDocumentos = createServerFn({ method: "GET" })
 
     // 6. Formulários bancários (referências compartilhadas)
     {
-      const { data } = await supabase
-        .from("formularios_bancarios")
-        .select("storage_path, nome, banco")
-        .not("storage_path", "is", null)
-        .limit(5000);
+      const { data } = await todasAsLinhas(() =>
+        supabase
+          .from("formularios_bancarios")
+          .select("storage_path, nome, banco")
+          .not("storage_path", "is", null)
+          .order("id"),
+      );
       for (const d of (data ?? []) as any[]) {
         if (!d.storage_path) continue;
         brutos.push({
@@ -172,11 +189,13 @@ export const montarInventarioDocumentos = createServerFn({ method: "GET" })
 
     // 7. Módulo Arquivos (árvore de pastas)
     {
-      const { data } = await supabase
-        .from("arquivos_nos")
-        .select("id, parent_id, tipo, nome, storage_path")
-        .eq("correspondente_id", corr)
-        .limit(10000);
+      const { data } = await todasAsLinhas(() =>
+        supabase
+          .from("arquivos_nos")
+          .select("id, parent_id, tipo, nome, storage_path")
+          .eq("correspondente_id", corr)
+          .order("id"),
+      );
       const nos = (data ?? []) as {
         id: string;
         parent_id: string | null;

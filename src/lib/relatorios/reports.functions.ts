@@ -133,7 +133,7 @@ function statusOpcoesPorCodigo(codigo: string): { value: string; label: string }
   }
 }
 
-/** Teto de linhas por resposta do PostgREST: `.limit(20000)` não passa disso. */
+/** Teto de linhas por resposta do PostgREST: pedir mais não passa disso. */
 const LOTE_PGRST = 1000;
 
 /**

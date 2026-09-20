@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todasAsLinhas } from "@/lib/paginar";
 import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 
 export type TarefaStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
@@ -604,11 +605,14 @@ export const listarEquipeTarefas = createServerFn({ method: "GET" })
       .eq("correspondente_id", corr)
       .order("nome");
     if (error) throw new Error(error.message);
-    const { data: tarefas } = await supabase
-      .from("tasks")
-      .select("responsavel_id, status")
-      .eq("correspondente_id", corr)
-      .limit(2000);
+    const { data: tarefas } = await todasAsLinhas(() =>
+      supabase
+        .from("tasks")
+        .select("responsavel_id, status")
+        .eq("correspondente_id", corr)
+        .is("deleted_at", null)
+        .order("id"),
+    );
     const cont = new Map<string, { abertas: number; em_andamento: number; concluidas: number }>();
     (tarefas ?? []).forEach((t: any) => {
       if (!t.responsavel_id) return;

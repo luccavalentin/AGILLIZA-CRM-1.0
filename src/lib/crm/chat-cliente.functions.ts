@@ -139,11 +139,15 @@ export const listarConversasCliente = createServerFn({ method: "GET" })
     // filtro final por escopo de dados do cliente é aplicado mais abaixo, de
     // modo que nenhuma mensagem enviada pelo cliente fique invisível só
     // porque foi direcionada a outro atendente.
+    // O teto aqui é proposital — a lista de conversas se monta pelas mensagens
+    // mais recentes. Mas `.limit(3000)` era ilusão: o PostgREST devolve no
+    // máximo 1.000 por resposta, então sempre foram 1.000 (QA 19/09/2026).
+    // Assumindo o número real, fica claro o que a tela usa.
     const { data: r, error } = await supabase
       .from("cliente_app_mensagens")
       .select(colunas)
       .order("criada_em", { ascending: false })
-      .limit(3000);
+      .limit(1000);
     if (error) throw new Error(error.message);
     const rows: any[] = r ?? [];
 

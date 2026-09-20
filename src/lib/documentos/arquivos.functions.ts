@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todasAsLinhas } from "@/lib/paginar";
 
 export interface ArquivoNo {
   id: string;
@@ -163,12 +164,14 @@ export const pesquisarArquivos = createServerFn({ method: "GET" })
         .order("tipo", { ascending: true })
         .order("nome", { ascending: true })
         .limit(200),
-      supabase
-        .from("arquivos_nos")
-        .select("id, nome, parent_id")
-        .eq("correspondente_id", corr)
-        .eq("tipo", "pasta")
-        .limit(10000),
+      todasAsLinhas(() =>
+        supabase
+          .from("arquivos_nos")
+          .select("id, nome, parent_id")
+          .eq("correspondente_id", corr)
+          .eq("tipo", "pasta")
+          .order("id"),
+      ),
     ]);
     if (matchRes.error) throw new Error(matchRes.error.message);
     const pastas = (pastasRes.data ?? []) as {
@@ -489,12 +492,14 @@ export const listarPastas = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return [];
-    const { data } = await supabase
-      .from("arquivos_nos")
-      .select("id, nome, parent_id")
-      .eq("correspondente_id", corr)
-      .eq("tipo", "pasta")
-      .limit(10000);
+    const { data } = await todasAsLinhas(() =>
+      supabase
+        .from("arquivos_nos")
+        .select("id, nome, parent_id")
+        .eq("correspondente_id", corr)
+        .eq("tipo", "pasta")
+        .order("id"),
+    );
     const nos = (data ?? []) as { id: string; nome: string; parent_id: string | null }[];
     const mapa = new Map(nos.map((n) => [n.id, n]));
     const caminhoDe = (id: string): string => {

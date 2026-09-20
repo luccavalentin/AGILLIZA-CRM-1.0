@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todasAsLinhas } from "@/lib/paginar";
 import { z } from "zod";
 import {
   calcularFeriasCLT,
@@ -83,17 +84,23 @@ export const obterControleFerias = createServerFn({ method: "GET" })
       const ids = rows.map((r) => r.id as string);
 
       const [{ data: gozos }, { data: ocorrencias }] = await Promise.all([
-        supabase
-          .from("rh_ferias")
-          .select("funcionario_id, periodo_aquisitivo_inicio, dias_gozados, abono_dias, status")
-          .in("funcionario_id", ids)
-          .limit(5000),
-        supabase
-          .from("rh_ocorrencias")
-          .select("funcionario_id, data_inicio, dias, abonada, tipo")
-          .in("funcionario_id", ids)
-          .eq("tipo", "falta")
-          .limit(5000),
+        // Paginadas: `.limit(5000)` parava nas 1.000 linhas do PostgREST e o
+        // saldo de férias sairia menor do que o real (QA 19/09/2026).
+        todasAsLinhas(() =>
+          supabase
+            .from("rh_ferias")
+            .select("funcionario_id, periodo_aquisitivo_inicio, dias_gozados, abono_dias, status")
+            .in("funcionario_id", ids)
+            .order("id"),
+        ),
+        todasAsLinhas(() =>
+          supabase
+            .from("rh_ocorrencias")
+            .select("funcionario_id, data_inicio, dias, abonada, tipo")
+            .in("funcionario_id", ids)
+            .eq("tipo", "falta")
+            .order("id"),
+        ),
       ]);
 
       const gozosPor = new Map<string, any[]>();

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todasAsLinhas } from "@/lib/paginar";
 import { toTitleCase } from "@/lib/utils";
 
 export interface ParceiroItem {
@@ -19,13 +20,15 @@ export const listarParceiros = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ParceiroItem[]> => {
     const { supabase } = context;
-    const { data, error } = await supabase
-      .from("parceiro_detalhes")
-      .select(
-        "id, profile_id, razao_social, creci, tipo_pessoa, percentual_comissao, profiles!parceiro_detalhes_profile_id_fkey(nome, email, telefone)",
-      )
-      .order("created_at", { ascending: false })
-      .limit(2000);
+    const { data, error } = await todasAsLinhas(() =>
+      supabase
+        .from("parceiro_detalhes")
+        .select(
+          "id, profile_id, razao_social, creci, tipo_pessoa, percentual_comissao, profiles!parceiro_detalhes_profile_id_fkey(nome, email, telefone)",
+        )
+        .order("created_at", { ascending: false })
+        .order("id"),
+    );
     if (error) throw new Error(error.message);
     return (data ?? []).map((p: any) => ({
       id: p.id,
@@ -62,10 +65,9 @@ export const listarOpcoesVinculoPropostas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<OpcoesVinculoPropostas> => {
     const { supabase } = context;
-    const { data: vinculos, error } = await supabase
-      .from("cliente_parceiros")
-      .select("parceiro_id, tipo_vinculo")
-      .limit(5000);
+    const { data: vinculos, error } = await todasAsLinhas(() =>
+      supabase.from("cliente_parceiros").select("parceiro_id, tipo_vinculo").order("id"),
+    );
     if (error) throw new Error(error.message);
 
     const idsPorTipo = {

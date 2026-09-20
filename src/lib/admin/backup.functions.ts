@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todasAsLinhas } from "@/lib/paginar";
 
 export interface BackupLista {
   id: string;
@@ -280,10 +281,14 @@ export const exportarBackupCompleto = createServerFn({ method: "GET" })
     const tabelas: TabelaExportada[] = [];
     for (const g of GRUPOS_EXPORT) {
       try {
-        const { data, error } = await (supabase.from(g.tabela as never) as any)
-          .select("*")
-          .eq("correspondente_id", corr)
-          .limit(5000);
+        // Paginado: `.limit(5000)` devolvia as primeiras 1.000 linhas e o
+        // backup saía pela metade, sem nenhum aviso (QA 19/09/2026).
+        const { data, error } = await todasAsLinhas(() =>
+          (supabase.from(g.tabela as never) as any)
+            .select("*")
+            .eq("correspondente_id", corr)
+            .order("id"),
+        );
         if (error) continue;
         const brutas = (data ?? []) as Record<string, unknown>[];
         const colunas = brutas.length > 0 ? Object.keys(brutas[0]) : [];

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todasAsLinhas } from "@/lib/paginar";
 
 /** Rótulo da pasta-mãe para clientes sem imobiliária vinculada. */
 export const AVULSO_LABEL = "Avulso";
@@ -60,13 +61,15 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     // mesmo sem clientes vinculados.
     let perfisQuery = supabase.from("profiles").select("id, nome, tipo_pessoa, correspondente_id");
     if (corr) perfisQuery = perfisQuery.eq("correspondente_id", corr);
-    const { data: perfis } = await perfisQuery.limit(2000);
+    // Paginadas: `.limit(2000)`/`.limit(4000)` paravam nas 1.000 linhas do
+    // PostgREST e sumiam pessoas dos seletores (QA 19/09/2026).
+    const { data: perfis } = await todasAsLinhas(() => perfisQuery.order("id"));
 
     let papeisQuery = supabase
       .from("user_roles")
       .select("user_id, role, profiles!inner(id, nome, correspondente_id)");
     if (corr) papeisQuery = papeisQuery.eq("profiles.correspondente_id", corr);
-    const { data: papeis } = await papeisQuery.limit(4000);
+    const { data: papeis } = await todasAsLinhas(() => papeisQuery.order("user_id"));
 
     const comerciaisMap = new Map<string, string>();
     const imobsBaseMap = new Map<string, string>();

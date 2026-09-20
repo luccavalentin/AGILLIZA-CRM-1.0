@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { todasAsLinhas } from "@/lib/paginar";
 import type { ConciliacaoItem, ConciliacaoLote, ResumoBanco } from "@/lib/conciliacao/tipos";
 
 /** Processa um arquivo já lido no navegador e grava o lote conciliado. */
@@ -127,20 +128,26 @@ export const listarItensConciliacao = createServerFn({ method: "GET" })
       .parse(data),
   )
   .handler(async ({ data, context }): Promise<ConciliacaoItem[]> => {
-    let q = context.supabase
-      .from("conciliacao_itens")
-      .select("*")
-      .eq("lote_id", data.loteId)
-      .order("resultado", { ascending: true })
-      .limit(5000);
-    if (data.resultado) q = q.eq("resultado", data.resultado);
-    if (data.busca) {
-      const b = data.busca.replace(/[%,]/g, " ");
-      q = q.or(
-        `numero_proposta_banco.ilike.%${b}%,nome_cliente_banco.ilike.%${b}%,numero_proposta_sistema.ilike.%${b}%`,
-      );
-    }
-    const { data: rows, error } = await q;
+    // Paginado: `.limit(5000)` parava nas 1.000 linhas do PostgREST e o lote
+    // aparecia pela metade na conferência (QA 19/09/2026). `id` desempata a
+    // ordem por resultado, senão a paginação repete e perde linhas.
+    const montar = () => {
+      let q = context.supabase
+        .from("conciliacao_itens")
+        .select("*")
+        .eq("lote_id", data.loteId)
+        .order("resultado", { ascending: true })
+        .order("id");
+      if (data.resultado) q = q.eq("resultado", data.resultado);
+      if (data.busca) {
+        const b = data.busca.replace(/[%,]/g, " ");
+        q = q.or(
+          `numero_proposta_banco.ilike.%${b}%,nome_cliente_banco.ilike.%${b}%,numero_proposta_sistema.ilike.%${b}%`,
+        );
+      }
+      return q;
+    };
+    const { data: rows, error } = await todasAsLinhas(montar);
     if (error) throw new Error(error.message);
     return (rows ?? []) as unknown as ConciliacaoItem[];
   });
