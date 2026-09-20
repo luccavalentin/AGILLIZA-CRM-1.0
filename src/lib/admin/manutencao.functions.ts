@@ -175,8 +175,17 @@ export interface AgendadorSaude {
   falhas_24h: number;
 }
 
+export interface AlertaSistema {
+  tipo: string;
+  titulo: string;
+  valor: number | null;
+  desde: string;
+}
+
 export interface SaudeSistema {
   agendadores: AgendadorSaude[];
+  alertas_abertos: AlertaSistema[];
+  alertas_resolvidos_24h: number;
   http_falhas_1h: number;
   simulacoes_presas: number;
   locks_vencidos: number;

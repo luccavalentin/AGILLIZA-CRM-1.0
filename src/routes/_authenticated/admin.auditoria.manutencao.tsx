@@ -85,6 +85,37 @@ function PaginaManutencao() {
               <p className="text-sm text-muted-foreground">Medindo…</p>
             ) : (
               <>
+                {/*
+                  O que a rotina de 15 em 15 minutos anotou sozinha. Sem isto,
+                  um travamento às 3 da manhã que se resolve às 7 nunca é visto.
+                */}
+                {saude.alertas_abertos.length > 0 ? (
+                  <ul className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+                    {saude.alertas_abertos.map((a) => (
+                      <li key={a.tipo} className="text-sm">
+                        <span className="font-medium text-destructive">{a.titulo}</span>
+                        <span className="text-muted-foreground">
+                          {a.valor != null && ` · ${a.valor}`} · desde{" "}
+                          {new Date(a.desde).toLocaleString("pt-BR", {
+                            timeZone: "America/Sao_Paulo",
+                            day: "2-digit",
+                            month: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    Nenhum alerta aberto
+                    {saude.alertas_resolvidos_24h > 0 &&
+                      ` · ${saude.alertas_resolvidos_24h} resolvido(s) nas últimas 24 h`}
+                  </p>
+                )}
+
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <Sinal
                     rotulo="Simulações presas (30 min)"
