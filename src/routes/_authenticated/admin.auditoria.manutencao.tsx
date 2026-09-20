@@ -1,12 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AdminHero } from "@/components/admin/admin-hero";
-import { Wrench, AlertCircle, CheckCircle2, Loader2, Info } from "lucide-react";
+import { Wrench, AlertCircle, CheckCircle2, Loader2, Info, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { obterSumarioDestravamento, destravarSimulacoes } from "@/lib/admin/manutencao.functions";
+import {
+  obterSumarioDestravamento,
+  destravarSimulacoes,
+  obterSaudeSistema,
+} from "@/lib/admin/manutencao.functions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria/manutencao")({
   head: () => ({ meta: [{ title: "Manutenção do Sistema — Agilliza" }] }),
@@ -20,6 +25,12 @@ function PaginaManutencao() {
     queryKey: ["admin-manutencao-sumario"],
     queryFn: () => obterSumarioDestravamento(),
     refetchInterval: 30000,
+  });
+
+  const { data: saude, isLoading: carregandoSaude } = useQuery({
+    queryKey: ["admin-saude-sistema"],
+    queryFn: () => obterSaudeSistema(),
+    refetchInterval: 60_000,
   });
 
   const mutation = useMutation({
@@ -54,6 +65,87 @@ function PaginaManutencao() {
       />
 
       <div className="grid gap-6">
+        {/*
+          Painel de sinais vitais: até 19/09/2026 não existia nada que dissesse
+          "isto está parado". O relatório somou errado por meses sem ninguém
+          perceber; estes números são os que teriam denunciado.
+        */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Saúde do sistema
+            </CardTitle>
+            <CardDescription>
+              Agendadores, envios presos e tamanho do banco. Atualiza a cada minuto.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {carregandoSaude || !saude ? (
+              <p className="text-sm text-muted-foreground">Medindo…</p>
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <Sinal
+                    rotulo="Simulações presas (30 min)"
+                    valor={saude.simulacoes_presas}
+                    ruimAcimaDe={0}
+                  />
+                  <Sinal rotulo="Locks vencidos" valor={saude.locks_vencidos} ruimAcimaDe={0} />
+                  <Sinal
+                    rotulo="Bancos sem retorno (24 h)"
+                    valor={saude.bancos_sem_retorno_24h}
+                    ruimAcimaDe={0}
+                  />
+                  <Sinal
+                    rotulo="Propostas sem sincronizar (2 h)"
+                    valor={saude.propostas_sem_sincronizar_2h}
+                    ruimAcimaDe={0}
+                  />
+                  <Sinal rotulo="Falhas HTTP (1 h)" valor={saude.http_falhas_1h} ruimAcimaDe={0} />
+                  <Sinal
+                    rotulo="Banco de dados"
+                    valor={`${saude.banco_mb} MB`}
+                    detalhe={`${saude.logs_mb} MB são logs da HomeFin`}
+                  />
+                </div>
+
+                <div className="rounded-lg border border-border">
+                  <p className="border-b border-border px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
+                    Agendadores
+                  </p>
+                  <ul className="divide-y divide-border">
+                    {saude.agendadores.map((a) => {
+                      const atrasado = a.minutos_atras == null || a.minutos_atras > 90;
+                      return (
+                        <li
+                          key={a.nome}
+                          className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
+                        >
+                          <span className="text-foreground">{a.nome}</span>
+                          <span
+                            className={cn(
+                              "tabular-nums",
+                              atrasado ? "text-destructive" : "text-muted-foreground",
+                            )}
+                          >
+                            {a.minutos_atras == null
+                              ? "nunca rodou"
+                              : a.minutos_atras < 1
+                                ? "agora há pouco"
+                                : `há ${a.minutos_atras} min`}
+                            {a.falhas_24h > 0 && ` · ${a.falhas_24h} falha(s) em 24 h`}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -127,6 +219,37 @@ function PaginaManutencao() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+/** Um número da saúde do sistema, vermelho quando passa do aceitável. */
+function Sinal({
+  rotulo,
+  valor,
+  detalhe,
+  ruimAcimaDe,
+}: {
+  rotulo: string;
+  valor: number | string;
+  detalhe?: string;
+  ruimAcimaDe?: number;
+}) {
+  const ruim = ruimAcimaDe != null && typeof valor === "number" && valor > ruimAcimaDe;
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3">
+      <p
+        className={cn(
+          "text-2xl font-bold tabular-nums",
+          ruim ? "text-destructive" : "text-foreground",
+        )}
+      >
+        {valor}
+      </p>
+      <p className="mt-0.5 line-clamp-2 break-words text-xs font-medium leading-snug text-muted-foreground">
+        {rotulo}
+      </p>
+      {detalhe && <p className="text-[11px] text-muted-foreground/80">{detalhe}</p>}
     </div>
   );
 }

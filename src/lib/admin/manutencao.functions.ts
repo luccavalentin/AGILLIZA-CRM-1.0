@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 /**
@@ -166,3 +167,40 @@ export const obterSumarioDestravamento = createServerFn({ method: "GET" }).handl
     presasSemId: semId,
   };
 });
+
+export interface AgendadorSaude {
+  nome: string;
+  ultima_em: string | null;
+  minutos_atras: number | null;
+  falhas_24h: number;
+}
+
+export interface SaudeSistema {
+  agendadores: AgendadorSaude[];
+  http_falhas_1h: number;
+  simulacoes_presas: number;
+  locks_vencidos: number;
+  bancos_sem_retorno_24h: number;
+  propostas_sem_sincronizar_2h: number;
+  banco_mb: number;
+  logs_mb: number;
+  medido_em: string;
+}
+
+/**
+ * Sinais vitais do sistema.
+ *
+ * O relatório contou errado por meses e nada avisou: não havia nenhum lugar
+ * que dissesse "isto está parado" (QA 19/09/2026). Junta o que antes só dava
+ * para ver abrindo o banco — agendadores, envios presos, propostas que
+ * pararam de sincronizar, falhas de HTTP e o tamanho do banco. A checagem de
+ * administrador é feita dentro da função do banco.
+ */
+export const obterSaudeSistema = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<SaudeSistema> => {
+    const { supabase } = context;
+    const { data, error } = await (supabase as any).rpc("sistema_saude");
+    if (error) throw new Error(error.message);
+    return data as SaudeSistema;
+  });
