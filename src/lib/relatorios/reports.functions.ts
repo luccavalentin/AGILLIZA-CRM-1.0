@@ -153,6 +153,17 @@ async function todasPaginas(
     const linhas = (data ?? []) as any[];
     acumulado.push(...linhas);
     if (linhas.length < LOTE_PGRST) break;
+    // Último lote cheio: ainda há linhas lá fora e o teto chegou. Melhor um
+    // erro na cara do que um número menor do que a realidade — foi assim que
+    // o relatório passou meses somando só parte das propostas.
+    if (i === maxLotes - 1) {
+      return {
+        data: acumulado,
+        error: {
+          message: `O relatório passou de ${maxLotes * LOTE_PGRST} linhas e a soma pararia no meio. Reduza o período do filtro; se precisar do total, a conta tem de ser feita no banco.`,
+        },
+      };
+    }
   }
   return { data: acumulado, error: null };
 }
@@ -505,43 +516,22 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function listarOpcoesOperacionais() {
-      const [{ data: bancosCad }, { data: bancosSims }, { data: prodProps }, { data: prodSims }] =
-        await Promise.all([
-          supabase
-            .from("homefin_bancos")
-            .select("nome_banco")
-            .eq("ativo", true)
-            .order("nome_banco", { ascending: true }),
-          // Paginadas: `.limit(20000)` parava em 1.000 linhas e as opções
-          // de banco/produto vinham só das primeiras.
-          todasPaginas(() =>
-            (supabase as any).from("simulacao_bancos").select("nome_banco").order("id"),
-          ),
-          todasPaginas(() =>
-            (supabase as any).from("propostas").select("produto").is("deleted_at", null).order("id"),
-          ),
-          todasPaginas(() =>
-            (supabase as any)
-              .from("simulacoes")
-              .select("produto")
-              .is("deleted_at", null)
-              .order("id"),
-          ),
-        ]);
-      const bancos = [
-        ...new Set(
-          [...((bancosCad ?? []) as any[]), ...((bancosSims ?? []) as any[])]
-            .map((b) => String(b.nome_banco ?? ""))
-            .filter(Boolean),
-        ),
-      ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      // Os distintos vêm do banco. Antes a tela baixava TODAS as linhas de
+      // simulacao_bancos (12.126), propostas e simulações — ~19 mil linhas,
+      // de mil em mil, para terminar com algumas dezenas de valores. E a
+      // paginação tem teto: passando de 50 mil linhas, opção sumiria sem
+      // avisar (QA 19/09/2026).
+      const { data, error } = await (supabase as any).rpc("relatorios_opcoes_operacionais");
+      if (error) throw new Error(error.message);
+      const bancos = [...new Set(((data?.bancos ?? []) as string[]).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b, "pt-BR"),
+      );
       const produtos = [
         ...new Set(
           [
             "financiamento_imobiliario",
             "home_equity",
-            ...((prodProps ?? []) as any[]).map((p) => String(p.produto ?? "")),
-            ...((prodSims ?? []) as any[]).map((p) => String(p.produto ?? "")),
+            ...((data?.produtos ?? []) as string[]),
           ].filter(Boolean),
         ),
       ].sort((a, b) => a.localeCompare(b, "pt-BR"));
@@ -3153,7 +3143,9 @@ export const runReport = createServerFn({ method: "POST" })
       const coms = await todasPaginas(() => {
         let cq = (supabase as any)
           .from("comissoes")
-          .select("valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,created_at")
+          .select(
+            "valor_bruto,split_parceiro,split_interno,status,usuario_responsavel_id,created_at",
+          )
           .gte("created_at", deIni)
           .lte("created_at", ateFim)
           .order("id");

@@ -404,6 +404,16 @@ async function todasAsLinhas<T = any>(
     const linhas = (data ?? []) as T[];
     acumulado.push(...linhas);
     if (linhas.length < lote) break;
+    // Teto alcançado com o último lote cheio: o painel mostraria um número
+    // menor do que a realidade sem avisar ninguém. Falha explícita.
+    if (i === maxLotes - 1) {
+      return {
+        data: null,
+        error: {
+          message: `O painel passou de ${maxLotes * lote} linhas e a conta pararia no meio. Reduza o período do filtro; se precisar do total, a conta tem de ser feita no banco.`,
+        },
+      };
+    }
   }
   return { data: acumulado, error: null };
 }
