@@ -116,6 +116,13 @@ function Acompanhar() {
   const emAndamento = etapas.filter((e) => e.status === "atual").length;
   const restantes = etapas.filter((e) => e.status !== "concluida").length;
   const pendentes = Math.max(0, restantes - emAndamento);
+  // O prazo vem sempre como "última movimentação + 7 dias". Parada a etapa,
+  // a data vence e o cliente via uma promessa no passado ("Até 15/09" no dia
+  // 19/09). Vencida, a tela diz que a previsão está sendo refeita — sem
+  // inventar data nova (QA 19/09/2026).
+  const prazoVencido = prazo_proxima_etapa
+    ? new Date(`${prazo_proxima_etapa}T23:59:59-03:00`).getTime() < Date.now()
+    : false;
 
   const heroData = [{ name: "p", value: progresso, fill: "#ffffff" }];
   const panoramaData = [
@@ -441,9 +448,17 @@ function Acompanhar() {
           />
           <MiniStat
             icon={Calendar}
-            valor={`Até ${fmtData(prazo_proxima_etapa, { day: "2-digit", month: "2-digit", year: "numeric" })}`}
+            valor={
+              prazoVencido
+                ? "Em revisão"
+                : `Até ${fmtData(prazo_proxima_etapa, { day: "2-digit", month: "2-digit", year: "numeric" })}`
+            }
             label="Prazo estimado"
-            hint="Para próxima etapa"
+            hint={
+              prazoVencido
+                ? `A previsão anterior era ${fmtData(prazo_proxima_etapa)}`
+                : "Para próxima etapa"
+            }
             small
           />
           <MiniStat
