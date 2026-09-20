@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useRouter } from "@tanstack/react-router";
 import { Archive, ArrowLeft, Loader2, MessageCircle, MessagesSquare, Search } from "lucide-react";
@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { listarThreadsCentral, type ThreadKind } from "@/lib/chats/central.functions";
 import {
@@ -33,11 +34,43 @@ export function CentralChatPage() {
   const listarEstadoFn = useServerFn(listarEstadoChatDoUsuario);
   const listarVinculosFn = useServerFn(listarVinculosEtiqueta);
   const listarEtiquetasFn = useServerFn(listarEtiquetas);
+  const queryClient = useQueryClient();
   const { data: threads, isLoading } = useQuery({
     queryKey: ["threads-central"],
     queryFn: () => listarFn(),
-    refetchInterval: 15_000,
+    // A lista reage às mensagens em tempo real (abaixo); o intervalo fica só
+    // como rede de segurança se a conexão do realtime cair.
+    refetchInterval: 60_000,
   });
+
+  // Mensagem nova em qualquer conversa reordena a lista na hora, em vez de
+  // esperar o próximo ciclo: antes uma resposta podia levar 15 s para aparecer
+  // na lista de quem estava com a central aberta (QA 19/09/2026). As quatro
+  // tabelas já estão publicadas no realtime.
+  useEffect(() => {
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const recarregar = () => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["threads-central"] });
+        queryClient.invalidateQueries({ queryKey: ["chat-estado-usuario"] });
+      }, 800);
+    };
+    const canal = supabase.channel("rt-central-chat");
+    for (const table of [
+      "dm_mensagens",
+      "demanda_mensagens",
+      "cliente_app_mensagens",
+      "dm_conversas",
+    ]) {
+      canal.on("postgres_changes", { event: "*", schema: "public", table }, recarregar);
+    }
+    canal.subscribe();
+    return () => {
+      if (debounce) clearTimeout(debounce);
+      supabase.removeChannel(canal);
+    };
+  }, [queryClient]);
   const { data: estados } = useQuery({
     queryKey: ["chat-estado-usuario"],
     queryFn: () => listarEstadoFn(),
