@@ -128,3 +128,38 @@ describe("RG padrão = CPF", () => {
     expect(f.map((c) => c.chave)).toContain("numero_documento");
   });
 });
+
+describe("endereço do proponente", () => {
+  const base = {
+    tipo_situacao: "A",
+    nome: "Maria Souza",
+    tipo_qualificacao: "CO",
+    tipo_pessoa: "F",
+    cpf_cnpj: "41612449832",
+    data_nascimento: "1990-01-01",
+    nome_mae: "Ana Souza",
+    tipo_sexo: "F",
+    estado_civil: "S",
+    tipo_documento_identidade: "RG",
+    numero_documento: "123456",
+    orgao_expedidor: "SSP",
+    uf_expedicao: "SP",
+    profissao: "Analista",
+    renda: 8000,
+    email: "a@b.com.br",
+    celular: "19999999999",
+    utiliza_fgts: false,
+    fg_autorizacao_dados: true,
+  };
+
+  it("vazio não barra o envio: o padrão do cadastro entra no lugar", () => {
+    expect(faltantesEnvolvido(base)).toEqual([]);
+  });
+
+  it("o que falta fora do endereço continua sendo cobrado", () => {
+    const faltando = faltantesEnvolvido({ ...base, nome_mae: "", profissao: "" }).map(
+      (c) => c.chave,
+    );
+    expect(faltando.sort()).toEqual(["nome_mae", "profissao"]);
+  });
+});

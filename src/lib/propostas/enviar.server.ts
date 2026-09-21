@@ -38,6 +38,7 @@ import {
   celularConjugeOuPadrao,
   emailConjugeOuPadrao,
   ouPadrao,
+  ENDERECO_PADRAO,
   PADROES_CADASTRO,
 } from "@/lib/crm/padroes-cadastro";
 import { dadosBancariosParticipante, normalizarAgencia } from "@/lib/bancos/agencia";
@@ -1188,6 +1189,36 @@ export async function garantirEnderecoParticipantes({
       ...dadosConjuge,
     };
 
+    // Proponente sem endereço completo: o banco recusa com um erro técnico que
+    // não diz quem nem o quê. Em vez de barrar o envio, o que faltar recebe o
+    // endereço padrão do cadastro — o operador corrige depois na conferência,
+    // como acontece com profissão, empresa e documento. Vendedor fica de fora.
+    const ehProponente = (enumBancoId(part?.tipoQualificacao) ?? "CO") !== "VD";
+    if (ehProponente && ehPessoaFisica) {
+      const completados: string[] = [];
+      const completar = (
+        campo: "cep" | "logradouro" | "numeroLogradouro" | "bairro" | "municipio" | "uf",
+        padrao: string,
+        rotulo: string,
+        vazio: boolean,
+      ) => {
+        if (!vazio) return;
+        payload[campo] = padrao;
+        completados.push(rotulo);
+      };
+      completar("cep", ENDERECO_PADRAO.cep, "CEP", String(payload.cep ?? "").length !== 8);
+      completar("logradouro", ENDERECO_PADRAO.logradouro, "rua", !payload.logradouro);
+      completar("numeroLogradouro", ENDERECO_PADRAO.numero, "número", !payload.numeroLogradouro);
+      completar("bairro", ENDERECO_PADRAO.bairro, "bairro", !payload.bairro);
+      completar("municipio", ENDERECO_PADRAO.cidade, "cidade", !payload.municipio);
+      completar("uf", ENDERECO_PADRAO.uf, "UF", !payload.uf);
+      if (completados.length > 0) {
+        console.warn(
+          `[enviar.server] endereço padrão aplicado a ${payload.nomeParticipante ?? "participante"} (faltava ${completados.join(", ")})`,
+        );
+      }
+    }
+
     // Validação OFICIAL baseada nos campos "S" do CreateParticipantRequest.
     //
     // Só vale para quem temos cadastrado localmente E que é proponente (CO/TI).
@@ -1210,28 +1241,6 @@ export async function garantirEnderecoParticipantes({
       if (faltantes.length > 0) {
         const msg = msgCadastroIncompleto(pb?.nome_banco ?? "banco", env, faltantes);
         throw new IntegracaoBancariaError(msg.texto);
-      }
-    }
-
-    // Proponente sem endereço completo não vai ao banco: o banco recusa com um
-    // erro técnico que não diz quem nem o quê. Vendedor não entra nesta regra.
-    const ehProponente = (enumBancoId(part?.tipoQualificacao) ?? "CO") !== "VD";
-    if (ehProponente && ehPessoaFisica) {
-      const faltaEndereco = [
-        String(payload.cep ?? "").length !== 8 && "CEP",
-        !payload.logradouro && "rua",
-        !payload.numeroLogradouro && "número",
-        !payload.bairro && "bairro",
-        !payload.municipio && "cidade",
-        !payload.uf && "UF",
-      ].filter(Boolean) as string[];
-      if (faltaEndereco.length > 0) {
-        const nome = String(payload.nomeParticipante ?? "participante");
-        throw new IntegracaoBancariaError(
-          env
-            ? `Endereço de ${nome} incompleto (falta ${faltaEndereco.join(", ")}). Complete na conferência de dados e envie de novo.`
-            : `${nome} está na oportunidade da HomeFin, mas não nos participantes desta proposta, e está sem endereço (falta ${faltaEndereco.join(", ")}). Inclua ${nome} na proposta com o endereço completo e envie de novo.`,
-        );
       }
     }
 

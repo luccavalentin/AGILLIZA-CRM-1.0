@@ -66,6 +66,19 @@ export const CAMPOS_OBRIGATORIOS_PARTICIPANTE: CampoObrigatorio[] = [
   },
 ];
 
+/**
+ * Endereço do proponente: continua pedido na tela, mas não barra o envio — o
+ * que ficar vazio sai com o endereço padrão do cadastro.
+ */
+const CAMPOS_ENDERECO_COM_PADRAO = new Set([
+  "cep",
+  "logradouro",
+  "numero_logradouro",
+  "bairro",
+  "municipio",
+  "uf",
+]);
+
 /** Chaves obrigatórias (para marcar o asterisco na tela). */
 export const CHAVES_OBRIGATORIAS = new Set(CAMPOS_OBRIGATORIOS_PARTICIPANTE.map((c) => c.chave));
 
@@ -140,6 +153,10 @@ export function faltantesEnvolvido(
     if (c.chave === "tipo_documento_identidade" && !vazio(env?.[c.chave])) {
       return !TIPOS_DOCUMENTO_ACEITOS.includes(String(env[c.chave]).trim().toUpperCase());
     }
+    // Endereço vazio vai ao banco com o endereço padrão do cadastro (ver
+    // `ENDERECO_PADRAO` e `enviar.server.ts`), então não trava o envio — o
+    // operador completa depois na conferência, como faz com profissão e RG.
+    if (CAMPOS_ENDERECO_COM_PADRAO.has(c.chave)) return false;
     // RG vazio de pessoa física vai ao banco como o próprio CPF (padrão do
     // cadastro), então não trava o envio.
     if (

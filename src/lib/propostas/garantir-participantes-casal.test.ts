@@ -19,6 +19,7 @@ vi.mock("./propostas.functions", () => ({
 }));
 
 import { garantirEnderecoParticipantes } from "./enviar.server";
+import { ENDERECO_PADRAO } from "@/lib/crm/padroes-cadastro";
 
 /** Supabase mínimo: cada tabela devolve o que o teste define. */
 function supabaseFake(tabelas: Record<string, any>) {
@@ -159,7 +160,7 @@ describe("envio de casal ao banco", () => {
     });
   });
 
-  it("proponente fora da proposta e sem endereço barra o envio com aviso claro", async () => {
+  it("proponente sem endereço no cadastro vai com o endereço padrão, sem barrar o envio", async () => {
     participantesHomefin = [
       partHomefin("41612449832", 1),
       {
@@ -169,16 +170,22 @@ describe("envio de casal ao banco", () => {
         uf: "SP",
       },
     ];
-    await expect(
-      garantirEnderecoParticipantes({
-        prop: { ...prop, estado_civil: "S" },
-        pb: { nome_banco: "Itaú" },
-        idOportunidade: "31676",
-        ctx: { simulacao_id: null, proposta_id: "p1", correspondente_id: null },
-        supabase: supabaseFake({
-          proposta_envolvidos: [{ ...titular, estado_civil: "S", regime_casamento: null }],
-        }),
+    await garantirEnderecoParticipantes({
+      prop: { ...prop, estado_civil: "S" },
+      pb: { nome_banco: "Itaú" },
+      idOportunidade: "31676",
+      ctx: { simulacao_id: null, proposta_id: "p1", correspondente_id: null },
+      supabase: supabaseFake({
+        proposta_envolvidos: [{ ...titular, estado_civil: "S", regime_casamento: null }],
       }),
-    ).rejects.toThrow(/Caio Guerrero.*sem endereço/);
+    });
+    const fora = chamadas.filter((c) => c.metodo === "PUT").find((c) => c.endpoint.endsWith("/3"));
+    expect(fora?.payload).toMatchObject({
+      cep: ENDERECO_PADRAO.cep,
+      logradouro: ENDERECO_PADRAO.logradouro,
+      numeroLogradouro: ENDERECO_PADRAO.numero,
+      bairro: ENDERECO_PADRAO.bairro,
+      municipio: ENDERECO_PADRAO.cidade,
+    });
   });
 });
