@@ -38,6 +38,7 @@ import {
   celularConjugeOuPadrao,
   emailConjugeOuPadrao,
   ouPadrao,
+  rendaConjugeOuPadrao,
   rgDoCpf,
   ENDERECO_PADRAO,
   PADROES_CADASTRO,
@@ -714,7 +715,9 @@ async function dadosFamiliaresAtuaisDaProposta({
       estadoCivilBanco(principal?.estado_civil) ||
       estadoCivilBanco(prop.estado_civil) ||
       undefined,
-    compoeRenda: Boolean(prop.compoe_renda) && prop.compoe_renda_conjuge !== false,
+    // `propostas` não tem `compoe_renda_conjuge`; a chave da simulação chega
+    // aqui copiada em `compoe_renda` (ver criação da proposta).
+    compoeRenda: Boolean(prop.compoe_renda),
   };
 }
 
@@ -994,15 +997,13 @@ export async function garantirEnderecoParticipantes({
             textoLivreParaBanco(src?.conjuge_profissao) ||
             textoLivreParaBanco(part?.nomeProfissaoConjuge) ||
             PADROES_CADASTRO.profissao,
-          rendaConjuge:
-            // O titular sempre compõe renda; `compoe_renda_conjuge` fala do cônjuge dele.
-            !ehPrincipal || prop.compoe_renda_conjuge !== false
-              ? (conjuge?.renda ??
-                src?.conjuge_renda ??
-                simConj?.renda_conjuge ??
-                part?.rendaConjuge ??
-                undefined)
-              : 0,
+          // Renda própria do cônjuge, com padrão quando vazia ou zero. Antes
+          // a condição testava `prop.compoe_renda_conjuge`, coluna que não
+          // existe em `propostas` — o ramo "não compõe → 0" nunca rodava. Se
+          // o cônjuge compõe renda é o `fgCompoeRenda` da oportunidade.
+          rendaConjuge: rendaConjugeOuPadrao(
+            conjuge?.renda ?? src?.conjuge_renda ?? simConj?.renda_conjuge ?? part?.rendaConjuge,
+          ),
           nomeEmpresaProfissaoConjuge:
             textoLivreParaBanco(conjuge?.empresa) ||
             textoLivreParaBanco(src?.conjuge_empresa) ||
@@ -1152,14 +1153,17 @@ export async function garantirEnderecoParticipantes({
         part?.nomeMae ??
         src?.mae ??
         (ehPessoaFisica && env?.conjuge_de ? PADROES_CADASTRO.maeConjuge : undefined),
-      // Cônjuge/coproponente sem renda (não compõe) vai com 0: o campo é
-      // obrigatório no contrato, e o comprador já é cobrado antes do envio.
-      renda:
-        numeroOuNada(env?.renda) ??
-        part?.renda ??
-        src?.renda_total_declarada ??
-        prop.renda_total ??
-        (env && !exigeRenda(env) ? 0 : undefined),
+      // Cônjuge como participante próprio: renda dele, com o padrão quando
+      // vazia ou zero (ia com 0 ou, pior, caía em `prop.renda_total`, a renda
+      // do titular). Outro coproponente sem renda (não compõe) vai com 0: o
+      // campo é obrigatório no contrato, e o comprador já é cobrado antes.
+      renda: env?.conjuge_de
+        ? rendaConjugeOuPadrao(numeroOuNada(env?.renda) ?? part?.renda)
+        : (numeroOuNada(env?.renda) ??
+          part?.renda ??
+          src?.renda_total_declarada ??
+          prop.renda_total ??
+          (env && !exigeRenda(env) ? 0 : undefined)),
       // Cônjuge/coproponente: e-mail vazio ou igual ao do titular vai com o
       // e-mail padrão do cônjuge, como o celular.
       email: ehPrincipal

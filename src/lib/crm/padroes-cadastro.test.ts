@@ -5,7 +5,24 @@ import {
   celularConjugeOuPadrao,
   emailConjugeOuPadrao,
   PADROES_CADASTRO,
+  rendaConjugeOuPadrao,
 } from "./padroes-cadastro";
+
+describe("rendaConjugeOuPadrao", () => {
+  it("vazia, zero ou inválida vira R$ 3.000", () => {
+    expect(rendaConjugeOuPadrao(undefined)).toBe(3000);
+    expect(rendaConjugeOuPadrao(null)).toBe(3000);
+    expect(rendaConjugeOuPadrao("")).toBe(3000);
+    expect(rendaConjugeOuPadrao(0)).toBe(3000);
+    expect(rendaConjugeOuPadrao("0.00")).toBe(3000);
+    expect(rendaConjugeOuPadrao("abc")).toBe(3000);
+  });
+
+  it("renda informada é mantida", () => {
+    expect(rendaConjugeOuPadrao(1500)).toBe(1500);
+    expect(rendaConjugeOuPadrao("8000.50")).toBe(8000.5);
+  });
+});
 
 describe("aplicarPadroesCliente", () => {
   it("preenche o que está vazio", () => {

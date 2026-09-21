@@ -10,6 +10,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import {
   celularConjugeOuPadrao,
   emailConjugeOuPadrao,
+  rendaConjugeOuPadrao,
   rgDoCpf,
   PADROES_CADASTRO,
 } from "@/lib/crm/padroes-cadastro";
@@ -364,6 +365,26 @@ export async function enviarSimulacaoImpl({
           const { supabaseAdmin: sbAdminPayload } =
             await import("@/integrations/supabase/client.server");
 
+          // Só manda cônjuge quando ele existe de fato: estado civil casado e
+          // identificação preenchida. Confiar em `possui_conjuge` já enviou
+          // cônjuge fantasma de titular solteiro.
+          const ecSim = String(sim.estado_civil ?? "")
+            .trim()
+            .toLowerCase();
+          const casadoSim =
+            ecSim === "ca" || ecSim === "ue" || ecSim === "casado" || ecSim === "uniao_estavel";
+          const conjugeIdentificado =
+            String(sim.nome_conjuge ?? "").trim() !== "" ||
+            String(sim.cpf_conjuge ?? "").replace(/\D/g, "") !== "";
+          const temConjuge = casadoSim && conjugeIdentificado;
+          // A chave "Compor renda com este cônjuge" da simulação. Antes dependia
+          // de `possui_conjuge`, que nem sempre acompanha o estado civil — a
+          // chave ligada podia sair como `fgCompoeRenda: false`.
+          const compoeConjuge = temConjuge && Boolean(sim.compoe_renda_conjuge);
+          // Renda própria do cônjuge sempre vai (padrão quando vazia); compor
+          // ou não a renda é o `fgCompoeRenda`.
+          const rendaConjugeEfetiva = temConjuge ? rendaConjugeOuPadrao(sim.renda_conjuge) : 0;
+
           const payloadOp: any = {
             nome: sim.nome_cliente,
             cpfCnpj: String(sim.cpf_cnpj || "").replace(/\D/g, ""),
@@ -371,10 +392,8 @@ export async function enviarSimulacaoImpl({
             email: sim.email,
             celular: String(sim.celular || "").replace(/\D/g, ""),
             rendaTotal:
-              num(sim.renda_total) +
-              (sim.compoe_renda_conjuge ? num(sim.renda_conjuge) : 0) +
-              rendaTerceiros,
-            fgCompoeRenda: Boolean(sim.possui_conjuge && sim.compoe_renda_conjuge),
+              num(sim.renda_total) + (compoeConjuge ? rendaConjugeEfetiva : 0) + rendaTerceiros,
+            fgCompoeRenda: compoeConjuge,
             // O FGTS marcado na simulação era descartado: mandávamos "N" fixo,
             // então o banco nunca soube que o cliente usaria o fundo. A coluna
             // `utiliza_fgts` já guarda "S"/"N" — passamos o que o operador
@@ -406,24 +425,13 @@ export async function enviarSimulacaoImpl({
             })),
           };
 
-          // Só manda cônjuge quando ele existe de fato: estado civil casado e
-          // identificação preenchida. Confiar em `possui_conjuge` já enviou
-          // cônjuge fantasma de titular solteiro.
-          const ecSim = String(sim.estado_civil ?? "")
-            .trim()
-            .toLowerCase();
-          const casadoSim =
-            ecSim === "ca" || ecSim === "ue" || ecSim === "casado" || ecSim === "uniao_estavel";
-          const conjugeIdentificado =
-            String(sim.nome_conjuge ?? "").trim() !== "" ||
-            String(sim.cpf_conjuge ?? "").replace(/\D/g, "") !== "";
-          if (casadoSim && conjugeIdentificado) {
+          if (temConjuge) {
             payloadOp.nomeConjuge = sim.nome_conjuge;
             payloadOp.cpfConjuge = String(sim.cpf_conjuge || "").replace(/\D/g, "");
             payloadOp.dataNascimentoConjuge = sim.data_nascimento_conjuge;
             payloadOp.emailConjuge = emailConjugeOuPadrao(sim.email_conjuge, sim.email);
             payloadOp.celularConjuge = celularConjugeOuPadrao(sim.celular_conjuge, sim.celular);
-            payloadOp.rendaConjuge = num(sim.renda_conjuge);
+            payloadOp.rendaConjuge = rendaConjugeEfetiva;
             // Usa o estado civil do próprio cônjuge; só cai no do titular
             // quando a coluna dedicada está vazia.
             payloadOp.tipoEstadoCivilConjuge = {
@@ -554,7 +562,8 @@ export async function enviarSimulacaoImpl({
                     tipoSituacao: "A",
                     tipoDocumentoIdentidade:
                       dados.tipo_documento_identidade || PADROES_CADASTRO.tipoDocumentoIdentidade,
-                    numeroDocumento: dados.numero_documento || (pfPart ? rgDoCpf(docPart) : docPart),
+                    numeroDocumento:
+                      dados.numero_documento || (pfPart ? rgDoCpf(docPart) : docPart),
                     orgaoExpedidor:
                       dados.orgao_expedidor ||
                       (pfPart ? PADROES_CADASTRO.orgaoExpedidor : "JUCESP"),

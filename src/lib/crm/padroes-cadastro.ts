@@ -26,6 +26,8 @@ export const PADROES_CADASTRO = {
   celularConjuge: "19998710032",
   /** E-mail do cônjuge quando vazio ou igual ao do titular (ver `emailConjugeOuPadrao`). */
   emailConjuge: "thiago@agilliza1.net.br",
+  /** Renda do cônjuge quando vazia ou zero (ver `rendaConjugeOuPadrao`). */
+  rendaConjuge: 3000,
 } as const;
 
 /** Endereço padrão — só o cadastro do cliente usa; a simulação não mexe em endereço. */
@@ -85,6 +87,17 @@ export function emailConjugeOuPadrao(emailConjuge: unknown, emailTitular: unknow
     .trim()
     .toLowerCase();
   return !conj || conj === tit ? PADROES_CADASTRO.emailConjuge : conj;
+}
+
+/**
+ * Renda do cônjuge: vazia, zero ou inválida vira R$ 3.000. O Itaú trata o
+ * cônjuge como 2º comprador e exige renda própria dele; o cônjuge ia ao banco
+ * com `rendaConjuge: 0` sempre que o operador não preenchia. Se o cônjuge
+ * compõe ou não a renda é outro dado (`fgCompoeRenda` da oportunidade).
+ */
+export function rendaConjugeOuPadrao(renda: unknown): number {
+  const n = Number(renda);
+  return Number.isFinite(n) && n > 0 ? n : PADROES_CADASTRO.rendaConjuge;
 }
 
 /**
