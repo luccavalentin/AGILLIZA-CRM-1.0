@@ -11,6 +11,9 @@ export const PADROES_CADASTRO = {
   email: "thiago@agilliza.net.br",
   mae: "Maria José",
   pai: "José Maria",
+  /** Filiação padrão do cônjuge — diferente da do titular. */
+  maeConjuge: "Ana Maria",
+  paiConjuge: "José Antonio",
   profissao: "Administrador",
   empresa: "Agilliza",
   tipoDocumentoIdentidade: "RG",
@@ -36,6 +39,19 @@ export const ENDERECO_PADRAO = {
 } as const;
 
 const vazio = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
+
+/** Tamanho do RG usado como padrão (RG de SP: 9 caracteres). */
+export const TAMANHO_RG = 9;
+
+/**
+ * RG padrão a partir do CPF: os primeiros 9 dígitos do CPF. Quem não informa
+ * o RG ia ao banco com os 11 dígitos do CPF no campo de identidade.
+ */
+export function rgDoCpf(cpf: unknown): string {
+  return String(cpf ?? "")
+    .replace(/\D/g, "")
+    .slice(0, TAMANHO_RG);
+}
 
 /** Devolve `padrao` quando o valor está vazio; senão devolve o próprio valor. */
 export function ouPadrao<T>(valor: T, padrao: string): T | string {
@@ -74,7 +90,7 @@ export function emailConjugeOuPadrao(emailConjuge: unknown, emailTitular: unknow
 /**
  * Nacionalidade, naturalidade e RG de pessoa física: valem na criação E na
  * edição do cadastro (ao contrário dos demais padrões, que só entram na
- * criação). Vazio vira Brasileira / São Paulo-SP / o próprio CPF; celular e
+ * criação). Vazio vira Brasileira / São Paulo-SP / o CPF no tamanho de RG; celular e
  * e-mail do cônjuge seguem `celularConjugeOuPadrao` / `emailConjugeOuPadrao`.
  *
  * Naturalidade é gravada como "Cidade/UF". Só o estado ("/SP") conta como
@@ -100,14 +116,14 @@ export function aplicarPadroesIdentificacao<T extends Record<string, any>>(campo
   if (!cidade && (!uf || uf === "SP")) c.naturalidade = PADROES_CADASTRO.naturalidade;
 
   if (!vazio(c.documento)) {
-    if (vazio(c.documento_secundario)) c.documento_secundario = String(c.documento);
-    if (vazio(c.numero_documento)) c.numero_documento = String(c.documento);
+    if (vazio(c.documento_secundario)) c.documento_secundario = rgDoCpf(c.documento);
+    if (vazio(c.numero_documento)) c.numero_documento = rgDoCpf(c.documento);
   }
 
   if (!vazio(c.conjuge_nome) || !vazio(c.conjuge_cpf)) {
     if (vazio(c.conjuge_nacionalidade)) c.conjuge_nacionalidade = PADROES_CADASTRO.nacionalidade;
     if (vazio(c.conjuge_numero_documento) && !vazio(c.conjuge_cpf)) {
-      c.conjuge_numero_documento = String(c.conjuge_cpf);
+      c.conjuge_numero_documento = rgDoCpf(c.conjuge_cpf);
     }
     c.conjuge_celular = celularConjugeOuPadrao(c.conjuge_celular, c.telefone_celular);
     c.conjuge_email = emailConjugeOuPadrao(c.conjuge_email, c.email);
@@ -126,8 +142,9 @@ export function comPadroesIdentificacao<T extends Record<string, any>>(campos: T
 /**
  * Aplica os padrões sobre as colunas de `clientes`.
  *
- * `documento` (CPF) entra como número do documento de identidade quando ele
- * não foi informado; o mesmo vale para o cônjuge com `conjuge_cpf`.
+ * `documento` (CPF), cortado no tamanho de RG, entra como número do documento
+ * de identidade quando ele não foi informado; o mesmo vale para o cônjuge com
+ * `conjuge_cpf`.
  */
 export function aplicarPadroesCliente<T extends Record<string, any>>(campos: T): T {
   const p = PADROES_CADASTRO;
@@ -145,14 +162,14 @@ export function aplicarPadroesCliente<T extends Record<string, any>>(campos: T):
   comPadrao("uf_expedicao", p.ufExpedicao);
   comPadrao("data_expedicao", p.dataExpedicao);
   if (vazio(campos.numero_documento) && !vazio(campos.documento)) {
-    (campos as Record<string, any>).numero_documento = String(campos.documento);
+    (campos as Record<string, any>).numero_documento = rgDoCpf(campos.documento);
   }
 
   // Cônjuge: só quando existe cônjuge no cadastro, para não criar um cônjuge
   // fantasma só de padrão em cliente solteiro.
   if (!vazio(campos.conjuge_nome) || !vazio(campos.conjuge_cpf)) {
     comPadrao("conjuge_email", p.emailConjuge);
-    comPadrao("conjuge_nome_mae", p.mae);
+    comPadrao("conjuge_nome_mae", p.maeConjuge);
     comPadrao("conjuge_profissao", p.profissao);
     comPadrao("conjuge_empresa", p.empresa);
     comPadrao("conjuge_tipo_documento_identidade", p.tipoDocumentoIdentidade);
@@ -160,7 +177,7 @@ export function aplicarPadroesCliente<T extends Record<string, any>>(campos: T):
     comPadrao("conjuge_uf_expedicao", p.ufExpedicao);
     comPadrao("conjuge_data_expedicao", p.dataExpedicao);
     if (vazio(campos.conjuge_numero_documento) && !vazio(campos.conjuge_cpf)) {
-      (campos as Record<string, any>).conjuge_numero_documento = String(campos.conjuge_cpf);
+      (campos as Record<string, any>).conjuge_numero_documento = rgDoCpf(campos.conjuge_cpf);
     }
   }
 

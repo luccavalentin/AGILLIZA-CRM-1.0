@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ESTADO_CIVIL_COM_REGIME } from "@/lib/propostas/dominios";
 import { LABEL_POR_CHAVE } from "@/lib/propostas/campos-obrigatorios";
+import { TAMANHO_RG } from "@/lib/crm/padroes-cadastro";
 import { CamposParticipante } from "./participante-form/campos-participante";
 import {
   camposFaltantes,
@@ -104,19 +105,20 @@ export function ParticipanteDialog({
     jaFocou.current = false;
   }, [open, participanteId]);
 
-  // Participante novo: o número do documento padrão é o CPF, que só existe
+  // Participante novo: o número do documento padrão é o CPF (no tamanho de
+  // RG, 9 dígitos), que só existe
   // depois de digitado. Preenche quando o CPF fica completo e o número está
   // vazio — digitar outro número continua valendo.
   useEffect(() => {
     const cpf = f.cpf_cnpj.replace(/\D/g, "");
     if (f.tipo_pessoa !== "J" && cpf.length === 11 && !f.numero_documento.trim()) {
-      setF((prev) => ({ ...prev, numero_documento: cpf }));
+      setF((prev) => ({ ...prev, numero_documento: cpf.slice(0, TAMANHO_RG) }));
     }
   }, [f.cpf_cnpj, f.tipo_pessoa]);
   useEffect(() => {
     const cpf = conjuge.cpf_cnpj.replace(/\D/g, "");
     if (conjuge.tipo_pessoa !== "J" && cpf.length === 11 && !conjuge.numero_documento.trim()) {
-      setConjuge((prev) => ({ ...prev, numero_documento: cpf }));
+      setConjuge((prev) => ({ ...prev, numero_documento: cpf.slice(0, TAMANHO_RG) }));
     }
   }, [conjuge.cpf_cnpj, conjuge.tipo_pessoa]);
 

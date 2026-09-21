@@ -38,6 +38,7 @@ import {
   celularConjugeOuPadrao,
   emailConjugeOuPadrao,
   ouPadrao,
+  rgDoCpf,
   ENDERECO_PADRAO,
   PADROES_CADASTRO,
 } from "@/lib/crm/padroes-cadastro";
@@ -972,7 +973,7 @@ export async function garantirEnderecoParticipantes({
                 src?.conjuge_numero_documento ??
                 part?.numeroDocumentoConjuge,
             ) ??
-            (soDigitos(
+            (rgDoCpf(
               conjuge?.cpf_cnpj ?? src?.conjuge_cpf ?? simConj?.cpf_conjuge ?? part?.cpfConjuge,
             ) ||
               undefined),
@@ -1132,7 +1133,7 @@ export async function garantirEnderecoParticipantes({
       numeroDocumento:
         sanitizarNumeroDocumento(env?.numero_documento) ??
         sanitizarNumeroDocumento(part?.numeroDocumento) ??
-        (ehPessoaFisica && cpf ? cpf : undefined),
+        (ehPessoaFisica && cpf ? rgDoCpf(cpf) : undefined),
       orgaoExpedidor: ehPessoaFisica
         ? ouPadrao(env?.orgao_expedidor || part?.orgaoExpedidor, PADROES_CADASTRO.orgaoExpedidor)
         : env?.orgao_expedidor || part?.orgaoExpedidor || undefined,
@@ -1144,7 +1145,13 @@ export async function garantirEnderecoParticipantes({
         : env?.data_expedicao || part?.dataExpedicao || undefined,
       nomeProfissao: profissao,
       nomeEmpresaProfissao: empresa,
-      nomeMae: textoOuNada(env?.nome_mae) ?? part?.nomeMae ?? src?.mae ?? undefined,
+      // Cônjuge (envolvido com `conjuge_de`) sem mãe informada vai com a
+      // filiação padrão do cônjuge.
+      nomeMae:
+        textoOuNada(env?.nome_mae) ??
+        part?.nomeMae ??
+        src?.mae ??
+        (ehPessoaFisica && env?.conjuge_de ? PADROES_CADASTRO.maeConjuge : undefined),
       // Cônjuge/coproponente sem renda (não compõe) vai com 0: o campo é
       // obrigatório no contrato, e o comprador já é cobrado antes do envio.
       renda:

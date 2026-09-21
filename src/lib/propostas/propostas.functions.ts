@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { aplicarPadroesCliente, comPadroesIdentificacao } from "@/lib/crm/padroes-cadastro";
+import {
+  aplicarPadroesCliente,
+  comPadroesIdentificacao,
+  PADROES_CADASTRO,
+} from "@/lib/crm/padroes-cadastro";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -819,7 +823,7 @@ export const criarProposta = createServerFn({ method: "POST" })
             nome: c.conjuge_nome,
             cpf_cnpj: c.conjuge_cpf,
             data_nascimento: c.conjuge_data_nascimento,
-            nome_mae: c.conjuge_nome_mae,
+            nome_mae: c.conjuge_nome_mae || PADROES_CADASTRO.maeConjuge,
             tipo_sexo: c.conjuge_sexo
               ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase()
               : c.conjuge_sexo,
@@ -846,6 +850,7 @@ export const criarProposta = createServerFn({ method: "POST" })
             municipio: e.cidade ?? null,
             uf: e.uf ?? c.uf_interesse ?? null,
             dados: {
+              pai: PADROES_CADASTRO.paiConjuge,
               nacionalidade: comPadroesIdentificacao(c).conjuge_nacionalidade ?? null,
               banco_conta: c.conjuge_banco_conta ?? null,
             },
@@ -977,7 +982,7 @@ export const obterConjugeCliente = createServerFn({ method: "GET" })
       nome: toTitleCase(c.conjuge_nome),
       cpf_cnpj: c.conjuge_cpf,
       data_nascimento: c.conjuge_data_nascimento,
-      nome_mae: toTitleCase(c.conjuge_nome_mae),
+      nome_mae: toTitleCase(c.conjuge_nome_mae) || PADROES_CADASTRO.maeConjuge,
       tipo_sexo: c.conjuge_sexo
         ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase()
         : c.conjuge_sexo,
@@ -2503,7 +2508,7 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
         nome: c.conjuge_nome,
         cpf_cnpj: c.conjuge_cpf,
         data_nascimento: c.conjuge_data_nascimento,
-        nome_mae: c.conjuge_nome_mae,
+        nome_mae: c.conjuge_nome_mae || PADROES_CADASTRO.maeConjuge,
         tipo_sexo: c.conjuge_sexo
           ? String(c.conjuge_sexo).trim().charAt(0).toUpperCase()
           : c.conjuge_sexo,
@@ -2532,6 +2537,7 @@ export const vincularClienteAProposta = createServerFn({ method: "POST" })
         utiliza_fgts: false,
         fg_autorizacao_dados: c.fg_autorizacao_dados ?? false,
         dados: {
+          pai: PADROES_CADASTRO.paiConjuge,
           nacionalidade: comPadroesIdentificacao(c).conjuge_nacionalidade ?? null,
           banco_conta: c.conjuge_banco_conta ?? null,
         },

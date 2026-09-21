@@ -10,6 +10,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import {
   celularConjugeOuPadrao,
   emailConjugeOuPadrao,
+  rgDoCpf,
   PADROES_CADASTRO,
 } from "@/lib/crm/padroes-cadastro";
 import { codigoTipoImovel } from "./dominios-homefin";
@@ -553,7 +554,7 @@ export async function enviarSimulacaoImpl({
                     tipoSituacao: "A",
                     tipoDocumentoIdentidade:
                       dados.tipo_documento_identidade || PADROES_CADASTRO.tipoDocumentoIdentidade,
-                    numeroDocumento: dados.numero_documento || docPart,
+                    numeroDocumento: dados.numero_documento || (pfPart ? rgDoCpf(docPart) : docPart),
                     orgaoExpedidor:
                       dados.orgao_expedidor ||
                       (pfPart ? PADROES_CADASTRO.orgaoExpedidor : "JUCESP"),
