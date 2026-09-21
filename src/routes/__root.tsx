@@ -21,6 +21,7 @@ import { AgenciaBradescoDialogHost } from "@/components/proposta/dialogs/agencia
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
 import { iniciarLimpezaBadge } from "../lib/host-badge-cleaner";
+import { PROCEDENCIA } from "@/lib/procedencia";
 
 function NotFoundComponent() {
   return (
@@ -126,6 +127,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#000f9f" },
+      // Procedência: este sistema foi construído com IA, sob direção e revisão
+      // humana. Fica no HTML para ser verificável por qualquer pessoa, sem
+      // acesso ao repositório (ver PROCEDENCIA-IA.md e /ai.txt).
+      { name: "generator", content: PROCEDENCIA.gerador },
+      { name: "ai-generated", content: "yes" },
+      { name: "ai-human-review", content: `sim — ${PROCEDENCIA.responsavel}` },
     ],
     links: [
       {
