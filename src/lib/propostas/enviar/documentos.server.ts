@@ -44,6 +44,7 @@ import {
   termosDoTipoDocumento,
 } from "@/lib/documentos/tipos-banco";
 import { ehAgenciaDoBradesco } from "@/lib/bancos/agencia";
+import { bancoJaEnviado } from "./helpers-retorno.server";
 
 export interface EnviarDocumentosArgs {
   propostaId: string;
@@ -136,9 +137,14 @@ export async function enviarDocumentosBancoImpl({
     .eq("proposta_id", propostaId);
   const bancos = ((bancosRaw ?? []) as any[]).filter((b) => b.homefin_id_simulacao_banco);
   const aprovado = (b: any) => ["aprovada", "aprovado", "condicionado"].includes(b.status_banco);
+  // A documentação exige a simulação "com proposta criada no banco". Uma linha
+  // só selecionada, ou com erro de envio, não tem proposta lá: o lote sairia
+  // com a simulação errada.
   const banco =
     bancos.find((b) => aprovado(b) && b.selecionado) ??
     bancos.find(aprovado) ??
+    bancos.find((b) => bancoJaEnviado(b) && b.selecionado) ??
+    bancos.find((b) => bancoJaEnviado(b)) ??
     bancos.find((b) => b.selecionado) ??
     bancos[0] ??
     null;
@@ -148,7 +154,10 @@ export async function enviarDocumentosBancoImpl({
       "Nenhuma simulação bancária vinculada. Selecione e envie um banco antes de enviar os documentos.",
     );
   }
-  const loteDoBanco = ehAgenciaDoBradesco(banco?.nome_banco);
+  // O lote é do Bradesco e só existe com a proposta criada no banco (swagger:
+  // "idSimulacao com proposta criada no banco"). Sem isso o upload segue — o
+  // arquivo fica na HomeFin —, mas o lote não é chamado à toa.
+  const loteDoBanco = ehAgenciaDoBradesco(banco?.nome_banco) && bancoJaEnviado(banco ?? {});
 
   const { data: envolvidosRaw } = await supabase
     .from("proposta_envolvidos")
@@ -496,7 +505,10 @@ export async function enviarDocumentosBancoImpl({
         ? situacaoDoItem(item, ignoradoDoItem(ignorados, item))
         : { situacao: "homefin" as const, mensagem: naoConsultado };
       if (situacao === "homefin" && !loteDoBanco) {
-        mensagem = `Enviado à HomeFin, que repassa ao ${banco?.nome_banco ?? "banco"}.`;
+        mensagem =
+          ehAgenciaDoBradesco(banco?.nome_banco) && !bancoJaEnviado(banco ?? {})
+            ? "Enviado à HomeFin. Vai ao Bradesco quando a proposta estiver criada no banco."
+            : `Enviado à HomeFin, que repassa ao ${banco?.nome_banco ?? "banco"}.`;
       }
       if (situacao === "homefin" && falhaLote) mensagem = falhaLote;
       await marcarDoc(doc.id, situacao, mensagem);
