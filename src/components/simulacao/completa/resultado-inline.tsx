@@ -24,6 +24,7 @@ import { BancoLogo } from "@/components/bancos/banco-logo";
 import { BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import { TitularBadge, temMaisDeUmTitular } from "@/components/simulacao/titular-badge";
 import { obterSimulacao, enviarSimulacaoBanco } from "@/lib/simulacao/simulacoes.functions";
 // Import já realizado no topo
 import { formatBRL, formatPercent, formatTaxa } from "@/lib/simulacao/format";
@@ -208,6 +209,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
     (Number(s.renda_total) || 0) + (s.compoe_renda ? Number(s.renda_conjuge) || 0 : 0);
   const rendaBancos = rendaMinimaPelosBancos(bancos, rendaInformada || null);
   const melhorId = bancosComTaxa.length > 1 ? bancosComTaxa[0]?.id : undefined;
+  const mostrarTitular = temMaisDeUmTitular(bancos);
 
   return (
     <Card className="overflow-hidden border-primary/30 shadow-lg ring-1 ring-primary/10">
@@ -331,6 +333,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                             >
                               {b.nome_banco}
                             </span>
+                            <TitularBadge banco={b} mostrar={mostrarTitular} />
                             {b.id === melhorId && <ToneBadge tone="success">Melhor taxa</ToneBadge>}
                           </div>
                           <div className="mt-1">
@@ -487,6 +490,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                               >
                                 {b.nome_banco}
                               </span>
+                              <TitularBadge banco={b} mostrar={mostrarTitular} />
                               {b.id === melhorId && (
                                 <ToneBadge tone="success" className="hidden xl:inline-flex">
                                   Melhor

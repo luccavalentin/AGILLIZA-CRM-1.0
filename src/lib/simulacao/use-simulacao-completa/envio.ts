@@ -675,7 +675,11 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
       ? (crypto.randomUUID?.() ??
         `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`)
       : null;
-    const { id, agrupador_id: agrupadorServidor } = await criarSimulacao({
+    const {
+      id,
+      agrupador_id: agrupadorServidor,
+      id_secundario: idSecundario,
+    } = await criarSimulacao({
       data: {
         modo: "completa",
         dados: {
@@ -891,7 +895,9 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
           return;
         }
         const agenciaSearch =
-          respostaAgencia.agencia !== undefined ? { agencia: respostaAgencia.agencia || "nao" } : {};
+          respostaAgencia.agencia !== undefined
+            ? { agencia: respostaAgencia.agencia || "nao" }
+            : {};
         const { proposta_id, envolvido_pendente_id } = await criarProposta({
           data: { simulacao_id: id, banco_id: bancoId },
         });
@@ -957,6 +963,10 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     // prazo. O que faltava não era um segundo id na tela — era a original
     // carregar o agrupador, que ela só ganha ao ter irmãs (ver `criarSimulacao`).
     ctx.setSimulacaoResultadoId(id);
+    // Inversão automática titular ⇄ cônjuge: o servidor devolvia o id da
+    // simulação invertida, mas a tela nunca o guardava — o popup de
+    // comparativo de taxas (que espera os dois ids) não abria nunca.
+    ctx.setSimulacaoResultadoIdSecundario?.(idSecundario ?? null);
     setEnviando(false);
     setConcluidos(0);
     toast.success("Simulação realizada. Os retornos dos bancos estão sendo processados.");

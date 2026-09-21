@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import { TitularBadge, temMaisDeUmTitular } from "@/components/simulacao/titular-badge";
 import { BancoStatusBadge } from "@/components/simulacao/status-badge";
 import { DetalheBancoDialog } from "@/components/simulacao/detalhe-banco-dialog";
 import { formatBRL, formatPercent, formatTaxa } from "@/lib/simulacao/format";
@@ -90,6 +91,7 @@ export function ComparativoBancos({
     .sort((a: any, b: any) => (a.valor_parcela ?? 0) - (b.valor_parcela ?? 0))[0]?.id;
 
   const bancosExibicao: any[] = isMista ? [...bancosSac, ...bancosPrice] : bancos;
+  const mostrarTitular = temMaisDeUmTitular(bancos);
 
   const ehMelhorParcela = (b: any) => {
     if (!isMista) return b.id === melhorParcelaId;
@@ -246,6 +248,7 @@ export function ComparativoBancos({
                       >
                         {b.nome_banco}
                       </span>
+                      <TitularBadge banco={b} mostrar={mostrarTitular} />
                       {ehMelhorParcela(b) && <ToneBadge tone="success">Menor parcela</ToneBadge>}
                       {ehMelhorCet(b) && <ToneBadge tone="info">Menor CET</ToneBadge>}
                     </div>
@@ -411,6 +414,7 @@ export function ComparativoBancos({
                       <div className="flex items-center gap-2.5">
                         <BancoLogo nome={b.nome_banco} size="lg" />
                         <span style={{ color: corDoBanco(b.nome_banco) }}>{b.nome_banco}</span>
+                        <TitularBadge banco={b} mostrar={mostrarTitular} />
                         {melhorParcela && <ToneBadge tone="success">Menor parcela</ToneBadge>}
                         {melhorCet && <ToneBadge tone="info">Menor CET</ToneBadge>}
                       </div>
