@@ -39,3 +39,24 @@ export function mensagemDeErro(e: unknown, alternativa: string): string {
 
   return texto;
 }
+
+/**
+ * Cancelamento de consulta/requisição — não é falha para o usuário.
+ *
+ * O React Query cancela a busca em andamento quando a tela troca ou quando
+ * outra busca da mesma chave começa; o erro chega com `message:
+ * "CancelledError"` e virava um toast vermelho escrito "CancelledError" no
+ * meio do envio da proposta (visto em 21/09/2026). Nada falhou: quem cancelou
+ * fomos nós.
+ */
+export function ehCancelamento(e: unknown): boolean {
+  const nome = String((e as any)?.name ?? "").toLowerCase();
+  const msg = String((e as any)?.message ?? "").toLowerCase();
+  return (
+    nome === "cancellederror" ||
+    nome === "aborterror" ||
+    msg === "cancellederror" ||
+    msg.includes("the operation was aborted") ||
+    msg.includes("signal is aborted")
+  );
+}

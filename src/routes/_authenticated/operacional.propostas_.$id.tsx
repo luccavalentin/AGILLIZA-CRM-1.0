@@ -3,6 +3,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { ehCancelamento, mensagemDeErro } from "@/lib/erros/mensagem";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { propostaQueryOptions } from "@/lib/propostas/queries";
 import { sincronizarPropostaComCrm } from "@/lib/propostas/continuar.functions";
@@ -240,7 +241,7 @@ function PropostaRoute() {
           if (r) toast.success("Proposta enviada. Acompanhe a situação nesta tela.");
         } catch (erroEnvio: any) {
           setBancoEmEnvio(null);
-          if (!erroEnvio?.cadastroIncompleto) {
+          if (!erroEnvio?.cadastroIncompleto && !ehCancelamento(erroEnvio)) {
             toast.error(erroEnvio?.message ?? "Falha ao enviar a proposta ao banco.", {
               duration: 12_000,
             });
@@ -248,8 +249,10 @@ function PropostaRoute() {
           throw erroEnvio;
         }
       } catch (e: any) {
-        if (!enviandoAoBanco) {
-          toast.error(e?.message ?? "Falha ao salvar participante.");
+        // Consulta cancelada (troca de tela, refetch) não é falha: mostrava um
+        // toast vermelho escrito "CancelledError" no meio do envio.
+        if (!enviandoAoBanco && !ehCancelamento(e)) {
+          toast.error(mensagemDeErro(e, "Falha ao salvar participante."));
         }
       }
     },
