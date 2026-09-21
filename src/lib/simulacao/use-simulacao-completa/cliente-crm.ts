@@ -3,7 +3,9 @@
  * Extraído de `use-simulacao-completa.ts` para reduzir a superfície do hook.
  * Cada função recebe o `form` atual e devolve o próximo estado — sem side effects.
  */
-import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "@/lib/propostas/dominios";
+import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
+import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
+import { regimeParaFormulario } from "@/lib/simulacao/regime-form";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { EMAIL_CONJUGE_PADRAO, EMAIL_PADRAO, type Form } from "./state";
 
@@ -49,7 +51,7 @@ export function patchSelecionarClienteCRM(
     // de volta: a cada nova simulação do mesmo cliente o campo voltava vazio e
     // precisava ser redigitado. Só faz sentido quando há casamento/união.
     regime_casamento: temConjuge
-      ? regimeCasamentoCrmParaCodigo(c.regime_casamento) || prev.regime_casamento
+      ? regimeParaFormulario(c.regime_casamento || prev.regime_casamento, true)
       : "",
     renda_total: c.renda_total_declarada ?? prev.renda_total,
     renda_price: c.renda_total_declarada ?? prev.renda_price,
@@ -136,7 +138,16 @@ export function patchPuxarConjugeCRM(prev: Form, crm: any): Form {
       temConjuge && (prev.compoe_renda_conjuge || Number(crm.conjuge_renda) > 0),
     estado_civil: ecTitular,
     estado_civil_conjuge: temConjuge ? prev.estado_civil_conjuge || ecTitular : "",
+    regime_casamento: regimeParaFormulario(
+      prev.regime_casamento || crm.regime_casamento,
+      temConjuge,
+    ),
   };
+  // Compondo renda sem valor no cadastro, o campo abre com a renda padrão do
+  // cônjuge em vez de vazio (é o que iria ao banco de qualquer forma).
+  if (next.compoe_renda_conjuge && !(Number(crm.conjuge_renda) > 0)) {
+    doCrm.renda_conjuge = PADROES_CADASTRO.rendaConjuge;
+  }
   for (const [k, v] of Object.entries(doCrm)) {
     const atual = (prev as any)[k];
     const ehEmailPadrao =

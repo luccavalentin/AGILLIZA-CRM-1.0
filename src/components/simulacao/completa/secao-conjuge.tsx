@@ -28,6 +28,7 @@ import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
 import { ESTADOS_CIVIS } from "@/lib/simulacao/schemas";
 import { REGIMES } from "@/components/crm/cliente-form/constants";
 import { Switch } from "@/components/ui/switch";
+import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 import { Label } from "@/components/ui/label";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
 
@@ -42,6 +43,14 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     rendaAntiga: number;
     rendaNova: number;
   } | null>(null);
+
+  // Ligar a composição abre a renda do cônjuge já com o padrão quando ela
+  // está vazia — é o valor que iria ao banco de qualquer forma.
+  const ligarComposicao = () => {
+    set("compoe_renda_conjuge", true);
+    set("compoe_renda", true);
+    if (!(Number(f.renda_conjuge) > 0)) set("renda_conjuge", PADROES_CADASTRO.rendaConjuge);
+  };
 
   const handleToggleComposicao = (checked: boolean) => {
     if (!checked) {
@@ -83,10 +92,7 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           : hoje.getFullYear() - nascimentoDate.getFullYear();
 
         setConfirmacaoReducao({
-          callback: () => {
-            set("compoe_renda_conjuge", true);
-            set("compoe_renda", true);
-          },
+          callback: ligarComposicao,
           prazoAntigo: prazoAtual,
           prazoNovo: prazoNovo,
           participanteNome: f.nome_conjuge || "Cônjuge",
@@ -98,8 +104,7 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
       }
     }
 
-    set("compoe_renda_conjuge", true);
-    set("compoe_renda", true);
+    ligarComposicao();
   };
 
   const handleUpdateNascimento = (data: string) => {

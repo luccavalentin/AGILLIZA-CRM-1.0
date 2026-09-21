@@ -14,7 +14,9 @@ import {
   type MotivoLimitador,
 } from "@/lib/simulacao/prazo";
 import { obterConfiguracoesModulos } from "@/lib/admin/configuracoes-modulos.functions";
-import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "@/lib/propostas/dominios";
+import { estadoCivilCrmParaCodigo } from "@/lib/propostas/dominios";
+import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
+import { regimeParaFormulario } from "@/lib/simulacao/regime-form";
 import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import {
@@ -441,6 +443,9 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
         next.possui_conjuge = passaASerCasado;
         if (passaASerCasado) {
           if (!next.estado_civil_conjuge) next.estado_civil_conjuge = v;
+          // Regime de bens já vem com o padrão (comunhão parcial); o operador
+          // troca se for outro.
+          next.regime_casamento = regimeParaFormulario(next.regime_casamento, true);
         } else {
           next.compoe_renda = false;
           next.compoe_renda_conjuge = false;
@@ -698,13 +703,21 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           compoe_renda_conjuge: s.compoe_renda_conjuge || false,
           nome_conjuge: s.nome_conjuge || "",
           cpf_conjuge: s.cpf_conjuge || "",
-          renda_conjuge: s.renda_conjuge || 0,
+          // Compondo renda sem valor salvo, abre com a renda padrão do cônjuge.
+          renda_conjuge:
+            s.renda_conjuge ||
+            (s.compoe_renda_conjuge && ehCasado(estadoCivilCrmParaCodigo(s.estado_civil))
+              ? PADROES_CADASTRO.rendaConjuge
+              : 0),
           data_nascimento_conjuge: s.data_nascimento_conjuge || "",
           email_conjuge: s.email_conjuge || EMAIL_CONJUGE_PADRAO,
           celular_conjuge: s.celular_conjuge || "",
           sexo_conjuge: s.sexo_conjuge || prev.sexo_conjuge,
           estado_civil_conjuge: estadoCivilCrmParaCodigo(s.estado_civil_conjuge) || "",
-          regime_casamento: regimeCasamentoCrmParaCodigo(s.regime_casamento) || "",
+          regime_casamento: regimeParaFormulario(
+            s.regime_casamento,
+            ehCasado(estadoCivilCrmParaCodigo(s.estado_civil)),
+          ),
 
           // Consentimentos que o mapeamento esquecia e o usuário tinha de
           // repreencher ao editar. Editar deve devolver a simulação
