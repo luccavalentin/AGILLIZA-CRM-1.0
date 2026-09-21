@@ -71,7 +71,7 @@ function garantirHttps(): void {
   const h = req?.headers;
   const proto = h?.get("x-forwarded-proto") ?? (req?.url?.startsWith("https://") ? "https" : null);
   const host = h?.get("host") ?? "";
-  // Preview local do dev-server sempre acessa via https na Lovable; libera
+  // O preview do dev-server sempre acessa via https; libera
   // apenas 127.0.0.1/localhost para permitir testes explícitos em http.
   const ehLocal = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
   if (proto !== "https" && !ehLocal) {

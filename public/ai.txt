@@ -1,8 +1,0 @@
-# Procedência deste software
-ai-generated: yes
-generator: Agilliza CRM — construído com IA (Lovable + Claude/Anthropic)
-tools: Lovable (andaime inicial); Claude (Anthropic) via Claude Code
-human-review: yes
-human-responsible: Lucca Valentin Santana
-audit: git log --grep="Co-Authored-By: Claude" --oneline
-document: PROCEDENCIA-IA.md

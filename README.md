@@ -1,24 +1,35 @@
 # AGILLIZA CRM 1.0
 
-aguarde orientação
+Plataforma do correspondente bancário: simulações, propostas, documentos,
+contratos e comissões de crédito imobiliário e home equity.
 
-This project was built with [Lovable](https://lovable.dev).
+## Tecnologia
 
-## Build with Lovable
+- **Linguagem**: TypeScript no front e no servidor
+- **Aplicação**: React 19 com TanStack Start, Router e Query
+- **Interface**: Tailwind CSS 4 e componentes shadcn/ui
+- **Servidor**: server functions do TanStack Start, publicadas em Cloudflare Workers
+- **Banco de dados**: Supabase (PostgreSQL) com RLS e migrações versionadas
+- **Testes**: Vitest
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/26703839-0816-4a98-96eb-c9d55be68119).
+## Desenvolvimento
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Requer Node.js e npm — [instale com nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
+git clone <url-deste-repositorio>
+cd <pasta-do-repositorio>
 npm i
 npm run dev
+```
+
+## Publicação
+
+O deploy sai do branch `main`: o push publica a versão. Antes de publicar, rode:
+
+```sh
+node node_modules/typescript/bin/tsc --noEmit -p .
+npx vitest run
+npm run lint
+npm run build
 ```
