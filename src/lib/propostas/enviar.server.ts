@@ -1164,14 +1164,10 @@ export async function garantirEnderecoParticipantes({
           src?.renda_total_declarada ??
           prop.renda_total ??
           (env && !exigeRenda(env) ? 0 : undefined)),
-      // Cônjuge/coproponente: e-mail vazio ou igual ao do titular vai com o
-      // e-mail padrão do cônjuge, como o celular.
+      // Cônjuge/coproponente: e-mail vazio vai com o e-mail padrão do cônjuge.
       email: ehPrincipal
         ? (textoOuNada(env?.email) ?? part?.email ?? src?.email ?? prop.email ?? undefined)
-        : emailConjugeOuPadrao(
-            textoOuNada(env?.email) ?? part?.email,
-            cliente?.email ?? prop.email,
-          ),
+        : emailConjugeOuPadrao(textoOuNada(env?.email) ?? part?.email),
       // Cônjuge/coproponente: vazio ou igual ao do titular vai com o celular
       // padrão (os dois proponentes iam ao banco com o mesmo contato).
       celular: ehPrincipal

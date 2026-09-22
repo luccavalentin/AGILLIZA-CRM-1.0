@@ -24,8 +24,8 @@ export const PADROES_CADASTRO = {
   naturalidade: "São Paulo/SP",
   /** Celular do cônjuge quando vazio ou igual ao do titular (ver `celularConjugeOuPadrao`). */
   celularConjuge: "19998710032",
-  /** E-mail do cônjuge quando vazio ou igual ao do titular (ver `emailConjugeOuPadrao`). */
-  emailConjuge: "thiago@agilliza1.net.br",
+  /** E-mail do cônjuge quando vazio (ver `emailConjugeOuPadrao`). */
+  emailConjuge: "thiago@agilliza.net.br",
   /** Renda do cônjuge quando vazia ou zero (ver `rendaConjugeOuPadrao`). */
   rendaConjuge: 3000,
 } as const;
@@ -75,18 +75,14 @@ export function celularConjugeOuPadrao(celularConjuge: unknown, celularTitular: 
 }
 
 /**
- * E-mail do cônjuge: vazio ou igual ao do titular vira o e-mail padrão do
- * cônjuge. Mesmo motivo do celular: os dois proponentes iam ao banco com o
- * mesmo contato (o padrão do titular). E-mail próprio e diferente é mantido.
+ * E-mail do cônjuge: só o vazio recebe o padrão. O que o operador digitar é
+ * mantido, mesmo que seja igual ao do titular.
  */
-export function emailConjugeOuPadrao(emailConjuge: unknown, emailTitular: unknown): string {
+export function emailConjugeOuPadrao(emailConjuge: unknown): string {
   const conj = String(emailConjuge ?? "")
     .trim()
     .toLowerCase();
-  const tit = String(emailTitular ?? "")
-    .trim()
-    .toLowerCase();
-  return !conj || conj === tit ? PADROES_CADASTRO.emailConjuge : conj;
+  return conj || PADROES_CADASTRO.emailConjuge;
 }
 
 /**
@@ -139,7 +135,7 @@ export function aplicarPadroesIdentificacao<T extends Record<string, any>>(campo
       c.conjuge_numero_documento = rgDoCpf(c.conjuge_cpf);
     }
     c.conjuge_celular = celularConjugeOuPadrao(c.conjuge_celular, c.telefone_celular);
-    c.conjuge_email = emailConjugeOuPadrao(c.conjuge_email, c.email);
+    c.conjuge_email = emailConjugeOuPadrao(c.conjuge_email);
   }
   return campos;
 }

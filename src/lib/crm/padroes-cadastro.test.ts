@@ -171,17 +171,14 @@ describe("celularConjugeOuPadrao", () => {
 });
 
 describe("emailConjugeOuPadrao", () => {
-  it("vazio ou igual ao do titular vira o e-mail padrão do cônjuge", () => {
-    expect(emailConjugeOuPadrao("", "thiago@agilliza.net.br")).toBe("thiago@agilliza1.net.br");
-    expect(emailConjugeOuPadrao(" Thiago@Agilliza.net.br ", "thiago@agilliza.net.br")).toBe(
-      "thiago@agilliza1.net.br",
-    );
+  it("vazio vira o e-mail padrão do cônjuge", () => {
+    expect(emailConjugeOuPadrao("")).toBe("thiago@agilliza.net.br");
+    expect(emailConjugeOuPadrao(null)).toBe("thiago@agilliza.net.br");
   });
 
-  it("e-mail próprio do cônjuge é mantido", () => {
-    expect(emailConjugeOuPadrao("maria@gmail.com", "thiago@agilliza.net.br")).toBe(
-      "maria@gmail.com",
-    );
+  it("o que o operador digitar é mantido, mesmo igual ao do titular", () => {
+    expect(emailConjugeOuPadrao("maria@gmail.com")).toBe("maria@gmail.com");
+    expect(emailConjugeOuPadrao(" Maria@Gmail.com ")).toBe("maria@gmail.com");
   });
 
   it("cadastro com cônjuge recebe o e-mail padrão do cônjuge", () => {
@@ -190,6 +187,6 @@ describe("emailConjugeOuPadrao", () => {
       conjuge_nome: "Fulana",
       conjuge_cpf: "22233344455",
     } as Record<string, any>);
-    expect(r.conjuge_email).toBe("thiago@agilliza1.net.br");
+    expect(r.conjuge_email).toBe("thiago@agilliza.net.br");
   });
 });

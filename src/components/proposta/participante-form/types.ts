@@ -103,8 +103,6 @@ export function aplicarPadroesParticipante(f: ParticipanteForm): ParticipanteFor
   // Cônjuge/coproponente sem celular: vai o número padrão do cônjuge.
   if (next.tipo_qualificacao === "TI") {
     comPadrao("celular", PADROES_CADASTRO.celularConjuge);
-    // O e-mail padrão do titular também vira o do cônjuge.
-    if (next.email === PADROES_CADASTRO.email) next.email = PADROES_CADASTRO.emailConjuge;
   }
   return next;
 }

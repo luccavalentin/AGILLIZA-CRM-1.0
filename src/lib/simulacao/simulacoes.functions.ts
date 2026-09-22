@@ -392,7 +392,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         // vale para a simulação, o cadastro no CRM e a simulação invertida.
         if (casado && (dd.nome_conjuge || dd.cpf_conjuge)) {
           dd.celular_conjuge = celularConjugeOuPadrao(dd.celular_conjuge, dd.celular);
-          dd.email_conjuge = emailConjugeOuPadrao(dd.email_conjuge, dd.email);
+          dd.email_conjuge = emailConjugeOuPadrao(dd.email_conjuge);
         }
         // NORMALIZAÇÃO DE PRAZO ANTES DO INSERT (SERVER-SIDE DETERMINISTIC)
         const { prazoMaximoParaProponentes } = await import("./prazo");

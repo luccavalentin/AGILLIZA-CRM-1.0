@@ -429,7 +429,7 @@ export async function enviarSimulacaoImpl({
             payloadOp.nomeConjuge = sim.nome_conjuge;
             payloadOp.cpfConjuge = String(sim.cpf_conjuge || "").replace(/\D/g, "");
             payloadOp.dataNascimentoConjuge = sim.data_nascimento_conjuge;
-            payloadOp.emailConjuge = emailConjugeOuPadrao(sim.email_conjuge, sim.email);
+            payloadOp.emailConjuge = emailConjugeOuPadrao(sim.email_conjuge);
             payloadOp.celularConjuge = celularConjugeOuPadrao(sim.celular_conjuge, sim.celular);
             payloadOp.rendaConjuge = rendaConjugeEfetiva;
             // Usa o estado civil do próprio cônjuge; só cai no do titular
