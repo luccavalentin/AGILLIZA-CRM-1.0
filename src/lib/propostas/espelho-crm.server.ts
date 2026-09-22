@@ -17,6 +17,7 @@ import {
   mesmoDocumento,
   vendedorCrmParaEnvolvido,
 } from "./sincronizar-crm";
+import { emSegundoPlano } from "@/lib/segundo-plano.server";
 
 type Db = SupabaseClient<any, any, any>;
 
@@ -206,6 +207,9 @@ export async function espelharPropostaNaHomefin({
  * Alteração cadastral feita no CRM → propostas abertas do cliente, e delas à
  * HomeFin. Chamada ao gravar cliente, endereço, vendedor, imóvel/IQ e contato
  * da vistoria. Nunca derruba a gravação no CRM.
+ *
+ * Roda depois da resposta: são ~5 s por proposta aberta, e o operador ficava
+ * preso em "Salvando…" esperando a HomeFin (13 s com uma proposta só).
  */
 export async function propagarClienteParaPropostas({
   supabase,
@@ -214,6 +218,12 @@ export async function propagarClienteParaPropostas({
   supabase: Db;
   clienteId: string;
 }): Promise<void> {
+  emSegundoPlano(`espelho-crm cliente ${clienteId}`, () =>
+    propagarAgora({ supabase, clienteId }),
+  );
+}
+
+async function propagarAgora({ supabase, clienteId }: { supabase: Db; clienteId: string }) {
   try {
     const { data: propostas } = await supabase
       .from("propostas")

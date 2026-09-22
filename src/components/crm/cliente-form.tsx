@@ -355,7 +355,9 @@ export function ClienteForm({
       };
       let id = v.id;
       if (id) {
-        await atualizar({ data: { id, ...payload } });
+        await atualizar({
+          data: { id, ...payload, endereco_em_seguida: Boolean(end.cep || end.logradouro) },
+        });
       } else {
         const r = await criar({ data: payload });
         id = r.id;

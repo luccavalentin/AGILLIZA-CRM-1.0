@@ -1697,13 +1697,8 @@ export const cancelarProposta = createServerFn({ method: "POST" })
         }
       })();
 
-      const waitUntil = (globalThis as any)?.ctx?.waitUntil ?? (globalThis as any)?.waitUntil;
-      if (typeof waitUntil === "function") {
-        waitUntil(notificarBanco);
-      } else {
-        // Se não houver waitUntil (dev ou runtime limitado), não bloqueamos o retorno ao usuário
-        notificarBanco.catch(() => {});
-      }
+      const { emSegundoPlano } = await import("@/lib/segundo-plano.server");
+      emSegundoPlano("cancelamento na HomeFin", () => notificarBanco);
     }
     return { ok: true };
   });
@@ -2118,9 +2113,8 @@ export const excluirProposta = createServerFn({ method: "POST" })
           console.error("[HomeFin] Erro ao cancelar oportunidade da proposta excluída:", e);
         }
       })();
-      const waitUntil = (globalThis as any)?.ctx?.waitUntil ?? (globalThis as any)?.waitUntil;
-      if (typeof waitUntil === "function") waitUntil(cancelarNoBanco);
-      else cancelarNoBanco.catch(() => {});
+      const { emSegundoPlano } = await import("@/lib/segundo-plano.server");
+      emSegundoPlano("exclusão de proposta na HomeFin", () => cancelarNoBanco);
     }
 
     if (!removidas || removidas.length === 0) {

@@ -447,10 +447,19 @@ export const criarCliente = createServerFn({ method: "POST" })
 /** Atualiza dados do cliente. */
 export const atualizarCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => clienteInputSchema.extend({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) =>
+    clienteInputSchema
+      .extend({
+        id: z.string().uuid(),
+        // O formulário grava o endereço logo em seguida, e aquela gravação já
+        // repassa tudo às propostas — repassar aqui também fazia o trabalho 2x.
+        endereco_em_seguida: z.boolean().optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
-    const { id, ...campos } = data;
+    const { id, endereco_em_seguida, ...campos } = data;
 
     // Bloqueia troca de documento para um valor já usado por outro cliente do
     // mesmo correspondente (mensagem amigável em vez de erro 23505 do Postgres).
@@ -545,7 +554,7 @@ export const atualizarCliente = createServerFn({ method: "POST" })
       entidadeId: id,
       payloadNovo: { nome: campos.nome },
     });
-    {
+    if (!endereco_em_seguida) {
       const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
       await propagarClienteParaPropostas({ supabase, clienteId: id });
     }

@@ -1907,9 +1907,8 @@ export const excluirSimulacao = createServerFn({ method: "POST" })
           console.error("[HomeFin] Erro ao cancelar oportunidade da simulação excluída:", e);
         }
       })();
-      const waitUntil = (globalThis as any)?.ctx?.waitUntil ?? (globalThis as any)?.waitUntil;
-      if (typeof waitUntil === "function") waitUntil(cancelarNoBanco);
-      else cancelarNoBanco.catch(() => {});
+      const { emSegundoPlano } = await import("@/lib/segundo-plano.server");
+      emSegundoPlano("exclusão de simulação na HomeFin", () => cancelarNoBanco);
     }
 
     // Cascata: demandas/alertas e notificações vinculadas somente a esta simulação
