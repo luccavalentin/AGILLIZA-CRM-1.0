@@ -34,6 +34,9 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     limparTitular,
     isPJ,
   } = ctx;
+  // Só PRICE usa esta mesma renda (`renda_total`); só "Ambos" ganha o campo PRICE à parte.
+  const sistemaRenda: "S" | "P" = f.sistema_amortizacao === "P" ? "P" : "S";
+  const nomeSistemaRenda = sistemaRenda === "P" ? "PRICE" : "SAC";
 
   return (
     <section className="space-y-4">
@@ -177,7 +180,8 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <Campo
             label={
               <>
-                {isPJ ? "Faturamento mensal (R$)" : "Renda familiar — SAC (R$)"} <Ast />
+                {isPJ ? "Faturamento mensal (R$)" : `Renda familiar — ${nomeSistemaRenda} (R$)`}{" "}
+                <Ast />
               </>
             }
           >
@@ -205,7 +209,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                         valor_imovel: f.valor_imovel,
                         prazo_meses: f.prazo,
                         taxa_ano: ctx.melhorTaxaAno,
-                        sistema: "S",
+                        sistema: sistemaRenda,
                       });
                       if (aval) set("renda_total", aval.rendaMinima);
                     }}
@@ -218,14 +222,16 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               {!isPJ && <AvisoRendaCrm ctx={ctx} />}
 
               {f.valor_financiamento > 0 &&
-                (f.sistema_amortizacao === "S" || f.sistema_amortizacao === "B") && (
+                (f.sistema_amortizacao === "S" ||
+                  f.sistema_amortizacao === "P" ||
+                  f.sistema_amortizacao === "B") && (
                   <div className="pt-1">
                     <DicaRendaMinima
                       valorFinanciamento={f.valor_financiamento}
                       valorImovel={f.valor_imovel}
                       prazoMeses={f.prazo}
                       taxaAno={ctx.melhorTaxaAno}
-                      sistema="S"
+                      sistema={sistemaRenda}
                       rendaInformada={0}
                       compoeRendaConjuge={f.compoe_renda && f.compoe_renda_conjuge}
                     />

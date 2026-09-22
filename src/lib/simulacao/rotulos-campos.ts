@@ -15,7 +15,7 @@ export const ROTULOS_CAMPOS_SIMULACAO: Record<string, string> = {
   celular: "Celular do proponente",
   estado_civil: "Estado civil",
   regime_casamento: "Regime de casamento",
-  renda_total: "Renda do proponente (SAC)",
+  renda_total: "Renda do proponente",
   renda_price: "Renda do proponente (PRICE)",
   profissao: "Profissão",
   nome_conjuge: "Nome do cônjuge",
