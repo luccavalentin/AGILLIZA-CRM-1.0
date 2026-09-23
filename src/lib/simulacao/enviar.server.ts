@@ -414,7 +414,16 @@ export async function enviarSimulacaoImpl({
             usoImovel: { id: sim.uso_imovel === "R" ? "R" : "C" },
             operacao: { idOperacao: String(sim.id_operacao_homefin || "1") },
             parceiro: { idParceiro: tokenInfo.idParceiro || "167" },
-            regional: { idRegional: tokenInfo.idRegional || "1" },
+            // A regional vem do token (hoje 1, "HOMEFIN"). O parceiro tem
+            // regional própria — 26, "AGILLIZA CRED" —, e foi nela que a
+            // HomeFin criou o caso de casal que o Itaú aceitou (0000032828),
+            // enquanto todos os nossos casais na regional 1 voltam com "Erro
+            // desconhecido na integração Itaú". `HOMEFIN_ID_REGIONAL` permite
+            // apontar a regional certa sem tocar no resto do fluxo; sem a
+            // variável, nada muda.
+            regional: {
+              idRegional: process.env.HOMEFIN_ID_REGIONAL || tokenInfo.idRegional || "1",
+            },
             usuarioParceiro: { idUsuarioParceiro: tokenInfo.idUsuarioParceiro || "159" },
             codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao === "P" ? "P" : "S" },
             bancos: bancosParaProcessar.map((b) => ({
