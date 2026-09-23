@@ -18,6 +18,14 @@ import { codigoTipoImovel } from "./dominios-homefin";
 import { fgAutorizacaoDadosParticipante } from "./autorizacao-dados";
 
 /**
+ * Regional do parceiro na HomeFin ("AGILLIZA CRED"), confirmada por eles em
+ * 23/09/2026. Não dá para descobrir pela API: o `/auth/token` devolve a
+ * regional 1 ("HOMEFIN") e não existe endpoint que liste as regionais do
+ * parceiro (`/regional`, `/parceiro` e variantes devolvem 404).
+ */
+const ID_REGIONAL_PARCEIRO = "26";
+
+/**
  * Empurrão imediato na reconciliação, logo após um envio que ficou aguardando.
  *
  * É só um atalho: quem garante o resultado é o `pg_cron` de dois em dois
@@ -415,16 +423,12 @@ export async function enviarSimulacaoImpl({
             usoImovel: { id: sim.uso_imovel === "R" ? "R" : "C" },
             operacao: { idOperacao: String(sim.id_operacao_homefin || "1") },
             parceiro: { idParceiro: tokenInfo.idParceiro || "167" },
-            // A regional vem do token (hoje 1, "HOMEFIN"). O parceiro tem
-            // regional própria — 26, "AGILLIZA CRED" —, e foi nela que a
-            // HomeFin criou o caso de casal que o Itaú aceitou (0000032828),
-            // enquanto todos os nossos casais na regional 1 voltam com "Erro
-            // desconhecido na integração Itaú". `HOMEFIN_ID_REGIONAL` permite
-            // apontar a regional certa sem tocar no resto do fluxo; sem a
-            // variável, nada muda.
-            regional: {
-              idRegional: process.env.HOMEFIN_ID_REGIONAL || tokenInfo.idRegional || "1",
-            },
+            // A regional é a do parceiro, não a do token. O `/auth/token`
+            // devolve 1 ("HOMEFIN"), que é a regional da própria HomeFin; a
+            // nossa é a 26 ("AGILLIZA CRED"), confirmada por eles em 23/09 e a
+            // mesma em que foi criado o caso de casal que o Itaú aceitou
+            // (0000032828). `HOMEFIN_ID_REGIONAL` sobrepõe, se um dia mudar.
+            regional: { idRegional: process.env.HOMEFIN_ID_REGIONAL || ID_REGIONAL_PARCEIRO },
             usuarioParceiro: { idUsuarioParceiro: tokenInfo.idUsuarioParceiro || "159" },
             codigoSistemaAmortizacaoBanco: { id: sim.sistema_amortizacao === "P" ? "P" : "S" },
             bancos: bancosParaProcessar.map((b) => ({
@@ -874,12 +878,11 @@ async function processarBancoIndividual(
       prazo: prazoDoBanco, // teto de idade/operação já aplicado; aqui entra o do banco
       valorImovel: num(sim.valor_imovel),
       valorFinanciamento,
-      // A simulação também guarda o imóvel, e o nosso ia em branco: em
-      // 0000032882 `tipoImovel` e `tipoUtilizacaoImovel` voltaram null,
-      // enquanto na 0000032828 — o casal que o Itaú aceitou — vieram "AP" e
-      // "R". São os mesmos valores já mandados na oportunidade.
-      tipoImovel: { id: codigoTipoImovel(sim.tipo_imovel) },
-      tipoUtilizacaoImovel: { id: sim.uso_imovel === "R" ? "R" : "C" },
+      // `tipoImovel` e `tipoUtilizacaoImovel` ficam de fora: não estão em
+      // `CreateSimulationRequest` e a HomeFin os descarta. Testado em 23/09 na
+      // oportunidade 32892 — foram enviados e voltaram null assim mesmo. Na
+      // 0000032828 eles aparecem porque aquela oportunidade foi criada pelo
+      // painel da HomeFin, não pela integração.
       // O contrato define `fgAutorizacaoDados` como BOOLEAN (Swagger e
       // documentação). Enviávamos a string "S", que é o formato dos flags
       // S/N de outros campos — aqui o tipo é outro. O valor acompanha o dos
