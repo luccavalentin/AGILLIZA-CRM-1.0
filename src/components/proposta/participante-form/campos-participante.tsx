@@ -3,7 +3,6 @@ import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/shared/date-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
 import {
   TIPO_SITUACAO,
@@ -16,7 +15,6 @@ import {
   ESTADO_CIVIL_COM_REGIME,
 } from "@/lib/propostas/dominios";
 import { maskCpfCnpj, maskCelular } from "@/lib/simulacao/format";
-import { cn } from "@/lib/utils";
 import { Campo, Secao, SelSelect, SelUf } from "./campos-atomos";
 import { CLASSE_ERRO, mascararCep, type ParticipanteForm } from "./types";
 import { exigeRenda } from "@/lib/propostas/campos-obrigatorios";
