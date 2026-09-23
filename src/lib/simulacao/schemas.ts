@@ -1,13 +1,39 @@
 import { z } from "zod";
 import { validarCpfCnpj } from "./format";
 
+/**
+ * Piso de valor aceito pelos bancos. Abaixo disso nenhum deles opera, e a
+ * integração devolve HTTP 500 sem motivo em vez de uma recusa — foi o que
+ * aconteceu nas SIM-007083 e SIM-007084, de imóvel de R$ 2.000, enquanto as
+ * 388 simulações do mês com imóvel acima de R$ 200 mil passaram. Barrar aqui
+ * troca o erro sem explicação por uma mensagem que diz o que corrigir.
+ */
+export const VALOR_IMOVEL_MINIMO = 50_000;
+export const VALOR_FINANCIAMENTO_MINIMO = 30_000;
+
+const MSG_IMOVEL_MINIMO = "Os bancos não simulam imóvel abaixo de R$ 50.000,00";
+const MSG_FINANCIAMENTO_MINIMO = "Os bancos não simulam crédito abaixo de R$ 30.000,00";
+
+/** Mensagens de piso, para quem precisa mostrá-las inteiras (e não só apontar
+ *  o campo, como faz `mensagemCamposPendentes`). */
+export const MENSAGENS_PISO_VALOR: readonly string[] = [
+  MSG_IMOVEL_MINIMO,
+  MSG_FINANCIAMENTO_MINIMO,
+];
+
 /** Schema do wizard inicial (paridade com o site público). */
 export const wizardSchema = z
   .object({
     produto: z.enum(["financiamento_imobiliario", "home_equity"]),
-    valor_imovel: z.number().positive("Informe o valor do imóvel"),
+    valor_imovel: z
+      .number()
+      .positive("Informe o valor do imóvel")
+      .min(VALOR_IMOVEL_MINIMO, MSG_IMOVEL_MINIMO),
     valor_entrada: z.number().min(0),
-    valor_financiamento: z.number().positive("Informe o valor do crédito"),
+    valor_financiamento: z
+      .number()
+      .positive("Informe o valor do crédito")
+      .min(VALOR_FINANCIAMENTO_MINIMO, MSG_FINANCIAMENTO_MINIMO),
     possui_imovel_escolhido: z.boolean().optional().nullable(),
     data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
     prazo_meses: z
@@ -61,9 +87,15 @@ export const completaSchema = z
     situacao_imovel: z.string().min(1, "Selecione a situação do imóvel"),
     uf: z.string().length(2, "Selecione a UF"),
     cep_imovel: z.string().optional().nullable(),
-    valor_imovel: z.number().positive("Informe o valor do imóvel"),
+    valor_imovel: z
+      .number()
+      .positive("Informe o valor do imóvel")
+      .min(VALOR_IMOVEL_MINIMO, MSG_IMOVEL_MINIMO),
     valor_entrada: z.number().min(0),
-    valor_financiamento: z.number().positive(),
+    valor_financiamento: z
+      .number()
+      .positive()
+      .min(VALOR_FINANCIAMENTO_MINIMO, MSG_FINANCIAMENTO_MINIMO),
     prazo: z.number().int().min(60, "Prazo mínimo 60 meses").max(420, "Prazo máximo 420 meses"),
     prazo_2: z.number().int().min(60).max(420).optional().nullable(),
     prazo_anos: z.number().int().optional().nullable(),

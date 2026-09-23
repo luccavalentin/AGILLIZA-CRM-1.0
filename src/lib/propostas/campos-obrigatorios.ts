@@ -130,8 +130,11 @@ export const CAMPO_DATA_EXPEDICAO: CampoObrigatorio = {
 
 /**
  * Campos obrigatórios ausentes em uma linha de `proposta_envolvidos`.
- * `utiliza_fgts` é booleano com default e nunca é apontado como pendente;
- * `fg_autorizacao_dados` precisa ser `true` (é um aceite do titular).
+ * `utiliza_fgts` é booleano com default e nunca é apontado como pendente.
+ * `fg_autorizacao_dados` continua na lista do contrato, mas deixou de ser
+ * cobrado: todo participante vai ao banco com `false` (ver
+ * `fgAutorizacaoDadosParticipante`), então exigir o aceite na tela travava o
+ * envio sem mudar nada no que a integração recebe.
  *
  * `exigirDataExpedicao` acrescenta `data_expedicao` à lista de obrigatórios
  * — usar quando o Santander está entre os bancos do envio (ver
@@ -176,7 +179,7 @@ export function faltantesEnvolvido(
     }
     if (c.chave === "renda" && !exigeRenda(env)) return false;
     if (c.chave === "utiliza_fgts") return false; // booleano com default (S/N)
-    if (c.chave === "fg_autorizacao_dados") return env?.fg_autorizacao_dados !== true;
+    if (c.chave === "fg_autorizacao_dados") return false; // sempre enviado como false
     return vazio(env?.[c.chave]);
   });
 }

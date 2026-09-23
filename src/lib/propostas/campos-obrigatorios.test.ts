@@ -47,12 +47,12 @@ describe("campos obrigatórios do participante", () => {
     expect(chaves.sort()).toEqual(["nome_mae", "tipo_sexo"]);
   });
 
-  it("fg_autorizacao_dados precisa ser verdadeiro, não apenas preenchido", () => {
+  it("fg_autorizacao_dados não trava mais o envio — vai sempre false ao banco", () => {
     const chaves = faltantesEnvolvido({
       ...COMPRADOR_COMPLETO,
       fg_autorizacao_dados: false,
     }).map((c) => c.chave);
-    expect(chaves).toContain("fg_autorizacao_dados");
+    expect(chaves).not.toContain("fg_autorizacao_dados");
   });
 
   it("pessoa jurídica não é cobrada nos campos exclusivos de pessoa física", () => {

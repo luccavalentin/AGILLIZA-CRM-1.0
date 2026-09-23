@@ -292,34 +292,17 @@ export function CamposParticipante({
         </div>
       </Secao>
 
-      {/* FGTS / autorizações */}
-      <Secao titulo="FGTS e autorizações">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
-            <Label className="cursor-pointer">Utiliza FGTS?</Label>
-            <Switch
-              aria-label="Utiliza FGTS?"
-              checked={f.utiliza_fgts}
-              onCheckedChange={(v) => set({ utiliza_fgts: v })}
-            />
-          </div>
-          <label
-            className={cn(
-              "flex items-start gap-2 rounded-md border px-3 py-2",
-              err("fg_autorizacao_dados") ? "border-destructive bg-destructive/5" : "border-border",
-            )}
-          >
-            <Checkbox
-              aria-label="Autorizo a consulta e o tratamento dos meus dados para análise de crédito"
-              checked={f.fg_autorizacao_dados}
-              onCheckedChange={(v) => set({ fg_autorizacao_dados: Boolean(v) })}
-              className="mt-0.5"
-            />
-            <span className="text-sm text-muted-foreground">
-              Autorizo a consulta e o tratamento dos meus dados para análise de crédito{" "}
-              <span className="text-destructive">*</span> (obrigatório).
-            </span>
-          </label>
+      {/* O aceite de consulta de dados saiu da tela: todo participante vai ao
+          banco com `fgAutorizacaoDados: false`, então o campo não mudava nada
+          no envio e ainda aparecia duplicado no cônjuge. */}
+      <Secao titulo="FGTS">
+        <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+          <Label className="cursor-pointer">Utiliza FGTS?</Label>
+          <Switch
+            aria-label="Utiliza FGTS?"
+            checked={f.utiliza_fgts}
+            onCheckedChange={(v) => set({ utiliza_fgts: v })}
+          />
         </div>
       </Secao>
     </>

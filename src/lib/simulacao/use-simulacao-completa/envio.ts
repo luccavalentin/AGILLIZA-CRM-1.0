@@ -9,7 +9,11 @@
 import { mensagemCamposPendentes } from "@/lib/simulacao/rotulos-campos";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { toast } from "sonner";
-import { completaSchema, validarCepImovelHomeEquity } from "@/lib/simulacao/schemas";
+import {
+  completaSchema,
+  MENSAGENS_PISO_VALOR,
+  validarCepImovelHomeEquity,
+} from "@/lib/simulacao/schemas";
 import {
   criarSimulacao,
   enviarSimulacaoBanco,
@@ -282,6 +286,9 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
   const cenarios: Cenario[] = [];
   const errosValidacao: Record<string, string> = {};
   const camposPendentes: string[] = [];
+  /** Regras de valor (piso dos bancos): o campo está preenchido, o número é
+   *  que não serve. Dizer "falta preencher" aqui confundiria. */
+  const regrasVioladas: string[] = [];
 
   const validarCenario = (
     sistema: "S" | "P",
@@ -305,7 +312,11 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
         const campo = String(issue.path[0]);
         if (!errosValidacao[campo]) {
           errosValidacao[campo] = issue.message;
-          camposPendentes.push(campo);
+          if (MENSAGENS_PISO_VALOR.includes(issue.message)) {
+            if (!regrasVioladas.includes(issue.message)) regrasVioladas.push(issue.message);
+          } else {
+            camposPendentes.push(campo);
+          }
         }
       });
       return;
@@ -329,12 +340,14 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
     `[SIM-PERF][ETAPA] validacao duration_ms=${(performance.now() - tValidacao).toFixed(0)}`,
   );
 
-  if (camposPendentes.length > 0 || cenarios.length === 0) {
+  if (camposPendentes.length > 0 || regrasVioladas.length > 0 || cenarios.length === 0) {
     setErros(errosValidacao);
     toast.error(
-      camposPendentes.length > 0
-        ? mensagemCamposPendentes(camposPendentes)
-        : "Não foi possível montar o envio. Revise os dados da simulação.",
+      regrasVioladas.length > 0
+        ? `${regrasVioladas.join(". ")}.`
+        : camposPendentes.length > 0
+          ? mensagemCamposPendentes(camposPendentes)
+          : "Não foi possível montar o envio. Revise os dados da simulação.",
     );
     return;
   }

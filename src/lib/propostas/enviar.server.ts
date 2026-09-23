@@ -195,10 +195,15 @@ function sistemaAmortizacaoBanco(v: unknown): string {
  * A mensagem diz exatamente isso — não inventa uma causa.
  *
  * A única pista que podemos oferecer é factual e verificável: existe outra
- * proposta RECENTE do mesmo CPF neste mesmo banco. Ela vai como observação,
- * marcada como possibilidade, e só nos últimos 15 dias. Sem esse corte, uma
- * recusa de dois meses atrás era apresentada como "recusa logo antes deste
- * envio" — uma causa inventada, que manda o operador tratar o problema errado.
+ * proposta RECENTE do mesmo CPF neste mesmo banco. Ela vai como observação, e
+ * só nos últimos 15 dias — sem esse corte, uma recusa de dois meses atrás era
+ * apresentada como se fosse de logo antes deste envio.
+ *
+ * O texto não afirma regra de banco que a API e a documentação da integração
+ * não descrevem: a recusa anterior é relatada como um fato do histórico, não
+ * como a causa desta. A única causa que a mensagem afirma é a proposta viva do
+ * mesmo CPF, e essa está documentada (a integração devolve "já existe proposta
+ * em análise para o cpf").
  */
 const DIAS_PROPOSTA_RECENTE = 15;
 
@@ -254,9 +259,9 @@ async function motivoFalhaSemMensagem({
       return (
         `O ${banco} já tem uma proposta em andamento para este CPF: ` +
         `${ativa.propostas?.numero_proposta ?? ""} (protocolo ${ativa.numero_proposta_banco}). ` +
-        `Os bancos não aceitam duas propostas do mesmo CPF ao mesmo tempo, e por isso ` +
-        `esta foi recusada sem mensagem. Acompanhe ou cancele a proposta existente ` +
-        `antes de enviar outra — reenviar agora vai falhar de novo.`
+        `A integração recusa uma segunda proposta do mesmo CPF enquanto a anterior ` +
+        `está em análise ("já existe proposta em análise para o cpf"). Acompanhe ou ` +
+        `cancele a proposta existente antes de enviar outra.`
       );
     }
 
@@ -265,11 +270,10 @@ async function motivoFalhaSemMensagem({
     );
     if (recusada) {
       return (
-        `O ${banco} não aceitou esta proposta e não informou o motivo. O mesmo CPF ` +
-        `foi recusado neste banco na proposta ${recusada.propostas?.numero_proposta ?? ""} ` +
-        `(protocolo ${recusada.numero_proposta_banco}) nos últimos ${DIAS_PROPOSTA_RECENTE} dias; ` +
-        `os bancos costumam bloquear uma nova entrada logo após uma recusa. Trate a ` +
-        `causa da recusa ou tente outro banco.`
+        `${base} Para o histórico: o mesmo CPF já havia sido recusado neste banco na ` +
+        `proposta ${recusada.propostas?.numero_proposta ?? ""} ` +
+        `(protocolo ${recusada.numero_proposta_banco}) nos últimos ${DIAS_PROPOSTA_RECENTE} dias. ` +
+        `A integração não diz se uma coisa tem relação com a outra.`
       );
     }
 
