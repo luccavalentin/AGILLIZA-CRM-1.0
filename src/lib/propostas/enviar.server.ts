@@ -517,8 +517,16 @@ async function renovarSimulacaoSeConsumida({
   // e prazo. Qualquer outro campo (estado civil, regime de casamento, cônjuge,
   // dados do imóvel) provoca HTTP 500 no provedor e mascara a mensagem real do
   // banco. Estado civil/cônjuge vão no PUT /participante.
+  // No schema `Opportunity` (PUT /oportunidade/{id}) o financiamento e o prazo
+  // se chamam `valorFinanciamentoSimulacao` e `prazoPagamentoSimulacao`;
+  // `valorFinanciamento` e `prazo` só existem no POST de criação. Mandávamos
+  // os nomes do POST, então a HomeFin descartava os dois: mudar valor ou prazo
+  // na proposta não chegava à oportunidade. Os nomes antigos seguem junto
+  // porque não custam nada e não sabemos qual deles a implementação deles lê.
   const payloadOportunidadeAtual: Record<string, unknown> = {
     valorImovel,
+    valorFinanciamentoSimulacao: valorFinanciamento,
+    prazoPagamentoSimulacao: prazo,
     valorFinanciamento,
     prazo,
   };
