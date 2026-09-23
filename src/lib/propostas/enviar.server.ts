@@ -11,6 +11,7 @@ import {
   sanitizarMensagemErro,
   TIPO_BANCO_SANTANDER,
 } from "@/lib/simulacao/homefin.server";
+import { fgAutorizacaoDadosParticipante } from "@/lib/simulacao/autorizacao-dados";
 import { exigeRenda, faltantesEnvolvido, ehProponenteEnviadoAoBanco } from "./campos-obrigatorios";
 import { msgCadastroIncompleto } from "./mensagens-envio";
 
@@ -1177,15 +1178,7 @@ export async function garantirEnderecoParticipantes({
             soDigitos(cliente?.telefone_celular) || soDigitos(prop.celular),
           ),
       utilizaFgts: env ? (env.utiliza_fgts ? "S" : "N") : (part?.utilizaFgts ?? "N"),
-      // Aceite de consulta de dados: vale o que está no cadastro do
-      // participante. O `?? true` assumia autorização de quem nunca autorizou —
-      // o cônjuge criado pela proposta ia sempre com `true`. No caso de casal
-      // que o Itaú aprovou (HomeFin 0000032828) os dois proponentes foram com
-      // `false`; nos nossos, recusados, os dois vão com `true`.
-      // `HOMEFIN_FG_AUTORIZACAO=false` força `false` para reproduzir aquele
-      // envio; sem a variável, vale o cadastro.
-      fgAutorizacaoDados:
-        process.env.HOMEFIN_FG_AUTORIZACAO === "false" ? false : env?.fg_autorizacao_dados === true,
+      fgAutorizacaoDados: fgAutorizacaoDadosParticipante(env?.fg_autorizacao_dados),
       cep: soDigitos(doEndereco("cep") ?? (ehPrincipal ? prop.cep_imovel : undefined)) || undefined,
       logradouro:
         doEndereco("logradouro") ?? (ehPrincipal ? textoOuNada(prop.endereco_imovel) : undefined),

@@ -15,6 +15,7 @@ import {
   PADROES_CADASTRO,
 } from "@/lib/crm/padroes-cadastro";
 import { codigoTipoImovel } from "./dominios-homefin";
+import { fgAutorizacaoDadosParticipante } from "./autorizacao-dados";
 
 /**
  * Empurrão imediato na reconciliação, logo após um envio que ficou aguardando.
@@ -536,7 +537,7 @@ export async function enviarSimulacaoImpl({
                     municipio: c.imovel_cidade || "Sao Paulo",
                     uf: c.imovel_uf || sim.uf || "SP",
                     utilizaFgts: String(sim.utiliza_fgts ?? "N") === "S" ? "S" : "N",
-                    fgAutorizacaoDados: true,
+                    fgAutorizacaoDados: fgAutorizacaoDadosParticipante(c.fg_autorizacao_dados),
                     // Opcionais no contrato: enviados quando o cadastro tem.
                     // Em PJ a data de abertura mora no mesmo campo da data de
                     // nascimento.
@@ -579,7 +580,7 @@ export async function enviarSimulacaoImpl({
                     ufExpedicao: dados.uf_expedicao || PADROES_CADASTRO.ufExpedicao,
                     nomeProfissao: dados.profissao || PADROES_CADASTRO.profissao,
                     utilizaFgts: dados.utiliza_fgts ? "S" : "N",
-                    fgAutorizacaoDados: true,
+                    fgAutorizacaoDados: fgAutorizacaoDadosParticipante(dados.fg_autorizacao_dados),
                     tipoQualificacao: "CO",
                     tipoPessoa: (p.cpf_cnpj || "").replace(/\D/g, "").length > 11 ? "J" : "F",
                     nomeParticipante: p.nome,
