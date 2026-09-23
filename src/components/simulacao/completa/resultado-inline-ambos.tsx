@@ -267,9 +267,11 @@ export function ResultadoInlineAmbos({
     simId: string;
     simulacao: any;
     banco: any;
-    /** Quem figura como titular nesta linha (teste automático de CPFs). */
+    /** Quem figura como titular nesta linha (comparativo de CPFs). */
     titularNome: string;
     titularPrincipal: boolean;
+    /** "Titular", "Cônjuge" ou "CPF testado". */
+    titularVinculo: string;
   };
   const todasIrmas = [
     ...(dataSac?.simulacao?._irmas ?? []),
@@ -295,6 +297,8 @@ export function ResultadoInlineAmbos({
           banco: b,
           titularNome: b._titularNome ?? s.nome_cliente ?? "",
           titularPrincipal: b._ehTitularPrincipal !== false,
+          titularVinculo:
+            b._titularVinculo ?? (b._ehTitularPrincipal !== false ? "Titular" : "CPF testado"),
         });
       }
     }
@@ -715,7 +719,7 @@ export function ResultadoInlineAmbos({
                                   {l.titularNome}
                                 </span>
                                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                                  {l.titularPrincipal ? "Titular" : "CPF testado"}
+                                  {l.titularVinculo}
                                 </span>
                                 <div className="h-px flex-1 bg-primary/20" />
                               </div>

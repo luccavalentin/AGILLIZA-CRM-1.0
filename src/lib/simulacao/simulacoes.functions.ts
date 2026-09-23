@@ -292,7 +292,6 @@ export const criarSimulacao = createServerFn({ method: "POST" })
     }): Promise<{
       id: string;
       numero_simulacao: string;
-      id_secundario?: string;
       agrupador_id?: string;
     }> => {
       try {
@@ -376,7 +375,6 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           return {
             id: existente.id,
             numero_simulacao: existente.numero_simulacao,
-            id_secundario: undefined,
             agrupador_id: existente.agrupador_id || undefined,
           };
         }
@@ -439,20 +437,10 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           dd.prazo = prazoNormalizado;
         }
 
-        const possuiConjugeMinimo =
-          Boolean(dd.nome_conjuge) &&
-          Boolean(dd.cpf_conjuge) &&
-          Boolean(dd.data_nascimento_conjuge);
-        // Quando o teste de CPF está ligado, o cliente já cria e envia a
-        // simulação de cada proponente (cônjuge incluído) e as agrupa. Manter o
-        // inversor automático aqui geraria uma segunda simulação do cônjuge e
-        // dobraria as consultas ao banco.
-        const testarAmbos =
-          data.modo === "completa" &&
-          casado &&
-          possuiConjugeMinimo &&
-          dd.compoe_renda_conjuge !== false &&
-          !(dd as any).testar_cpfs;
+        // Simulação com o cônjuge na posição de titular só nasce quando o
+        // operador marca "Comparar CPFs" — a tela cria e agrupa a de cada
+        // proponente. O inversor automático que existia aqui criava essa
+        // segunda simulação sem ninguém pedir.
         let cliente_id = dd.cliente_id ?? null;
         const clienteOrigemId = cliente_id;
 
@@ -826,139 +814,6 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           return agrupadorDoLote;
         };
 
-        let id_secundario: string | undefined;
-
-        // O comparativo de CPF agora roda SEMPRE para casados com dados mínimos do cônjuge.
-        // A simulação secundária é criada apenas se o cônjuge tiver dados aptos a ser titular.
-        const conjugeAptoTitular =
-          !!dd.cpf_conjuge && !!dd.data_nascimento_conjuge && Number(dd.renda_conjuge ?? 0) > 0;
-
-        if (testarAmbos && !conjugeAptoTitular) {
-          await supabaseAdmin.from("simulacao_historico").insert({
-            simulacao_id: sim.id,
-            tipo: "info",
-            descricao:
-              "Comparativo de CPF não executado: faltam nome, CPF, data de nascimento ou renda do cônjuge.",
-            ator_id: userId,
-          });
-        }
-
-        if (testarAmbos && conjugeAptoTitular && dd.cpf_conjuge !== dd.cpf_cnpj) {
-          // REGRA DE SEGURANÇA: Validar prazo contra idade no servidor para o cônjuge como titular
-          const proponentesInvertidos = [
-            {
-              nome: dd.nome_conjuge || "Titular",
-              vinculo: "Titular",
-              dataNascimento: dd.data_nascimento_conjuge,
-            },
-            {
-              nome: dd.nome_cliente || "Cônjuge",
-              vinculo: "cônjuge",
-              dataNascimento: dd.data_nascimento,
-            },
-          ];
-          const analiseInvertida = ajustarPrazoPorIdade(
-            dd.prazo || 0,
-            { nome: dd.nome_conjuge!, dataNascimento: dd.data_nascimento_conjuge! },
-            [{ nome: dd.nome_cliente!, vinculo: "cônjuge", dataNascimento: dd.data_nascimento! }],
-            // Mesma regra da simulação original: sem composição de renda, o teto
-            // é contado pelo proponente mais novo.
-            modoTetoIdade(compoeRendaConjugeTeto),
-          );
-
-          const prazoEfetivo = analiseInvertida.prazo;
-          const rendaTotalSoma = (dd.renda_total ?? 0) + (dd.renda_conjuge ?? 0);
-          const insertInvertido = {
-            ...insert,
-            // Inverte titular ⇄ cônjuge
-            cliente_id: conjugeId || cliente_id,
-            cpf_cnpj: dd.cpf_conjuge || null,
-            nome_cliente: dd.nome_conjuge || null,
-            email: dd.email_conjuge || PADROES_CADASTRO.email,
-            celular: dd.celular_conjuge || null,
-            data_nascimento: dd.data_nascimento_conjuge || null,
-            renda_total: dd.compoe_renda ? rendaTotalSoma : (dd.renda_conjuge ?? 0),
-            prazo: prazoEfetivo,
-            prazo_anos: Math.floor(prazoEfetivo / 12),
-            estado_civil: dd.estado_civil_conjuge || dd.estado_civil,
-            sexo: dd.sexo_conjuge === "M" || dd.sexo_conjuge === "F" ? dd.sexo_conjuge : null,
-            sexo_conjuge: dd.sexo === "M" || dd.sexo === "F" ? dd.sexo : null,
-
-            nome_conjuge: dd.nome_cliente || null,
-            cpf_conjuge: dd.cpf_cnpj || null,
-            data_nascimento_conjuge: dd.data_nascimento || null,
-            email_conjuge: dd.email || null,
-            celular_conjuge: dd.celular || null,
-            renda_conjuge: dd.renda_total || null,
-            estado_civil_conjuge: dd.estado_civil ?? null,
-
-            // Mantém vínculo via agrupador para que a UI saiba que são parte da mesma "comparação"
-            agrupador_id: await garantirAgrupadorNaOriginal(),
-          };
-
-          // Se composição de renda ativa, garante que ambos levem a MESMA renda somada
-          if (dd.compoe_renda) {
-            insert.renda_total = rendaTotalSoma;
-            insertInvertido.renda_total = rendaTotalSoma;
-          }
-
-          const { data: simSec, error: errorSec } = await supabaseAdmin
-            .from("simulacoes")
-            .insert(insertInvertido as any)
-            .select("id")
-            .single();
-
-          if (!errorSec && simSec) {
-            id_secundario = simSec.id;
-            // Salva participantes se houver
-            if (dd.participantes && dd.participantes.length > 0) {
-              const rowsPart = dd.participantes.map((p: any) => ({
-                simulacao_id: simSec.id,
-                nome: p.nome,
-                cpf_cnpj: limparDocumento(p.cpf_cnpj),
-                data_nascimento: p.data_nascimento,
-                renda: Number(p.renda) || 0,
-                vinculo: p.vinculo,
-                estado_civil: p.estado_civil,
-                compoe_renda: Boolean(p.compoe_renda),
-                dados: { sexo: p.sexo } as any,
-              }));
-              await supabaseAdmin.from("simulacao_participantes").insert(rowsPart as any);
-            }
-            // Replica os bancos selecionados para a simulação invertida
-            if (dd.bancos_ids && dd.bancos_ids.length > 0) {
-              const { data: bancosAtivos } = await supabase
-                .from("vw_bancos_ativos")
-                .select("id, codigo_banco, nome_banco, id_banco")
-                .in("id", dd.bancos_ids);
-
-              if (bancosAtivos && bancosAtivos.length > 0) {
-                await supabaseAdmin.from("simulacao_bancos").insert(
-                  bancosAtivos.map((b) => ({
-                    simulacao_id: simSec.id,
-                    banco_id: b.id,
-                    codigo_banco: b.codigo_banco,
-                    nome_banco: b.nome_banco,
-                    homefin_id_banco: b.id_banco,
-                    status_banco: "aguardando",
-                    selecionado: true,
-                  })),
-                );
-              }
-            }
-
-            // Envio da simulação invertida (testagem de casal). Vai para a
-            // fila e é aguardado antes do retorno — ver `enviosDasIrmas`.
-            const { enviarSimulacaoBanco } = await import("./simulacoes.functions");
-            enviosDasIrmas.push(
-              enviarSimulacaoBanco({
-                data: { simulacao_id: simSec.id, banco_ids: dd.bancos_ids },
-              }).catch((e) =>
-                console.error("[HomeFin] Erro no envio automático da simulação secundária:", e),
-              ),
-            );
-          }
-        }
 
         // registra bancos selecionados
         if (dd.bancos_ids && dd.bancos_ids.length > 0) {
@@ -1173,11 +1028,22 @@ export const obterSimulacao = createServerFn({ method: "GET" })
     }
 
     const cpfPrincipal = String((simulacao as any).cpf_cnpj ?? "").replace(/\D/g, "");
+    const cpfConjugePrincipal = String((simulacao as any).cpf_conjuge ?? "").replace(/\D/g, "");
 
     const bancos = (bancosRaw ?? []).map((b: any) => {
       const titular = titularPorSim.get(b.simulacao_id);
+      const cpfDaLinha = titular?.cpf ?? cpfPrincipal;
       return {
         ...b,
+        // Rótulo da linha no comparativo de CPFs: o proponente testado pode ser
+        // o cônjuge ou um participante, e chamar os dois de "titular" fazia
+        // parecer que a operação tinha dois titulares.
+        _titularVinculo:
+          cpfDaLinha === cpfPrincipal
+            ? "Titular"
+            : cpfConjugePrincipal && cpfDaLinha === cpfConjugePrincipal
+              ? "Cônjuge"
+              : "CPF testado",
         _sistema: sistemaPorSim.get(b.simulacao_id) === "P" ? "PRICE" : "SAC",
         _prazo: prazoPorSim.get(b.simulacao_id) ?? (simulacao as any).prazo,
         // Etiquetas do teste de CPF: permitem à tela separar "titular" das

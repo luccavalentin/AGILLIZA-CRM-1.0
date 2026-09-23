@@ -3,19 +3,20 @@ import { ToneBadge } from "@/components/crm/tone-badge";
 const primeiroNome = (n: string) => n.trim().split(/\s+/)[0] || n;
 
 /**
- * Quem está na posição de titular nesta linha de banco.
+ * De quem é esta linha de banco no comparativo de CPFs.
  *
- * No teste de CPF (inversão titular ⇄ cônjuge) o comparativo lista os bancos
- * das duas simulações juntos e cada banco aparece duas vezes — sem dizer de
- * quem é cada linha, parecia simulação duplicada. Só aparece quando há mais
- * de um titular no grupo.
+ * Com "Comparar CPFs" o comparativo lista os bancos das duas simulações juntos
+ * e cada banco aparece duas vezes. A linha da simulação feita com o cônjuge na
+ * posição de titular diz "Cônjuge": chamá-la de "Titular" fazia parecer que o
+ * titular da operação era ele. Só aparece quando há mais de um no grupo.
  */
 export function TitularBadge({ banco, mostrar }: { banco: any; mostrar: boolean }) {
   if (!mostrar || !banco?._titularNome) return null;
   const principal = banco._ehTitularPrincipal !== false;
   return (
     <ToneBadge tone={principal ? "muted" : "info"} className="whitespace-nowrap">
-      Titular: {primeiroNome(String(banco._titularNome))}
+      {banco._titularVinculo ?? (principal ? "Titular" : "CPF testado")}:{" "}
+      {primeiroNome(String(banco._titularNome))}
     </ToneBadge>
   );
 }
