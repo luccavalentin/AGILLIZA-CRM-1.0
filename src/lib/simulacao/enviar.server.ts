@@ -13,6 +13,7 @@ import {
   rendaConjugeOuPadrao,
   rgDoCpf,
   PADROES_CADASTRO,
+  ENDERECO_PADRAO,
 } from "@/lib/crm/padroes-cadastro";
 import { codigoTipoImovel } from "./dominios-homefin";
 import { fgAutorizacaoDadosParticipante } from "./autorizacao-dados";
@@ -599,7 +600,7 @@ export async function enviarSimulacaoImpl({
                     cep: (dados.cep || "01001000").replace(/\D/g, ""),
                     logradouro: dados.logradouro || "Rua Não Informada",
                     numeroLogradouro: dados.numero || "SN",
-                    complementoLogradouro: dados.complemento || "",
+                    complementoLogradouro: dados.complemento || ENDERECO_PADRAO.complemento,
                     bairro: dados.bairro || "Centro",
                     municipio: dados.municipio || "São Paulo",
                     uf: dados.uf || "SP",

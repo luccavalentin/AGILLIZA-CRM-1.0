@@ -786,7 +786,9 @@ export const salvarEndereco = createServerFn({ method: "POST" })
       cep: data.cep || padrao?.cep || null,
       logradouro: data.logradouro || padrao?.logradouro || null,
       numero: data.numero || padrao?.numero || null,
-      complemento: data.complemento ?? null,
+      // Complemento vazio vira o padrão em qualquer endereço, não só no que
+      // nasce em branco: é o campo que os proponentes mais deixam sem.
+      complemento: String(data.complemento ?? "").trim() || ENDERECO_PADRAO.complemento,
       bairro: data.bairro || padrao?.bairro || null,
       cidade: data.cidade || padrao?.cidade || null,
       uf: data.uf || padrao?.uf || null,

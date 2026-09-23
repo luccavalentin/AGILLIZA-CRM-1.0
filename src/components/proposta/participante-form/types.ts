@@ -1,7 +1,7 @@
 import { ESTADO_CIVIL_COM_REGIME } from "@/lib/propostas/dominios";
 import { faltantesEnvolvido } from "@/lib/propostas/campos-obrigatorios";
 import { maskCpfCnpj, maskCelular, apenasDigitos, validarCpfCnpj } from "@/lib/simulacao/format";
-import { PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
+import { ENDERECO_PADRAO, PADROES_CADASTRO } from "@/lib/crm/padroes-cadastro";
 
 export type ParticipanteForm = {
   tipo_situacao: string;
@@ -88,6 +88,7 @@ export function aplicarPadroesParticipante(f: ParticipanteForm): ParticipanteFor
   const comPadrao = (campo: keyof ParticipanteForm, valor: string) => {
     if (semValor(next[campo])) (next as any)[campo] = valor;
   };
+  comPadrao("complemento", ENDERECO_PADRAO.complemento);
   comPadrao("profissao", PADROES_CADASTRO.profissao);
   comPadrao("empresa", PADROES_CADASTRO.empresa);
   comPadrao("email", PADROES_CADASTRO.email);

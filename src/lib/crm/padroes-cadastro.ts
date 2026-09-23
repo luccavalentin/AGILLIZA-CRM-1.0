@@ -30,17 +30,17 @@ export const PADROES_CADASTRO = {
   rendaConjuge: 3000,
 } as const;
 
-/** Endereço padrão — só o cadastro do cliente usa; a simulação não mexe em endereço. */
+/**
+ * Endereço padrão — entra por inteiro só quando o endereço está em branco. O
+ * complemento é a exceção: vazio vira "001" em qualquer endereço, porque é
+ * opcional no contrato do banco mas sair vazio já custou envio (o casal que o
+ * Itaú aceitou, 0000032828, ia com complemento preenchido).
+ */
 export const ENDERECO_PADRAO = {
   cep: "13416222",
   logradouro: "Rua Dr. Paulo Pinto",
   numero: "1001",
-  // Complemento era o último campo do participante que saía vazio nos nossos
-  // envios e vinha preenchido no casal que o Itaú aceitou (0000032828,
-  // "Bl E Ap 71"). É opcional no contrato, mas o endereço do 2º proponente já
-  // derrubou um envio antes — em 17/09 o Itaú validou o CEP do proponente 2 —,
-  // então não vale a pena deixar diferença de graça.
-  complemento: "Sala 1",
+  complemento: "001",
   bairro: "São Dimas",
   cidade: "Piracicaba",
   uf: "SP",
