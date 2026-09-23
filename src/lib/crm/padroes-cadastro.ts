@@ -35,6 +35,12 @@ export const ENDERECO_PADRAO = {
   cep: "13416222",
   logradouro: "Rua Dr. Paulo Pinto",
   numero: "1001",
+  // Complemento era o último campo do participante que saía vazio nos nossos
+  // envios e vinha preenchido no casal que o Itaú aceitou (0000032828,
+  // "Bl E Ap 71"). É opcional no contrato, mas o endereço do 2º proponente já
+  // derrubou um envio antes — em 17/09 o Itaú validou o CEP do proponente 2 —,
+  // então não vale a pena deixar diferença de graça.
+  complemento: "Sala 1",
   bairro: "São Dimas",
   cidade: "Piracicaba",
   uf: "SP",

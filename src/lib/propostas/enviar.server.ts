@@ -1209,7 +1209,14 @@ export async function garantirEnderecoParticipantes({
     if (ehProponente && ehPessoaFisica) {
       const completados: string[] = [];
       const completar = (
-        campo: "cep" | "logradouro" | "numeroLogradouro" | "bairro" | "municipio" | "uf",
+        campo:
+          | "cep"
+          | "logradouro"
+          | "numeroLogradouro"
+          | "complementoLogradouro"
+          | "bairro"
+          | "municipio"
+          | "uf",
         padrao: string,
         rotulo: string,
         vazio: boolean,
@@ -1221,6 +1228,12 @@ export async function garantirEnderecoParticipantes({
       completar("cep", ENDERECO_PADRAO.cep, "CEP", String(payload.cep ?? "").length !== 8);
       completar("logradouro", ENDERECO_PADRAO.logradouro, "rua", !payload.logradouro);
       completar("numeroLogradouro", ENDERECO_PADRAO.numero, "número", !payload.numeroLogradouro);
+      completar(
+        "complementoLogradouro",
+        ENDERECO_PADRAO.complemento,
+        "complemento",
+        !payload.complementoLogradouro,
+      );
       completar("bairro", ENDERECO_PADRAO.bairro, "bairro", !payload.bairro);
       completar("municipio", ENDERECO_PADRAO.cidade, "cidade", !payload.municipio);
       completar("uf", ENDERECO_PADRAO.uf, "UF", !payload.uf);
