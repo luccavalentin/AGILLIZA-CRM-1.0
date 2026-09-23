@@ -449,7 +449,7 @@ async function renovarSimulacaoSeConsumida({
     fgFinanciarDespesas: despesasBanco.fgFinanciarDespesas,
     valorDespesasFinanciadas: despesasBanco.valorDespesasFinanciadas,
     valorTotalFinanciamento: despesasBanco.valorTotalFinanciamento,
-    fgAutorizacaoDados: true,
+    fgAutorizacaoDados: fgAutorizacaoDadosParticipante(),
   };
 
   // A agência NÃO vai na simulação (a integração ignorava o campo aqui): ela

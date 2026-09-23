@@ -874,13 +874,20 @@ async function processarBancoIndividual(
       prazo: prazoDoBanco, // teto de idade/operação já aplicado; aqui entra o do banco
       valorImovel: num(sim.valor_imovel),
       valorFinanciamento,
+      // A simulação também guarda o imóvel, e o nosso ia em branco: em
+      // 0000032882 `tipoImovel` e `tipoUtilizacaoImovel` voltaram null,
+      // enquanto na 0000032828 — o casal que o Itaú aceitou — vieram "AP" e
+      // "R". São os mesmos valores já mandados na oportunidade.
+      tipoImovel: { id: codigoTipoImovel(sim.tipo_imovel) },
+      tipoUtilizacaoImovel: { id: sim.uso_imovel === "R" ? "R" : "C" },
       // O contrato define `fgAutorizacaoDados` como BOOLEAN (Swagger e
       // documentação). Enviávamos a string "S", que é o formato dos flags
-      // S/N de outros campos — aqui o tipo é outro.
+      // S/N de outros campos — aqui o tipo é outro. O valor acompanha o dos
+      // participantes: false, como na 0000032828.
       valorTotalFinanciamento,
       valorDespesasFinanciadas,
       fgFinanciarDespesas,
-      fgAutorizacaoDados: true,
+      fgAutorizacaoDados: fgAutorizacaoDadosParticipante(),
       // Empresa não tem sexo, então em PJ este campo saía ausente — e ausência
       // é a única diferença que sobrou entre os envios que o Bradesco responde
       // e os que ele quebra sem devolver motivo. Mandamos o mesmo valor que já
@@ -948,7 +955,7 @@ async function processarBancoIndividual(
           valorDespesasFinanciadas,
           valorTotalFinanciamento,
           fgFinanciarDespesas,
-          fgAutorizacaoDados: true,
+          fgAutorizacaoDados: fgAutorizacaoDadosParticipante(),
         },
         { simulacao_id: simulacaoId },
       );
