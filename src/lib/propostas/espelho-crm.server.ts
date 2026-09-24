@@ -179,6 +179,15 @@ export async function espelharPropostaNaHomefin({
     out.vendedoresPendentes = v.pendentes;
     for (const e of v.erros)
       out.erros.push({ bloco: "vendedores", mensagem: `${e.nome}: ${e.mensagem}` });
+    // Vendedor sem os obrigatórios não é criado na integração. Antes isso não
+    // aparecia em lugar nenhum: o operador cadastrava e nada chegava lá.
+    for (const p of v.pendentes) {
+      await supabase.from("proposta_historico").insert({
+        proposta_id: propostaId,
+        tipo_evento: "erro_envio",
+        descricao: `Vendedor ${p.nome} não foi enviado à integração: falta ${p.faltando.join(", ")}.`,
+      } as any);
+    }
   } catch (e) {
     out.erros.push({ bloco: "vendedores", mensagem: msg(e) });
   }
