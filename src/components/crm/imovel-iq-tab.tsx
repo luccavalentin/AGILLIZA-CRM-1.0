@@ -20,6 +20,7 @@ import { Loader2 } from "lucide-react";
 import { salvarImovelIq } from "@/lib/crm/clientes.functions";
 import { TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL } from "@/lib/simulacao/schemas";
 import { mascararCep, cepValido, consultarCep } from "@/lib/cep";
+import { mascararTelefone } from "@/lib/crm/documento";
 
 const UFS = [
   "AC",
@@ -86,6 +87,8 @@ function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cl
     imovel_bairro: cliente.imovel_bairro ?? "",
     imovel_cidade: cliente.imovel_cidade ?? "",
     imovel_uf: cliente.imovel_uf ?? "",
+    vistoria_nome: String((cliente.documentos_checklist ?? {}).i_vistoria_nome ?? ""),
+    vistoria_telefone: String((cliente.documentos_checklist ?? {}).i_vistoria_tel ?? ""),
   });
 
   function set<K extends keyof typeof f>(k: K, v: string) {
@@ -134,6 +137,8 @@ function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cl
           imovel_bairro: f.imovel_bairro || null,
           imovel_cidade: f.imovel_cidade || null,
           imovel_uf: f.imovel_uf || null,
+          vistoria_nome: f.vistoria_nome,
+          vistoria_telefone: f.vistoria_telefone,
         },
       });
       toast.success("Dados do imóvel salvos.");
@@ -146,130 +151,160 @@ function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cl
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5 space-y-4">
-      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Dados do imóvel
-      </p>
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-        <div>
-          <Label>Tipo do imóvel</Label>
-          <Select value={f.imovel_tipo} onValueChange={(v) => set("imovel_tipo", v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {TIPOS_IMOVEL.map((t) => (
-                <SelectItem key={t.value} value={t.value}>
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Uso do imóvel</Label>
-          <Select value={f.imovel_uso} onValueChange={(v) => set("imovel_uso", v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {USOS_IMOVEL.map((t) => (
-                <SelectItem key={t.value} value={t.value}>
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Situação do imóvel</Label>
-          <Select value={f.imovel_situacao} onValueChange={(v) => set("imovel_situacao", v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {SITUACOES_IMOVEL.map((t) => (
-                <SelectItem key={t.value} value={t.value}>
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Valor do imóvel (R$)</Label>
-          <Input
-            type="number"
-            inputMode="decimal"
-            value={f.imovel_valor || ""}
-            onChange={(e) => set("imovel_valor", e.target.value)}
-          />
-        </div>
-        <div>
-          <Label>CEP</Label>
-          <div className="relative">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="rounded-lg border border-border bg-card p-5 space-y-4">
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Dados do imóvel
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label>Tipo do imóvel</Label>
+            <Select value={f.imovel_tipo} onValueChange={(v) => set("imovel_tipo", v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIPOS_IMOVEL.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Uso do imóvel</Label>
+            <Select value={f.imovel_uso} onValueChange={(v) => set("imovel_uso", v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {USOS_IMOVEL.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Situação do imóvel</Label>
+            <Select value={f.imovel_situacao} onValueChange={(v) => set("imovel_situacao", v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {SITUACOES_IMOVEL.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Valor do imóvel (R$)</Label>
             <Input
-              value={f.imovel_cep}
-              inputMode="numeric"
-              placeholder="00000-000"
-              onChange={(e) => {
-                const m = mascararCep(e.target.value);
-                set("imovel_cep", m);
-                if (cepValido(m)) buscarCepImovel(m);
-              }}
-              onBlur={(e) => buscarCepImovel(e.target.value)}
+              type="number"
+              inputMode="decimal"
+              value={f.imovel_valor || ""}
+              onChange={(e) => set("imovel_valor", e.target.value)}
             />
-            {buscandoCep && (
-              <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-            )}
+          </div>
+          <div>
+            <Label>CEP</Label>
+            <div className="relative">
+              <Input
+                value={f.imovel_cep}
+                inputMode="numeric"
+                placeholder="00000-000"
+                onChange={(e) => {
+                  const m = mascararCep(e.target.value);
+                  set("imovel_cep", m);
+                  if (cepValido(m)) buscarCepImovel(m);
+                }}
+                onBlur={(e) => buscarCepImovel(e.target.value)}
+              />
+              {buscandoCep && (
+                <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          </div>
+          <div>
+            <Label>UF</Label>
+            <Select value={f.imovel_uf} onValueChange={(v) => set("imovel_uf", v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="UF" />
+              </SelectTrigger>
+              <SelectContent>
+                {UFS.map((u) => (
+                  <SelectItem key={u} value={u}>
+                    {u}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Logradouro</Label>
+            <Input
+              value={f.imovel_logradouro}
+              onChange={(e) => set("imovel_logradouro", e.target.value)}
+            />
+          </div>
+          <div>
+            <Label>Número</Label>
+            <Input value={f.imovel_numero} onChange={(e) => set("imovel_numero", e.target.value)} />
+          </div>
+          <div>
+            <Label>Complemento</Label>
+            <Input
+              value={f.imovel_complemento}
+              onChange={(e) => set("imovel_complemento", e.target.value)}
+            />
+          </div>
+          <div>
+            <Label>Bairro</Label>
+            <Input value={f.imovel_bairro} onChange={(e) => set("imovel_bairro", e.target.value)} />
+          </div>
+          <div>
+            <Label>Cidade</Label>
+            <Input value={f.imovel_cidade} onChange={(e) => set("imovel_cidade", e.target.value)} />
           </div>
         </div>
-        <div>
-          <Label>UF</Label>
-          <Select value={f.imovel_uf} onValueChange={(v) => set("imovel_uf", v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="UF" />
-            </SelectTrigger>
-            <SelectContent>
-              {UFS.map((u) => (
-                <SelectItem key={u} value={u}>
-                  {u}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="sm:col-span-2">
-          <Label>Logradouro</Label>
-          <Input
-            value={f.imovel_logradouro}
-            onChange={(e) => set("imovel_logradouro", e.target.value)}
-          />
-        </div>
-        <div>
-          <Label>Número</Label>
-          <Input value={f.imovel_numero} onChange={(e) => set("imovel_numero", e.target.value)} />
-        </div>
-        <div>
-          <Label>Complemento</Label>
-          <Input
-            value={f.imovel_complemento}
-            onChange={(e) => set("imovel_complemento", e.target.value)}
-          />
-        </div>
-        <div>
-          <Label>Bairro</Label>
-          <Input value={f.imovel_bairro} onChange={(e) => set("imovel_bairro", e.target.value)} />
-        </div>
-        <div>
-          <Label>Cidade</Label>
-          <Input value={f.imovel_cidade} onChange={(e) => set("imovel_cidade", e.target.value)} />
+        <div className="flex justify-end">
+          <Button onClick={onSalvar} disabled={salvando}>
+            {salvando ? "Salvando…" : "Salvar imóvel"}
+          </Button>
         </div>
       </div>
-      <div className="flex justify-end">
-        <Button onClick={onSalvar} disabled={salvando}>
-          {salvando ? "Salvando…" : "Salvar imóvel"}
-        </Button>
+
+      {/* Quem a vistoria procura para agendar. Vai à integração junto com o
+          imóvel (`contatoAvaliacao`), por isso fica ao lado dele. */}
+      <div className="rounded-lg border border-border bg-card p-5 space-y-4">
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Dados da avaliação
+        </p>
+        <div>
+          <Label>Nome do contato</Label>
+          <Input
+            value={f.vistoria_nome}
+            placeholder="Nome do contato"
+            onChange={(e) => set("vistoria_nome", e.target.value)}
+          />
+        </div>
+        <div>
+          <Label>Telefone do contato</Label>
+          <Input
+            value={mascararTelefone(f.vistoria_telefone)}
+            inputMode="numeric"
+            placeholder="Digite o número do telefone"
+            onChange={(e) =>
+              set("vistoria_telefone", e.target.value.replace(/\D/g, "").slice(0, 11))
+            }
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">Salvo junto com o imóvel, no botão ao lado.</p>
       </div>
     </div>
   );

@@ -2067,6 +2067,10 @@ export const salvarImovelIq = createServerFn({ method: "POST" })
         iq_nome: z.string().max(200).optional().nullable(),
         iq_comentario: z.string().max(2000).optional().nullable(),
         imovel_matricula: z.record(z.any()).optional().nullable(),
+        // Contato que a vistoria procura. Mora no checklist (`i_vistoria_*`),
+        // de onde o espelho o leva à proposta e à integração.
+        vistoria_nome: z.string().max(200).optional(),
+        vistoria_telefone: z.string().max(20).optional(),
       })
       .parse(d),
   )
@@ -2075,7 +2079,22 @@ export const salvarImovelIq = createServerFn({ method: "POST" })
     if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
       throw new Error("Você não tem permissão para editar o cliente.");
     }
-    const { cliente_id, ...patch } = data;
+    const { cliente_id, vistoria_nome, vistoria_telefone, ...patch } = data;
+    if (vistoria_nome !== undefined || vistoria_telefone !== undefined) {
+      const { data: atual } = await supabase
+        .from("clientes")
+        .select("documentos_checklist")
+        .eq("id", cliente_id)
+        .maybeSingle();
+      const checklist = {
+        ...(((atual as any)?.documentos_checklist ?? {}) as Record<string, unknown>),
+      };
+      if (vistoria_nome !== undefined) checklist.i_vistoria_nome = vistoria_nome;
+      if (vistoria_telefone !== undefined) {
+        checklist.i_vistoria_tel = vistoria_telefone.replace(/\D/g, "");
+      }
+      (patch as Record<string, unknown>).documentos_checklist = checklist;
+    }
     const { error } = await supabase
       .from("clientes")
       .update(patch as never)
