@@ -7,8 +7,12 @@
  * Por isso o que ficar vazio recebe um padrão; o que o operador digitar
  * sempre vence, e ele pode alterar e salvar depois.
  */
+/** Celular do correspondente, usado quando o cadastro não tem número. */
+const CELULAR_PADRAO = "19998710032";
+
 export const PADROES_CADASTRO = {
   email: "thiago@agilliza.net.br",
+  celular: CELULAR_PADRAO,
   mae: "Maria José",
   pai: "José Maria",
   /** Filiação padrão do cônjuge — diferente da do titular. */
@@ -23,7 +27,7 @@ export const PADROES_CADASTRO = {
   nacionalidade: "Brasileira",
   naturalidade: "São Paulo/SP",
   /** Celular do cônjuge quando vazio ou igual ao do titular (ver `celularConjugeOuPadrao`). */
-  celularConjuge: "19998710032",
+  celularConjuge: CELULAR_PADRAO,
   /** E-mail do cônjuge quando vazio (ver `emailConjugeOuPadrao`). */
   emailConjuge: "thiago@agilliza.net.br",
   /** Renda do cônjuge quando vazia ou zero (ver `rendaConjugeOuPadrao`). */

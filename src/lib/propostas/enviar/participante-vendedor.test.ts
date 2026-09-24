@@ -65,14 +65,38 @@ describe("vendedor como participante VD", () => {
     });
   });
 
-  it("vendedor completo não tem pendência; incompleto diz o que falta", () => {
+  it("só trava no que ninguém preenche pelo vendedor; o resto vai com padrão", () => {
     expect(pendenciasDoVendedor(vendedorCompleto)).toEqual([]);
-    const faltando = pendenciasDoVendedor({ ...vendedorCompleto, nome_mae: "", renda: null })
-      .map((c) => c.api)
-      .sort();
-    // Renda não é cobrada do vendedor (vai 0 no payload).
-    expect(faltando).toEqual(["nomeMae"]);
-    expect(payloadParticipanteVendedor({ ...vendedorCompleto, renda: null }).renda).toBe(0);
+    // Nome da mãe, e-mail, celular, profissão e documento têm padrão — não
+    // travam. Renda não é cobrada do vendedor (vai 0 no payload).
+    const comPadrao = {
+      ...vendedorCompleto,
+      nome_mae: "",
+      email: "",
+      celular: "",
+      profissao: "",
+      tipo_documento_identidade: "",
+      numero_documento: "",
+      orgao_expedidor: "",
+      uf_expedicao: "",
+      renda: null,
+    };
+    expect(pendenciasDoVendedor(comPadrao)).toEqual([]);
+    const p = payloadParticipanteVendedor(comPadrao);
+    expect(p).toMatchObject({
+      nomeMae: "Maria José",
+      email: "thiago@agilliza.net.br",
+      celular: "19998710032",
+      nomeProfissao: "Administrador",
+      tipoDocumentoIdentidade: "RG",
+      numeroDocumento: "12345678909",
+      renda: 0,
+    });
+    // Sem data de nascimento ninguém inventa: continua pendente.
+    const faltando = pendenciasDoVendedor({ ...vendedorCompleto, data_nascimento: "" }).map(
+      (c) => c.api,
+    );
+    expect(faltando).toEqual(["dataNascimento"]);
   });
 
   it("campo vazio não vai no payload (PUT não apaga o que a HomeFin tem)", () => {

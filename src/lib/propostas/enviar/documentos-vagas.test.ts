@@ -142,6 +142,18 @@ describe("dono da vaga pelo tipoDocumento", () => {
     expect(vagaAceitaCategoria({ tipoDocumento: "IM" }, "outros")).toBe(true);
     expect(vagaAceitaCategoria({}, "vendedor")).toBe(true);
   });
+
+  // Checklist real (oportunidade 28883): IPTU e matrícula vêm como `CO`, no
+  // nome do comprador, e não existe vaga `IM`.
+  it("vaga de imóvel pelo nome aceita documento do imóvel, mesmo com tipo CO", () => {
+    const iptu = { tipoDocumento: "CO", nomeDocumento: "IPTU" };
+    const matricula = { tipoDocumento: "CO", nomeDocumento: "Matrícula (Atualizada e válida)" };
+    expect(vagaAceitaCategoria(iptu, "imovel")).toBe(true);
+    expect(vagaAceitaCategoria(matricula, "imovel")).toBe(true);
+    // e não recebe documento de pessoa
+    expect(vagaAceitaCategoria(iptu, "comprador")).toBe(false);
+    expect(vagaAceitaCategoria(matricula, "vendedor")).toBe(false);
+  });
 });
 
 describe("classificação: nada vai para a vaga de outro tipo", () => {
