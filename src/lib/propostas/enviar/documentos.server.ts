@@ -35,8 +35,10 @@ import {
   nomeArquivoNaHomefin,
   pontuarVaga,
   situacaoDoItem,
+  statusPelaHomefin,
   vagaAceitaCategoria,
   vagaDeReserva,
+  type SituacaoDocumentoBanco,
 } from "./documentos-vagas";
 import {
   exigeVagaPropria,
@@ -202,7 +204,7 @@ export async function enviarDocumentosBancoImpl({
 
   const marcarDoc = async (
     id: string,
-    situacao: "enviado" | "erro" | "homefin",
+    situacao: SituacaoDocumentoBanco,
     mensagem: string | null,
   ) => {
     try {
@@ -212,6 +214,7 @@ export async function enviarDocumentosBancoImpl({
           situacao_integracao: situacao,
           integrado_em: situacao === "enviado" ? new Date().toISOString() : null,
           erro_integracao: mensagem,
+          ...statusPelaHomefin(situacao),
         } as any)
         .eq("id", id);
     } catch {
@@ -969,6 +972,7 @@ export async function atualizarSituacaoDocumentosImpl({
         situacao_integracao: situacao,
         integrado_em: situacao === "enviado" ? new Date().toISOString() : null,
         erro_integracao: mensagem,
+        ...statusPelaHomefin(situacao),
       } as any)
       .eq("id", l.cliente_documento_id);
     atualizados++;

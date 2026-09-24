@@ -237,7 +237,7 @@ export function ignoradoDoItem(ignorados: any[], item: any): any | null {
   );
 }
 
-export type SituacaoDocumentoBanco = "enviado" | "erro" | "homefin";
+export type SituacaoDocumentoBanco = "enviado" | "erro" | "homefin" | "aprovado";
 
 /**
  * Situação do nosso documento a partir do item do checklist da HomeFin:
@@ -268,6 +268,9 @@ export function situacaoDoItem(
       mensagem: `Recusado na análise da HomeFin${comentario ? `: ${comentario}` : "."}`,
     };
   }
+  // "A" é a aprovação da HomeFin — a única que autoriza chamar o documento de
+  // aprovado no nosso sistema.
+  if (analise === "A") return { situacao: "aprovado", mensagem: "Aprovado na HomeFin." };
   // O texto da HomeFin é técnico ("use documentoAprovado=true…"): o usuário vê
   // só o que aconteceu com o documento.
   if (ignorado) {
@@ -278,6 +281,22 @@ export function situacaoDoItem(
   }
   if (analise === "I") return { situacao: "homefin", mensagem: MENSAGEM_EM_ANALISE };
   return { situacao: "homefin", mensagem: MENSAGEM_HOMEFIN };
+}
+
+/**
+ * Status do documento no CRM a partir da situação na integração.
+ *
+ * Quem aprova é a HomeFin: enquanto o documento está em análise lá, ele não
+ * pode aparecer como aprovado aqui — era o que acontecia com o que o Scan IA
+ * tinha marcado sozinho. "enviado" significa que já entrou no lote do banco,
+ * o que só acontece depois da aprovação dela.
+ */
+export function statusPelaHomefin(
+  situacao: SituacaoDocumentoBanco,
+): { status: string } | Record<string, never> {
+  if (situacao === "aprovado" || situacao === "enviado") return { status: "aprovado" };
+  if (situacao === "homefin") return { status: "recebido" };
+  return {};
 }
 
 const MENSAGEM_EM_ANALISE = "Enviado à HomeFin. Segue ao banco depois da análise da HomeFin.";

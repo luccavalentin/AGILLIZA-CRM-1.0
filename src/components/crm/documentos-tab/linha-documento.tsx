@@ -17,9 +17,13 @@ import { CATEGORIA_LABEL, statusTone, type Categoria } from "./types";
 /** Situação do documento na integração (`situacao_integracao`). */
 const SITUACAO_BANCO: Record<string, { label: string; tone: "success" | "warning" | "danger" }> = {
   enviado: { label: "no banco", tone: "success" },
+  aprovado: { label: "aprovado na HomeFin", tone: "success" },
   homefin: { label: "em análise na HomeFin", tone: "warning" },
   erro: { label: "falha no envio", tone: "danger" },
 };
+
+/** Em análise ou recusado na HomeFin, nada pode ser exibido como aprovado. */
+const SEM_APROVACAO = new Set(["homefin", "erro"]);
 
 /** Formata data ISO (YYYY-MM-DD) em pt-BR sem conversão de fuso. */
 function formatarValidade(iso: string): string {
@@ -90,12 +94,13 @@ export function LinhaDocumento({
       </button>
 
       <div className="flex shrink-0 items-center justify-end gap-0.5 border-t border-border/60 pt-2 sm:border-0 sm:pt-0">
-        <ToneBadge tone={statusTone[doc.status] ?? "muted"} title="Conferência interna">
-          {doc.status}
-        </ToneBadge>
-        {/* A conferência interna não diz nada sobre o provedor: o documento só
-            vai ao banco depois que a HomeFin o aprova. Sem esta etiqueta, um
-            documento "aprovado" aqui parecia aprovado lá. */}
+        {/* Documento em análise na HomeFin não pode aparecer como aprovado:
+            quem aprova é ela, e é a etiqueta dela que vale. */}
+        {doc.status === "aprovado" && SEM_APROVACAO.has(doc.situacao_integracao) ? null : (
+          <ToneBadge tone={statusTone[doc.status] ?? "muted"} title="Conferência interna">
+            {doc.status}
+          </ToneBadge>
+        )}
         {doc.situacao_integracao ? (
           <ToneBadge
             tone={SITUACAO_BANCO[doc.situacao_integracao]?.tone ?? "muted"}
