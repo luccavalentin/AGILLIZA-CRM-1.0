@@ -14,13 +14,13 @@
  *   `DELETE /documento/arquivo/{idArquivo}` — ao excluir o documento no CRM, ou
  *   antes de reenviar um arquivo que o banco recusou.
  *
- * `documentoAprovado: true`: só documento aprovado entra no lote do banco, e
- * `true` aprova no próprio upload. A HomeFin pediu `false` em 16/09/2026, mas o
- * primeiro envio real (17/09, oportunidades 30200 e 31430) mostrou o efeito:
- * todos os arquivos chegaram à HomeFin e o `incluir-documentos-integracao`
- * devolveu TODOS em `ignorados` com `documento_nao_aprovado` — nada foi
- * espelhado ao banco. Com a autorização do Lucca (17/09), o upload passou a ir
- * com `true`. Documento já aprovado não é rebaixado por um novo upload.
+ * `documentoAprovado: false`: o upload sobe o documento para a análise da
+ * HomeFin, por decisão do Lucca em 23/09/2026 (a HomeFin já havia pedido isso
+ * em 16/09). Consequência conhecida, medida no envio real de 17/09
+ * (oportunidades 30200 e 31430): enquanto a HomeFin não aprova, o
+ * `incluir-documentos-integracao` devolve os documentos em `ignorados` com
+ * `documento_nao_aprovado` e eles NÃO são espelhados ao Bradesco. Documento já
+ * aprovado não é rebaixado por um novo upload.
  *
  * O checklist era lido chamando `incluir-documentos-integracao` ANTES dos
  * uploads, como se fosse um GET. Não é: é a própria ação de enviar ao banco, e o
@@ -416,9 +416,9 @@ export async function enviarDocumentosBancoImpl({
     }
 
     try {
-      // `documentoAprovado: true` — o documento sobe aprovado e entra no lote do
-      // banco na mesma hora (ver topo). O nome leva o prefixo do documento: é
-      // por ele que o reconhecemos no checklist.
+      // `documentoAprovado: false` — o documento sobe para análise da HomeFin
+      // (ver topo). O nome leva o prefixo do documento: é por ele que o
+      // reconhecemos no checklist.
       const upload = await enviarArquivoIntegracao<any>(
         `/documento/${item.idDocumento}/upload`,
         {
@@ -426,7 +426,7 @@ export async function enviarDocumentosBancoImpl({
           nome: nomeArquivoNaHomefin(doc, nomeDoTipoDocumento(doc.tipo_documento)),
           mime: doc.mime_type ?? "application/octet-stream",
         },
-        true,
+        false,
         ctx,
       );
       itemDoDoc.set(doc.id, {

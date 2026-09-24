@@ -542,7 +542,7 @@ export async function enviarSimulacaoImpl({
                     municipio: c.imovel_cidade || "Sao Paulo",
                     uf: c.imovel_uf || sim.uf || "SP",
                     utilizaFgts: String(sim.utiliza_fgts ?? "N") === "S" ? "S" : "N",
-                    fgAutorizacaoDados: fgAutorizacaoDadosParticipante(c.fg_autorizacao_dados),
+                    fgAutorizacaoDados: fgAutorizacaoDadosParticipante(),
                     // Opcionais no contrato: enviados quando o cadastro tem.
                     // Em PJ a data de abertura mora no mesmo campo da data de
                     // nascimento.
@@ -585,7 +585,7 @@ export async function enviarSimulacaoImpl({
                     ufExpedicao: dados.uf_expedicao || PADROES_CADASTRO.ufExpedicao,
                     nomeProfissao: dados.profissao || PADROES_CADASTRO.profissao,
                     utilizaFgts: dados.utiliza_fgts ? "S" : "N",
-                    fgAutorizacaoDados: fgAutorizacaoDadosParticipante(dados.fg_autorizacao_dados),
+                    fgAutorizacaoDados: fgAutorizacaoDadosParticipante(),
                     tipoQualificacao: "CO",
                     tipoPessoa: (p.cpf_cnpj || "").replace(/\D/g, "").length > 11 ? "J" : "F",
                     nomeParticipante: p.nome,

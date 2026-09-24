@@ -1190,7 +1190,7 @@ export async function garantirEnderecoParticipantes({
             soDigitos(cliente?.telefone_celular) || soDigitos(prop.celular),
           ),
       utilizaFgts: env ? (env.utiliza_fgts ? "S" : "N") : (part?.utilizaFgts ?? "N"),
-      fgAutorizacaoDados: fgAutorizacaoDadosParticipante(env?.fg_autorizacao_dados),
+      fgAutorizacaoDados: fgAutorizacaoDadosParticipante(),
       cep: soDigitos(doEndereco("cep") ?? (ehPrincipal ? prop.cep_imovel : undefined)) || undefined,
       logradouro:
         doEndereco("logradouro") ?? (ehPrincipal ? textoOuNada(prop.endereco_imovel) : undefined),
