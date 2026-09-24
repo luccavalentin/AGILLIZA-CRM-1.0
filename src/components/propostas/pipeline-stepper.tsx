@@ -40,8 +40,7 @@ export function PipelineStepper({
 
   const atual = indiceEtapa(status);
   const total = ETAPAS_STEPPER.length;
-  // Ajuste para 7 etapas conforme solicitado no anexo
-  const progresso = Math.round(((atual + 1) / 7) * 100);
+  const progresso = Math.round(((atual + 1) / total) * 100);
   const etapaAtual = ETAPAS_STEPPER[atual];
 
   return (
@@ -50,7 +49,7 @@ export function PipelineStepper({
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <div className="flex min-w-0 items-baseline gap-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Etapa {atual + 1} de 7
+            Etapa {atual + 1} de {total}
           </span>
           {etapaAtual && (
             <span

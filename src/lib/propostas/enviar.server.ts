@@ -2598,7 +2598,11 @@ export async function sincronizarPropostaImpl({
         const sit = String(a?.tipoSituacao ?? "")
           .toUpperCase()
           .charAt(0);
-        const rotuloSit = sit === "C" ? "Concluída" : sit === "E" ? "Em andamento" : "Não iniciada";
+        // "Não iniciada" é só o roteiro do fluxo, que vem inteiro em toda
+        // leitura: 21 linhas com o mesmo horário e nada acontecido. O
+        // histórico guarda o que de fato andou.
+        if (sit !== "C" && sit !== "E") return null;
+        const rotuloSit = sit === "C" ? "Concluída" : "Em andamento";
         const etapaNome = String(a?.etapa?.nomeEtapa ?? "").trim();
         const dt =
           a?.dataHoraConclusao ??
@@ -2619,7 +2623,7 @@ export async function sincronizarPropostaImpl({
       })
       .filter(Boolean) as { titulo: string; comentario: string; created_at: string }[];
 
-    if (atvBanco.length > 0) {
+    {
       // Antes: apagava TODOS os follow-ups do banco e reinseria a lista inteira
       // a cada sincronização — que roda de 2 em 2 minutos por proposta ativa.
       // Resultado: 1.068.690 inserts para 3.906 linhas vivas, tabela inchada de
@@ -2645,16 +2649,18 @@ export async function sincronizarPropostaImpl({
           .delete()
           .eq("proposta_id", propostaId)
           .eq("tipo", "banco");
-        await supabase.from("proposta_followups").insert(
-          atvBanco.map((a) => ({
-            proposta_id: propostaId,
-            tipo: "banco",
-            titulo: a.titulo,
-            comentario: a.comentario,
-            homefin_enviado: true,
-            created_at: a.created_at,
-          })) as any,
-        );
+        if (atvBanco.length > 0) {
+          await supabase.from("proposta_followups").insert(
+            atvBanco.map((a) => ({
+              proposta_id: propostaId,
+              tipo: "banco",
+              titulo: a.titulo,
+              comentario: a.comentario,
+              homefin_enviado: true,
+              created_at: a.created_at,
+            })) as any,
+          );
+        }
       }
     }
   } catch (e) {

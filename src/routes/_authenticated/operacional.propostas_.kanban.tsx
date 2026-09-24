@@ -75,7 +75,8 @@ const COLUNAS: ColunaKanban[] = [
     agrega: ["engenharia_vistoria", "vistoria_agendamento", "vistoria_concluida"],
   },
   { destino: "analise_juridica", agrega: ["analise_juridica", "emissao_contrato"] },
-  { destino: "contrato_emitido", agrega: ["contrato_emitido", "registrado"] },
+  { destino: "contrato_emitido", agrega: ["contrato_emitido"] },
+  { destino: "registrado", agrega: ["registrado"] },
   { destino: "erro_envio", agrega: ["erro_envio"] },
   { destino: "cancelada", agrega: ["cancelada"] },
 ];

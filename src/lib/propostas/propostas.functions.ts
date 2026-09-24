@@ -415,12 +415,31 @@ export const obterProposta = createServerFn({ method: "GET" })
       }
     }
 
+    // Nome de quem escreveu cada comentário: o histórico é lido como conversa,
+    // e "Interno" sem autor não diz quem falou.
+    const fups = (followups.data ?? []) as any[];
+    const autorIds = Array.from(
+      new Set(fups.map((f) => f.autor_id).filter((v): v is string => Boolean(v))),
+    );
+    if (autorIds.length > 0) {
+      const { data: autores } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", autorIds);
+      const nomePorId = new Map<string, string>(
+        ((autores ?? []) as { id: string; nome: string | null }[])
+          .filter((p) => p.nome)
+          .map((p) => [p.id, p.nome as string]),
+      );
+      for (const f of fups) f.autor_nome = nomePorId.get(f.autor_id) ?? null;
+    }
+
     return {
       proposta,
       bancos: bancosProp,
       envolvidos: envolvidos.data ?? [],
       documentos: documentos.data ?? [],
-      followups: followups.data ?? [],
+      followups: fups,
       historico: historico.data ?? [],
     };
   });

@@ -56,19 +56,21 @@ export const TRANSICOES: Record<PropostaStatus, PropostaStatus[]> = {
     "cancelada",
   ],
   em_analise_credito: ["credito_aprovado", "credito_condicionado", "credito_recusado", "cancelada"],
-  credito_aprovado: ["aguardando_documentos", "cancelada"],
+  credito_aprovado: ["aguardando_documentos", "engenharia_vistoria", "cancelada"],
   // O condicionado segue para documentos como a aprovação plena, mas também
   // pode virar aprovação (condições cumpridas) ou recusa (não cumpridas).
   credito_condicionado: [
     "credito_aprovado",
     "aguardando_documentos",
+    "engenharia_vistoria",
     "credito_recusado",
     "cancelada",
   ],
   aguardando_documentos: ["engenharia_vistoria", "cancelada"],
   engenharia_vistoria: ["analise_juridica", "cancelada"],
   analise_juridica: ["contrato_emitido", "cancelada"],
-  contrato_emitido: [],
+  // Registro é a última etapa do provedor e fecha o ciclo aqui também.
+  contrato_emitido: ["registrado"],
   credito_recusado: [],
   cancelada: [],
   // Legados granulares -> encaminham para o fluxo novo simplificado.
@@ -96,6 +98,7 @@ export const ORDEM_STATUS: PropostaStatus[] = [
   "engenharia_vistoria",
   "analise_juridica",
   "contrato_emitido",
+  "registrado",
 ];
 
 export function transicaoPermitida(de: PropostaStatus, para: PropostaStatus): boolean {

@@ -1,18 +1,25 @@
 import type { PropostaStatus } from "@/lib/propostas/state-machine";
 
 /**
- * Etapas fixas do stepper da ficha da proposta (ciclo da oportunidade).
- * `auto` = etapa que avança automaticamente pela integração bancária (API).
- * As demais são concluídas/movidas manualmente pelo usuário.
+ * Etapas do stepper da ficha da proposta.
+ *
+ * São as MESMAS etapas da integração, com os mesmos nomes e na mesma ordem
+ * (Simulação, Crédito, Engenharia, Análise Jurídica, Contrato Emitido,
+ * Registro), para que a régua daqui acompanhe exatamente o que o provedor
+ * move. Antes eram sete, com nomes nossos: "Enviado p/ aprovação" e "Crédito
+ * aprovado" partiam a etapa Crédito em duas, "Coleta de documentos" não existe
+ * lá e Registro faltava. O detalhe do crédito (enviado, aprovado,
+ * condicionado, recusado) continua no rótulo do status.
+ *
+ * `auto` = etapa que a integração move sozinha.
  */
 export const ETAPAS_STEPPER = [
   { codigo: "simulacao", numero: 1, label: "Simulação", auto: false },
-  { codigo: "credito_enviado", numero: 2, label: "Enviado p/ aprovação de...", auto: true },
-  { codigo: "credito_aprovado", numero: 3, label: "Crédito aprovado", auto: true },
-  { codigo: "coleta_documentos", numero: 4, label: "Coleta de documentos", auto: false },
-  { codigo: "engenharia_vistoria", numero: 5, label: "Engenharia / vistoria", auto: false },
-  { codigo: "analise_juridica", numero: 6, label: "Análise jurídica", auto: false },
-  { codigo: "contrato", numero: 7, label: "Contrato emitido", auto: false },
+  { codigo: "credito", numero: 2, label: "Crédito", auto: true },
+  { codigo: "engenharia", numero: 3, label: "Engenharia", auto: true },
+  { codigo: "analise_juridica", numero: 4, label: "Análise Jurídica", auto: true },
+  { codigo: "contrato_emitido", numero: 5, label: "Contrato Emitido", auto: true },
+  { codigo: "registro", numero: 6, label: "Registro", auto: true },
 ] as const;
 
 export type StepperCodigo = (typeof ETAPAS_STEPPER)[number]["codigo"];
@@ -23,27 +30,28 @@ const MAPA: Record<PropostaStatus, StepperCodigo> = {
   aguardando_envio: "simulacao",
   erro_envio: "simulacao",
   cancelada: "simulacao",
-  enviada_banco: "credito_enviado",
-  em_analise_credito: "credito_enviado",
-  credito_aprovado: "credito_aprovado",
-  // Condicionado ocupa a MESMA etapa do funil que a aprovação: o crédito saiu,
-  // com exigências. Quem mostra a diferença é o rótulo do status, não o passo.
-  credito_condicionado: "credito_aprovado",
-  credito_recusado: "credito_enviado",
-  aguardando_documentos: "coleta_documentos",
-  engenharia_vistoria: "engenharia_vistoria",
+  // Tudo que é crédito ocupa a etapa Crédito, como no provedor: enviado, em
+  // análise, aprovado, condicionado, recusado e a coleta de documentos que
+  // acontece dentro dela.
+  enviada_banco: "credito",
+  em_analise_credito: "credito",
+  credito_aprovado: "credito",
+  credito_condicionado: "credito",
+  credito_recusado: "credito",
+  aguardando_documentos: "credito",
+  engenharia_vistoria: "engenharia",
   analise_juridica: "analise_juridica",
-  contrato_emitido: "contrato",
-  // Legados granulares -> mapeiam para as macro-etapas do fluxo novo.
-  checklist_documentacao: "coleta_documentos",
-  cadastro_complementar: "coleta_documentos",
-  dossie_completo: "coleta_documentos",
-  formularios: "coleta_documentos",
-  envio_documentos_banco: "coleta_documentos",
-  vistoria_agendamento: "engenharia_vistoria",
-  vistoria_concluida: "engenharia_vistoria",
+  contrato_emitido: "contrato_emitido",
+  registrado: "registro",
+  // Legados granulares -> mapeiam para as etapas do provedor.
+  checklist_documentacao: "credito",
+  cadastro_complementar: "credito",
+  dossie_completo: "credito",
+  formularios: "credito",
+  envio_documentos_banco: "credito",
+  vistoria_agendamento: "engenharia",
+  vistoria_concluida: "engenharia",
   emissao_contrato: "analise_juridica",
-  registrado: "contrato",
 };
 
 export function etapaDoStatus(status: string): StepperCodigo {

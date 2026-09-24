@@ -21,7 +21,9 @@ export function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
     n.includes("não aprov")
   )
     return "credito_recusado";
-  if (n.includes("contrato") || n.includes("registr")) return "contrato_emitido";
+  // Registro é etapa própria no provedor, depois do contrato emitido.
+  if (n.includes("registr")) return "registrado";
+  if (n.includes("contrato")) return "contrato_emitido";
   if (n.includes("juríd") || n.includes("jurid") || n.includes("emiss")) return "analise_juridica";
   if (n.includes("vistoria") || n.includes("engenharia") || n.includes("avaliaç"))
     return "engenharia_vistoria";
