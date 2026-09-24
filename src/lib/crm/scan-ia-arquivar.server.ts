@@ -108,9 +108,10 @@ export async function arquivarLeituraNaDocumentacao(params: {
         mime_type: contentType,
         tamanho_bytes: buffer.byteLength,
         versao: (count ?? 0) + 1,
-        status: "aprovado",
-        aprovado_por: userId,
-        aprovado_em: new Date().toISOString(),
+        // Arquivar pelo Scan IA não é aprovação: quem aprova é uma pessoa, na
+        // conferência. Marcado como aprovado, o documento parecia liberado
+        // mesmo sem ninguém ter olhado e sem a HomeFin ter aprovado.
+        status: "recebido",
         enviado_por: userId,
         // Fica pendente na fila de envio ao banco (sequenciamento da proposta).
         situacao_integracao: null,

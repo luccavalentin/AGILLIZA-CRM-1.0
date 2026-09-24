@@ -14,6 +14,13 @@ import { Button } from "@/components/ui/button";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { CATEGORIA_LABEL, statusTone, type Categoria } from "./types";
 
+/** Situação do documento na integração (`situacao_integracao`). */
+const SITUACAO_BANCO: Record<string, { label: string; tone: "success" | "warning" | "danger" }> = {
+  enviado: { label: "no banco", tone: "success" },
+  homefin: { label: "em análise na HomeFin", tone: "warning" },
+  erro: { label: "falha no envio", tone: "danger" },
+};
+
 /** Formata data ISO (YYYY-MM-DD) em pt-BR sem conversão de fuso. */
 function formatarValidade(iso: string): string {
   const [a, m, d] = iso.split("-");
@@ -83,7 +90,20 @@ export function LinhaDocumento({
       </button>
 
       <div className="flex shrink-0 items-center justify-end gap-0.5 border-t border-border/60 pt-2 sm:border-0 sm:pt-0">
-        <ToneBadge tone={statusTone[doc.status] ?? "muted"}>{doc.status}</ToneBadge>
+        <ToneBadge tone={statusTone[doc.status] ?? "muted"} title="Conferência interna">
+          {doc.status}
+        </ToneBadge>
+        {/* A conferência interna não diz nada sobre o provedor: o documento só
+            vai ao banco depois que a HomeFin o aprova. Sem esta etiqueta, um
+            documento "aprovado" aqui parecia aprovado lá. */}
+        {doc.situacao_integracao ? (
+          <ToneBadge
+            tone={SITUACAO_BANCO[doc.situacao_integracao]?.tone ?? "muted"}
+            title={doc.erro_integracao ?? undefined}
+          >
+            {SITUACAO_BANCO[doc.situacao_integracao]?.label ?? doc.situacao_integracao}
+          </ToneBadge>
+        ) : null}
         {onEnviarBanco && (
           <Button
             size="icon"
