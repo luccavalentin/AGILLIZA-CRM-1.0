@@ -547,6 +547,36 @@ export async function enviarDocumentosBancoImpl({
     }
   }
 
+  // Primeiro documento entregue à integração: a proposta sai de "crédito
+  // aprovado" e passa a "coleta de documentos" sozinha. Daí em diante quem
+  // move a etapa é a integração (Engenharia, Jurídica, Contrato, Registro),
+  // pela sincronização — aqui nada avança além da coleta.
+  if (itemDoDoc.size > 0) {
+    const { data: atualProp } = await supabase
+      .from("propostas")
+      .select("status")
+      .eq("id", propostaId)
+      .maybeSingle();
+    const status = String((atualProp as any)?.status ?? "");
+    if (status === "credito_aprovado" || status === "credito_condicionado") {
+      await supabase
+        .from("propostas")
+        .update({
+          status: "aguardando_documentos",
+          status_atualizado_em: new Date().toISOString(),
+        } as any)
+        .eq("id", propostaId);
+      await supabase.from("proposta_historico").insert({
+        proposta_id: propostaId,
+        tipo_evento: "status",
+        descricao: "Primeiro documento enviado à integração: proposta em coleta de documentos.",
+        status_anterior: status,
+        status_novo: "aguardando_documentos",
+        ator_id: userId,
+      } as any);
+    }
+  }
+
   if (itemDoDoc.size > 0 || erros.length > 0) {
     try {
       await supabase.from("proposta_historico").insert({
