@@ -9,6 +9,7 @@
  */
 import { jsPDF } from "jspdf";
 import type { CamposCarta, ModeloCarta } from "./dados";
+import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
 
 type RGB = [number, number, number];
 
@@ -183,8 +184,21 @@ function cabecalhoNumero(doc: jsPDF, c: CamposCarta, corTexto: RGB, y = 16) {
 }
 
 // ------------------------------------------------ páginas 2 e 3 (1 e 2)
+/**
+ * Logo do banco da proposta, no alto à direita. É a carta de análise DELE, e
+ * quem recebe reconhece a marca antes de ler o texto. Banco sem logo conhecida
+ * (o nome continua no quadro "Instituição financeira") não desenha nada.
+ */
+function logoDoBanco(doc: jsPDF, c: CamposCarta, y: number, altura = 11) {
+  const brand = resolveBancoBrand(c.banco);
+  if (!brand) return;
+  const largura = altura * (brand.ratio || 1);
+  doc.addImage(brand.logo, "PNG", W - MX - largura, y, largura, altura, "banco", "FAST");
+}
+
 function paginaResumo(doc: jsPDF, tema: Tema, c: CamposCarta, parecer: string) {
   cabecalhoNumero(doc, c, BRANCO);
+  logoDoBanco(doc, c, 55);
 
   fonte(doc, 7.5, "bold");
   cor(doc, VERMELHO);
