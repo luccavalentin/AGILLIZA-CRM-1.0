@@ -4,6 +4,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { listarVendedores, salvarVendedor, removerVendedor } from "@/lib/crm/clientes.functions";
 import { validarDocumento, validarEmail, validarTelefone } from "@/lib/crm/documento";
 import { CardVendedor } from "./vendedores-tab/card-vendedor";
@@ -21,6 +30,7 @@ export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBan
   const [salvando, setSalvando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [erros, setErros] = useState<Set<string>>(new Set());
+  const [pendentes, setPendentes] = useState<string[] | null>(null);
 
   async function buscarCep(cepRaw: string) {
     const cep = cepRaw.replace(/\D/g, "");
@@ -96,8 +106,11 @@ export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBan
 
     setSalvando(true);
     try {
-      await salvar({ data: { ...form, cliente_id: clienteId } as any });
+      const r: any = await salvar({ data: { ...form, cliente_id: clienteId } as any });
       toast.success("Vendedor salvo.");
+      // Salvo mesmo incompleto, mas sem os obrigatórios ele não vai ao banco:
+      // o operador precisa saber disso na hora, não descobrir no envio.
+      if (Array.isArray(r?.pendentes) && r.pendentes.length > 0) setPendentes(r.pendentes);
       setAberto(false);
       qc.invalidateQueries({ queryKey: ["cliente-vendedores", clienteId] });
     } catch (err: any) {
@@ -154,6 +167,26 @@ export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBan
         onSubmeter={submeter}
         idBanco={idBanco}
       />
+
+      <AlertDialog open={pendentes !== null} onOpenChange={(o) => !o && setPendentes(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vendedor salvo, mas incompleto</AlertDialogTitle>
+            <AlertDialogDescription>
+              O cadastro foi guardado aqui. Enquanto faltarem os campos abaixo, este vendedor não é
+              enviado ao banco — os dados são dele e precisam ser preenchidos de verdade.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="list-disc space-y-1 pl-5 pb-2 text-sm text-foreground">
+            {(pendentes ?? []).map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setPendentes(null)}>Entendi</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

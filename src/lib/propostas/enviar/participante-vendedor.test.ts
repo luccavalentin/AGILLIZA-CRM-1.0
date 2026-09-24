@@ -65,38 +65,23 @@ describe("vendedor como participante VD", () => {
     });
   });
 
-  it("só trava no que ninguém preenche pelo vendedor; o resto vai com padrão", () => {
+  // O vendedor não ganha padrão nenhum: os dados são de outra pessoa e o
+  // operador precisa preencher. Faltando, ele não vai à integração.
+  it("cobra do operador todo campo obrigatório que faltar", () => {
     expect(pendenciasDoVendedor(vendedorCompleto)).toEqual([]);
-    // Nome da mãe, e-mail, celular, profissão e documento têm padrão — não
-    // travam. Renda não é cobrada do vendedor (vai 0 no payload).
-    const comPadrao = {
+    const faltando = pendenciasDoVendedor({
       ...vendedorCompleto,
       nome_mae: "",
       email: "",
-      celular: "",
-      profissao: "",
-      tipo_documento_identidade: "",
-      numero_documento: "",
-      orgao_expedidor: "",
-      uf_expedicao: "",
       renda: null,
-    };
-    expect(pendenciasDoVendedor(comPadrao)).toEqual([]);
-    const p = payloadParticipanteVendedor(comPadrao);
-    expect(p).toMatchObject({
-      nomeMae: "Maria José",
-      email: "thiago@agilliza.net.br",
-      celular: "19998710032",
-      nomeProfissao: "Administrador",
-      tipoDocumentoIdentidade: "RG",
-      numeroDocumento: "12345678909",
-      renda: 0,
-    });
-    // Sem data de nascimento ninguém inventa: continua pendente.
-    const faltando = pendenciasDoVendedor({ ...vendedorCompleto, data_nascimento: "" }).map(
-      (c) => c.api,
-    );
-    expect(faltando).toEqual(["dataNascimento"]);
+    })
+      .map((c) => c.api)
+      .sort();
+    // Renda não é cobrada do vendedor (vai 0 no payload).
+    expect(faltando).toEqual(["email", "nomeMae"]);
+    const p = payloadParticipanteVendedor({ ...vendedorCompleto, email: "", renda: null });
+    expect(p).not.toHaveProperty("email");
+    expect(p.renda).toBe(0);
   });
 
   it("campo vazio não vai no payload (PUT não apaga o que a HomeFin tem)", () => {

@@ -888,7 +888,7 @@ export const listarVendedores = createServerFn({ method: "GET" })
 export const salvarVendedor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => vendedorSchema.parse(d))
-  .handler(async ({ data, context }): Promise<{ ok: true; id: string }> => {
+  .handler(async ({ data, context }): Promise<{ ok: true; id: string; pendentes: string[] }> => {
     const { supabase } = context;
     const norm = (v: string | null | undefined) =>
       v != null && String(v).trim() !== "" ? String(v).trim() : null;
@@ -918,7 +918,7 @@ export const salvarVendedor = createServerFn({ method: "POST" })
         const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
         await propagarClienteParaPropostas({ supabase, clienteId: cliente_id });
       }
-      return { ok: true, id };
+      return { ok: true, id, pendentes: await pendenciasVendedorSalvo(payload) };
     }
     const { data: inserted, error } = await supabase
       .from("cliente_vendedores")
@@ -930,8 +930,19 @@ export const salvarVendedor = createServerFn({ method: "POST" })
       const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
       await propagarClienteParaPropostas({ supabase, clienteId: cliente_id });
     }
-    return { ok: true, id: inserted.id };
+    return { ok: true, id: inserted.id, pendentes: await pendenciasVendedorSalvo(payload) };
   });
+
+/**
+ * O que ainda falta no vendedor para ele poder ir à integração. O cadastro é
+ * salvo mesmo incompleto — o operador é avisado e o que falta também fica no
+ * histórico da proposta (ver `espelho-crm.server.ts`).
+ */
+async function pendenciasVendedorSalvo(vendedorCrm: Record<string, unknown>): Promise<string[]> {
+  const { vendedorCrmParaEnvolvido } = await import("@/lib/propostas/sincronizar-crm");
+  const { pendenciasDoVendedor } = await import("@/lib/propostas/enviar/participante-vendedor");
+  return pendenciasDoVendedor(vendedorCrmParaEnvolvido(vendedorCrm)).map((c) => c.label);
+}
 
 export const removerVendedor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
