@@ -4,11 +4,9 @@ import {
   Download,
   FileText,
   Landmark,
-  MessageSquareWarning,
   Pencil,
   Trash2,
   User,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToneBadge } from "@/components/crm/tone-badge";
