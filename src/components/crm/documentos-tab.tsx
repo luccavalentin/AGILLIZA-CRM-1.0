@@ -238,30 +238,15 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     }
   }
 
-  async function marcar(id: string, status: "aprovado" | "reprovado") {
+  // Guardar o documento no CRM. Quem aprova, reprova ou pede correção é a
+  // HomeFin, na análise dela — não temos esses botões.
+  async function salvarDocumento(id: string) {
     try {
-      await revisar({ data: { id, status } });
-      toast.success(status === "aprovado" ? "Documento aprovado." : "Documento reprovado.");
+      await revisar({ data: { id, status: "recebido" } });
+      toast.success("Documento salvo.");
       qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
     } catch (e) {
-      toast.error(mensagemDeErro(e, "Falha ao revisar documento."));
-    }
-  }
-
-  async function solicitarCorrecao(doc: any) {
-    const observacao = window.prompt(
-      `Descreva o que precisa ser corrigido em "${doc.nome_arquivo}":`,
-      "",
-    );
-    if (observacao === null) return;
-    try {
-      await revisar({
-        data: { id: doc.id, status: "pendente", observacao: observacao.trim() || null },
-      });
-      toast.success("Correção solicitada.");
-      qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
-    } catch (e) {
-      toast.error(mensagemDeErro(e, "Falha ao solicitar correção."));
+      toast.error(mensagemDeErro(e, "Falha ao salvar documento."));
     }
   }
 
@@ -516,8 +501,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
               doc={d}
               onBaixar={baixar}
               onEditar={abrirEdicao}
-              onMarcar={marcar}
-              onSolicitarCorrecao={solicitarCorrecao}
+              onSalvar={salvarDocumento}
               onExcluir={setDelDoc}
               onEnviarBanco={(d) => setEnvioBanco([String(d.id)])}
             />

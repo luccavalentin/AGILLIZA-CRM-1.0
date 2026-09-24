@@ -40,16 +40,15 @@ export function LinhaDocumento({
   doc,
   onBaixar,
   onEditar,
-  onMarcar,
-  onSolicitarCorrecao,
+  onSalvar,
   onExcluir,
   onEnviarBanco,
 }: {
   doc: any;
   onBaixar: (storage_path: string, nome: string) => void;
   onEditar: (d: any) => void;
-  onMarcar: (id: string, status: "aprovado" | "reprovado") => void;
-  onSolicitarCorrecao: (d: any) => void;
+  /** Guarda o documento como recebido no CRM — a análise é da HomeFin. */
+  onSalvar: (id: string) => void;
   onExcluir: (d: any) => void;
   /** Abre o envio ao banco com este documento marcado (escolhe a proposta lá). */
   onEnviarBanco?: (d: any) => void;
@@ -138,32 +137,16 @@ export function LinhaDocumento({
         >
           <Pencil className="size-4" />
         </Button>
+        {/* Aprovar, reprovar e pedir correção é análise da HomeFin, não nossa:
+            aqui o documento só é guardado. */}
         <Button
           size="icon"
           variant="ghost"
-          onClick={() => onMarcar(doc.id, "aprovado")}
-          title="Aprovar"
-          aria-label="Aprovar documento"
+          onClick={() => onSalvar(doc.id)}
+          title="Salvar"
+          aria-label="Salvar documento"
         >
           <Check className="size-4 text-success" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => onSolicitarCorrecao(doc)}
-          title="Solicitar correção"
-          aria-label="Solicitar correção do documento"
-        >
-          <MessageSquareWarning className="size-4 text-warning" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => onMarcar(doc.id, "reprovado")}
-          title="Reprovar"
-          aria-label="Reprovar documento"
-        >
-          <X className="size-4 text-destructive" />
         </Button>
         <Button
           size="icon"
