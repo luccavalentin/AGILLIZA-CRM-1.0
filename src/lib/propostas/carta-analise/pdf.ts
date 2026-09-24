@@ -498,6 +498,7 @@ async function modelo3(doc: jsPDF, c: CamposCarta, parecer: string, incluirObser
   fonte(doc, 22, "bold");
   cor(doc, NAVY);
   doc.text("Detalhes da proposta", MX, 54);
+  logoDoBanco(doc, c, 44);
 
   fonte(doc, 7.5, "bold");
   cor(doc, NAVY);
