@@ -1,28 +1,44 @@
+import { useEffect, useRef } from "react";
 import { Check, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SituacaoDocumentacao } from "@/lib/propostas/documentacao-status";
 import { DocumentacaoProposta } from "./documentacao-proposta";
-import { ETAPAS_STEPPER, indiceEtapa } from "./pipeline-map";
+import { etapasDoBanco, indiceEtapa } from "./pipeline-map";
 
 /**
- * Stepper horizontal do ciclo da oportunidade (12 etapas).
+ * Stepper horizontal do ciclo da oportunidade — a régua do banco da proposta
+ * (Itaú e Santander com a etapa de formulários, no nome de cada portal).
  * Etapas `auto` avançam pela integração bancária; as demais são concluídas
- * manualmente. Rótulos neutros — nenhum provedor citado.
+ * manualmente.
  * O trilho rola horizontalmente dentro do card em telas estreitas, com
  * padding vertical para nunca cortar o anel da etapa atual.
  */
 export function PipelineStepper({
   status,
   detalheStatus,
+  banco,
   propostaId,
   documentacao,
 }: {
   status: string;
   detalheStatus?: string | null;
+  /** Banco da proposta: decide as etapas e os nomes da régua. */
+  banco?: string | null;
   /** Com os dois, o selo da documentação aparece abaixo de "Documentos". */
   propostaId?: string;
   documentacao?: SituacaoDocumentacao | null;
 }) {
+  const etapas = etapasDoBanco(banco, status);
+  const trilhoRef = useRef<HTMLDivElement>(null);
+
+  // Régua maior que a tela (celular): abre com a etapa atual no centro, em
+  // vez de mostrar sempre o começo e esconder onde a proposta está.
+  useEffect(() => {
+    const trilho = trilhoRef.current;
+    const alvo = trilho?.querySelector<HTMLElement>("[data-atual]");
+    if (!trilho || !alvo || trilho.scrollWidth <= trilho.clientWidth) return;
+    trilho.scrollLeft = alvo.offsetLeft - (trilho.clientWidth - alvo.offsetWidth) / 2;
+  }, [status, banco]);
   const recusado = status === "credito_recusado";
   const temSeloDocs = Boolean(propostaId && documentacao);
   const seloDocs = (centralizado: boolean) =>
@@ -54,10 +70,10 @@ export function PipelineStepper({
     );
   }
 
-  const atual = indiceEtapa(status);
-  const total = ETAPAS_STEPPER.length;
+  const atual = indiceEtapa(status, banco);
+  const total = etapas.length;
   const progresso = Math.round(((atual + 1) / total) * 100);
-  const etapaAtual = ETAPAS_STEPPER[atual];
+  const etapaAtual = etapas[atual];
 
   return (
     <div className="w-full">
@@ -96,18 +112,28 @@ export function PipelineStepper({
         />
       </div>
 
-      {/* Trilho de etapas — padding vertical evita corte do anel */}
-      <div className="w-full px-1 pb-2 pt-3">
-        <ol className="flex w-full items-start justify-between">
-          {ETAPAS_STEPPER.map((etapa, i) => {
+      {/* Trilho de etapas — padding vertical evita corte do anel. Quando não
+          cabe (celular, régua de 8 etapas), rola na horizontal dentro do card
+          e abre centralizado na etapa atual. */}
+      <div
+        ref={trilhoRef}
+        className="relative w-full overflow-x-auto overscroll-x-contain px-1 pb-2 pt-3 [scrollbar-width:thin]"
+      >
+        <ol className="flex w-max min-w-full items-start justify-between">
+          {etapas.map((etapa, i) => {
             const concluida = i < atual;
             const isAtual = i === atual;
             const first = i === 0;
             const recusadaAtual = isAtual && recusado;
             return (
-              <li key={etapa.codigo} className={cn("flex items-start", !first && "flex-1")}>
+              <li
+                key={etapa.codigo}
+                data-atual={isAtual || undefined}
+                aria-current={isAtual ? "step" : undefined}
+                className={cn("flex items-start", !first && "flex-1")}
+              >
                 {!first && (
-                  <div className="mt-[15px] h-0.5 min-w-6 flex-1 overflow-hidden rounded-full bg-border sm:min-w-10">
+                  <div className="mt-[15px] h-0.5 min-w-4 flex-1 overflow-hidden rounded-full bg-border sm:min-w-6">
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-500",
@@ -121,7 +147,7 @@ export function PipelineStepper({
                     />
                   </div>
                 )}
-                <div className="flex w-16 flex-col items-center gap-2 px-1 sm:w-28">
+                <div className="flex w-16 flex-col items-center gap-2 px-1 sm:w-20 lg:w-24">
                   <span
                     className={cn(
                       "relative grid size-8 place-items-center rounded-full text-xs font-bold transition-all",
@@ -151,12 +177,15 @@ export function PipelineStepper({
                   >
                     {etapa.label}
                   </span>
-                  {/* Selo da documentação embaixo de "Documentos", dentro da
-                      largura da coluna: o texto quebra em vez de invadir as
-                      etapas vizinhas. No celular a coluna é estreita demais,
-                      e ele vai numa linha própria abaixo da régua. */}
+                  {/* Selo da documentação embaixo de "Documentos". Tem largura
+                      própria (mais que a coluna), centralizada: ocupa o vão
+                      abaixo dos conectores — ali não há nada — e fica em duas
+                      linhas legíveis. No fluxo, empurra o que vem abaixo em vez
+                      de sobrepor. No celular vai numa linha própria. */}
                   {etapa.codigo === "documentos" && temSeloDocs && (
-                    <div className="hidden w-full justify-center sm:flex">{seloDocs(true)}</div>
+                    <div className="hidden w-40 justify-center self-center sm:flex">
+                      {seloDocs(true)}
+                    </div>
                   )}
                 </div>
               </li>

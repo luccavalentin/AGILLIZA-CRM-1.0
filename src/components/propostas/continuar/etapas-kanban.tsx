@@ -8,21 +8,38 @@ import { BancoLogo } from "@/components/bancos/banco-logo";
 import type { EtapaBanco } from "@/components/propostas/funil-banco-timeline";
 import { sincronizarProposta } from "@/lib/propostas/propostas.functions";
 import { statusDaEtapa } from "@/lib/propostas/etapa-banco";
+import {
+  fonteDoAndamento,
+  nomeEtapaFormularios,
+  temEtapaFormularios,
+} from "@/lib/bancos/etapas-banco";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 
-/**
- * Colunas do pós-aprovação, na ordem da máquina de estados.
- * `manual`: a coluna para a qual o operador pode mover a proposta daqui.
- */
-export const COLUNAS_KANBAN = [
+type ColunaPosAprovacao = { status: readonly string[]; titulo: string };
+
+/** Colunas do pós-aprovação, na ordem da máquina de estados. */
+const COLUNAS_KANBAN: readonly ColunaPosAprovacao[] = [
   { status: ["credito_aprovado", "credito_condicionado"], titulo: "Crédito aprovado" },
   { status: ["aguardando_documentos"], titulo: "Documentos" },
   { status: ["engenharia_vistoria"], titulo: "Engenharia / vistoria" },
   { status: ["analise_juridica"], titulo: "Análise jurídica" },
   { status: ["contrato_emitido"], titulo: "Contrato emitido" },
-] as const;
+];
+
+/**
+ * As colunas deste banco: Itaú e Santander têm a etapa de formulários entre o
+ * crédito e os documentos, com o nome do portal de cada um.
+ */
+function colunasDoBanco(nomeBanco: unknown, status: string): ColunaPosAprovacao[] {
+  if (!temEtapaFormularios(nomeBanco) && status !== "formularios") return [...COLUNAS_KANBAN];
+  return [
+    COLUNAS_KANBAN[0],
+    { status: ["formularios"], titulo: nomeEtapaFormularios(nomeBanco) },
+    ...COLUNAS_KANBAN.slice(1),
+  ];
+}
 
 export type DestinoManual = "engenharia_vistoria" | "analise_juridica" | "contrato_emitido";
 
@@ -63,17 +80,21 @@ export function EtapasKanban({
   const [sincronizando, setSincronizando] = useState(false);
 
   const status = String(proposta.status ?? "");
-  const indiceAtual = COLUNAS_KANBAN.findIndex((c) =>
-    (c.status as readonly string[]).includes(status),
-  );
-  const proxima = indiceAtual >= 1 ? COLUNAS_KANBAN[indiceAtual + 1] : undefined;
+  const nomeBanco = banco?.nome_banco ?? proposta.nome_banco;
+  const colunas = colunasDoBanco(nomeBanco, status);
+  const indiceAtual = colunas.findIndex((c) => c.status.includes(status));
+  // O operador só move daqui a partir de Documentos; até lá quem move é o
+  // banco (crédito, formulários) ou a conferência de dados.
+  const indiceDocumentos = colunas.findIndex((c) => c.status.includes("aguardando_documentos"));
+  const proxima = indiceAtual >= indiceDocumentos ? colunas[indiceAtual + 1] : undefined;
+  const pelaHomefin = fonteDoAndamento(nomeBanco) === "homefin";
 
   const etapasBanco: EtapaBanco[] = Array.isArray(proposta.etapas_banco)
     ? [...proposta.etapas_banco].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
     : [];
   const colunaDaEtapa = (e: EtapaBanco) => {
     const s = statusDaEtapa(e.nome);
-    return s ? COLUNAS_KANBAN.findIndex((c) => (c.status as readonly string[]).includes(s)) : -1;
+    return s ? colunas.findIndex((c) => c.status.includes(s)) : -1;
   };
   // Etapas de crédito (simulação, análise) ficam antes do kanban: não entram nas colunas.
   const semColuna = etapasBanco.filter((e) => colunaDaEtapa(e) < 0);
@@ -104,7 +125,9 @@ export function EtapasKanban({
         <div className="flex items-start gap-2 text-xs text-muted-foreground">
           <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p>
-            As etapas voltam do banco pela HomeFin e movem a proposta sozinhas.
+            {pelaHomefin
+              ? "As etapas voltam do banco pela HomeFin e movem a proposta sozinhas."
+              : `As etapas são lidas no portal do ${nomeBanco ?? "banco"} e movem a proposta sozinhas.`}
             <br />
             {ultima ? `Última consulta ao banco: ${ultima}.` : "Ainda não consultado no banco."}
           </p>
@@ -126,8 +149,15 @@ export function EtapasKanban({
       </div>
 
       <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
-        <div className="grid min-w-[900px] grid-cols-5 gap-2">
-          {COLUNAS_KANBAN.map((col, i) => {
+        <div
+          className="grid gap-2"
+          style={{
+            // 180 px por coluna: 5 colunas (Bradesco) ou 6 (Itaú, Santander).
+            gridTemplateColumns: `repeat(${colunas.length}, minmax(0, 1fr))`,
+            minWidth: `${colunas.length * 180}px`,
+          }}
+        >
+          {colunas.map((col, i) => {
             const atual = i === indiceAtual;
             const feita = indiceAtual > i;
             const etapasDaColuna = etapasBanco.filter((e) => colunaDaEtapa(e) === i);
@@ -206,9 +236,13 @@ export function EtapasKanban({
                           Mover para {proxima.titulo} <ArrowRight className="h-3 w-3" />
                         </Button>
                       )}
-                      {indiceAtual === 0 && (
+                      {indiceAtual >= 0 && indiceAtual < indiceDocumentos && (
                         <p className="mt-2 text-[10px] text-muted-foreground">
-                          Grave a conferência de dados para ir a Documentos.
+                          {colunas[indiceAtual + 1]?.status.includes("formularios")
+                            ? `O banco abre ${colunas[indiceAtual + 1].titulo} depois do crédito.`
+                            : col.status.includes("formularios")
+                              ? "O banco libera Documentos quando os formulários forem concluídos."
+                              : "Grave a conferência de dados para ir a Documentos."}
                         </p>
                       )}
                     </article>

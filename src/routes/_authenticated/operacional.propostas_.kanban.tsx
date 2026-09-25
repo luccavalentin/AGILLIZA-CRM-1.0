@@ -19,6 +19,7 @@ import { listarOpcoesVinculoPropostas } from "@/lib/crm/parceiros.functions";
 import { statusProposta } from "@/components/propostas/status";
 import {
   transicaoPermitida,
+  transicaoPermitidaNoBanco,
   STATUS_TERMINAIS,
   type PropostaStatus,
 } from "@/lib/propostas/state-machine";
@@ -57,8 +58,12 @@ type ColunaKanban = {
 const COLUNAS: ColunaKanban[] = [
   { destino: "rascunho", agrega: ["rascunho"] },
   { destino: "enviada_banco", agrega: ["enviada_banco", "em_analise_credito"] },
-  { destino: "credito_aprovado", agrega: ["credito_aprovado"] },
+  // A aprovação condicionada é crédito aprovado com exigências: sem ela aqui,
+  // essas propostas não apareciam em coluna nenhuma do kanban.
+  { destino: "credito_aprovado", agrega: ["credito_aprovado", "credito_condicionado"] },
   { destino: "credito_recusado", agrega: ["credito_recusado"] },
+  // Itaú e Santander: formulários do banco antes dos documentos.
+  { destino: "formularios", agrega: ["formularios"] },
   {
     destino: "aguardando_documentos",
     agrega: [
@@ -66,7 +71,6 @@ const COLUNAS: ColunaKanban[] = [
       "checklist_documentacao",
       "cadastro_complementar",
       "dossie_completo",
-      "formularios",
       "envio_documentos_banco",
     ],
   },
@@ -80,6 +84,24 @@ const COLUNAS: ColunaKanban[] = [
   { destino: "erro_envio", agrega: ["erro_envio"] },
   { destino: "cancelada", agrega: ["cancelada"] },
 ];
+
+/** Status contados como "em andamento": do crédito aprovado à análise jurídica. */
+const STATUS_EM_ANDAMENTO = new Set<PropostaStatus>([
+  "credito_aprovado",
+  "credito_condicionado",
+  "formularios",
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
+  // Legados mapeados para essas etapas.
+  "checklist_documentacao",
+  "cadastro_complementar",
+  "dossie_completo",
+  "envio_documentos_banco",
+  "vistoria_agendamento",
+  "vistoria_concluida",
+  "emissao_contrato",
+]);
 
 const TONE_BAR: Record<string, string> = {
   success: "bg-success",
@@ -124,7 +146,11 @@ function Pagina() {
   const qc = useQueryClient();
   const { q: qInicial } = Route.useSearch();
   const moverFn = useServerFn(moverStatusProposta);
-  const [arrastando, setArrastando] = useState<{ id: string; status: PropostaStatus } | null>(null);
+  const [arrastando, setArrastando] = useState<{
+    id: string;
+    status: PropostaStatus;
+    banco: string | null;
+  } | null>(null);
 
   const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
@@ -206,13 +232,18 @@ function Pagina() {
 
   async function soltar(coluna: PropostaStatus) {
     if (!arrastando) return;
-    const { id, status } = arrastando;
+    const { id, status, banco } = arrastando;
     setArrastando(null);
     if (status === coluna) return;
     if (!transicaoPermitida(status, coluna)) {
       toast.error(
-        `Transição inválida: ${statusProposta(status).label} → ${statusProposta(coluna).label}.`,
+        `Transição inválida: ${statusProposta(status, banco).label} → ${statusProposta(coluna, banco).label}.`,
       );
+      return;
+    }
+    // Formulários é etapa do Itaú e do Santander; o Bradesco não a tem.
+    if (!transicaoPermitidaNoBanco(status, coluna, banco)) {
+      toast.error(`O ${banco ?? "banco"} não tem a etapa de formulários.`);
       return;
     }
     try {
@@ -223,7 +254,9 @@ function Pagina() {
     }
   }
 
-  const itens = data?.itens ?? [];
+  // Memorizado: `?? []` criava uma lista nova a cada render e refazia o
+  // agrupamento por coluna e o KPI à toa.
+  const itens = useMemo(() => data?.itens ?? [], [data]);
 
   // Todos os responsáveis internos do correspondente (mesmo os sem proposta ainda),
   // combinados com quaisquer nomes que já apareçam nos cards por segurança.
@@ -268,17 +301,38 @@ function Pagina() {
     return mapa;
   }, [itensFiltrados]);
 
+  // KPI "Propostas em andamento": do crédito aprovado até a análise jurídica.
+  // Fica aqui em cima — hook dentro de função no meio do JSX quebra a regra
+  // dos hooks do React.
+  const emAndamento = useMemo(() => {
+    const ativos = itens.filter((i) => STATUS_EM_ANDAMENTO.has(i.status as PropostaStatus));
+    return {
+      count: ativos.length,
+      total: ativos.reduce((acc, i) => acc + (Number(i.valor_financiamento) || 0), 0),
+    };
+  }, [itens]);
+
   const [pastaAberta, setPastaAberta] = useState<PropostaStatus | null>(null);
   const [buscaPasta, setBuscaPasta] = useState("");
 
-  function renderCard(c: any, cfg: ReturnType<typeof statusProposta>) {
+  function renderCard(c: any, coluna: ReturnType<typeof statusProposta>) {
     const terminal = STATUS_TERMINAIS.includes(c.status as PropostaStatus);
+    // O selo do card é o status DELE, não o da coluna: numa coluna que agrupa
+    // mais de um status (aprovado + condicionado), a condicionada não pode
+    // aparecer como "Crédito aprovado". Com o banco, a etapa de formulários sai
+    // com o nome do portal.
+    const cfg = c.status ? statusProposta(String(c.status), c.nome_banco) : coluna;
     return (
       <div
         key={c.id}
         draggable={!terminal}
         onDragStart={() =>
-          !terminal && setArrastando({ id: c.id, status: c.status as PropostaStatus })
+          !terminal &&
+          setArrastando({
+            id: c.id,
+            status: c.status as PropostaStatus,
+            banco: c.nome_banco ?? null,
+          })
         }
         onDragEnd={() => setArrastando(null)}
         onClick={() => {
@@ -522,54 +576,22 @@ function Pagina() {
 
       {/* KPI - Propostas em Andamento */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {(() => {
-          const stats = useMemo(() => {
-            const ativos = itens.filter((i) => {
-              const s = i.status as PropostaStatus;
-              // Lógica: Se o crédito está em coleta de documentos até analise juridica está em andamento.
-              const emAndamento = [
-                "credito_aprovado",
-                "aguardando_documentos",
-                "engenharia_vistoria",
-                "analise_juridica",
-                // Legados mapeados para essas etapas
-                "checklist_documentacao",
-                "cadastro_complementar",
-                "dossie_completo",
-                "formularios",
-                "envio_documentos_banco",
-                "vistoria_agendamento",
-                "vistoria_concluida",
-                "emissao_contrato",
-              ].includes(s);
-              return emAndamento;
-            });
-
-            return {
-              count: ativos.length,
-              total: ativos.reduce((acc, i) => acc + (Number(i.valor_financiamento) || 0), 0),
-            };
-          }, [itens]);
-
-          return (
-            <Card className="rounded-2xl border-border/60 p-4 bg-gradient-to-br from-primary/5 to-transparent shadow-sm flex items-center gap-4">
-              <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <Clock className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Propostas em Andamento
-                </p>
-                <div className="flex items-baseline gap-2">
-                  <h3 className="text-2xl font-bold text-foreground">{stats.count}</h3>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {formatBRL(stats.total)}
-                  </span>
-                </div>
-              </div>
-            </Card>
-          );
-        })()}
+        <Card className="rounded-2xl border-border/60 p-4 bg-gradient-to-br from-primary/5 to-transparent shadow-sm flex items-center gap-4">
+          <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Clock className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Propostas em Andamento
+            </p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-2xl font-bold text-foreground">{emAndamento.count}</h3>
+              <span className="text-sm font-medium text-muted-foreground">
+                {formatBRL(emAndamento.total)}
+              </span>
+            </div>
+          </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

@@ -420,6 +420,7 @@ export function PropostaView({
           <PipelineStepper
             status={status}
             detalheStatus={p.detalhe_status_atual}
+            banco={p.nome_banco}
             propostaId={id}
             documentacao={data.documentacao}
           />

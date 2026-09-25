@@ -219,7 +219,7 @@ export function ContinuarPropostaPage({
     : false;
   const condicionado =
     banco?.status_banco === "condicionado" || p?.status === "credito_condicionado";
-  const status = p ? statusProposta(String(p.status)) : null;
+  const status = p ? statusProposta(String(p.status), p.nome_banco) : null;
 
   return (
     <div className="mx-auto w-full max-w-[1200px] space-y-4 p-4 sm:p-6">

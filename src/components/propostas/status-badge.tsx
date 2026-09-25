@@ -10,7 +10,7 @@ const STATUS_COM_BANCO = new Set([
 ]);
 
 export function PropostaStatusBadge({ status, banco }: { status: string; banco?: string | null }) {
-  const cfg = statusProposta(status);
+  const cfg = statusProposta(status, banco);
   const label = banco && STATUS_COM_BANCO.has(status) ? `${cfg.label} · ${banco}` : cfg.label;
   return <ToneBadge tone={cfg.tone}>{label}</ToneBadge>;
 }

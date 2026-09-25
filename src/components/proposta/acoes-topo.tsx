@@ -32,7 +32,7 @@ import {
 import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
 import { descreverParticipante, proponentesPendentes } from "@/lib/propostas/campos-obrigatorios";
 import { bancoJaEnviado } from "@/components/proposta/status-bancos-proposta";
-import { TRANSICOES, type PropostaStatus } from "@/lib/propostas/state-machine";
+import { transicoesDoBanco, type PropostaStatus } from "@/lib/propostas/state-machine";
 import { statusProposta } from "@/components/propostas/status";
 import { baixarPropostaDetalhadaPDF, baixarPropostaConsolidadoPDF } from "@/lib/propostas/pdf-lazy";
 import { cn } from "@/lib/utils";
@@ -72,7 +72,8 @@ export function AcoesTopo({
   const isBusy = busy || enviarBusy;
 
   const status = proposta.status as PropostaStatus;
-  const proximos = (status && TRANSICOES[status] ? TRANSICOES[status] : []).filter(
+  // Destinos deste banco: "Formulários" só no Itaú e no Santander.
+  const proximos = (status ? transicoesDoBanco(status, proposta.nome_banco) : []).filter(
     (s) => s !== "cancelada",
   );
 
@@ -390,7 +391,7 @@ export function AcoesTopo({
       {temDecisao && (
         <div className="flex flex-wrap items-center gap-2 sm:border-l sm:border-border sm:pl-2">
           {proximos.map((s) => {
-            const tone = statusProposta(s).tone;
+            const tone = statusProposta(s, proposta?.nome_banco).tone;
             const isRecusa = s === "credito_recusado";
             const isAprova = s === "credito_aprovado";
             return (
@@ -402,7 +403,7 @@ export function AcoesTopo({
                 disabled={busy}
                 className={cn(isAprova && "bg-success text-success-foreground hover:bg-success/90")}
               >
-                {isRecusa ? "✕" : "→"} {statusProposta(s).label}
+                {isRecusa ? "✕" : "→"} {statusProposta(s, proposta?.nome_banco).label}
               </Button>
             );
           })}

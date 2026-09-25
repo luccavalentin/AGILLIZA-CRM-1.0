@@ -10,6 +10,8 @@ describe("Sincronização não desfaz o que a proposta já andou", () => {
       "engenharia_vistoria",
     );
     expect(statusSemRetrocederCredito("credito_aprovado", "registrado")).toBe("registrado");
+    // Formulários do banco (Itaú/Santander) também já passou do crédito.
+    expect(statusSemRetrocederCredito("credito_condicionado", "formularios")).toBe("formularios");
   });
 
   it("desfechos do banco continuam valendo depois do crédito", () => {

@@ -410,8 +410,9 @@ export function statusGlobalPorBancos(
   return null;
 }
 
-/** Etapas depois do crédito: coleta de documentos em diante. */
+/** Etapas depois do crédito: formulários do banco (Itaú/Santander) em diante. */
 const DEPOIS_DO_CREDITO = new Set<PropostaStatus>([
+  "formularios",
   "aguardando_documentos",
   "engenharia_vistoria",
   "analise_juridica",

@@ -7,16 +7,23 @@
  *  2  Enviado para aprovação de crédito  -> enviada_banco / em_analise_credito   (AUTOMÁTICO via API)
  *  3  Crédito aprovado (banco)           -> credito_aprovado                      (AUTOMÁTICO via retorno da API)
  *  3b Crédito aprovado COM condições     -> credito_condicionado                  (AUTOMÁTICO; segue o mesmo caminho)
+ *  3c Formulários do banco               -> formularios                           (AUTOMÁTICO; só Itaú e Santander)
  *  4  Coleta de documentos               -> aguardando_documentos                 (manual)
  *  5  Engenharia / vistoria              -> engenharia_vistoria                   (manual)
  *  6  Análise jurídica                   -> analise_juridica                      (manual)
  *  7  Contrato emitido                   -> contrato_emitido                      (manual)
  *
+ * `formularios` é a etapa que Itaú e Santander têm entre o crédito e os
+ * documentos ("Formulários Digitais" / "Cadastro das Informações" — o nome de
+ * cada portal, ver `lib/bancos/etapas-banco.ts`). O Bradesco não tem essa etapa.
+ *
  * Status granulares antigos (checklist_documentacao, cadastro_complementar,
- * dossie_completo, formularios, envio_documentos_banco, vistoria_agendamento,
+ * dossie_completo, envio_documentos_banco, vistoria_agendamento,
  * vistoria_concluida, emissao_contrato, registrado) foram descontinuados e são
  * mantidos apenas como LEGADOS: encaminham para o fluxo novo, sem aparecer na UI.
  */
+import { temEtapaFormularios } from "@/lib/bancos/etapas-banco";
+
 export type PropostaStatus =
   | "rascunho"
   | "enviada_banco"
@@ -56,11 +63,12 @@ export const TRANSICOES: Record<PropostaStatus, PropostaStatus[]> = {
     "cancelada",
   ],
   em_analise_credito: ["credito_aprovado", "credito_condicionado", "credito_recusado", "cancelada"],
-  credito_aprovado: ["aguardando_documentos", "engenharia_vistoria", "cancelada"],
+  credito_aprovado: ["formularios", "aguardando_documentos", "engenharia_vistoria", "cancelada"],
   // O condicionado segue para documentos como a aprovação plena, mas também
   // pode virar aprovação (condições cumpridas) ou recusa (não cumpridas).
   credito_condicionado: [
     "credito_aprovado",
+    "formularios",
     "aguardando_documentos",
     "engenharia_vistoria",
     "credito_recusado",
@@ -71,13 +79,14 @@ export const TRANSICOES: Record<PropostaStatus, PropostaStatus[]> = {
   analise_juridica: ["contrato_emitido", "cancelada"],
   // Registro é a última etapa do provedor e fecha o ciclo aqui também.
   contrato_emitido: ["registrado"],
+  // Formulários do banco (Itaú/Santander) -> documentos.
+  formularios: ["aguardando_documentos", "cancelada"],
   credito_recusado: [],
   cancelada: [],
   // Legados granulares -> encaminham para o fluxo novo simplificado.
   checklist_documentacao: ["aguardando_documentos", "cancelada"],
   cadastro_complementar: ["aguardando_documentos", "cancelada"],
   dossie_completo: ["aguardando_documentos", "cancelada"],
-  formularios: ["aguardando_documentos", "cancelada"],
   envio_documentos_banco: ["engenharia_vistoria", "cancelada"],
   vistoria_agendamento: ["analise_juridica", "cancelada"],
   vistoria_concluida: ["analise_juridica", "cancelada"],
@@ -94,6 +103,7 @@ export const ORDEM_STATUS: PropostaStatus[] = [
   "em_analise_credito",
   "credito_aprovado",
   "credito_condicionado",
+  "formularios",
   "aguardando_documentos",
   "engenharia_vistoria",
   "analise_juridica",
@@ -108,6 +118,23 @@ export function transicaoPermitida(de: PropostaStatus, para: PropostaStatus): bo
 }
 
 /**
+ * Transições deste banco: a etapa de formulários só existe onde o banco a tem
+ * (Itaú, Santander). No Bradesco, "Formulários" não aparece como destino.
+ */
+export function transicoesDoBanco(de: PropostaStatus, nomeBanco: unknown): PropostaStatus[] {
+  const validas = TRANSICOES[de] ?? [];
+  return temEtapaFormularios(nomeBanco) ? validas : validas.filter((s) => s !== "formularios");
+}
+
+export function transicaoPermitidaNoBanco(
+  de: PropostaStatus,
+  para: PropostaStatus,
+  nomeBanco: unknown,
+): boolean {
+  return Boolean(de) && transicoesDoBanco(de, nomeBanco).includes(para);
+}
+
+/**
  * Status que ainda aceitam edição dos dados da proposta. Aprovada e
  * condicionada entram por causa do "Continuar proposta": a conferência dos
  * dados acontece depois da aprovação do crédito.
@@ -116,6 +143,7 @@ export const STATUS_EDITAVEIS: PropostaStatus[] = [
   "rascunho",
   "credito_aprovado",
   "credito_condicionado",
+  "formularios",
   "aguardando_documentos",
 ];
 
@@ -123,6 +151,7 @@ export const STATUS_EDITAVEIS: PropostaStatus[] = [
 export const STATUS_CONTINUAR: PropostaStatus[] = [
   "credito_aprovado",
   "credito_condicionado",
+  "formularios",
   "aguardando_documentos",
   "engenharia_vistoria",
   "analise_juridica",

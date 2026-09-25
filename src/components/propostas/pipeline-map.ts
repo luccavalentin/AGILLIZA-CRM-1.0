@@ -1,4 +1,5 @@
 import type { PropostaStatus } from "@/lib/propostas/state-machine";
+import { nomeEtapaFormularios, temEtapaFormularios } from "@/lib/bancos/etapas-banco";
 
 /**
  * Etapas do stepper da ficha da proposta.
@@ -10,20 +11,32 @@ import type { PropostaStatus } from "@/lib/propostas/state-machine";
  * abrir aquela etapa. O detalhe do crédito (enviado, aprovado, condicionado,
  * recusado) continua no rótulo do status.
  *
+ * Itaú e Santander têm ainda a etapa de formulários entre o crédito e os
+ * documentos, com o nome do portal de cada um (ver `etapasDoBanco`).
+ *
  * `auto` = etapa que a integração move sozinha. "Documentos" entra quando o
  * primeiro documento chega à integração (ver `documentos.server.ts`).
  */
 export const ETAPAS_STEPPER = [
-  { codigo: "simulacao", numero: 1, label: "Simulação", auto: false },
-  { codigo: "credito", numero: 2, label: "Crédito", auto: true },
-  { codigo: "documentos", numero: 3, label: "Documentos", auto: true },
-  { codigo: "engenharia", numero: 4, label: "Engenharia", auto: true },
-  { codigo: "analise_juridica", numero: 5, label: "Análise Jurídica", auto: true },
-  { codigo: "contrato_emitido", numero: 6, label: "Contrato Emitido", auto: true },
-  { codigo: "registro", numero: 7, label: "Registro", auto: true },
+  { codigo: "simulacao", label: "Simulação", auto: false },
+  { codigo: "credito", label: "Crédito", auto: true },
+  { codigo: "formularios", label: "Formulários", auto: true },
+  { codigo: "documentos", label: "Documentos", auto: true },
+  { codigo: "engenharia", label: "Engenharia", auto: true },
+  { codigo: "analise_juridica", label: "Análise Jurídica", auto: true },
+  { codigo: "contrato_emitido", label: "Contrato Emitido", auto: true },
+  { codigo: "registro", label: "Registro", auto: true },
 ] as const;
 
 export type StepperCodigo = (typeof ETAPAS_STEPPER)[number]["codigo"];
+
+export interface EtapaStepper {
+  codigo: StepperCodigo;
+  /** 1, 2, 3… na régua deste banco. */
+  numero: number;
+  label: string;
+  auto: boolean;
+}
 
 /** propostas.status -> etapa do stepper. */
 const MAPA: Record<PropostaStatus, StepperCodigo> = {
@@ -38,6 +51,7 @@ const MAPA: Record<PropostaStatus, StepperCodigo> = {
   credito_aprovado: "credito",
   credito_condicionado: "credito",
   credito_recusado: "credito",
+  formularios: "formularios",
   aguardando_documentos: "documentos",
   engenharia_vistoria: "engenharia",
   analise_juridica: "analise_juridica",
@@ -47,7 +61,6 @@ const MAPA: Record<PropostaStatus, StepperCodigo> = {
   checklist_documentacao: "documentos",
   cadastro_complementar: "documentos",
   dossie_completo: "documentos",
-  formularios: "documentos",
   envio_documentos_banco: "documentos",
   vistoria_agendamento: "engenharia",
   vistoria_concluida: "engenharia",
@@ -58,8 +71,23 @@ export function etapaDoStatus(status: string): StepperCodigo {
   return MAPA[status as PropostaStatus] ?? "simulacao";
 }
 
-/** Índice (0-based) da etapa atual dentro de ETAPAS_STEPPER. */
-export function indiceEtapa(status: string): number {
+/**
+ * A régua deste banco: Itaú e Santander com a etapa de formulários (no nome
+ * do portal de cada um), Bradesco sem ela. Uma proposta que já está em
+ * `formularios` sempre mostra a etapa, mesmo com o banco desconhecido.
+ */
+export function etapasDoBanco(nomeBanco?: string | null, status?: string | null): EtapaStepper[] {
+  const comFormularios = temEtapaFormularios(nomeBanco) || status === "formularios";
+  return ETAPAS_STEPPER.filter((e) => e.codigo !== "formularios" || comFormularios).map((e, i) => ({
+    codigo: e.codigo,
+    numero: i + 1,
+    label: e.codigo === "formularios" ? nomeEtapaFormularios(nomeBanco) : e.label,
+    auto: e.auto,
+  }));
+}
+
+/** Índice (0-based) da etapa atual dentro da régua do banco. */
+export function indiceEtapa(status: string, nomeBanco?: string | null): number {
   const cod = etapaDoStatus(status);
-  return ETAPAS_STEPPER.findIndex((e) => e.codigo === cod);
+  return etapasDoBanco(nomeBanco, status).findIndex((e) => e.codigo === cod);
 }

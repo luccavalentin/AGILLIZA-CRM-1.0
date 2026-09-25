@@ -27,6 +27,10 @@ export function statusDaEtapa(nomeEtapa: string | null): PropostaStatus | null {
   if (n.includes("juríd") || n.includes("jurid") || n.includes("emiss")) return "analise_juridica";
   if (n.includes("vistoria") || n.includes("engenharia") || n.includes("avaliaç"))
     return "engenharia_vistoria";
+  // Etapa de formulários do banco, no nome de cada portal: "Formulários
+  // Digitais" (Itaú), "Cadastro das Informações" (Santander).
+  if (n.includes("formulário") || n.includes("formulario") || n.includes("cadastro das informa"))
+    return "formularios";
   if (n.includes("document")) return "aguardando_documentos";
   // Antes de "aprov": "aprovado com condições" contém as duas palavras.
   if (n.includes("condicion") || n.includes("ressalva")) return "credito_condicionado";

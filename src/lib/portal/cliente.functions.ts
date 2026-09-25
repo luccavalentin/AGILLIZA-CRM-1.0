@@ -129,7 +129,10 @@ const STATUS_PROPOSTA_AMIGAVEL: Record<string, string> = {
   enviada_banco: "Enviada para aprovação de crédito",
   em_analise_credito: "Em aprovação de crédito",
   credito_aprovado: "Crédito aprovado",
+  credito_condicionado: "Crédito aprovado com condições",
   credito_recusado: "Não aprovada",
+  // Itaú/Santander: formulários no portal do banco antes dos documentos.
+  formularios: "Formulários do banco",
   aguardando_documentos: "Coleta de documentos",
   engenharia_vistoria: "Vistoria do imóvel",
   analise_juridica: "Análise jurídica",
@@ -137,7 +140,6 @@ const STATUS_PROPOSTA_AMIGAVEL: Record<string, string> = {
   checklist_documentacao: "Coleta de documentos",
   cadastro_complementar: "Coleta de documentos",
   dossie_completo: "Coleta de documentos",
-  formularios: "Coleta de documentos",
   envio_documentos_banco: "Coleta de documentos",
   vistoria_agendamento: "Vistoria do imóvel",
   vistoria_concluida: "Vistoria do imóvel",

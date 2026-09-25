@@ -12,6 +12,7 @@ import { toTitleCase } from "@/lib/utils";
 import { faltantesEnvolvido } from "./campos-obrigatorios";
 import {
   transicaoPermitida,
+  transicaoPermitidaNoBanco,
   STATUS_EDITAVEIS,
   STATUS_TERMINAIS,
   type PropostaStatus,
@@ -1693,7 +1694,7 @@ export const moverStatusProposta = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: prop } = await supabase
       .from("propostas")
-      .select("status")
+      .select("status, nome_banco")
       .eq("id", data.proposta_id)
       .maybeSingle();
     if (!prop) throw new Error("Proposta não encontrada.");
@@ -1702,6 +1703,10 @@ export const moverStatusProposta = createServerFn({ method: "POST" })
     const para = data.novo_status as PropostaStatus;
     if (!transicaoPermitida(de, para)) {
       throw new Error(`Transição inválida: ${de} → ${para}.`);
+    }
+    // A etapa de formulários é do Itaú e do Santander; o Bradesco não a tem.
+    if (!transicaoPermitidaNoBanco(de, para, prop.nome_banco)) {
+      throw new Error(`O ${prop.nome_banco ?? "banco"} não tem a etapa de formulários.`);
     }
     const patch: Record<string, unknown> = { status: para };
     if (para === "contrato_emitido") patch.contrato_emitido_em = new Date().toISOString();

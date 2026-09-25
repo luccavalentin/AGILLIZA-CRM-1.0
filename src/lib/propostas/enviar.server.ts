@@ -54,6 +54,8 @@ const ORDEM_STATUS: PropostaStatus[] = [
   "enviada_banco",
   "em_analise_credito",
   "credito_aprovado",
+  // Formulários do banco (Itaú/Santander), entre o crédito e os documentos.
+  "formularios",
   "aguardando_documentos",
   "engenharia_vistoria",
   "analise_juridica",

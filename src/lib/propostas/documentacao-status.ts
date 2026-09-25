@@ -35,7 +35,6 @@ const STATUS_COM_SELO = new Set([
   "checklist_documentacao",
   "cadastro_complementar",
   "dossie_completo",
-  "formularios",
   "envio_documentos_banco",
   "engenharia_vistoria",
   "vistoria_agendamento",

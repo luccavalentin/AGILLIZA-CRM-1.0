@@ -177,7 +177,7 @@ export function CardCliente({
           <span
             className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset ${statusClasse}`}
           >
-            {statusProposta(c.proposta_status).label}
+            {statusProposta(c.proposta_status, c.nome_banco).label}
           </span>
         )}
         {c.proposta_id && (

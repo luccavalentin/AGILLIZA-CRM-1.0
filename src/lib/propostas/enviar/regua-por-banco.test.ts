@@ -33,6 +33,15 @@ describe("Régua por banco: vale quem estiver mais adiante", () => {
     expect(homefinPodeRegravarRegua(reguaRobo("Documentos"), funilHomefin("Crédito"))).toBe(false);
   });
 
+  it("etapa de formulários do robô fica à frente do crédito da HomeFin", () => {
+    const itau = [
+      { nome: "Crédito", ativa: false, origem: ORIGEM_ROBO_PORTAL },
+      { nome: "Formulários Digitais", ativa: true, origem: ORIGEM_ROBO_PORTAL },
+    ];
+    expect(homefinPodeRegravarRegua(itau, funilHomefin("Crédito"))).toBe(false);
+    expect(homefinPodeRegravarRegua(itau, funilHomefin("Engenharia"))).toBe(true);
+  });
+
   it("mesma etapa nos dois: fica a leitura do robô", () => {
     expect(homefinPodeRegravarRegua(reguaRobo("Engenharia"), funilHomefin("Engenharia"))).toBe(
       false,
