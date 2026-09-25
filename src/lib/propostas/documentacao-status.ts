@@ -10,6 +10,11 @@
  *   - `enviado`  → aprovado e já repassado ao banco;
  *   - `erro`     → recusado na análise (R, com `comentarioAnalise`) ou pelo banco.
  *
+ * O selo — e o semáforo do SLA — é da HomeFin: só existe para proposta com
+ * documento enviado a ela. Proposta cujos documentos seguem por outro caminho
+ * (ex.: direto no portal do banco) não tem selo nenhum, em vez de um
+ * "aguardando" que nunca sairia do lugar.
+ *
  * Módulo puro: usado no servidor (lista, CRM, ficha) e na tela (contagem do SLA).
  */
 
@@ -19,8 +24,12 @@ export const SLA_DOCUMENTOS_DIAS_UTEIS = 2;
 /** Faltando menos que isto para o prazo, o selo fica amarelo (perto de estourar). */
 export const SLA_ALERTA_HORAS = 12;
 
-/** Status da proposta em que ainda se espera documentação. */
-const STATUS_DE_DOCUMENTOS = new Set([
+/**
+ * Onde o selo aparece: da etapa Documentos em diante. Antes disso a proposta
+ * ainda está no crédito e o selo confundiria — quem mostra que a documentação
+ * começou é a própria régua, ao passar para Documentos.
+ */
+const STATUS_COM_SELO = new Set([
   "aguardando_documentos",
   // Legados granulares que o stepper também trata como "Documentos".
   "checklist_documentacao",
@@ -28,15 +37,6 @@ const STATUS_DE_DOCUMENTOS = new Set([
   "dossie_completo",
   "formularios",
   "envio_documentos_banco",
-]);
-
-/**
- * Onde o selo aparece: da etapa Documentos em diante. Antes disso a proposta
- * ainda está no crédito e o selo confundiria — quem mostra que a documentação
- * começou é a própria régua, ao passar para Documentos.
- */
-const STATUS_COM_SELO = new Set([
-  ...STATUS_DE_DOCUMENTOS,
   "engenharia_vistoria",
   "vistoria_agendamento",
   "vistoria_concluida",
@@ -55,8 +55,6 @@ export interface DocumentoHomefinLinha {
 }
 
 export type SituacaoDocumentacao =
-  /** Na etapa de documentos, mas nada foi enviado ainda. */
-  | { tipo: "aguardando" }
   /** Recebido na HomeFin e em análise. `recebidoEm` = o mais antigo ainda na fila. */
   | { tipo: "em_analise"; recebidoEm: string; prazo: string; emAnalise: number; total: number }
   /** Pelo menos um recusado — pede ação e leitura dos comentários. */
@@ -114,8 +112,7 @@ export function tempoAtePrazo(
  * Resume os documentos da proposta num selo só.
  *
  * Prioridade: recusado (pede ação) > em análise (conta o SLA) > aprovado.
- * Só da etapa Documentos em diante; sem nenhum documento, só aparece o
- * "aguardando" na própria etapa de documentos.
+ * Só da etapa Documentos em diante, e só com documento enviado à HomeFin.
  */
 export function situacaoDocumentacao(
   status: string | null | undefined,
@@ -125,7 +122,7 @@ export function situacaoDocumentacao(
   if (!STATUS_COM_SELO.has(s)) return null;
 
   const docs = linhas ?? [];
-  if (docs.length === 0) return STATUS_DE_DOCUMENTOS.has(s) ? { tipo: "aguardando" } : null;
+  if (docs.length === 0) return null;
 
   const total = docs.length;
   const rejeitados = docs.filter((d) => d.situacao === "erro").length;

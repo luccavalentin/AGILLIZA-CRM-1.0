@@ -3,12 +3,13 @@
  * usados pelo sistema. Extraídos de `enviar.server.ts` sem alteração de
  * comportamento. Nenhuma dependência de Supabase/rede — 100 % determinísticos.
  */
-import type { PropostaStatus } from "../state-machine";
+import { ORDEM_STATUS, type PropostaStatus } from "../state-machine";
+import { statusDaEtapa } from "../etapa-banco";
 import { normalizarTexto } from "./shared-utils";
 
 // `statusDaEtapa` é puro e também usado na tela (kanban do "Continuar
 // proposta"); mora num módulo sem `.server` para poder ir ao cliente.
-export { statusDaEtapa } from "../etapa-banco";
+export { statusDaEtapa };
 
 /**
  * Detecta o cenário em que a integração devolveu "erro" mas a proposta
@@ -439,6 +440,45 @@ export function statusSemRetrocederCredito(
   const jaAndou = DEPOIS_DO_CREDITO.has(atual as PropostaStatus);
   const soDizAprovado = derivado === "credito_aprovado" || derivado === "credito_condicionado";
   return jaAndou && soDizAprovado ? (atual as PropostaStatus) : derivado;
+}
+
+/**
+ * Marca da régua (`propostas.etapas_banco`) gravada pelo robô que lê o portal
+ * do banco (Itaú, Santander…), em vez do funil da HomeFin. Cada etapa gravada
+ * pelo robô leva `origem: "robo_portal"`.
+ */
+export const ORIGEM_ROBO_PORTAL = "robo_portal";
+
+type EtapaRegua = { nome?: string | null; ativa?: boolean | null; origem?: string | null };
+
+/** Posição da etapa ativa numa régua, na ordem oficial de status (-1 = nada). */
+function posicaoDaRegua(etapas: ReadonlyArray<EtapaRegua>): number {
+  const ativa = [...etapas].reverse().find((e) => e?.ativa);
+  const status = statusDaEtapa(ativa?.nome ?? null);
+  return status ? ORDEM_STATUS.indexOf(status) : -1;
+}
+
+/**
+ * A HomeFin pode regravar a régua e o detalhe do status da proposta?
+ *
+ * Cada banco tem a sua fonte de andamento: o Bradesco volta 100% pela HomeFin;
+ * Itaú e Santander, pelo robô que lê o portal do banco, porque na HomeFin o
+ * funil deles fica parado em "Simulação". Os dois gravam o mesmo campo, e a
+ * regra é: vale quem estiver mais adiante.
+ *
+ * - Régua da própria HomeFin (ou nenhuma): regrava sempre, como sempre foi.
+ * - Régua do robô: só regrava se o funil da HomeFin estiver À FRENTE — no dia
+ *   em que ela passar a mover esses bancos, assume sem mexer em código. Na
+ *   mesma etapa ou atrás, o que o robô leu no banco fica.
+ */
+export function homefinPodeRegravarRegua(
+  gravada: unknown,
+  funilHomefin: ReadonlyArray<EtapaRegua>,
+): boolean {
+  const regua = Array.isArray(gravada) ? (gravada as EtapaRegua[]) : [];
+  const doRobo = regua.some((e) => e?.origem === ORIGEM_ROBO_PORTAL);
+  if (!doRobo) return true;
+  return posicaoDaRegua(funilHomefin) > posicaoDaRegua(regua);
 }
 
 /**

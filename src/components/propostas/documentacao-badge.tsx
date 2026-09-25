@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, FileClock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import type { Tone } from "@/components/crm/tone-badge";
 import { cn } from "@/lib/utils";
 import {
@@ -41,13 +41,6 @@ function conteudo(
 ): { tone: Tone; icone: React.ReactNode; titulo: string; detalhe?: string; explicacao: string } {
   const sla = `D+${SLA_DOCUMENTOS_DIAS_UTEIS}`;
   switch (s.tipo) {
-    case "aguardando":
-      return {
-        tone: "muted",
-        icone: <FileClock className="h-3 w-3 shrink-0" />,
-        titulo: "Aguardando documentos",
-        explicacao: "A proposta está na etapa de documentos e nada foi enviado à HomeFin ainda.",
-      };
     case "em_analise": {
       const prazo = new Date(s.prazo);
       const t = agora ? tempoAtePrazo(prazo, agora) : null;
@@ -93,8 +86,8 @@ function conteudo(
 }
 
 /**
- * Selo da documentação da proposta: aguardando, recebido na HomeFin com o
- * relógio do SLA D+2, aprovado ou rejeitado.
+ * Selo da documentação enviada à HomeFin: recebido com o relógio do SLA D+2
+ * (semáforo), aprovado ou rejeitado.
  *
  * Duas linhas curtas (o que aconteceu / o prazo ou o próximo passo) que
  * quebram dentro do espaço disponível — numa coluna estreita, na régua ou no

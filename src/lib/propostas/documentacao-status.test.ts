@@ -62,8 +62,9 @@ describe("SLA D+2 dos documentos", () => {
 });
 
 describe("Situação da documentação", () => {
-  it("sem documento: só aparece na etapa de documentos", () => {
-    expect(situacaoDocumentacao("aguardando_documentos", [])).toEqual({ tipo: "aguardando" });
+  it("sem documento enviado à HomeFin não há selo, nem na etapa de documentos", () => {
+    expect(situacaoDocumentacao("aguardando_documentos", [])).toBeNull();
+    expect(situacaoDocumentacao("engenharia_vistoria", null)).toBeNull();
     expect(situacaoDocumentacao("credito_aprovado", [])).toBeNull();
   });
 

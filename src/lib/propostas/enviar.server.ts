@@ -34,6 +34,7 @@ import {
   statusDaAtividade,
   statusGlobalPorBancos,
   statusSemRetrocederCredito,
+  homefinPodeRegravarRegua,
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
 import {
@@ -2450,9 +2451,19 @@ export async function sincronizarPropostaImpl({
     cancelada: "Cancelada",
   };
 
+  // Cada banco tem a sua fonte de andamento. Régua e detalhe que o robô leu no
+  // portal do banco (Itaú, Santander) só são regravados pela HomeFin quando o
+  // funil dela estiver à frente — ver `homefinPodeRegravarRegua`.
+  const homefinRegrava = homefinPodeRegravarRegua(
+    (prop as any).etapas_banco,
+    etapas.map((e) => ({ nome: e?.nomeEtapa ?? null, ativa: Boolean(e?.active) })),
+  );
+  const detalheHomefin = statusAtividade.detalhe ?? ROTULO_DETALHE[statusEfetivo] ?? nomeEtapa;
+
   const patch: Record<string, unknown> = {
     status: statusEfetivo,
-    detalhe_status_atual: statusAtividade.detalhe ?? ROTULO_DETALHE[statusEfetivo] ?? nomeEtapa,
+    detalhe_status_atual:
+      !homefinRegrava && statusEfetivo === prop.status ? prop.detalhe_status_atual : detalheHomefin,
     ultima_sincronizacao_em: new Date().toISOString(),
   };
 
@@ -2492,7 +2503,7 @@ export async function sincronizarPropostaImpl({
     }))
     .filter((e) => e.nome)
     .sort((a, b) => a.ordem - b.ordem);
-  if (funilBanco.length > 0) patch.etapas_banco = funilBanco;
+  if (funilBanco.length > 0 && homefinRegrava) patch.etapas_banco = funilBanco;
   const escolhida = simEscolhida ?? {};
   const numeroOportunidadeBanco = numeroBancoDaOportunidade(op);
   // Em falha de integração pura (sem nenhum banco realmente efetivado),
