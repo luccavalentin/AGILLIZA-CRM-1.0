@@ -215,11 +215,21 @@ function RootComponent() {
       if (isChunkError(msg)) tryReload();
     };
 
+    // O Vite avisa por este evento sempre que um import() dinâmico falha —
+    // inclusive quando quem chamou trata o erro. A carta de análise faz
+    // exatamente isso: capturava a falha, mostrava "Não foi possível gerar a
+    // carta" e a página nunca recarregava, porque "error"/"unhandledrejection"
+    // só veem erro não tratado. Aba aberta antes de um deploy ficava com a
+    // carta (e qualquer tela carregada sob demanda) quebrada até o F5.
+    const onPreloadError = () => tryReload();
+
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onRejection);
+    window.addEventListener("vite:preloadError", onPreloadError);
     return () => {
       window.removeEventListener("error", onError);
       window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("vite:preloadError", onPreloadError);
     };
   }, []);
 

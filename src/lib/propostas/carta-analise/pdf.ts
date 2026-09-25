@@ -33,23 +33,24 @@ const v = (s: string | null | undefined) => (s && s.trim() ? s.trim() : VAZIO);
 const cacheImagens = new Map<string, Promise<string>>();
 function imagem(caminho: string): Promise<string> {
   if (!cacheImagens.has(caminho)) {
-    cacheImagens.set(
-      caminho,
-      fetch(caminho)
-        .then((r) => {
-          if (!r.ok) throw new Error(`Imagem da carta não encontrada: ${caminho}`);
-          return r.blob();
-        })
-        .then(
-          (blob) =>
-            new Promise<string>((resolve, reject) => {
-              const fr = new FileReader();
-              fr.onload = () => resolve(String(fr.result));
-              fr.onerror = () => reject(fr.error);
-              fr.readAsDataURL(blob);
-            }),
-        ),
-    );
+    const carregando = fetch(caminho)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Imagem da carta não encontrada: ${caminho}`);
+        return r.blob();
+      })
+      .then(
+        (blob) =>
+          new Promise<string>((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(String(fr.result));
+            fr.onerror = () => reject(fr.error);
+            fr.readAsDataURL(blob);
+          }),
+      );
+    // Só o que carregou fica guardado: uma falha de rede não pode travar a
+    // carta até recarregar a página — a próxima tentativa busca de novo.
+    carregando.catch(() => cacheImagens.delete(caminho));
+    cacheImagens.set(caminho, carregando);
   }
   return cacheImagens.get(caminho)!;
 }

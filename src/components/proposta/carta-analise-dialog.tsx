@@ -30,6 +30,24 @@ import {
 } from "@/lib/propostas/carta-analise/dados";
 import { cn } from "@/lib/utils";
 
+/**
+ * Falha ao carregar o gerador da carta porque a aba é de antes de um deploy
+ * (o arquivo da versão anterior já não existe no servidor). A página recarrega
+ * sozinha (`vite:preloadError` em __root); a mensagem cobre o intervalo.
+ */
+function versaoDesatualizada(e: unknown): boolean {
+  const msg = String((e as { message?: unknown })?.message ?? e ?? "");
+  return /dynamically imported module|Importing a module script failed|ChunkLoadError|preload/i.test(
+    msg,
+  );
+}
+
+function mensagemFalhaCarta(e: unknown): string {
+  return versaoDesatualizada(e)
+    ? "O sistema foi atualizado. Recarregue a página (F5) e gere a carta de novo."
+    : "Não foi possível gerar a carta.";
+}
+
 /** Campos gerados do sistema que o usuário pode corrigir antes de emitir. */
 const CAMPOS_SISTEMA: { chave: keyof CamposCarta; rotulo: string }[] = [
   { chave: "numeroAnalise", rotulo: "Nº da análise" },
@@ -91,6 +109,10 @@ export function CartaAnaliseDialog({
   const [incluirObservacoes, setIncluirObservacoes] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [gerando, setGerando] = useState(false);
+  // Falha da pré-visualização: em vez de girar "Montando…" para sempre, a
+  // tela diz o que houve e oferece tentar de novo.
+  const [erroPreview, setErroPreview] = useState<string | null>(null);
+  const [tentativa, setTentativa] = useState(0);
   const urlAnterior = useRef<string | null>(null);
 
   const banco = bancosAprovados.find((b) => b.id === bancoId) ?? null;
@@ -135,15 +157,17 @@ export function CartaAnaliseDialog({
         if (urlAnterior.current) URL.revokeObjectURL(urlAnterior.current);
         urlAnterior.current = url;
         setPreviewUrl(url);
+        setErroPreview(null);
       } catch (e) {
         console.error("Falha ao gerar pré-visualização da carta", e);
+        setErroPreview(mensagemFalhaCarta(e));
       } finally {
         setGerando(false);
       }
     }, 650);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, campos, modelo, parecer?.curto, incluirObservacoes]);
+  }, [open, campos, modelo, parecer?.curto, incluirObservacoes, tentativa]);
 
   useEffect(
     () => () => {
@@ -169,7 +193,7 @@ export function CartaAnaliseDialog({
       toast.success("Carta de análise baixada.", { id: t });
     } catch (e) {
       console.error(e);
-      toast.error("Não foi possível gerar a carta.", { id: t });
+      toast.error(mensagemFalhaCarta(e), { id: t });
     }
   }
 
@@ -397,12 +421,33 @@ export function CartaAnaliseDialog({
                   </Button>
                 </div>
               </div>
-              {previewUrl ? (
+              {previewUrl && !erroPreview ? (
                 <iframe
                   title="Pré-visualização da carta"
                   src={`${previewUrl}#toolbar=0&navpanes=0&zoom=page-fit&view=Fit`}
                   className="min-h-0 flex-1 bg-white"
                 />
+              ) : erroPreview ? (
+                <div
+                  role="alert"
+                  className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center"
+                >
+                  <p className="max-w-sm text-sm text-muted-foreground">{erroPreview}</p>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={gerando}
+                      onClick={() => setTentativa((n) => n + 1)}
+                    >
+                      <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", gerando && "animate-spin")} />
+                      Tentar de novo
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => window.location.reload()}>
+                      Recarregar a página
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Montando pré-visualização…
