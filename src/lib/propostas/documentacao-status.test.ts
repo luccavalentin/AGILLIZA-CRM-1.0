@@ -43,6 +43,16 @@ describe("SLA D+2 dos documentos", () => {
       urgente: true,
       texto: "2h 05min",
     });
+    // Menos de 12 h: perto de estourar (amarelo).
+    expect(tempoAtePrazo("2026-09-24T21:00:00", agora)).toMatchObject({
+      vencido: false,
+      urgente: true,
+    });
+    // 13 h ainda está folgado (verde).
+    expect(tempoAtePrazo("2026-09-24T23:00:00", agora)).toMatchObject({
+      vencido: false,
+      urgente: false,
+    });
     expect(tempoAtePrazo("2026-09-24T07:00:00", agora)).toEqual({
       vencido: true,
       urgente: false,

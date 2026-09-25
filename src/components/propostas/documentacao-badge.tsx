@@ -52,7 +52,9 @@ function conteudo(
       const prazo = new Date(s.prazo);
       const t = agora ? tempoAtePrazo(prazo, agora) : null;
       return {
-        tone: t?.vencido ? "danger" : t?.urgente ? "warning" : "info",
+        // Semáforo do SLA: verde no prazo, amarelo perto de estourar,
+        // vermelho estourado. Neutro só no instante antes de ler o relógio.
+        tone: !t ? "muted" : t.vencido ? "danger" : t.urgente ? "warning" : "success",
         icone: <Clock className="h-3 w-3 shrink-0" />,
         titulo: "Recebido HomeFin",
         detalhe: !t

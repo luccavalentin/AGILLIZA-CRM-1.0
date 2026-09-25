@@ -16,6 +16,9 @@
 /** Prazo da HomeFin para analisar um documento recebido: D+2 dias úteis. */
 export const SLA_DOCUMENTOS_DIAS_UTEIS = 2;
 
+/** Faltando menos que isto para o prazo, o selo fica amarelo (perto de estourar). */
+export const SLA_ALERTA_HORAS = 12;
+
 /** Status da proposta em que ainda se espera documentação. */
 const STATUS_DE_DOCUMENTOS = new Set([
   "aguardando_documentos",
@@ -103,8 +106,8 @@ export function tempoAtePrazo(
       : h > 0
         ? `${h}h ${String(m).padStart(2, "0")}min`
         : `${Math.max(m, vencido ? 1 : 0)}min`;
-  // Menos de 4 horas para vencer: o selo muda de tom.
-  return { vencido, urgente: !vencido && diff < 4 * 3_600_000, texto };
+  // Perto de estourar: menos de SLA_ALERTA_HORAS para vencer.
+  return { vencido, urgente: !vencido && diff < SLA_ALERTA_HORAS * 3_600_000, texto };
 }
 
 /**
