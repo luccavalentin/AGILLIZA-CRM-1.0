@@ -409,6 +409,38 @@ export function statusGlobalPorBancos(
   return null;
 }
 
+/** Etapas depois do crédito: coleta de documentos em diante. */
+const DEPOIS_DO_CREDITO = new Set<PropostaStatus>([
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
+  "contrato_emitido",
+  "registrado",
+]);
+
+/**
+ * Status que o recálculo pelas linhas de banco pode gravar sem desfazer o que
+ * a proposta já andou.
+ *
+ * As linhas de banco só sabem dizer "aprovada"/"condicionada". Quando a
+ * proposta já passou do crédito (ex.: foi para a coleta de documentos ao
+ * enviar o 1º documento), esse "aprovada" não é novidade — é o passado. Sem
+ * esta trava, a sincronização devolvia a proposta para "Crédito aprovado"
+ * segundos depois: PRO-000311 (17/09, 26 s), PRO-000321 (14/09, 57 s),
+ * PRO-000192 (07/08).
+ *
+ * Desfechos continuam valendo: recusa, erro e cancelamento não são "aprovada",
+ * então passam direto.
+ */
+export function statusSemRetrocederCredito(
+  derivado: PropostaStatus | null,
+  atual: string | null | undefined,
+): PropostaStatus | null {
+  const jaAndou = DEPOIS_DO_CREDITO.has(atual as PropostaStatus);
+  const soDizAprovado = derivado === "credito_aprovado" || derivado === "credito_condicionado";
+  return jaAndou && soDizAprovado ? (atual as PropostaStatus) : derivado;
+}
+
 /**
  * Traduz o `tipoSituacao` cru do banco (S/P/N/A/R) para o enum interno usado
  * na coluna `proposta_bancos.situacao_banco` e no <Select> "Situação de crédito"

@@ -417,7 +417,12 @@ export function PropostaView({
         })}
 
         <div className="p-5">
-          <PipelineStepper status={status} detalheStatus={p.detalhe_status_atual} />
+          <PipelineStepper
+            status={status}
+            detalheStatus={p.detalhe_status_atual}
+            propostaId={id}
+            documentacao={data.documentacao}
+          />
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
             {p.status_atualizado_em && (
               <span className="inline-flex items-center gap-1">

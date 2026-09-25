@@ -1,5 +1,7 @@
 import { Check, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { SituacaoDocumentacao } from "@/lib/propostas/documentacao-status";
+import { DocumentacaoProposta } from "./documentacao-proposta";
 import { ETAPAS_STEPPER, indiceEtapa } from "./pipeline-map";
 
 /**
@@ -12,11 +14,25 @@ import { ETAPAS_STEPPER, indiceEtapa } from "./pipeline-map";
 export function PipelineStepper({
   status,
   detalheStatus,
+  propostaId,
+  documentacao,
 }: {
   status: string;
   detalheStatus?: string | null;
+  /** Com os dois, o selo da documentação aparece abaixo de "Documentos". */
+  propostaId?: string;
+  documentacao?: SituacaoDocumentacao | null;
 }) {
   const recusado = status === "credito_recusado";
+  const temSeloDocs = Boolean(propostaId && documentacao);
+  const seloDocs = (centralizado: boolean) =>
+    temSeloDocs ? (
+      <DocumentacaoProposta
+        propostaId={propostaId!}
+        situacao={documentacao}
+        centralizado={centralizado}
+      />
+    ) : null;
 
   if (status === "cancelada") {
     return (
@@ -135,12 +151,26 @@ export function PipelineStepper({
                   >
                     {etapa.label}
                   </span>
+                  {/* Selo da documentação embaixo de "Documentos", dentro da
+                      largura da coluna: o texto quebra em vez de invadir as
+                      etapas vizinhas. No celular a coluna é estreita demais,
+                      e ele vai numa linha própria abaixo da régua. */}
+                  {etapa.codigo === "documentos" && temSeloDocs && (
+                    <div className="hidden w-full justify-center sm:flex">{seloDocs(true)}</div>
+                  )}
                 </div>
               </li>
             );
           })}
         </ol>
       </div>
+
+      {temSeloDocs && (
+        <div className="mt-1 flex flex-wrap items-center gap-2 sm:hidden">
+          <span className="text-[11px] font-semibold text-muted-foreground">Documentos</span>
+          {seloDocs(false)}
+        </div>
+      )}
 
       {detalheStatus && (
         <p className="mt-1 text-center text-xs text-muted-foreground">

@@ -18,6 +18,7 @@ import { BancosProposta } from "@/components/proposta/bancos-proposta";
 import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { MenuAcoesProposta } from "./menu-acoes-proposta";
+import { DocumentacaoProposta } from "@/components/propostas/documentacao-proposta";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
@@ -202,7 +203,10 @@ export function ListaDesktop({
                     {formatBRL(p.valor_financiamento)}
                   </TableCell>
                   <TableCell>
-                    <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
+                    <div className="flex flex-col items-start gap-1.5">
+                      <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
+                      <DocumentacaoProposta propostaId={p.id} situacao={p.documentacao} />
+                    </div>
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     {verExcluidas ? (

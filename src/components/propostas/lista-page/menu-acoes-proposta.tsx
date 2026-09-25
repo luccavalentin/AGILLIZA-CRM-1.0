@@ -1,6 +1,12 @@
 import { lazy, Suspense, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { ExternalLink, FileCheck2, ListChecks, MoreHorizontal } from "lucide-react";
+import {
+  ExternalLink,
+  FileCheck2,
+  ListChecks,
+  MessageSquareText,
+  MoreHorizontal,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,6 +22,11 @@ const CartaAnaliseDialog = lazy(() =>
     default: m.CartaAnaliseDialog,
   })),
 );
+const ComentariosPropostaDialog = lazy(() =>
+  import("@/components/proposta/comentarios-proposta-dialog").then((m) => ({
+    default: m.ComentariosPropostaDialog,
+  })),
+);
 
 /** Menu "⋯" de cada proposta na lista. */
 export function MenuAcoesProposta({
@@ -29,6 +40,7 @@ export function MenuAcoesProposta({
 }) {
   const router = useRouter();
   const [cartaAberta, setCartaAberta] = useState(false);
+  const [comentariosAbertos, setComentariosAbertos] = useState(false);
   const temAprovacao = (bancos ?? []).some((b) => bancoPermiteCarta(b));
   // Só crédito aprovado/condicionado (e as etapas seguintes) seguem pelo fluxo.
   const podeContinuar = podeContinuarProposta(status, bancos);
@@ -48,6 +60,15 @@ export function MenuAcoesProposta({
             }
           >
             <ExternalLink className="mr-2 h-4 w-4" /> Abrir proposta
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setComentariosAbertos(true)}>
+            <MessageSquareText className="mr-2 h-4 w-4" />
+            <div className="flex flex-col">
+              <span>Ver comentários</span>
+              <span className="text-[11px] text-muted-foreground">
+                FUP e retorno da análise dos documentos
+              </span>
+            </div>
           </DropdownMenuItem>
           {podeContinuar && (
             <DropdownMenuItem
@@ -85,6 +106,15 @@ export function MenuAcoesProposta({
           <CartaAnaliseDialog
             open={cartaAberta}
             onOpenChange={setCartaAberta}
+            propostaId={propostaId}
+          />
+        </Suspense>
+      )}
+      {comentariosAbertos && (
+        <Suspense fallback={null}>
+          <ComentariosPropostaDialog
+            open={comentariosAbertos}
+            onOpenChange={setComentariosAbertos}
             propostaId={propostaId}
           />
         </Suspense>

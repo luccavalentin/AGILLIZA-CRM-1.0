@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ToneBadge } from "@/components/crm/tone-badge";
+import { HistoricoComentarios } from "@/components/proposta/historico-comentarios";
 
 export function TabFup({ propostaId, followups }: { propostaId: string; followups: any[] }) {
   const qc = useQueryClient();
@@ -88,47 +88,7 @@ export function TabFup({ propostaId, followups }: { propostaId: string; followup
         <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Histórico de comentários
         </p>
-        {/* Conversa: o que sai daqui fica à direita, com quem escreveu; o que
-            vem da integração fica à esquerda, em nome dela. */}
-        <div className="flex flex-col gap-3">
-          {followups.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhum comentário.</p>
-          )}
-          {[...followups]
-            .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
-            .map((f) => {
-              const nosso = f.tipo !== "banco";
-              const autor = nosso
-                ? `Agilliza · ${f.autor_nome ?? "operador"}`
-                : "HomeFin · integração";
-              return (
-                <div
-                  key={f.id}
-                  className={`flex ${nosso ? "justify-end" : "justify-start"} w-full`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-lg border p-3 ${
-                      nosso ? "border-primary/20 bg-primary/[0.06]" : "border-border bg-muted/40"
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold text-foreground">{autor}</span>
-                      {nosso && (
-                        <ToneBadge tone={f.tipo === "externo" ? "info" : "muted"}>
-                          {f.tipo === "externo" ? "enviado à HomeFin" : "interno"}
-                        </ToneBadge>
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(f.created_at).toLocaleString("pt-BR")}
-                      </span>
-                    </div>
-                    {f.titulo && <p className="mt-1 font-medium text-foreground">{f.titulo}</p>}
-                    <p className="text-sm text-muted-foreground">{f.comentario}</p>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
+        <HistoricoComentarios followups={followups} />
       </div>
     </div>
   );

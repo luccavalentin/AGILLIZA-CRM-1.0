@@ -25,6 +25,7 @@ import {
 import { propostaQueryOptions } from "./queries";
 import { grupoDoStatus, statusDoGrupo, type GrupoProposta } from "./status-grupos";
 import { aplicarFiltrosPropostas } from "./lista-filtros";
+import type { SituacaoDocumentacao } from "./documentacao-status";
 
 /** ===== Tipos de saída ===== */
 export interface PropostaBancoResumo {
@@ -52,6 +53,8 @@ export interface PropostaListaItem {
   corretor_nome: string | null;
   comercial_nome: string | null;
   bancos: PropostaBancoResumo[];
+  /** Selo da documentação (recebido/análise com SLA, aprovado, rejeitado). */
+  documentacao: SituacaoDocumentacao | null;
   deleted_at?: string | null;
   deleted_by?: string | null;
   deleted_motivo?: string | null;
@@ -65,6 +68,7 @@ export interface PropostaCompleta {
   documentos: any[];
   followups: any[];
   historico: any[];
+  documentacao: SituacaoDocumentacao | null;
 }
 
 async function correspondenteId(supabase: any, userId: string): Promise<string> {
@@ -323,6 +327,9 @@ export const listarPropostas = createServerFn({ method: "GET" })
         }
       }
 
+      const { situacoesDocumentacao } = await import("./documentacao.server");
+      const documentacaoPorProp = await situacoesDocumentacao(supabase, rows);
+
       const lista = rows.map((r: any) => {
         const responsavel_id = r.usuario_responsavel_id ?? r.usuario_criador_id ?? null;
         const imobId = r.cliente_id ? (imobPorCliente.get(r.cliente_id) ?? null) : null;
@@ -337,6 +344,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
           comercial_nome: comId ? (nomesPerfis.get(comId) ?? null) : null,
           nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
           bancos: bancosPorProp.get(r.id) ?? [],
+          documentacao: documentacaoPorProp.get(r.id) ?? null,
         };
       });
 
@@ -347,6 +355,26 @@ export const listarPropostas = createServerFn({ method: "GET" })
   );
 
 /** ===== Detalhe ===== */
+/**
+ * Nome de quem escreveu cada comentário: o histórico é lido como conversa, e
+ * "Interno" sem autor não diz quem falou.
+ */
+async function comNomeDoAutor(supabase: SupabaseClient<any, any, any>, fups: any[]) {
+  const autorIds = Array.from(
+    new Set(fups.map((f) => f.autor_id).filter((v): v is string => Boolean(v))),
+  );
+  if (autorIds.length > 0) {
+    const { data: autores } = await supabase.from("profiles").select("id, nome").in("id", autorIds);
+    const nomePorId = new Map<string, string>(
+      ((autores ?? []) as { id: string; nome: string | null }[])
+        .filter((p) => p.nome)
+        .map((p) => [p.id, p.nome as string]),
+    );
+    for (const f of fups) f.autor_nome = nomePorId.get(f.autor_id) ?? null;
+  }
+  return fups;
+}
+
 export const obterProposta = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
@@ -415,24 +443,11 @@ export const obterProposta = createServerFn({ method: "GET" })
       }
     }
 
-    // Nome de quem escreveu cada comentário: o histórico é lido como conversa,
-    // e "Interno" sem autor não diz quem falou.
-    const fups = (followups.data ?? []) as any[];
-    const autorIds = Array.from(
-      new Set(fups.map((f) => f.autor_id).filter((v): v is string => Boolean(v))),
-    );
-    if (autorIds.length > 0) {
-      const { data: autores } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .in("id", autorIds);
-      const nomePorId = new Map<string, string>(
-        ((autores ?? []) as { id: string; nome: string | null }[])
-          .filter((p) => p.nome)
-          .map((p) => [p.id, p.nome as string]),
-      );
-      for (const f of fups) f.autor_nome = nomePorId.get(f.autor_id) ?? null;
-    }
+    const fups = await comNomeDoAutor(supabase, (followups.data ?? []) as any[]);
+
+    const { situacoesDocumentacao } = await import("./documentacao.server");
+    const documentacao =
+      (await situacoesDocumentacao(supabase, [proposta as any])).get(proposta.id) ?? null;
 
     return {
       proposta,
@@ -441,6 +456,7 @@ export const obterProposta = createServerFn({ method: "GET" })
       documentos: documentos.data ?? [],
       followups: fups,
       historico: historico.data ?? [],
+      documentacao,
     };
   });
 
@@ -1576,6 +1592,48 @@ export const removerEnvolvido = createServerFn({ method: "POST" })
   });
 
 /** ===== Follow-ups ===== */
+
+/**
+ * Comentários da proposta para a janela "Ver comentários" (consulta de
+ * propostas e CRM): a conversa do FUP, os documentos recusados com o motivo
+ * dado na análise e o selo de documentação.
+ */
+export const listarComentariosProposta = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const [{ data: proposta, error }, { data: followups, error: erroFups }] = await Promise.all([
+      supabase
+        .from("propostas")
+        .select("id, numero_proposta, nome_cliente, status")
+        .eq("id", data.proposta_id)
+        .maybeSingle(),
+      supabase
+        .from("proposta_followups")
+        .select("*")
+        .eq("proposta_id", data.proposta_id)
+        .order("created_at", { ascending: false }),
+    ]);
+    if (error) throw new Error(error.message);
+    if (erroFups) throw new Error(erroFups.message);
+    if (!proposta) throw new Error("Proposta não encontrada.");
+
+    const { documentosRecusados, situacoesDocumentacao } = await import("./documentacao.server");
+    const [fups, recusados, documentacao] = await Promise.all([
+      comNomeDoAutor(supabase, (followups ?? []) as any[]),
+      documentosRecusados(supabase, data.proposta_id),
+      situacoesDocumentacao(supabase, [proposta as any]).then((m) => m.get(proposta.id) ?? null),
+    ]);
+    return {
+      numero_proposta: proposta.numero_proposta as string,
+      nome_cliente: (proposta.nome_cliente ?? null) as string | null,
+      followups: fups,
+      recusados,
+      documentacao,
+    };
+  });
+
 export const adicionarFollowup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>

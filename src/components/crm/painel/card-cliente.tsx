@@ -1,3 +1,4 @@
+import { lazy, Suspense, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Building2,
@@ -8,6 +9,7 @@ import {
   Clock,
   ExternalLink,
   KanbanSquare,
+  MessageSquareText,
   MoreHorizontal,
   Trash2,
   User,
@@ -26,7 +28,14 @@ import {
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { statusProposta } from "@/components/propostas/status";
+import { DocumentacaoProposta } from "@/components/propostas/documentacao-proposta";
 import { tempoRelativo, type PainelClienteItem } from "./utils";
+
+const ComentariosPropostaDialog = lazy(() =>
+  import("@/components/proposta/comentarios-proposta-dialog").then((m) => ({
+    default: m.ComentariosPropostaDialog,
+  })),
+);
 
 interface Props {
   cliente: PainelClienteItem;
@@ -74,6 +83,7 @@ export function CardCliente({
       ? "bg-destructive/10 text-destructive ring-destructive/25"
       : "bg-primary/10 text-primary ring-primary/20";
   const mostrarBloco = temProposta || dependente;
+  const [comentariosAbertos, setComentariosAbertos] = useState(false);
 
   return (
     <div
@@ -134,6 +144,11 @@ export function CardCliente({
                 </Link>
               </DropdownMenuItem>
             )}
+            {c.proposta_id && (
+              <DropdownMenuItem onClick={() => setComentariosAbertos(true)}>
+                <MessageSquareText className="mr-2 size-4" /> Ver comentários
+              </DropdownMenuItem>
+            )}
             {ehContrato && c.contrato_emitido_em && (
               <>
                 <DropdownMenuSeparator />
@@ -164,6 +179,9 @@ export function CardCliente({
           >
             {statusProposta(c.proposta_status).label}
           </span>
+        )}
+        {c.proposta_id && (
+          <DocumentacaoProposta propostaId={c.proposta_id} situacao={c.documentacao} />
         )}
         <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
           <Clock className="h-2.5 w-2.5" />
@@ -290,6 +308,18 @@ export function CardCliente({
             />
           </div>
         </div>
+      )}
+      {comentariosAbertos && c.proposta_id && (
+        // Cliques dentro da janela (portal) não podem abrir o cadastro do card.
+        <span className="contents" onClick={(e) => e.stopPropagation()}>
+          <Suspense fallback={null}>
+            <ComentariosPropostaDialog
+              open={comentariosAbertos}
+              onOpenChange={setComentariosAbertos}
+              propostaId={c.proposta_id}
+            />
+          </Suspense>
+        </span>
       )}
     </div>
   );

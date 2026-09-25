@@ -33,6 +33,7 @@ import {
   escolherSimulacaoBanco,
   statusDaAtividade,
   statusGlobalPorBancos,
+  statusSemRetrocederCredito,
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
 import {
@@ -56,6 +57,9 @@ const ORDEM_STATUS: PropostaStatus[] = [
   "engenharia_vistoria",
   "analise_juridica",
   "contrato_emitido",
+  // Sem ele, uma proposta registrada tinha índice -1 aqui e qualquer etapa do
+  // funil "avançava" sobre ela — na prática, voltava para trás.
+  "registrado",
 ];
 
 // statusDaEtapa foi extraído para ./enviar/helpers-retorno.server.ts
@@ -2342,8 +2346,9 @@ export async function sincronizarPropostaImpl({
     novoStatus = "cancelada";
   } else {
     // FONTE ÚNICA DE VERDADE: `propostas.status` é DERIVADO do estado atual de
-    // `proposta_bancos` (statusBancos) através da função centralizada.
-    let derivado: PropostaStatus | null = statusBancos;
+    // `proposta_bancos` (statusBancos) através da função centralizada — sem
+    // desfazer o que a proposta já andou depois do crédito (ver a função).
+    let derivado: PropostaStatus | null = statusSemRetrocederCredito(statusBancos, prop.status);
 
     // Verificação de integridade (Log de divergência pós-polling)
     if (derivado === "credito_recusado" && (algumAprovado || algumEmAnalise)) {

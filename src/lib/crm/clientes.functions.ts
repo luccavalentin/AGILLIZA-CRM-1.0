@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { mascararDocumento } from "@/lib/crm/documento";
+import type { SituacaoDocumentacao } from "@/lib/propostas/documentacao-status";
 import { toTitleCase } from "@/lib/utils";
 import {
   aplicarPadroesCliente,
@@ -630,6 +631,8 @@ export interface PainelStage {
     numero_proposta: string | null;
     proposta_id: string | null;
     proposta_status: string | null;
+    /** Selo da documentação da proposta (recebido/análise com SLA, aprovado, rejeitado). */
+    documentacao: SituacaoDocumentacao | null;
     nome_banco: string | null;
     numero_simulacao: string | null;
     simulacao_id: string | null;
@@ -689,6 +692,14 @@ export const listarPainel = createServerFn({ method: "GET" })
       return true;
     });
 
+    const { situacoesDocumentacao } = await import("@/lib/propostas/documentacao.server");
+    const documentacaoPorProp = await situacoesDocumentacao(
+      supabase,
+      filtradas
+        .filter((r: any) => r.proposta_id)
+        .map((r: any) => ({ id: String(r.proposta_id), status: r.proposta_status ?? null })),
+    );
+
     return stages.map((s) => ({
       codigo: s.codigo,
       nome: s.nome,
@@ -706,6 +717,9 @@ export const listarPainel = createServerFn({ method: "GET" })
           numero_proposta: r.numero_proposta ?? null,
           proposta_id: r.proposta_id ?? null,
           proposta_status: r.proposta_status ?? null,
+          documentacao: r.proposta_id
+            ? (documentacaoPorProp.get(String(r.proposta_id)) ?? null)
+            : null,
           nome_banco: r.nome_banco ?? null,
           numero_simulacao: r.numero_simulacao ?? null,
           simulacao_id: r.simulacao_id ?? null,

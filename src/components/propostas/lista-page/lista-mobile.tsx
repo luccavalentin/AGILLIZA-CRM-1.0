@@ -8,6 +8,7 @@ import { BancoLogo } from "@/components/bancos/banco-logo";
 import { StatusBancosProposta } from "@/components/proposta/status-bancos-proposta";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { MenuAcoesProposta } from "./menu-acoes-proposta";
+import { DocumentacaoProposta } from "@/components/propostas/documentacao-proposta";
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
@@ -193,8 +194,9 @@ export function ListaMobile({
                   <ChevronRight className="mb-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover/card:translate-x-0.5" />
                 </div>
 
-                <div className="mt-3">
+                <div className="mt-3 flex flex-col items-start gap-1.5">
                   <StatusBancosProposta bancos={p.bancos} fallbackStatus={p.status} />
+                  <DocumentacaoProposta propostaId={p.id} situacao={p.documentacao} />
                 </div>
               </div>
             </Card>
