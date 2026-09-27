@@ -444,6 +444,19 @@ export const obterProposta = createServerFn({ method: "GET" })
       }
     }
 
+    // Custas de documentação (despesas cartorárias financiadas): o valor mora
+    // na simulação de origem, e a proposta só guarda o "sim/não". A carta de
+    // análise precisa do valor para informá-lo ao cliente.
+    if (proposta.simulacao_id && (proposta as any).valor_despesas_financiadas == null) {
+      const { data: sim } = await supabase
+        .from("simulacoes")
+        .select("valor_despesas_financiadas, fg_financiar_despesas")
+        .eq("id", proposta.simulacao_id)
+        .maybeSingle();
+      (proposta as any).valor_despesas_financiadas = sim?.valor_despesas_financiadas ?? null;
+      (proposta as any).fg_financiar_despesas = sim?.fg_financiar_despesas ?? null;
+    }
+
     const fups = await comNomeDoAutor(supabase, (followups.data ?? []) as any[]);
 
     const { situacoesDocumentacao } = await import("./documentacao.server");

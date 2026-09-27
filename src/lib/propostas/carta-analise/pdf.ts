@@ -10,6 +10,15 @@
 import { jsPDF } from "jspdf";
 import type { CamposCarta, ModeloCarta } from "./dados";
 import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
+import logoOficial from "@/assets/brand/agilliza-logo-oficial.png";
+import logoClaro from "@/assets/brand/agilliza-logo-oficial-light.png";
+import simboloClaro from "@/assets/brand/agilliza-symbol-oficial-light.png";
+import {
+  capaModelo1 as arteCapaModelo1,
+  capaModelo2 as arteCapaModelo2,
+  paginaModelo1 as artePaginaModelo1,
+  paginaModelo2 as artePaginaModelo2,
+} from "./arte";
 
 type RGB = [number, number, number];
 
@@ -238,6 +247,11 @@ function paginaResumo(doc: jsPDF, tema: Tema, c: CamposCarta, parecer: string) {
       { rotulo: "Sistema de amortização", valor: c.sistemaAmortizacao },
       { rotulo: "Valor do imóvel", valor: c.valorImovel },
       { rotulo: "Valor do financiamento", valor: c.valorFinanciamento },
+      // Custas de documentação só entram quando a proposta as financia —
+      // quem não financia não vê a linha, em vez de ler "—".
+      ...(c.custasDocumentacao?.trim()
+        ? [{ rotulo: "Custas de documentação", valor: c.custasDocumentacao }]
+        : []),
       { rotulo: "1ª parcela", valor: c.primeiraParcela },
     ],
     114,
@@ -379,10 +393,7 @@ function capaModelo2(doc: jsPDF, c: CamposCarta, parecerCapa: string, total: num
 // ------------------------------------------------------------ modelo 3
 async function modelo3(doc: jsPDF, c: CamposCarta, parecer: string, incluirObservacoes: boolean) {
   const total = incluirObservacoes ? 3 : 2;
-  const [logo, foto] = await Promise.all([
-    imagem("/cartas/logo-colorido.jpg"),
-    imagem("/cartas/modelo3-foto.jpg"),
-  ]);
+  const [logo, foto] = await Promise.all([imagem(logoOficial), imagem("/cartas/modelo3-foto.jpg")]);
   const tema = TEMA_CLARO;
 
   const cabecalho = (pagina: number) => {
@@ -390,7 +401,7 @@ async function modelo3(doc: jsPDF, c: CamposCarta, parecer: string, incluirObser
     doc.rect(0, 0, W, 3, "F");
     fill(doc, VERMELHO);
     doc.rect(W * 0.7, 0, W * 0.3, 3, "F");
-    doc.addImage(logo, "JPEG", MX, 10, 40, 14.6, "logo", "FAST");
+    doc.addImage(logo, "PNG", MX, 10, 40, 14.6, "logo", "SLOW");
     fonte(doc, 7, "bold");
     cor(doc, NAVY);
     espacado(doc, `PARECER DE CRÉDITO   /   0${pagina}`, W - MX, 15, { align: "right" });
@@ -486,9 +497,12 @@ async function modelo3(doc: jsPDF, c: CamposCarta, parecer: string, incluirObser
     ["Produto", c.produto],
     ["Valor do imóvel", c.valorImovel],
     ["Valor do financiamento", c.valorFinanciamento],
+    ...(c.custasDocumentacao?.trim() ? [["Custas de documentação", c.custasDocumentacao]] : []),
     ["1ª parcela", c.primeiraParcela],
     ["Sistema de amortização", c.sistemaAmortizacao],
-  ].forEach(([r, val], i) => linhaTabela(r, val, 160 + i * 10));
+    // 8 linhas com as custas: a última fecha em 233mm, antes da caixa do
+    // parecer (236mm). Passar disso invade a caixa.
+  ].forEach(([r, val], i) => linhaTabela(r, val, 160 + i * 9));
   caixaParecer("RESULTADO DA ANÁLISE", 236);
   rodape(1);
 
@@ -516,6 +530,10 @@ async function modelo3(doc: jsPDF, c: CamposCarta, parecer: string, incluirObser
     ["Instituição financeira", c.banco],
     ["Valor do imóvel", c.valorImovel],
     ["Valor do financiamento", c.valorFinanciamento],
+    // Só quando a proposta financia as custas (ver `custasDaProposta`).
+    ...(c.custasDocumentacao?.trim()
+      ? ([["Custas de documentação", c.custasDocumentacao]] as [string, string][])
+      : []),
     ["1ª parcela", c.primeiraParcela],
     ["Sistema de amortização", c.sistemaAmortizacao],
     ["Parecer", parecer],
@@ -638,24 +656,30 @@ export async function gerarCartaAnalisePdf(
 
   const escuro = modelo === "modelo1";
   const tema = escuro ? TEMA_ESCURO : TEMA_CLARO;
-  const [capa, pagina] = await Promise.all([
-    imagem(`/cartas/${modelo}-capa.jpg`),
-    imagem(`/cartas/${modelo}-pagina.jpg`),
+  // A marca é a única imagem que sobrou: o resto do fundo é vetor. Nos dois
+  // modelos ela fica sobre fundo escuro, então é sempre a versão clara.
+  const [logo, simbolo] = await Promise.all([
+    imagem(logoClaro),
+    escuro ? imagem(simboloClaro) : Promise.resolve(""),
   ]);
 
-  doc.addImage(capa, "JPEG", 0, 0, W, H, "capa", "FAST");
+  const fundoCapa = () =>
+    escuro ? arteCapaModelo1(doc, logo, simbolo) : arteCapaModelo2(doc, logo);
+  const fundoPagina = () => (escuro ? artePaginaModelo1(doc, logo) : artePaginaModelo2(doc, logo));
+
+  fundoCapa();
   if (escuro) capaModelo1(doc, campos, parecer.curto, total);
   else capaModelo2(doc, campos, parecer.capa, total);
 
   doc.addPage();
-  doc.addImage(pagina, "JPEG", 0, 0, W, H, "pagina", "FAST");
+  fundoPagina();
   paginaResumo(doc, tema, campos, parecer.curto);
   rodapeInstitucional(doc, tema, 2, total);
 
   if (!incluirObservacoes) return doc;
 
   doc.addPage();
-  doc.addImage(pagina, "JPEG", 0, 0, W, H, "pagina", "FAST");
+  fundoPagina();
   paginaObservacoes(doc, tema, campos);
   rodapeInstitucional(doc, tema, 3, 3);
 

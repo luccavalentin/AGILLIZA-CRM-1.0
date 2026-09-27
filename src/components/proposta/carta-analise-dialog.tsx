@@ -59,6 +59,7 @@ const CAMPOS_SISTEMA: { chave: keyof CamposCarta; rotulo: string }[] = [
   { chave: "produto", rotulo: "Produto" },
   { chave: "valorImovel", rotulo: "Valor do imóvel" },
   { chave: "valorFinanciamento", rotulo: "Valor do financiamento" },
+  { chave: "custasDocumentacao", rotulo: "Custas de documentação" },
   { chave: "primeiraParcela", rotulo: "1ª parcela" },
   { chave: "sistemaAmortizacao", rotulo: "Sistema de amortização" },
   { chave: "prazo", rotulo: "Prazo" },

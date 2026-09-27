@@ -68,6 +68,8 @@ export interface CamposCarta {
   taxaJuros: string;
   rendaFamiliar: string;
   agencia: string;
+  /** Custas de documentação financiadas. Vazio quando a proposta não tem. */
+  custasDocumentacao: string;
   // Preenchidos pelo usuário
   vencimento: string;
   fgtsAprovado: string;
@@ -145,6 +147,19 @@ const dinheiro = (v: unknown) => {
   const n = num(v);
   return n == null ? "" : formatBRL(n);
 };
+/**
+ * Custas de documentação (despesas cartorárias) financiadas junto com o
+ * imóvel. A proposta guarda só o "sim/não"; o valor vem da simulação de
+ * origem, anexado em `obterProposta`. Sem valor, a linha não sai na carta.
+ */
+function custasDaProposta(proposta: any): string {
+  const financia =
+    proposta?.financia_despesas_cartorarias ?? proposta?.fg_financiar_despesas ?? null;
+  if (financia === false) return "";
+  const valor = num(proposta?.valor_despesas_financiadas);
+  return valor && valor > 0 ? formatBRL(valor) : "";
+}
+
 const dataBR = (d: Date) =>
   `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 
@@ -220,6 +235,9 @@ export function camposIniciaisCarta({
     taxaJuros: taxa ? `${taxa.toFixed(2).replace(".", ",")}% a.a.` : "",
     rendaFamiliar: dinheiro(proposta?.renda_total),
     agencia: String(banco?.agencia ?? proposta?.agencia ?? "").trim(),
+    // Só sai na carta quando a proposta financia as custas: o valor vem da
+    // simulação de origem (`valor_despesas_financiadas`).
+    custasDocumentacao: custasDaProposta(proposta),
     // Validade padrão da carta: 30 dias a partir da emissão.
     vencimento: dataBR(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 30)),
     fgtsAprovado:
