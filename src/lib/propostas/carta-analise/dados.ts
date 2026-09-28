@@ -213,7 +213,13 @@ export function camposIniciaisCarta({
   const indexadorBruto = String(
     banco?.codigo_indexador ?? proposta?.codigo_indexador_aprovado ?? "",
   ).trim();
-  const taxa = num(banco?.taxa_juros_ano) ?? num(proposta?.taxa_juros_ano_aprovado);
+  // Parcela e taxa saem da simulação daquele banco — o par que o cliente viu
+  // e que fecha entre si. Só cai para os campos da proposta quando a simulação
+  // de origem não está ligada (propostas antigas, sem `simulacao_banco_id`).
+  const taxa =
+    num(banco?.simulacao_taxa_juros_ano) ??
+    num(banco?.taxa_juros_ano) ??
+    num(proposta?.taxa_juros_ano_aprovado);
 
   return {
     numeroAnalise: String(banco?.numero_proposta_banco ?? proposta?.numero_proposta ?? "").trim(),
@@ -228,7 +234,9 @@ export function camposIniciaisCarta({
     valorFinanciamento: dinheiro(
       proposta?.valor_financiamento_aprovado ?? proposta?.valor_financiamento,
     ),
-    primeiraParcela: dinheiro(banco?.valor_parcela ?? proposta?.valor_parcela_aprovado),
+    primeiraParcela: dinheiro(
+      banco?.simulacao_valor_parcela ?? banco?.valor_parcela ?? proposta?.valor_parcela_aprovado,
+    ),
     sistemaAmortizacao: SISTEMAS[sistema] ?? sistema,
     prazo: prazo ? `${prazo} meses` : "",
     indexador: INDEXADORES[indexadorBruto.toUpperCase()] ?? indexadorBruto,

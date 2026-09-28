@@ -89,6 +89,54 @@ describe("camposIniciaisCarta", () => {
     hoje: new Date(2026, 8, 16),
   };
 
+  it("puxa parcela e taxa da simulação daquele banco", () => {
+    // Caso da PRO-000577 (25/09/2026): o Itaú simulou 4.421,76 a 13,85% a.a.
+    // e, na aprovação, o sync gravou 3.611,16 em `valor_parcela` sem mexer na
+    // taxa. Ler `proposta_bancos` dava um par impossível — a 13,85% só
+    // amortização + juros já somam R$ 4.366,63 em 320.000/360 meses.
+    const c = camposIniciaisCarta({
+      ...base,
+      banco: {
+        ...base.banco,
+        nome_banco: "Itaú",
+        valor_parcela: 3611.16,
+        taxa_juros_ano: 13.85,
+        simulacao_valor_parcela: 4421.76,
+        simulacao_taxa_juros_ano: 13.85,
+      },
+    });
+    expect(c.primeiraParcela).toMatch(/4\.421,76/);
+    expect(c.taxaJuros).toBe("13,85% a.a.");
+  });
+
+  it("sem simulação ligada, cai para os campos da proposta", () => {
+    // Propostas antigas não têm `simulacao_banco_id`; a carta não pode sair
+    // em branco por causa disso.
+    const c = camposIniciaisCarta({
+      ...base,
+      banco: { ...base.banco, simulacao_valor_parcela: null, simulacao_taxa_juros_ano: null },
+    });
+    expect(c.primeiraParcela).toMatch(/5\.303,59/);
+    expect(c.taxaJuros).toBe("13,85% a.a.");
+  });
+
+  it("cada banco leva a parcela da própria simulação", () => {
+    const daSimulacao = (nome: string, parcela: number, taxa: number) =>
+      camposIniciaisCarta({
+        ...base,
+        banco: {
+          ...base.banco,
+          nome_banco: nome,
+          simulacao_valor_parcela: parcela,
+          simulacao_taxa_juros_ano: taxa,
+        },
+      });
+    expect(daSimulacao("Bradesco", 4430.24, 13.85).primeiraParcela).toMatch(/4\.430,24/);
+    expect(daSimulacao("Itaú", 4421.76, 13.85).primeiraParcela).toMatch(/4\.421,76/);
+    expect(daSimulacao("Santander", 4307.99, 13.29).primeiraParcela).toMatch(/4\.307,99/);
+    expect(daSimulacao("Santander", 4307.99, 13.29).taxaJuros).toBe("13,29% a.a.");
+  });
+
   it("preenche o que o sistema já tem", () => {
     const c = camposIniciaisCarta(base);
     expect(c.numeroAnalise).toBe("5526325");

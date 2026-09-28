@@ -432,15 +432,22 @@ export const obterProposta = createServerFn({ method: "GET" })
     if (simBancoIds.length) {
       const { data: simBancos } = await supabase
         .from("simulacao_bancos")
-        .select("id, raw_response")
+        .select("id, raw_response, valor_parcela, taxa_juros_ano")
         .in("id", simBancoIds);
-      const rawPorId = new Map<string, any>(
-        (simBancos ?? []).map((s: any) => [s.id, s.raw_response]),
-      );
+      const simPorId = new Map<string, any>((simBancos ?? []).map((s: any) => [s.id, s]));
       for (const b of bancosProp) {
+        const sim = b.simulacao_banco_id ? simPorId.get(b.simulacao_banco_id) : null;
         if (b.simulacao_banco_id && b.raw_response == null) {
-          b.raw_response = rawPorId.get(b.simulacao_banco_id) ?? null;
+          b.raw_response = sim?.raw_response ?? null;
         }
+        // Parcela e taxa como a simulação daquele banco devolveu. São os dois
+        // números que o cliente viu na cotação e o único par comprovadamente
+        // coerente entre si: a conferência de 12.318 simulações (28/09/2026)
+        // não achou uma única divergência em relação ao `raw_response`. O
+        // sync da aprovação troca a parcela sem trocar a taxa, e quem lê
+        // `proposta_bancos` acaba com um par impossível.
+        b.simulacao_valor_parcela = sim?.valor_parcela ?? null;
+        b.simulacao_taxa_juros_ano = sim?.taxa_juros_ano ?? null;
       }
     }
 
