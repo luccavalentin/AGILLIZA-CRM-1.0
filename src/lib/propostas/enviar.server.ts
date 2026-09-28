@@ -1985,6 +1985,53 @@ export async function sincronizarPropostasAtivas({
  *  2. a etapa ativa do funil (Engenharia / Jurídica / Contrato / Registro) e
  *     `tipoSituacao` da oportunidade (T = Contrato / C = Cancelada).
  */
+/**
+ * Os quatro valores "aprovado" da proposta a partir do que o banco devolveu.
+ *
+ * Com a simulação aprovada em mãos, os quatro campos são os da aprovação,
+ * exatamente: o que o banco não mandou fica vazio. Herdar o valor da simulação
+ * misturava estimativa com aprovação e produzia conjunto impossível — a
+ * PRO-000577 (25/09/2026) ficou com a parcela da aprovação (R$ 3.611,16) e a
+ * taxa da simulação (13,85% a.a.), taxa na qual só amortização + juros já dão
+ * R$ 4.366,63, mais que a parcela inteira. Como a carta não imprime a taxa, o
+ * número falso passava despercebido.
+ *
+ * Enquanto não há aprovação, preenche só o que chega e não apaga nada: o
+ * polling lê a oportunidade várias vezes e uma leitura parcial não pode zerar
+ * dado bom.
+ */
+export function camposAprovadosDoBanco({
+  op,
+  simulacaoEscolhida,
+  aprovado,
+}: {
+  op: any;
+  simulacaoEscolhida: any;
+  aprovado: boolean;
+}): Record<string, unknown> {
+  const escolhida = simulacaoEscolhida ?? {};
+  const vFin = op?.valorFinanciamentoBanco ?? escolhida.valorFinanciamentoBanco;
+  const vParc = op?.valorParcelaBanco ?? escolhida.valorParcelaBanco;
+  const vPrazo = op?.prazoPagamentoBanco ?? escolhida.prazoPagamentoBanco;
+  const vTaxa = op?.taxaJurosAnoBanco ?? escolhida.taxaJurosAnoBanco;
+
+  if (simulacaoEscolhida != null && aprovado) {
+    return {
+      valor_financiamento_aprovado: vFin ?? null,
+      valor_parcela_aprovado: vParc ?? null,
+      prazo_aprovado: vPrazo ?? null,
+      taxa_juros_ano_aprovado: vTaxa ?? null,
+    };
+  }
+
+  const campos: Record<string, unknown> = {};
+  if (vFin != null) campos.valor_financiamento_aprovado = vFin;
+  if (vParc != null) campos.valor_parcela_aprovado = vParc;
+  if (vPrazo != null) campos.prazo_aprovado = vPrazo;
+  if (vTaxa != null) campos.taxa_juros_ano_aprovado = vTaxa;
+  return campos;
+}
+
 export async function sincronizarPropostaImpl({
   propostaId,
   userId,
@@ -2525,14 +2572,10 @@ export async function sincronizarPropostaImpl({
   const referenciaEscolhida = referenciaIntegracaoBanco(escolhida);
   if (op?.codigoOportunidadeBanco || referenciaEscolhida)
     patch.codigo_oportunidade_homefin = op?.codigoOportunidadeBanco ?? referenciaEscolhida;
-  const vFin = op?.valorFinanciamentoBanco ?? escolhida.valorFinanciamentoBanco;
-  const vParc = op?.valorParcelaBanco ?? escolhida.valorParcelaBanco;
-  const vPrazo = op?.prazoPagamentoBanco ?? escolhida.prazoPagamentoBanco;
-  const vTaxa = op?.taxaJurosAnoBanco ?? escolhida.taxaJurosAnoBanco;
-  if (vFin != null) patch.valor_financiamento_aprovado = vFin;
-  if (vParc != null) patch.valor_parcela_aprovado = vParc;
-  if (vPrazo != null) patch.prazo_aprovado = vPrazo;
-  if (vTaxa != null) patch.taxa_juros_ano_aprovado = vTaxa;
+  Object.assign(
+    patch,
+    camposAprovadosDoBanco({ op, simulacaoEscolhida: simEscolhida, aprovado: algumAprovado }),
+  );
 
   const mudouStatus = statusEfetivo !== prop.status;
   if (mudouStatus) {

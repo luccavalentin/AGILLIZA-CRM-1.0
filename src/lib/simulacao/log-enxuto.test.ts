@@ -1,14 +1,38 @@
 import { describe, it, expect } from "vitest";
 import { enxugarRespostaDeLog } from "./homefin.server";
 
-/** Resposta real do `GET /oportunidade/{id}`, encurtada. */
+/**
+ * Resposta do `GET /oportunidade/{id}` com o peso que ela tem em produção:
+ * etapas e participantes completos. É esse peso que o resumo existe para
+ * jogar fora — uma fixture enxuta demais faria a asserção de tamanho medir
+ * ruído em vez do ganho real.
+ */
 const oportunidade = {
   etapa: [
-    { idEtapa: 1, nomeEtapa: "Simulação", active: true, completed: false },
-    { idEtapa: 2, nomeEtapa: "Crédito", active: false, completed: false },
+    {
+      idEtapa: 1,
+      nomeEtapa: "Simulação",
+      ordemEtapa: 1,
+      active: true,
+      completed: false,
+      dataHoraCriacao: "2026-09-25T19:37:45.000Z",
+      dataHoraAlteracao: "2026-09-25T19:38:18.000Z",
+    },
+    {
+      idEtapa: 2,
+      nomeEtapa: "Crédito",
+      ordemEtapa: 2,
+      active: false,
+      completed: false,
+      dataHoraCriacao: "2026-09-25T19:37:45.000Z",
+      dataHoraAlteracao: null,
+    },
   ],
   oportunidade: { tipoSituacao: "A", codigoOportunidadeBanco: "XPTO-1" },
-  participantes: [{ idParticipante: 1 }, { idParticipante: 2 }],
+  participantes: [
+    { idParticipante: 1, nome: "Fulano de Tal", cpf: "00000000000", tipoSituacao: "A" },
+    { idParticipante: 2, nome: "Beltrana de Tal", cpf: "11111111111", tipoSituacao: "A" },
+  ],
   simulacoes: [{ idSimulacao: 89125, tipoSituacao: "A", valorParcelaBanco: 5927.14, lixo: "x" }],
 };
 
@@ -96,6 +120,47 @@ describe("log da integração — envelope `oportunidade`", () => {
     expect(santander.dataHoraRetornoIntegracao).toBeNull();
     const bradesco = r.simulacoes.find((s: any) => s.idBanco === 45);
     expect(bradesco.valorParcelaBanco).toBe(4827.11);
+  });
+
+  it("guarda os quatro valores que o sync grava como aprovado", () => {
+    // Forma real do retorno da PRO-000577 (25/09/2026): o resumo guardava só a
+    // parcela, então não dava para dizer se a taxa tinha vindo do banco ou se
+    // era resto da simulação. Sem os quatro, o log não audita a carta.
+    const aprovada = {
+      oportunidade: {
+        tipoSituacao: "A",
+        simulacoes: [
+          {
+            idSimulacao: 113920,
+            idBanco: 61,
+            tipoSituacao: "A",
+            valorParcelaBanco: 3611.16,
+            taxaJurosAnoBanco: 10.31,
+            valorFinanciamentoBanco: 320000,
+            prazoPagamentoBanco: 360,
+          },
+        ],
+      },
+    };
+    const r = enxugarRespostaDeLog("/oportunidade/33616", "GET", 200, aprovada) as any;
+    const itau = r.simulacoes[0];
+    expect(itau.valorParcelaBanco).toBe(3611.16);
+    expect(itau.taxaJurosAnoBanco).toBe(10.31);
+    expect(itau.valorFinanciamentoBanco).toBe(320000);
+    expect(itau.prazoPagamentoBanco).toBe(360);
+  });
+
+  it("distingue taxa ausente de taxa zero", () => {
+    // `null` explícito é a prova de que o banco omitiu o campo — é o que
+    // autoriza o sync a deixar o campo aprovado vazio em vez de herdar a
+    // simulação.
+    const semTaxa = {
+      oportunidade: {
+        simulacoes: [{ idSimulacao: 1, idBanco: 61, valorParcelaBanco: 3611.16 }],
+      },
+    };
+    const r = enxugarRespostaDeLog("/oportunidade/1", "GET", 200, semTaxa) as any;
+    expect(r.simulacoes[0].taxaJurosAnoBanco).toBeNull();
   });
 
   it("regressão: ler só a raiz devolvia lista vazia", () => {

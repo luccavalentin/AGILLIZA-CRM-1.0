@@ -151,6 +151,14 @@ export function enxugarRespostaDeLog(
       idBanco: s?.idBanco ?? null,
       tipoSituacao: s?.tipoSituacao ?? null,
       valorParcelaBanco: s?.valorParcelaBanco ?? null,
+      // Os outros três valores que o sync grava como "aprovado". Sem eles no
+      // log não há como auditar de onde saiu cada número da carta: em
+      // 25/09/2026 uma proposta ficou com a parcela da aprovação e a taxa da
+      // simulação, e o log resumido não permitia dizer se o banco tinha
+      // mandado a taxa ou omitido.
+      taxaJurosAnoBanco: s?.taxaJurosAnoBanco ?? null,
+      valorFinanciamentoBanco: s?.valorFinanciamentoBanco ?? null,
+      prazoPagamentoBanco: s?.prazoPagamentoBanco ?? null,
       // Campos que dizem se o banco assíncrono já respondeu. Sem eles não há
       // como distinguir "o banco ainda não devolveu" de "a leitura falhou".
       codigoSituacaoBanco: s?.codigoSituacaoBanco ?? null,
