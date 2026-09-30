@@ -13,18 +13,20 @@
  *   Depois dela (aprovado, condicionado e etapas seguintes) o andamento vem do
  *   robô dos portais (`automacao-portal-banco`) e o agendador NÃO consulta
  *   mais. Recusa já é final para todos os bancos.
- * - Bradesco: o follow-up vem pela HomeFin, então continua sendo consultado,
- *   só que espaçado.
+ * - Bradesco: depois da decisão de crédito, UMA consulta por dia. Ela não
+ *   busca mais aprovado/recusado; serve para trazer os comentários
+ *   (`atividadesOportunidade` → Follow-up), a situação dos documentos e as
+ *   etapas seguintes, que só chegam por essa consulta (a API não tem webhook).
  *
  * | Fase (horário comercial)                   | Itaú / Santander | Bradesco                    |
  * |--------------------------------------------|------------------|-----------------------------|
  * | Análise de crédito, 1ª hora após o envio   | 2 min            | 5 min (a 1ª só 5 min após o envio)|
  * | Análise de crédito, depois da 1ª hora      | 10 min           | 10 min                      |
- * | Aprovada / condicionada / etapas seguintes | não consulta     | 30 min                      |
+ * | Aprovada / condicionada / etapas seguintes | não consulta     | 1 vez por dia (24 h)        |
  *
  * Fora do horário comercial (antes das 8h, depois das 20h, sábado e domingo):
- * análise a cada 30 min, demais fases a cada 3 h. Proposta sem nenhuma
- * mudança há mais de 7 dias: no máximo a cada 4 h.
+ * análise a cada 30 min. Análise sem nenhuma mudança há mais de 7 dias: no
+ * máximo a cada 4 h.
  *
  * Encerradas (cancelada, recusada, contrato, registrado) nem chegam aqui: quem
  * seleciona as candidatas já as exclui. Abrir a proposta e o botão "Atualizar
@@ -112,17 +114,18 @@ export function intervaloMinimoMinutos(p: PropostaParaSincronizar, agora = Date.
   const analise = FASE_ANALISE.has(String(p.status ?? ""));
   const banco = bancoDe(p.nome_banco);
 
+  // Depois da decisão de crédito: uma vez por dia, em qualquer horário.
+  if (!analise) return 24 * 60;
+
   let intervalo: number;
   if (!emHorarioComercial(agora)) {
-    intervalo = analise ? 30 : 180;
-  } else if (analise) {
+    intervalo = 30;
+  } else {
     // A resposta do crédito sai em minutos (Itaú/Santander em menos de 1,
     // Bradesco em ~8): o ritmo curto só vale para a primeira hora.
     const enviada = paraMs(p.enviada_em) ?? marcoDeAtividade(p);
     const primeiraHora = enviada !== null && agora - enviada < 60 * 60_000;
     intervalo = !primeiraHora ? 10 : banco === "bradesco" ? 5 : 2;
-  } else {
-    intervalo = 30;
   }
 
   const marco = marcoDeAtividade(p);

@@ -31,7 +31,6 @@ import {
 } from "@/components/proposta/visualizacao/proposta-skeletons";
 import { PropostaView } from "@/components/proposta/visualizacao/proposta-view";
 import { EnvioProgresso } from "@/components/proposta/envio-progresso";
-import { andamentoForaDaHomefin } from "@/lib/propostas/sync-backoff";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id")({
   head: () => ({ meta: [{ title: "Proposta — Agilliza" }] }),
@@ -334,20 +333,18 @@ function PropostaRoute() {
       !!(b.numero_proposta_banco || b.homefin_id_proposta || b.codigo_oportunidade_homefin),
   );
 
-  const propostaNomeBanco = data?.proposta?.nome_banco as string | undefined;
-
   React.useEffect(() => {
     const terminais = ["contrato_emitido", "cancelada", "credito_recusado", "rascunho"];
     if (!propostaStatus || terminais.includes(propostaStatus)) return;
     if (!temProtocoloBanco) return;
-    // Itaú/Santander depois do crédito: o andamento vem do robô dos portais,
-    // não da HomeFin (ver `sync-backoff.ts`). O botão "Atualizar status" segue.
-    const proposta = { status: propostaStatus, nome_banco: propostaNomeBanco };
-    if (andamentoForaDaHomefin(proposta)) return;
+    // Depois da decisão de crédito a tela não consulta sozinha: Itaú/Santander
+    // vêm do robô dos portais e o Bradesco é consultado 1 vez por dia pelo
+    // agendador (ver `sync-backoff.ts`). O botão "Atualizar status" segue.
+    const analise = ["enviada_banco", "em_analise_credito"].includes(propostaStatus);
+    if (!analise) return;
     let cancelado = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
-    const analise = ["enviada_banco", "em_analise_credito"].includes(propostaStatus);
-    const BASE = (analise ? 5 : 30) * 60_000;
+    const BASE = 5 * 60_000;
     let intervalo = BASE;
 
     const tick = async () => {
@@ -367,7 +364,7 @@ function PropostaRoute() {
       cancelado = true;
       if (timer) clearTimeout(timer);
     };
-  }, [id, propostaStatus, propostaNomeBanco, temProtocoloBanco, sincronizarAutoFn, qc]);
+  }, [id, propostaStatus, temProtocoloBanco, sincronizarAutoFn, qc]);
 
   React.useEffect(() => {
     // Espera os bancos carregarem: é por eles que se sabe se o envio é a um

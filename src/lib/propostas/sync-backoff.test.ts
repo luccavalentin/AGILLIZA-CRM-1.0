@@ -73,25 +73,29 @@ describe("intervalo por banco e fase", () => {
     }
   });
 
-  it("Bradesco aprovado e etapas seguintes: 30 min", () => {
+  it("Bradesco depois da decisão de crédito: 1 vez por dia, em qualquer horário", () => {
     for (const status of POS_CREDITO) {
       const p = { status, nome_banco: "Bradesco", status_atualizado_em: minAtras(COMERCIAL, 60) };
-      expect(intervaloMinimoMinutos(p, COMERCIAL)).toBe(30);
+      expect(intervaloMinimoMinutos(p, COMERCIAL)).toBe(24 * 60);
+      expect(intervaloMinimoMinutos(p, NOITE)).toBe(24 * 60);
+      expect(intervaloMinimoMinutos(p, SABADO)).toBe(24 * 60);
     }
   });
 
-  it("fora do horário: análise 30 min, demais 3 h", () => {
-    const base = { status_atualizado_em: minAtras(NOITE, 30), nome_banco: "Bradesco" };
-    expect(intervaloMinimoMinutos({ ...base, status: "em_analise_credito" }, NOITE)).toBe(30);
-    expect(intervaloMinimoMinutos({ ...base, status: "credito_aprovado" }, NOITE)).toBe(180);
-    expect(intervaloMinimoMinutos({ ...base, status: "credito_aprovado" }, SABADO)).toBe(180);
+  it("análise fora do horário: 30 min", () => {
+    const p = {
+      status: "em_analise_credito",
+      nome_banco: "Bradesco",
+      enviada_em: minAtras(NOITE, 20),
+    };
+    expect(intervaloMinimoMinutos(p, NOITE)).toBe(30);
   });
 
-  it("parada há mais de 7 dias: no máximo a cada 4 h", () => {
+  it("análise parada há mais de 7 dias: no máximo a cada 4 h", () => {
     const parada = {
-      status: "credito_aprovado",
+      status: "em_analise_credito",
       nome_banco: "Bradesco",
-      status_atualizado_em: minAtras(COMERCIAL, 8 * 24 * 60),
+      enviada_em: minAtras(COMERCIAL, 8 * 24 * 60),
     };
     expect(intervaloMinimoMinutos(parada, COMERCIAL)).toBe(240);
   });
@@ -110,12 +114,12 @@ describe("decisão de consultar agora", () => {
       nome_banco: "Bradesco",
       status_atualizado_em: minAtras(COMERCIAL, 60),
     };
-    expect(devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 20) }, COMERCIAL)).toBe(
-      false,
-    );
-    expect(devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 30) }, COMERCIAL)).toBe(
-      true,
-    );
+    expect(
+      devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 23 * 60) }, COMERCIAL),
+    ).toBe(false);
+    expect(
+      devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 24 * 60) }, COMERCIAL),
+    ).toBe(true);
   });
 
   it("usa a leitura mais recente entre o estado do servidor e a da proposta", () => {
