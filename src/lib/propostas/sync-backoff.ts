@@ -17,12 +17,15 @@
  *   busca mais aprovado/recusado; serve para trazer os comentários
  *   (`atividadesOportunidade` → Follow-up), a situação dos documentos e as
  *   etapas seguintes, que só chegam por essa consulta (a API não tem webhook).
+ *   A situação dos documentos (`GET /documentos`) vai junto, só quando há
+ *   documento enviado à HomeFin — no máximo 1 por dia também. Sábado e
+ *   domingo não consulta; o que chegar no fim de semana entra na segunda.
  *
  * | Fase (horário comercial)                   | Itaú / Santander | Bradesco                    |
  * |--------------------------------------------|------------------|-----------------------------|
  * | Análise de crédito, 1ª hora após o envio   | 2 min            | 5 min (a 1ª só 5 min após o envio)|
  * | Análise de crédito, depois da 1ª hora      | 10 min           | 10 min                      |
- * | Aprovada / condicionada / etapas seguintes | não consulta     | 1 vez por dia (24 h)        |
+ * | Aprovada / condicionada / etapas seguintes | não consulta     | 1 vez por dia útil          |
  *
  * Fora do horário comercial (antes das 8h, depois das 20h, sábado e domingo):
  * análise a cada 30 min. Análise sem nenhuma mudança há mais de 7 dias: no
@@ -82,17 +85,29 @@ export function andamentoForaDaHomefin(p: PropostaParaSincronizar): boolean {
   return fonteDoAndamento(p.nome_banco) === "portal_banco";
 }
 
-/** Dias úteis das 8h às 20h, no horário de Brasília. */
-export function emHorarioComercial(agora = Date.now()): boolean {
+function agoraEmBrasilia(agora: number): { dia: string; hora: number } {
   const partes = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Sao_Paulo",
     weekday: "short",
     hour: "numeric",
     hourCycle: "h23",
   }).formatToParts(new Date(agora));
-  const dia = partes.find((p) => p.type === "weekday")?.value ?? "";
-  const hora = Number(partes.find((p) => p.type === "hour")?.value ?? "0");
-  if (dia === "Sat" || dia === "Sun") return false;
+  return {
+    dia: partes.find((p) => p.type === "weekday")?.value ?? "",
+    hora: Number(partes.find((p) => p.type === "hour")?.value ?? "0"),
+  };
+}
+
+/** Sábado ou domingo, no horário de Brasília. */
+export function emFimDeSemana(agora = Date.now()): boolean {
+  const { dia } = agoraEmBrasilia(agora);
+  return dia === "Sat" || dia === "Sun";
+}
+
+/** Dias úteis das 8h às 20h, no horário de Brasília. */
+export function emHorarioComercial(agora = Date.now()): boolean {
+  if (emFimDeSemana(agora)) return false;
+  const { hora } = agoraEmBrasilia(agora);
   return hora >= 8 && hora < 20;
 }
 
@@ -144,6 +159,8 @@ export function intervaloMinimoMinutos(p: PropostaParaSincronizar, agora = Date.
 export function devesincronizar(p: PropostaParaSincronizar, agora = Date.now()): boolean {
   if (andamentoForaDaHomefin(p)) return false;
   const analise = FASE_ANALISE.has(String(p.status ?? ""));
+  // Pós-crédito não consulta no fim de semana: a de segunda cobre o período.
+  if (!analise && emFimDeSemana(agora)) return false;
   const enviada = paraMs(p.enviada_em);
   if (
     analise &&

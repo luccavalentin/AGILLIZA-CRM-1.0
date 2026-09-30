@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   andamentoForaDaHomefin,
   devesincronizar,
+  emFimDeSemana,
   emHorarioComercial,
   filtrarParaSincronizar,
   intervaloMinimoMinutos,
@@ -80,6 +81,27 @@ describe("intervalo por banco e fase", () => {
       expect(intervaloMinimoMinutos(p, NOITE)).toBe(24 * 60);
       expect(intervaloMinimoMinutos(p, SABADO)).toBe(24 * 60);
     }
+  });
+
+  it("Bradesco depois do crédito não consulta no sábado nem no domingo", () => {
+    const DOMINGO = new Date("2026-09-20T15:00:00Z").getTime();
+    const SEGUNDA = new Date("2026-09-21T11:00:00Z").getTime();
+    expect(emFimDeSemana(SABADO)).toBe(true);
+    expect(emFimDeSemana(DOMINGO)).toBe(true);
+    expect(emFimDeSemana(SEGUNDA)).toBe(false);
+    const p = {
+      status: "credito_aprovado",
+      nome_banco: "Bradesco",
+      // Última consulta na sexta.
+      ultima_consulta_em: new Date("2026-09-18T15:00:00Z").toISOString(),
+    };
+    expect(devesincronizar(p, SABADO)).toBe(false);
+    expect(devesincronizar(p, DOMINGO)).toBe(false);
+    expect(devesincronizar(p, SEGUNDA)).toBe(true);
+    // A análise de crédito segue no fim de semana.
+    expect(devesincronizar({ status: "em_analise_credito", nome_banco: "Bradesco" }, SABADO)).toBe(
+      true,
+    );
   });
 
   it("análise fora do horário: 30 min", () => {
