@@ -2,28 +2,35 @@
  * Ritmo do polling de propostas.
  *
  * A integração não tem webhook — a única forma de saber o andamento é
- * consultar `GET /oportunidade/{id}`. Consultar toda proposta ativa o tempo
- * todo custava ~110 mil chamadas por semana com 6 usuários, 99,8% delas com a
- * resposta idêntica à anterior (levantamento de 18/09/2026).
+ * consultar `GET /oportunidade/{id}`. Em 30/09/2026 a HomeFin apontou uma
+ * média de ~1.000 consultas por proposta: o ritmo antigo (2 min nas fases
+ * pós-crédito) dava ~370 consultas por dia útil numa proposta condicionada,
+ * que fica semanas nessa fase.
  *
- * Regras (definidas com o Lucca em 18/09/2026), em horário comercial:
+ * Regras (definidas com o Lucca em 30/09/2026):
  *
- * | Fase                                      | Itaú / Santander | Bradesco                     |
- * |-------------------------------------------|------------------|------------------------------|
- * | Análise de crédito (enviada, em análise)  | 1 min            | 5 min após o envio, depois 3 |
- * | Aprovada / condicionada / etapas seguintes| 2 min            | 10 min                       |
+ * - Itaú e Santander: a HomeFin só serve para trazer a decisão de crédito.
+ *   Depois dela (aprovado, condicionado e etapas seguintes) o andamento vem do
+ *   robô dos portais (`automacao-portal-banco`) e o agendador NÃO consulta
+ *   mais. Recusa já é final para todos os bancos.
+ * - Bradesco: o follow-up vem pela HomeFin, então continua sendo consultado,
+ *   só que espaçado.
+ *
+ * | Fase (horário comercial)                   | Itaú / Santander | Bradesco                    |
+ * |--------------------------------------------|------------------|-----------------------------|
+ * | Análise de crédito, 1ª hora após o envio   | 2 min            | 5 min (a 1ª só 5 min após o envio)|
+ * | Análise de crédito, depois da 1ª hora      | 10 min           | 10 min                      |
+ * | Aprovada / condicionada / etapas seguintes | não consulta     | 30 min                      |
  *
  * Fora do horário comercial (antes das 8h, depois das 20h, sábado e domingo):
- * análise a cada 15 min, demais fases a cada 1 h. O Bradesco leva ~8 min para
- * responder o crédito (mediana de 30 dias), Itaú e Santander menos de 1 min.
- *
- * Proposta sem nenhuma mudança há mais de 30 dias: no máximo de hora em hora
- * (foi o caso das 26 mil consultas numa única oportunidade parada).
+ * análise a cada 30 min, demais fases a cada 3 h. Proposta sem nenhuma
+ * mudança há mais de 7 dias: no máximo a cada 4 h.
  *
  * Encerradas (cancelada, recusada, contrato, registrado) nem chegam aqui: quem
  * seleciona as candidatas já as exclui. Abrir a proposta e o botão "Atualizar
  * status" continuam consultando na hora.
  */
+import { fonteDoAndamento } from "@/lib/bancos/etapas-banco";
 
 export interface PropostaParaSincronizar {
   status?: string | null;
@@ -64,6 +71,15 @@ function bancoDe(nome: unknown): Banco {
   return "outro";
 }
 
+/**
+ * A decisão de crédito já saiu e o andamento dali em diante não vem da
+ * HomeFin (Itaú e Santander, pelo robô dos portais). Consultar seria só carga.
+ */
+export function andamentoForaDaHomefin(p: PropostaParaSincronizar): boolean {
+  if (FASE_ANALISE.has(String(p.status ?? ""))) return false;
+  return fonteDoAndamento(p.nome_banco) === "portal_banco";
+}
+
 /** Dias úteis das 8h às 20h, no horário de Brasília. */
 export function emHorarioComercial(agora = Date.now()): boolean {
   const partes = new Intl.DateTimeFormat("en-US", {
@@ -98,26 +114,32 @@ export function intervaloMinimoMinutos(p: PropostaParaSincronizar, agora = Date.
 
   let intervalo: number;
   if (!emHorarioComercial(agora)) {
-    intervalo = analise ? 15 : 60;
+    intervalo = analise ? 30 : 180;
   } else if (analise) {
-    intervalo = banco === "bradesco" ? 3 : 1;
+    // A resposta do crédito sai em minutos (Itaú/Santander em menos de 1,
+    // Bradesco em ~8): o ritmo curto só vale para a primeira hora.
+    const enviada = paraMs(p.enviada_em) ?? marcoDeAtividade(p);
+    const primeiraHora = enviada !== null && agora - enviada < 60 * 60_000;
+    intervalo = !primeiraHora ? 10 : banco === "bradesco" ? 5 : 2;
   } else {
-    intervalo = banco === "bradesco" ? 10 : 2;
+    intervalo = 30;
   }
 
   const marco = marcoDeAtividade(p);
-  if (marco !== null && agora - marco > 30 * 24 * 3_600_000) {
-    intervalo = Math.max(intervalo, 60);
+  if (marco !== null && agora - marco > 7 * 24 * 3_600_000) {
+    intervalo = Math.max(intervalo, 240);
   }
   return intervalo;
 }
 
 /**
  * A proposta já pode ser consultada de novo?
- * Nunca consultada sempre pode. O Bradesco em análise espera 5 min após o
- * envio antes da primeira consulta (ele não responde antes disso).
+ * Nunca consultada sempre pode, exceto quando o andamento não vem mais da
+ * HomeFin. O Bradesco em análise espera 5 min após o envio antes da primeira
+ * consulta (ele não responde antes disso).
  */
 export function devesincronizar(p: PropostaParaSincronizar, agora = Date.now()): boolean {
+  if (andamentoForaDaHomefin(p)) return false;
   const analise = FASE_ANALISE.has(String(p.status ?? ""));
   const enviada = paraMs(p.enviada_em);
   if (
@@ -134,7 +156,7 @@ export function devesincronizar(p: PropostaParaSincronizar, agora = Date.now()):
   if (leituras.length === 0) return true;
   const ultima = Math.max(...leituras);
   // Tolerância de 10 s: o agendador roda de minuto em minuto e a consulta
-  // anterior leva alguns segundos — sem ela, "1 min" viraria 2 na prática.
+  // anterior leva alguns segundos — sem ela, "2 min" viraria 3 na prática.
   return agora - ultima >= intervaloMinimoMinutos(p, agora) * 60_000 - 10_000;
 }
 

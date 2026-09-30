@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  andamentoForaDaHomefin,
   devesincronizar,
   emHorarioComercial,
   filtrarParaSincronizar,
@@ -15,6 +16,14 @@ const SABADO = new Date("2026-09-19T15:00:00Z").getTime();
 
 const minAtras = (base: number, m: number) => new Date(base - m * 60_000).toISOString();
 
+const POS_CREDITO = [
+  "credito_aprovado",
+  "credito_condicionado",
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
+];
+
 describe("horário comercial (Brasília)", () => {
   it("dia útil das 8h às 20h", () => {
     expect(emHorarioComercial(COMERCIAL)).toBe(true);
@@ -23,58 +32,74 @@ describe("horário comercial (Brasília)", () => {
   });
 });
 
+describe("Itaú e Santander depois do crédito", () => {
+  it("não consultam mais a HomeFin: o andamento vem do robô dos portais", () => {
+    for (const nome_banco of ["Itaú", "BANCO ITAU S.A.", "Santander"]) {
+      for (const status of POS_CREDITO) {
+        const p = { status, nome_banco, ultima_consulta_em: minAtras(COMERCIAL, 600) };
+        expect(andamentoForaDaHomefin(p)).toBe(true);
+        expect(devesincronizar(p, COMERCIAL)).toBe(false);
+        // Nem a primeira consulta.
+        expect(devesincronizar({ status, nome_banco }, COMERCIAL)).toBe(false);
+      }
+    }
+  });
+
+  it("na análise de crédito continuam sendo consultados", () => {
+    const p = { status: "em_analise_credito", nome_banco: "Itaú" };
+    expect(andamentoForaDaHomefin(p)).toBe(false);
+    expect(devesincronizar(p, COMERCIAL)).toBe(true);
+  });
+
+  it("Bradesco depois do crédito continua (follow-up vem pela HomeFin)", () => {
+    for (const status of POS_CREDITO) {
+      expect(andamentoForaDaHomefin({ status, nome_banco: "Bradesco" })).toBe(false);
+    }
+  });
+});
+
 describe("intervalo por banco e fase", () => {
-  const recente = { status_atualizado_em: minAtras(COMERCIAL, 30) };
-
-  it("análise de crédito: Itaú e Santander 1 min, Bradesco 3 min", () => {
-    for (const nome of ["Itaú", "Santander"]) {
-      expect(
-        intervaloMinimoMinutos(
-          { ...recente, status: "em_analise_credito", nome_banco: nome },
-          COMERCIAL,
-        ),
-      ).toBe(1);
-    }
-    expect(
-      intervaloMinimoMinutos(
-        { ...recente, status: "em_analise_credito", nome_banco: "Bradesco" },
-        COMERCIAL,
-      ),
-    ).toBe(3);
+  it("análise na 1ª hora após o envio: Itaú/Santander 2 min, Bradesco 5 min", () => {
+    const base = { status: "em_analise_credito", enviada_em: minAtras(COMERCIAL, 20) };
+    expect(intervaloMinimoMinutos({ ...base, nome_banco: "Itaú" }, COMERCIAL)).toBe(2);
+    expect(intervaloMinimoMinutos({ ...base, nome_banco: "Santander" }, COMERCIAL)).toBe(2);
+    expect(intervaloMinimoMinutos({ ...base, nome_banco: "Bradesco" }, COMERCIAL)).toBe(5);
   });
 
-  it("aprovada e etapas seguintes: Itaú e Santander 2 min, Bradesco 10 min", () => {
-    for (const status of ["credito_aprovado", "credito_condicionado", "analise_juridica"]) {
-      expect(intervaloMinimoMinutos({ ...recente, status, nome_banco: "Itaú" }, COMERCIAL)).toBe(2);
-      expect(
-        intervaloMinimoMinutos({ ...recente, status, nome_banco: "Santander" }, COMERCIAL),
-      ).toBe(2);
-      expect(
-        intervaloMinimoMinutos({ ...recente, status, nome_banco: "Bradesco" }, COMERCIAL),
-      ).toBe(10);
+  it("análise depois da 1ª hora: 10 min para todos", () => {
+    const base = { status: "em_analise_credito", enviada_em: minAtras(COMERCIAL, 90) };
+    for (const nome_banco of ["Itaú", "Santander", "Bradesco"]) {
+      expect(intervaloMinimoMinutos({ ...base, nome_banco }, COMERCIAL)).toBe(10);
     }
   });
 
-  it("fora do horário: análise 15 min, demais 1 hora", () => {
-    const base = { status_atualizado_em: minAtras(NOITE, 30), nome_banco: "Itaú" };
-    expect(intervaloMinimoMinutos({ ...base, status: "em_analise_credito" }, NOITE)).toBe(15);
-    expect(intervaloMinimoMinutos({ ...base, status: "credito_aprovado" }, NOITE)).toBe(60);
-    expect(intervaloMinimoMinutos({ ...base, status: "credito_aprovado" }, SABADO)).toBe(60);
+  it("Bradesco aprovado e etapas seguintes: 30 min", () => {
+    for (const status of POS_CREDITO) {
+      const p = { status, nome_banco: "Bradesco", status_atualizado_em: minAtras(COMERCIAL, 60) };
+      expect(intervaloMinimoMinutos(p, COMERCIAL)).toBe(30);
+    }
   });
 
-  it("parada há mais de 30 dias: no máximo de hora em hora", () => {
+  it("fora do horário: análise 30 min, demais 3 h", () => {
+    const base = { status_atualizado_em: minAtras(NOITE, 30), nome_banco: "Bradesco" };
+    expect(intervaloMinimoMinutos({ ...base, status: "em_analise_credito" }, NOITE)).toBe(30);
+    expect(intervaloMinimoMinutos({ ...base, status: "credito_aprovado" }, NOITE)).toBe(180);
+    expect(intervaloMinimoMinutos({ ...base, status: "credito_aprovado" }, SABADO)).toBe(180);
+  });
+
+  it("parada há mais de 7 dias: no máximo a cada 4 h", () => {
     const parada = {
       status: "credito_aprovado",
-      nome_banco: "Itaú",
-      status_atualizado_em: minAtras(COMERCIAL, 31 * 24 * 60),
+      nome_banco: "Bradesco",
+      status_atualizado_em: minAtras(COMERCIAL, 8 * 24 * 60),
     };
-    expect(intervaloMinimoMinutos(parada, COMERCIAL)).toBe(60);
+    expect(intervaloMinimoMinutos(parada, COMERCIAL)).toBe(240);
   });
 });
 
 describe("decisão de consultar agora", () => {
-  it("nunca consultada sempre é consultada", () => {
-    expect(devesincronizar({ status: "credito_aprovado", nome_banco: "Itaú" }, COMERCIAL)).toBe(
+  it("nunca consultada é consultada (se o andamento vem da HomeFin)", () => {
+    expect(devesincronizar({ status: "credito_aprovado", nome_banco: "Bradesco" }, COMERCIAL)).toBe(
       true,
     );
   });
@@ -85,10 +110,10 @@ describe("decisão de consultar agora", () => {
       nome_banco: "Bradesco",
       status_atualizado_em: minAtras(COMERCIAL, 60),
     };
-    expect(devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 5) }, COMERCIAL)).toBe(
+    expect(devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 20) }, COMERCIAL)).toBe(
       false,
     );
-    expect(devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 10) }, COMERCIAL)).toBe(
+    expect(devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 30) }, COMERCIAL)).toBe(
       true,
     );
   });
@@ -96,8 +121,8 @@ describe("decisão de consultar agora", () => {
   it("usa a leitura mais recente entre o estado do servidor e a da proposta", () => {
     const p = {
       status: "credito_aprovado",
-      nome_banco: "Itaú",
-      ultima_consulta_em: minAtras(COMERCIAL, 30),
+      nome_banco: "Bradesco",
+      ultima_consulta_em: minAtras(COMERCIAL, 60),
       ultima_sincronizacao_em: minAtras(COMERCIAL, 1),
     };
     expect(devesincronizar(p, COMERCIAL)).toBe(false);
@@ -113,8 +138,9 @@ describe("decisão de consultar agora", () => {
     const lista = [
       {
         id: "a",
-        status: "credito_aprovado",
+        status: "em_analise_credito",
         nome_banco: "Itaú",
+        enviada_em: minAtras(COMERCIAL, 10),
         ultima_consulta_em: minAtras(COMERCIAL, 3),
       },
       {
@@ -122,6 +148,12 @@ describe("decisão de consultar agora", () => {
         status: "credito_aprovado",
         nome_banco: "Bradesco",
         ultima_consulta_em: minAtras(COMERCIAL, 3),
+      },
+      {
+        id: "c",
+        status: "credito_condicionado",
+        nome_banco: "Santander",
+        ultima_consulta_em: minAtras(COMERCIAL, 600),
       },
     ];
     expect(filtrarParaSincronizar(lista, COMERCIAL).map((p) => p.id)).toEqual(["a"]);
