@@ -179,9 +179,23 @@ async function registrarLog(entrada: {
   request?: unknown;
   response?: unknown;
   erro?: string;
+  /** Quantas requisições saíram de fato (repetições por 401/502/504 contam). */
+  tentativas?: number;
 }) {
   try {
     const { supabaseAdmin: sbAdmin } = await import("@/integrations/supabase/client.server");
+    // Contador exato por dia e rota (`homefin_chamadas_dia`). O log abaixo não
+    // guarda a consulta de acompanhamento repetida, então sozinho ele não diz
+    // quantas chamadas saíram.
+    try {
+      await (sbAdmin as any).rpc("homefin_contar_chamada", {
+        _metodo: entrada.metodo,
+        _endpoint: entrada.endpoint,
+        _qtd: entrada.tentativas ?? 1,
+      });
+    } catch (e) {
+      console.error("[integracao] falha ao contar chamada", e);
+    }
     if (entrada.proposta_id) {
       // Consulta de acompanhamento bem-sucedida com a MESMA resposta da anterior
       // não vai para o log: eram ~93% das linhas (99,8% idênticas à anterior),
@@ -495,13 +509,16 @@ async function executarChamada<T = unknown>(
   const url = `${base}${endpoint}`;
   const bodyNormalizado = body ? normalizarPayloadBanco(body) : undefined;
 
-  const executar = (token: string) =>
-    fetch(url, {
+  let tentativas = 0;
+  const executar = (token: string) => {
+    tentativas++;
+    return fetch(url, {
       method,
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: bodyNormalizado ? JSON.stringify(bodyNormalizado) : undefined,
       signal: AbortSignal.timeout(90_000),
     });
+  };
 
   let resp: Response;
   try {
@@ -590,6 +607,7 @@ async function executarChamada<T = unknown>(
       metodo: method,
       request: bodyNormalizado,
       erro: String(e),
+      tentativas,
     });
     throw new IntegracaoBancariaError("O banco não respondeu no tempo esperado.");
   }
@@ -603,6 +621,7 @@ async function executarChamada<T = unknown>(
     request: bodyNormalizado,
     response: json as any,
     erro: resp.ok ? undefined : `HTTP ${resp.status}`,
+    tentativas,
   });
   if (!resp.ok)
     throw new IntegracaoBancariaError(
@@ -711,6 +730,7 @@ export async function enviarArquivoIntegracao<T = unknown>(
     request: { arquivo: arquivo.nome, documentoAprovado },
     response: json as any,
     erro: resp.ok ? undefined : `HTTP ${resp.status}`,
+    tentativas,
   });
   if (!resp.ok)
     throw new IntegracaoBancariaError(

@@ -113,13 +113,25 @@ describe("intervalo por banco e fase", () => {
     expect(intervaloMinimoMinutos(p, NOITE)).toBe(30);
   });
 
-  it("análise parada há mais de 7 dias: no máximo a cada 4 h", () => {
+  it("análise sem decisão há mais de 24 h: 1 consulta por dia útil", () => {
     const parada = {
       status: "em_analise_credito",
-      nome_banco: "Bradesco",
-      enviada_em: minAtras(COMERCIAL, 8 * 24 * 60),
+      nome_banco: "Santander",
+      enviada_em: minAtras(COMERCIAL, 25 * 60),
     };
-    expect(intervaloMinimoMinutos(parada, COMERCIAL)).toBe(240);
+    expect(intervaloMinimoMinutos(parada, COMERCIAL)).toBe(24 * 60);
+    expect(intervaloMinimoMinutos(parada, NOITE)).toBe(24 * 60);
+    expect(
+      devesincronizar({ ...parada, ultima_consulta_em: minAtras(COMERCIAL, 60) }, COMERCIAL),
+    ).toBe(false);
+    // No fim de semana não consulta.
+    expect(devesincronizar({ ...parada, enviada_em: minAtras(SABADO, 3 * 24 * 60) }, SABADO)).toBe(
+      false,
+    );
+    // Reenviada hoje: volta ao ritmo curto.
+    expect(
+      intervaloMinimoMinutos({ ...parada, enviada_em: minAtras(COMERCIAL, 10) }, COMERCIAL),
+    ).toBe(2);
   });
 });
 

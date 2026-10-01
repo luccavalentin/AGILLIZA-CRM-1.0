@@ -264,11 +264,50 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
           porOportunidade.set(idOp, lista);
         }
 
+        /**
+         * ESPAÇAMENTO POR OPORTUNIDADE.
+         *
+         * Com a tela aberta esta rota roda a cada ~20 s, e cada rodada fazia um
+         * GET por oportunidade pendente: ~65 consultas em 25 min para a mesma
+         * oportunidade (medido em 29 e 30/09/2026). Só que o banco responde
+         * rápido ou não responde — mediana de 15 s, percentil 90 de 47 s. O
+         * ritmo curto só serve nos primeiros minutos; depois é carga na
+         * HomeFin sem resultado.
+         *
+         * A idade conta a partir do banco pendente mais novo da oportunidade,
+         * para um reenvio voltar ao ritmo curto.
+         */
+        const segundosEntreConsultas = (minutosPendente: number) => {
+          if (minutosPendente < 3) return 0;
+          if (minutosPendente < 15) return 60;
+          if (minutosPendente < 60) return 5 * 60;
+          return 30 * 60;
+        };
+
         let adiadas = 0;
+        let espacadas = 0;
         for (const [idOp, bancos] of porOportunidade.entries()) {
           if (tempoEsgotado()) {
             adiadas += bancos.length;
             continue;
+          }
+          const minutosPendente = Math.min(
+            ...bancos.map(
+              (b) => (Date.now() - new Date(b.created_at as string).getTime()) / 60_000,
+            ),
+          );
+          const espera = segundosEntreConsultas(minutosPendente);
+          if (espera > 0) {
+            // Mesma trava atômica das rotinas: só passa se a última consulta
+            // desta oportunidade foi há mais de `espera`. Falhando, consulta.
+            const { data: liberou, error: erroEspera } = await (supabaseAdmin as any).rpc(
+              "rotina_reservar",
+              { _nome: `reconciliar-op:${idOp}`, _intervalo_segundos: espera - 5 },
+            );
+            if (!erroEspera && liberou !== true) {
+              espacadas += bancos.length;
+              continue;
+            }
           }
           try {
             // Consultar a oportunidade na HomeFin
@@ -604,6 +643,13 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
           }
         }
 
+        // As travas por oportunidade só valem enquanto ela está pendente (24 h).
+        await supabaseAdmin
+          .from("rotina_execucoes" as any)
+          .delete()
+          .like("nome", "reconciliar-op:%")
+          .lt("iniciada_em", new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
+
         return Response.json({
           ok: true,
           processadas: pendentes.length,
@@ -611,6 +657,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
           erros,
           reenviadasOrfas,
           adiadas,
+          espacadas,
         });
       },
     },

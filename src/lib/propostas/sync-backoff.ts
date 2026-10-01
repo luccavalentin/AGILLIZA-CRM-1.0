@@ -28,8 +28,12 @@
  * | Aprovada / condicionada / etapas seguintes | não consulta     | 1 vez por dia útil          |
  *
  * Fora do horário comercial (antes das 8h, depois das 20h, sábado e domingo):
- * análise a cada 30 min. Análise sem nenhuma mudança há mais de 7 dias: no
- * máximo a cada 4 h.
+ * análise a cada 30 min.
+ *
+ * Análise sem decisão há mais de 24 h: a resposta do crédito sai em minutos,
+ * então depois de um dia a proposta está travada, não "quase saindo". Passa a
+ * 1 consulta por dia útil, como o pós-crédito (em 01/10/2026 três propostas
+ * do Santander nessa situação respondiam por quase todo o acompanhamento).
  *
  * Encerradas (cancelada, recusada, contrato, registrado) nem chegam aqui: quem
  * seleciona as candidatas já as exclui. Abrir a proposta e o botão "Atualizar
@@ -130,24 +134,22 @@ export function intervaloMinimoMinutos(p: PropostaParaSincronizar, agora = Date.
   const banco = bancoDe(p.nome_banco);
 
   // Depois da decisão de crédito: uma vez por dia, em qualquer horário.
-  if (!analise) return 24 * 60;
+  if (!analise || analiseParada(p, agora)) return 24 * 60;
 
-  let intervalo: number;
-  if (!emHorarioComercial(agora)) {
-    intervalo = 30;
-  } else {
-    // A resposta do crédito sai em minutos (Itaú/Santander em menos de 1,
-    // Bradesco em ~8): o ritmo curto só vale para a primeira hora.
-    const enviada = paraMs(p.enviada_em) ?? marcoDeAtividade(p);
-    const primeiraHora = enviada !== null && agora - enviada < 60 * 60_000;
-    intervalo = !primeiraHora ? 10 : banco === "bradesco" ? 5 : 2;
-  }
+  if (!emHorarioComercial(agora)) return 30;
+  // A resposta do crédito sai em minutos (Itaú/Santander em menos de 1,
+  // Bradesco em ~8): o ritmo curto só vale para a primeira hora.
+  const inicio = paraMs(p.enviada_em) ?? marcoDeAtividade(p);
+  const primeiraHora = inicio !== null && agora - inicio < 60 * 60_000;
+  if (!primeiraHora) return 10;
+  return banco === "bradesco" ? 5 : 2;
+}
 
-  const marco = marcoDeAtividade(p);
-  if (marco !== null && agora - marco > 7 * 24 * 3_600_000) {
-    intervalo = Math.max(intervalo, 240);
-  }
-  return intervalo;
+/** Em análise (ou rascunho) sem decisão há mais de 24 h. */
+function analiseParada(p: PropostaParaSincronizar, agora: number): boolean {
+  if (!FASE_ANALISE.has(String(p.status ?? ""))) return false;
+  const inicio = paraMs(p.enviada_em) ?? marcoDeAtividade(p);
+  return inicio !== null && agora - inicio > 24 * 3_600_000;
 }
 
 /**
@@ -159,8 +161,9 @@ export function intervaloMinimoMinutos(p: PropostaParaSincronizar, agora = Date.
 export function devesincronizar(p: PropostaParaSincronizar, agora = Date.now()): boolean {
   if (andamentoForaDaHomefin(p)) return false;
   const analise = FASE_ANALISE.has(String(p.status ?? ""));
-  // Pós-crédito não consulta no fim de semana: a de segunda cobre o período.
-  if (!analise && emFimDeSemana(agora)) return false;
+  // Consulta diária (pós-crédito e análise parada) não roda no fim de semana:
+  // a de segunda cobre o período.
+  if ((!analise || analiseParada(p, agora)) && emFimDeSemana(agora)) return false;
   const enviada = paraMs(p.enviada_em);
   if (
     analise &&
