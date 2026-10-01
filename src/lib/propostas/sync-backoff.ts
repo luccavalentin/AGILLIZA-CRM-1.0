@@ -7,39 +7,34 @@
  * pós-crédito) dava ~370 consultas por dia útil numa proposta condicionada,
  * que fica semanas nessa fase.
  *
- * Regras (definidas com o Lucca em 30/09/2026):
+ * Regra (definida com o Lucca em 01/10/2026): o objetivo da integração é
+ * simulação → aprovação ou reprovação, e acaba aí. É o que o fluxograma da
+ * HomeFin descreve — ele termina em "proposta enviada para integração
+ * bancária", e as rotas GET são só "apoio de consulta". Por isso:
  *
- * - Itaú e Santander: a HomeFin só serve para trazer a decisão de crédito.
- *   Depois dela (aprovado, condicionado e etapas seguintes) o andamento vem do
- *   robô dos portais (`automacao-portal-banco`) e o agendador NÃO consulta
- *   mais. Recusa já é final para todos os bancos.
- * - Bradesco: depois da decisão de crédito, UMA consulta por dia. Ela não
- *   busca mais aprovado/recusado; serve para trazer os comentários
- *   (`atividadesOportunidade` → Follow-up), a situação dos documentos e as
- *   etapas seguintes, que só chegam por essa consulta (a API não tem webhook).
- *   A situação dos documentos (`GET /documentos`) vai junto, só quando há
- *   documento enviado à HomeFin — no máximo 1 por dia também. Sábado e
- *   domingo não consulta; o que chegar no fim de semana entra na segunda.
+ * - Só se consulta ENQUANTO a decisão de crédito não saiu.
+ * - Saiu a decisão (aprovado, condicionado ou qualquer etapa seguinte), o
+ *   sistema não consulta mais sozinho, em NENHUM banco. Itaú e Santander
+ *   seguem pelo robô dos portais; no Bradesco, comentários e retorno de
+ *   documentos chegam pelo botão "Atualizar status" da proposta.
  *
- * | Fase (horário comercial)                   | Itaú / Santander | Bradesco                    |
- * |--------------------------------------------|------------------|-----------------------------|
- * | Análise de crédito, 1ª hora após o envio   | 2 min            | 5 min (a 1ª só 5 min após o envio)|
- * | Análise de crédito, depois da 1ª hora      | 10 min           | 10 min                      |
- * | Aprovada / condicionada / etapas seguintes | não consulta     | 1 vez por dia útil          |
+ * | Análise de crédito (horário comercial) | Itaú / Santander | Bradesco                           |
+ * |----------------------------------------|------------------|------------------------------------|
+ * | 1ª hora após o envio                   | 2 min            | 5 min (a 1ª só 5 min após o envio) |
+ * | Depois da 1ª hora                      | 10 min           | 10 min                             |
  *
  * Fora do horário comercial (antes das 8h, depois das 20h, sábado e domingo):
- * análise a cada 30 min.
+ * a cada 30 min.
  *
  * Análise sem decisão há mais de 24 h: a resposta do crédito sai em minutos,
  * então depois de um dia a proposta está travada, não "quase saindo". Passa a
- * 1 consulta por dia útil, como o pós-crédito (em 01/10/2026 três propostas
- * do Santander nessa situação respondiam por quase todo o acompanhamento).
+ * 1 consulta por dia útil (em 01/10/2026 três propostas do Santander nessa
+ * situação respondiam por quase todo o acompanhamento).
  *
  * Encerradas (cancelada, recusada, contrato, registrado) nem chegam aqui: quem
  * seleciona as candidatas já as exclui. Abrir a proposta e o botão "Atualizar
  * status" continuam consultando na hora.
  */
-import { fonteDoAndamento } from "@/lib/bancos/etapas-banco";
 
 export interface PropostaParaSincronizar {
   status?: string | null;
@@ -80,13 +75,9 @@ function bancoDe(nome: unknown): Banco {
   return "outro";
 }
 
-/**
- * A decisão de crédito já saiu e o andamento dali em diante não vem da
- * HomeFin (Itaú e Santander, pelo robô dos portais). Consultar seria só carga.
- */
-export function andamentoForaDaHomefin(p: PropostaParaSincronizar): boolean {
-  if (FASE_ANALISE.has(String(p.status ?? ""))) return false;
-  return fonteDoAndamento(p.nome_banco) === "portal_banco";
+/** A decisão de crédito já saiu: dali em diante não há consulta automática. */
+export function creditoDecidido(p: PropostaParaSincronizar): boolean {
+  return !FASE_ANALISE.has(String(p.status ?? ""));
 }
 
 function agoraEmBrasilia(agora: number): { dia: string; hora: number } {
@@ -130,11 +121,11 @@ function marcoDeAtividade(p: PropostaParaSincronizar): number | null {
 
 /** Intervalo mínimo, em minutos, entre duas consultas desta proposta. */
 export function intervaloMinimoMinutos(p: PropostaParaSincronizar, agora = Date.now()): number {
-  const analise = FASE_ANALISE.has(String(p.status ?? ""));
   const banco = bancoDe(p.nome_banco);
 
-  // Depois da decisão de crédito: uma vez por dia, em qualquer horário.
-  if (!analise || analiseParada(p, agora)) return 24 * 60;
+  // Análise travada há mais de um dia: uma vez por dia, em qualquer horário.
+  // (Com o crédito decidido nem se consulta — ver `devesincronizar`.)
+  if (creditoDecidido(p) || analiseParada(p, agora)) return 24 * 60;
 
   if (!emHorarioComercial(agora)) return 30;
   // A resposta do crédito sai em minutos (Itaú/Santander em menos de 1,
@@ -154,23 +145,17 @@ function analiseParada(p: PropostaParaSincronizar, agora: number): boolean {
 
 /**
  * A proposta já pode ser consultada de novo?
- * Nunca consultada sempre pode, exceto quando o andamento não vem mais da
- * HomeFin. O Bradesco em análise espera 5 min após o envio antes da primeira
+ * Com o crédito decidido, nunca. Em análise, a nunca consultada sempre pode.
+ * O Bradesco em análise espera 5 min após o envio antes da primeira
  * consulta (ele não responde antes disso).
  */
 export function devesincronizar(p: PropostaParaSincronizar, agora = Date.now()): boolean {
-  if (andamentoForaDaHomefin(p)) return false;
-  const analise = FASE_ANALISE.has(String(p.status ?? ""));
-  // Consulta diária (pós-crédito e análise parada) não roda no fim de semana:
-  // a de segunda cobre o período.
-  if ((!analise || analiseParada(p, agora)) && emFimDeSemana(agora)) return false;
+  if (creditoDecidido(p)) return false;
+  // A consulta diária da análise parada não roda no fim de semana: a de
+  // segunda cobre o período.
+  if (analiseParada(p, agora) && emFimDeSemana(agora)) return false;
   const enviada = paraMs(p.enviada_em);
-  if (
-    analise &&
-    bancoDe(p.nome_banco) === "bradesco" &&
-    enviada !== null &&
-    agora - enviada < 5 * 60_000
-  ) {
+  if (bancoDe(p.nome_banco) === "bradesco" && enviada !== null && agora - enviada < 5 * 60_000) {
     return false;
   }
   const leituras = [paraMs(p.ultima_consulta_em), paraMs(p.ultima_sincronizacao_em)].filter(
