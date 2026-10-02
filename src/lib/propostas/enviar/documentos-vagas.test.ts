@@ -9,6 +9,7 @@ import {
   ignoradoDoItem,
   nomeArquivoNaHomefin,
   pontuarVaga,
+  vagaCasaComTipo,
   situacaoDoItem,
 } from "./documentos-vagas";
 
@@ -67,6 +68,53 @@ describe("pontuarVaga", () => {
     expect(
       pontuarVaga(iptu, { termos: termosDoTipoDocumento("i_iptu"), alvo: "" }, "Imóvel", nomes),
     ).toBeGreaterThan(100);
+  });
+
+  it("documento do imóvel entra na vaga do imóvel que vem no nome do comprador", () => {
+    // Checklist real da proposta 5566680: IPTU e Matrícula com tipo CO e
+    // `referente` = comprador. A Matrícula ia parar dentro do IPTU.
+    const comprador = nomes[0];
+    const iptu = { nomeDocumento: "IPTU", referente: comprador, tipoDocumento: "CO", arquivos: [] };
+    const matricula = {
+      nomeDocumento: "Matrícula (Atualizada e válida)",
+      referente: comprador,
+      tipoDocumento: "CO",
+      arquivos: [],
+    };
+    const docMatricula = { termos: termosDoTipoDocumento("i_matricula"), alvo: "Matricula.pdf" };
+    const docIptu = { termos: termosDoTipoDocumento("i_iptu"), alvo: "IPTU.pdf" };
+    expect(pontuarVaga(matricula, docMatricula, "Imóvel", nomes)).toBeGreaterThan(100);
+    expect(pontuarVaga(matricula, docMatricula, "Imóvel", nomes)).toBeGreaterThan(
+      pontuarVaga(iptu, docMatricula, "Imóvel", nomes),
+    );
+    expect(pontuarVaga(iptu, docIptu, "Imóvel", nomes)).toBeGreaterThan(
+      pontuarVaga(matricula, docIptu, "Imóvel", nomes),
+    );
+    expect(vagaCasaComTipo(matricula, docMatricula)).toBe(true);
+    expect(vagaCasaComTipo(iptu, docMatricula)).toBe(false);
+  });
+
+  it("documento sem vaga do tipo vai para uma vaga vazia do mesmo dono, nunca a do imóvel", () => {
+    const comprador = nomes[0];
+    const vaga = (id: string, nomeDocumento: string, arquivos: unknown[] = []) => ({
+      idDocumento: id,
+      nomeDocumento,
+      referente: comprador,
+      tipoDocumento: "CO",
+      arquivos,
+    });
+    const itens = [
+      vaga("1", "Matrícula (Atualizada e válida)"),
+      vaga("2", "IPTU"),
+      vaga("3", "Cópia legível do RG ou RNE", [{ idArquivo: 9 }]),
+      vaga("4", "Proposta de Financiamento Imobiliário"),
+    ];
+    const formulario = {
+      termos: termosDoTipoDocumento("c_form_aut"),
+      alvo: "Formulário de Autorização Analise_de_credito_assinado.pdf",
+    };
+    for (const i of itens) expect(pontuarVaga(i, formulario, comprador, nomes)).toBe(-1);
+    expect(vagaDeReserva(itens, "comprador")?.idDocumento).toBe("4");
   });
 
   it("tipo que não casa com a vaga não serve", () => {

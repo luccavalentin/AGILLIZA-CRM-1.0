@@ -76,7 +76,15 @@ export function pontuarVaga(
 
   const referente = normTexto(item?.referente);
   const dono = normTexto(nomeDono);
-  if (referente) {
+  // Vaga do imóvel no nome de um comprador (IPTU e Matrícula vêm assim, com
+  // `referente` = nome do comprador): para o documento do imóvel ela é a vaga
+  // dele. Sem isto ela era descartada como "vaga de outro participante", o
+  // documento caía na vaga de reserva e a Matrícula subia dentro do IPTU
+  // (proposta 5566680, 02/10/2026).
+  const imovelNaVagaDoImovel = dono === "imovel" && vagaEhDoImovel(item);
+  if (imovelNaVagaDoImovel) {
+    pontos += 100;
+  } else if (referente) {
     const ehDoDono =
       dono && (referente === dono || referente.includes(dono) || dono.includes(referente));
     const ehDeOutro = outrosParticipantes
@@ -131,6 +139,28 @@ export function pontuarVaga(
   return pontos;
 }
 
+/**
+ * O nome da vaga corresponde ao tipo do documento? (Mesma regra de tipo de
+ * `pontuarVaga`, sem olhar o dono.) Serve para saber se um arquivo já enviado
+ * está na vaga certa.
+ */
+export function vagaCasaComTipo(
+  item: any,
+  documento: { termos: string[]; nomeTipo?: string | null },
+): boolean {
+  const nomeItem = normTexto(item?.nomeDocumento);
+  if (!nomeItem) return false;
+  const termos = (documento.termos ?? []).map(normTexto).filter(Boolean);
+  if (termos.some((t) => nomeItem.includes(t) || (nomeItem.length > 3 && t.includes(nomeItem)))) {
+    return true;
+  }
+  const nomeTipo = normTexto(documento.nomeTipo);
+  return (
+    nomeTipo.length > 3 &&
+    (nomeItem === nomeTipo || nomeTipo.includes(nomeItem) || nomeItem.includes(nomeTipo))
+  );
+}
+
 /** Siglas curtas que identificam o documento e não podem ser descartadas. */
 const SIGLAS = new Set(["rg", "cpf", "cnh", "rne", "dps", "iq", "cnd", "itbi", "iptu"]);
 
@@ -169,7 +199,9 @@ export function vagaDeReserva(itens: any[], categoria: string | null | undefined
   const candidatas = (itens ?? []).filter((i) => {
     const tipo = String(i?.tipoDocumento ?? "").toUpperCase();
     if (!CATEGORIA_POR_TIPO_VAGA[tipo]) return false;
-    return CATEGORIA_POR_TIPO_VAGA[tipo] === cat;
+    // IPTU e Matrícula vêm com tipo CO: sem este filtro um documento de
+    // pessoa caía na vaga do imóvel só porque ela estava vazia.
+    return CATEGORIA_POR_TIPO_VAGA[tipo] === cat && (cat === "imovel" || !vagaEhDoImovel(i));
   });
   const lista =
     candidatas.length > 0 ? candidatas : (itens ?? []).filter((i) => vagaAceitaCategoria(i, cat));

@@ -113,17 +113,6 @@ export function nomeDoTipoDocumento(tipo: unknown): string {
   return t.startsWith("custom_") ? "Documento adicional" : t;
 }
 
-/**
- * Tipos que só podem subir na vaga do próprio tipo. Sem ela, o documento NÃO
- * vai para a vaga de reserva: subiria com o código de outro documento (ex.:
- * como "estado civil") e poderia ser repassado ao banco com o tipo errado.
- */
-const SO_VAGA_PROPRIA = new Set(["formulario de autorizacao"]);
-
-export function exigeVagaPropria(tipo: unknown): boolean {
-  return SO_VAGA_PROPRIA.has(normalizar(nomeDoTipoDocumento(tipo)));
-}
-
 /** Termos que identificam a vaga do banco para este tipo. */
 export function termosDoTipoDocumento(tipo: unknown): string[] {
   const k = conhecido(tipo);

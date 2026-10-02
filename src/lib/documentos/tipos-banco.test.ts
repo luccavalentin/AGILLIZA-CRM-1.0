@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  exigeVagaPropria,
-  nomeDoTipoDocumento,
-  sugerirTipoDocumento,
-  termosDoTipoDocumento,
-} from "./tipos-banco";
+import { nomeDoTipoDocumento, sugerirTipoDocumento, termosDoTipoDocumento } from "./tipos-banco";
 
 describe("tipos de documento", () => {
   it("chave interna do checklist vira nome legível", () => {
@@ -50,10 +45,8 @@ describe("tipos de documento", () => {
 });
 
 describe("Formulário de Autorização", () => {
-  it("é reconhecido pelo nome e só aceita vaga própria", () => {
+  it("é reconhecido pelo nome", () => {
     expect(nomeDoTipoDocumento("Formulário de Autorização")).toBe("Formulário de Autorização");
     expect(termosDoTipoDocumento("Formulário de Autorização")).toContain("autorizacao");
-    expect(exigeVagaPropria("Formulário de Autorização")).toBe(true);
-    expect(exigeVagaPropria("Capa do IPTU ou Certidão de Valor Venal")).toBe(false);
   });
 });

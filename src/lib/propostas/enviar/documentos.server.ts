@@ -37,14 +37,11 @@ import {
   situacaoDoItem,
   statusPelaHomefin,
   vagaAceitaCategoria,
+  vagaCasaComTipo,
   vagaDeReserva,
   type SituacaoDocumentoBanco,
 } from "./documentos-vagas";
-import {
-  exigeVagaPropria,
-  nomeDoTipoDocumento,
-  termosDoTipoDocumento,
-} from "@/lib/documentos/tipos-banco";
+import { nomeDoTipoDocumento, termosDoTipoDocumento } from "@/lib/documentos/tipos-banco";
 import { ehAgenciaDoBradesco } from "@/lib/bancos/agencia";
 import { bancoJaEnviado } from "./helpers-retorno.server";
 
@@ -320,8 +317,50 @@ export async function enviarDocumentosBancoImpl({
     // Já carregado nesta oportunidade — na mesma vaga, se o operador escolheu
     // uma — não sobe outra cópia.
     const achado = arquivoDoDocumento(itens, doc.id);
-    const existente =
+    let existente =
       achado && (!idEscolhido || String(achado.item.idDocumento) === idEscolhido) ? achado : null;
+
+    // Arquivo que subiu na vaga errada (a Matrícula dentro do IPTU, quando a
+    // vaga certa não era reconhecida): se existe a vaga do tipo dele, o
+    // reenvio tira o arquivo de onde está e sobe na certa. Documento já
+    // aprovado ou já no banco não é mexido.
+    if (existente && !idEscolhido) {
+      const tipoDoDoc = {
+        termos: termosDoTipoDocumento(doc.tipo_documento),
+        nomeTipo: nomeDoTipoDocumento(doc.tipo_documento),
+      };
+      const analiseAtual = String(existente.item?.tipoSituacao ?? "")
+        .toUpperCase()
+        .charAt(0);
+      const noBanco = String(existente.item?.situacaoIntegracao ?? "").toLowerCase() === "success";
+      const idAtual = String(existente.item.idDocumento);
+      const vagaCerta =
+        analiseAtual !== "A" && !noBanco && !vagaCasaComTipo(existente.item, tipoDoDoc)
+          ? vagas.find(
+              (v) =>
+                String(v?.idDocumento) !== idAtual &&
+                vagaAceitaCategoria(v, doc.categoria) &&
+                vagaCasaComTipo(v, tipoDoDoc) &&
+                pontuarVaga(
+                  v,
+                  { ...tipoDoDoc, alvo: `${tipoDoDoc.nomeTipo} ${doc.nome_arquivo}` },
+                  nomeDono,
+                  nomesParticipantes,
+                ) >= 0,
+            )
+          : null;
+      if (vagaCerta) {
+        for (const idArquivo of existente.idArquivos) {
+          try {
+            await chamarIntegracao(`/documento/arquivo/${idArquivo}`, "DELETE", undefined, ctx);
+          } catch {
+            // Se não apagar, a cópia antiga fica na vaga errada — segue.
+          }
+        }
+        existente = null;
+      }
+    }
+
     if (existente) {
       const { situacao } = situacaoDoItem(existente.item);
       const idDocumento = String(existente.item.idDocumento);
@@ -381,15 +420,22 @@ export async function enviarDocumentosBancoImpl({
       }
       // Nada casou pelo tipo: vai na vaga do mesmo dono com menos arquivos, com
       // o tipo no nome do arquivo, em vez de ficar fora do envio.
+      //
+      // Vale para todo tipo, inclusive o Formulário de Autorização: ele era
+      // barrado quando o checklist não trazia uma vaga com esse nome, e o
+      // checklist da API nunca traz. Decisão do Lucca em 02/10/2026: a HomeFin
+      // abre as vagas e o documento tem de ser enviado de qualquer forma.
+      //
+      // As contagens de `arquivos` são da leitura feita antes dos uploads: sem
+      // tirar as vagas já usadas neste envio, dois documentos sem vaga própria
+      // caíam os dois na mesma.
       item =
         melhor?.item ??
-        (exigeVagaPropria(doc.tipo_documento) ? null : vagaDeReserva(vagas, doc.categoria));
-    }
-    if (!item && exigeVagaPropria(doc.tipo_documento)) {
-      const motivo = `A HomeFin não tem a vaga "${nomeDoTipoDocumento(doc.tipo_documento)}" nesta oportunidade, e a API não permite criá-la. Peça à HomeFin para incluir a vaga no checklist (ou envie pelo portal).`;
-      erros.push({ nome: doc.nome_arquivo, motivo, participante: nomeDono || null });
-      await marcarDoc(doc.id, "erro", motivo);
-      continue;
+        vagaDeReserva(
+          vagas.filter((v) => !usados.has(String(v?.idDocumento))),
+          doc.categoria,
+        ) ??
+        vagaDeReserva(vagas, doc.categoria);
     }
     if (!item) {
       const motivo = nomeDono
