@@ -21,8 +21,14 @@
 /** Prazo da HomeFin para analisar um documento recebido: D+2 dias úteis. */
 export const SLA_DOCUMENTOS_DIAS_UTEIS = 2;
 
-/** Faltando menos que isto para o prazo, o selo fica amarelo (perto de estourar). */
-export const SLA_ALERTA_HORAS = 12;
+/** Expediente da HomeFin, no horário de Brasília: das 09h às 18h, seg a sex. */
+export const JORNADA_INICIO_HORA = 9;
+export const JORNADA_FIM_HORA = 18;
+/** Um dia útil de SLA são as horas de expediente, não 24 h de calendário. */
+export const HORAS_UTEIS_POR_DIA = JORNADA_FIM_HORA - JORNADA_INICIO_HORA;
+
+/** Faltando menos que isto de EXPEDIENTE para o prazo, o selo fica amarelo. */
+export const SLA_ALERTA_HORAS = 4;
 
 /**
  * Onde o selo aparece: da etapa Documentos em diante. Antes disso a proposta
@@ -61,9 +67,121 @@ export type SituacaoDocumentacao =
   /** Tudo aprovado pela HomeFin (`noBanco` = quantos já foram repassados). */
   | { tipo: "aprovado"; aprovados: number; noBanco: number; total: number };
 
+const FUSO = "America/Sao_Paulo";
+
+/**
+ * Minutos que Brasília está à frente do UTC naquele instante (hoje, -180).
+ * Lido do fuso em vez de fixado: o Brasil não tem horário de verão desde
+ * 2019, mas se voltar a ter o prazo continua certo.
+ */
+function offsetBrasilia(ms: number): number {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: FUSO,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(ms));
+  const v = (t: string) => Number(partes.find((p) => p.type === t)?.value ?? "0");
+  const comoUtc = Date.UTC(
+    v("year"),
+    v("month") - 1,
+    v("day"),
+    v("hour"),
+    v("minute"),
+    v("second"),
+  );
+  return Math.round((comoUtc - ms) / 60_000);
+}
+
+/**
+ * O relógio de parede de Brasília, deslocado para ser lido com `getUTC*`.
+ * Todo o cálculo de expediente acontece neste espaço; no fim volta para o
+ * instante real.
+ */
+function paraRelogio(ms: number): number {
+  return ms + offsetBrasilia(ms) * 60_000;
+}
+function doRelogio(relogioMs: number, referenciaMs: number): number {
+  return relogioMs - offsetBrasilia(referenciaMs) * 60_000;
+}
+
+function emFimDeSemanaRelogio(ms: number): boolean {
+  const dia = new Date(ms).getUTCDay();
+  return dia === 0 || dia === 6;
+}
+
+/** Hora cheia do mesmo dia, no espaço do relógio. */
+function horaDoDia(ms: number, hora: number): number {
+  const d = new Date(ms);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hora, 0, 0, 0);
+}
+
+/**
+ * O primeiro instante de expediente a partir daqui. Dentro do expediente, é o
+ * próprio instante; fora dele, a abertura do próximo dia útil — é isso que faz
+ * o SLA congelar à noite e no fim de semana.
+ */
+function proximoExpediente(ms: number): number {
+  let cur = ms;
+  // Caminhada de no máximo alguns dias; o teto evita laço infinito.
+  for (let i = 0; i < 400; i++) {
+    if (emFimDeSemanaRelogio(cur)) {
+      cur = horaDoDia(cur + 24 * 3_600_000, JORNADA_INICIO_HORA);
+      continue;
+    }
+    const abre = horaDoDia(cur, JORNADA_INICIO_HORA);
+    const fecha = horaDoDia(cur, JORNADA_FIM_HORA);
+    if (cur < abre) return abre;
+    if (cur < fecha) return cur;
+    cur = horaDoDia(cur + 24 * 3_600_000, JORNADA_INICIO_HORA);
+  }
+  return cur;
+}
+
+/**
+ * Soma `minutos` de EXPEDIENTE a um instante: o relógio só anda das 09h às 18h
+ * de dias úteis, em Brasília. Feriados não entram.
+ */
+export function somarMinutosUteis(inicio: Date, minutos: number): Date {
+  const ref = inicio.getTime();
+  let cur = proximoExpediente(paraRelogio(ref));
+  let faltam = Math.max(0, minutos);
+  for (let i = 0; i < 2000 && faltam > 0; i++) {
+    const fecha = horaDoDia(cur, JORNADA_FIM_HORA);
+    const disponivel = (fecha - cur) / 60_000;
+    if (faltam <= disponivel) {
+      cur += faltam * 60_000;
+      faltam = 0;
+    } else {
+      faltam -= disponivel;
+      cur = proximoExpediente(fecha);
+    }
+  }
+  return new Date(doRelogio(cur, ref));
+}
+
+/** Minutos de EXPEDIENTE entre dois instantes (0 se `ate` não for depois). */
+export function minutosUteisEntre(de: Date, ate: Date): number {
+  const fim = paraRelogio(ate.getTime());
+  let cur = proximoExpediente(paraRelogio(de.getTime()));
+  let total = 0;
+  for (let i = 0; i < 2000 && cur < fim; i++) {
+    const fechaDia = horaDoDia(cur, JORNADA_FIM_HORA);
+    const ate2 = Math.min(fechaDia, fim);
+    if (ate2 > cur) total += (ate2 - cur) / 60_000;
+    if (ate2 >= fim) break;
+    cur = proximoExpediente(fechaDia);
+  }
+  return Math.round(total);
+}
+
 /**
  * Soma `dias` dias úteis (segunda a sexta) a partir de `inicio`, mantendo a
- * hora. Feriados não entram: o prazo é o D+2 que a HomeFin combina.
+ * hora. Mantida para quem precisa só da data, sem jornada.
  */
 export function somarDiasUteis(inicio: Date, dias: number): Date {
   const d = new Date(inicio.getTime());
@@ -76,26 +194,35 @@ export function somarDiasUteis(inicio: Date, dias: number): Date {
   return d;
 }
 
-/** Prazo do SLA de análise para um documento recebido em `recebidoEm`. */
+/**
+ * Prazo do SLA de análise para um documento recebido em `recebidoEm`.
+ *
+ * D+2 úteis conta EXPEDIENTE, não calendário: 2 × 9 h das 09h às 18h. Um
+ * documento recebido sexta às 17h vence terça às 16h, porque o relógio para às
+ * 18h de sexta e só volta a andar segunda às 09h. Contado no calendário, o selo
+ * mostrava "faltam 3d 18h" num prazo de dois dias.
+ */
 export function prazoSlaDocumentos(recebidoEm: string | Date): Date {
   const inicio = recebidoEm instanceof Date ? recebidoEm : new Date(recebidoEm);
-  return somarDiasUteis(inicio, SLA_DOCUMENTOS_DIAS_UTEIS);
+  return somarMinutosUteis(inicio, SLA_DOCUMENTOS_DIAS_UTEIS * HORAS_UTEIS_POR_DIA * 60);
 }
 
 /**
- * Tempo até o prazo, pronto para o selo: "1d 04h", "5h 12min", "12min".
- * Depois do prazo, `vencido` e o tempo de atraso.
+ * Tempo de EXPEDIENTE até o prazo, pronto para o selo: "1d 04h", "5h 12min",
+ * "12min". Um "d" é um dia útil de 9 h, não 24 h — senão o selo diria "2d" para
+ * um prazo que vence na tarde seguinte. Depois do prazo, `vencido` e o atraso,
+ * também em expediente.
  */
 export function tempoAtePrazo(
   prazo: string | Date,
   agora: Date = new Date(),
 ): { vencido: boolean; urgente: boolean; texto: string } {
   const fim = prazo instanceof Date ? prazo : new Date(prazo);
-  const diff = fim.getTime() - agora.getTime();
-  const vencido = diff <= 0;
-  const minutos = Math.floor(Math.abs(diff) / 60_000);
-  const d = Math.floor(minutos / 1440);
-  const h = Math.floor((minutos % 1440) / 60);
+  const vencido = fim.getTime() <= agora.getTime();
+  const minutos = vencido ? minutosUteisEntre(fim, agora) : minutosUteisEntre(agora, fim);
+  const porDia = HORAS_UTEIS_POR_DIA * 60;
+  const d = Math.floor(minutos / porDia);
+  const h = Math.floor((minutos % porDia) / 60);
   const m = minutos % 60;
   const texto =
     d > 0
@@ -103,8 +230,8 @@ export function tempoAtePrazo(
       : h > 0
         ? `${h}h ${String(m).padStart(2, "0")}min`
         : `${Math.max(m, vencido ? 1 : 0)}min`;
-  // Perto de estourar: menos de SLA_ALERTA_HORAS para vencer.
-  return { vencido, urgente: !vencido && diff < SLA_ALERTA_HORAS * 3_600_000, texto };
+  // Perto de estourar: menos de SLA_ALERTA_HORAS de expediente para vencer.
+  return { vencido, urgente: !vencido && minutos < SLA_ALERTA_HORAS * 60, texto };
 }
 
 /**

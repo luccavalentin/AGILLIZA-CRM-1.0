@@ -58,7 +58,8 @@ function conteudo(
         explicacao:
           `${plural(s.emAnalise, "documento", "documentos")} em análise na HomeFin (de ${s.total} enviados). ` +
           `Recebido em ${new Date(s.recebidoEm).toLocaleString("pt-BR")}. ` +
-          `Prazo ${sla} (dias úteis): ${prazo.toLocaleString("pt-BR")}.`,
+          `Prazo ${sla} em expediente (09h-18h, dias úteis): ${prazo.toLocaleString("pt-BR")}. ` +
+          `A contagem para fora do expediente e volta no dia útil seguinte.`,
       };
     }
     case "rejeitado":
