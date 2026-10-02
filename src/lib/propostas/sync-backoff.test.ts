@@ -44,6 +44,60 @@ describe("depois da decisão de crédito", () => {
     }
   });
 
+  it("quem enviou documento é consultado 1 vez por dia útil", () => {
+    // Exceção aberta em 02/10/2026: documento analisado e aprovado não chega
+    // de nenhuma outra forma (a API não tem webhook), e o retorno ficava
+    // parado até alguém clicar em "Atualizar status".
+    for (const status of POS_CREDITO) {
+      const p = { status, nome_banco: "Bradesco", tem_documento_enviado: true };
+      expect(creditoDecidido(p)).toBe(true);
+      // Nunca consultada: vai agora.
+      expect(devesincronizar(p, COMERCIAL)).toBe(true);
+      // Uma por dia, não mais: 2 h depois ainda não.
+      expect(
+        devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 120) }, COMERCIAL),
+      ).toBe(false);
+      // Passado o dia, vai de novo.
+      expect(
+        devesincronizar({ ...p, ultima_consulta_em: minAtras(COMERCIAL, 25 * 60) }, COMERCIAL),
+      ).toBe(true);
+      expect(intervaloMinimoMinutos(p, COMERCIAL)).toBe(24 * 60);
+    }
+  });
+
+  it("vale para qualquer banco, mas não no fim de semana", () => {
+    for (const nome_banco of ["Itaú", "Santander", "Bradesco"]) {
+      const p = { status: "engenharia_vistoria", nome_banco, tem_documento_enviado: true };
+      expect(devesincronizar(p, COMERCIAL)).toBe(true);
+      // Fora do horário comercial de um dia útil ainda vale: é 1 por dia, não
+      // um ritmo curto. No sábado e no domingo, não.
+      expect(devesincronizar(p, NOITE)).toBe(true);
+      expect(devesincronizar(p, SABADO)).toBe(false);
+    }
+  });
+
+  it("sem documento enviado, a regra antiga continua: nenhuma consulta", () => {
+    for (const status of POS_CREDITO) {
+      for (const tem of [false, null, undefined]) {
+        expect(
+          devesincronizar(
+            { status, nome_banco: "Bradesco", tem_documento_enviado: tem },
+            COMERCIAL,
+          ),
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("filtrarParaSincronizar separa quem enviou documento de quem não enviou", () => {
+    const base = { status: "aguardando_documentos", nome_banco: "Bradesco" };
+    const lista = [
+      { ...base, id: "com-doc", tem_documento_enviado: true },
+      { ...base, id: "sem-doc", tem_documento_enviado: false },
+    ];
+    expect(filtrarParaSincronizar(lista, COMERCIAL).map((p) => p.id)).toEqual(["com-doc"]);
+  });
+
   it("na análise de crédito continuam sendo consultados", () => {
     for (const nome_banco of ["Itaú", "Santander", "Bradesco"]) {
       const p = { status: "em_analise_credito", nome_banco };

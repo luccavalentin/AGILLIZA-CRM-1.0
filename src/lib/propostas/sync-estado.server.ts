@@ -35,6 +35,45 @@ export async function lerUltimasConsultas(ids: string[]): Promise<Map<string, st
 }
 
 /**
+ * Quais destas propostas já enviaram algum documento à HomeFin.
+ *
+ * É o que libera a única consulta automática do pós-crédito: sem documento
+ * enviado não há retorno de análise para buscar, e a proposta segue sem
+ * consulta nenhuma. Falha na leitura devolve conjunto vazio — na dúvida,
+ * não consulta.
+ */
+async function comDocumentoEnviado(
+  supabase: SupabaseClient<any, any, any>,
+  ids: string[],
+): Promise<Set<string>> {
+  const comDoc = new Set<string>();
+  if (ids.length === 0) return comDoc;
+  try {
+    // Lotes de ids (a lista vai na URL) e paginação por página cheia: o
+    // PostgREST corta em 1.000 linhas sem avisar, e uma proposta tem várias.
+    for (let i = 0; i < ids.length; i += 150) {
+      const lote = ids.slice(i, i + 150);
+      for (let ini = 0; ; ini += 1000) {
+        const { data, error } = await supabase
+          .from("proposta_documentos_homefin" as any)
+          .select("proposta_id")
+          .in("proposta_id", lote)
+          .order("proposta_id")
+          .range(ini, ini + 999);
+        if (error) throw new Error(error.message);
+        const linhas = (data ?? []) as any[];
+        for (const l of linhas) comDoc.add(String(l.proposta_id));
+        if (linhas.length < 1000) break;
+      }
+    }
+  } catch (e) {
+    console.error("[sync-estado] documentos enviados: leitura falhou", e);
+    return new Set<string>();
+  }
+  return comDoc;
+}
+
+/**
  * Propostas vencidas para consulta, segundo `sync-backoff.ts`, das mais
  * atrasadas para as mais recentes. `supabase` define o que é visível: o
  * agendador passa o cliente administrativo; a lista de propostas, o do usuário
@@ -58,10 +97,18 @@ export async function selecionarParaSincronizar(
     .limit(1000);
   if (error) throw new Error(error.message);
   const lista = (candidatas ?? []) as any[];
-  const ultimas = await lerUltimasConsultas(lista.map((p) => String(p.id)));
+  const ids = lista.map((p) => String(p.id));
+  const [ultimas, comDoc] = await Promise.all([
+    lerUltimasConsultas(ids),
+    comDocumentoEnviado(supabase, ids),
+  ]);
   const { filtrarParaSincronizar } = await import("./sync-backoff");
   const vencidas = filtrarParaSincronizar(
-    lista.map((p) => ({ ...p, ultima_consulta_em: ultimas.get(String(p.id)) ?? null })),
+    lista.map((p) => ({
+      ...p,
+      ultima_consulta_em: ultimas.get(String(p.id)) ?? null,
+      tem_documento_enviado: comDoc.has(String(p.id)),
+    })),
   );
   const quando = (p: any) =>
     Math.max(
@@ -103,16 +150,14 @@ export async function resumoMudou(propostaId: string, resumo: string): Promise<b
       .eq("proposta_id", propostaId)
       .maybeSingle();
     if (data && (data as any).ultimo_resumo === resumo) return false;
-    await sb
-      .from("proposta_sync_estado")
-      .upsert(
-        {
-          proposta_id: propostaId,
-          ultimo_resumo: resumo,
-          ultima_consulta_em: new Date().toISOString(),
-        },
-        { onConflict: "proposta_id" },
-      );
+    await sb.from("proposta_sync_estado").upsert(
+      {
+        proposta_id: propostaId,
+        ultimo_resumo: resumo,
+        ultima_consulta_em: new Date().toISOString(),
+      },
+      { onConflict: "proposta_id" },
+    );
     return true;
   } catch {
     // Na dúvida, registra: perder um log é pior que gravar um repetido.

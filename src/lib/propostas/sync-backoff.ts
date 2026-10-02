@@ -15,8 +15,13 @@
  * - Só se consulta ENQUANTO a decisão de crédito não saiu.
  * - Saiu a decisão (aprovado, condicionado ou qualquer etapa seguinte), o
  *   sistema não consulta mais sozinho, em NENHUM banco. Itaú e Santander
- *   seguem pelo robô dos portais; no Bradesco, comentários e retorno de
- *   documentos chegam pelo botão "Atualizar status" da proposta.
+ *   seguem pelo robô dos portais.
+ * - Única exceção, aberta em 02/10/2026: a proposta pós-crédito que JÁ ENVIOU
+ *   documento é consultada 1 vez por dia útil, para trazer a análise deles.
+ *   Documento analisado e aprovado não chega de nenhuma outra forma — a API
+ *   não tem webhook, e o retorno ficava parado até alguém clicar em
+ *   "Atualizar status". Quem não enviou documento segue sem consulta
+ *   nenhuma, que é a maioria e era o peso do volume.
  *
  * | Análise de crédito (horário comercial) | Itaú / Santander | Bradesco                           |
  * |----------------------------------------|------------------|------------------------------------|
@@ -47,6 +52,11 @@ export interface PropostaParaSincronizar {
   status_atualizado_em?: string | null;
   /** Momento do envio ao banco. */
   enviada_em?: string | null;
+  /**
+   * A proposta já enviou documento à HomeFin. É o que autoriza a única
+   * consulta automática do pós-crédito (ver `acompanhaDocumentos`).
+   */
+  tem_documento_enviado?: boolean | null;
   created_at?: string | null;
 }
 
@@ -136,6 +146,15 @@ export function intervaloMinimoMinutos(p: PropostaParaSincronizar, agora = Date.
   return banco === "bradesco" ? 5 : 2;
 }
 
+/**
+ * Pós-crédito, a única consulta automática que sobra: a análise dos documentos.
+ * Vale só para quem já enviou documento, 1 vez por dia útil (o intervalo de 24 h
+ * vem de `intervaloMinimoMinutos`). O mesmo GET traz também os comentários.
+ */
+function acompanhaDocumentos(p: PropostaParaSincronizar, agora: number): boolean {
+  return Boolean(p.tem_documento_enviado) && !emFimDeSemana(agora);
+}
+
 /** Em análise (ou rascunho) sem decisão há mais de 24 h. */
 function analiseParada(p: PropostaParaSincronizar, agora: number): boolean {
   if (!FASE_ANALISE.has(String(p.status ?? ""))) return false;
@@ -150,7 +169,7 @@ function analiseParada(p: PropostaParaSincronizar, agora: number): boolean {
  * consulta (ele não responde antes disso).
  */
 export function devesincronizar(p: PropostaParaSincronizar, agora = Date.now()): boolean {
-  if (creditoDecidido(p)) return false;
+  if (creditoDecidido(p) && !acompanhaDocumentos(p, agora)) return false;
   // A consulta diária da análise parada não roda no fim de semana: a de
   // segunda cobre o período.
   if (analiseParada(p, agora) && emFimDeSemana(agora)) return false;
