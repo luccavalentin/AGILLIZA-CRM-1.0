@@ -730,7 +730,6 @@ export async function enviarArquivoIntegracao<T = unknown>(
     request: { arquivo: arquivo.nome, documentoAprovado },
     response: json as any,
     erro: resp.ok ? undefined : `HTTP ${resp.status}`,
-    tentativas,
   });
   if (!resp.ok)
     throw new IntegracaoBancariaError(
