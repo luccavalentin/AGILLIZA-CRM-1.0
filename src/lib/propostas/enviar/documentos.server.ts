@@ -412,10 +412,13 @@ export async function enviarDocumentosBancoImpl({
         let pontos = pontuarVaga(v, documento, nomeDono, nomesParticipantes);
         if (pontos < 0) continue;
         // A vaga aceita vários arquivos (frente/verso, titular e cônjuge no
-        // mesmo item). Uma já usada neste envio perde preferência, mas não é
-        // descartada: antes o segundo documento do mesmo tipo ficava sem vaga e
-        // não era enviado.
-        if (usados.has(String(v.idDocumento))) pontos -= 20;
+        // mesmo item, Formulário de Autorização junto com a Proposta de
+        // Financiamento). Uma já usada neste envio perde o desempate, mas nada
+        // além disso: com -20 ela ficava 35 pontos atrás de uma vaga vazia
+        // (contando o bônus de `pontuarVaga`), mais que um casamento de tipo
+        // inteiro, e o segundo documento ia para uma vaga de nome errado em vez
+        // de dividir a certa.
+        if (usados.has(String(v.idDocumento))) pontos -= 4;
         if (!melhor || pontos > melhor.pontos) melhor = { item: v, pontos };
       }
       // Nada casou pelo tipo: vai na vaga do mesmo dono com menos arquivos, com

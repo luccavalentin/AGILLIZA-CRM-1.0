@@ -133,8 +133,14 @@ export function pontuarVaga(
     pontos += casadas * 10;
   }
 
-  // Vaga ainda vazia é preferível a uma que já tem arquivo.
-  if (!Array.isArray(item?.arquivos) || item.arquivos.length === 0) pontos += 15;
+  // Vaga ainda vazia é preferível a uma que já tem arquivo — mas só no
+  // desempate. A HomeFin aceita vários arquivos na mesma vaga (o Formulário de
+  // Autorização e a Proposta de Financiamento vão juntos, decisão do Lucca em
+  // 02/10/2026), então estar ocupada nunca pode valer mais que o casamento de
+  // tipo: o menor sinal de tipo são 10 pontos por palavra, e este bônus é
+  // menor que isso de propósito. Com +15 o segundo documento era empurrado
+  // para uma vaga de nome pior só por ela estar vazia.
+  if (!Array.isArray(item?.arquivos) || item.arquivos.length === 0) pontos += 4;
 
   return pontos;
 }

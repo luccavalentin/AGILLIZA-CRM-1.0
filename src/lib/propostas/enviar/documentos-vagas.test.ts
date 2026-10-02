@@ -48,6 +48,33 @@ describe("pontuarVaga", () => {
     ).toBeGreaterThan(100);
   });
 
+  it("vaga ocupada continua sendo a melhor: a HomeFin aceita vários arquivos", () => {
+    // A HomeFin empilha arquivos na mesma vaga (Formulário de Autorização e
+    // Proposta de Financiamento vão juntos). Estar ocupada só desempata: não
+    // pode jogar o documento numa vaga de nome pior só porque ela está vazia.
+    const dono = "Cleitom de Oliveira";
+    const certa = { nomeDocumento: "RG", referente: dono, arquivos: [{ idArquivo: "ja-subiu" }] };
+    const vaziaPior = { nomeDocumento: "Comprovante de renda", referente: dono, arquivos: [] };
+    const pontosCerta = pontuarVaga(certa, identidade, dono, nomes);
+    const pontosPior = pontuarVaga(vaziaPior, identidade, dono, nomes);
+    expect(pontosCerta).toBeGreaterThan(pontosPior);
+  });
+
+  it("entre duas vagas igualmente boas, a vazia ganha", () => {
+    const dono = "Cleitom de Oliveira";
+    const vazia = { nomeDocumento: "RG", referente: dono, arquivos: [] };
+    const ocupada = { nomeDocumento: "RG", referente: dono, arquivos: [{ idArquivo: "x" }] };
+    expect(pontuarVaga(vazia, identidade, dono, nomes)).toBeGreaterThan(
+      pontuarVaga(ocupada, identidade, dono, nomes),
+    );
+    // A diferença é de desempate, menor que o menor sinal de tipo (10 pontos
+    // por palavra casada). Acima disso ela mandaria o documento para a vaga
+    // errada.
+    const diff =
+      pontuarVaga(vazia, identidade, dono, nomes) - pontuarVaga(ocupada, identidade, dono, nomes);
+    expect(diff).toBeLessThan(10);
+  });
+
   it("chave interna do checklist acha a vaga mesmo com arquivo sem nome útil", () => {
     const certidao = {
       nomeDocumento: "Certidão de Casamento",
