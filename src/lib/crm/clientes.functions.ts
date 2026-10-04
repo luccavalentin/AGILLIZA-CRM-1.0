@@ -661,7 +661,7 @@ export const listarPainel = createServerFn({ method: "GET" })
         .parse(d) ?? {},
   )
   .handler(async ({ data, context }): Promise<PainelStage[]> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const desde = data?.desde ? new Date(data.desde).getTime() : null;
     const ate = data?.ate ? new Date(`${data.ate}T23:59:59.999`).getTime() : null;
     const soMinhas = data?.escopo === "minhas";
@@ -698,6 +698,7 @@ export const listarPainel = createServerFn({ method: "GET" })
       filtradas
         .filter((r: any) => r.proposta_id)
         .map((r: any) => ({ id: String(r.proposta_id), status: r.proposta_status ?? null })),
+      userId,
     );
 
     return stages.map((s) => ({

@@ -95,10 +95,9 @@ function conteudo(
  * celular o texto nunca invade o que está ao lado. Com `onVerComentarios`, o
  * selo é um botão que abre os comentários.
  *
- * Com `piscando`, ganha o ponto vermelho pulsando e a chamada "comentários
- * novos": é o aviso de que a HomeFin devolveu alguma coisa (documento
- * aprovado, recusado ou comentário do banco) que ainda não foi lida. Some ao
- * abrir os comentários.
+ * Com `piscando`, ganha o ponto vermelho pulsando e a chamada do que chegou:
+ * é o aviso de que a HomeFin decidiu um documento (aprovou, repassou ao banco
+ * ou recusou) e ninguém leu ainda. Some ao abrir os comentários.
  */
 export function DocumentacaoBadge({
   situacao,
@@ -120,10 +119,14 @@ export function DocumentacaoBadge({
   const c = conteudo(situacao, agora);
   // Sem o que clicar, piscar só incomodaria: não há como ler nem como parar.
   const avisa = piscando && Boolean(onVerComentarios);
+  // Só a recusa traz texto escrito (o `comentarioAnalise`); a aprovação é uma
+  // mudança de situação. Chamar as duas de "comentário" mandava a pessoa
+  // procurar uma mensagem que não existia.
+  const chamada = situacao.tipo === "rejeitado" ? "Comentário novo" : "Retorno novo";
 
   const selo = (
     <span
-      title={avisa ? `Comentários novos. ${c.explicacao}` : c.explicacao}
+      title={avisa ? `${chamada}. ${c.explicacao}` : c.explicacao}
       className={cn(
         "relative inline-flex max-w-full flex-col gap-0.5 rounded-md border px-2 py-1 text-left leading-tight",
         centralizado && "items-center text-center",
@@ -152,7 +155,7 @@ export function DocumentacaoBadge({
       {avisa && (
         <span className="inline-flex max-w-full items-center gap-1 text-[10px] font-semibold text-destructive">
           <MessageSquare className="h-3 w-3 shrink-0" />
-          <span className="min-w-0 break-words">Comentários novos</span>
+          <span className="min-w-0 break-words">{chamada}</span>
         </span>
       )}
     </span>
@@ -167,7 +170,7 @@ export function DocumentacaoBadge({
         e.stopPropagation();
         onVerComentarios();
       }}
-      aria-label={`${c.titulo}${c.detalhe ? ` — ${c.detalhe}` : ""}.${avisa ? " Há comentários novos." : ""} ${c.explicacao} Ver comentários da proposta.`}
+      aria-label={`${c.titulo}${c.detalhe ? ` — ${c.detalhe}` : ""}.${avisa ? ` ${chamada}.` : ""} ${c.explicacao} Ver comentários da proposta.`}
     >
       {selo}
     </button>

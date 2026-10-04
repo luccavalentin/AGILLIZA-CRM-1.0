@@ -329,7 +329,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
       }
 
       const { situacoesDocumentacao } = await import("./documentacao.server");
-      const documentacaoPorProp = await situacoesDocumentacao(supabase, rows);
+      const documentacaoPorProp = await situacoesDocumentacao(supabase, rows, userId);
 
       const lista = rows.map((r: any) => {
         const responsavel_id = r.usuario_responsavel_id ?? r.usuario_criador_id ?? null;
@@ -380,7 +380,7 @@ export const obterProposta = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }): Promise<PropostaCompleta> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { data: proposta, error } = await supabase
       .from("propostas")
       .select("*")
@@ -468,7 +468,7 @@ export const obterProposta = createServerFn({ method: "GET" })
 
     const { situacoesDocumentacao } = await import("./documentacao.server");
     const documentacao =
-      (await situacoesDocumentacao(supabase, [proposta as any])).get(proposta.id) ?? null;
+      (await situacoesDocumentacao(supabase, [proposta as any], userId)).get(proposta.id) ?? null;
 
     return {
       proposta,
@@ -1623,7 +1623,7 @@ export const listarComentariosProposta = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const [{ data: proposta, error }, { data: followups, error: erroFups }] = await Promise.all([
       supabase
         .from("propostas")
@@ -1644,7 +1644,9 @@ export const listarComentariosProposta = createServerFn({ method: "GET" })
     const [fups, recusados, documentacao] = await Promise.all([
       comNomeDoAutor(supabase, (followups ?? []) as any[]),
       documentosRecusados(supabase, data.proposta_id),
-      situacoesDocumentacao(supabase, [proposta as any]).then((m) => m.get(proposta.id) ?? null),
+      situacoesDocumentacao(supabase, [proposta as any], userId).then(
+        (m) => m.get(proposta.id) ?? null,
+      ),
     ]);
     return {
       numero_proposta: proposta.numero_proposta as string,
@@ -1653,6 +1655,28 @@ export const listarComentariosProposta = createServerFn({ method: "GET" })
       recusados,
       documentacao,
     };
+  });
+
+/**
+ * Registra que esta pessoa acabou de abrir os comentários da proposta — é o
+ * que apaga o aviso de novidade do selo da documentação, para ela, em qualquer
+ * máquina. Uma linha por (proposta, pessoa), substituída a cada abertura.
+ */
+export const marcarComentariosVistos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase.from("proposta_comentarios_vistos" as any).upsert(
+      {
+        proposta_id: data.proposta_id,
+        user_id: userId,
+        visto_em: new Date().toISOString(),
+      } as any,
+      { onConflict: "proposta_id,user_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const adicionarFollowup = createServerFn({ method: "POST" })

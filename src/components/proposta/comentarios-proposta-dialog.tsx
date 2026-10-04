@@ -15,8 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DocumentacaoBadge } from "@/components/propostas/documentacao-badge";
 import { HistoricoComentarios } from "@/components/proposta/historico-comentarios";
-import { marcarComentariosVistos } from "@/lib/propostas/comentarios-vistos";
-import { adicionarFollowup, listarComentariosProposta } from "@/lib/propostas/propostas.functions";
+import { marcarLidaLocalmente } from "@/lib/propostas/comentarios-vistos";
+import {
+  adicionarFollowup,
+  listarComentariosProposta,
+  marcarComentariosVistos,
+} from "@/lib/propostas/propostas.functions";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { cn } from "@/lib/utils";
 
@@ -50,10 +54,18 @@ export function ComentariosPropostaDialog({
   const [enviando, setEnviando] = useState(false);
   const fimRef = useRef<HTMLDivElement>(null);
 
-  // Abriu, leu: o selo da proposta para de piscar (em todas as telas abertas).
+  // Abriu, leu: o selo para de piscar na hora em todas as telas abertas, e a
+  // leitura vai para o banco para valer em qualquer máquina. Falhando a
+  // gravação, o selo volta a piscar no próximo carregamento — ninguém
+  // registrou a leitura, então é o certo.
+  const marcarVistos = useServerFn(marcarComentariosVistos);
   useEffect(() => {
-    if (open) marcarComentariosVistos(propostaId);
-  }, [open, propostaId]);
+    if (!open) return;
+    marcarLidaLocalmente(propostaId);
+    marcarVistos({ data: { proposta_id: propostaId } }).catch((e) =>
+      console.error("[comentarios] não deu para registrar a leitura", e),
+    );
+  }, [open, propostaId, marcarVistos]);
 
   // Como num chat: abre e segue sempre na mensagem mais nova.
   const totalMensagens = d?.followups.length ?? 0;

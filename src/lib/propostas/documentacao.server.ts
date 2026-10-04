@@ -44,35 +44,27 @@ async function documentosDasPropostas(
 }
 
 /**
- * Comentário mais recente do banco em cada proposta (`proposta_followups` de
- * tipo "banco", espelho das atividades da oportunidade). Entra no selo só para
- * dizer que há novidade a ler.
+ * Até quando esta pessoa já leu os comentários de cada proposta
+ * (`proposta_comentarios_vistos`). É o que o selo compara com a decisão mais
+ * recente da HomeFin para saber se pisca.
  */
-async function ultimoComentarioDoBanco(
+async function leiturasDasPropostas(
   supabase: SupabaseClient<any, any, any>,
   ids: string[],
+  userId: string,
 ): Promise<Map<string, string>> {
   const porProposta = new Map<string, string>();
   for (let i = 0; i < ids.length; i += IDS_POR_LOTE) {
-    const lote = ids.slice(i, i + IDS_POR_LOTE);
-    for (let ini = 0; ; ini += LINHAS_POR_PAGINA) {
-      const { data, error } = await supabase
-        .from("proposta_followups")
-        .select("proposta_id, created_at")
-        .in("proposta_id", lote)
-        .eq("tipo", "banco")
-        .order("proposta_id")
-        .range(ini, ini + LINHAS_POR_PAGINA - 1);
-      if (error) throw new Error(error.message);
-      const linhas = (data ?? []) as any[];
-      for (const l of linhas) {
-        const atual = porProposta.get(l.proposta_id);
-        if (!atual || new Date(l.created_at) > new Date(atual)) {
-          porProposta.set(l.proposta_id, l.created_at);
-        }
-      }
-      if (linhas.length < LINHAS_POR_PAGINA) break;
-    }
+    const { data, error } = await supabase
+      .from("proposta_comentarios_vistos" as any)
+      .select("proposta_id, visto_em")
+      // A política de acesso já limita à própria pessoa; o filtro explícito é
+      // para quem chamar com o cliente administrativo, que passa por cima dela.
+      .eq("user_id", userId)
+      .in("proposta_id", ids.slice(i, i + IDS_POR_LOTE));
+    if (error) throw new Error(error.message);
+    // Uma linha por (proposta, pessoa): não há o que paginar dentro do lote.
+    for (const l of (data ?? []) as any[]) porProposta.set(l.proposta_id, l.visto_em);
   }
   return porProposta;
 }
@@ -84,29 +76,30 @@ async function ultimoComentarioDoBanco(
 export async function situacoesDocumentacao(
   supabase: SupabaseClient<any, any, any>,
   propostas: { id: string; status: string | null }[],
+  userId?: string | null,
 ): Promise<Map<string, SituacaoDocumentacao | null>> {
   const resultado = new Map<string, SituacaoDocumentacao | null>();
   if (propostas.length === 0) return resultado;
   const ids = propostas.map((p) => p.id);
   let docs = new Map<string, DocumentoHomefinLinha[]>();
-  let comentarios = new Map<string, string>();
+  let vistos = new Map<string, string>();
   try {
-    [docs, comentarios] = await Promise.all([
+    [docs, vistos] = await Promise.all([
       documentosDasPropostas(supabase, ids),
-      // Sem os comentários o selo ainda sai, só não pisca por causa deles.
-      ultimoComentarioDoBanco(supabase, ids).catch((e) => {
-        console.error("[documentacao] leitura dos comentários do banco falhou", e);
-        return new Map<string, string>();
-      }),
+      // Falhando a leitura, o selo sai sem marca de lido e pisca. Chamar
+      // atenção à toa é melhor que esconder uma recusa.
+      userId
+        ? leiturasDasPropostas(supabase, ids, userId).catch((e) => {
+            console.error("[documentacao] leitura dos comentários vistos falhou", e);
+            return new Map<string, string>();
+          })
+        : Promise.resolve(new Map<string, string>()),
     ]);
   } catch (e) {
     console.error("[documentacao] leitura dos documentos falhou", e);
   }
   for (const p of propostas) {
-    resultado.set(
-      p.id,
-      situacaoDocumentacao(p.status, docs.get(p.id), comentarios.get(p.id) ?? null),
-    );
+    resultado.set(p.id, situacaoDocumentacao(p.status, docs.get(p.id), vistos.get(p.id) ?? null));
   }
   return resultado;
 }
