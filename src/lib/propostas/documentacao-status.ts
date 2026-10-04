@@ -59,13 +59,27 @@ export interface DocumentoHomefinLinha {
   atualizado_em: string | null;
 }
 
-export type SituacaoDocumentacao =
+/**
+ * Quando a HomeFin disse alguma coisa pela última vez nesta proposta: a
+ * decisão de documento mais recente (aprovado, repassado ao banco ou recusado)
+ * ou o comentário mais novo do banco. É o que o selo compara com a última vez
+ * que a pessoa abriu os comentários para decidir se pisca.
+ *
+ * `null` quando ainda não houve retorno nenhum — documento só enviado e
+ * esperando não é novidade, é o estado normal de quem acabou de subir.
+ */
+export interface ComNovidade {
+  novidadeEm: string | null;
+}
+
+export type SituacaoDocumentacao = ComNovidade &
   /** Recebido na HomeFin e em análise. `recebidoEm` = o mais antigo ainda na fila. */
-  | { tipo: "em_analise"; recebidoEm: string; prazo: string; emAnalise: number; total: number }
-  /** Pelo menos um recusado — pede ação e leitura dos comentários. */
-  | { tipo: "rejeitado"; rejeitados: number; emAnalise: number; total: number }
-  /** Tudo aprovado pela HomeFin (`noBanco` = quantos já foram repassados). */
-  | { tipo: "aprovado"; aprovados: number; noBanco: number; total: number };
+  (| { tipo: "em_analise"; recebidoEm: string; prazo: string; emAnalise: number; total: number }
+    /** Pelo menos um recusado — pede ação e leitura dos comentários. */
+    | { tipo: "rejeitado"; rejeitados: number; emAnalise: number; total: number }
+    /** Tudo aprovado pela HomeFin (`noBanco` = quantos já foram repassados). */
+    | { tipo: "aprovado"; aprovados: number; noBanco: number; total: number }
+  );
 
 const FUSO = "America/Sao_Paulo";
 
@@ -234,15 +248,40 @@ export function tempoAtePrazo(
   return { vencido, urgente: !vencido && minutos < SLA_ALERTA_HORAS * 60, texto };
 }
 
+/** Situações que são retorno da HomeFin, e não o documento parado na fila. */
+const SITUACOES_DECIDIDAS = new Set(["aprovado", "enviado", "erro"]);
+
+/**
+ * O retorno mais recente da HomeFin nesta proposta: a última decisão de
+ * documento ou o último comentário do banco, o que vier depois.
+ */
+function momentoDaNovidade(
+  docs: DocumentoHomefinLinha[],
+  ultimoComentarioBanco: string | null | undefined,
+): string | null {
+  const momentos = docs
+    .filter((d) => SITUACOES_DECIDIDAS.has(String(d.situacao ?? "")))
+    .map((d) => d.atualizado_em)
+    .filter((v): v is string => Boolean(v));
+  if (ultimoComentarioBanco) momentos.push(ultimoComentarioBanco);
+  if (momentos.length === 0) return null;
+  // Datas ISO em UTC ordenam como texto; as do banco vêm todas assim.
+  return momentos.reduce((a, b) => (new Date(a) >= new Date(b) ? a : b));
+}
+
 /**
  * Resume os documentos da proposta num selo só.
  *
  * Prioridade: recusado (pede ação) > em análise (conta o SLA) > aprovado.
  * Só da etapa Documentos em diante, e só com documento enviado à HomeFin.
+ *
+ * `ultimoComentarioBanco` entra só no `novidadeEm` — é o que faz o selo piscar
+ * quando o banco comenta sem mexer em documento nenhum.
  */
 export function situacaoDocumentacao(
   status: string | null | undefined,
   linhas: DocumentoHomefinLinha[] | null | undefined,
+  ultimoComentarioBanco?: string | null,
 ): SituacaoDocumentacao | null {
   const s = String(status ?? "");
   if (!STATUS_COM_SELO.has(s)) return null;
@@ -255,8 +294,10 @@ export function situacaoDocumentacao(
   const naFila = docs.filter((d) => d.situacao === "homefin");
   const noBanco = docs.filter((d) => d.situacao === "enviado").length;
   const aprovados = docs.filter((d) => d.situacao === "aprovado").length + noBanco;
+  const novidadeEm = momentoDaNovidade(docs, ultimoComentarioBanco);
 
-  if (rejeitados > 0) return { tipo: "rejeitado", rejeitados, emAnalise: naFila.length, total };
+  if (rejeitados > 0)
+    return { tipo: "rejeitado", rejeitados, emAnalise: naFila.length, total, novidadeEm };
 
   if (naFila.length > 0) {
     const maisAntigo = naFila
@@ -271,8 +312,9 @@ export function situacaoDocumentacao(
       prazo: prazoSlaDocumentos(recebidoEm).toISOString(),
       emAnalise: naFila.length,
       total,
+      novidadeEm,
     };
   }
 
-  return { tipo: "aprovado", aprovados, noBanco, total };
+  return { tipo: "aprovado", aprovados, noBanco, total, novidadeEm };
 }

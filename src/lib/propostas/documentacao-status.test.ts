@@ -126,6 +126,49 @@ describe("Situação da documentação", () => {
       aprovados: 2,
       noBanco: 1,
       total: 2,
+      novidadeEm: "2026-09-22T10:00:00",
+    });
+  });
+
+  describe("novidade a ler (o que faz o selo piscar)", () => {
+    it("documento só enviado e esperando não é novidade", () => {
+      expect(
+        situacaoDocumentacao("aguardando_documentos", [doc("homefin"), doc("homefin")]),
+      ).toMatchObject({ tipo: "em_analise", novidadeEm: null });
+    });
+
+    it("decisão da HomeFin é novidade, mesmo com outros ainda na fila", () => {
+      expect(
+        situacaoDocumentacao("aguardando_documentos", [
+          doc("homefin", "2026-09-22T10:00:00"),
+          doc("aprovado", "2026-09-23T15:00:00"),
+        ]),
+      ).toMatchObject({ tipo: "em_analise", novidadeEm: "2026-09-23T15:00:00" });
+      expect(
+        situacaoDocumentacao("aguardando_documentos", [doc("erro", "2026-09-24T08:00:00")]),
+      ).toMatchObject({ tipo: "rejeitado", novidadeEm: "2026-09-24T08:00:00" });
+    });
+
+    it("comentário do banco é novidade mesmo sem documento decidido", () => {
+      expect(
+        situacaoDocumentacao(
+          "engenharia_vistoria",
+          [doc("homefin", "2026-09-22T10:00:00")],
+          "2026-09-25T12:00:00Z",
+        ),
+      ).toMatchObject({ novidadeEm: "2026-09-25T12:00:00Z" });
+    });
+
+    it("vale o retorno mais recente entre documento e comentário", () => {
+      const docs = [doc("aprovado", "2026-09-26T10:00:00Z")];
+      // Comentário mais velho que a decisão: vale a decisão.
+      expect(
+        situacaoDocumentacao("engenharia_vistoria", docs, "2026-09-24T10:00:00Z"),
+      ).toMatchObject({ novidadeEm: "2026-09-26T10:00:00Z" });
+      // Comentário mais novo: vale o comentário.
+      expect(
+        situacaoDocumentacao("engenharia_vistoria", docs, "2026-09-27T10:00:00Z"),
+      ).toMatchObject({ novidadeEm: "2026-09-27T10:00:00Z" });
     });
   });
 

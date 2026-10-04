@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, MessageSquare } from "lucide-react";
 import type { Tone } from "@/components/crm/tone-badge";
 import { cn } from "@/lib/utils";
 import {
@@ -94,15 +94,23 @@ function conteudo(
  * quebram dentro do espaço disponível — numa coluna estreita, na régua ou no
  * celular o texto nunca invade o que está ao lado. Com `onVerComentarios`, o
  * selo é um botão que abre os comentários.
+ *
+ * Com `piscando`, ganha o ponto vermelho pulsando e a chamada "comentários
+ * novos": é o aviso de que a HomeFin devolveu alguma coisa (documento
+ * aprovado, recusado ou comentário do banco) que ainda não foi lida. Some ao
+ * abrir os comentários.
  */
 export function DocumentacaoBadge({
   situacao,
   onVerComentarios,
+  piscando = false,
   centralizado = false,
   className,
 }: {
   situacao: SituacaoDocumentacao | null | undefined;
   onVerComentarios?: () => void;
+  /** Há retorno da HomeFin ainda não lido: o selo chama atenção. */
+  piscando?: boolean;
   /** Na régua de etapas o selo fica centralizado embaixo da etapa. */
   centralizado?: boolean;
   className?: string;
@@ -110,17 +118,28 @@ export function DocumentacaoBadge({
   const agora = useAgora(situacao?.tipo === "em_analise");
   if (!situacao) return null;
   const c = conteudo(situacao, agora);
+  // Sem o que clicar, piscar só incomodaria: não há como ler nem como parar.
+  const avisa = piscando && Boolean(onVerComentarios);
 
   const selo = (
     <span
-      title={c.explicacao}
+      title={avisa ? `Comentários novos. ${c.explicacao}` : c.explicacao}
       className={cn(
-        "inline-flex max-w-full flex-col gap-0.5 rounded-md border px-2 py-1 text-left leading-tight",
+        "relative inline-flex max-w-full flex-col gap-0.5 rounded-md border px-2 py-1 text-left leading-tight",
         centralizado && "items-center text-center",
         TONS[c.tone],
+        // Anel pulsando em volta do selo inteiro: o que puxa o olho na régua.
+        avisa &&
+          "motion-safe:animate-pulse ring-2 ring-destructive/60 ring-offset-1 ring-offset-background",
         className,
       )}
     >
+      {avisa && (
+        <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75 motion-safe:animate-ping" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
+        </span>
+      )}
       <span className="inline-flex max-w-full items-center gap-1 text-[11px] font-semibold">
         {c.icone}
         <span className="min-w-0 break-words">{c.titulo}</span>
@@ -128,6 +147,12 @@ export function DocumentacaoBadge({
       {c.detalhe && (
         <span className="max-w-full break-words text-[10px] font-medium tabular-nums opacity-90">
           {c.detalhe}
+        </span>
+      )}
+      {avisa && (
+        <span className="inline-flex max-w-full items-center gap-1 text-[10px] font-semibold text-destructive">
+          <MessageSquare className="h-3 w-3 shrink-0" />
+          <span className="min-w-0 break-words">Comentários novos</span>
         </span>
       )}
     </span>
@@ -142,7 +167,7 @@ export function DocumentacaoBadge({
         e.stopPropagation();
         onVerComentarios();
       }}
-      aria-label={`${c.titulo}${c.detalhe ? ` — ${c.detalhe}` : ""}. ${c.explicacao} Ver comentários da proposta.`}
+      aria-label={`${c.titulo}${c.detalhe ? ` — ${c.detalhe}` : ""}.${avisa ? " Há comentários novos." : ""} ${c.explicacao} Ver comentários da proposta.`}
     >
       {selo}
     </button>

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import { DocumentacaoBadge } from "@/components/propostas/documentacao-badge";
+import { useComentariosNaoLidos } from "@/lib/propostas/comentarios-vistos";
 import type { SituacaoDocumentacao } from "@/lib/propostas/documentacao-status";
 
 const ComentariosPropostaDialog = lazy(() =>
@@ -11,6 +12,11 @@ const ComentariosPropostaDialog = lazy(() =>
 /**
  * Selo da documentação que abre os comentários da proposta ao clicar — o
  * mesmo em qualquer tela (consulta de propostas, CRM, ficha).
+ *
+ * Pisca enquanto houver retorno da HomeFin mais novo que a última leitura
+ * desta pessoa (ver `comentarios-vistos`). Quem marca como lido é a própria
+ * janela de comentários, ao abrir — assim vale também para quem a abre pelo
+ * menu "⋯" da lista, sem passar por aqui.
  */
 export function DocumentacaoProposta({
   propostaId,
@@ -24,6 +30,7 @@ export function DocumentacaoProposta({
   className?: string;
 }) {
   const [aberto, setAberto] = useState(false);
+  const naoLidos = useComentariosNaoLidos(propostaId, situacao?.novidadeEm);
   if (!situacao) return null;
   return (
     // A janela abre por portal, mas os cliques dentro dela ainda sobem pela
@@ -32,6 +39,7 @@ export function DocumentacaoProposta({
       <DocumentacaoBadge
         situacao={situacao}
         onVerComentarios={() => setAberto(true)}
+        piscando={naoLidos}
         centralizado={centralizado}
         className={className}
       />

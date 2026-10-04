@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DocumentacaoBadge } from "@/components/propostas/documentacao-badge";
 import { HistoricoComentarios } from "@/components/proposta/historico-comentarios";
+import { marcarComentariosVistos } from "@/lib/propostas/comentarios-vistos";
 import { adicionarFollowup, listarComentariosProposta } from "@/lib/propostas/propostas.functions";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,11 @@ export function ComentariosPropostaDialog({
   const [externo, setExterno] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const fimRef = useRef<HTMLDivElement>(null);
+
+  // Abriu, leu: o selo da proposta para de piscar (em todas as telas abertas).
+  useEffect(() => {
+    if (open) marcarComentariosVistos(propostaId);
+  }, [open, propostaId]);
 
   // Como num chat: abre e segue sempre na mensagem mais nova.
   const totalMensagens = d?.followups.length ?? 0;
