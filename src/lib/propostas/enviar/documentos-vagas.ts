@@ -278,6 +278,29 @@ export function ignoradoDoItem(ignorados: any[], item: any): any | null {
 export type SituacaoDocumentoBanco = "enviado" | "erro" | "homefin" | "aprovado";
 
 /**
+ * Como cada situação aparece para quem opera, com o tom (a cor) de cada uma.
+ * Fonte única: o envio da proposta, as vagas da HomeFin e a aba de documentos
+ * do CRM mostram o mesmo rótulo e a mesma cor.
+ *
+ * São três estados, três cores: enviado e esperando (azul), aprovado (verde),
+ * recusado (vermelho). Antes "enviado à HomeFin" e "enviado ao banco" saíam os
+ * dois em verde, e não dava para distinguir o que já tinha resposta do que
+ * ainda estava na fila.
+ *
+ * O repasse ao banco não aparece: `enviado` quer dizer que a HomeFin aprovou e
+ * encaminhou, o que para quem opera é a mesma notícia que `aprovado`.
+ */
+export const ROTULO_SITUACAO_DOCUMENTO: Record<
+  SituacaoDocumentoBanco,
+  { label: string; tone: "info" | "success" | "danger" }
+> = {
+  homefin: { label: "Enviado à HomeFin", tone: "info" },
+  aprovado: { label: "Documento aprovado", tone: "success" },
+  enviado: { label: "Documento aprovado", tone: "success" },
+  erro: { label: "Documento recusado", tone: "danger" },
+};
+
+/**
  * Situação do nosso documento a partir do item do checklist da HomeFin:
  * `situacaoIntegracao` (pending/success/error) diz se chegou ao banco;
  * `tipoSituacao` (P/I/A/R/D) é a análise da HomeFin. O upload sobe com
@@ -296,7 +319,7 @@ export function situacaoDoItem(
   if (integracao === "error") {
     return {
       situacao: "erro",
-      mensagem: String(item?.mensagemIntegracao ?? "").trim() || "O banco recusou o documento.",
+      mensagem: String(item?.mensagemIntegracao ?? "").trim() || "Documento recusado.",
     };
   }
   if (analise === "R") {
@@ -337,12 +360,13 @@ export function statusPelaHomefin(
   return {};
 }
 
-const MENSAGEM_EM_ANALISE = "Enviado à HomeFin. Segue ao banco depois da análise da HomeFin.";
+const MENSAGEM_EM_ANALISE = "Enviado à HomeFin, aguardando a análise.";
 const MENSAGEM_HOMEFIN = "Enviado à HomeFin.";
 const MENSAGEM_IGNORADO: Record<string, string> = {
   documento_nao_aprovado: MENSAGEM_EM_ANALISE,
-  sem_codigo_integracao_bradesco: "Enviado à HomeFin, que repassa este documento ao banco.",
-  sem_correspondencia_checklist_banco: "Enviado à HomeFin. O banco ainda não pediu este documento.",
+  sem_codigo_integracao_bradesco: "Enviado à HomeFin.",
+  sem_correspondencia_checklist_banco:
+    "Enviado à HomeFin. Este documento ainda não foi solicitado.",
 };
 
 // ---------------------------------------------------------------------------

@@ -11,6 +11,7 @@ import {
   pontuarVaga,
   vagaCasaComTipo,
   situacaoDoItem,
+  ROTULO_SITUACAO_DOCUMENTO,
 } from "./documentos-vagas";
 
 const envolvidos = [
@@ -191,9 +192,19 @@ describe("estado do documento na HomeFin", () => {
     );
     expect(situacaoDoItem(item, ignorado)).toEqual({
       situacao: "homefin",
-      mensagem: "Enviado à HomeFin. Segue ao banco depois da análise da HomeFin.",
+      mensagem: "Enviado à HomeFin, aguardando a análise.",
     });
     expect(situacaoDoItem(item).situacao).toBe("homefin");
+  });
+
+  it("o rótulo não fala em banco: três estados, três cores", () => {
+    const rotulos = Object.values(ROTULO_SITUACAO_DOCUMENTO);
+    expect(rotulos.some((r) => /banco/i.test(r.label))).toBe(false);
+    // Aprovado e repassado contam a mesma notícia para quem opera.
+    expect(ROTULO_SITUACAO_DOCUMENTO.enviado).toEqual(ROTULO_SITUACAO_DOCUMENTO.aprovado);
+    expect(ROTULO_SITUACAO_DOCUMENTO.homefin.tone).toBe("info");
+    expect(ROTULO_SITUACAO_DOCUMENTO.aprovado.tone).toBe("success");
+    expect(ROTULO_SITUACAO_DOCUMENTO.erro.tone).toBe("danger");
   });
 });
 

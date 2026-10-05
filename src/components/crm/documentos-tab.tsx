@@ -416,8 +416,8 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
           </Button>
         </div>
         <SecaoEnvioBanco
-          titulo="Enviar documentos ao banco"
-          descricao="Anexar salva só no CRM. Para mandar ao banco, clique ao lado, escolha a proposta e marque os documentos — cada um vai no nome do dono (comprador, cônjuge, vendedor, imóvel)."
+          titulo="Enviar documentos à HomeFin"
+          descricao="Anexar salva só no CRM. Para mandar à HomeFin, clique ao lado, escolha a proposta e marque os documentos — cada um vai no nome do dono (comprador, cônjuge, vendedor, imóvel)."
           rotulo="Enviar ao banco / vincular proposta"
           desabilitado={(docs ?? []).length === 0}
           onEnviar={() => setEnvioBanco([])}
@@ -453,7 +453,7 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       </div>
 
       <SecaoEnvioBanco
-        titulo={`Enviar documentos de "${pasta.nome}" ao banco`}
+        titulo={`Enviar documentos de "${pasta.nome}" à HomeFin`}
         descricao="Os documentos desta pasta já vêm marcados. Escolha a proposta e confirme. Em cada documento, o ícone do banco envia só aquele arquivo."
         rotulo="Enviar ao banco / vincular proposta"
         desabilitado={(docs ?? []).length === 0}

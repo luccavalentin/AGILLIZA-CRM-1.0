@@ -438,7 +438,7 @@ export function ContinuarPropostaPage({
                 )}
                 {envioDocs?.enviando
                   ? "Enviando…"
-                  : `Enviar documentos ao banco${envioDocs?.pendentes ? ` (${envioDocs.pendentes})` : ""}`}
+                  : `Enviar documentos à HomeFin${envioDocs?.pendentes ? ` (${envioDocs.pendentes})` : ""}`}
               </Button>
               <Button className="gap-1.5" onClick={() => setEtapa("etapas")}>
                 Próximas etapas <ArrowRight className="h-4 w-4" />

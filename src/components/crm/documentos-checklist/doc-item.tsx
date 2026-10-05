@@ -75,7 +75,7 @@ export function DocItem({
           <button
             type="button"
             onClick={() => state.abrirEnvioBanco(cat, label)}
-            title="Enviar ao banco, escolhendo a proposta"
+            title="Enviar à HomeFin, escolhendo a proposta"
             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-accent"
           >
             <Landmark className="size-3.5" /> Banco

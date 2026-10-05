@@ -91,9 +91,9 @@ export function DocumentosChecklist({ clienteId }: { clienteId: string }) {
   return (
     <div className="space-y-4">
       <SecaoEnvioBanco
-        titulo="Enviar documentos ao banco"
-        descricao="Anexar salva só no CRM. Para mandar ao banco, clique ao lado, escolha a proposta e marque os documentos. No item do checklist, o botão Banco envia só aquele documento."
-        rotulo="Enviar ao banco / vincular proposta"
+        titulo="Enviar documentos à HomeFin"
+        descricao="Anexar salva só no CRM. Para mandar à HomeFin, clique ao lado, escolha a proposta e marque os documentos. No item do checklist, o botão HomeFin envia só aquele documento."
+        rotulo="Enviar à HomeFin / vincular proposta"
         onEnviar={() => setEnvioGeral(true)}
       />
       <EnviarBancoDialog

@@ -74,7 +74,11 @@ import {
 } from "@/lib/propostas/propostas.functions";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
-import { donoDoDocumento } from "@/lib/propostas/enviar/documentos-vagas";
+import {
+  donoDoDocumento,
+  ROTULO_SITUACAO_DOCUMENTO,
+  type SituacaoDocumentoBanco,
+} from "@/lib/propostas/enviar/documentos-vagas";
 import { VagasBanco } from "./vagas-banco";
 import {
   nomeDoTipoDocumento,
@@ -154,7 +158,28 @@ function cobreTipo(d: { tipo_documento?: unknown; vagas_proposta?: string[] }, t
   return nomes.some((n) => termos.some((t) => ` ${n} `.includes(` ${t} `)));
 }
 
-/** Já está na HomeFin (em análise ou no banco): não pede para enviar de novo. */
+/**
+ * Selo da situação do documento: rótulo, cor e ícone do mapa compartilhado
+ * (`ROTULO_SITUACAO_DOCUMENTO`). Devolve `null` para o documento que ainda não
+ * foi enviado — quem avisa disso é o selo "Salvo, não enviado".
+ */
+function situacaoDoDocumento(
+  d: any,
+): { label: string; tom: "ok" | "erro" | "info"; titulo?: string; icone?: React.ReactNode } | null {
+  const cfg = ROTULO_SITUACAO_DOCUMENTO[d?.situacao_integracao as SituacaoDocumentoBanco];
+  if (!cfg) return null;
+  const tom = cfg.tone === "success" ? "ok" : cfg.tone === "danger" ? "erro" : "info";
+  return {
+    label: cfg.label,
+    tom,
+    // A recusa traz o motivo logo abaixo, em vermelho; repetir no título do
+    // selo só atrapalharia.
+    titulo: tom === "info" ? "A HomeFin ainda está analisando este documento." : undefined,
+    icone: tom === "erro" ? undefined : <CheckCircle2 className="mr-0.5 inline h-3 w-3" />,
+  };
+}
+
+/** Já está na HomeFin (em análise ou aprovado): não pede para enviar de novo. */
 const jaEnviado = (d: { situacao_integracao?: string | null }) =>
   d.situacao_integracao === "enviado" || d.situacao_integracao === "homefin";
 
@@ -462,14 +487,14 @@ export function AbaEnviarBanco({
       const r = await enviar({ data: { proposta_id: propostaId, documento_ids: ids, vagas } });
       qc.invalidateQueries({ queryKey: ["checklist-banco", propostaId] });
       setResultado(r);
-      if (r.enviados > 0) toast.success(`${r.enviados} documento(s) enviado(s) ao banco.`);
+      if (r.enviados > 0) toast.success(`${r.enviados} documento(s) enviado(s) à HomeFin.`);
       if (r.naHomefin.length > 0)
         toast.success(`${r.naHomefin.length} documento(s) enviado(s) à HomeFin.`);
       if (r.erros.length > 0) toast.warning(`${r.erros.length} documento(s) não enviado(s).`);
       setSelecionados(new Set());
       recarregar();
     } catch (e) {
-      toast.error(mensagemDeErro(e, "Falha ao enviar ao banco."));
+      toast.error(mensagemDeErro(e, "Falha ao enviar à HomeFin."));
     } finally {
       setEnviando(false);
     }
@@ -487,7 +512,7 @@ export function AbaEnviarBanco({
       if (r.erro) toast.error(`Dados do imóvel: ${r.erro}`);
       else if (r.naoConfirmados.length > 0)
         toast.warning("Dados do imóvel enviados, mas o banco não confirmou todos os campos.");
-      else if (!silencioso) toast.success("Dados do imóvel e da vistoria enviados ao banco.");
+      else if (!silencioso) toast.success("Dados do imóvel e da vistoria enviados à HomeFin.");
     } catch (e) {
       toast.error(mensagemDeErro(e, "Falha ao enviar os dados do imóvel."));
     } finally {
@@ -544,7 +569,7 @@ export function AbaEnviarBanco({
     return (
       <>
         <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          Vincule um cliente à proposta para enviar os documentos ao banco.
+          Vincule um cliente à proposta para enviar os documentos à HomeFin.
         </div>
       </>
     );
@@ -624,11 +649,11 @@ export function AbaEnviarBanco({
             </span>
             <div className="text-sm">
               <p className="font-semibold tracking-tight text-foreground">
-                Enviar documentação ao banco
+                Enviar documentação à HomeFin
               </p>
               <p className="text-muted-foreground">
                 {!propostaNoBanco
-                  ? "Envie a proposta ao banco primeiro: o checklist de documentos é criado por ela."
+                  ? "Envie a proposta à HomeFin primeiro: o checklist de documentos é criado por ela."
                   : aptos.length === 0
                     ? "Nenhum documento anexado ainda. Anexe nos grupos abaixo."
                     : naoEnviados.length > 0
@@ -661,8 +686,8 @@ export function AbaEnviarBanco({
               {ocupado
                 ? "Enviando…"
                 : naoEnviados.length > 0
-                  ? "Enviar documentos ao banco"
-                  : "Reenviar documentos ao banco"}
+                  ? "Enviar documentos à HomeFin"
+                  : "Reenviar documentos à HomeFin"}
             </Button>
           </div>
         </CardContent>
@@ -717,7 +742,7 @@ export function AbaEnviarBanco({
                       <Linha
                         icone="ok"
                         titulo="Dados do imóvel e vistoria"
-                        detalhe={`${resultadoImovel.confirmados.length} campo(s) gravado(s) no banco`}
+                        detalhe={`${resultadoImovel.confirmados.length} campo(s) gravado(s) na HomeFin`}
                       />
                     )}
                     {resultadoImovel.naoConfirmados.length > 0 && (
@@ -737,7 +762,7 @@ export function AbaEnviarBanco({
             {resultado && resultado.sucesso.length > 0 && (
               <Linha
                 icone="ok"
-                titulo={`${resultado.sucesso.length} documento(s) enviado(s) ao banco`}
+                titulo={`${resultado.sucesso.length} documento(s) enviado(s) à HomeFin`}
                 detalhe={resultado.sucesso.map((s) => s.nome).join(", ")}
               />
             )}
@@ -745,7 +770,7 @@ export function AbaEnviarBanco({
               <Linha
                 icone="ok"
                 titulo={`${resultado.naHomefin.length} documento(s) enviado(s) à HomeFin`}
-                detalhe={`${resultado.naHomefin.map((h) => h.nome).join(", ")}. A HomeFin analisa e repassa ao banco.`}
+                detalhe={`${resultado.naHomefin.map((h) => h.nome).join(", ")}. A HomeFin vai analisar.`}
               />
             )}
             {resultado?.erros.map((er, i) => (
@@ -806,7 +831,7 @@ export function AbaEnviarBanco({
                         size="sm"
                         variant="outline"
                         className="gap-1.5 rounded-lg"
-                        title={`Envia ao banco os ${aptosGrupo.length} documento(s) de ${g.titulo}`}
+                        title={`Envia à HomeFin os ${aptosGrupo.length} documento(s) de ${g.titulo}`}
                         disabled={ocupado || !propostaNoBanco}
                         onClick={() => enviarDocumentos(aptosGrupo)}
                       >
@@ -828,8 +853,8 @@ export function AbaEnviarBanco({
                 {g.categoria === "vendedor" && !vendedor && (
                   <Aviso>
                     Cadastre o vendedor na aba <strong>Vendedores</strong>: os dados dele entram na
-                    proposta. Os documentos do vendedor ficam salvos aqui e seguem ao banco quando a
-                    HomeFin pedir.
+                    proposta. Os documentos do vendedor ficam salvos aqui e seguem à HomeFin quando
+                    a HomeFin pedir.
                   </Aviso>
                 )}
 
@@ -868,6 +893,7 @@ export function AbaEnviarBanco({
                     {g.itens.map((d: any) => {
                       const apto = ehFormatoBanco(d);
                       const grande = Number(d.tamanho_bytes) > MAX_BYTES_BANCO;
+                      const sit = situacaoDoDocumento(d);
                       return (
                         <li
                           key={d.id}
@@ -889,27 +915,19 @@ export function AbaEnviarBanco({
                             <p className="truncate text-sm font-medium text-foreground">
                               {nomeDoTipoDocumento(d.tipo_documento)}
                             </p>
-                            <p className="flex flex-wrap items-center gap-2 truncate text-xs text-muted-foreground">
-                              <span className="truncate">{d.nome_arquivo}</span>
+                            {/* `truncate` aqui dentro brigava com o `flex-wrap`:
+                                o nowrap dele empurrava os selos para fora e o
+                                overflow escondido cortava a segunda linha no
+                                celular. Quem trunca é o nome do arquivo. */}
+                            <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span className="max-w-full truncate">{d.nome_arquivo}</span>
                               {!apto && <Selo tom="alerta">formato não aceito</Selo>}
                               {apto && grande && <Selo tom="alerta">acima de 5 MB</Selo>}
-                              {d.situacao_integracao === "enviado" && (
-                                <Selo tom="ok">
-                                  <CheckCircle2 className="mr-0.5 inline h-3 w-3" />
-                                  Enviado ao banco
+                              {sit && (
+                                <Selo tom={sit.tom} titulo={sit.titulo}>
+                                  {sit.icone}
+                                  {sit.label}
                                 </Selo>
-                              )}
-                              {d.situacao_integracao === "homefin" && (
-                                <Selo
-                                  tom="ok"
-                                  titulo="A HomeFin analisa o documento e repassa ao banco."
-                                >
-                                  <CheckCircle2 className="mr-0.5 inline h-3 w-3" />
-                                  Enviado à HomeFin
-                                </Selo>
-                              )}
-                              {d.situacao_integracao === "erro" && (
-                                <Selo tom="erro">Não enviado</Selo>
                               )}
                               {!d.situacao_integracao && apto && <Selo>Salvo, não enviado</Selo>}
                             </p>
@@ -1097,7 +1115,7 @@ function Selo({
   titulo,
 }: {
   children: React.ReactNode;
-  tom?: "ok" | "erro" | "alerta";
+  tom?: "ok" | "erro" | "alerta" | "info";
   titulo?: string;
 }) {
   return (
@@ -1108,6 +1126,7 @@ function Selo({
         tom === "ok" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
         tom === "erro" && "bg-destructive/15 text-destructive",
         tom === "alerta" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+        tom === "info" && "bg-primary/10 text-primary",
         !tom && "bg-muted text-muted-foreground",
       )}
     >
@@ -1153,7 +1172,7 @@ function Linha({
   );
 }
 
-/** Prévia dos dados do imóvel; seguem ao banco no envio principal da tela. */
+/** Prévia dos dados do imóvel; seguem à HomeFin no envio principal da tela. */
 function DadosImovel({
   previa,
 }: {
@@ -1174,7 +1193,7 @@ function DadosImovel({
           Dados do imóvel e da vistoria
         </p>
         <span className="text-[11px] text-muted-foreground">
-          Vão ao banco junto com os documentos
+          Vão à HomeFin junto com os documentos
         </span>
       </div>
       {previa.campos.length === 0 ? (

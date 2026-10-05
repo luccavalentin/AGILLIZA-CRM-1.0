@@ -10,15 +10,17 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import {
+  ROTULO_SITUACAO_DOCUMENTO,
+  type SituacaoDocumentoBanco,
+} from "@/lib/propostas/enviar/documentos-vagas";
 import { CATEGORIA_LABEL, statusTone, type Categoria } from "./types";
 
-/** Situação do documento na integração (`situacao_integracao`). */
-const SITUACAO_BANCO: Record<string, { label: string; tone: "success" | "warning" | "danger" }> = {
-  enviado: { label: "no banco", tone: "success" },
-  aprovado: { label: "aprovado na HomeFin", tone: "success" },
-  homefin: { label: "em análise na HomeFin", tone: "warning" },
-  erro: { label: "falha no envio", tone: "danger" },
-};
+/**
+ * Situação do documento na integração (`situacao_integracao`), com o rótulo e
+ * a cor do mapa compartilhado — os mesmos do envio da proposta e das vagas.
+ */
+const SITUACAO_HOMEFIN = ROTULO_SITUACAO_DOCUMENTO;
 
 /** Em análise ou recusado na HomeFin, nada pode ser exibido como aprovado. */
 const SEM_APROVACAO = new Set(["homefin", "erro"]);
@@ -48,7 +50,7 @@ export function LinhaDocumento({
   /** Guarda o documento como recebido no CRM — a análise é da HomeFin. */
   onSalvar: (id: string) => void;
   onExcluir: (d: any) => void;
-  /** Abre o envio ao banco com este documento marcado (escolhe a proposta lá). */
+  /** Abre o envio à HomeFin com este documento marcado (escolhe a proposta lá). */
   onEnviarBanco?: (d: any) => void;
 }) {
   const vencido = doc.expira_em ? estaVencido(doc.expira_em) : false;
@@ -100,10 +102,13 @@ export function LinhaDocumento({
         )}
         {doc.situacao_integracao ? (
           <ToneBadge
-            tone={SITUACAO_BANCO[doc.situacao_integracao]?.tone ?? "muted"}
+            tone={
+              SITUACAO_HOMEFIN[doc.situacao_integracao as SituacaoDocumentoBanco]?.tone ?? "muted"
+            }
             title={doc.erro_integracao ?? undefined}
           >
-            {SITUACAO_BANCO[doc.situacao_integracao]?.label ?? doc.situacao_integracao}
+            {SITUACAO_HOMEFIN[doc.situacao_integracao as SituacaoDocumentoBanco]?.label ??
+              doc.situacao_integracao}
           </ToneBadge>
         ) : null}
         {onEnviarBanco && (
@@ -111,8 +116,8 @@ export function LinhaDocumento({
             size="icon"
             variant="ghost"
             onClick={() => onEnviarBanco(doc)}
-            title="Enviar ao banco (vincular a uma proposta)"
-            aria-label="Enviar documento ao banco"
+            title="Enviar à HomeFin (vincular a uma proposta)"
+            aria-label="Enviar documento à HomeFin"
           >
             <Landmark className="size-4 text-primary" />
           </Button>

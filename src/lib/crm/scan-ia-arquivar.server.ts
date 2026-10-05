@@ -168,7 +168,7 @@ export async function arquivarLeituraNaDocumentacao(params: {
         await supabase.from("proposta_historico").insert({
           proposta_id: prop.id,
           tipo_evento: "documento",
-          descricao: `Documento validado pelo Scan IA disponível para envio ao banco: ${nomeArquivo}`,
+          descricao: `Documento validado pelo Scan IA disponível para envio à HomeFin: ${nomeArquivo}`,
           ator_id: userId,
         });
       }

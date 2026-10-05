@@ -273,8 +273,8 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
         },
       });
       toast.success("Documento salvo no CRM.", {
-        description: "Para mandar ao banco, use “Banco” e escolha a proposta.",
-        action: { label: "Enviar ao banco", onClick: () => abrirEnvioBanco(cat, key) },
+        description: "Para mandar à HomeFin, use “HomeFin” e escolha a proposta.",
+        action: { label: "Enviar à HomeFin", onClick: () => abrirEnvioBanco(cat, key) },
       });
       qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
       void id;

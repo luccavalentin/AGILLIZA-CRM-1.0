@@ -18,31 +18,39 @@ import {
   checklistBancoProposta,
   removerArquivoVagaBanco,
 } from "@/lib/propostas/propostas.functions";
-import { ROTULO_TIPO_VAGA, vagaAceitaCategoria } from "@/lib/propostas/enviar/documentos-vagas";
+import {
+  ROTULO_SITUACAO_DOCUMENTO,
+  ROTULO_TIPO_VAGA,
+  vagaAceitaCategoria,
+} from "@/lib/propostas/enviar/documentos-vagas";
 import { nomeDoTipoDocumento } from "@/lib/documentos/tipos-banco";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { normTexto } from "@/lib/propostas/enviar/shared-utils";
 import { cn } from "@/lib/utils";
 
-type Tom = "ok" | "erro" | "alerta";
+type Tom = "ok" | "erro" | "alerta" | "info";
 
 /**
- * Selo da vaga do ponto de vista de quem opera: foi enviado ou falta enviar.
- * "Em análise" (I) aparece quando a HomeFin ainda não concluiu a análise dela;
- * o upload já sobe aprovado, então para o usuário o documento foi enviado.
+ * Selo da vaga do ponto de vista de quem opera, com os mesmos três estados (e
+ * as mesmas três cores) do resto do sistema: enviado e esperando a análise
+ * (azul), aprovado (verde), recusado (vermelho).
+ *
+ * "Em análise" (I) é o normal logo após o upload: ele sobe com
+ * `documentoAprovado=false` e só a HomeFin aprova.
  */
 function estadoDaVaga(v: any): { rotulo: string; tom?: Tom; recusado: boolean } {
   const analise = String(v.situacaoAnalise ?? "P");
-  if (v.situacaoIntegracao === "error") {
-    return { rotulo: "Recusado pelo banco", tom: "erro", recusado: true };
+  if (v.situacaoIntegracao === "error" || analise === "R") {
+    return { rotulo: ROTULO_SITUACAO_DOCUMENTO.erro.label, tom: "erro", recusado: true };
   }
-  if (analise === "R") return { rotulo: "Recusado pela HomeFin", tom: "erro", recusado: true };
   if (analise === "D") return { rotulo: "Dispensado", recusado: false };
-  if (v.situacaoIntegracao === "success") {
-    return { rotulo: "Enviado ao banco", tom: "ok", recusado: false };
+  if (v.situacaoIntegracao === "success" || analise === "A") {
+    return { rotulo: ROTULO_SITUACAO_DOCUMENTO.aprovado.label, tom: "ok", recusado: false };
   }
-  if (v.arquivos.length > 0) return { rotulo: "Enviado à HomeFin", tom: "ok", recusado: false };
+  if (v.arquivos.length > 0) {
+    return { rotulo: ROTULO_SITUACAO_DOCUMENTO.homefin.label, tom: "info", recusado: false };
+  }
   return { rotulo: "Pendente", recusado: false };
 }
 
@@ -218,9 +226,7 @@ export function VagasBanco({
               <p className="text-xs text-muted-foreground">
                 O que a HomeFin pediu e o que já recebeu. Arquivo enviado por aqui também fica salvo
                 no cadastro do cliente.
-                {data && !data.loteAutomatico
-                  ? " A HomeFin repassa estes documentos ao banco."
-                  : ""}
+                {data && !data.loteAutomatico ? " A HomeFin analisa cada documento recebido." : ""}
               </p>
             </div>
           </div>
@@ -244,23 +250,21 @@ export function VagasBanco({
               <Selo tom="erro">{data.resumo.recusados} recusado(s)</Selo>
             )}
             {data.resumo.emAnalise > 0 && (
-              <Selo tom="ok">{data.resumo.emAnalise} enviado(s) à HomeFin</Selo>
+              <Selo tom="info">{data.resumo.emAnalise} enviado(s) à HomeFin</Selo>
             )}
-            {data.resumo.noBanco > 0 && (
-              <Selo tom="ok">{data.resumo.noBanco} enviado(s) ao banco</Selo>
-            )}
+            {data.resumo.noBanco > 0 && <Selo tom="ok">{data.resumo.noBanco} aprovado(s)</Selo>}
           </div>
         )}
 
         {isLoading && (
           <p className="flex items-center text-xs text-muted-foreground">
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Consultando o checklist no
-            banco…
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Consultando o checklist na
+            HomeFin…
           </p>
         )}
         {error && (
           <p className="text-xs text-destructive">
-            {mensagemDeErro(error, "Não foi possível consultar o checklist do banco.")}
+            {mensagemDeErro(error, "Não foi possível consultar o checklist da HomeFin.")}
           </p>
         )}
         {data && vagas.length === 0 && (
@@ -377,7 +381,7 @@ export function VagasBanco({
           <p className="rounded-md border border-dashed border-border p-2 text-xs text-muted-foreground">
             Documentos de{" "}
             {[!temVendedor && "vendedor", !temImovel && "imóvel"].filter(Boolean).join(" e ")}: a
-            HomeFin ainda não pediu nesta etapa. Eles ficam salvos no cadastro e seguem ao banco
+            HomeFin ainda não pediu nesta etapa. Eles ficam salvos no cadastro e seguem à HomeFin
             quando forem pedidos.
           </p>
         )}
@@ -386,7 +390,7 @@ export function VagasBanco({
   );
 }
 
-function Selo({ children, tom }: { children: React.ReactNode; tom?: "ok" | "erro" | "alerta" }) {
+function Selo({ children, tom }: { children: React.ReactNode; tom?: Tom }) {
   return (
     <span
       className={cn(
@@ -394,6 +398,7 @@ function Selo({ children, tom }: { children: React.ReactNode; tom?: "ok" | "erro
         tom === "ok" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
         tom === "erro" && "bg-destructive/15 text-destructive",
         tom === "alerta" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+        tom === "info" && "bg-primary/10 text-primary",
         !tom && "bg-muted text-muted-foreground",
       )}
     >
