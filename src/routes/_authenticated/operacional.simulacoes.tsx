@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Calculator, ListChecks, Building2, Clock } from "lucide-react";
@@ -102,7 +102,13 @@ function Pagina() {
     bancos: any[];
   } | null>(null);
   const [envioCarregando, setEnvioCarregando] = useState(false);
+  // Qual banco está tendo a proposta criada agora. O botão do diálogo fica
+  // travado enquanto isso: a criação leva 1 a 2 s e, até 05/10/2026, nada
+  // impedia um segundo clique de criar uma proposta duplicada (PRO-000685).
+  // O `ref` acompanha o estado porque o segundo clique pode chegar antes do
+  // React redesenhar com o botão desabilitado.
   const [enviandoBancoId, setEnviandoBancoId] = useState<string | null>(null);
+  const criandoRef = useRef(false);
   const [propostasCriadas, setPropostasCriadas] = useState<
     Array<{
       simulacao_banco_id: string;
@@ -315,15 +321,19 @@ function Pagina() {
 
   async function enviarBancoIndividual(banco: any, agenciaJaEscolhida?: string) {
     if (!envio) return;
-    // Bradesco: o popup de agência abre já no clique, antes de criar a proposta.
-    let agencia = agenciaJaEscolhida;
-    if (agencia === undefined) {
-      const resposta = await perguntarAgenciaSeBradesco(banco.nome_banco);
-      if (resposta.cancelado) return;
-      agencia = resposta.agencia;
-    }
+    if (criandoRef.current) return;
+    criandoRef.current = true;
     setEnviandoBancoId(banco.id);
     try {
+      // Bradesco: o popup de agência abre já no clique, antes de criar a
+      // proposta. Fica dentro da trava — enquanto ele responde, o botão do
+      // banco não aceita outro clique.
+      let agencia = agenciaJaEscolhida;
+      if (agencia === undefined) {
+        const resposta = await perguntarAgenciaSeBradesco(banco.nome_banco);
+        if (resposta.cancelado) return;
+        agencia = resposta.agencia;
+      }
       const res = await criar({
         data: { simulacao_id: envio.id, simulacao_banco_id: banco.id },
       });
@@ -373,6 +383,7 @@ function Pagina() {
     } catch (e) {
       toast.error(mensagemDeErro(e, "Não foi possível gerar a proposta."));
     } finally {
+      criandoRef.current = false;
       setEnviandoBancoId(null);
     }
   }
@@ -430,13 +441,15 @@ function Pagina() {
     acc[st] = (acc[st] ?? 0) + 1;
     return acc;
   }, {});
-  const porBanco = cotacoesFiltro ?? itens.reduce<Record<string, number>>((acc, s) => {
-    (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
-      const nome = b.nome_banco ?? b.nome ?? b.banco_nome ?? "Banco";
-      acc[nome] = (acc[nome] ?? 0) + 1;
-    });
-    return acc;
-  }, {});
+  const porBanco =
+    cotacoesFiltro ??
+    itens.reduce<Record<string, number>>((acc, s) => {
+      (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
+        const nome = b.nome_banco ?? b.nome ?? b.banco_nome ?? "Banco";
+        acc[nome] = (acc[nome] ?? 0) + 1;
+      });
+      return acc;
+    }, {});
   const prazoMin = prazos.length ? Math.min(...prazos) : 0;
   const prazoMax = prazos.length ? Math.max(...prazos) : 0;
 
@@ -817,6 +830,7 @@ function Pagina() {
         onClose={() => setEnvio(null)}
         carregando={envioCarregando}
         statusPorBanco={statusPorBanco}
+        criandoBancoId={enviandoBancoId}
         onEnviarBanco={enviarBancoIndividual}
         onEnviarTodos={enviarTodos}
       />

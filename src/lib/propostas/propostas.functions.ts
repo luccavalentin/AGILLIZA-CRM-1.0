@@ -736,6 +736,34 @@ export const criarProposta = createServerFn({ method: "POST" })
       };
     }
 
+    // Dois cliques no mesmo banco criavam duas propostas (PRO-000684 e
+    // PRO-000685, 05/10/2026: mesma simulação, mesmo Itaú, 1,7 s de
+    // diferença, a segunda nunca enviada). A tela ganhou trava, mas ela não
+    // cobre o caso de duas abas, um recarregamento no meio do caminho ou outra
+    // tela que chame isto — a trava que vale é aqui.
+    //
+    // Só reaproveita rascunho INTACTO e NUNCA enviado do mesmo banco desta
+    // mesma simulação. Reenvio depois de uma recusa não passa por aqui (aquela
+    // proposta já tem `enviada_em`), e segue criando proposta nova como sempre.
+    // `bancoEscolhido` vive dentro do bloco acima; aqui fora o banco escolhido
+    // é o único item de `bancosParaVincular`.
+    const bancoDaProposta = bancosParaVincular[0];
+    const reaproveitada =
+      snapshot.simulacao_id && bancoDaProposta?.id
+        ? await rascunhoJaCriado(supabaseAdmin, {
+            correspondenteId: corr,
+            simulacaoId: String(snapshot.simulacao_id),
+            simulacaoBancoId: String(bancoDaProposta.id),
+          })
+        : null;
+    if (reaproveitada) {
+      return {
+        proposta_id: reaproveitada.id,
+        numero_proposta: reaproveitada.numero_proposta,
+        envolvido_pendente_id: await primeiroProponentePendente(supabaseAdmin, reaproveitada.id),
+      };
+    }
+
     const { data: inserted, error: insErr } = await supabaseAdmin
       .from("propostas")
       .insert(snapshot as any)
@@ -987,6 +1015,92 @@ export const criarProposta = createServerFn({ method: "POST" })
       envolvido_pendente_id: await primeiroProponentePendente(supabaseAdmin, inserted.id),
     };
   });
+
+/**
+ * Rascunho já criado para esta simulação e este banco, pronto para ser
+ * reaproveitado no lugar de uma proposta nova — a trava contra o envio
+ * duplicado.
+ *
+ * Exige as cinco condições juntas: mesma simulação, mesma linha de banco,
+ * ainda em rascunho, NUNCA enviada e criada há menos de
+ * `JANELA_RASCUNHO_DUPLICADO_MS`. Falta qualquer uma e devolve `null`, que faz
+ * o fluxo criar a proposta normalmente.
+ *
+ * A janela de tempo é de propósito: o alvo é o clique repetido (o caso real
+ * foram 1,7 s), e um envio em curso leva no máximo ~2 min. Rascunho antigo —
+ * há 12 deles na base em 05/10/2026, alguns de setembro — continua sendo
+ * ignorado, e clicar em "Enviar" de novo cria proposta nova como sempre fez.
+ * Reaproveitar um rascunho de semanas atrás seria mudar um comportamento que
+ * ninguém pediu.
+ *
+ * O evento "criada" no histórico é a última coisa que `criarProposta` grava:
+ * exigi-lo é o que garante que o rascunho está inteiro (participantes e bancos
+ * vinculados). Um rascunho de uma tentativa que morreu no meio não é
+ * reaproveitado — seria pior que criar outro.
+ *
+ * Falha de leitura devolve `null`: na dúvida, cria. Uma proposta a mais é
+ * chato; recusar criar por causa de um erro de consulta trava o operador.
+ */
+const JANELA_RASCUNHO_DUPLICADO_MS = 10 * 60_000;
+
+async function rascunhoJaCriado(
+  supabaseAdmin: any,
+  {
+    correspondenteId,
+    simulacaoId,
+    simulacaoBancoId,
+  }: {
+    correspondenteId: string | null;
+    simulacaoId: string;
+    simulacaoBancoId: string;
+  },
+): Promise<{ id: string; numero_proposta: string } | null> {
+  if (!simulacaoId || simulacaoId === "undefined" || !simulacaoBancoId) return null;
+  try {
+    const { data: candidatas, error } = await supabaseAdmin
+      .from("propostas")
+      .select("id, numero_proposta")
+      .eq("correspondente_id", correspondenteId)
+      .eq("simulacao_id", simulacaoId)
+      .eq("status", "rascunho")
+      .is("enviada_em", null)
+      .is("deleted_at", null)
+      .gte("created_at", new Date(Date.now() - JANELA_RASCUNHO_DUPLICADO_MS).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (error) throw new Error(error.message);
+    const ids = ((candidatas ?? []) as any[]).map((p) => String(p.id));
+    if (ids.length === 0) return null;
+
+    const { data: linhasBanco, error: erroBanco } = await supabaseAdmin
+      .from("proposta_bancos")
+      .select("proposta_id")
+      .in("proposta_id", ids)
+      .eq("simulacao_banco_id", simulacaoBancoId);
+    if (erroBanco) throw new Error(erroBanco.message);
+    const doMesmoBanco = new Set(((linhasBanco ?? []) as any[]).map((l) => String(l.proposta_id)));
+    if (doMesmoBanco.size === 0) return null;
+
+    const { data: criadas, error: erroHist } = await supabaseAdmin
+      .from("proposta_historico")
+      .select("proposta_id")
+      .in("proposta_id", [...doMesmoBanco])
+      .eq("tipo_evento", "criada");
+    if (erroHist) throw new Error(erroHist.message);
+    const inteiras = new Set(((criadas ?? []) as any[]).map((l) => String(l.proposta_id)));
+
+    // `candidatas` já vem da mais nova para a mais antiga.
+    const escolhida = ((candidatas ?? []) as any[]).find(
+      (p) => doMesmoBanco.has(String(p.id)) && inteiras.has(String(p.id)),
+    );
+    return escolhida
+      ? { id: String(escolhida.id), numero_proposta: String(escolhida.numero_proposta) }
+      : null;
+  } catch (e) {
+    console.error("[criarProposta] checagem de rascunho duplicado falhou", e);
+    return null;
+  }
+}
 
 /**
  * Primeiro proponente da proposta que ainda não tem todos os campos exigidos

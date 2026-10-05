@@ -35,6 +35,7 @@ export function EnviarPropostaDialog({
   onClose,
   carregando,
   statusPorBanco,
+  criandoBancoId = null,
   onEnviarBanco,
   onEnviarTodos,
 }: {
@@ -42,6 +43,15 @@ export function EnviarPropostaDialog({
   onClose: () => void;
   carregando: boolean;
   statusPorBanco: Record<string, StatusEnvioBanco>;
+  /**
+   * Linha de banco cuja proposta está sendo criada agora.
+   *
+   * `statusPorBanco` sozinho não cobre este momento: nesta tela o clique só
+   * CRIA a proposta (1 a 2 s) e o envio acontece depois, já na tela dela — o
+   * hook de envio nem entrou em cena ainda. Sem isto o botão seguia clicável
+   * durante a criação e um segundo clique gerava proposta duplicada.
+   */
+  criandoBancoId?: string | null;
   onEnviarBanco: (banco: any) => void;
   onEnviarTodos: (bancos: any[]) => void;
 }) {
@@ -61,7 +71,8 @@ export function EnviarPropostaDialog({
   const statusDoBanco = (b: any): StatusEnvioBanco | undefined =>
     statusPorBanco[b.id] ?? statusPorBanco[b.banco_id];
 
-  const enviandoQualquer = Object.values(statusPorBanco).some((s) => s.status === "loading");
+  const enviandoQualquer =
+    Object.values(statusPorBanco).some((s) => s.status === "loading") || Boolean(criandoBancoId);
   const todosConcluidos =
     simulados.length > 0 &&
     simulados.every((b) => {
@@ -261,6 +272,7 @@ export function EnviarPropostaDialog({
                               variant="ghost"
                               size="sm"
                               className="h-7 px-2 text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/10 hover:text-destructive"
+                              disabled={enviandoQualquer}
                               onClick={() => {
                                 if (status.erroEstruturado?.codigo === "CADASTRO_INCOMPLETO") {
                                   onClose();
@@ -296,7 +308,15 @@ export function EnviarPropostaDialog({
                             onClick={() => onEnviarBanco(b)}
                             disabled={enviandoQualquer}
                           >
-                            <Send className="mr-1.5 h-3.5 w-3.5" /> Enviar
+                            {criandoBancoId === b.id ? (
+                              <>
+                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Criando…
+                              </>
+                            ) : (
+                              <>
+                                <Send className="mr-1.5 h-3.5 w-3.5" /> Enviar
+                              </>
+                            )}
                           </Button>
                         )}
                       </div>
