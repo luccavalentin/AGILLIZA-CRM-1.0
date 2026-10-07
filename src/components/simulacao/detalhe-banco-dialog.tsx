@@ -305,8 +305,8 @@ export function DetalheBancoDialog({
                     </h3>
                     {detalhe!.parcelasEstimadas && (
                       <p className="text-xs text-muted-foreground">
-                        Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª e
-                        última parcela reais).
+                        Projeção pela taxa e sistema do banco: amortização + juros, sem seguros
+                        MIP/DFI (o banco não informa o seguro mês a mês).
                       </p>
                     )}
                   </div>
@@ -320,7 +320,9 @@ export function DetalheBancoDialog({
                         <TableHead>Data</TableHead>
                         <TableHead className="text-right">Amortização</TableHead>
                         <TableHead className="text-right">Juros</TableHead>
-                        <TableHead className="text-right">Parcela</TableHead>
+                        <TableHead className="text-right">
+                          {detalhe!.parcelasEstimadas ? "Parcela s/ seguro" : "Parcela"}
+                        </TableHead>
                         <TableHead className="text-right">Saldo devedor</TableHead>
                       </TableRow>
                     </TableHeader>

@@ -295,90 +295,22 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     parcelas = calcularPlano(valorFin, prazo, taxaMes, sistema, dataInicial);
     estimadas = parcelas.length > 0;
 
-    // A parcela calculada (amortização + juros) não inclui seguros (MIP/DFI) e
-    // taxa de administração. Esses encargos NÃO são fixos: o MIP é cobrado
-    // sobre o saldo devedor e cai mês a mês até ~zero na última parcela
-    // (Bradesco, Itaú e Santander). Somar o encargo da 1ª parcela em todas as
-    // 420 inflava o total em dezenas de milhares de reais.
-    // Modelo: encargo_k = fixo + variável × (saldo antes da parcela k / principal),
-    // calibrado pela 1ª parcela real e por um segundo ponto do banco:
-    //  - Itaú: somatório real das parcelas (installmentsTotalValue) — o MIP do
-    //    Itaú sobe com a idade, então o encargo médio é maior que o da 1ª;
-    //  - Bradesco: CET informado pelo banco (valorCetAno), que já embute o
-    //    seguro de todas as parcelas; o MIP do Bradesco também sobe com a idade;
-    //  - senão, última parcela real; sem nada, encargo proporcional ao saldo.
-    // 1ª e última parcelas usam sempre o valor exato informado pelo banco.
-    const parcelaBanco =
-      num(r.valorParcelaBanco) ?? num(desc.installmentValue) ?? primeiraParcelaApi;
-    if (estimadas && parcelaBanco != null && parcelaBanco > 0) {
-      const n = parcelas.length;
-      const e1 = parcelaBanco - parcelas[0].parcela;
-      if (e1 > 0) {
-        const ultimaReal =
-          ultimaParcelaApi != null && ultimaParcelaApi > 0 ? ultimaParcelaApi : null;
-        const ratio = parcelas.map((p) => (p.saldoDevedor + p.amortizacao) / valorFin);
-        const totalBanco = num(desc.installmentsTotalValue);
-        const cetBradesco = num(desc.valorCetAno);
-        const base = parcelas;
-        const montar = (variavel: number) =>
-          base.map((p, k) => {
-            const encargo = Math.max(0, e1 - variavel + variavel * ratio[k]);
-            const exata = k === 0 ? parcelaBanco : k === n - 1 ? ultimaReal : null;
-            return { ...p, parcela: Math.round((exata ?? p.parcela + encargo) * 100) / 100 };
-          });
-
-        let variavel = e1;
-        let calibrado = false;
-        if (totalBanco != null && totalBanco > 0 && n > 2) {
-          // Encargos das parcelas 1..n-1 precisam fechar o total do banco
-          // (a última entra pelo valor exato).
-          const somaCalc = parcelas.slice(0, n - 1).reduce((s, p) => s + p.parcela, 0);
-          const alvo = totalBanco - (ultimaReal ?? parcelas[n - 1].parcela) - somaCalc;
-          const somaRatio = ratio.slice(0, n - 1).reduce((s, v) => s + v, 0);
-          // alvo = (n-1)·fixo + variável·somaRatio, com fixo = e1 − variável
-          const den = somaRatio - (n - 1);
-          if (alvo > 0 && den !== 0) {
-            variavel = (alvo - (n - 1) * e1) / den;
-            calibrado = true;
-          }
-        } else if (cetBradesco != null && cetBradesco > 0) {
-          // Custos à vista do CET do Bradesco: tarifa de avaliação (valorTag) + IOF.
-          const custos =
-            (num(desc.valorTag) ?? TARIFA_AVALIACAO_GARANTIA_PADRAO) + (num(desc.valorIof) ?? 0);
-          const cetCom = (v: number) => calcularCET(valorFin, montar(v), custos);
-          // CET cai conforme "variável" sobe (menos seguro nas parcelas finais).
-          let lo = -20 * e1;
-          let hi = e1;
-          const cLo = cetCom(lo);
-          const cHi = cetCom(hi);
-          if (cLo != null && cHi != null && cLo >= cetBradesco && cHi <= cetBradesco) {
-            for (let it = 0; it < 60; it++) {
-              const mid = (lo + hi) / 2;
-              const c = cetCom(mid);
-              if (c == null) break;
-              if (c > cetBradesco) lo = mid;
-              else hi = mid;
-            }
-            variavel = (lo + hi) / 2;
-            calibrado = true;
-          }
-        }
-        if (!calibrado && ultimaReal != null) {
-          const eN = Math.max(0, ultimaReal - parcelas[n - 1].parcela);
-          const rN = ratio[n - 1];
-          if (rN < 1) variavel = (e1 - eN) / (1 - rN);
-        }
-        if (!Number.isFinite(variavel)) variavel = e1;
-
-        parcelas = montar(variavel);
-      }
-    }
+    // Bradesco e Itaú não devolvem o seguro (MIP/DFI) mês a mês — só o da 1ª
+    // parcela. Não estimamos seguro: as parcelas projetadas são apenas
+    // amortização + juros, e a 1ª/última parcela reais (com seguro) vêm nos
+    // campos primeiraParcela/ultimaParcela, exatamente como o banco informou.
   }
 
   // IOF e tarifa de avaliação são custos à vista (deduzidos do valor liberado
   // no cálculo do CET conforme Bacen).
-  const iofValor = num(desc.iof?.totalValue ?? desc.iof?.value) ?? num(r.valorIofBanco) ?? 0;
+  const iofValor =
+    num(desc.iof?.totalValue ?? desc.iof?.value) ??
+    num(desc.valorIof) ??
+    num(r.valorIofBanco) ??
+    0;
   const tarifaAvaliacaoValor =
+    // Bradesco: valorTag = Tarifa de Avaliação de Garantia real do banco.
+    num(desc.valorTag) ??
     num(desc.propertyEvaluation) ??
     num(desc.appraisalFee) ??
     num(desc.evaluationFee) ??
@@ -389,7 +321,11 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     TARIFA_AVALIACAO_GARANTIA_PADRAO;
   const custosAVista = (iofValor || 0) + (tarifaAvaliacaoValor || 0);
 
-  const somatorio = parcelas.length ? parcelas.reduce((s, p) => s + p.parcela, 0) : null;
+  // Somatório: o total real do banco quando informado (Itaú). Em plano projetado
+  // sem total do banco, a soma não teria os seguros — então não mostramos.
+  const somatorio =
+    num(desc.installmentsTotalValue) ??
+    (parcelas.length && !estimadas ? parcelas.reduce((s, p) => s + p.parcela, 0) : null);
   const cet =
     num(desc.cetAnnual) ??
     num(desc.cet) ??

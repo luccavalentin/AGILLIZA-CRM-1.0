@@ -594,7 +594,16 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
       { content: "", styles: { halign: "right" as const } },
     ];
 
-    const cabecalho = [["Parc.", "Data", "Amortização", "Juros", "Parcela", "Saldo devedor"]];
+    const cabecalho = [
+      [
+        "Parc.",
+        "Data",
+        "Amortização",
+        "Juros",
+        d?.parcelasEstimadas ? "Parcela s/ seguro" : "Parcela",
+        "Saldo devedor",
+      ],
+    ];
     const estiloTabela = {
       styles: {
         fontSize: 7,
@@ -641,7 +650,7 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
       doc.setFontSize(6.5);
       doc.setTextColor(P.cinza);
       doc.text(
-        "Projeção a partir da taxa/sistema do banco (1ª/última reais).",
+        "Projeção pela taxa/sistema do banco, sem seguros MIP/DFI (o banco não informa mês a mês).",
         rightX,
         blocoTop + 10,
         {
@@ -1035,7 +1044,7 @@ function criarDocSimulacaoDetalhada({
       doc.setFontSize(7);
       doc.setTextColor(P.cinza);
       doc.text(
-        "Projeção calculada a partir da taxa e do sistema informados pelo banco (1ª/última parcela reais).",
+        "Projeção pela taxa do banco: amortização + juros, sem seguros MIP/DFI (não informados mês a mês).",
         pageW - MARGIN,
         y,
         { align: "right" },
@@ -1051,7 +1060,16 @@ function criarDocSimulacaoDetalhada({
     } else {
       autoTable(doc, {
         startY: y,
-        head: [["Parc.", "Data", "Amortização", "Juros", "Parcela", "Saldo devedor"]],
+        head: [
+          [
+            "Parc.",
+            "Data",
+            "Amortização",
+            "Juros",
+            d?.parcelasEstimadas ? "Parcela s/ seguro" : "Parcela",
+            "Saldo devedor",
+          ],
+        ],
         body: parcelas.map((p) => [
           String(p.numero),
           p.data ? dataTxt(p.data) : "—",
