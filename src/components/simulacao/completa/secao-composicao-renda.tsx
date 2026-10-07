@@ -293,7 +293,7 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                       />
                     </Campo>
 
-                    <Campo label="Sexo *">
+                    <Campo label="Gênero *">
                       <Select
                         value={p.sexo}
                         onValueChange={(v) => updateParticipante(p.id, "sexo", v)}

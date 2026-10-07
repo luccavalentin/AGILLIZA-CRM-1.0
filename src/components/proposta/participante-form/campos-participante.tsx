@@ -114,7 +114,7 @@ export function CamposParticipante({
               />
             </Campo>
             <SelSelect
-              label="Sexo"
+              label="Gênero"
               value={f.tipo_sexo}
               options={TIPO_SEXO}
               onChange={(v) => set({ tipo_sexo: v })}

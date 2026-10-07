@@ -223,10 +223,10 @@ export function SecaoConjuge({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             label={
               f.compoe_renda_conjuge ? (
                 <>
-                  Sexo <Ast />
+                  Gênero <Ast />
                 </>
               ) : (
-                "Sexo"
+                "Gênero"
               )
             }
           >

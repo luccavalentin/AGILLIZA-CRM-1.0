@@ -24,7 +24,7 @@ const baseSolteiro = {
 };
 
 const pedeSexoDoConjuge = (sim: any) =>
-  validarCamposSimulacao(sim).some((c) => c.campo === "Sexo do cônjuge");
+  validarCamposSimulacao(sim).some((c) => c.campo === "Gênero do cônjuge");
 
 describe("validarCamposSimulacao — sexo do cônjuge", () => {
   it("não exige para titular solteiro preenchido manualmente", () => {
@@ -91,7 +91,7 @@ describe("validarCamposSimulacao — sexo do cônjuge", () => {
 // ---------------------------------------------------------------------------
 // O bloqueio real chegava pelo schema, não por `validarCamposSimulacao`: o
 // enum de `sexo_conjuge` reprovava string vazia, e o erro saía com o rótulo
-// "Sexo do cônjuge".
+// "Gênero do cônjuge".
 // ---------------------------------------------------------------------------
 
 const simulacaoCompletaSolteiro = {
@@ -153,7 +153,7 @@ const basePJ = {
 describe("pessoa jurídica", () => {
   it("não exige sexo nem estado civil de PJ", () => {
     const campos = validarCamposSimulacao(basePJ).map((c) => c.campo);
-    expect(campos).not.toContain("Sexo");
+    expect(campos).not.toContain("Gênero");
     expect(campos).not.toContain("Estado civil");
   });
 
@@ -163,7 +163,7 @@ describe("pessoa jurídica", () => {
       tipo_pessoa: "PF",
       cpf_cnpj: "12345678909",
     }).map((c) => c.campo);
-    expect(campos).toContain("Sexo");
+    expect(campos).toContain("Gênero");
     expect(campos).toContain("Estado civil");
   });
 

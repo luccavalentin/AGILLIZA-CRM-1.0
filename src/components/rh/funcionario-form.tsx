@@ -549,7 +549,7 @@ export function FuncionarioForm({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Sexo</Label>
+                <Label>Gênero</Label>
                 <Select value={f.sexo ?? ""} onValueChange={(v) => set("sexo", v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />

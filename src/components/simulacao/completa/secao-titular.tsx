@@ -341,7 +341,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               <Campo
                 label={
                   <>
-                    Sexo <Ast />
+                    Gênero <Ast />
                   </>
                 }
               >

@@ -37,7 +37,7 @@ export const CAMPOS_OBRIGATORIOS_PARTICIPANTE: CampoObrigatorio[] = [
   { chave: "cpf_cnpj", api: "cpfCnpj", label: "CPF/CNPJ" },
   { chave: "data_nascimento", api: "dataNascimento", label: "Data de nascimento", apenasPF: true },
   { chave: "nome_mae", api: "nomeMae", label: "Nome da mãe", apenasPF: true },
-  { chave: "tipo_sexo", api: "tipoSexo", label: "Sexo", apenasPF: true },
+  { chave: "tipo_sexo", api: "tipoSexo", label: "Gênero", apenasPF: true },
   { chave: "estado_civil", api: "tipoEstadoCivil", label: "Estado civil", apenasPF: true },
   {
     chave: "tipo_documento_identidade",

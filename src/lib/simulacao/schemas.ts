@@ -56,7 +56,7 @@ export const participanteSchema = z.object({
   data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
   renda: z.number().min(0),
   vinculo: z.string().min(1, "Selecione o vínculo"),
-  sexo: z.enum(["M", "F"], { errorMap: () => ({ message: "Selecione o sexo" }) }),
+  sexo: z.enum(["M", "F"], { errorMap: () => ({ message: "Selecione o gênero" }) }),
   estado_civil: z.string().min(1, "Selecione o estado civil"),
   compoe_renda: z.boolean().default(true),
   // Campos obrigatórios para HomeFin
@@ -165,7 +165,7 @@ export const completaSchema = z
     }),
   })
   .refine((d) => (d.tipo_pessoa === "PJ" ? true : Boolean(d.sexo)), {
-    message: "Selecione o sexo",
+    message: "Selecione o gênero",
     path: ["sexo"],
   })
   .refine((d) => (d.tipo_pessoa === "PJ" ? true : String(d.estado_civil ?? "").trim() !== ""), {
@@ -189,7 +189,7 @@ export const completaSchema = z
       return true;
     },
     {
-      message: "Selecione o sexo do cônjuge",
+      message: "Selecione o gênero do cônjuge",
       path: ["sexo_conjuge"],
     },
   )

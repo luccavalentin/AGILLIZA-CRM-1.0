@@ -34,7 +34,7 @@ export function validarCamposSimulacao(sim: any): CampoFaltante[] {
   if (!rot(sim?.data_nascimento)) add("Data de nascimento");
   // PJ não tem sexo nem estado civil; cobrá-los impede o envio da modalidade.
   const ehPJ = String(sim?.tipo_pessoa ?? "PF").toUpperCase() === "PJ";
-  if (!ehPJ && !rot(sim?.sexo)) add("Sexo");
+  if (!ehPJ && !rot(sim?.sexo)) add("Gênero");
   if (!rot(sim?.email)) add("E-mail");
   if (rot(sim?.celular).replace(/\D/g, "").length < 10) add("Celular");
   if (!(Number(sim?.renda_total) > 0)) add("Renda total");
@@ -54,7 +54,7 @@ export function validarCamposSimulacao(sim: any): CampoFaltante[] {
   const conjugeIdentificado =
     rot(sim?.nome_conjuge) !== "" || rot(sim?.cpf_conjuge).replace(/\D/g, "") !== "";
   if (casadoTitular && conjugeIdentificado && !rot(sim?.sexo_conjuge)) {
-    add("Sexo do cônjuge");
+    add("Gênero do cônjuge");
   }
 
   // Regime de bens e estado civil do cônjuge.

@@ -147,7 +147,7 @@ export function DialogVendedor({
                     onChange={(v) => set({ data_nascimento: v })}
                   />
                 </Campo>
-                <Campo label="Sexo">
+                <Campo label="Gênero">
                   <Select value={form.sexo || undefined} onValueChange={(v) => set({ sexo: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />

@@ -108,8 +108,8 @@ const ROTULO_CAMPO: Record<string, string> = {
   municipio: "Município",
   cidade: "Cidade",
   uf: "UF",
-  gender: "Sexo",
-  tiposexo: "Sexo",
+  gender: "Gênero",
+  tiposexo: "Gênero",
 };
 
 function rotularCampo(nome: unknown): string | null {

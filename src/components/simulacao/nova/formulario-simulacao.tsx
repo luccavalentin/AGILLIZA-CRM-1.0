@@ -385,7 +385,7 @@ export function FormularioSimulacao({
         </div>
         <div className="space-y-1.5">
           <Label>
-            Sexo <Ast />
+            Gênero <Ast />
           </Label>
           <Select value={w.sexo} onValueChange={(v) => set("sexo", v as any)}>
             <SelectTrigger>

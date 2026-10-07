@@ -235,7 +235,7 @@ export function DadosBasicosSection({
 
         {/* 10. Sexo */}
         <div className="space-y-1.5">
-          <Label>Sexo</Label>
+          <Label>Gênero</Label>
           <Select value={v.sexo || undefined} onValueChange={(x) => set("sexo", x)}>
             <SelectTrigger className={cls("sexo")}>
               <SelectValue placeholder="Selecione" />

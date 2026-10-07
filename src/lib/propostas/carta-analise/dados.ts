@@ -213,13 +213,14 @@ export function camposIniciaisCarta({
   const indexadorBruto = String(
     banco?.codigo_indexador ?? proposta?.codigo_indexador_aprovado ?? "",
   ).trim();
-  // Parcela e taxa saem da simulação daquele banco — o par que o cliente viu
-  // e que fecha entre si. Só cai para os campos da proposta quando a simulação
-  // de origem não está ligada (propostas antigas, sem `simulacao_banco_id`).
+  // Taxa: a que o banco de fato aprovou, exibida como veio, sem cálculo. O
+  // sync da aprovação grava a taxa de cada banco em `proposta_bancos` e a do
+  // banco escolhido em `taxa_juros_ano_aprovado`. A da simulação só entra em
+  // proposta sem retorno de aprovação gravado.
   const taxa =
-    num(banco?.simulacao_taxa_juros_ano) ??
     num(banco?.taxa_juros_ano) ??
-    num(proposta?.taxa_juros_ano_aprovado);
+    num(proposta?.taxa_juros_ano_aprovado) ??
+    num(banco?.simulacao_taxa_juros_ano);
 
   return {
     numeroAnalise: String(banco?.numero_proposta_banco ?? proposta?.numero_proposta ?? "").trim(),
@@ -240,7 +241,9 @@ export function camposIniciaisCarta({
     sistemaAmortizacao: SISTEMAS[sistema] ?? sistema,
     prazo: prazo ? `${prazo} meses` : "",
     indexador: INDEXADORES[indexadorBruto.toUpperCase()] ?? indexadorBruto,
-    taxaJuros: taxa ? `${taxa.toFixed(2).replace(".", ",")}% a.a.` : "",
+    taxaJuros: taxa
+      ? `${taxa.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}% a.a.`
+      : "",
     rendaFamiliar: dinheiro(proposta?.renda_total),
     agencia: String(banco?.agencia ?? proposta?.agencia ?? "").trim(),
     // Só sai na carta quando a proposta financia as custas: o valor vem da

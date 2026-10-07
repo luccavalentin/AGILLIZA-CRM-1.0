@@ -120,6 +120,21 @@ describe("camposIniciaisCarta", () => {
     expect(c.taxaJuros).toBe("13,85% a.a.");
   });
 
+  it("a taxa é a da aprovação do banco, exibida como veio", () => {
+    const c = camposIniciaisCarta({
+      ...base,
+      proposta: { ...base.proposta, taxa_juros_ano_aprovado: 11.49 },
+      banco: { ...base.banco, taxa_juros_ano: 11.4934, simulacao_taxa_juros_ano: 13.85 },
+    });
+    expect(c.taxaJuros).toBe("11,4934% a.a.");
+    const semNoBanco = camposIniciaisCarta({
+      ...base,
+      proposta: { ...base.proposta, taxa_juros_ano_aprovado: 11.49 },
+      banco: { ...base.banco, taxa_juros_ano: null, simulacao_taxa_juros_ano: 13.85 },
+    });
+    expect(semNoBanco.taxaJuros).toBe("11,49% a.a.");
+  });
+
   it("cada banco leva a parcela da própria simulação", () => {
     const daSimulacao = (nome: string, parcela: number, taxa: number) =>
       camposIniciaisCarta({
@@ -134,7 +149,6 @@ describe("camposIniciaisCarta", () => {
     expect(daSimulacao("Bradesco", 4430.24, 13.85).primeiraParcela).toMatch(/4\.430,24/);
     expect(daSimulacao("Itaú", 4421.76, 13.85).primeiraParcela).toMatch(/4\.421,76/);
     expect(daSimulacao("Santander", 4307.99, 13.29).primeiraParcela).toMatch(/4\.307,99/);
-    expect(daSimulacao("Santander", 4307.99, 13.29).taxaJuros).toBe("13,29% a.a.");
   });
 
   it("preenche o que o sistema já tem", () => {

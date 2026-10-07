@@ -243,7 +243,7 @@ export const CAMPO_LABEL: Record<string, string> = {
   uf_expedicao: "UF de expedição",
   data_expedicao: "Data de expedição",
   data_nascimento: "Data de nascimento",
-  sexo: "Sexo",
+  sexo: "Gênero",
   nacionalidade: "Nacionalidade",
   naturalidade: "Naturalidade",
   nome_mae: "Nome da mãe",

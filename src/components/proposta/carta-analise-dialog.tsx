@@ -133,7 +133,13 @@ export function CartaAnaliseDialog({
       envolvidos: (data.envolvidos as any[]) ?? [],
     });
     const rascunho = lerRascunho(chaveRascunho(propostaId, banco.id));
-    const inicial = { ...iniciais, ...rascunho, data: iniciais.data };
+    // A taxa é a da aprovação: rascunho antigo do navegador não pode trocá-la.
+    const inicial = {
+      ...iniciais,
+      ...rascunho,
+      data: iniciais.data,
+      taxaJuros: iniciais.taxaJuros,
+    };
     setCampos(inicial);
     // Quem já escreveu observações neste rascunho continua com a página ligada.
     setIncluirObservacoes(Boolean(inicial.textoFgts?.trim() || inicial.observacoes?.trim()));
