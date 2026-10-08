@@ -2184,7 +2184,7 @@ export const documentosHomefinProposta = createServerFn({ method: "POST" })
       nome_vaga: string | null;
       dono_vaga: string | null;
       tipo_vaga: string | null;
-      situacao: "enviado" | "homefin" | "erro";
+      situacao: "enviado" | "homefin" | "erro" | "aprovado";
       mensagem: string | null;
       atualizado_em: string;
     }[];

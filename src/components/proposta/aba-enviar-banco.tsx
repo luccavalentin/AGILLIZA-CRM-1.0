@@ -181,7 +181,9 @@ function situacaoDoDocumento(
 
 /** Já está na HomeFin (em análise ou aprovado): não pede para enviar de novo. */
 const jaEnviado = (d: { situacao_integracao?: string | null }) =>
-  d.situacao_integracao === "enviado" || d.situacao_integracao === "homefin";
+  d.situacao_integracao === "enviado" ||
+  d.situacao_integracao === "homefin" ||
+  d.situacao_integracao === "aprovado";
 
 function ehFormatoBanco(d: { mime_type?: string | null; nome_arquivo?: string | null }): boolean {
   const mime = String(d.mime_type ?? "").toLowerCase();
@@ -307,6 +309,7 @@ export function AbaEnviarBanco({
         envios.find((e) => e.situacao === "erro") ??
         envios.find((e) => e.situacao === "homefin") ??
         envios.find((e) => e.situacao === "enviado") ??
+        envios.find((e) => e.situacao === "aprovado") ??
         null;
       return {
         ...d,
