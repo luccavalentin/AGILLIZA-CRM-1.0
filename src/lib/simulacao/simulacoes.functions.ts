@@ -355,7 +355,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           .from("simulacoes")
           .select("id, numero_simulacao, agrupador_id")
           .eq("cpf_cnpj", cpfTitularSim)
-          .eq("cliente_id", dd.cliente_id || "")
+          // Sem cliente vinculado: compara com "is null" — eq("") é UUID inválido
+          // e a consulta inteira falhava (400), desligando esta proteção.
+          .filter("cliente_id", dd.cliente_id ? "eq" : "is", dd.cliente_id || null)
           .eq("sistema_amortizacao", dd.sistema_amortizacao || "S")
           .eq("valor_imovel", dd.valor_imovel || 0)
           .eq("valor_financiamento", dd.valor_financiamento || 0)
