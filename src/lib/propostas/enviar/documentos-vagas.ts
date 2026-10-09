@@ -307,8 +307,6 @@ export const ROTULO_SITUACAO_DOCUMENTO: Record<
  * `documentoAprovado=false`, então o normal é "I" (em análise) até a HomeFin
  * aprovar e o documento virar "A".
  */
-export const PREFIXO_COMENTARIO_HOMEFIN = "Comentário da HomeFin: ";
-
 export function situacaoDoItem(
   item: any,
   ignorado?: any | null,
@@ -317,12 +315,7 @@ export function situacaoDoItem(
   const analise = String(item?.tipoSituacao ?? "")
     .toUpperCase()
     .charAt(0);
-  // O analista da HomeFin pode comentar também documento aprovado ou em
-  // análise; antes o comentário só era lido na recusa e se perdia nos demais.
-  const comentarioAnalise = String(item?.comentarioAnalise ?? "").trim();
-  const comComentario = (padrao: string | null) =>
-    comentarioAnalise ? `${PREFIXO_COMENTARIO_HOMEFIN}${comentarioAnalise}` : padrao;
-  if (integracao === "success") return { situacao: "enviado", mensagem: comComentario(null) };
+  if (integracao === "success") return { situacao: "enviado", mensagem: null };
   if (integracao === "error") {
     return {
       situacao: "erro",
@@ -338,9 +331,7 @@ export function situacaoDoItem(
   }
   // "A" é a aprovação da HomeFin — a única que autoriza chamar o documento de
   // aprovado no nosso sistema.
-  if (analise === "A") {
-    return { situacao: "aprovado", mensagem: comComentario("Aprovado na HomeFin.") };
-  }
+  if (analise === "A") return { situacao: "aprovado", mensagem: "Aprovado na HomeFin." };
   // O texto da HomeFin é técnico ("use documentoAprovado=true…"): o usuário vê
   // só o que aconteceu com o documento.
   if (ignorado) {
@@ -349,8 +340,8 @@ export function situacaoDoItem(
       mensagem: MENSAGEM_IGNORADO[String(ignorado?.motivo ?? "")] ?? MENSAGEM_HOMEFIN,
     };
   }
-  if (analise === "I") return { situacao: "homefin", mensagem: comComentario(MENSAGEM_EM_ANALISE) };
-  return { situacao: "homefin", mensagem: comComentario(MENSAGEM_HOMEFIN) };
+  if (analise === "I") return { situacao: "homefin", mensagem: MENSAGEM_EM_ANALISE };
+  return { situacao: "homefin", mensagem: MENSAGEM_HOMEFIN };
 }
 
 /**
