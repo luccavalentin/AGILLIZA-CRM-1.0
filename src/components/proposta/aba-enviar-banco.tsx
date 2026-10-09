@@ -76,6 +76,7 @@ import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 import {
   donoDoDocumento,
+  PREFIXO_COMENTARIO_HOMEFIN,
   ROTULO_SITUACAO_DOCUMENTO,
   type SituacaoDocumentoBanco,
 } from "@/lib/propostas/enviar/documentos-vagas";
@@ -937,6 +938,14 @@ export function AbaEnviarBanco({
                             {d.situacao_integracao === "erro" && d.erro_integracao && (
                               <p className="mt-0.5 text-xs text-destructive">{d.erro_integracao}</p>
                             )}
+                            {d.situacao_integracao !== "erro" &&
+                              String(d.erro_integracao ?? "").startsWith(
+                                PREFIXO_COMENTARIO_HOMEFIN,
+                              ) && (
+                                <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                                  {d.erro_integracao}
+                                </p>
+                              )}
                           </div>
                           <div className="flex shrink-0 items-center gap-1">
                             {apto && (
