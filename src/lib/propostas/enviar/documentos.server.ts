@@ -1078,5 +1078,62 @@ export async function atualizarSituacaoDocumentosImpl({
       } as any);
     }
   }
+
+  try {
+    await importarComentariosDocumentos({ supabase, propostaId, itens });
+  } catch (e) {
+    console.error("[documentos] importação dos comentários da HomeFin falhou", e);
+  }
   return { atualizados, recusados, resumo };
+}
+
+/**
+ * Comentário do analista da HomeFin em cada documento (`comentarioAnalise`,
+ * em qualquer `tipoSituacao`) vira comentário na aba FUP da proposta, em nome
+ * da HomeFin. Grava uma vez só: o mesmo texto no mesmo documento não se repete
+ * a cada leitura. Tipo próprio ("homefin_documento") para não ser apagado pelo
+ * espelho das atividades (tipo "banco"), que é reescrito a cada sincronização.
+ */
+async function importarComentariosDocumentos({
+  supabase,
+  propostaId,
+  itens,
+}: {
+  supabase: SupabaseClient<any, any, any>;
+  propostaId: string;
+  itens: any[];
+}) {
+  const novos = (itens ?? [])
+    .map((i: any) => {
+      const comentario = String(i?.comentarioAnalise ?? "").trim();
+      if (!comentario) return null;
+      const doc = String(i?.nomeDocumento ?? "Documento").trim();
+      const referente = String(i?.referente ?? "").trim();
+      const titulo = `Análise do documento: ${doc}${referente ? ` (${referente})` : ""}`;
+      const d = i?.dataHoraAnalise ? new Date(i.dataHoraAnalise) : null;
+      const created_at = d && !Number.isNaN(d.getTime()) ? d.toISOString() : new Date().toISOString();
+      return { titulo, comentario, created_at };
+    })
+    .filter(Boolean) as { titulo: string; comentario: string; created_at: string }[];
+  if (novos.length === 0) return;
+
+  const { data: atuais } = await supabase
+    .from("proposta_followups")
+    .select("titulo, comentario")
+    .eq("proposta_id", propostaId)
+    .eq("tipo", "homefin_documento");
+  const ja = new Set((atuais ?? []).map((a: any) => `${a.titulo}|${a.comentario}`));
+  const inserir = novos.filter((n) => !ja.has(`${n.titulo}|${n.comentario}`));
+  if (inserir.length === 0) return;
+
+  await supabase.from("proposta_followups").insert(
+    inserir.map((n) => ({
+      proposta_id: propostaId,
+      tipo: "homefin_documento",
+      titulo: n.titulo,
+      comentario: n.comentario,
+      homefin_enviado: true,
+      created_at: n.created_at,
+    })) as any,
+  );
 }
