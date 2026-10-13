@@ -166,10 +166,19 @@ function mapParcela(p: Record<string, any>): ParcelaDetalhe {
   };
 }
 
+/** Trunca em centavos sem cair em erro de ponto flutuante (ex.: 0,29999...). */
+function truncCentavos(v: number): number {
+  return Math.floor(Math.round(v * 1e6) / 1e4) / 100;
+}
+
 /**
  * Calcula o plano de pagamento completo e exato a partir do sistema de amortização
  * (SAC ou PRICE), do valor financiado, do prazo e da taxa mensal. Cada parcela é
  * composta apenas por amortização + juros (sem seguros ou tarifas).
+ *
+ * `truncarCentavos`: regra do Itaú — no SAC a amortização é saldo ÷ meses
+ * restantes e os juros saldo × taxa, ambos truncados no centavo (conferido
+ * contra simulações reais do Itaú: 1ª e última parcela iguais às do banco).
  */
 export function calcularPlano(
   principal: number,
@@ -177,22 +186,28 @@ export function calcularPlano(
   taxaMesPct: number,
   sistema: string,
   dataInicial: string | null,
+  opts?: { truncarCentavos?: boolean },
 ): ParcelaDetalhe[] {
   if (!(principal > 0) || !(n > 0) || !(taxaMesPct > 0)) return [];
   const i = taxaMesPct / 100;
   const price = sistema === "PRICE";
+  const trunc = opts?.truncarCentavos === true;
   const parcelaFixa = price ? (principal * i) / (1 - Math.pow(1 + i, -n)) : 0;
   const amortSac = principal / n;
 
   const parcelas: ParcelaDetalhe[] = [];
   let saldo = principal;
   for (let k = 1; k <= n; k++) {
-    const juros = saldo * i;
-    let amort = price ? parcelaFixa - juros : amortSac;
+    const juros = trunc ? truncCentavos(saldo * i) : saldo * i;
+    let amort = price
+      ? parcelaFixa - juros
+      : trunc
+        ? truncCentavos(saldo / (n - k + 1))
+        : amortSac;
     // Ajuste da última parcela para zerar o saldo devedor exatamente.
     if (k === n) amort = saldo;
     const total = amort + juros;
-    saldo = Math.max(0, saldo - amort);
+    saldo = Math.max(0, trunc ? Math.round((saldo - amort) * 100) / 100 : saldo - amort);
     parcelas.push({
       numero: k,
       data: addMeses(dataInicial, k - 1),
@@ -234,19 +249,39 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     num(r.taxaJurosAnoBanco) ??
     num(r.taxaJurosAnoSimulacao);
   const taxaNominalAno = num(desc.valorTaxaNominal);
-  // Se o banco informa taxa nominal a.a., a taxa mensal é nominal/12 (regime
-  // usado pelos bancos para calcular a parcela SAC/PRICE). Caso contrário,
-  // deriva pela equivalência composta da taxa efetiva anual.
+  // Santander devolve o plano completo em unrelatedFlow/relationShipFlow.paymentPlan,
+  // com MIP (proporcional ao saldo) e DFI separados por parcela.
+  const fluxo = (desc.unrelatedFlow ?? desc.relationShipFlow) as Record<string, any> | undefined;
+  const itau = desc.firstInstallment != null && desc.monthlyRate != null;
+  // Taxa mensal exibida: a que o banco informa (Itaú monthlyRate, Santander
+  // monthlyInterestRate). O Bradesco não manda taxa mensal; usa a equivalente
+  // composta da efetiva anual (não a nominal/12, que dava parcela errada).
   const taxaMes =
     num(desc.monthlyRate) ??
-    (taxaNominalAno != null ? taxaNominalAno / 12 : null) ??
-    taxaMensalEquivalente(taxaAno);
+    num(fluxo?.monthlyInterestRate) ??
+    taxaMensalEquivalente(taxaAno) ??
+    (taxaNominalAno != null ? taxaNominalAno / 12 : null);
+  // Taxa usada no cálculo do plano, com a precisão que cada banco usa.
+  // Conferido contra simulações reais: Bradesco = equivalente exata da efetiva
+  // anual (3.000/3.000 parcelas iguais); Itaú = equivalente arredondada em
+  // 8 casas decimais (2.000/2.000), que o banco exibe como 1,0868.
+  const taxaEquivExata = taxaMensalEquivalente(taxaAno);
+  const taxaCalculo =
+    taxaEquivExata != null
+      ? itau
+        ? Math.round(taxaEquivExata * 1e6) / 1e6
+        : taxaEquivExata
+      : taxaMes;
   const prazo =
     num(desc.period) ??
     num(desc.prazoFinanciamento) ??
+    // Santander: o prazo aceito pelo banco pode diferir do pedido.
+    num(desc.financingDeadlineInMonths) ??
     num(r.prazoPagamentoBanco) ??
     num(r.prazoPagamentoSimulacao);
   const valorFin =
+    // Itaú: saldo inicial da 1ª parcela = valor efetivamente financiado.
+    num(desc.firstInstallment?.beginningBalance) ??
     num(desc.loanAmount) ??
     num(desc.valorTotalFinanciamento) ??
     num(desc.valorFinanciamento) ??
@@ -260,17 +295,29 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     num(desc.valorPrimeiraPrestacaoComSeguroTac) ??
     num(desc.valorPrimeiraPrestacaoSemSeguroTac) ??
     num(desc.firstInstallment?.totalValue) ??
+    num(fluxo?.firstPaymentAmount) ??
     num(r.valorParcelaBanco);
-  // Bradesco: valorUltimaPrestacao; Itaú: lastInstallment.totalValue.
+  // Bradesco: valorUltimaPrestacao; Itaú: lastInstallment.totalValue;
+  // Santander: lastPaymentAmount.
   const ultimaParcelaApi =
-    num(desc.valorUltimaPrestacao) ?? num(desc.lastInstallment?.totalValue);
-  const seguroMensal = num(desc.valorSeguro);
+    num(desc.valorUltimaPrestacao) ??
+    num(desc.lastInstallment?.totalValue) ??
+    num(fluxo?.lastPaymentAmount);
+  // Seguros da 1ª parcela: Bradesco manda o total; Itaú manda MIP e DFI.
+  const fi = desc.firstInstallment as Record<string, any> | undefined;
+  const seguroItau =
+    num(fi?.insurerMip) != null || num(fi?.insurerDfi) != null
+      ? (num(fi?.insurerMip) ?? 0) + (num(fi?.insurerDfi) ?? 0)
+      : null;
+  const seguroMensalApi = num(desc.valorSeguro) ?? seguroItau;
+  const fiAmort = num(fi?.amortization);
+  const fiJuros = num(fi?.interest);
+  const primeiraSemSeguroApi =
+    num(desc.valorPrimeiraPrestacaoSemSeguroTac) ??
+    (fiAmort != null && fiJuros != null ? Math.round((fiAmort + fiJuros) * 100) / 100 : null);
   const taxaAdminMensal = num(desc.valorTaxaAdministracaoMensal);
   const rendaMinimaExigida = num(desc.valorRendaLiquidaMinimaExigida);
 
-  // Santander devolve o plano completo em unrelatedFlow/relationShipFlow.paymentPlan,
-  // com MIP (proporcional ao saldo) e DFI separados por parcela.
-  const fluxo = (desc.unrelatedFlow ?? desc.relationShipFlow) as Record<string, any> | undefined;
   const brutas: any[] = Array.isArray(desc.installments)
     ? desc.installments
     : Array.isArray(fluxo?.paymentPlan)
@@ -283,12 +330,14 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   let estimadas = false;
 
   // Se o banco não devolveu o plano completo, calculamos localmente pelo sistema de amortização.
-  if (parcelas.length <= 2 && valorFin && prazo && taxaMes) {
+  if (parcelas.length <= 2 && valorFin && prazo && taxaCalculo) {
     const dataInicial =
       (desc.firstInstallment?.dueDate as string) ??
       (brutas[0]?.dueDate as string) ??
       primeiroVencimentoPadrao();
-    parcelas = calcularPlano(valorFin, prazo, taxaMes, sistema, dataInicial);
+    parcelas = calcularPlano(valorFin, prazo, taxaCalculo, sistema, dataInicial, {
+      truncarCentavos: itau,
+    });
     estimadas = parcelas.length > 0;
 
     // Bradesco e Itaú não devolvem o seguro (MIP/DFI) mês a mês — só o da 1ª
@@ -297,10 +346,25 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     // campos primeiraParcela/ultimaParcela, exatamente como o banco informou.
   }
 
+  // Santander: seguros e parcela sem seguros vêm da 1ª linha do plano do banco.
+  const linha1 = brutas.find((p) => num(p?.numberInstallment ?? p?.number) === 1) as
+    | Record<string, any>
+    | undefined;
+  const l1Mip = num(linha1?.insuranceValueMip);
+  const l1Dfi = num(linha1?.insuranceValueDfi);
+  const l1Amort = num(linha1?.amortizationValue);
+  const l1Juros = num(linha1?.interestAmount);
+  const seguroSantander = l1Mip != null || l1Dfi != null ? (l1Mip ?? 0) + (l1Dfi ?? 0) : null;
+  const semSeguroSantander =
+    l1Amort != null && l1Juros != null ? Math.round((l1Amort + l1Juros) * 100) / 100 : null;
+  const seguroMensal = seguroMensalApi ?? seguroSantander;
+  const primeiraParcelaSemSeguro = primeiraSemSeguroApi ?? semSeguroSantander;
+
   // IOF e tarifa de avaliação são custos à vista, só quando o banco informa.
   const iofValor =
     num(desc.iof?.totalValue ?? desc.iof?.value) ??
     num(desc.valorIof) ??
+    num(desc.iofValue) ??
     num(r.valorIofBanco) ??
     0;
   const tarifaAvaliacaoValor =
@@ -310,6 +374,8 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     num(desc.appraisalFee) ??
     num(desc.evaluationFee) ??
     num(desc.guaranteeEvaluationFee) ??
+    // Santander: valuationFeeAmount.
+    num(desc.valuationFeeAmount) ??
     num(r.valorTarifaAvaliacaoBanco) ??
     num(r.valorTarifaAvaliacaoGarantiaBanco) ??
     num(r.tarifaAvaliacaoGarantia);
@@ -335,10 +401,14 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   const financiamentoBase =
     num(desc.valorFinanciamento) ??
     num(desc.loanAmount) ??
+    num(desc.financingValue) ??
     num(r.valorFinanciamentoBanco) ??
     num(r.valorFinanciamentoSimulacao);
   const financiamentoTotalRaw =
-    num(desc.valorTotalFinanciamento) ?? num(r.valorTotalFinanciamento) ?? valorFin;
+    num(desc.valorTotalFinanciamento) ??
+    num(desc.totalFinancingValueWithExpenses) ??
+    num(r.valorTotalFinanciamento) ??
+    valorFin;
   const despesasApi =
     num(desc.valorTotalDespesasFinanceiras) ??
     num(r.valorDespesasFinanciadas) ??
@@ -353,9 +423,14 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   const despesasFinanciadas =
     despesasApi != null && despesasApi > 0 ? despesasApi : (despesasDerivada ?? despesasApi);
 
-  const valorImovel = num(desc.propertyPrice) ?? num(desc.valorImovel) ?? num(r.valorImovel);
+  const valorImovel =
+    num(desc.propertyPrice) ??
+    num(desc.valorImovel) ??
+    num(desc.propertyValue) ??
+    num(r.valorImovel);
   // Entrada = valor do imóvel − financiamento base (quando o banco não devolve).
-  const entradaApi = num(desc.downPayment) ?? num(r.valorEntrada);
+  const entradaApi =
+    num(desc.downPayment) ?? num(desc.downPaymentAmount) ?? num(r.valorEntrada);
   const entradaDerivada =
     valorImovel != null && financiamentoBase != null
       ? Math.max(0, Math.round((valorImovel - financiamentoBase) * 100) / 100)
@@ -393,7 +468,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     // estimativa local.
     primeiraParcela:
       primeiraParcelaApi ?? (parcelas.length ? parcelas[0].parcela : num(r.valorParcelaBanco)),
-    primeiraParcelaSemSeguro: num(desc.valorPrimeiraPrestacaoSemSeguroTac),
+    primeiraParcelaSemSeguro,
     ultimaParcela:
       ultimaParcelaApi ?? (parcelas.length ? parcelas[parcelas.length - 1].parcela : null),
     somatorioParcelas: somatorio,
