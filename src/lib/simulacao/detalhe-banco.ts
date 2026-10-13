@@ -479,3 +479,50 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     parcelas,
   };
 }
+
+/**
+ * Divisão financiamento / despesas / entrada a exibir para um banco.
+ *
+ * Quando as despesas vão embutidas no financiamento (Santander sempre;
+ * Bradesco e Itaú quando o pedido não é 5% — ver despesas-por-banco), o banco
+ * devolve despesas 0 e o total como valor financiado. O total continua sendo o
+ * do banco; a divisão e a entrada são as do pedido, que o banco aceitou
+ * integralmente (total devolvido = financiamento + despesas pedidos).
+ */
+export function divisaoFinanciamento(
+  d: DetalheBanco | null,
+  s: {
+    fg_financiar_despesas?: boolean | null;
+    valor_despesas_financiadas?: number | string | null;
+    valor_financiamento?: number | string | null;
+    valor_imovel?: number | string | null;
+  } | null | undefined,
+): {
+  embutidas: boolean;
+  valorSolicitado: number | null;
+  despesas: number | null;
+  entrada: number | null;
+} {
+  const despPedidas = s?.fg_financiar_despesas ? Number(s.valor_despesas_financiadas) || 0 : 0;
+  const finPedido = Number(s?.valor_financiamento) || 0;
+  const embutidas =
+    despPedidas > 0 &&
+    !(Number(d?.despesasFinanciadas) > 0) &&
+    d?.valorTotalFinanciamento != null &&
+    Math.abs(d.valorTotalFinanciamento - finPedido - despPedidas) < 0.005;
+  if (!embutidas) {
+    return {
+      embutidas: false,
+      valorSolicitado: d?.valorFinanciamento ?? null,
+      despesas: d?.despesasFinanciadas ?? null,
+      entrada: d?.valorEntrada ?? null,
+    };
+  }
+  const imovel = d?.valorImovel ?? (Number(s?.valor_imovel) || null);
+  return {
+    embutidas: true,
+    valorSolicitado: finPedido,
+    despesas: despPedidas,
+    entrada: imovel != null ? Math.round((imovel - finPedido) * 100) / 100 : null,
+  };
+}

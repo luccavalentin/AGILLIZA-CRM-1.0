@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calcularPlano, extrairDetalheBanco } from "./detalhe-banco";
+import { calcularPlano, divisaoFinanciamento, extrairDetalheBanco } from "./detalhe-banco";
 
 const centavos = (v: number) => Math.round(v * 100) / 100;
 
@@ -202,5 +202,46 @@ describe("Santander: prazo, taxa e tarifa do banco", () => {
     expect(d.primeiraParcelaSemSeguro).toBe(1283.36);
     expect(d.seguroMensal).toBeCloseTo(40.44, 10);
     expect(d.valorEntrada).toBe(80000);
+  });
+});
+
+describe("despesas embutidas (3% pedido)", () => {
+  // Simulação 033627f8 (13/10): imóvel 1.000.000, financiamento 600.000 e
+  // 30.000 de despesas, enviados embutidos. Bradesco devolveu 630.000.
+  const d = extrairDetalheBanco({
+    codigoSistemaAmortizacaoBanco: "P",
+    valorImovel: 1000000,
+    valorDespesasFinanciadas: 0,
+    descricaoRespostaBanco: {
+      valorImovel: 1000000,
+      valorFinanciamento: 630000,
+      valorTotalFinanciamento: 630000,
+      valorTotalDespesasFinanceiras: 0,
+      valorTaxaJurosEfetivoAno: 12.45,
+      prazoFinanciamento: 420,
+      valorPrimeiraPrestacaoSemSeguroTac: 6294.09,
+    },
+  })!;
+  const s = {
+    fg_financiar_despesas: true,
+    valor_despesas_financiadas: "30000",
+    valor_financiamento: "600000.00",
+    valor_imovel: "1000000.00",
+  };
+
+  it("mostra a divisão pedida com o total do banco", () => {
+    const div = divisaoFinanciamento(d, s);
+    expect(div.embutidas).toBe(true);
+    expect(div.valorSolicitado).toBe(600000);
+    expect(div.despesas).toBe(30000);
+    expect(div.entrada).toBe(400000);
+    expect(d.valorTotalFinanciamento).toBe(630000);
+    expect(centavos(d.parcelas[0].parcela)).toBe(6294.09);
+  });
+
+  it("se o banco devolver outro total, mostra o do banco", () => {
+    const div = divisaoFinanciamento(d, { ...s, valor_despesas_financiadas: "50000" });
+    expect(div.embutidas).toBe(false);
+    expect(div.valorSolicitado).toBe(630000);
   });
 });

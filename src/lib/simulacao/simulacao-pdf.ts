@@ -4,6 +4,7 @@ import { exportPDF, drawBrandHeader } from "@/lib/relatorios/report-pdf";
 import { formatBRL, formatPercent, formatTaxa } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
 import {
+  divisaoFinanciamento,
   extrairDetalheBanco,
   normalizarSistemaAmortizacao,
   type DetalheBanco,
@@ -305,17 +306,8 @@ function drawInfoFinanciamento(
   const startX = opts?.x ?? MARGIN;
   const w = opts?.width ?? pageW - MARGIN * 2;
   const cols = opts?.cols ?? 3;
-  // Despesas embutidas no financiamento (Santander sempre; Bradesco/Itaú quando
-  // o pedido não é 5% — ver despesas-por-banco): o banco devolve despesas 0 e
-  // o total como "solicitado". O total é o do banco; a divisão é a do pedido.
-  const despPedidas = s.fg_financiar_despesas ? Number(s.valor_despesas_financiadas) || 0 : 0;
-  const embutidas =
-    despPedidas > 0 &&
-    !(Number(d?.despesasFinanciadas) > 0) &&
-    d?.valorTotalFinanciamento != null &&
-    Math.abs(d.valorTotalFinanciamento - (Number(s.valor_financiamento) || 0) - despPedidas) < 0.01;
-  const solicitadoExibido = embutidas ? s.valor_financiamento : d?.valorFinanciamento;
-  const despesasExibidas = embutidas ? despPedidas : d?.despesasFinanciadas;
+  // Despesas embutidas no financiamento: total do banco, divisão do pedido.
+  const divisao = divisaoFinanciamento(d, s);
 
   const itens: { label: string; valor: string }[] = [
     {
@@ -345,14 +337,14 @@ function drawInfoFinanciamento(
     // banco pode financiar despesas diferentes das pedidas (ex.: Bradesco
     // devolveu 50 mil de despesas quando foram pedidos 30 mil).
     { label: "Valor de compra e venda", valor: brlOuTraco(d?.valorImovel ?? s.valor_imovel) },
-    { label: "Valor da entrada", valor: brlOuTraco(d?.valorEntrada ?? s.valor_entrada) },
+    { label: "Valor da entrada", valor: brlOuTraco(divisao.entrada ?? s.valor_entrada) },
     {
       label: "Valor solicitado",
-      valor: brlOuTraco(solicitadoExibido ?? s.valor_financiamento),
+      valor: brlOuTraco(divisao.valorSolicitado ?? s.valor_financiamento),
     },
     {
       label: "Despesas financiadas",
-      valor: brlOuTraco(despesasExibidas ?? s.valor_despesas_financiadas),
+      valor: brlOuTraco(divisao.despesas ?? s.valor_despesas_financiadas),
     },
     {
       label: "Valor de financiamento total",

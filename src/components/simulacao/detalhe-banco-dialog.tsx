@@ -29,7 +29,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheck } from "lucide-react";
 import { BancoStatusBadge } from "@/components/simulacao/status-badge";
-import { extrairDetalheBanco, normalizarSistemaAmortizacao } from "@/lib/simulacao/detalhe-banco";
+import {
+  divisaoFinanciamento,
+  extrairDetalheBanco,
+  normalizarSistemaAmortizacao,
+} from "@/lib/simulacao/detalhe-banco";
 import { formatBRL } from "@/lib/simulacao/format";
 
 function pct(v: number | null | undefined): string {
@@ -120,7 +124,10 @@ export function DetalheBancoDialog({
   const despesasSolicitadas =
     Boolean(simulacao?.fg_financiar_despesas) &&
     Number(simulacao?.valor_despesas_financiadas ?? 0) > 0;
-  const despesasFinanciadasBanco = Number(detalhe?.despesasFinanciadas ?? 0);
+  // Despesas embutidas no financiamento: o banco devolve despesas 0, mas o
+  // total já as inclui — não é recusa.
+  const divisao = divisaoFinanciamento(detalhe, simulacao);
+  const despesasFinanciadasBanco = Number(divisao.despesas ?? 0);
   const bancoNaoFinanciouDespesas =
     despesasSolicitadas && !!detalhe && !(despesasFinanciadasBanco > 0);
 
@@ -244,10 +251,10 @@ export function DetalheBancoDialog({
                     rotulo="Financiamento total"
                     valor={formatBRL(detalhe!.financiamentoTotal ?? detalhe!.valorFinanciamento)}
                   />
-                  <Linha rotulo="Entrada" valor={formatBRL(detalhe!.valorEntrada)} />
+                  <Linha rotulo="Entrada" valor={formatBRL(divisao.entrada)} />
                   <Linha
                     rotulo="Despesas financiadas"
-                    valor={formatBRL(detalhe!.despesasFinanciadas)}
+                    valor={formatBRL(divisao.despesas)}
                   />
                 </Grupo>
 
