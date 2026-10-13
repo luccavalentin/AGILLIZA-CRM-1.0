@@ -1,11 +1,5 @@
 import { parseBRL } from "@/lib/simulacao/format";
 
-/**
- * Tarifa de avaliação de garantia padrão (R$ 1.950), aplicada quando o banco
- * não informa o valor. É um custo à vista — não entra no valor financiado.
- */
-export const TARIFA_AVALIACAO_GARANTIA_PADRAO = 1950;
-
 /** Uma parcela do plano de pagamento (valores já convertidos em número). */
 export interface ParcelaDetalhe {
   numero: number;
@@ -303,8 +297,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     // campos primeiraParcela/ultimaParcela, exatamente como o banco informou.
   }
 
-  // IOF e tarifa de avaliação são custos à vista (deduzidos do valor liberado
-  // no cálculo do CET conforme Bacen).
+  // IOF e tarifa de avaliação são custos à vista, só quando o banco informa.
   const iofValor =
     num(desc.iof?.totalValue ?? desc.iof?.value) ??
     num(desc.valorIof) ??
@@ -319,9 +312,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     num(desc.guaranteeEvaluationFee) ??
     num(r.valorTarifaAvaliacaoBanco) ??
     num(r.valorTarifaAvaliacaoGarantiaBanco) ??
-    num(r.tarifaAvaliacaoGarantia) ??
-    TARIFA_AVALIACAO_GARANTIA_PADRAO;
-  const custosAVista = (iofValor || 0) + (tarifaAvaliacaoValor || 0);
+    num(r.tarifaAvaliacaoGarantia);
 
   // Somatório: o total real do banco quando informado (Itaú). Em plano projetado
   // sem total do banco, a soma não teria os seguros — então não mostramos.
@@ -333,7 +324,9 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     num(desc.cet) ??
     num(r.taxaCetAnoBanco) ??
     num(r.taxaCETAnoBanco) ??
-    calcularCET(valorFin, parcelas, custosAVista);
+    // Bradesco: valorCetAno. Sem CET do banco fica vazio — a projeção não tem
+    // seguros, então um CET calculado aqui sairia menor que o real.
+    num(desc.valorCetAno);
 
   // Despesas financiadas = valor incorporado ao financiamento além do valor-base
   // (custos como ITBI, registro e tarifas embutidos na operação). O cálculo
@@ -347,6 +340,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   const financiamentoTotalRaw =
     num(desc.valorTotalFinanciamento) ?? num(r.valorTotalFinanciamento) ?? valorFin;
   const despesasApi =
+    num(desc.valorTotalDespesasFinanceiras) ??
     num(r.valorDespesasFinanciadas) ??
     num(desc.valorDespesasFinanciadas) ??
     num(desc.expensesFinancedValue);
@@ -359,7 +353,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
   const despesasFinanciadas =
     despesasApi != null && despesasApi > 0 ? despesasApi : (despesasDerivada ?? despesasApi);
 
-  const valorImovel = num(desc.propertyPrice) ?? num(r.valorImovel);
+  const valorImovel = num(desc.propertyPrice) ?? num(desc.valorImovel) ?? num(r.valorImovel);
   // Entrada = valor do imóvel − financiamento base (quando o banco não devolve).
   const entradaApi = num(desc.downPayment) ?? num(r.valorEntrada);
   const entradaDerivada =

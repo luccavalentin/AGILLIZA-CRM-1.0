@@ -6,7 +6,6 @@ import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared
 import {
   extrairDetalheBanco,
   normalizarSistemaAmortizacao,
-  calcularCET,
   type DetalheBanco,
 } from "@/lib/simulacao/detalhe-banco";
 import {
@@ -369,14 +368,7 @@ function drawInfoFinanciamento(
     { label: "Taxa de juros mensal", valor: pctTxt(d?.taxaJurosMes, "a.m.") },
     {
       label: "CET (Custo Efetivo Total)",
-      valor: pctTxt(
-        d?.cet ??
-          calcularCET(
-            d?.valorFinanciamento ?? s.valor_financiamento,
-            d?.parcelas,
-            (d?.iof ?? 0) + (d?.tarifaAvaliacao ?? 0),
-          ),
-      ),
+      valor: pctTxt(d?.cet),
     },
     {
       label: "Renda mínima necessária",
@@ -384,8 +376,8 @@ function drawInfoFinanciamento(
     },
   ];
 
-  // Tarifa de avaliação de garantia (custo à vista, não financiado).
-  // Valor padrão fixo aplicado a todos os bancos.
+  // Tarifa de avaliação de garantia (custo à vista, não financiado), só
+  // quando o banco informa.
   if (d?.tarifaAvaliacao != null) {
     itens.splice(2, 0, {
       label: "Tarifa de avaliação (não financiada)",
