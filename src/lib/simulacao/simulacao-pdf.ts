@@ -330,14 +330,24 @@ function drawInfoFinanciamento(
         return map[s.uso_imovel] ?? "—";
       })(s),
     },
-    { label: "Valor de compra e venda", valor: brlOuTraco(s.valor_imovel) },
-    { label: "Valor da entrada", valor: brlOuTraco(s.valor_entrada) },
-    { label: "Valor solicitado", valor: brlOuTraco(s.valor_financiamento) },
-    { label: "Despesas financiadas", valor: brlOuTraco(s.valor_despesas_financiadas) },
+    // Valores como o banco devolveu; o digitado na simulação é só fallback. O
+    // banco pode financiar despesas diferentes das pedidas (ex.: Bradesco
+    // devolveu 50 mil de despesas quando foram pedidos 30 mil).
+    { label: "Valor de compra e venda", valor: brlOuTraco(d?.valorImovel ?? s.valor_imovel) },
+    { label: "Valor da entrada", valor: brlOuTraco(d?.valorEntrada ?? s.valor_entrada) },
+    {
+      label: "Valor solicitado",
+      valor: brlOuTraco(d?.valorFinanciamento ?? s.valor_financiamento),
+    },
+    {
+      label: "Despesas financiadas",
+      valor: brlOuTraco(d?.despesasFinanciadas ?? s.valor_despesas_financiadas),
+    },
     {
       label: "Valor de financiamento total",
       valor: brlOuTraco(
-        Number(s.valor_financiamento ?? 0) + Number(s.valor_despesas_financiadas ?? 0),
+        d?.valorTotalFinanciamento ??
+          Number(s.valor_financiamento ?? 0) + Number(s.valor_despesas_financiadas ?? 0),
       ),
     },
     { label: "Tipo da parcela", valor: d?.tipoParcela ?? d?.indexador ?? "—" },
@@ -881,6 +891,41 @@ function bancosDaTabelaSolicitada(s: any, bancos: any[]): any[] {
   return lista.filter((b) => b?.simulacao_id === simId);
 }
 
+/** Quatro cartões "Resumo do Pagamento" com valores exatamente como o banco informou. */
+function drawResumoPagamento(
+  doc: jsPDF,
+  pageW: number,
+  y: number,
+  resumo: { label: string; valor: string }[],
+): number {
+  doc.setTextColor(P.destaque);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("Resumo do Pagamento", MARGIN, y);
+  y += 8;
+  const w = pageW - MARGIN * 2;
+  const gap = 8;
+  const cardW = (w - gap * 3) / 4;
+  const cardH = 40;
+  resumo.forEach((it, i) => {
+    const x = MARGIN + i * (cardW + gap);
+    doc.setFillColor(P.card);
+    doc.setDrawColor(P.borda);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(x, y, cardW, cardH, 3, 3, "FD");
+    doc.setTextColor(P.cinza);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(5.5);
+
+    doc.text(it.label.toUpperCase(), x + 10, y + 15, { maxWidth: cardW - 16 });
+    doc.setTextColor(P.destaque);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(it.valor, x + 10, y + 32, { maxWidth: cardW - 16 });
+  });
+  return y + cardH + 20;
+}
+
 /** Baixa o extrato simplificado: cabeçalho com CET/CESH/taxas + resumo, um banco por folha. */
 export function baixarSimulacaoSimplificadaPDF({
   simulacao: s,
@@ -921,38 +966,12 @@ export function baixarSimulacaoSimplificadaPDF({
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
 
     // Resumo das parcelas (valores fornecidos pela instituição — sem recálculo)
-    const resumo: { label: string; valor: string }[] = [
+    y = drawResumoPagamento(doc, pageW, y, [
       { label: "1ª parcela", valor: brlOuTraco(d?.primeiraParcela ?? b?.valor_parcela) },
       { label: "Última parcela", valor: brlOuTraco(d?.ultimaParcela) },
       { label: "Somatório das parcelas", valor: brlOuTraco(d?.somatorioParcelas) },
       { label: "Renda mínima necessária", valor: brlOuTraco(rendaMinimaDoBanco(b)) },
-    ];
-    doc.setTextColor(P.destaque);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("Resumo do Pagamento", MARGIN, y);
-    y += 8;
-    const w = pageW - MARGIN * 2;
-    const gap = 8;
-    const cardW = (w - gap * 3) / 4;
-    const cardH = 40;
-    resumo.forEach((it, i) => {
-      const x = MARGIN + i * (cardW + gap);
-      doc.setFillColor(P.card);
-      doc.setDrawColor(P.borda);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(x, y, cardW, cardH, 3, 3, "FD");
-      doc.setTextColor(P.cinza);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(5.5);
-
-      doc.text(it.label.toUpperCase(), x + 10, y + 15, { maxWidth: cardW - 16 });
-      doc.setTextColor(P.destaque);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.text(it.valor, x + 10, y + 32, { maxWidth: cardW - 16 });
-    });
-    y += cardH + 20;
+    ]);
   });
 
   const total = doc.getNumberOfPages();
@@ -1004,6 +1023,19 @@ function criarDocSimulacaoDetalhada({
     y = drawDadosCliente(doc, pageW, s, y);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
 
+    // A tabela abaixo é projeção sem seguros; a parcela que o cliente paga é a
+    // do banco (com MIP/DFI). Sem este resumo o extrato detalhado não mostrava
+    // a 1ª parcela real em lugar nenhum.
+    y = drawResumoPagamento(doc, pageW, y, [
+      {
+        label: "1ª parcela (com seguros)",
+        valor: brlOuTraco(d?.primeiraParcela ?? b?.valor_parcela),
+      },
+      { label: "1ª parcela sem seguros", valor: brlOuTraco(d?.primeiraParcelaSemSeguro) },
+      { label: "Seguros MIP/DFI na 1ª parcela", valor: brlOuTraco(d?.seguroMensal) },
+      { label: "Última parcela", valor: brlOuTraco(d?.ultimaParcela) },
+    ]);
+
     const parcelas = d?.parcelas ?? [];
     const somas = parcelas.reduce(
       (acc, p) => ({
@@ -1044,7 +1076,7 @@ function criarDocSimulacaoDetalhada({
       doc.setFontSize(7);
       doc.setTextColor(P.cinza);
       doc.text(
-        "Projeção pela taxa do banco: amortização + juros, sem seguros MIP/DFI (não informados mês a mês).",
+        "Projeção pela taxa do banco: amortização + juros, sem seguros MIP/DFI. A parcela a pagar é a do resumo acima.",
         pageW - MARGIN,
         y,
         { align: "right" },

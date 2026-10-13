@@ -36,6 +36,8 @@ export interface DetalheBanco {
   indexador: string | null;
   tipoParcela: string | null;
   primeiraParcela: number | null;
+  /** 1ª parcela sem seguros/TAC, como o banco informou (Bradesco). */
+  primeiraParcelaSemSeguro: number | null;
   ultimaParcela: number | null;
   somatorioParcelas: number | null;
   /** Seguro habitacional mensal informado pelo banco (MIP/DFI juntos). */
@@ -397,6 +399,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     // estimativa local.
     primeiraParcela:
       primeiraParcelaApi ?? (parcelas.length ? parcelas[0].parcela : num(r.valorParcelaBanco)),
+    primeiraParcelaSemSeguro: num(desc.valorPrimeiraPrestacaoSemSeguroTac),
     ultimaParcela:
       ultimaParcelaApi ?? (parcelas.length ? parcelas[parcelas.length - 1].parcela : null),
     somatorioParcelas: somatorio,
