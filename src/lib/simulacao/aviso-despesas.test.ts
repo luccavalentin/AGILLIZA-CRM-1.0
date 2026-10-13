@@ -59,4 +59,16 @@ describe("avisoDespesasDescartadas", () => {
       }),
     ).toBeNull();
   });
+  it("avisa quando o banco aplica 5% em vez do percentual pedido", () => {
+    // Oportunidade 36402 (13/10): pedidos 30.000 (3%), integração devolveu 650.000.
+    const aviso = avisoDespesasDescartadas({
+      nomeBanco: "Bradesco",
+      totalPedido: 630_000,
+      totalRetornado: 650_000,
+      despesasFinanciadas: 30_000,
+    });
+    expect(aviso).toContain("50.000,00");
+    expect(aviso).toContain("30.000,00");
+    expect(aviso).toContain("650.000,00");
+  });
 });

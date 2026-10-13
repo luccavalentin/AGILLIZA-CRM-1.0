@@ -34,6 +34,21 @@ export function avisoDespesasDescartadas(params: {
   const { totalPedido, totalRetornado, despesasFinanciadas } = params;
   if (!(despesasFinanciadas > 0)) return null;
   if (!(totalRetornado > 0)) return null;
+
+  // O inverso: Bradesco e Itaú, pela HomeFin, financiam sempre 5% do imóvel
+  // de despesas, seja qual for o valor pedido. Log de 13/10 (oportunidade
+  // 36402): POST e PUT com 30.000 confirmados pela HomeFin; a integração
+  // devolveu 50.000. Em todas as simulações com pedido diferente de 5% o
+  // banco aplicou 5%.
+  if (totalRetornado > totalPedido + 0.01) {
+    const aplicadas = despesasFinanciadas + (totalRetornado - totalPedido);
+    return `Atenção: o ${params.nomeBanco ?? "banco"} aplicou ${formatarBRL(
+      aplicadas,
+    )} de despesas financiadas, e não os ${formatarBRL(
+      despesasFinanciadas,
+    )} pedidos. Parcela, taxa e CET foram calculados sobre ${formatarBRL(totalRetornado)}.`;
+  }
+
   // Margem de um centavo: arredondamento do provedor não é divergência.
   if (!(totalRetornado < totalPedido - 0.01)) return null;
 
