@@ -34,6 +34,32 @@ describe("despesasParaOBanco", () => {
     expect(r.embutidas).toBe(false);
   });
 
+  it("3% no Bradesco/Itaú vai embutido (senão o banco aplica 5%)", () => {
+    // Oportunidade 36402: 30.000 pedidos, integração devolveu 50.000.
+    const r = despesasParaOBanco({
+      banco: itau,
+      valorFinanciamento: 600_000,
+      valorDespesasFinanciadas: 30_000,
+      valorImovel: 1_000_000,
+    });
+    expect(r.valorFinanciamento).toBe(630_000);
+    expect(r.valorDespesasFinanciadas).toBe(0);
+    expect(r.fgFinanciarDespesas).toBe("N");
+    expect(r.embutidas).toBe(true);
+  });
+
+  it("5% no Bradesco/Itaú segue com despesas separadas", () => {
+    const r = despesasParaOBanco({
+      banco: itau,
+      valorFinanciamento: 600_000,
+      valorDespesasFinanciadas: 50_000,
+      valorImovel: 1_000_000,
+    });
+    expect(r.valorFinanciamento).toBe(600_000);
+    expect(r.valorDespesasFinanciadas).toBe(50_000);
+    expect(r.fgFinanciarDespesas).toBe("S");
+  });
+
   it("sem custas, nada muda nem para o Santander", () => {
     const r = despesasParaOBanco({
       banco: santander,

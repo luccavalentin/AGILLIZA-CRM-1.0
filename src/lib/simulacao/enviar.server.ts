@@ -839,6 +839,7 @@ async function processarBancoIndividual(
       banco: b,
       valorFinanciamento: num(sim.valor_financiamento),
       valorDespesasFinanciadas: sim.fg_financiar_despesas ? num(sim.valor_despesas_financiadas) : 0,
+      valorImovel: num(sim.valor_imovel),
     });
     const fgFinanciarDespesas = despesas.fgFinanciarDespesas;
     const valorDespesasFinanciadas = despesas.valorDespesasFinanciadas;

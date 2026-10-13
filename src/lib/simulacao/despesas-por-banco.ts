@@ -39,16 +39,37 @@ export interface DespesasNoPayload {
   embutidas: boolean;
 }
 
+/**
+ * Bradesco e Itaú, pela HomeFin, financiam SEMPRE 5% do imóvel de despesas,
+ * seja qual for o valor pedido. Log de 13/10 (oportunidade 36402): POST e PUT
+ * com 30.000 (3%) confirmados pela HomeFin; a integração devolveu 50.000. Em
+ * todas as simulações com pedido diferente de 5% o banco aplicou 5%.
+ *
+ * Para o banco calcular sobre o valor pedido, quando ele não é 5% do imóvel
+ * o total vai embutido no financiamento, como no Santander. Só na simulação
+ * (quem chama informa `valorImovel`); a proposta segue o fluxo normal.
+ */
+function bancoForcaCincoPorCento(despesas: number, valorImovel: number | null | undefined) {
+  const imovel = Number(valorImovel) || 0;
+  if (!(imovel > 0) || !(despesas > 0)) return false;
+  return Math.abs(despesas - imovel * 0.05) > 0.01;
+}
+
 export function despesasParaOBanco(params: {
   banco: BancoRef;
   valorFinanciamento: number;
   valorDespesasFinanciadas: number;
+  /** Informado só pela simulação: ativa a regra dos 5% de Bradesco/Itaú. */
+  valorImovel?: number | null;
 }): DespesasNoPayload {
   const financiamento = Number(params.valorFinanciamento) || 0;
   const despesas = Number(params.valorDespesasFinanciadas) || 0;
   const total = financiamento + despesas;
 
-  if (despesas > 0 && isSantander(params.banco)) {
+  if (
+    despesas > 0 &&
+    (isSantander(params.banco) || bancoForcaCincoPorCento(despesas, params.valorImovel))
+  ) {
     return {
       valorFinanciamento: total,
       valorDespesasFinanciadas: 0,

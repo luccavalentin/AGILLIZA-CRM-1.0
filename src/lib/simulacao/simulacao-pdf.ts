@@ -305,6 +305,18 @@ function drawInfoFinanciamento(
   const startX = opts?.x ?? MARGIN;
   const w = opts?.width ?? pageW - MARGIN * 2;
   const cols = opts?.cols ?? 3;
+  // Despesas embutidas no financiamento (Santander sempre; Bradesco/Itaú quando
+  // o pedido não é 5% — ver despesas-por-banco): o banco devolve despesas 0 e
+  // o total como "solicitado". O total é o do banco; a divisão é a do pedido.
+  const despPedidas = s.fg_financiar_despesas ? Number(s.valor_despesas_financiadas) || 0 : 0;
+  const embutidas =
+    despPedidas > 0 &&
+    !(Number(d?.despesasFinanciadas) > 0) &&
+    d?.valorTotalFinanciamento != null &&
+    Math.abs(d.valorTotalFinanciamento - (Number(s.valor_financiamento) || 0) - despPedidas) < 0.01;
+  const solicitadoExibido = embutidas ? s.valor_financiamento : d?.valorFinanciamento;
+  const despesasExibidas = embutidas ? despPedidas : d?.despesasFinanciadas;
+
   const itens: { label: string; valor: string }[] = [
     {
       label: "Tipo do imóvel",
@@ -336,11 +348,11 @@ function drawInfoFinanciamento(
     { label: "Valor da entrada", valor: brlOuTraco(d?.valorEntrada ?? s.valor_entrada) },
     {
       label: "Valor solicitado",
-      valor: brlOuTraco(d?.valorFinanciamento ?? s.valor_financiamento),
+      valor: brlOuTraco(solicitadoExibido ?? s.valor_financiamento),
     },
     {
       label: "Despesas financiadas",
-      valor: brlOuTraco(d?.despesasFinanciadas ?? s.valor_despesas_financiadas),
+      valor: brlOuTraco(despesasExibidas ?? s.valor_despesas_financiadas),
     },
     {
       label: "Valor de financiamento total",
