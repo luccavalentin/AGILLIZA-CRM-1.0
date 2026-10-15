@@ -17,6 +17,8 @@ export interface DpsPergunta {
   nota?: string;
   /** Subitens (ex.: pergunta 4 a-j). */
   subitens?: DpsSubItem[];
+  /** Pergunta com subitens que também tem Sim/Não próprio (ex.: pergunta 5). */
+  simNao?: boolean;
 }
 
 export const DPS_PERGUNTAS: DpsPergunta[] = [
@@ -99,6 +101,7 @@ export const DPS_PERGUNTAS: DpsPergunta[] = [
   {
     numero: 5,
     texto: "Já teve doença COVID19?",
+    simNao: true,
     subitens: [
       { letra: "a", texto: "Já foi vacinado para o coronavírus SARS-COV2?" },
       {

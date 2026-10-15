@@ -275,9 +275,8 @@ function iniciarRespostas(): Record<string, Resposta> {
   for (const p of DPS_PERGUNTAS) {
     if (p.subitens) {
       for (const s of p.subitens) r[`${p.numero}${s.letra}`] = null;
-    } else {
-      r[String(p.numero)] = null;
     }
+    if (!p.subitens || p.simNao) r[String(p.numero)] = null;
   }
   return r;
 }
@@ -400,7 +399,7 @@ function DpsDocumento({
                 <p className="dps-q-text">
                   <b>{p.numero} –</b> {p.texto}
                 </p>
-                {!p.subitens && (
+                {(!p.subitens || p.simNao) && (
                   <SimNao
                     valor={respostas[String(p.numero)] ?? null}
                     onChange={(v) => marcar(String(p.numero), v)}
