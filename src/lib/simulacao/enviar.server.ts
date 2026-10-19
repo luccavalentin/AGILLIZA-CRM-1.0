@@ -660,6 +660,17 @@ export async function enviarSimulacaoImpl({
       if (!idOportunidade) throw e;
     }
 
+    // Participantes completos antes de simular: desde 18/10/2026 a HomeFin
+    // devolve 500 ao criar simulação em oportunidade com participante sem
+    // sexo, mãe, documento, profissão, endereço e regime. Ver
+    // `completar-participantes.ts`.
+    if (idOportunidade && !ehPJ) {
+      const { completarParticipantesOportunidade } = await import(
+        "./completar-participantes.server"
+      );
+      await completarParticipantesOportunidade(String(idOportunidade), sim, simulacaoId);
+    }
+
     const resultados: EnviarResultado["bancos"] = [];
 
     // ETAPA 3: Paralelização controlada de bancos no servidor.
