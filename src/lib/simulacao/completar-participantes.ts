@@ -91,6 +91,31 @@ function sexo(v: unknown): string | undefined {
 
 const ESTADOS_CASADO = new Set(["CA", "UE"]);
 
+/** Falha do servidor da HomeFin (não do pedido): vale tentar de novo. */
+const STATUS_REPETIVEL = new Set([500, 502, 503, 504]);
+
+/**
+ * Executa `fn` e repete quando a HomeFin devolve erro de servidor (500/502/
+ * 503/504) ou nem responde. Só para chamadas seguras de repetir — `GET` e o
+ * `PUT` de participante, que atualiza o mesmo registro. Erro do pedido (4xx)
+ * não se repete: mandar igual daria o mesmo erro.
+ */
+export async function repetirEmFalhaDoServidor<T>(
+  fn: () => Promise<T>,
+  esperasMs: number[] = [1500, 3000, 4500],
+): Promise<T> {
+  for (let tentativa = 0; ; tentativa++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      const status = e?.statusHttp;
+      const repetivel = status === undefined || STATUS_REPETIVEL.has(Number(status));
+      if (!repetivel || tentativa >= esperasMs.length) throw e;
+      await new Promise((r) => setTimeout(r, esperasMs[tentativa]));
+    }
+  }
+}
+
 export type PapelParticipante = "titular" | "conjuge";
 
 /** De quem é o participante: titular, cônjuge do titular ou outro (não mexemos). */

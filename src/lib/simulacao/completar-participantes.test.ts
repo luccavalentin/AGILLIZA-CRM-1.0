@@ -1,5 +1,46 @@
 import { describe, expect, it } from "vitest";
-import { papelDoParticipante, payloadCompletarParticipante } from "./completar-participantes";
+import {
+  papelDoParticipante,
+  payloadCompletarParticipante,
+  repetirEmFalhaDoServidor,
+} from "./completar-participantes";
+
+const erroHttp = (statusHttp: number) => Object.assign(new Error(`HTTP ${statusHttp}`), { statusHttp });
+
+describe("repetirEmFalhaDoServidor", () => {
+  it("tenta de novo quando a HomeFin devolve 500 e devolve o primeiro sucesso", async () => {
+    let chamadas = 0;
+    const r = await repetirEmFalhaDoServidor(async () => {
+      chamadas++;
+      if (chamadas < 3) throw erroHttp(500);
+      return "ok";
+    }, [0, 0, 0]);
+    expect(r).toBe("ok");
+    expect(chamadas).toBe(3);
+  });
+
+  it("desiste depois das tentativas e repassa o erro", async () => {
+    let chamadas = 0;
+    await expect(
+      repetirEmFalhaDoServidor(async () => {
+        chamadas++;
+        throw erroHttp(503);
+      }, [0, 0]),
+    ).rejects.toThrow("HTTP 503");
+    expect(chamadas).toBe(3);
+  });
+
+  it("não repete erro do pedido (4xx)", async () => {
+    let chamadas = 0;
+    await expect(
+      repetirEmFalhaDoServidor(async () => {
+        chamadas++;
+        throw erroHttp(400);
+      }, [0, 0]),
+    ).rejects.toThrow("HTTP 400");
+    expect(chamadas).toBe(1);
+  });
+});
 
 /** Participante como a HomeFin devolve logo após o `POST /oportunidade`. */
 const titularHomefin = {
