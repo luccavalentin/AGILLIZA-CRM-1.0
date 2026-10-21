@@ -2,9 +2,7 @@ import { useCallback } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
-import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
 import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
-import { mensagemDeErro } from "@/lib/erros/mensagem";
 import {
   recusaRecenteAntesDoEnvio,
   textoRecusaRecente,
@@ -49,7 +47,6 @@ export interface PedidoEnvioAprovacao {
  */
 export function useEnviarAprovacao() {
   const router = useRouter();
-  const { enviar } = useEnviarProposta();
   return useCallback(
     async (p: PedidoEnvioAprovacao): Promise<"cancelado" | "cadastro" | "enviada"> => {
       // Mesmo CPF recusado há pouco neste banco: avisa antes (a checagem nunca trava o envio).
@@ -85,31 +82,19 @@ export function useEnviarAprovacao() {
         return "cadastro";
       }
 
-      // Cadastro completo: envia uma única vez aqui e abre a proposta já
-      // enviada (sem `complementar`, que dispararia um segundo envio).
-      try {
-        await enviar({
-          propostaId: proposta_id,
-          bancoId: p.bancoId ?? "todos", // Passa o ID do banco ou "todos" se não houver
-          nomeBanco: p.nomeBanco ?? undefined,
-          agencia,
-        });
-      } catch (e: any) {
-        // O hook não mostra toast de erro. Seguimos para a proposta mesmo
-        // assim (ela já foi criada), mas avisando que o envio não aconteceu.
-        if (!e?.cadastroIncompleto) {
-          toast.error(mensagemDeErro(e, "A proposta foi criada, mas o envio ao banco falhou."), {
-            duration: 12_000,
-          });
-        }
-      }
+      // Cadastro completo: abre a proposta e o envio começa lá (`complementar=1`), com o
+      // painel de andamento do Agilliza (etapa, quanto falta, há quanto tempo). Enviar
+      // aqui deixava só o botão girando por até dois minutos (pedido do dono, 21/10/2026).
       router.navigate({
         to: "/operacional/propostas/$id",
         params: { id: proposta_id },
-        search: {},
+        search: {
+          complementar: 1,
+          ...(agencia !== undefined ? { agencia: agencia || "nao" } : {}),
+        },
       });
       return "enviada";
     },
-    [router, enviar],
+    [router],
   );
 }

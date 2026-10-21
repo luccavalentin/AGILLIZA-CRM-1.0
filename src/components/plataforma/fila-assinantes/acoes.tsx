@@ -39,21 +39,57 @@ import {
   pedirCorrecaoAoAssinante,
   ROTULO_PROPOSTA_ASSINANTE,
 } from "@/lib/plataforma/fila.functions";
+import { PropostaStatusBadge } from "@/components/propostas/status-badge";
+import { statusProposta } from "@/components/propostas/status";
 import { AGUARDANDO_ENVIO, invalidarFila, useAcoesAssinante, type PropostaParaAcao } from "./hooks";
 
 const ALTO = "h-11 md:h-9";
 
-/** Selo da situação da proposta do assinante. */
-export function SeloSituacao({ status, atrasada }: { status: string; atrasada?: boolean | null }) {
+/**
+ * Situação do Corretor → situação do Agilliza: a fila mostra o mesmo selo (texto e cor) das
+ * propostas do Agilliza (pedido do dono, 21/10/2026: "igual aparece as da Agilliza").
+ */
+const STATUS_NO_AGILLIZA: Record<string, string> = {
+  aguardando_correspondente: "aguardando_envio",
+  em_envio: "aguardando_envio",
+  enviada: "enviada_banco",
+  em_analise: "em_analise_credito",
+  aguardando_documentos: "aguardando_documentos",
+  condicionada: "credito_condicionado",
+  aprovada: "credito_aprovado",
+  recusada: "credito_recusado",
+  erro_envio: "erro_envio",
+  formularios: "formularios",
+  engenharia_vistoria: "engenharia_vistoria",
+  analise_juridica: "analise_juridica",
+  contrato: "contrato_emitido",
+  registrado: "registrado",
+  cancelada: "cancelada",
+};
+
+/** Rótulo da situação como o Agilliza escreve. */
+export function rotuloSituacao(status: string, banco?: string | null) {
+  const s = STATUS_NO_AGILLIZA[status];
+  return s ? statusProposta(s, banco).label : (ROTULO_PROPOSTA_ASSINANTE[status] ?? status);
+}
+
+/** Selo da situação da proposta do assinante, no padrão das propostas do Agilliza. */
+export function SeloSituacao({
+  status,
+  atrasada,
+  banco,
+}: {
+  status: string;
+  atrasada?: boolean | null;
+  banco?: string | null;
+}) {
   return (
     <span className="inline-flex flex-wrap gap-1">
-      <Badge
-        variant={status === "recusada" || status === "erro_envio" ? "destructive" : "secondary"}
-        className="font-medium"
-      >
-        {ROTULO_PROPOSTA_ASSINANTE[status] ?? status}
-      </Badge>
-      {atrasada && <Badge variant="destructive">Prazo estourado</Badge>}
+      <PropostaStatusBadge status={STATUS_NO_AGILLIZA[status] ?? status} banco={banco} />
+      {/* O prazo é do correspondente até o envio; depois quem responde é o banco. */}
+      {atrasada && AGUARDANDO_ENVIO.includes(status) && (
+        <Badge variant="destructive">Prazo estourado</Badge>
+      )}
     </span>
   );
 }
@@ -168,42 +204,53 @@ export function AcoesPainel({
       </div>
     );
   }
+  // Uma ação principal, compacta, à direita; as demais em botões leves de 13 px à
+  // esquerda (pedido do dono, 21/10/2026: "botão grosseiro"). No celular a principal
+  // vem primeiro, na largura toda, e as outras em 2 × 2 com alvo de 44 px.
+  const secundario =
+    "h-11 justify-center gap-1.5 rounded-lg px-3 text-[13px] font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground md:h-8 md:px-2.5";
+  const fino = (acao: string, Icone: typeof Send) =>
+    a.executando === acao ? (
+      <Loader2 className="size-[15px] animate-spin" />
+    ) : (
+      <Icone className="size-[15px]" strokeWidth={1.75} />
+    );
   return (
-    <div className="w-full space-y-2">
-      <Button
-        className="h-12 w-full text-base md:h-10"
-        onClick={a.enviarParaAprovacao}
-        disabled={ocupado}
-      >
-        {icone("enviar", Send)}
-        Enviar para aprovação{p.banco ? ` · ${p.banco}` : ""}
-      </Button>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div className="flex w-full flex-col-reverse gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
+      <div className="grid grid-cols-2 gap-1.5 md:flex md:flex-wrap md:gap-0.5">
         <Button
-          variant="outline"
-          className={ALTO}
+          variant="ghost"
+          className={secundario}
           onClick={a.gerarNovaSimulacao}
           disabled={ocupado}
           title="Refaz a simulação com os mesmos dados; dá para ajustar valores e bancos antes"
         >
-          {icone("nova", RefreshCw)} Nova simulação
+          {fino("nova", RefreshCw)} Nova simulação
         </Button>
-        <Button variant="outline" className={ALTO} onClick={a.editarDados} disabled={ocupado}>
-          {icone("editar", Pencil)} Editar dados
+        <Button variant="ghost" className={secundario} onClick={a.editarDados} disabled={ocupado}>
+          {fino("editar", Pencil)} Editar dados
         </Button>
         <Button
-          variant="outline"
-          className={ALTO}
+          variant="ghost"
+          className={secundario}
           onClick={onDevolver}
           disabled={ocupado}
           title="Devolver ao assinante pedindo correção"
         >
-          <MessageSquareWarning className="mr-1.5 size-4" /> Devolver
+          <MessageSquareWarning className="size-[15px]" strokeWidth={1.75} /> Devolver
         </Button>
-        <Button variant="ghost" className={ALTO} onClick={onDesignar} disabled={ocupado}>
-          <UserCog className="mr-1.5 size-4" /> Designar
+        <Button variant="ghost" className={secundario} onClick={onDesignar} disabled={ocupado}>
+          <UserCog className="size-[15px]" strokeWidth={1.75} /> Designar
         </Button>
       </div>
+      <Button
+        className="h-11 w-full gap-2 rounded-lg px-4 text-sm font-medium shadow-sm md:h-9 md:w-auto"
+        onClick={a.enviarParaAprovacao}
+        disabled={ocupado}
+      >
+        {fino("enviar", Send)}
+        Enviar para aprovação{p.banco ? ` · ${p.banco}` : ""}
+      </Button>
     </div>
   );
 }

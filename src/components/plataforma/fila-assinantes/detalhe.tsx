@@ -15,12 +15,12 @@ import {
   Wallet,
 } from "lucide-react";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { usePermissao } from "@/hooks/use-permissao";
@@ -32,7 +32,7 @@ import {
   type DetalhePropostaAssinante,
   type PropostaAssinante,
 } from "@/lib/plataforma/fila.functions";
-import { AcoesPainel, SeloSituacao } from "./acoes";
+import { AcoesPainel, SeloSituacao, rotuloSituacao } from "./acoes";
 import { AvisoPermissao, MENSAGEM_SEM_CONTAS } from "./aviso-permissao";
 
 const TIPO_IMOVEL: Record<string, string> = {
@@ -169,32 +169,34 @@ export function DetalhePropostaSheet({
   const p = proposta;
 
   return (
-    <Sheet open={!!p} onOpenChange={(v) => !v && onFechar()}>
-      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-xl">
+    // Modal centralizado, à frente de tudo (pedido do dono, 21/10/2026): o painel
+    // lateral ficava espremido à direita. Cabeçalho e ações fixos; o meio rola.
+    <Dialog open={!!p} onOpenChange={(v) => !v && onFechar()}>
+      <DialogContent className="gap-0 p-0 sm:max-w-3xl w-[calc(100%-1.5rem)] max-h-[92dvh] sm:max-h-[88vh]">
         {p && (
           <>
-            <SheetHeader className="mb-0 space-y-1.5 border-b border-border/60 p-4 pr-12 text-left sm:p-5 sm:pr-12">
+            <DialogHeader className="mb-0 space-y-1.5 border-b border-border/60 px-4 pb-4 pr-12 pt-5 text-left sm:px-6 sm:pr-14">
               <div className="flex flex-wrap items-center gap-2">
-                <SheetTitle className="text-base">{p.codigo}</SheetTitle>
+                <DialogTitle className="text-base tabular-nums">{p.codigo}</DialogTitle>
                 {d?.id_op && (
                   <span className="text-xs font-medium tabular-nums text-muted-foreground">
                     ID {d.id_op}
                   </span>
                 )}
-                <SeloSituacao status={d?.status ?? p.status} atrasada={d?.atrasada ?? p.atrasada} />
+                <SeloSituacao status={d?.status ?? p.status} atrasada={d?.atrasada ?? p.atrasada} banco={p.banco} />
               </div>
-              <SheetDescription className="text-left">
+              <DialogDescription className="text-left">
                 {p.cliente} · {p.conta} (
                 {p.conta_tipo === "imobiliaria" ? "imobiliária" : "corretor"})
-              </SheetDescription>
+              </DialogDescription>
               {d?.agilliza?.numero_proposta && (
                 <p className="text-xs font-medium text-primary">
                   Proposta no Agilliza: {d.agilliza.numero_proposta}
                 </p>
               )}
-            </SheetHeader>
+            </DialogHeader>
 
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:px-6 sm:py-5">
               {!podeVerDados ? (
                 <AvisoPermissao texto={MENSAGEM_SEM_CONTAS} />
               ) : q.isLoading ? (
@@ -212,7 +214,7 @@ export function DetalhePropostaSheet({
               )}
             </div>
 
-            <div className="border-t border-border/60 bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
+            <div className="shrink-0 border-t border-border/60 bg-background px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
               <AcoesPainel
                 proposta={{
                   ...p,
@@ -229,8 +231,8 @@ export function DetalhePropostaSheet({
             </div>
           </>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -247,7 +249,7 @@ function Conteudo({ d }: { d: DetalhePropostaAssinante }) {
       <Secao icone={<Clock />} titulo="Situação">
         <Campos
           itens={[
-            ["Situação", ROTULO_PROPOSTA_ASSINANTE[d.status] ?? d.status],
+            ["Situação", rotuloSituacao(d.status)],
             ["Recebida em", dataHora(d.criado_em)],
             ["Analista", d.analista ?? (d.pendente ? "Aguardando um analista" : "—")],
             ["Prazo (SLA)", d.sla_ate ? dataHora(d.sla_ate) : "—"],

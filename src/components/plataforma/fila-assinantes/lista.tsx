@@ -89,7 +89,7 @@ export function PropostasAssinantesInterativas({
                   )}
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     <span className="text-sm font-semibold tabular-nums">{valor(p)}</span>
-                    <SeloSituacao status={p.status} atrasada={p.atrasada} />
+                    <SeloSituacao status={p.status} atrasada={p.atrasada} banco={p.banco} />
                   </div>
                 </div>
               </button>
@@ -166,7 +166,7 @@ export function PropostasAssinantesInterativas({
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{valor(p)}</TableCell>
                   <TableCell>
-                    <SeloSituacao status={p.status} atrasada={p.atrasada} />
+                    <SeloSituacao status={p.status} atrasada={p.atrasada} banco={p.banco} />
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
                     {p.analista ?? <span className="text-muted-foreground">Sem analista</span>}
