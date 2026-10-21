@@ -64,27 +64,20 @@ export function TabsNav({ aba, setAba }: { aba: string; setAba: (v: string) => v
         </Select>
       </div>
 
-      {/* Desktop: abas roláveis com visual premium e mais espaçado */}
-      <div className="relative hidden sm:block">
-        <TabsList className="crm-scrollbar-slim flex w-full flex-nowrap justify-start gap-2.5 overflow-x-auto rounded-xl bg-muted/40 p-2 shadow-inner">
-          {SECOES_CLIENTE.map((s) => (
-            <TabsTrigger
-              key={s.v}
-              value={s.v}
-              className="crm-focus-ring relative shrink-0 gap-3 whitespace-nowrap px-5 py-3 transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:ring-1 data-[state=active]:ring-primary/20"
-            >
-              <s.Icon className="size-5" />
-              <span className="text-[14px] font-semibold tracking-tight">{s.label}</span>
-            </TabsTrigger>
-          ))}
-          {/* Espaçador final para garantir que o último item não seja cortado pelo gradiente */}
-          <div className="w-12 shrink-0" aria-hidden="true" />
-        </TabsList>
-        <div className="pointer-events-none absolute inset-y-2 right-0 w-16 rounded-r-xl bg-gradient-to-l from-muted/95 via-muted/40 to-transparent" />
-      </div>
-      <p className="mt-1.5 hidden text-[11px] text-muted-foreground sm:block">
-        Deslize para ver mais seções · clique em uma aba para abrir.
-      </p>
+      {/* Monitor e tablet: as 12 seções à vista, quebrando em linhas — sem trilho que
+          rola escondido (pedido do dono, 21/10/2026: "achatada e sem responsividade"). */}
+      <TabsList className="hidden h-auto w-full flex-wrap justify-start gap-1.5 rounded-xl border border-border/60 bg-card p-1.5 shadow-sm sm:flex">
+        {SECOES_CLIENTE.map((s) => (
+          <TabsTrigger
+            key={s.v}
+            value={s.v}
+            className="crm-focus-ring h-9 flex-none gap-2 rounded-lg px-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-primary/[0.06] hover:text-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+          >
+            <s.Icon className="size-4 shrink-0" />
+            <span className="whitespace-nowrap">{s.label}</span>
+          </TabsTrigger>
+        ))}
+      </TabsList>
     </>
   );
 }

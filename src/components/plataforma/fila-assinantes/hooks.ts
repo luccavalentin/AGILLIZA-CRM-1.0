@@ -76,16 +76,10 @@ export function useAcoesAssinante(p: PropostaParaAcao) {
         );
         return;
       }
-      // Como no Agilliza: sem o endereço do imóvel o banco recusa. Pede antes de enviar.
+      // Igual ao envio nativo do Agilliza: o endereço completo do imóvel não trava o envio
+      // (pedido do dono, 21/10/2026). O que existe no cadastro vai junto (`aposCriar`); o
+      // que faltar se completa em "Continuar proposta", como em qualquer proposta.
       const falta = prep.pendencias_imovel ?? [];
-      if (falta.length > 0) {
-        toast.warning(
-          `Antes de enviar, complete o endereço do imóvel no cadastro do cliente: ${falta.join(", ")}.`,
-          { duration: 12_000 },
-        );
-        navigate({ to: "/crm/clientes/$id", params: { id: prep.cliente_id } });
-        return;
-      }
       await enviarAprovacao({
         simulacaoId: prep.simulacao_id,
         simulacaoBancoId: prep.simulacao_banco_id,
