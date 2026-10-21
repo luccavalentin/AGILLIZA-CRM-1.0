@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TIPOS_EMPRESA, type ClienteFormValues } from "./constants";
+import { TIPOS_EMPRESA, mascararMoedaBR, type ClienteFormValues } from "./constants";
 
 /**
  * Dados da empresa exigidos pela integração bancária no participante PJ:
@@ -43,9 +43,9 @@ export function EmpresaSection({
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label>Natureza jurídica *</Label>
+          <Label htmlFor="cf-empresa-porte-tipo-da-empresa">Porte / tipo da empresa</Label>
           <Select value={v.tipo_empresa} onValueChange={(x) => set("tipo_empresa", x)}>
-            <SelectTrigger className={cls("tipo_empresa")}>
+            <SelectTrigger id="cf-empresa-porte-tipo-da-empresa" className={cls("tipo_empresa")}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -56,33 +56,40 @@ export function EmpresaSection({
               ))}
             </SelectContent>
           </Select>
+          {/* O banco só aceita estes tipos (SA/EPP/ME/MEI/EIRELI). */}
+          <p className="text-xs text-muted-foreground">
+            LTDA ou SLU: escolha pelo porte (ME ou EPP). Pedido pelo banco no envio da proposta.
+          </p>
         </div>
 
         <div className="space-y-1.5">
-          <Label>Faturamento mensal (R$)</Label>
+          <Label htmlFor="cf-empresa-faturamento-mensal-r">Faturamento mensal (R$)</Label>
           <Input
+            id="cf-empresa-faturamento-mensal-r"
             value={v.faturamento_empresa}
-            onChange={(e) => set("faturamento_empresa", e.target.value)}
+            onChange={(e) => set("faturamento_empresa", mascararMoedaBR(e.target.value))}
             placeholder="0,00"
             inputMode="decimal"
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label>Patrimônio líquido (R$)</Label>
+          <Label htmlFor="cf-empresa-patrimonio-liquido-r">Patrimônio líquido (R$)</Label>
           <Input
+            id="cf-empresa-patrimonio-liquido-r"
             value={v.patrimonio_liquido_empresa}
-            onChange={(e) => set("patrimonio_liquido_empresa", e.target.value)}
+            onChange={(e) => set("patrimonio_liquido_empresa", mascararMoedaBR(e.target.value))}
             placeholder="0,00"
             inputMode="decimal"
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label>Capital social (R$)</Label>
+          <Label htmlFor="cf-empresa-capital-social-r">Capital social (R$)</Label>
           <Input
+            id="cf-empresa-capital-social-r"
             value={v.capital_social_empresa}
-            onChange={(e) => set("capital_social_empresa", e.target.value)}
+            onChange={(e) => set("capital_social_empresa", mascararMoedaBR(e.target.value))}
             placeholder="0,00"
             inputMode="decimal"
           />

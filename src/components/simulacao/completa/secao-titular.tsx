@@ -201,6 +201,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                     type="button"
                     variant="outline"
                     size="icon"
+                    aria-label="Preencher renda necessária"
                     className="h-10 w-10 shrink-0 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
                     title="Preencher renda necessária (Qualificação)"
                     onClick={() => {
@@ -264,6 +265,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                       type="button"
                       variant="outline"
                       size="icon"
+                      aria-label="Preencher renda necessária"
                       className="h-10 w-10 shrink-0 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
                       title="Preencher renda necessária (Qualificação)"
                       onClick={() => {

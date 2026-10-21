@@ -1,13 +1,14 @@
 import type { DGCliente } from "@/lib/crm/documentos-gerais.functions";
+import { exibirDocumento, formatarCelular } from "@/lib/crm/documento";
+import { ESTADOS_CIVIS } from "@/components/crm/cliente-form/constants";
+import { formatData } from "@/lib/financeiro/format";
 
 export const brl = (n: number | null | undefined) =>
   n == null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+/** Data civil (nascimento) sem deslocar o dia; instante convertido para o dia local. */
 export function fmtData(v: string | null | undefined) {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  return formatData(v);
 }
 
 export const SEM_CORRETOR = "Sem corretor vinculado";
@@ -96,4 +97,20 @@ export function finalizar(node: PastaNode): number {
   node.clientes.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   node.total_clientes = total;
   return total;
+}
+
+/** CPF/CNPJ com pontuação; documento já mascarado (sem permissão de PII) fica como veio. */
+export function docExib(v: string | null | undefined): string | null {
+  return v ? exibirDocumento(v) : null;
+}
+
+/** Celular "(11) 99999-9999". */
+export function celularExib(v: string | null | undefined): string | null {
+  return v ? formatarCelular(v) : null;
+}
+
+/** Estado civil em português ("uniao_estavel" → "União estável"). */
+export function estadoCivilExib(v: string | null | undefined): string | null {
+  if (!v) return null;
+  return ESTADOS_CIVIS.find((e) => e.v === v)?.l ?? v;
 }

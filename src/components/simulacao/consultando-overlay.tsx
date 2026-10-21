@@ -13,7 +13,10 @@ export function ConsultandoOverlay({
   listaSimulacoes = [],
   onTimeout,
   onReenviar,
+  modoProposta = false,
 }: {
+  /** Tela "Nova Proposta": os textos falam de envio da proposta, não de simulações. */
+  modoProposta?: boolean;
   aberto: boolean;
   total: number;
   concluidos: number;
@@ -204,7 +207,8 @@ export function ConsultandoOverlay({
             <p className="mt-1.5 text-[13.5px] text-slate-500 tabular-nums">
               {totalReal > 0 ? (
                 <span>
-                  {totalRetornadas} de {totalReal} simulações processadas
+                  {totalRetornadas} de {totalReal}{" "}
+                  {modoProposta ? "envio(s) processado(s)" : "simulações processadas"}
                 </span>
               ) : (
                 <span className="animate-pulse">Iniciando processamento…</span>
@@ -283,14 +287,17 @@ export function ConsultandoOverlay({
           {tudoEnviado && !finalizado && (
             <div className="mt-6 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-[12.5px] text-slate-500">
               <p>Todas as solicitações foram enviadas.</p>
-              <Button
-                variant="link"
-                size="sm"
-                className="mt-0.5 h-auto p-0 text-[12.5px] text-[#000F9F]"
-                onClick={onTimeout}
-              >
-                Ver simulações
-              </Button>
+              {/* Sem destino (Nova Proposta), o link não fazia nada. */}
+              {onTimeout && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="mt-0.5 h-auto p-0 text-[12.5px] text-[#000F9F]"
+                  onClick={onTimeout}
+                >
+                  {modoProposta ? "Ver propostas" : "Ver simulações"}
+                </Button>
+              )}
             </div>
           )}
 

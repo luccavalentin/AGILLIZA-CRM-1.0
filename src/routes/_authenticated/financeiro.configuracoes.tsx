@@ -11,12 +11,14 @@ import {
   Trash2,
   Tags,
   Building2,
+  CreditCard,
   Percent,
   Users,
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import {
   listarConfigsGestao,
   criarConfig,
@@ -125,6 +127,9 @@ function Pagina() {
           <TabsTrigger value="centros" className="gap-1.5">
             <Building2 className="h-4 w-4" /> Centros de custo
           </TabsTrigger>
+          <TabsTrigger value="formas" className="gap-1.5">
+            <CreditCard className="h-4 w-4" /> Formas de pagamento
+          </TabsTrigger>
           <TabsTrigger value="comissoes" className="gap-1.5">
             <Percent className="h-4 w-4" /> Repasses
           </TabsTrigger>
@@ -145,6 +150,15 @@ function Pagina() {
             icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
           />
         </TabsContent>
+        <TabsContent value="formas" className="mt-4">
+          <SecaoSimples
+            entidade="forma"
+            titulo="Formas de pagamento"
+            descricao="Pix, boleto, transferência, cartão… Aparecem na baixa e no recebimento das contas."
+            singular="forma de pagamento"
+            icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
+          />
+        </TabsContent>
         <TabsContent value="comissoes" className="mt-4 space-y-6">
           <SecaoRegrasComissao />
           <SimuladorComissao />
@@ -159,6 +173,16 @@ function Pagina() {
 
 const QK = ["fin-configs-gestao"];
 
+/**
+ * Categorias, centros e formas são mantidos por quem edita contas (a pagar ou a
+ * receber): é a regra do servidor. Sem ela, os botões só davam erro.
+ */
+function usePodeEditarCadastros(): boolean {
+  const pagar = usePermissao("financeiro.contas_pagar", "edit");
+  const receber = usePermissao("financeiro.contas_receber", "edit");
+  return pagar || receber;
+}
+
 function useConfigs() {
   const listar = useServerFn(listarConfigsGestao);
   return useQuery({ queryKey: QK, queryFn: () => listar() });
@@ -168,6 +192,7 @@ function useConfigs() {
 
 function SecaoCategorias() {
   const qc = useQueryClient();
+  const podeEditar = usePodeEditarCadastros();
   const { data, isLoading } = useConfigs();
   const criar = useServerFn(criarConfig);
   const atualizar = useServerFn(atualizarConfig);
@@ -239,9 +264,11 @@ function SecaoCategorias() {
             Plano de contas de receitas e despesas usado na classificação dos lançamentos.
           </p>
         </div>
-        <Button size="sm" onClick={novo}>
-          <Plus className="mr-1 h-4 w-4" /> Nova categoria
-        </Button>
+        {podeEditar && (
+          <Button size="sm" onClick={novo}>
+            <Plus className="mr-1 h-4 w-4" /> Nova categoria
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -279,6 +306,7 @@ function SecaoCategorias() {
                     <TableCell className="text-center">
                       <Switch
                         checked={c.ativo}
+                        disabled={!podeEditar}
                         onCheckedChange={() => alternar.mutate(c)}
                         aria-label="Ativar categoria"
                       />
@@ -359,6 +387,7 @@ function SecaoSimples({
   icon: React.ReactNode;
 }) {
   const qc = useQueryClient();
+  const podeEditar = usePodeEditarCadastros();
   const { data, isLoading } = useConfigs();
   const criar = useServerFn(criarConfig);
   const atualizar = useServerFn(atualizarConfig);
@@ -420,9 +449,11 @@ function SecaoSimples({
           </CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
         </div>
-        <Button size="sm" onClick={novo}>
-          <Plus className="mr-1 h-4 w-4" /> Novo
-        </Button>
+        {podeEditar && (
+          <Button size="sm" onClick={novo}>
+            <Plus className="mr-1 h-4 w-4" /> Novo
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -448,6 +479,7 @@ function SecaoSimples({
                     <TableCell className="text-center">
                       <Switch
                         checked={i.ativo}
+                        disabled={!podeEditar}
                         onCheckedChange={() => alternar.mutate(i)}
                         aria-label="Ativar registro"
                       />
@@ -511,9 +543,17 @@ function AcoesLinha({
   onDelete: () => Promise<void> | void;
   nome: string;
 }) {
+  const podeEditar = usePodeEditarCadastros();
+  if (!podeEditar) return null;
   return (
     <div className="flex justify-end gap-1">
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={onEdit}
+        aria-label={`Editar ${nome}`}
+      >
         <Pencil className="h-4 w-4" />
       </Button>
       <ConfirmDelete
@@ -521,7 +561,12 @@ function AcoesLinha({
         descricao="Se houver lançamentos vinculados, o registro será apenas desativado."
         onConfirm={() => Promise.resolve(onDelete())}
         trigger={
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive"
+            aria-label={`Remover ${nome}`}
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         }

@@ -50,7 +50,9 @@ function montar(ano: string, mes: string, dia: string): string | null {
   const y = Number(ano);
   const mo = Number(mes);
   const d = Number(dia);
-  if (mo < 1 || mo > 12 || d < 1 || d > 31 || y < 1900 || y > 2200) return null;
+  if (mo < 1 || mo > 12 || d < 1 || y < 1900 || y > 2200) return null;
+  // Dia que não existe no mês (31/02, 31/04…) é recusado aqui — antes ia ao banco e voltava erro.
+  if (d > new Date(Date.UTC(y, mo, 0)).getUTCDate()) return null;
   return `${ano}-${pad(mo)}-${pad(d)}`;
 }
 

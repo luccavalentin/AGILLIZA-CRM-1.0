@@ -18,12 +18,16 @@ import { validarDocumento, validarEmail, validarTelefone } from "@/lib/crm/docum
 import { CardVendedor } from "./vendedores-tab/card-vendedor";
 import { DialogVendedor } from "./vendedores-tab/dialog-vendedor";
 import { paraForm, VAZIO, type VendedorForm } from "./vendedores-tab/types";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBanco?: number }) {
   const qc = useQueryClient();
   const listar = useServerFn(listarVendedores);
   const salvar = useServerFn(salvarVendedor);
   const remover = useServerFn(removerVendedor);
+  // Incluir, editar e remover vendedor exigem "Editar" em Clientes (o servidor recusa).
+  const podeEditar = usePermissao("crm.clientes", "edit");
 
   const [aberto, setAberto] = useState(false);
   const [form, setForm] = useState<VendedorForm>(VAZIO);
@@ -57,7 +61,12 @@ export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBan
     }
   }
 
-  const { data: vendedores, isLoading } = useQuery({
+  const {
+    data: vendedores,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["cliente-vendedores", clienteId],
     queryFn: () => listar({ data: { cliente_id: clienteId } }),
   });
@@ -76,7 +85,12 @@ export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBan
   async function submeter() {
     const e = new Set<string>();
     if (!form.nome.trim()) e.add("nome");
-    if (form.documento && !validarDocumento(form.documento, form.tipo_pessoa)) e.add("documento");
+    if (
+      form.documento &&
+      !form.documento.includes("*") &&
+      !validarDocumento(form.documento, form.tipo_pessoa)
+    )
+      e.add("documento");
     if (form.email && !validarEmail(form.email)) e.add("email");
     if (form.telefone_celular && !validarTelefone(form.telefone_celular)) e.add("telefone_celular");
 
@@ -114,7 +128,7 @@ export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBan
       setAberto(false);
       qc.invalidateQueries({ queryKey: ["cliente-vendedores", clienteId] });
     } catch (err: any) {
-      toast.error(err?.message ?? "Não foi possível salvar o vendedor.");
+      toast.error(mensagemDeErro(err, "Não foi possível salvar o vendedor."));
     } finally {
       setSalvando(false);
     }
@@ -126,7 +140,7 @@ export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBan
       toast.success("Vendedor removido.");
       qc.invalidateQueries({ queryKey: ["cliente-vendedores", clienteId] });
     } catch (err: any) {
-      toast.error(err?.message ?? "Não foi possível remover.");
+      toast.error(mensagemDeErro(err, "Não foi possível remover."));
     }
   }
 
@@ -134,14 +148,23 @@ export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBan
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">Cadastre os vendedores do imóvel.</p>
-        <Button size="sm" onClick={novo}>
-          <Plus className="mr-1 size-4" /> Adicionar vendedor
-        </Button>
+        {podeEditar && (
+          <Button size="sm" onClick={novo}>
+            <Plus className="mr-1 size-4" /> Adicionar vendedor
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-destructive/40 py-10 text-center text-sm">
+          <p className="text-destructive">Não foi possível carregar os vendedores.</p>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>
+            Tentar de novo
+          </Button>
         </div>
       ) : (vendedores?.length ?? 0) === 0 ? (
         <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
@@ -150,7 +173,13 @@ export function VendedoresTab({ clienteId, idBanco }: { clienteId: string; idBan
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {vendedores!.map((v: any) => (
-            <CardVendedor key={v.id} v={v} onEditar={editar} onExcluir={excluir} />
+            <CardVendedor
+              key={v.id}
+              v={v}
+              onEditar={editar}
+              onExcluir={excluir}
+              podeEditar={podeEditar}
+            />
           ))}
         </div>
       )}

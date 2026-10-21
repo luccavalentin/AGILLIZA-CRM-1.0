@@ -12,6 +12,15 @@ import type { ContaTipo } from "@/lib/financeiro/financeiro.functions";
 
 const STATUS_OPCOES = ["aberta", "parcial", "paga", "atrasada", "cancelada", "estornada"];
 
+export const ROTULO_STATUS_CONTA: Record<string, string> = {
+  aberta: "Aberta",
+  parcial: "Parcial",
+  paga: "Paga",
+  atrasada: "Em atraso",
+  cancelada: "Cancelada",
+  estornada: "Estornada",
+};
+
 export interface ContasFiltrosProps {
   tipo: ContaTipo;
   status: string;
@@ -22,6 +31,8 @@ export interface ContasFiltrosProps {
   de: string;
   onDe: (v: string) => void;
   ate: string;
+  /** Fim antes do início: o período é ignorado e a barra avisa. */
+  periodoInvertido?: boolean;
   onAte: (v: string) => void;
   contraparte: string;
   onContraparte: (v: string) => void;
@@ -45,6 +56,7 @@ export function ContasFiltros({
   de,
   onDe,
   ate,
+  periodoInvertido,
   onAte,
   contraparte,
   onContraparte,
@@ -69,8 +81,8 @@ export function ContasFiltros({
             <SelectContent>
               <SelectItem value="all">Todos os status</SelectItem>
               {STATUS_OPCOES.map((s) => (
-                <SelectItem key={s} value={s} className="capitalize">
-                  {s}
+                <SelectItem key={s} value={s}>
+                  {tipo === "receber" && s === "paga" ? "Recebida" : ROTULO_STATUS_CONTA[s]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -144,6 +156,11 @@ export function ContasFiltros({
           </Button>
         )}
       </div>
+      {periodoInvertido && (
+        <p role="alert" className="text-xs text-destructive">
+          A data final do vencimento é anterior à inicial — o período não foi aplicado.
+        </p>
+      )}
     </div>
   );
 }

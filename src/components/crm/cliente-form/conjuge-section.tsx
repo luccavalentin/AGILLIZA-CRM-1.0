@@ -19,11 +19,21 @@ import {
   OPCOES_ORGAO_EXPEDIDOR,
   OPCOES_UF,
   mascararMoedaBR,
+  CLASSE_ERRO,
   type ClienteFormValues,
   type SetCampo,
 } from "./constants";
 
-export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo }) {
+export function ConjugeSection({
+  v,
+  set,
+  erros,
+}: {
+  v: ClienteFormValues;
+  set: SetCampo;
+  erros?: Set<string>;
+}) {
+  const cls = (k: string) => (erros?.has(k) ? CLASSE_ERRO : undefined);
   return (
     <Card>
       <CardHeader>
@@ -38,25 +48,33 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
       <CardContent className="grid gap-4 sm:grid-cols-2">
         {/* 1. Nome completo */}
         <div className="space-y-1.5">
-          <Label>Nome completo do cônjuge *</Label>
-          <Input value={v.conjuge_nome} onChange={(e) => set("conjuge_nome", e.target.value)} />
+          <Label htmlFor="cf-conjuge-nome-completo-do-conjuge">Nome completo do cônjuge</Label>
+          <Input
+            id="cf-conjuge-nome-completo-do-conjuge"
+            value={v.conjuge_nome}
+            onChange={(e) => set("conjuge_nome", e.target.value)}
+          />
         </div>
 
         {/* 2. CPF */}
         <div className="space-y-1.5">
-          <Label>CPF do cônjuge</Label>
+          <Label htmlFor="cf-conjuge-cpf-do-conjuge">CPF do cônjuge</Label>
           <Input
+            id="cf-conjuge-cpf-do-conjuge"
             value={v.conjuge_cpf}
             onChange={(e) => set("conjuge_cpf", mascararCPF(e.target.value))}
+            readOnly={(v.conjuge_cpf ?? "").includes("*")}
             inputMode="numeric"
+            className={cls("conjuge_cpf")}
             placeholder="000.000.000-00"
           />
         </div>
 
         {/* 3. Número do documento (RG) */}
         <div className="space-y-1.5">
-          <Label>Número do documento</Label>
+          <Label htmlFor="cf-conjuge-numero-do-documento">Número do documento</Label>
           <Input
+            id="cf-conjuge-numero-do-documento"
             value={v.conjuge_numero_documento}
             onChange={(e) => set("conjuge_numero_documento", e.target.value)}
           />
@@ -68,6 +86,7 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
           <DateInput
             value={v.conjuge_data_nascimento}
             onChange={(val) => set("conjuge_data_nascimento", val)}
+            className={cls("conjuge_data_nascimento")}
           />
         </div>
 
@@ -97,12 +116,12 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
 
         {/* 7. UF de expedição */}
         <div className="space-y-1.5">
-          <Label>UF de expedição</Label>
+          <Label htmlFor="cf-conjuge-uf-de-expedicao">UF de expedição</Label>
           <Select
             value={v.conjuge_uf_expedicao}
             onValueChange={(x) => set("conjuge_uf_expedicao", x)}
           >
-            <SelectTrigger>
+            <SelectTrigger id="cf-conjuge-uf-de-expedicao">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -117,8 +136,9 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
 
         {/* 8. Data de expedição */}
         <div className="space-y-1.5">
-          <Label>Data de expedição</Label>
+          <Label htmlFor="cf-conjuge-data-de-expedicao">Data de expedição</Label>
           <Input
+            id="cf-conjuge-data-de-expedicao"
             type="date"
             value={v.conjuge_data_expedicao}
             onChange={(e) => set("conjuge_data_expedicao", e.target.value)}
@@ -127,8 +147,9 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
 
         {/* 9. Nome da mãe */}
         <div className="space-y-1.5">
-          <Label>Nome da mãe do cônjuge</Label>
+          <Label htmlFor="cf-conjuge-nome-da-mae-do-conjuge">Nome da mãe do cônjuge</Label>
           <Input
+            id="cf-conjuge-nome-da-mae-do-conjuge"
             value={v.conjuge_nome_mae}
             onChange={(e) => set("conjuge_nome_mae", e.target.value)}
           />
@@ -136,9 +157,9 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
 
         {/* 10. Sexo */}
         <div className="space-y-1.5">
-          <Label>Gênero</Label>
+          <Label htmlFor="cf-conjuge-genero">Gênero</Label>
           <Select value={v.conjuge_sexo || undefined} onValueChange={(x) => set("conjuge_sexo", x)}>
-            <SelectTrigger>
+            <SelectTrigger id="cf-conjuge-genero">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -165,8 +186,9 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
 
         {/* 12. Profissão */}
         <div className="space-y-1.5">
-          <Label>Profissão</Label>
+          <Label htmlFor="cf-conjuge-profissao">Profissão</Label>
           <Input
+            id="cf-conjuge-profissao"
             value={v.conjuge_profissao}
             onChange={(e) => set("conjuge_profissao", e.target.value)}
           />
@@ -174,8 +196,9 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
 
         {/* 13. Empresa */}
         <div className="space-y-1.5">
-          <Label>Empresa</Label>
+          <Label htmlFor="cf-conjuge-empresa">Empresa</Label>
           <Input
+            id="cf-conjuge-empresa"
             value={v.conjuge_empresa}
             onChange={(e) => set("conjuge_empresa", e.target.value)}
           />
@@ -183,33 +206,38 @@ export function ConjugeSection({ v, set }: { v: ClienteFormValues; set: SetCampo
 
         {/* 14. E-mail */}
         <div className="space-y-1.5">
-          <Label>E-mail do cônjuge</Label>
+          <Label htmlFor="cf-conjuge-e-mail-do-conjuge">E-mail do cônjuge</Label>
           <Input
+            id="cf-conjuge-e-mail-do-conjuge"
             type="email"
             value={v.conjuge_email}
             onChange={(e) => set("conjuge_email", e.target.value)}
+            className={cls("conjuge_email")}
           />
         </div>
 
         {/* 15. Celular */}
         <div className="space-y-1.5">
-          <Label>Celular do cônjuge</Label>
+          <Label htmlFor="cf-conjuge-celular-do-conjuge">Celular do cônjuge</Label>
           <Input
+            id="cf-conjuge-celular-do-conjuge"
             value={v.conjuge_celular}
             onChange={(e) => set("conjuge_celular", mascararTelefone(e.target.value))}
             inputMode="numeric"
+            className={cls("conjuge_celular")}
             placeholder="Vazio ou igual ao do titular: (19) 99871-0032"
           />
         </div>
 
         {/* 16. Renda declarada */}
         <div className="space-y-1.5">
-          <Label>Renda declarada (R$)</Label>
+          <Label htmlFor="cf-conjuge-renda-declarada-r">Renda declarada (R$)</Label>
           <div className="relative">
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
               R$
             </span>
             <Input
+              id="cf-conjuge-renda-declarada-r"
               inputMode="numeric"
               className="pl-9"
               value={v.conjuge_renda}

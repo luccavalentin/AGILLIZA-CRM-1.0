@@ -46,6 +46,7 @@ export function CardPasta({
           variant="ghost"
           className="size-8"
           title="Renomear pasta"
+          aria-label="Renomear pasta"
           onClick={() => onRenomear(pasta)}
         >
           <Pencil className="size-4" />
@@ -55,6 +56,7 @@ export function CardPasta({
           variant="ghost"
           className="size-8 hover:bg-destructive/10"
           title="Excluir pasta"
+          aria-label="Excluir pasta"
           onClick={() => onExcluir(pasta)}
         >
           <Trash2 className="size-4 text-destructive" />

@@ -7,6 +7,7 @@ import {
   type CalculoFeriasResultado,
   type PeriodoAquisitivo,
 } from "@/lib/rh/ferias-clt";
+import { hojeISO } from "@/lib/financeiro/format";
 
 export interface ControleFeriasFuncionario {
   funcionario_id: string;
@@ -116,7 +117,7 @@ export const obterControleFerias = createServerFn({ method: "GET" })
         faltasPor.set(o.funcionario_id as string, arr);
       }
 
-      const hojeIso = new Date().toISOString().slice(0, 10);
+      const hojeIso = hojeISO();
 
       const itens: ControleFeriasFuncionario[] = rows.map((r) => {
         const salario = Number(r.salario_atual ?? 0);

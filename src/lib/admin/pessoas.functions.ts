@@ -2,6 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AppRole } from "@/lib/session.functions";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { soDigitos, validarTelefone } from "@/lib/crm/documento";
+
+/** Telefone opcional: vazio passa; preenchido precisa ser um número BR válido. */
+const telefoneOpcional = z
+  .string()
+  .optional()
+  .nullable()
+  .refine((v) => !v || !v.trim() || validarTelefone(v), "Telefone inválido.")
+  .transform((v) => (v && v.trim() ? soDigitos(v) : undefined));
 
 /** Papéis que NUNCA podem ser atribuídos por outro usuário do ecossistema. */
 const PAPEIS_PROIBIDOS: AppRole[] = ["correspondente", "admin"];
@@ -13,7 +23,7 @@ export const criarSchema = z
       .min(2, "Informe o nome completo.")
       .transform((v) => v.trim().toUpperCase()),
     email: z.string().email("E-mail inválido.").optional().or(z.literal("")),
-    telefone: z.string().optional(),
+    telefone: telefoneOpcional,
     nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
     tipo_pessoa: z.string().min(1).default("usuario"),
     tipos_pessoa: z.array(z.string().min(1)).optional(),
@@ -22,7 +32,11 @@ export const criarSchema = z
     dados_parceiro: z
       .object({
         creci: z.string().optional(),
-        comissao_padrao: z.number().optional(),
+        comissao_padrao: z
+          .number()
+          .min(0, "A comissão não pode ser negativa.")
+          .max(100, "A comissão vai até 100%.")
+          .optional(),
         imobiliaria_id: z.string().uuid().optional().nullable(),
       })
       .optional(),
@@ -52,6 +66,63 @@ export interface PessoaLista {
   nivel_acesso_nome: string | null;
 }
 
+/** Chaves "modulo:acao" liberadas num nível de acesso. */
+async function chavesDoNivel(admin: any, nivelId: string): Promise<Set<string>> {
+  const { data, error } = await admin
+    .from("permissions")
+    .select("modulo, acao")
+    .eq("nivel_acesso_id", nivelId)
+    .eq("permitido", true);
+  if (error) throw new Error("Não foi possível conferir as permissões do nível.");
+  return new Set(
+    ((data ?? []) as { modulo: string; acao: string }[]).map((p) => `${p.modulo}:${p.acao}`),
+  );
+}
+
+/**
+ * Impede escalar privilégio pela tela de Pessoas: quem não é dono/admin só dá a
+ * outra pessoa (ou mexe em quem tem) um nível cujas permissões ele mesmo tem.
+ * Sem isso, quem cadastra pessoas criava alguém com um nível "maior" (a senha
+ * provisória é o e-mail, que ele digitou), entrava com essa conta e ganhava o
+ * acesso; e "Redefinir senha" de um superior dava a mesma porta.
+ */
+async function garantirNivelAoAlcance(
+  supabase: any,
+  userId: string,
+  nivelId: string,
+  mensagem = "Você não pode dar um nível de acesso com mais permissões que o seu.",
+) {
+  const { data: tudo } = await supabase.rpc("has_any_role", {
+    _user_id: userId,
+    _roles: ["admin", "correspondente"],
+  });
+  if (tudo === true) return;
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: eu } = await supabaseAdmin
+    .from("profiles")
+    .select("nivel_acesso_id")
+    .eq("id", userId)
+    .maybeSingle();
+  const minhas = eu?.nivel_acesso_id
+    ? await chavesDoNivel(supabaseAdmin, eu.nivel_acesso_id)
+    : new Set<string>();
+  const alvo = await chavesDoNivel(supabaseAdmin, nivelId);
+  for (const chave of alvo) {
+    if (!minhas.has(chave)) throw new Error(mensagem);
+  }
+}
+
+/** O nível escolhido precisa ser do próprio ecossistema ou um modelo global. */
+function garantirNivelDoEcossistema(
+  nivel: { correspondente_id?: string | null },
+  correspondenteId: string,
+) {
+  if (nivel.correspondente_id && nivel.correspondente_id !== correspondenteId) {
+    throw new Error("Nível de acesso inválido.");
+  }
+}
+
 function gerarSenhaTemporaria(): string {
   const alfa = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
   const num = "23456789";
@@ -64,7 +135,7 @@ function gerarSenhaTemporaria(): string {
 
 /** Lista todas as pessoas do ecossistema do usuário logado (equipe + parceiros). */
 export const listarPessoas = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.pessoas", "view"], ["admin.regras", "view"])])
   .handler(async ({ context }): Promise<PessoaLista[]> => {
     const { supabase, userId } = context;
 
@@ -157,10 +228,11 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     // Papel e portal são derivados do nível de acesso selecionado.
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, papel, acesso_tipo")
+      .select("id, papel, acesso_tipo, correspondente_id")
       .eq("id", data.nivel_acesso_id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso inválido.");
+    garantirNivelDoEcossistema(nivel, correspondenteId);
 
     const papel = (nivel.papel ?? "comercial") as AppRole;
     const acessoTipo = (nivel.acesso_tipo ?? "sistema") as "sistema" | "portal_parceiro";
@@ -188,6 +260,7 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       }
     }
     if (!autorizado) throw new Error("Você não tem permissão para gerenciar pessoas.");
+    await garantirNivelAoAlcance(supabase, userId, data.nivel_acesso_id);
 
     const comLogin = data.com_login;
     // Tipos de pessoa (múltiplos): o primeiro é o "primário".
@@ -195,9 +268,11 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       data.tipos_pessoa && data.tipos_pessoa.length > 0 ? data.tipos_pessoa : [data.tipo_pessoa]
     ).filter(Boolean);
     const tipoPrimario = tiposList[0] ?? "usuario";
-    // Com login: senha provisória = o próprio e-mail (trocada no 1º acesso).
+    // Senha provisória = o próprio e-mail (regra do dono, 21/10/2026). Ela só
+    // serve para a primeira entrada: `senha_provisoria` no app_metadata (que só o
+    // servidor escreve) prende a pessoa na troca de senha até ela definir a dela.
     // Sem login: e-mail sintético + senha aleatória; a conta fica banida no Auth.
-    const emailReal = comLogin ? (data.email ?? "").trim() : "";
+    const emailReal = comLogin ? (data.email ?? "").trim().toLowerCase() : "";
     const emailAuth = comLogin ? emailReal : `semlogin+${crypto.randomUUID()}@parceiro.local`;
     const senha = comLogin ? emailReal : gerarSenhaTemporaria();
 
@@ -207,6 +282,7 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       email: emailAuth,
       password: senha,
       email_confirm: true,
+      app_metadata: { senha_provisoria: comLogin },
       user_metadata: {
         full_name: data.nome,
         nome: data.nome,
@@ -221,7 +297,13 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
     });
 
     if (createErr || !created?.user) {
-      // Mensagem genérica; não vaza se o e-mail já existe.
+      // Quem cadastra é o administrador da conta: dizer que o e-mail já existe
+      // é o que ele precisa para resolver (a mensagem genérica não explicava nada).
+      if (createErr && /already|exists|registered/i.test(createErr.message ?? "")) {
+        throw new Error(
+          "Este e-mail já está cadastrado. Use outro e-mail ou procure a pessoa na lista.",
+        );
+      }
       throw new Error("Não foi possível criar a pessoa. Verifique os dados e tente novamente.");
     }
 
@@ -247,9 +329,30 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
           tipos_pessoa: tiposList,
           login_habilitado: comLogin,
           email: comLogin ? emailReal : null,
+          // A foto informada no cadastro era aceita e descartada.
+          ...(data.avatar_url ? { avatar_url: data.avatar_url, foto_url: data.avatar_url } : {}),
         } as never)
         .eq("id", created.user.id);
       if (updErr) throw updErr;
+
+      // Parceiro precisa da ficha de parceiro: é dela que saem a lista de
+      // /crm/parceiros, o portal do parceiro e o % de comissão padrão. Antes o
+      // formulário enviava a comissão e nada a gravava.
+      if (
+        acessoTipo === "portal_parceiro" &&
+        tiposList.some((t) => t === "imobiliaria" || t === "corretor")
+      ) {
+        const dp = data.dados_parceiro;
+        const { error: parcErr } = await supabaseAdmin.from("parceiro_detalhes").insert({
+          profile_id: created.user.id,
+          correspondente_id: correspondenteId,
+          creci: dp?.creci?.trim() || null,
+          percentual_comissao: dp?.comissao_padrao ?? 0,
+          imobiliaria_id: dp?.imobiliaria_id ?? null,
+          tipo_pessoa: tiposList.includes("imobiliaria") ? "pj" : "pf",
+        } as never);
+        if (parcErr) throw parcErr;
+      }
 
       // Auditoria (o trigger já criou profiles + user_roles).
       const { registrarAuditoria } = await import("@/lib/admin/audit.server");
@@ -319,6 +422,15 @@ async function carregarAlvo(supabase: any, userId: string, alvoId: string) {
   if (papeis.some((p) => PAPEIS_PROIBIDOS.includes(p))) {
     throw new Error("Este cadastro não pode ser gerenciado.");
   }
+  // Ninguém mexe (senha, e-mail, bloqueio, exclusão) em quem tem mais acesso que ele.
+  if (alvo.nivel_acesso_id) {
+    await garantirNivelAoAlcance(
+      supabase,
+      userId,
+      alvo.nivel_acesso_id,
+      "Esta pessoa tem um nível de acesso com mais permissões que o seu.",
+    );
+  }
 
   return { correspondenteId, alvo };
 }
@@ -329,7 +441,7 @@ export const atualizarSchema = z.object({
     .string()
     .min(2, "Informe o nome completo.")
     .transform((v) => v.trim().toUpperCase()),
-  telefone: z.string().optional().nullable(),
+  telefone: telefoneOpcional,
   nivel_acesso_id: z.string().uuid("Selecione um nível de acesso."),
   tipo_pessoa: z.string().min(1).optional(),
   tipos_pessoa: z.array(z.string().min(1)).optional(),
@@ -338,7 +450,7 @@ export const atualizarSchema = z.object({
 
 /** Atualiza dados básicos e o nível de acesso (papel/portal) de uma pessoa. */
 export const atualizarPessoa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
   .inputValidator((data: unknown) => atualizarSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
@@ -346,14 +458,18 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
 
     const { data: nivel } = await supabase
       .from("access_levels")
-      .select("id, papel, acesso_tipo")
+      .select("id, papel, acesso_tipo, correspondente_id")
       .eq("id", data.nivel_acesso_id)
       .maybeSingle();
     if (!nivel) throw new Error("Nível de acesso inválido.");
+    garantirNivelDoEcossistema(nivel, correspondenteId);
 
     const papel = (nivel.papel ?? "comercial") as AppRole;
     const acessoTipo = (nivel.acesso_tipo ?? "sistema") as "sistema" | "portal_parceiro";
     if (PAPEIS_PROIBIDOS.includes(papel)) throw new Error("Papel não permitido.");
+    if (data.nivel_acesso_id !== alvo.nivel_acesso_id) {
+      await garantirNivelAoAlcance(supabase, userId, data.nivel_acesso_id);
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -381,14 +497,17 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
     if (upErr) throw new Error("Não foi possível atualizar a pessoa.");
 
     // Sincroniza o papel (mantém os papéis protegidos intocados).
-    await supabaseAdmin
+    // Falha aqui deixava o nível novo com o papel antigo (sem aviso).
+    const { error: delRoleErr } = await supabaseAdmin
       .from("user_roles")
       .delete()
       .eq("user_id", data.id)
       .not("role", "in", `(${PAPEIS_PROIBIDOS.join(",")})`);
-    await supabaseAdmin
+    if (delRoleErr) throw new Error("Não foi possível atualizar o papel da pessoa.");
+    const { error: upRoleErr } = await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: data.id, role: papel }, { onConflict: "user_id,role" });
+    if (upRoleErr) throw new Error("Não foi possível atualizar o papel da pessoa.");
 
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
@@ -410,7 +529,7 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
  * Define o e-mail real, gera senha provisória, desbane no Auth e marca login_habilitado.
  */
 export const habilitarLoginPessoa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
   .inputValidator((data: unknown) =>
     z.object({ id: z.string().uuid(), email: z.string().email("E-mail inválido.") }).parse(data),
   )
@@ -418,7 +537,7 @@ export const habilitarLoginPessoa = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { correspondenteId } = await carregarAlvo(supabase, userId, data.id);
 
-    const email = data.email.trim();
+    const email = data.email.trim().toLowerCase();
     const senha = email;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -426,6 +545,7 @@ export const habilitarLoginPessoa = createServerFn({ method: "POST" })
       email,
       email_confirm: true,
       password: senha,
+      app_metadata: { senha_provisoria: true },
       ban_duration: "none",
     });
     if (authErr) {
@@ -454,7 +574,7 @@ export const habilitarLoginPessoa = createServerFn({ method: "POST" })
 
 /** Ativa ou desativa (bloqueia) o acesso de uma pessoa. */
 export const alternarStatusPessoa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
   .inputValidator((data: unknown) =>
     z.object({ id: z.string().uuid(), ativar: z.boolean() }).parse(data),
   )
@@ -496,16 +616,20 @@ export const alternarStatusPessoa = createServerFn({ method: "POST" })
 
 /** Gera uma nova senha temporária para a pessoa (exibida uma única vez). */
 export const resetarSenhaPessoa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
     const { supabase, userId } = context;
     const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
 
-    // Senha provisória = o próprio e-mail do usuário.
-    const senha = alvo.email ?? gerarSenhaTemporaria();
+    // Volta à senha provisória = o próprio e-mail, com troca obrigatória na entrada.
+    const senha = (alvo.email ?? "").trim().toLowerCase();
+    if (!senha) throw new Error("Esta pessoa não tem e-mail de acesso.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, { password: senha });
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
+      password: senha,
+      app_metadata: { senha_provisoria: true },
+    });
     if (error) throw new Error("Não foi possível redefinir a senha.");
 
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
@@ -521,9 +645,55 @@ export const resetarSenhaPessoa = createServerFn({ method: "POST" })
     return { id: data.id, email: alvo.email ?? "", senha_temporaria: senha };
   });
 
+/**
+ * Troca o e-mail de acesso. A API administrativa do Auth exige a chave de serviço,
+ * então roda aqui no servidor (antes era chamada do navegador e voltava 403).
+ */
+export const alterarEmailPessoa = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        email: z.string().trim().toLowerCase().email("Informe um e-mail válido."),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context;
+    const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
+    if ((alvo.email ?? "").toLowerCase() === data.email) return { ok: true };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
+      email: data.email,
+      email_confirm: true,
+    });
+    if (error) {
+      throw new Error(
+        /already|exists|registered/i.test(error.message)
+          ? "Este e-mail já está em uso por outra pessoa."
+          : "Não foi possível trocar o e-mail.",
+      );
+    }
+    await supabaseAdmin.from("profiles").update({ email: data.email }).eq("id", data.id);
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
+      acao: "pessoa.alterar_email",
+      entidade: "profiles",
+      entidadeId: data.id,
+      payloadNovo: { email: data.email },
+    });
+    return { ok: true };
+  });
+
 /** Exclui definitivamente uma pessoa (remove o acesso ao sistema). */
 export const excluirPessoa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;

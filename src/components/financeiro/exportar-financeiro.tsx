@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ReportColumn, ReportRow, ReportKpi } from "@/lib/relatorios/shared";
+import { hojeISO } from "@/lib/financeiro/format";
 
 export interface ExportarFinanceiroProps {
   titulo: string;
@@ -64,7 +65,7 @@ export function ExportarFinanceiro({
   className,
 }: ExportarFinanceiroProps) {
   const [busy, setBusy] = useState(false);
-  const nome = arquivo ?? `agilliza-${slug(titulo)}-${new Date().toISOString().slice(0, 10)}`;
+  const nome = arquivo ?? `agilliza-${slug(titulo)}-${hojeISO()}`;
   const metaFinal = [...meta, `${rows.length} registro(s)`];
 
   function semDados() {

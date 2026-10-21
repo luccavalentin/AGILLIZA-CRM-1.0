@@ -1,25 +1,26 @@
 import { cn } from "@/lib/utils";
 import type { StatusFuncionario } from "@/lib/rh/funcionarios.functions";
+import { STATUS_FUNCIONARIO_LABEL } from "@/lib/rh/rotulos";
 
 const map: Record<StatusFuncionario, { label: string; cls: string }> = {
   ativo: {
-    label: "Ativo",
+    label: STATUS_FUNCIONARIO_LABEL.ativo,
     cls: "bg-[color-mix(in_oklab,var(--success)_15%,transparent)] text-success",
   },
   experiencia: {
-    label: "Experiência",
+    label: STATUS_FUNCIONARIO_LABEL.experiencia,
     cls: "bg-[color-mix(in_oklab,var(--warning)_20%,transparent)] text-warning-foreground",
   },
   afastado: {
-    label: "Afastado",
+    label: STATUS_FUNCIONARIO_LABEL.afastado,
     cls: "bg-muted text-muted-foreground",
   },
   ferias: {
-    label: "Férias",
+    label: STATUS_FUNCIONARIO_LABEL.ferias,
     cls: "bg-primary/10 text-primary",
   },
   desligado: {
-    label: "Desligado",
+    label: STATUS_FUNCIONARIO_LABEL.desligado,
     cls: "bg-destructive/10 text-destructive",
   },
 };

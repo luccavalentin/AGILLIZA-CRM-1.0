@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { Calculator, Download, ExternalLink, Eye, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { HoleriteBuilderDialog } from "@/components/rh/holerite-builder-dialog";
 import {
   Dialog,
@@ -32,24 +31,42 @@ import {
   listarFerias,
   listarOcorrencias,
   listarHolerites,
-  gerarUrlAssinada,
   registrarDocumento,
   excluirDocumento,
   anexarHolerite,
   excluirHolerite,
 } from "@/lib/rh/submodulos.functions";
 import { ChecklistClt } from "@/components/rh/checklist-clt";
-import { formatBRL } from "@/lib/financeiro/format";
+import { formatBRL, formatData } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { EstadoLista } from "@/components/rh/estado-lista";
+import {
+  abrirArquivoRh,
+  baixarArquivoRh,
+  caminhoHolerite,
+  enviarArquivoRh,
+  extensaoDe,
+} from "@/lib/rh/arquivos";
+import { parseMoeda } from "@/lib/rh/moeda";
+import { FERIAS_STATUS_LABEL, OCORRENCIA_LABEL, rotulo } from "@/lib/rh/rotulos";
 
 function fmtDate(iso: string | null | undefined) {
-  return iso ? new Date(iso).toLocaleDateString("pt-BR") : "—";
+  return formatData(iso);
 }
 
-function Empty({ children }: { children: React.ReactNode }) {
+/** Linha de carregando / erro / vazio. Erro de consulta não aparece como "Nenhum …". */
+function Empty({
+  q,
+  children,
+}: {
+  q: { isLoading: boolean; isError: boolean; error: unknown; refetch: () => unknown };
+  children: string;
+}) {
   return (
     <TableRow>
-      <TableCell colSpan={99} className="py-8 text-center text-sm text-muted-foreground">
-        {children}
+      <TableCell colSpan={99} className="p-0">
+        <EstadoLista q={q} vazio={children} className="py-8" />
       </TableCell>
     </TableRow>
   );
@@ -66,20 +83,6 @@ const TIPOS_DOC = [
   "Termo aditivo",
   "Outros",
 ];
-
-/** Descobre o correspondente do usuário logado (prefixo dos paths no bucket). */
-async function correspondenteAtual() {
-  const user = (await supabase.auth.getUser()).data.user;
-  if (!user) throw new Error("Sessão expirada.");
-  const prof = await supabase
-    .from("profiles")
-    .select("correspondente_id")
-    .eq("id", user.id)
-    .maybeSingle();
-  const cid = prof.data?.correspondente_id as string | undefined;
-  if (!cid) throw new Error("Correspondente não encontrado.");
-  return cid;
-}
 
 function Chrome({
   titulo,
@@ -116,7 +119,6 @@ function Chrome({
 export function FichaDocumentos({ funcionarioId }: { funcionarioId: string }) {
   const qc = useQueryClient();
   const fn = useServerFn(listarDocumentos);
-  const fnUrl = useServerFn(gerarUrlAssinada);
   const fnRegistrar = useServerFn(registrarDocumento);
   const fnExcluir = useServerFn(excluirDocumento);
   const [open, setOpen] = useState(false);
@@ -132,21 +134,14 @@ export function FichaDocumentos({ funcionarioId }: { funcionarioId: string }) {
     queryFn: () => fn({ data: { funcionario_id: funcionarioId } }),
   });
 
-  async function baixar(path: string) {
-    const r = await fnUrl({ data: { path, expira_em: 300 } });
-    window.open(r.url, "_blank", "noopener,noreferrer");
-  }
-
   const enviar = useMutation({
     mutationFn: async () => {
       if (!form.file) throw new Error("Selecione o arquivo.");
-      const cid = await correspondenteAtual();
-      const ext = form.file.name.split(".").pop() || "bin";
-      const path = `${cid}/${funcionarioId}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("rh-documentos")
-        .upload(path, form.file, { contentType: form.file.type });
-      if (error) throw new Error(error.message);
+      const path = await enviarArquivoRh(
+        `${funcionarioId}/${crypto.randomUUID()}.${extensaoDe(form.file.name)}`,
+        form.file,
+        { contentType: form.file.type },
+      );
       await fnRegistrar({
         data: {
           funcionario_id: funcionarioId,
@@ -167,17 +162,16 @@ export function FichaDocumentos({ funcionarioId }: { funcionarioId: string }) {
       qc.invalidateQueries({ queryKey: ["rh-ficha-docs", funcionarioId] });
       qc.invalidateQueries({ queryKey: ["rh-checklist-clt", funcionarioId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao anexar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao anexar.")),
   });
 
-  const remover = useMutation({
-    mutationFn: (id: string) => fnExcluir({ data: { id } }),
-    onSuccess: () => {
-      toast.success("Documento removido.");
-      qc.invalidateQueries({ queryKey: ["rh-ficha-docs", funcionarioId] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao remover."),
-  });
+  // Sem try/catch: o ConfirmDelete mostra o erro e continua aberto.
+  async function excluirDoc(id: string) {
+    await fnExcluir({ data: { id } });
+    toast.success("Documento excluído.");
+    qc.invalidateQueries({ queryKey: ["rh-ficha-docs", funcionarioId] });
+    qc.invalidateQueries({ queryKey: ["rh-checklist-clt", funcionarioId] });
+  }
 
   return (
     <div className="space-y-4">
@@ -258,10 +252,7 @@ export function FichaDocumentos({ funcionarioId }: { funcionarioId: string }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {q.isLoading && <Empty>Carregando…</Empty>}
-            {!q.isLoading && (q.data?.length ?? 0) === 0 && (
-              <Empty>Nenhum documento anexado.</Empty>
-            )}
+            {(q.data?.length ?? 0) === 0 && <Empty q={q}>Nenhum documento anexado.</Empty>}
             {q.data?.map((d) => (
               <TableRow key={d.id}>
                 <TableCell className="font-medium">{d.tipo}</TableCell>
@@ -272,20 +263,28 @@ export function FichaDocumentos({ funcionarioId }: { funcionarioId: string }) {
                   <Button
                     size="icon"
                     variant="ghost"
-                    title="Abrir / baixar"
-                    onClick={() => baixar(d.arquivo_path)}
+                    title="Abrir"
+                    aria-label={`Abrir ${d.arquivo_nome}`}
+                    onClick={() => abrirArquivoRh(d.arquivo_path)}
                   >
                     <Download className="h-4 w-4" />
                   </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    title="Excluir"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => remover.mutate(d.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <ConfirmDelete
+                    titulo={`Excluir "${d.arquivo_nome}"?`}
+                    descricao="O documento sai da ficha do funcionário."
+                    onConfirm={() => excluirDoc(d.id)}
+                    trigger={
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Excluir"
+                        aria-label={`Excluir ${d.arquivo_nome}`}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -315,10 +314,7 @@ export function FichaBeneficios({ funcionarioId }: { funcionarioId: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {q.isLoading && <Empty>Carregando…</Empty>}
-          {!q.isLoading && (q.data?.length ?? 0) === 0 && (
-            <Empty>Nenhum benefício vinculado.</Empty>
-          )}
+          {(q.data?.length ?? 0) === 0 && <Empty q={q}>Nenhum benefício vinculado.</Empty>}
           {q.data?.map((b) => (
             <TableRow key={b.id}>
               <TableCell className="font-medium">{b.tipo_nome}</TableCell>
@@ -365,10 +361,7 @@ export function FichaFerias({ funcionarioId }: { funcionarioId: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {q.isLoading && <Empty>Carregando…</Empty>}
-          {!q.isLoading && (q.data?.length ?? 0) === 0 && (
-            <Empty>Nenhum período de férias cadastrado.</Empty>
-          )}
+          {(q.data?.length ?? 0) === 0 && <Empty q={q}>Nenhum período de férias cadastrado.</Empty>}
           {q.data?.map((f) => (
             <TableRow key={f.id}>
               <TableCell>
@@ -379,7 +372,7 @@ export function FichaFerias({ funcionarioId }: { funcionarioId: string }) {
               </TableCell>
               <TableCell>{f.dias_gozados}</TableCell>
               <TableCell>{f.abono_dias}</TableCell>
-              <TableCell className="capitalize">{f.status}</TableCell>
+              <TableCell>{rotulo(FERIAS_STATUS_LABEL, f.status)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -407,13 +400,10 @@ export function FichaOcorrencias({ funcionarioId }: { funcionarioId: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {q.isLoading && <Empty>Carregando…</Empty>}
-          {!q.isLoading && (q.data?.length ?? 0) === 0 && (
-            <Empty>Nenhuma ocorrência registrada.</Empty>
-          )}
+          {(q.data?.length ?? 0) === 0 && <Empty q={q}>Nenhuma ocorrência registrada.</Empty>}
           {q.data?.map((o) => (
             <TableRow key={o.id}>
-              <TableCell className="font-medium capitalize">{o.tipo}</TableCell>
+              <TableCell className="font-medium">{rotulo(OCORRENCIA_LABEL, o.tipo)}</TableCell>
               <TableCell>{fmtDate(o.data_inicio)}</TableCell>
               <TableCell>{fmtDate(o.data_fim)}</TableCell>
               <TableCell>{o.dias ?? "—"}</TableCell>
@@ -430,7 +420,6 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
   const qc = useQueryClient();
   const hoje = new Date();
   const fn = useServerFn(listarHolerites);
-  const fnUrl = useServerFn(gerarUrlAssinada);
   const fnAnexar = useServerFn(anexarHolerite);
   const fnExcluir = useServerFn(excluirHolerite);
   const [open, setOpen] = useState(false);
@@ -446,32 +435,15 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
     queryFn: () => fn({ data: { funcionario_id: funcionarioId } }),
   });
 
-  async function abrir(path: string) {
-    const r = await fnUrl({ data: { path, expira_em: 300 } });
-    window.open(r.url, "_blank", "noopener,noreferrer");
-  }
-
-  async function baixar(path: string, nome: string) {
-    const r = await fnUrl({ data: { path, expira_em: 300 } });
-    const a = document.createElement("a");
-    a.href = r.url;
-    a.download = nome;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
-
   const enviar = useMutation({
     mutationFn: async () => {
       if (!form.file) throw new Error("Selecione o arquivo do holerite.");
-      const cid = await correspondenteAtual();
-      const path = `${cid}/holerites/${funcionarioId}/${form.ano}-${String(form.mes).padStart(2, "0")}.pdf`;
-      const { error } = await supabase.storage.from("rh-documentos").upload(path, form.file, {
-        contentType: form.file.type || "application/pdf",
-        upsert: true,
-      });
-      if (error) throw new Error(error.message);
-      const liquido = Number(String(form.valor_liquido).replace(",", "."));
+      const path = await enviarArquivoRh(
+        caminhoHolerite(funcionarioId, form.ano, form.mes),
+        form.file,
+        { contentType: form.file.type || "application/pdf", upsert: true },
+      );
+      const liquido = parseMoeda(form.valor_liquido);
       await fnAnexar({
         data: {
           funcionario_id: funcionarioId,
@@ -490,19 +462,19 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
       qc.invalidateQueries({ queryKey: ["rh-ficha-hol", funcionarioId] });
       qc.invalidateQueries({ queryKey: ["rh-holerites"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao anexar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao anexar.")),
   });
 
   const [emEdicao, setEmEdicao] = useState<any | null>(null);
 
-  const remover = useMutation({
-    mutationFn: (id: string) => fnExcluir({ data: { id } }),
-    onSuccess: () => {
-      toast.success("Holerite removido.");
-      qc.invalidateQueries({ queryKey: ["rh-ficha-hol", funcionarioId] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao remover."),
-  });
+  // Sem try/catch: o ConfirmDelete mostra o erro e continua aberto.
+  async function excluirHol(id: string) {
+    const r = await fnExcluir({ data: { id } });
+    if (r.arquivoApagado) toast.success("Holerite excluído.");
+    else toast.warning("Holerite excluído, mas o PDF não pôde ser apagado do armazenamento.");
+    qc.invalidateQueries({ queryKey: ["rh-ficha-hol", funcionarioId] });
+    qc.invalidateQueries({ queryKey: ["rh-holerites"] });
+  }
 
   return (
     <Chrome
@@ -511,6 +483,7 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
       acao={
         <div className="flex flex-wrap gap-2">
           <HoleriteBuilderDialog
+            funcionarioFixo={funcionarioId}
             trigger={
               <Button size="sm">
                 <Calculator className="mr-2 h-3.5 w-3.5" /> Gerar holerite
@@ -589,10 +562,7 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {q.isLoading && <Empty>Carregando…</Empty>}
-          {!q.isLoading && (q.data?.length ?? 0) === 0 && (
-            <Empty>Nenhum holerite disponível.</Empty>
-          )}
+          {(q.data?.length ?? 0) === 0 && <Empty q={q}>Nenhum holerite disponível.</Empty>}
           {q.data?.map((h) => (
             <TableRow key={h.id}>
               <TableCell className="font-medium">
@@ -613,7 +583,7 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
                   size="icon"
                   variant="ghost"
                   title="Visualizar"
-                  onClick={() => abrir(h.arquivo_path)}
+                  onClick={() => abrirArquivoRh(h.arquivo_path)}
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
@@ -621,19 +591,26 @@ export function FichaHolerites({ funcionarioId }: { funcionarioId: string }) {
                   size="icon"
                   variant="ghost"
                   title="Baixar"
-                  onClick={() => baixar(h.arquivo_path, h.arquivo_nome)}
+                  onClick={() => baixarArquivoRh(h.arquivo_path, h.arquivo_nome)}
                 >
                   <Download className="h-4 w-4" />
                 </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  title="Excluir"
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => remover.mutate(h.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <ConfirmDelete
+                  titulo={`Excluir o holerite de ${String(h.mes).padStart(2, "0")}/${h.ano}?`}
+                  descricao="O registro e o PDF são apagados."
+                  onConfirm={() => excluirHol(h.id)}
+                  trigger={
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      title="Excluir"
+                      aria-label={`Excluir holerite de ${String(h.mes).padStart(2, "0")}/${h.ano}`}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  }
+                />
               </TableCell>
             </TableRow>
           ))}

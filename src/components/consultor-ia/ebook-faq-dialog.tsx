@@ -26,6 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { gerarFaqEbook, publicarFaqNaBase } from "@/lib/consultor-ia/ebook.functions";
 import type { EbookFaq } from "@/lib/consultor-ia/ebook.server";
 import { gerarEbookFaqPDF } from "@/lib/consultor-ia/pdf-lazy";
+import { usePermissao } from "@/hooks/use-permissao";
 
 interface Props {
   pergunta: string;
@@ -39,6 +40,8 @@ interface Props {
 export function EbookFaqButton({ pergunta, resposta }: Props) {
   const [aberto, setAberto] = useState(false);
   const [ebook, setEbook] = useState<EbookFaq | null>(null);
+  // Publicar grava na base de conhecimento: mesma permissão da tela da base.
+  const podePublicar = usePermissao("admin.parametros", "edit");
 
   const gerar = useMutation({
     mutationFn: () => gerarFaqEbook({ data: { pergunta, resposta } }),
@@ -142,14 +145,18 @@ export function EbookFaqButton({ pergunta, resposta }: Props) {
           ) : null}
 
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button
-              variant="outline"
-              disabled={!ebook || publicar.isPending}
-              onClick={() => publicar.mutate()}
-            >
-              {publicar.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              Publicar na base
-            </Button>
+            {podePublicar ? (
+              <Button
+                variant="outline"
+                disabled={!ebook || publicar.isPending}
+                onClick={() => publicar.mutate()}
+              >
+                {publicar.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                Publicar na base
+              </Button>
+            ) : (
+              <span />
+            )}
             <Button disabled={!ebook} onClick={() => void (ebook && gerarEbookFaqPDF(ebook))}>
               <Download className="mr-2 size-4" />
               Baixar e-book (PDF)

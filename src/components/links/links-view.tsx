@@ -49,6 +49,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 function hostname(url: string): string {
   try {
@@ -63,6 +65,10 @@ export function LinksView() {
   const listarCats = useServerFn(listarCategoriasLinks);
   const excluirFn = useServerFn(excluirLink);
   const qc = useQueryClient();
+  // Cada ação segue a permissão que o servidor exige em Links.
+  const podeCriar = usePermissao("documentos.links", "create");
+  const podeEditar = usePermissao("documentos.links", "edit");
+  const podeExcluir = usePermissao("documentos.links", "delete");
 
   const { data, isLoading } = useQuery({ queryKey: ["links"], queryFn: () => listar() });
   const { data: categorias } = useQuery({
@@ -102,7 +108,7 @@ export function LinksView() {
       setExcluindo(null);
       qc.invalidateQueries({ queryKey: ["links"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir.")),
   });
 
   const totalLinks = (data ?? []).length;
@@ -114,17 +120,21 @@ export function LinksView() {
         icon={<LinkIcon className="h-5 w-5" />}
         eyebrow="Documentos"
         titulo="Links úteis"
-        descricao="Repositório central de links. Busque e clique para abrir em nova aba."
+        descricao="Links de uso diário da equipe, por categoria."
         acoes={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={() => setGerenciandoCats(true)}>
-              <Tags className="mr-2 h-4 w-4" />
-              Categorias
-            </Button>
-            <Button onClick={() => setCriando(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo link
-            </Button>
+            {podeEditar && (
+              <Button variant="outline" onClick={() => setGerenciandoCats(true)}>
+                <Tags className="mr-2 h-4 w-4" />
+                Categorias
+              </Button>
+            )}
+            {podeCriar && (
+              <Button onClick={() => setCriando(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo link
+              </Button>
+            )}
           </div>
         }
       />
@@ -136,7 +146,11 @@ export function LinksView() {
           icon={<LinkIcon className="h-5 w-5 text-primary" />}
           tint="bg-primary/10 text-primary"
         />
-        <button type="button" onClick={() => setGerenciandoCats(true)} className="text-left">
+        <button
+          type="button"
+          onClick={() => podeEditar && setGerenciandoCats(true)}
+          className="text-left"
+        >
           <OpStat
             label="Categorias"
             value={totalCategorias}
@@ -252,18 +266,24 @@ export function LinksView() {
                   </div>
                 </a>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => setEditando(l)}>
-                    <Pencil className="mr-1 h-4 w-4" />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setExcluindo(l)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {podeEditar && (
+                    <Button variant="ghost" size="sm" onClick={() => setEditando(l)}>
+                      <Pencil className="mr-1 h-4 w-4" />
+                      Editar
+                    </Button>
+                  )}
+                  {podeExcluir && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setExcluindo(l)}
+                      aria-label={`Excluir link ${l.titulo}`}
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             );
@@ -364,7 +384,7 @@ function LinkDialog({
       }
       onDone();
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao salvar.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar."));
     } finally {
       setSalvando(false);
     }

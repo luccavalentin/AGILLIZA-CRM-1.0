@@ -96,7 +96,8 @@ export function NavegacaoCalendario({
           variant="outline"
           size="icon"
           className="h-8 w-8"
-          title="Aproximar (dia)"
+          title="Aproximar"
+          aria-label="Aproximar a visão do calendário"
           disabled={!podeZoomIn}
           onClick={() => onVisaoChange(ORDEM[idx - 1])}
         >
@@ -106,7 +107,8 @@ export function NavegacaoCalendario({
           variant="outline"
           size="icon"
           className="h-8 w-8"
-          title="Afastar (ano)"
+          title="Afastar"
+          aria-label="Afastar a visão do calendário"
           disabled={!podeZoomOut}
           onClick={() => onVisaoChange(ORDEM[idx + 1])}
         >

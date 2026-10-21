@@ -203,5 +203,5 @@ export function humanizarBackup(dados: BackupCompleto): BackupCompleto {
     };
   });
 
-  return { geradoEm: dados.geradoEm, tabelas };
+  return { ...dados, tabelas };
 }

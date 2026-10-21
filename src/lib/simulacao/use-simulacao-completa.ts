@@ -66,6 +66,7 @@ import {
   type SimulacaoComparativo,
 } from "./use-simulacao-completa/envio";
 import { listarTitularesAlternativos } from "./use-simulacao-completa/titulares-alternativos";
+import { maskCelular, maskCpfCnpj } from "@/lib/simulacao/format";
 
 export type { Form };
 
@@ -680,7 +681,8 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           ...prev,
           cliente_id: s.cliente_id,
           nome_cliente: s.nome_cliente || "",
-          cpf_cnpj: s.cpf_cnpj || "",
+          // Documento e celular com máscara (vinham crus ao duplicar/editar).
+          cpf_cnpj: s.cpf_cnpj ? maskCpfCnpj(s.cpf_cnpj) : "",
           // Modalidade gravada na simulação. O documento é o plano B para
           // linhas anteriores à coluna `tipo_pessoa`.
           tipo_pessoa:
@@ -688,7 +690,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
               ? s.tipo_pessoa
               : (modalidadePeloDocumento(s.cpf_cnpj) ?? "PF"),
           email: s.email || EMAIL_PADRAO,
-          celular: s.celular || "",
+          celular: s.celular ? maskCelular(s.celular) : "",
           data_nascimento: s.data_nascimento || "",
           sexo: s.sexo || prev.sexo,
           // Os <Select> só conhecem o código (CA/CP). Linhas antigas ou
@@ -702,7 +704,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
           compoe_renda: s.compoe_renda || false,
           compoe_renda_conjuge: s.compoe_renda_conjuge || false,
           nome_conjuge: s.nome_conjuge || "",
-          cpf_conjuge: s.cpf_conjuge || "",
+          cpf_conjuge: s.cpf_conjuge ? maskCpfCnpj(s.cpf_conjuge) : "",
           // Compondo renda sem valor salvo, abre com a renda padrão do cônjuge.
           renda_conjuge:
             s.renda_conjuge ||
@@ -711,7 +713,7 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
               : 0),
           data_nascimento_conjuge: s.data_nascimento_conjuge || "",
           email_conjuge: s.email_conjuge || EMAIL_CONJUGE_PADRAO,
-          celular_conjuge: s.celular_conjuge || "",
+          celular_conjuge: s.celular_conjuge ? maskCelular(s.celular_conjuge) : "",
           sexo_conjuge: s.sexo_conjuge || prev.sexo_conjuge,
           estado_civil_conjuge: estadoCivilCrmParaCodigo(s.estado_civil_conjuge) || "",
           regime_casamento: regimeParaFormulario(

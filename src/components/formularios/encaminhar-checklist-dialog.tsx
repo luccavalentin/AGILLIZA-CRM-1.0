@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, Mail, MessageCircle, Send, Download } from "lucide-react";
 import { toast } from "sonner";
+import { validarEmail, validarTelefone } from "@/lib/crm/documento";
 
 interface EncaminharChecklistDialogProps {
   aberto: boolean;
@@ -41,8 +42,17 @@ export function EncaminharChecklistDialog({
       toast.error("Por favor, preencha o e-mail.");
       return;
     }
+    // E-mail inválido abria o Gmail com destinatário quebrado.
+    if (canal === "email" && !validarEmail(email.trim())) {
+      toast.error("E-mail inválido.");
+      return;
+    }
     if (canal === "whatsapp" && !whatsapp) {
       toast.error("Por favor, preencha o número do WhatsApp.");
+      return;
+    }
+    if (canal === "whatsapp" && !validarTelefone(whatsapp)) {
+      toast.error("WhatsApp inválido. Informe DDD + número.");
       return;
     }
     onConfirm({ email, whatsapp, canal });

@@ -14,29 +14,20 @@ import {
   History,
   ChevronLeft,
   Activity,
-  Maximize2,
+  Lock,
 } from "lucide-react";
-import {
-  abrirChatFlutuante,
-  fecharChatFlutuante,
-  useFloatingChats,
-} from "@/components/shared/floating-chat-store";
 import { ConversaMenuAcoesLive } from "@/components/shared/conversa-menu-acoes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { listarInteracoes, listarHistorico } from "@/lib/crm/clientes.functions";
-import { ChatClienteConversa, type ChatClienteInfo } from "./chat-cliente-tab";
+import { ChatClienteTab, type ChatClienteInfo } from "./chat-cliente-tab";
+import { usePermissao, usePermissoesCarregadas } from "@/hooks/use-permissao";
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 
 function iniciais(nome?: string | null) {
-  if (!nome) return "?";
-  return nome
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("");
+  return iniciaisDoNome(nome);
 }
 
 function tempoRelativo(iso: string) {
@@ -96,6 +87,15 @@ export function ChatClienteInstagram({
   info?: ChatClienteInfo;
 }) {
   const [mobileView, setMobileView] = useState<"lista" | "chat">("chat");
+  // A conversa é do módulo Chat (ou da Central de Conversas): sem ele, a ficha mostra só
+  // a linha do tempo, em vez de uma conversa que o servidor recusaria.
+  const verChatCrm = usePermissao("crm.chat", "view");
+  const verCentral = usePermissao("operacional.chats", "view");
+  const podeVerChat = verChatCrm || verCentral;
+  const escreverCrm = usePermissao("crm.chat", "create");
+  const escreverCentral = usePermissao("operacional.chats", "create");
+  const podeEscrever = escreverCrm || escreverCentral;
+  const permissoesCarregadas = usePermissoesCarregadas();
   const interFn = useServerFn(listarInteracoes);
   const histFn = useServerFn(listarHistorico);
 
@@ -241,63 +241,28 @@ export function ChatClienteInstagram({
         >
           <ChevronLeft className="size-3.5" /> Histórico
         </button>
-        <ConversaComSoltar clienteId={clienteId} info={info} />
+        {podeVerChat ? (
+          <ChatClienteTab
+            clienteId={clienteId}
+            info={info}
+            somenteLeitura={!podeEscrever}
+            acoes={
+              <ConversaMenuAcoesLive
+                chatTipo="cliente"
+                chatId={clienteId}
+                nomeReferencia={info?.nome ?? null}
+              />
+            }
+          />
+        ) : permissoesCarregadas ? (
+          <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
+            <Lock className="size-6 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Você não tem acesso ao chat com o cliente.
+            </p>
+          </div>
+        ) : null}
       </div>
-    </div>
-  );
-}
-
-/**
- * Envolve a conversa com o botão "Soltar chat" — abre a conversa na janela
- * flutuante global (mesmo comportamento do chat do correspondente).
- */
-function ConversaComSoltar({ clienteId, info }: { clienteId: string; info?: ChatClienteInfo }) {
-  const janelas = useFloatingChats();
-  const estaFlutuando = janelas.some((c) => c.kind === "cliente" && c.clienteId === clienteId);
-
-  if (estaFlutuando) {
-    return (
-      <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
-        <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Maximize2 className="size-6" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-foreground">Aberta em janela flutuante</p>
-          <p className="text-xs text-muted-foreground">
-            A conversa continua disponível mesmo ao trocar de tela.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => fecharChatFlutuante("cliente", clienteId)}
-          className="rounded-md border border-border/60 bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
-        >
-          Reacoplar janela
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative h-full min-h-0">
-      <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => abrirChatFlutuante(clienteId, info)}
-          title="Soltar em janela flutuante"
-          aria-label="Soltar em janela flutuante"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-        >
-          <Maximize2 className="size-3.5" />
-          <span className="hidden sm:inline">Soltar chat</span>
-        </button>
-        <ConversaMenuAcoesLive
-          chatTipo="cliente"
-          chatId={clienteId}
-          nomeReferencia={info?.nome ?? null}
-        />
-      </div>
-      <ChatClienteConversa clienteId={clienteId} info={info} />
     </div>
   );
 }

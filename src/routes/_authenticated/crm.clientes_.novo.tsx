@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ClienteForm } from "@/components/crm/cliente-form";
 import { getPrefillCadastroProposta } from "@/lib/propostas/propostas.functions";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { getMinhasPermissoes } from "@/lib/permissions.functions";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes_/novo")({
   head: () => ({ meta: [{ title: "Novo cliente — Agilliza" }] }),
@@ -15,7 +16,14 @@ export const Route = createFileRoute("/_authenticated/crm/clientes_/novo")({
     proposta: z.string().uuid().optional(),
     enviar: z.coerce.number().optional(),
   }),
-  beforeLoad: () => assertModuloPermitido("crm.clientes"),
+  beforeLoad: async () => {
+    await assertModuloPermitido("crm.clientes");
+    // Cadastrar exige "Criar" em Clientes (o servidor recusa sem ela); quem só vê volta à lista.
+    const perms = await getMinhasPermissoes();
+    if (!perms.todas && !perms.chaves.includes("crm.clientes:create")) {
+      throw redirect({ to: "/crm/clientes" });
+    }
+  },
   component: Pagina,
 });
 

@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { editarDemanda } from "@/lib/operacional/demandas.functions";
+import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
 
 type Prioridade = "p1" | "p2" | "p3";
 
@@ -131,9 +132,9 @@ export function EditarDemandaDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="p1">Alta (P1)</SelectItem>
-                <SelectItem value="p2">Média (P2)</SelectItem>
-                <SelectItem value="p3">Baixa (P3)</SelectItem>
+                <SelectItem value="p1">{ROTULO_PRIORIDADE.p1}</SelectItem>
+                <SelectItem value="p2">{ROTULO_PRIORIDADE.p2}</SelectItem>
+                <SelectItem value="p3">{ROTULO_PRIORIDADE.p3}</SelectItem>
               </SelectContent>
             </Select>
           </div>

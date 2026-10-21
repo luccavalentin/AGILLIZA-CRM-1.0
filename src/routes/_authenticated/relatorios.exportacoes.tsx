@@ -8,6 +8,36 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listarExportacoes } from "@/lib/relatorios/reports.functions";
 import { formatData } from "@/lib/financeiro/format";
+import { Button } from "@/components/ui/button";
+import { rotuloRelatorio } from "@/lib/relatorios/shared";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+
+/*
+ * Relatórios com tela própria abrem em /relatorios/<código>; os operacionais
+ * (consolidado, propostas enviadas/aprovadas/recusadas…) moram todos em
+ * /relatorios/operacional, escolhidos por `tipo`. "Reexecutar" um deles abria 404.
+ */
+const RELATORIOS_COM_TELA = new Set([
+  "app-cliente",
+  "clientes",
+  "comerciais",
+  "comissoes",
+  "comparativos",
+  "consolidado",
+  "crm",
+  "demandas",
+  "financeiros",
+  "gerencial",
+  "painel-geral",
+  "propostas",
+  "simulacoes",
+  "tarefas",
+]);
+function rotaDoRelatorio(codigo: string): { to: string; search: Record<string, string> } {
+  return RELATORIOS_COM_TELA.has(codigo)
+    ? { to: `/relatorios/${codigo}`, search: {} }
+    : { to: "/relatorios/operacional", search: { tipo: codigo } };
+}
 
 export const Route = createFileRoute("/_authenticated/relatorios/exportacoes")({
   // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
@@ -19,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/relatorios/exportacoes")({
 
 function Pagina() {
   const fn = useServerFn(listarExportacoes);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["report-exports"],
     queryFn: () => fn(),
     staleTime: 30_000,
@@ -35,7 +65,7 @@ function Pagina() {
           Histórico de exportações
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Relatórios exportados em PDF/XLSX. Reexecute com os mesmos filtros para gerar novamente.
+          Relatórios exportados ou impressos. Reexecute com os mesmos filtros para gerar novamente.
         </p>
       </header>
 
@@ -45,6 +75,15 @@ function Pagina() {
             <Skeleton key={i} className="h-16" />
           ))}
         </div>
+      ) : isError ? (
+        <Card className="flex flex-col items-center gap-3 p-10 text-center">
+          <p className="text-sm text-destructive">
+            {mensagemDeErro(error, "Não foi possível carregar o histórico.")}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            Tentar de novo
+          </Button>
+        </Card>
       ) : !data?.length ? (
         <Card className="p-10 text-center text-sm text-muted-foreground">
           Nenhuma exportação registrada ainda.
@@ -79,7 +118,9 @@ function Pagina() {
                     i % 2 === 1 ? "border-t border-border bg-muted/25" : "border-t border-border"
                   }
                 >
-                  <td className="px-3 py-2 font-medium text-foreground">{e.report_codigo}</td>
+                  <td className="px-3 py-2 font-medium text-foreground">
+                    {rotuloRelatorio(String(e.report_codigo ?? ""))}
+                  </td>
                   <td className="px-3 py-2">
                     <Badge variant="secondary" className="uppercase">
                       {e.formato}
@@ -90,13 +131,27 @@ function Pagina() {
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">{formatData(e.created_at)}</td>
                   <td className="px-3 py-2 text-right">
-                    <Link
-                      to={`/relatorios/${e.report_codigo}` as any}
-                      search={(e.filtros ?? {}) as any}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                    >
-                      <RotateCw className="h-3 w-3" /> Reexecutar
-                    </Link>
+                    {e.report_codigo === "comparativos" ? (
+                      <Link
+                        to="/relatorios/comparativos"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                      >
+                        <RotateCw className="h-3 w-3" /> Abrir
+                      </Link>
+                    ) : (
+                      <Link
+                        to={rotaDoRelatorio(e.report_codigo).to as any}
+                        search={
+                          {
+                            ...(e.filtros ?? {}),
+                            ...rotaDoRelatorio(e.report_codigo).search,
+                          } as any
+                        }
+                        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                      >
+                        <RotateCw className="h-3 w-3" /> Reexecutar
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}

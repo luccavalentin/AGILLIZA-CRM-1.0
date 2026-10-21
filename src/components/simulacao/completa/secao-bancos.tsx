@@ -22,7 +22,11 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     restricaoEspecial,
     toggleBanco,
     isHomeEquity,
+    modoProposta,
   } = ctx;
+  // Nova Proposta vai para UM banco (o envio usa só o primeiro escolhido): aqui
+  // a escolha é única, em vez de deixar marcar vários e ignorar os demais.
+  const escolhaUnica = Boolean(modoProposta) && f.sistema_amortizacao !== "B";
 
   const modoAmbos = f.sistema_amortizacao === "B";
 
@@ -47,9 +51,14 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
               type="button"
               disabled={bloqueado}
               aria-pressed={selecionado}
-              onClick={() =>
-                modoAmbos && filtroSistema ? toggleBanco(b.id, filtroSistema) : toggleBanco(b.id)
-              }
+              onClick={() => {
+                if (escolhaUnica) {
+                  set("bancos_ids", selecionado ? [] : [b.id]);
+                  return;
+                }
+                if (modoAmbos && filtroSistema) toggleBanco(b.id, filtroSistema);
+                else toggleBanco(b.id);
+              }}
               style={selecionado ? { borderColor: cor } : undefined}
               className={cn(
                 "group relative flex items-center gap-3 overflow-hidden rounded-xl border bg-card p-3 text-left transition-all duration-200",
@@ -74,7 +83,11 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                   {b.nome_banco}
                 </span>
                 <span className="block text-xs text-muted-foreground">
-                  {selecionado ? "Selecionado" : "Toque para incluir"}
+                  {selecionado
+                    ? "Selecionado"
+                    : escolhaUnica
+                      ? "Toque para escolher"
+                      : "Toque para incluir"}
                 </span>
               </span>
 
@@ -182,7 +195,9 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
   return (
     <section className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        {f.bancos_ids?.length ?? 0} de {bancos.length} banco(s) selecionado(s)
+        {escolhaUnica
+          ? "Escolha o banco que vai receber a proposta."
+          : `${f.bancos_ids?.length ?? 0} de ${bancos.length} banco(s) selecionado(s)`}
       </p>
 
       {restricaoEspecial.ativo && (
@@ -219,7 +234,9 @@ export function SecaoBancos({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             Baixar PDF automaticamente
           </Label>
           <p className="text-xs text-muted-foreground">
-            Ao finalizar a simulação, o PDF detalhado será baixado para o seu dispositivo.
+            {modoProposta
+              ? "Ao enviar a proposta, o PDF detalhado será baixado para o seu dispositivo."
+              : "Ao finalizar a simulação, o PDF detalhado será baixado para o seu dispositivo."}
           </p>
         </div>
         <Switch

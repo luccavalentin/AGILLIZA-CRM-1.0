@@ -50,26 +50,6 @@ import {
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
 
-/** Mapeia o rótulo de uma métrica para a rota correspondente (cards clicáveis). */
-function linkParaMetrica(label: string): string | undefined {
-  const l = label.toLowerCase();
-  if (l.includes("taxa de aprova")) return "/relatorios/propostas";
-  if (l.includes("contrato")) return "/operacional/propostas";
-  if (l.includes("simula")) return "/operacional/simulacoes";
-  if (l.includes("tarefa")) return "/operacional/tarefas";
-  if (l.includes("demanda") || l.includes("sla")) return "/operacional/demandas";
-  if (
-    l.includes("proposta") ||
-    l.includes("aprovad") ||
-    l.includes("recusad") ||
-    l.includes("análise") ||
-    l.includes("analise") ||
-    l.includes("rascunho")
-  )
-    return "/operacional/propostas";
-  return undefined;
-}
-
 /** Ícone ilustrativo por rótulo de indicador executivo. */
 function iconeParaMetrica(label: string): LucideIcon | undefined {
   const l = label.toLowerCase();
@@ -184,7 +164,7 @@ export function PainelView({
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:space-y-8 md:p-6">
       <PanelHeader
-        variant={modulo === "visao-geral" ? "dark" : "light"}
+        variant="light"
         eyebrow={eyebrow}
         titulo={titulo}
         descricao={descricao}
@@ -195,7 +175,6 @@ export function PainelView({
             <VisionSelector
               escopo={escopo}
               onChange={mudarEscopo}
-              podeEquipe={perms?.podeEquipe ?? false}
               podeGeral={perms?.podeGeral ?? false}
             />
             {podeFiltrarUsuario && (
@@ -208,13 +187,7 @@ export function PainelView({
               />
             )}
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
-              <SelectTrigger
-                className={
-                  modulo === "visao-geral"
-                    ? "h-9 w-full sm:w-40 border-white/20 bg-white/10 text-white [&_svg]:text-white/80 hover:bg-white/15"
-                    : "h-9 w-full sm:w-40"
-                }
-              >
+              <SelectTrigger className="h-9 w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -234,11 +207,6 @@ export function PainelView({
                   setAte(a);
                 }}
                 className="h-9 w-full sm:w-72"
-                triggerClassName={
-                  modulo === "visao-geral"
-                    ? "border-white/20 bg-white/10 text-white hover:bg-white/15 hover:text-white [&_svg]:text-white/80"
-                    : undefined
-                }
                 numberOfMonths={2}
               />
             )}

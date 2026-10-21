@@ -129,7 +129,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
           <strong className="font-semibold text-destructive">
             Home Equity temporariamente indisponível:
           </strong>{" "}
-          a API HomeFin ainda não processa simulações e propostas deste produto. Você pode registrar
+          a integração bancária ainda não processa simulações e propostas deste produto. Você pode registrar
           a simulação, mas o envio aos bancos não estará disponível.
         </div>
       )}
@@ -146,7 +146,7 @@ export function SecaoOperacaoImovel({ ctx }: { ctx: SimulacaoCompletaCtx }) {
             onValueChange={(v) => {
               set("produto", v);
               if (v === "home_equity") {
-                toast.warning("Home Equity está temporariamente indisponível na API HomeFin.", {
+                toast.warning("Home Equity está temporariamente indisponível na integração bancária.", {
                   description: "O envio aos bancos para este produto ainda não é suportado.",
                 });
               }

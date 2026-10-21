@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import {
   getConfigIA,
   salvarConfigIA,
@@ -43,6 +44,8 @@ type TesteResultado = { ok: boolean; message: string; modelo?: string } | null;
 
 function Pagina() {
   const qc = useQueryClient();
+  // Ações que gravam exigem "edit" no servidor; sem ela os botões só davam erro.
+  const podeEditar = usePermissao("admin.integracoes", "edit");
   const q = useQuery({ queryKey: ["admin-config-ia"], queryFn: () => getConfigIA() });
 
   const [provedor, setProvedor] = useState<ProvedorIA>("gemini");
@@ -288,13 +291,13 @@ function Pagina() {
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <Button
               variant="outline"
-              disabled={testar.isPending || (!apiKey.trim() && !hasApiKey)}
+              disabled={!podeEditar || testar.isPending || (!apiKey.trim() && !hasApiKey)}
               onClick={() => testar.mutate()}
             >
               <PlugZap className="mr-2 h-4 w-4" />
               {testar.isPending ? "Testando..." : "Testar conexão"}
             </Button>
-            <Button disabled={salvar.isPending} onClick={() => salvar.mutate()}>
+            <Button disabled={!podeEditar || salvar.isPending} onClick={() => salvar.mutate()}>
               {salvar.isPending ? "Salvando..." : "Salvar configuração"}
             </Button>
           </div>

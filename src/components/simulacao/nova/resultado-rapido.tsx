@@ -5,7 +5,8 @@ import { Card } from "@/components/ui/card";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { cn } from "@/lib/utils";
-import { formatBRL, formatTaxa } from "@/lib/simulacao/format";
+import { formatBRL, formatPercent } from "@/lib/simulacao/format";
+import { avaliarRendaMinima } from "@/lib/simulacao/renda";
 
 interface Comparativo {
   banco_id: string;
@@ -17,6 +18,8 @@ interface Comparativo {
 interface Props {
   comparativo: Comparativo[];
   valorFinanciamento: number;
+  /** Valor do imóvel (entra no seguro DFI da renda mínima, igual à dica do formulário). */
+  valorImovel?: number | null;
   prazoMeses: number;
   sistema?: "SAC" | "PRICE";
   baixando: boolean;
@@ -25,7 +28,16 @@ interface Props {
 }
 
 export const ResultadoRapido = forwardRef<HTMLDivElement, Props>(function ResultadoRapido(
-  { comparativo, valorFinanciamento, prazoMeses, sistema = "SAC", baixando, onBaixar, onEnviar },
+  {
+    comparativo,
+    valorFinanciamento,
+    valorImovel,
+    prazoMeses,
+    sistema = "SAC",
+    baixando,
+    onBaixar,
+    onEnviar,
+  },
   ref,
 ) {
   return (
@@ -79,6 +91,8 @@ export const ResultadoRapido = forwardRef<HTMLDivElement, Props>(function Result
                 melhor={i === 0 && comparativo.length > 1}
                 prazoMeses={prazoMeses}
                 valorFinanciamento={valorFinanciamento}
+                valorImovel={valorImovel}
+                sistema={sistema}
                 onBaixar={onBaixar}
                 baixando={baixando}
               />
@@ -95,6 +109,8 @@ function BancoResultadoCard({
   melhor,
   prazoMeses,
   valorFinanciamento,
+  valorImovel,
+  sistema,
   onBaixar,
   baixando,
 }: {
@@ -102,10 +118,22 @@ function BancoResultadoCard({
   melhor: boolean;
   prazoMeses: number;
   valorFinanciamento: number;
+  valorImovel?: number | null;
+  sistema: "SAC" | "PRICE";
   onBaixar: (bancoId?: string) => void;
   baixando: boolean;
 }) {
   const cor = corDoBanco(c.nome_banco);
+  // Mesmo cálculo da dica de renda do formulário (encargos + margem). Antes era
+  // parcela / 30% e o card mostrava um número diferente do resumo.
+  const rendaMinima =
+    avaliarRendaMinima({
+      valor_financiamento: valorFinanciamento,
+      valor_imovel: valorImovel,
+      prazo_meses: prazoMeses,
+      taxa_ano: c.taxa_ano,
+      sistema: sistema === "PRICE" ? "P" : "S",
+    })?.rendaMinima ?? 0;
   return (
     <div
       className={cn(
@@ -136,10 +164,11 @@ function BancoResultadoCard({
 
       <dl className="flex flex-col divide-y divide-border/60 rounded-xl border border-border/50 bg-muted/30">
         <Info label="Parcela inicial" value={formatBRL(c.resultado.primeira_parcela)} emphasis />
-        <Info label="Taxa a.a." value={formatTaxa(c.taxa_ano)} />
+        {/* taxa_ano chega como fração (0,1199): formatPercent multiplica por 100. */}
+        <Info label="Taxa a.a." value={formatPercent(c.taxa_ano)} />
         <Info label="Prazo" value={`${prazoMeses} meses`} />
         <Info label="Financ. máx" value={formatBRL(valorFinanciamento)} />
-        <Info label="Renda mínima" value={formatBRL(c.resultado.primeira_parcela / 0.3)} emphasis />
+        <Info label="Renda mínima neste banco" value={formatBRL(rendaMinima)} emphasis />
         <Info label="Última parcela" value={formatBRL(c.resultado.ultima_parcela)} />
       </dl>
 

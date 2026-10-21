@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { CrmPageTransition } from "@/components/crm/page-transition";
 
 /**
@@ -12,6 +12,12 @@ import { CrmPageTransition } from "@/components/crm/page-transition";
  * requisito de aplicar o efeito SOMENTE no módulo do CRM.
  */
 export const Route = createFileRoute("/_authenticated/crm")({
+  // "/crm" sozinho não tem tela (o layout só envolve as filhas): abria em branco.
+  beforeLoad: ({ location }) => {
+    if (location.pathname === "/crm" || location.pathname === "/crm/") {
+      throw redirect({ to: "/crm/clientes" });
+    }
+  },
   component: CrmLayout,
 });
 

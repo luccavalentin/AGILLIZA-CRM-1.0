@@ -115,7 +115,7 @@ export function ContasKpiDialog({
                       {formatBRL(c.valor)}
                     </TableCell>
                     <TableCell>
-                      <ContaStatusBadge status={c.status_efetivo} />
+                      <ContaStatusBadge status={c.status_efetivo} tipo={tipo} />
                     </TableCell>
                   </TableRow>
                 ))}

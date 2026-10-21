@@ -44,10 +44,21 @@ import {
   type StatusCompetencia,
   type FolhaItem,
 } from "@/lib/rh/folha.functions";
-import { formatBRL } from "@/lib/financeiro/format";
+import { formatBRL, formatData } from "@/lib/financeiro/format";
 import { YearPicker } from "@/components/rh/year-picker";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { usePermissao } from "@/hooks/use-permissao";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+const STATUS_LABEL: Record<StatusCompetencia, string> = {
+  aberta: "Aberta",
+  conferida: "Conferida",
+  fechada: "Fechada",
+  cancelada: "Cancelada",
+};
 
 const STATUS_TONE: Record<StatusCompetencia, string> = {
   aberta: "bg-muted text-muted-foreground",
@@ -70,6 +81,11 @@ function Pagina() {
   const fnListarAjustes = useServerFn(listarAjustes);
   const fnSalvarAjuste = useServerFn(salvarAjuste);
   const fnExcluirAjuste = useServerFn(excluirAjuste);
+  // Mesmas regras do servidor: fechar exige "editar" da prévia; lançar ajuste
+  // aceita também quem edita funcionários.
+  const podeFechar = usePermissao("rh.previa_folha", "edit");
+  const podeEditarFuncionarios = usePermissao("rh.funcionarios", "edit");
+  const podeAjustar = podeFechar || podeEditarFuncionarios;
 
   const hoje = new Date();
   const [mes, setMes] = useState(hoje.getMonth() + 1);
@@ -79,7 +95,7 @@ function Pagina() {
     const d = new Date();
     d.setDate(5);
     d.setMonth(d.getMonth() + 1);
-    return d.toISOString().slice(0, 10);
+    return d.toLocaleDateString("sv");
   });
   const [observacoes, setObservacoes] = useState("");
 
@@ -121,7 +137,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["financeiro"] });
       setOpenFechar(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao fechar competência."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao fechar competência.")),
   });
 
   const salvarAj = useMutation({
@@ -147,17 +163,17 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["rh-ajustes"] });
       qc.invalidateQueries({ queryKey: ["rh-previa-folha", mes, ano] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar ajuste."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar ajuste.")),
   });
 
   const removerAj = useMutation({
     mutationFn: (id: string) => fnExcluirAjuste({ data: { id } }),
     onSuccess: () => {
-      toast.success("Ajuste removido.");
+      toast.success("Ajuste excluído.");
       qc.invalidateQueries({ queryKey: ["rh-ajustes"] });
       qc.invalidateQueries({ queryKey: ["rh-previa-folha", mes, ano] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao remover."),
+    // Erro: o ConfirmDelete mostra a mensagem e continua aberto.
   });
 
   const totais = useMemo(
@@ -174,7 +190,6 @@ function Pagina() {
     [previa.data],
   );
 
-  const anos = [hoje.getFullYear() - 1, hoje.getFullYear(), hoje.getFullYear() + 1];
   const jaFechada = (historico.data ?? []).some(
     (c) => c.mes === mes && c.ano === ano && c.status === "fechada",
   );
@@ -190,20 +205,22 @@ function Pagina() {
             Consolida salários, benefícios, descontos e ajustes avulsos por competência.
           </p>
         </div>
-        <Button
-          onClick={() => setOpenFechar(true)}
-          disabled={jaFechada || !previa.data || previa.data.length === 0}
-        >
-          {jaFechada ? (
-            <>
-              <CheckCircle2 className="mr-2 h-4 w-4" /> Já fechada
-            </>
-          ) : (
-            <>
-              <Lock className="mr-2 h-4 w-4" /> Fechar competência
-            </>
-          )}
-        </Button>
+        {(podeFechar || jaFechada) && (
+          <Button
+            onClick={() => setOpenFechar(true)}
+            disabled={jaFechada || !previa.data || previa.data.length === 0}
+          >
+            {jaFechada ? (
+              <>
+                <CheckCircle2 className="mr-2 h-4 w-4" /> Já fechada
+              </>
+            ) : (
+              <>
+                <Lock className="mr-2 h-4 w-4" /> Fechar competência
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -285,7 +302,7 @@ function Pagina() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          disabled={jaFechada}
+                          disabled={jaFechada || !podeAjustar}
                           onClick={() => {
                             setAjustesFunc(i);
                             setAjusteForm({
@@ -296,6 +313,7 @@ function Pagina() {
                             });
                           }}
                           title="Ajustes avulsos"
+                          aria-label="Ajustes avulsos"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -307,9 +325,13 @@ function Pagina() {
                   <TableRow>
                     <TableCell
                       colSpan={9}
-                      className="py-10 text-center text-sm text-muted-foreground"
+                      className={`py-10 text-center text-sm ${previa.isError ? "text-destructive" : "text-muted-foreground"}`}
                     >
-                      Nenhum funcionário ativo nesta competência.
+                      {previa.isLoading
+                        ? "Carregando…"
+                        : previa.isError
+                          ? mensagemDeErro(previa.error, "Não foi possível calcular a prévia.")
+                          : "Nenhum funcionário ativo nesta competência."}
                     </TableCell>
                   </TableRow>
                 )}
@@ -362,7 +384,9 @@ function Pagina() {
                       {MESES[c.mes - 1]}/{c.ano}
                     </TableCell>
                     <TableCell>
-                      <Badge className={STATUS_TONE[c.status]}>{c.status}</Badge>
+                      <Badge className={STATUS_TONE[c.status]}>
+                        {STATUS_LABEL[c.status as StatusCompetencia] ?? c.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">{formatBRL(c.total_proventos)}</TableCell>
                     <TableCell className="text-right">{formatBRL(c.total_descontos)}</TableCell>
@@ -370,19 +394,16 @@ function Pagina() {
                       {formatBRL(c.total_liquido)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {c.fechada_em ? new Date(c.fechada_em).toLocaleDateString("pt-BR") : "—"}
+                      {c.fechada_em ? formatData(c.fechada_em) : "—"}
                     </TableCell>
                   </TableRow>
                 ))}
                 {(!historico.data || historico.data.length === 0) && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="py-10 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhuma competência fechada ainda.
-                    </TableCell>
-                  </TableRow>
+                  <LinhaEstadoLista
+                    colSpan={6}
+                    q={historico}
+                    vazio="Nenhuma competência fechada ainda."
+                  />
                 )}
               </TableBody>
             </Table>
@@ -477,6 +498,7 @@ function Pagina() {
                           <Button
                             size="icon"
                             variant="ghost"
+                            aria-label={`Editar ajuste ${a.descricao}`}
                             onClick={() =>
                               setAjusteForm({
                                 tipo: a.tipo,
@@ -488,27 +510,34 @@ function Pagina() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => removerAj.mutate(a.id)}
-                            disabled={removerAj.isPending}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <ConfirmDelete
+                            titulo={`Excluir o ajuste "${a.descricao}"?`}
+                            descricao="O valor sai da prévia desta competência."
+                            onConfirm={async () => {
+                              await removerAj.mutateAsync(a.id);
+                            }}
+                            trigger={
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                aria-label={`Excluir ajuste ${a.descricao}`}
+                                disabled={removerAj.isPending}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            }
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
                   {(!ajustes.data || ajustes.data.length === 0) && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        className="py-6 text-center text-sm text-muted-foreground"
-                      >
-                        Nenhum ajuste avulso nesta competência.
-                      </TableCell>
-                    </TableRow>
+                    <LinhaEstadoLista
+                      colSpan={4}
+                      q={ajustes}
+                      vazio="Nenhum ajuste avulso nesta competência."
+                      className="py-6"
+                    />
                   )}
                 </TableBody>
               </Table>

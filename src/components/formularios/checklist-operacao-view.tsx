@@ -93,6 +93,11 @@ export function ChecklistOperacaoView({
             style={{ width: `${pct}%` }}
           />
         </div>
+        {/* As marcações não ficam gravadas (o checklist não é de um cliente): dizer
+            isso evita achar que a conferência foi salva. */}
+        <p className="mt-2 text-xs text-muted-foreground">
+          Conferência rápida: as marcações não são salvas e somem ao sair desta tela.
+        </p>
       </div>
 
       {checklist.blocos.map((bloco, i) => (

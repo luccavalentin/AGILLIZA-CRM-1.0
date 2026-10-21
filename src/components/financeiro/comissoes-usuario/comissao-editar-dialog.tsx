@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { atualizarComissaoUsuario } from "@/lib/financeiro/comissoes-usuario.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export interface ComissaoEditavel {
   id: string;
@@ -73,7 +74,7 @@ export function ComissaoEditarDialog({
       qc.invalidateQueries({ queryKey: ["fin-contas"] });
       onOpenChange(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Não foi possível salvar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível salvar.")),
   });
 
   return (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Building2,
@@ -45,6 +46,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DateInput } from "@/components/shared/date-input";
 import type { ContratoEmitido } from "@/lib/crm/clientes.functions";
+import { formatData } from "@/lib/financeiro/format";
 import type { PainelClienteItem } from "./utils";
 
 /** Diálogo que lista clientes de uma etapa (ou de toda a esteira). */
@@ -109,7 +111,7 @@ export function DialogClientesEtapa({
                 className="group flex w-full items-center gap-2.5 rounded-lg border border-border bg-background p-2.5 text-left transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
               >
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground">
-                  {c.nome.trim().charAt(0).toUpperCase()}
+                  {iniciaisDoNome(c.nome)}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
@@ -142,13 +144,21 @@ export function DialogClientesEtapa({
 interface DialogArquivoProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Página atual do arquivo (paginado e filtrado no servidor). */
   contratos: ContratoEmitido[] | undefined;
-  contratosFiltrados: ContratoEmitido[];
+  total: number;
+  pagina: number;
+  totalPaginas: number;
+  onPagina: (p: number) => void;
   carregando: boolean;
+  erro: boolean;
+  onTentarDeNovo: () => void;
   contratoBusca: string;
   contratoDesde: string;
   contratoAte: string;
   editandoContrato: string | null;
+  /** `crm.clientes` › Editar: sem ela, o arquivo é só consulta. */
+  podeEditar: boolean;
   setContratoBusca: (v: string) => void;
   setContratoDesde: (v: string) => void;
   setContratoAte: (v: string) => void;
@@ -158,9 +168,40 @@ interface DialogArquivoProps {
   onExcluir: (clienteId: string) => void;
 }
 
+/** Edição da data de emissão: grava só ao confirmar, e só com data completa. */
+function EditarDataContrato({
+  valor,
+  onSalvar,
+  onCancelar,
+}: {
+  valor: string | null;
+  onSalvar: (v: string) => void;
+  onCancelar: () => void;
+}) {
+  const [rascunho, setRascunho] = useState(valor ? String(valor).slice(0, 10) : "");
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <DateInput value={rascunho} onChange={setRascunho} className="h-8 flex-1" />
+      <Button
+        type="button"
+        size="sm"
+        className="h-8"
+        disabled={!/^\d{4}-\d{2}-\d{2}$/.test(rascunho)}
+        onClick={() => onSalvar(rascunho)}
+      >
+        Salvar
+      </Button>
+      <Button type="button" size="sm" variant="ghost" className="h-8" onClick={onCancelar}>
+        Cancelar
+      </Button>
+    </div>
+  );
+}
+
 /** Diálogo com o arquivo de contratos emitidos (pesquisa, filtro e ações). */
 export function DialogArquivoContratos(p: DialogArquivoProps) {
   const navigate = useNavigate();
+  const filtrando = Boolean(p.contratoDesde || p.contratoAte || p.contratoBusca.trim());
   return (
     <Dialog open={p.open} onOpenChange={p.onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -170,7 +211,7 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
             Contratos emitidos
           </DialogTitle>
           <DialogDescription>
-            Arquivo dos contratos já emitidos — pesquise e filtre por data.
+            Contratos arquivados. Pesquise ou filtre pela data de emissão.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 border-y border-border/60 py-3">
@@ -179,7 +220,7 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
             <Input
               value={p.contratoBusca}
               onChange={(e) => p.setContratoBusca(e.target.value)}
-              placeholder="Buscar por nome, nº do cliente, proposta ou banco..."
+              placeholder="Buscar por nome ou nº do cliente"
               className="h-9 rounded-lg pl-9 pr-9 text-sm"
             />
             {p.contratoBusca && (
@@ -212,7 +253,7 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
                 className="h-9 w-36 rounded-lg text-sm"
               />
             </div>
-            {(p.contratoDesde || p.contratoAte || p.contratoBusca) && (
+            {filtrando && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -227,7 +268,7 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
               </Button>
             )}
             <span className="ml-auto self-center text-[11px] tabular-nums text-muted-foreground">
-              {p.contratosFiltrados.length} contrato(s)
+              {p.total} contrato(s)
             </span>
           </div>
         </div>
@@ -236,22 +277,28 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
             Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-16 w-full rounded-lg" />
             ))
+          ) : p.erro ? (
+            <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-destructive/40 px-4 py-10 text-center">
+              <p className="text-sm text-destructive">Não foi possível carregar os contratos.</p>
+              <Button size="sm" variant="outline" onClick={p.onTentarDeNovo}>
+                Tentar de novo
+              </Button>
+            </div>
           ) : (p.contratos ?? []).length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-4 py-10 text-center">
-              <FolderClosed className="size-7 text-muted-foreground/60" />
+              {filtrando ? (
+                <Search className="size-7 text-muted-foreground/60" />
+              ) : (
+                <FolderClosed className="size-7 text-muted-foreground/60" />
+              )}
               <p className="text-sm text-muted-foreground">
-                Nenhum contrato emitido arquivado ainda.
-              </p>
-            </div>
-          ) : p.contratosFiltrados.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-4 py-10 text-center">
-              <Search className="size-7 text-muted-foreground/60" />
-              <p className="text-sm text-muted-foreground">
-                Nenhum contrato encontrado com esses filtros.
+                {filtrando
+                  ? "Nenhum contrato encontrado com esses filtros."
+                  : "Nenhum contrato emitido arquivado ainda."}
               </p>
             </div>
           ) : (
-            p.contratosFiltrados.map((ct) => (
+            (p.contratos ?? []).map((ct) => (
               <div
                 key={ct.cliente_id}
                 className="group flex items-start gap-3 rounded-lg border border-border bg-background p-3 transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
@@ -296,11 +343,8 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
                     )}
                     <span className="inline-flex items-center gap-1">
                       <CalendarCheck className="size-3" />
-                      {ct.contrato_emitido_em
-                        ? new Date(ct.contrato_emitido_em).toLocaleDateString("pt-BR", {
-                            timeZone: "America/Sao_Paulo",
-                          })
-                        : "—"}
+                      {/* Data civil (aaaa-mm-dd): new Date() a lia como UTC e mostrava o dia anterior. */}
+                      {formatData(ct.contrato_emitido_em)}
                     </span>
                     {ct.nome_banco && (
                       <button
@@ -320,23 +364,15 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
                       </button>
                     )}
                   </span>
-                  {p.editandoContrato === ct.cliente_id && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <DateInput
-                        value={ct.contrato_emitido_em ?? ""}
-                        onChange={(v) => p.onSalvarDataContrato(ct.cliente_id, v)}
-                        className="h-8 flex-1"
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-8"
-                        onClick={() => p.setEditandoContrato(null)}
-                      >
-                        Concluir
-                      </Button>
-                    </div>
+                  {p.podeEditar && p.editandoContrato === ct.cliente_id && (
+                    <EditarDataContrato
+                      valor={ct.contrato_emitido_em}
+                      onCancelar={() => p.setEditandoContrato(null)}
+                      onSalvar={(v) => {
+                        p.onSalvarDataContrato(ct.cliente_id, v);
+                        p.setEditandoContrato(null);
+                      }}
+                    />
                   )}
                 </span>
                 {ct.valor_financiamento != null && (
@@ -352,6 +388,7 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
                       size="icon"
                       className="size-8 shrink-0 text-muted-foreground"
                       title="Ações do contrato"
+                      aria-label="Ações do contrato"
                     >
                       <MoreVertical className="size-4" />
                     </Button>
@@ -378,25 +415,56 @@ export function DialogArquivoContratos(p: DialogArquivoProps) {
                         <FileText className="mr-2 size-4" /> Visualizar proposta
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => p.setEditandoContrato(ct.cliente_id)}>
-                      <Pencil className="mr-2 size-4" /> Editar data de emissão
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => p.onDesarquivar(ct.cliente_id)}>
-                      <Undo2 className="mr-2 size-4" /> Mover para a esteira
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => p.onExcluir(ct.cliente_id)}
-                    >
-                      <Trash2 className="mr-2 size-4" /> Excluir
-                    </DropdownMenuItem>
+                    {p.podeEditar && (
+                      <>
+                        <DropdownMenuItem onClick={() => p.setEditandoContrato(ct.cliente_id)}>
+                          <Pencil className="mr-2 size-4" /> Editar data de emissão
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => p.onDesarquivar(ct.cliente_id)}>
+                          <Undo2 className="mr-2 size-4" /> Mover para a esteira
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => p.onExcluir(ct.cliente_id)}
+                        >
+                          <Trash2 className="mr-2 size-4" /> Excluir
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             ))
           )}
         </div>
+        {p.totalPaginas > 1 && (
+          <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+            <span className="tabular-nums">
+              Página {p.pagina} de {p.totalPaginas}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                disabled={p.pagina <= 1}
+                onClick={() => p.onPagina(p.pagina - 1)}
+              >
+                Anterior
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                disabled={p.pagina >= p.totalPaginas}
+                onClick={() => p.onPagina(p.pagina + 1)}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -481,7 +549,7 @@ export function DialogAdicionarCliente({
                   className="flex w-full items-center gap-2.5 rounded-lg border border-border p-2.5 text-left transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:opacity-60"
                 >
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                    {(cli.nome ?? "?").trim().charAt(0).toUpperCase()}
+                    {iniciaisDoNome(cli.nome)}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-foreground">
@@ -551,11 +619,10 @@ export function AlertLimparVinculo({
     <AlertDialog open={!!info} onOpenChange={(o) => !o && onOpenChange(false)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Excluir vínculo de simulação/aprovação?</AlertDialogTitle>
+          <AlertDialogTitle>Excluir vínculo com a etapa?</AlertDialogTitle>
           <AlertDialogDescription>
-            Isso remove por completo o vínculo de {info?.nome} com simulações e propostas (inclusive
-            registros já excluídos) e retorna o cliente para a etapa de cadastro. O cadastro do
-            cliente é mantido. Esta ação não pode ser desfeita.
+            {info?.nome} não tem simulação nem proposta ativa. O cliente volta para a etapa Cadastro
+            completo; o cadastro e o histórico não mudam.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -74,9 +74,6 @@ function PortalParceiro() {
         toast.error("Este acesso não pertence ao Portal do Parceiro.");
         return;
       }
-      // Salva o e-mail para habilitar biometria futura
-      localStorage.setItem("last_logged_in_email", email);
-
       await queryClient.invalidateQueries({ queryKey: ["minha-sessao"] });
       // Quem acabou de entrar com a senha não deve cair na tela de bloqueio.
       marcarAppDesbloqueado();

@@ -38,6 +38,11 @@ import {
   excluirDependente,
   type Dependente,
 } from "@/lib/rh/funcionarios.functions";
+import { formatData, hojeISO } from "@/lib/financeiro/format";
+import { mascararCPF, soDigitos, validarCPF } from "@/lib/crm/documento";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 
 const PARENTESCOS = [
   "Cônjuge",
@@ -90,12 +95,15 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
   const salvar = useMutation({
     mutationFn: async () => {
       if (!form.nome.trim()) throw new Error("Informe o nome.");
+      if (form.cpf && !validarCPF(form.cpf)) throw new Error("CPF do dependente inválido.");
+      if (form.data_nascimento && form.data_nascimento > hojeISO())
+        throw new Error("A data de nascimento não pode estar no futuro.");
       await fnSalvar({
         data: {
           id: form.id,
           funcionario_id: funcionarioId,
           nome: form.nome.trim(),
-          cpf: form.cpf || null,
+          cpf: form.cpf ? soDigitos(form.cpf) : null,
           data_nascimento: form.data_nascimento || null,
           parentesco: form.parentesco,
           ir: form.ir,
@@ -111,16 +119,16 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
       setOpen(false);
       setForm(vazio);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   const remover = useMutation({
     mutationFn: (id: string) => fnExcluir({ data: { id } }),
     onSuccess: () => {
-      toast.success("Dependente removido.");
+      toast.success("Dependente excluído.");
       qc.invalidateQueries({ queryKey: ["rh-dependentes", funcionarioId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao remover."),
+    // Erro: o ConfirmDelete mostra a mensagem e continua aberto.
   });
 
   function abrirNovo() {
@@ -131,7 +139,7 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
     setForm({
       id: d.id,
       nome: d.nome,
-      cpf: d.cpf ?? "",
+      cpf: d.cpf ? mascararCPF(d.cpf) : "",
       data_nascimento: d.data_nascimento ?? "",
       parentesco: d.parentesco,
       ir: d.ir,
@@ -170,11 +178,11 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
                 <TableRow key={d.id}>
                   <TableCell className="font-medium">{d.nome}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{d.parentesco}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{d.cpf ?? "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {d.data_nascimento
-                      ? new Date(d.data_nascimento).toLocaleDateString("pt-BR")
-                      : "—"}
+                    {d.cpf ? mascararCPF(d.cpf) : "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {d.data_nascimento ? formatData(d.data_nascimento) : "—"}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -188,31 +196,37 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => abrirEdicao(d)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => {
-                          if (confirm(`Remover ${d.nome}?`)) remover.mutate(d.id);
-                        }}
+                        aria-label={`Editar dependente ${d.nome}`}
+                        onClick={() => abrirEdicao(d)}
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
+                      {/* Confirmação padrão (era o confirm() do navegador). */}
+                      <ConfirmDelete
+                        titulo={`Excluir ${d.nome}?`}
+                        descricao="O dependente sai da ficha e deixa de contar no IRRF e no salário-família."
+                        onConfirm={async () => {
+                          await remover.mutateAsync(d.id);
+                        }}
+                        trigger={
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={`Excluir dependente ${d.nome}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        }
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
               {(!q.data || q.data.length === 0) && (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="py-10 text-center text-sm text-muted-foreground"
-                  >
-                    Nenhum dependente cadastrado.
-                  </TableCell>
-                </TableRow>
+                <LinhaEstadoLista colSpan={6} q={q} vazio="Nenhum dependente cadastrado." />
               )}
             </TableBody>
           </Table>
@@ -255,7 +269,8 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
               <Label>CPF</Label>
               <Input
                 value={form.cpf}
-                onChange={(e) => setForm((p) => ({ ...p, cpf: e.target.value }))}
+                onChange={(e) => setForm((p) => ({ ...p, cpf: mascararCPF(e.target.value) }))}
+                inputMode="numeric"
                 placeholder="000.000.000-00"
               />
             </div>
@@ -263,6 +278,7 @@ export function FichaDependentes({ funcionarioId }: { funcionarioId: string }) {
               <Label>Data de nascimento</Label>
               <Input
                 type="date"
+                max={hojeISO()}
                 value={form.data_nascimento}
                 onChange={(e) => setForm((p) => ({ ...p, data_nascimento: e.target.value }))}
               />

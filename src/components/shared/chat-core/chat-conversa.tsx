@@ -16,6 +16,7 @@ import { useIncomingChatSound } from "@/hooks/use-chat-sound";
 import { useChatTyping } from "@/hooks/use-chat-typing";
 import { useChatPresence } from "@/hooks/use-chat-presence";
 import { supabase } from "@/integrations/supabase/client";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { ChatClienteHeader } from "@/components/crm/chat-cliente/chat-header";
 import { ListaMensagens } from "@/components/crm/chat-cliente/lista-mensagens";
 import { ChatComposer, type ComposerSubmitPayload } from "@/components/crm/chat-cliente/composer";
@@ -57,7 +58,13 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
   const fimRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { data: mensagens, isLoading } = useQuery({
+  const {
+    data: mensagens,
+    isLoading,
+    isError,
+    error: erroLista,
+    refetch,
+  } = useQuery({
     queryKey,
     queryFn: () => adapter.listar(),
     // Fallback: garante entrega de mensagens, respostas e reações mesmo que
@@ -93,6 +100,39 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adapter.realtime.channel, qc]);
+
+  // Reações: só as das mensagens carregadas desta conversa. O filtro `in` do Realtime
+  // aceita até 100 valores — as mais recentes, que são as que aparecem na tela.
+  const tabelaReacoes = adapter.realtime.reacoes?.table ?? null;
+  const idsReacoes = useMemo(
+    () =>
+      (mensagens ?? [])
+        .filter((m) => !m.id.startsWith("otimista-"))
+        .slice(-100)
+        .map((m) => m.id)
+        .join(","),
+    [mensagens],
+  );
+  useEffect(() => {
+    if (!tabelaReacoes || !idsReacoes) return;
+    const canal = supabase
+      .channel(`${adapter.realtime.channel}:reacoes:${crypto.randomUUID()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: tabelaReacoes,
+          filter: `mensagem_id=in.(${idsReacoes})`,
+        },
+        () => qc.invalidateQueries({ queryKey }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canal);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adapter.realtime.channel, tabelaReacoes, idsReacoes, qc]);
 
   useIncomingChatSound(
     mensagens?.map((m) => ({ id: m.id, mine: m.remetente_tipo === mineTipo })),
@@ -160,9 +200,9 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
       if (ctx?.anterior) qc.setQueryData(queryKey, ctx.anterior);
       const bruto = err instanceof Error ? err.message : String(err);
       const motivo = /unauthorized|authorization header|invalid token|no token/i.test(bruto)
-        ? "sua sessão expirou. Atualize a página e entre novamente."
-        : bruto;
-      toast.error(`Não foi possível enviar a mensagem: ${motivo}`);
+        ? "Sua sessão expirou. Atualize a página e entre novamente."
+        : mensagemDeErro(err, "Tente de novo.");
+      toast.error(`Não foi possível enviar a mensagem. ${motivo}`);
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey });
@@ -177,8 +217,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
       qc.invalidateQueries({ queryKey });
     },
     onError: (err) => {
-      const motivo = err instanceof Error ? err.message : String(err);
-      toast.error(`Não foi possível editar: ${motivo}`);
+      toast.error(mensagemDeErro(err, "Não foi possível editar a mensagem."));
     },
   });
 
@@ -189,8 +228,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
       qc.invalidateQueries({ queryKey });
     },
     onError: (err) => {
-      const motivo = err instanceof Error ? err.message : String(err);
-      toast.error(`Não foi possível excluir: ${motivo}`);
+      toast.error(mensagemDeErro(err, "Não foi possível excluir a mensagem."));
     },
   });
 
@@ -227,8 +265,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     },
     onError: (err, _p, ctx) => {
       if (ctx?.anterior) qc.setQueryData(queryKey, ctx.anterior);
-      const motivo = err instanceof Error ? err.message : String(err);
-      toast.error(`Não foi possível reagir: ${motivo}`);
+      toast.error(mensagemDeErro(err, "Não foi possível reagir."));
     },
     onSettled: () => qc.invalidateQueries({ queryKey }),
   });
@@ -248,9 +285,15 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
       });
     },
     onSuccess: async (_r, vars) => {
+      const quando = (iso: string) =>
+        new Date(iso).toLocaleString("pt-BR", {
+          timeZone: "America/Sao_Paulo",
+          dateStyle: "short",
+          timeStyle: "short",
+        });
       const nota = vars.retorno
-        ? `📅 Retorno agendado para ${new Date(vars.prazo!).toLocaleString("pt-BR")}: ${vars.titulo}`
-        : `✅ Tarefa criada${vars.prazo ? ` (até ${new Date(vars.prazo).toLocaleString("pt-BR")})` : ""}: ${vars.titulo}`;
+        ? `Retorno agendado para ${quando(vars.prazo!)}: ${vars.titulo}`
+        : `Tarefa criada${vars.prazo ? ` (até ${quando(vars.prazo)})` : ""}: ${vars.titulo}`;
       try {
         await adapter.responder({ mensagem: nota, interna: true });
       } catch {
@@ -262,18 +305,10 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
     },
     onError: (err) => {
       const raw = err instanceof Error ? err.message : String(err);
-      let motivo = raw;
-      try {
-        const parsed = JSON.parse(raw);
-        const first = Array.isArray(parsed) ? parsed[0] : parsed?.issues?.[0];
-        if (first?.message) motivo = first.message;
-      } catch {
-        /* mensagem já é texto */
-      }
-      if (/at least 2 character/i.test(motivo)) {
-        motivo = "Descreva a tarefa com pelo menos 2 caracteres.";
-      }
-      toast.error(`Não foi possível criar: ${motivo}`);
+      const motivo = /at least 2 character/i.test(raw)
+        ? "Descreva a tarefa com pelo menos 2 caracteres."
+        : mensagemDeErro(err, "Tente de novo.");
+      toast.error(`Não foi possível criar. ${motivo}`);
     },
   });
 
@@ -349,6 +384,8 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
       await adapter.responder({
         mensagem: texto.trim() || undefined,
         anexo_path: path,
+        anexo_nome: file.name,
+        anexo_tamanho: file.size,
         responde_a: respondendo?.id,
       });
       setTexto("");
@@ -356,8 +393,7 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
       qc.invalidateQueries({ queryKey });
       toast.success("Arquivo enviado.");
     } catch (err) {
-      const motivo = err instanceof Error ? err.message : String(err);
-      toast.error(`Falha ao enviar o arquivo: ${motivo}`);
+      toast.error(mensagemDeErro(err, "Não foi possível enviar o arquivo."));
     } finally {
       setEnviandoAnexo(false);
     }
@@ -424,6 +460,13 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
       <ListaMensagens
         filtradas={filtradas}
         isLoading={isLoading}
+        erro={
+          isError && !mensagens
+            ? mensagemDeErro(erroLista, "Não foi possível carregar a conversa.")
+            : null
+        }
+        onTentarDeNovo={() => void refetch()}
+        meuId={adapter.meuId ?? null}
         buscaAberta={buscaAberta}
         buscaMsg={buscaMsg}
         info={info}
@@ -448,9 +491,15 @@ export function ChatConversaCore({ adapter }: { adapter: ChatAdapter }) {
 
       {somenteLeitura ? (
         <div className="border-t border-border/60 bg-muted/30 px-4 py-3 text-center text-xs text-muted-foreground">
-          Visualizando a conversa de{" "}
-          <span className="font-medium text-foreground">{atendenteNome ?? "outro atendente"}</span>{" "}
-          — somente leitura. Para falar com este cliente, abra a sua própria conversa.
+          {atendenteNome ? (
+            <>
+              Visualizando a conversa de{" "}
+              <span className="font-medium text-foreground">{atendenteNome}</span>, somente leitura.
+              Para falar com este cliente, abra a sua própria conversa.
+            </>
+          ) : (
+            "Somente leitura. Você não tem permissão para responder nesta conversa."
+          )}
         </div>
       ) : (
         <ChatComposer

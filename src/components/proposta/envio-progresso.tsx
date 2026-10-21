@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
@@ -89,7 +90,7 @@ export function EnvioProgresso({
 
             <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
-              <span className="truncate">{status.mensagem ?? ETAPAS[etapaAtual - 1]}</span>
+              <span className="truncate">{semMarcaIntegracao(status.mensagem) ?? ETAPAS[etapaAtual - 1]}</span>
             </p>
 
             <div className="mt-2.5">

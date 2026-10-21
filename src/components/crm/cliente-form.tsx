@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   criarCliente,
+  clientePorDocumento,
+  type ClienteDoDocumento,
   atualizarCliente,
   salvarEndereco,
   definirAcessoPortal,
@@ -29,6 +31,15 @@ import {
 } from "@/lib/crm/documento";
 import { CriarVinculoInline } from "@/components/crm/criar-vinculo-inline";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   emptyValues,
   formatarMoedaBR,
   normalizarSexo,
@@ -44,6 +55,13 @@ import { EmpresaSection } from "./cliente-form/empresa-section";
 import { EnderecoSection } from "./cliente-form/endereco-section";
 import { FgtsSection } from "./cliente-form/fgts-section";
 import { BancariosSection } from "./cliente-form/bancarios-section";
+
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { hojeISO } from "@/lib/financeiro/format";
+import { usePermissao } from "@/hooks/use-permissao";
+
+/** Documento que veio mascarado do servidor ("***.***.123-**") para quem não vê dados sensíveis. */
+const ehMascarado = (doc: string | null | undefined) => Boolean(doc && doc.includes("*"));
 
 export type { ClienteFormValues } from "./cliente-form/constants";
 
@@ -78,6 +96,19 @@ export function ClienteForm({
   const navigate = useNavigate();
   const qc = useQueryClient();
   const criar = useServerFn(criarCliente);
+  const buscarPorDocumento = useServerFn(clientePorDocumento);
+  /** Documento já cadastrado: o operador decide antes de qualquer gravação. */
+  const [duplicado, setDuplicado] = useState<
+    (ClienteDoDocumento & { responder: (r: "atualizar" | "abrir" | "cancelar") => void }) | null
+  >(null);
+  const perguntarDuplicado = (c: ClienteDoDocumento) =>
+    new Promise<"atualizar" | "abrir" | "cancelar">((responder) =>
+      setDuplicado({ ...c, responder }),
+    );
+  const responderDuplicado = (r: "atualizar" | "abrir" | "cancelar") => {
+    duplicado?.responder(r);
+    setDuplicado(null);
+  };
   const atualizar = useServerFn(atualizarCliente);
   const salvarEnd = useServerFn(salvarEndereco);
   const definirPortal = useServerFn(definirAcessoPortal);
@@ -97,8 +128,12 @@ export function ClienteForm({
     base.sexo = normalizarSexo(base.sexo);
     base.conjuge_sexo = normalizarSexo(base.conjuge_sexo);
     // Aplica máscaras de exibição em documentos/telefones vindos crus do banco.
-    if (base.documento) base.documento = mascararDocumentoTipo(base.documento, base.tipo_pessoa);
-    if (base.conjuge_cpf) base.conjuge_cpf = mascararCPF(base.conjuge_cpf);
+    // Documento que já chega mascarado ("***.***.123-**", sem "Ver dados sensíveis")
+    // fica como veio: a máscara de digitação comeria os asteriscos.
+    if (base.documento && !ehMascarado(base.documento))
+      base.documento = mascararDocumentoTipo(base.documento, base.tipo_pessoa);
+    if (base.conjuge_cpf && !ehMascarado(base.conjuge_cpf))
+      base.conjuge_cpf = mascararCPF(base.conjuge_cpf);
     if (base.telefone_celular) base.telefone_celular = mascararTelefone(base.telefone_celular);
     if (base.conjuge_celular) base.conjuge_celular = mascararTelefone(base.conjuge_celular);
     if (base.conjuge_renda) {
@@ -115,6 +150,11 @@ export function ClienteForm({
     cidade: enderecoInicial?.cidade ?? "",
     uf: enderecoInicial?.uf ?? "",
   });
+  // Cadastro novo exige "Criar"; alterar um existente (e o acesso ao portal) exige "Editar".
+  // O servidor recusa sem elas: aqui só some o botão.
+  const podeCriarCliente = usePermissao("crm.clientes", "create");
+  const podeEditarCliente = usePermissao("crm.clientes", "edit");
+  const podeSalvar = v.id ? podeEditarCliente : podeCriarCliente;
   const [portal, setPortal] = useState(Boolean(portalAtivo));
   const [portalSalvando, setPortalSalvando] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -164,7 +204,7 @@ export function ClienteForm({
       qc.invalidateQueries({ queryKey: ["clientes-stats"] });
     } catch (err: any) {
       setPortal(!ativo);
-      toast.error(err?.message ?? "Não foi possível salvar o acesso.");
+      toast.error(mensagemDeErro(err, "Não foi possível salvar o acesso."));
     } finally {
       setPortalSalvando(false);
     }
@@ -218,7 +258,8 @@ export function ClienteForm({
     /** Avisa e marca o campo em vermelho, levando o cursor até ele. */
     const falhar = (campo: string, msg: string) => {
       setCampoComErro(campo);
-      toast.error(msg);
+      // Mesmo id: o aviso novo substitui o anterior em vez de empilhar.
+      toast.error(msg, { id: "cliente-form-validacao" });
     };
 
     // Nome / razão social
@@ -226,19 +267,23 @@ export function ClienteForm({
       return falhar("nome", ehPF ? "Informe o nome completo." : "Informe a razão social.");
     }
 
-    // Documento: CPF (11 dígitos) para PF, CNPJ (14 dígitos) para PJ
+    // Documento: CPF (11 dígitos) para PF, CNPJ (14 dígitos) para PJ. Mascarado (quem não
+    // vê dados sensíveis editando a ficha): não se valida nem se grava — o servidor ignora.
+    const docMascarado = Boolean(v.id) && ehMascarado(v.documento);
     const docDigitos = soDigitos(v.documento);
-    if (!docDigitos) {
-      return falhar("documento", ehPF ? "Informe o CPF." : "Informe o CNPJ.");
-    }
-    if (ehPF && docDigitos.length !== 11) {
-      return falhar("documento", "O CPF deve conter 11 dígitos.");
-    }
-    if (!ehPF && docDigitos.length !== 14) {
-      return falhar("documento", "O CNPJ deve conter 14 dígitos.");
-    }
-    if (!validarDocumento(docDigitos, v.tipo_pessoa)) {
-      return falhar("documento", ehPF ? "CPF inválido." : "CNPJ inválido.");
+    if (!docMascarado) {
+      if (!docDigitos) {
+        return falhar("documento", ehPF ? "Informe o CPF." : "Informe o CNPJ.");
+      }
+      if (ehPF && docDigitos.length !== 11) {
+        return falhar("documento", "O CPF deve conter 11 dígitos.");
+      }
+      if (!ehPF && docDigitos.length !== 14) {
+        return falhar("documento", "O CNPJ deve conter 14 dígitos.");
+      }
+      if (!validarDocumento(docDigitos, v.tipo_pessoa)) {
+        return falhar("documento", ehPF ? "CPF inválido." : "CNPJ inválido.");
+      }
     }
 
     // Data de nascimento (PF) / abertura (PJ)
@@ -246,6 +291,14 @@ export function ClienteForm({
       return falhar(
         "data_nascimento",
         ehPF ? "Informe a data de nascimento." : "Informe a data de abertura.",
+      );
+    }
+    if (v.data_nascimento > hojeISO()) {
+      return falhar(
+        "data_nascimento",
+        ehPF
+          ? "A data de nascimento não pode estar no futuro."
+          : "A data de abertura não pode estar no futuro.",
       );
     }
 
@@ -272,14 +325,21 @@ export function ClienteForm({
     // Estado civil e cônjuge só se aplicam a Pessoa Física.
     const casado = ehPF && (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel");
     // Cônjuge é opcional no cadastro: permite salvar mesmo sem os dados preenchidos.
-    if (casado && v.conjuge_cpf && !validarCPF(v.conjuge_cpf)) {
-      return toast.error("CPF do cônjuge inválido.");
+    // Erros do cônjuge também marcam o campo (antes só aparecia o aviso flutuante).
+    if (casado && v.conjuge_cpf && !ehMascarado(v.conjuge_cpf) && !validarCPF(v.conjuge_cpf)) {
+      return falhar("conjuge_cpf", "CPF do cônjuge inválido.");
+    }
+    if (casado && v.conjuge_data_nascimento && v.conjuge_data_nascimento > hojeISO()) {
+      return falhar(
+        "conjuge_data_nascimento",
+        "A data de nascimento do cônjuge não pode estar no futuro.",
+      );
     }
     if (casado && v.conjuge_email && !validarEmail(v.conjuge_email)) {
-      return toast.error("E-mail do cônjuge inválido.");
+      return falhar("conjuge_email", "E-mail do cônjuge inválido.");
     }
     if (casado && v.conjuge_celular && !validarTelefone(v.conjuge_celular)) {
-      return toast.error("Celular do cônjuge inválido.");
+      return falhar("conjuge_celular", "Celular do cônjuge inválido.");
     }
     const rendaConjuge = v.conjuge_renda
       ? Number(v.conjuge_renda.replace(/\./g, "").replace(",", "."))
@@ -295,7 +355,7 @@ export function ClienteForm({
       const payload = {
         tipo_pessoa: v.tipo_pessoa,
         nome: up(v.nome),
-        documento: soDigitos(v.documento),
+        documento: docMascarado ? v.documento : soDigitos(v.documento),
         documento_secundario: up(v.documento_secundario) || null,
         data_nascimento: v.data_nascimento,
         estado_civil: v.estado_civil as any,
@@ -359,7 +419,16 @@ export function ClienteForm({
           data: { id, ...payload, endereco_em_seguida: Boolean(end.cep || end.logradouro) },
         });
       } else {
-        const r = await criar({ data: payload });
+        const existente = await buscarPorDocumento({ data: { documento: payload.documento } });
+        if (existente) {
+          const escolha = await perguntarDuplicado(existente);
+          if (escolha === "abrir" && existente.id) {
+            navigate({ to: "/crm/clientes/$id", params: { id: existente.id } });
+            return;
+          }
+          if (escolha !== "atualizar") return;
+        }
+        const r = await criar({ data: { ...payload, atualizar_existente: Boolean(existente) } });
         id = r.id;
         // Cria os vínculos de atendimento selecionados no novo cadastro.
         const falhas: string[] = [];
@@ -408,7 +477,7 @@ export function ClienteForm({
           navigate({ to: "/operacional/propostas/$id", params: { id: vincularPropostaId } });
           return;
         } catch (e: any) {
-          toast.error(e?.message ?? "Cliente salvo, mas falhou ao vincular à proposta.");
+          toast.error(mensagemDeErro(e, "Cliente salvo, mas falhou ao vincular à proposta."));
         }
       }
       if (embutido) {
@@ -424,10 +493,14 @@ export function ClienteForm({
       }
       await qc.invalidateQueries({ queryKey: ["clientes"] });
       await qc.invalidateQueries({ queryKey: ["clientes-stats"] });
+      // A ficha (cabeçalho e resumo) lê ["cliente", id]: sem isto ficava com os dados antigos.
+      await qc.invalidateQueries({ queryKey: ["cliente", id] });
+      await qc.invalidateQueries({ queryKey: ["cliente-hist", id] });
+      await qc.invalidateQueries({ queryKey: ["cliente-historico", id] });
       toast.success("Cliente salvo.");
       navigate({ to: "/crm/clientes/$id", params: { id: id! } });
     } catch (err: any) {
-      toast.error(err?.message ?? "Falha ao salvar.");
+      toast.error(mensagemDeErro(err, "Falha ao salvar."));
     } finally {
       setSalvando(false);
     }
@@ -565,16 +638,18 @@ export function ClienteForm({
         />
       )}
 
-      <PortalSection
-        temId={Boolean(v.id)}
-        portal={portal}
-        portalSalvando={portalSalvando}
-        alternarPortal={alternarPortal}
-      />
+      {(!v.id || podeEditarCliente) && (
+        <PortalSection
+          temId={Boolean(v.id)}
+          portal={portal}
+          portalSalvando={portalSalvando}
+          alternarPortal={alternarPortal}
+        />
+      )}
 
       <DadosBasicosSection v={v} set={set} setV={setV} erros={erros} idBanco={idBanco} />
 
-      {casadoPF && <ConjugeSection v={v} set={set} />}
+      {casadoPF && <ConjugeSection v={v} set={set} erros={erros} />}
 
       {/* Profissão e empresa onde trabalha são de pessoa física; a empresa
           informa faturamento, não profissão. */}
@@ -597,10 +672,47 @@ export function ClienteForm({
         <Button type="button" variant="outline" onClick={() => navigate({ to: "/crm/clientes" })}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={salvando}>
-          {salvando ? "Salvando…" : "Salvar cliente"}
-        </Button>
+        {podeSalvar && (
+          <Button type="submit" disabled={salvando}>
+            {salvando ? "Salvando…" : "Salvar cliente"}
+          </Button>
+        )}
       </div>
+
+      <AlertDialog
+        open={!!duplicado}
+        onOpenChange={(aberto) => !aberto && responderDuplicado("cancelar")}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {duplicado?.excluido
+                ? "Este documento é de um cliente excluído"
+                : "Este documento já está cadastrado"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {duplicado?.nome
+                ? `${duplicado.nome} (${duplicado.numero_cliente}) já usa este ${ehPF ? "CPF" : "CNPJ"}.`
+                : `Já existe um cliente com este ${ehPF ? "CPF" : "CNPJ"}, fora da sua carteira.`}{" "}
+              {duplicado?.excluido
+                ? "Salvar restaura esse cadastro com os dados deste formulário."
+                : "Salvar substitui os dados dele pelos deste formulário — não cria um cliente novo."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {/* flex-wrap: com três botões, "Voltar" ficava cortado à esquerda. */}
+          <AlertDialogFooter className="flex-wrap gap-2 sm:space-x-0">
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            {duplicado?.id && !duplicado.excluido && (
+              <Button type="button" variant="outline" onClick={() => responderDuplicado("abrir")}>
+                Abrir cadastro existente
+              </Button>
+            )}
+            <Button type="button" onClick={() => responderDuplicado("atualizar")}>
+              {duplicado?.excluido ? "Restaurar e atualizar" : "Atualizar o existente"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }

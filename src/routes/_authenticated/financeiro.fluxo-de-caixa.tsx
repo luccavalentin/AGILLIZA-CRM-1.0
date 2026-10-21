@@ -31,8 +31,8 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   obterFluxoCaixaAnalitico,
   type FluxoAnalitico,
-  limparFluxoCaixa,
 } from "@/lib/financeiro/financeiro.functions";
+import { usePermissao } from "@/hooks/use-permissao";
 
 import {
   PanelHeader,
@@ -57,6 +57,7 @@ import {
 import { ExportarFinanceiro } from "@/components/financeiro/exportar-financeiro";
 import { formatBRL } from "@/lib/financeiro/format";
 import { cn } from "@/lib/utils";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/_authenticated/financeiro/fluxo-de-caixa")({
   head: () => ({ meta: [{ title: "Fluxo de caixa — Agilliza" }] }),
@@ -71,7 +72,7 @@ export const Route = createFileRoute("/_authenticated/financeiro/fluxo-de-caixa"
 
 function formatCurto(v: number) {
   const abs = Math.abs(v);
-  if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
   if (abs >= 1_000) return `${(v / 1_000).toFixed(0)}k`;
   return String(v);
 }
@@ -227,6 +228,9 @@ function DetalheFluxoDialog({
   queryClient: any;
 }) {
   const total = linhas.reduce((s, l) => s + l.valor, 0);
+  // Excluir conta exige "editar" no módulo da conta (o servidor confere).
+  const podeEditarPagar = usePermissao("financeiro.contas_pagar", "edit");
+  const podeEditarReceber = usePermissao("financeiro.contas_receber", "edit");
   return (
     <Dialog open={aberto} onOpenChange={(o) => (!o ? onClose() : null)}>
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
@@ -264,36 +268,40 @@ function DetalheFluxoDialog({
                           <a
                             href={`/financeiro/contas-a-${d.tipo === "pagar" ? "pagar" : "receber"}?id=${d.id}`}
                           >
-                            Ver/Editar {d.tipo === "pagar" ? "Saída" : "Entrada"}
+                            Abrir {d.tipo === "pagar" ? "saída" : "entrada"}
                           </a>
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-destructive hover:bg-destructive/10"
-                          onClick={async () => {
-                            if (
-                              confirm(
-                                `Deseja excluir esta ${d.tipo === "pagar" ? "saída" : "entrada"}?`,
-                              )
-                            ) {
-                              try {
-                                const { excluirConta } =
-                                  await import("@/lib/financeiro/financeiro.functions");
-                                await excluirConta({ data: { tipo: d.tipo, id: d.id } });
-                                toast.success("Excluído com sucesso!");
-                                queryClient.invalidateQueries({
-                                  queryKey: ["fin-fluxo-analitico"],
-                                });
-                                // O modal fechará ou atualizará sozinho conforme o estado da query
-                              } catch (err: any) {
-                                toast.error(err.message);
+                        {(d.tipo === "pagar" ? podeEditarPagar : podeEditarReceber) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-destructive hover:bg-destructive/10"
+                            onClick={async () => {
+                              if (
+                                confirm(
+                                  `Deseja excluir esta ${d.tipo === "pagar" ? "saída" : "entrada"}?`,
+                                )
+                              ) {
+                                try {
+                                  const { excluirConta } =
+                                    await import("@/lib/financeiro/financeiro.functions");
+                                  await excluirConta({ data: { tipo: d.tipo, id: d.id } });
+                                  toast.success("Conta excluída.");
+                                  queryClient.invalidateQueries({
+                                    queryKey: ["fin-fluxo-analitico"],
+                                  });
+                                  // O modal fechará ou atualizará sozinho conforme o estado da query
+                                } catch (err: any) {
+                                  toast.error(
+                                    mensagemDeErro(err, "Não foi possível concluir a operação."),
+                                  );
+                                }
                               }
-                            }
-                          }}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
+                            }}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -348,17 +356,22 @@ function Pagina() {
     saldoRealizado: {
       titulo: "Detalhamento de Entradas e Saídas",
       descricao: "Movimentações já efetivadas em caixa.",
-      linhas: pontos.map((p: any) => ({
-        rotulo: p.label,
-        sub: `Entradas ${formatBRL(p.entradaReal)} · Saídas ${formatBRL(p.saidaReal)}`,
-        valor: Number(p.entradaReal) - Number(p.saidaReal),
-        details: p.movimentacoesRealizadas
-          ?.map((m: any) => ({
-            tipo: m.tipo === "saida" ? "pagar" : "receber",
-            id: m.ref_id,
-          }))
-          .filter((m: any) => !!m.id),
-      })),
+      linhas: [
+        ...(r?.saldoInicial
+          ? [{ rotulo: "Saldo antes do período", valor: Number(r.saldoInicial) }]
+          : []),
+        ...pontos.map((p: any) => ({
+          rotulo: p.label,
+          sub: `Entradas ${formatBRL(p.entradaReal)} · Saídas ${formatBRL(p.saidaReal)}`,
+          valor: Number(p.entradaReal) - Number(p.saidaReal),
+          details: p.movimentacoesRealizadas
+            ?.map((m: any) => ({
+              tipo: m.tipo === "saida" ? "pagar" : "receber",
+              id: m.ref_id,
+            }))
+            .filter((m: any) => !!m.id),
+        })),
+      ],
     },
     resultadoProj: {
       titulo: "Resultado projetado por período",
@@ -564,7 +577,11 @@ function Pagina() {
               <HeroMetric
                 label="Saldo realizado"
                 valor={formatBRL(r?.saldoRealizado ?? 0)}
-                hint="Caixa efetivo acumulado"
+                hint={
+                  r?.saldoInicial
+                    ? `Inclui ${formatBRL(r.saldoInicial)} de saldo antes do período`
+                    : "Caixa efetivo acumulado"
+                }
                 tone={(r?.saldoRealizado ?? 0) >= 0 ? "success" : "danger"}
                 icon={Wallet}
                 onDetails={() => setDetalhe("saldoRealizado")}

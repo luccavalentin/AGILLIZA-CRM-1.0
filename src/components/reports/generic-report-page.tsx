@@ -12,7 +12,11 @@ import { DrilldownTable } from "@/components/reports/drilldown-table";
 import { ExportButtons } from "@/components/reports/export-buttons";
 import { EmptyReport } from "@/components/reports/empty-report";
 import { MonthlyComparison } from "@/components/reports/monthly-comparison";
-import { runReport } from "@/lib/relatorios/reports.functions";
+import { runReport, registrarExport } from "@/lib/relatorios/reports.functions";
+import { usePermissao } from "@/hooks/use-permissao";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { resolverDrillGrafico } from "@/lib/relatorios/chart-drill";
 import {
   ESCOPO_LABEL,
@@ -27,7 +31,6 @@ export function GenericReportPage({
   codigo,
   filtros,
   onFiltros,
-  podeEquipe,
   podeGeral,
   comFiltroBanco,
   comFiltroStatus,
@@ -39,20 +42,43 @@ export function GenericReportPage({
   /** Falso enquanto os filtros efetivos ainda vão mudar (ex.: escopo carregando). */
   pronto?: boolean;
   onFiltros: (f: ReportFiltros) => void;
-  podeEquipe: boolean;
   podeGeral: boolean;
   comFiltroBanco?: boolean;
   comFiltroStatus?: boolean;
   typeSelector?: import("react").ReactNode;
 }) {
   const run = useServerFn(runReport);
-  const { data, isLoading, isError } = useQuery({
+  // Período com o fim antes do início não consulta: a barra de filtros avisa.
+  const periodoInvertido =
+    filtros.periodo === "custom" && !!filtros.de && !!filtros.ate && filtros.de > filtros.ate;
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["report", codigo, filtros],
     queryFn: () => run({ data: { codigo, filtros } }),
-    enabled: pronto,
+    enabled: pronto && !periodoInvertido,
     staleTime: 15_000,
     refetchOnWindowFocus: true,
   });
+
+  const registrar = useServerFn(registrarExport);
+  const podeExportar = usePermissao("relatorios.geral", "export");
+  // Mesmo caminho do PDF/XLSX: o registro confere "Exportar" no servidor antes.
+  async function imprimir() {
+    if (!data) return;
+    try {
+      await registrar({
+        data: {
+          codigo,
+          formato: "imprimir",
+          registros: data.rows.length,
+          filtros: filtros as unknown as Record<string, unknown>,
+        },
+      });
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível imprimir."));
+      return;
+    }
+    window.print();
+  }
 
   // Mantém KPIs (ticket médio, volumes, contratos) sincronizados em tempo real.
   useRealtimeInvalidate(`report-${codigo}`, [["report", codigo]]);
@@ -126,10 +152,10 @@ export function GenericReportPage({
         <VisionSelector
           escopo={filtros.escopo}
           onChange={(e) => onFiltros({ ...filtros, escopo: e })}
-          podeEquipe={podeEquipe}
           podeGeral={podeGeral}
         />
       }
+      onImprimir={podeExportar && data ? imprimir : undefined}
       exportButtons={
         data ? (
           <ExportButtons codigo={codigo} result={data} meta={metaArr} filtros={filtros} />
@@ -160,9 +186,14 @@ export function GenericReportPage({
           <Skeleton className="h-72" />
         </div>
       ) : isError ? (
-        <p className="py-12 text-center text-sm text-muted-foreground">
-          Não foi possível carregar o relatório.
-        </p>
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <p className="text-sm text-destructive">
+            {mensagemDeErro(error, "Não foi possível carregar o relatório.")}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            Tentar de novo
+          </Button>
+        </div>
       ) : !data || data.rows.length === 0 ? (
         <>
           {data && data.kpis.length > 0 && (
@@ -194,7 +225,9 @@ export function GenericReportPage({
             </div>
           </ReportSection>
 
-          <ReportSection titulo={`Detalhamento — ${data.rows.length} registros`}>
+          <ReportSection
+            titulo={`Detalhamento — ${data.rows.length.toLocaleString("pt-BR")} ${data.rows.length === 1 ? "registro" : "registros"}`}
+          >
             <DrilldownTable columns={data.columns} rows={data.rows} />
           </ReportSection>
 
@@ -272,7 +305,8 @@ export function GenericReportPage({
                     {graficoAberto.rows.length > 0 && (
                       <>
                         {" · "}
-                        {graficoAberto.rows.length.toLocaleString("pt-BR")} registros
+                        {graficoAberto.rows.length.toLocaleString("pt-BR")}{" "}
+                        {graficoAberto.rows.length === 1 ? "registro" : "registros"}
                       </>
                     )}
                   </p>
@@ -296,7 +330,7 @@ export function GenericReportPage({
           <DialogHeader className="shrink-0 border-b p-4 sm:px-6">
             <DialogTitle>
               {kpiAberto?.titulo ?? kpiAberto?.label} — {linhasKpi.length.toLocaleString("pt-BR")}{" "}
-              registros
+              {linhasKpi.length === 1 ? "registro" : "registros"}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="min-h-0 flex-1">

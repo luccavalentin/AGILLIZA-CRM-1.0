@@ -1,5 +1,28 @@
 import { Link } from "@tanstack/react-router";
-import type { FileText } from "lucide-react";
+import { AlertCircle, type FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+
+/** Falha ao carregar uma aba do painel (não é lista vazia). */
+export function ErroPainel({
+  erro,
+  alternativa,
+  onTentarDeNovo,
+}: {
+  erro: unknown;
+  alternativa: string;
+  onTentarDeNovo: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+      <AlertCircle className="size-5 text-destructive" />
+      <p className="text-sm text-muted-foreground">{mensagemDeErro(erro, alternativa)}</p>
+      <Button type="button" variant="outline" size="sm" onClick={onTentarDeNovo}>
+        Tentar de novo
+      </Button>
+    </div>
+  );
+}
 
 export function LinhaResumo({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
   return (

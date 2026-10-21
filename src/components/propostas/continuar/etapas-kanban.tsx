@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -126,7 +127,7 @@ export function EtapasKanban({
           <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p>
             {pelaHomefin
-              ? "As etapas voltam do banco pela HomeFin e movem a proposta sozinhas."
+              ? "As etapas voltam do banco pela integração bancária e movem a proposta sozinhas."
               : `As etapas são lidas no portal do ${nomeBanco ?? "banco"} e movem a proposta sozinhas.`}
             <br />
             {ultima ? `Última consulta ao banco: ${ultima}.` : "Ainda não consultado no banco."}
@@ -213,7 +214,7 @@ export function EtapasKanban({
                       </p>
                       {proposta.detalhe_status_atual && (
                         <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
-                          {proposta.detalhe_status_atual}
+                          {semMarcaIntegracao(proposta.detalhe_status_atual)}
                         </p>
                       )}
                       {dataHora(proposta.status_atualizado_em) && (
@@ -274,7 +275,7 @@ export function EtapasKanban({
       {etapasBanco.length === 0 && (
         <p className="text-xs text-muted-foreground">
           O banco ainda não devolveu o funil de etapas desta proposta. As colunas se preenchem
-          quando a HomeFin retornar.
+          quando a integração bancária retornar.
         </p>
       )}
 

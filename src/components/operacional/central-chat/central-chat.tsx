@@ -259,7 +259,7 @@ export function CentralChatPage() {
                 <div>
                   <p className="text-sm font-semibold">Nenhuma conversa por aqui</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Chame um colega para bater um papo 👋
+                    Comece uma conversa com um colega.
                   </p>
                 </div>
               </div>

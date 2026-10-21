@@ -594,6 +594,14 @@ function Pagina() {
         </Card>
       </div>
 
+      {/* O quadro carrega as 500 mais recentes; acima disso, avisa em vez de sumir calado. */}
+      {(data?.total ?? 0) > itens.length && (
+        <p className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Mostrando as {itens.length} propostas mais recentes de {data?.total}. Use os filtros para
+          ver as demais.
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {COLUNAS.map((col, idx) => {
           const cfg = statusProposta(col.destino);

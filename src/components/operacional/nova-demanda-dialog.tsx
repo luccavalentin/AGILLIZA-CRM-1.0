@@ -40,6 +40,7 @@ import {
   listarSimulacoesOpcoes,
 } from "@/lib/operacional/demandas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
+import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
 
 interface OpcaoId {
   id: string;
@@ -278,9 +279,9 @@ export function NovaDemandaDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="p1">P1 · Urgente</SelectItem>
-                  <SelectItem value="p2">P2 · Normal</SelectItem>
-                  <SelectItem value="p3">P3 · Baixa</SelectItem>
+                  <SelectItem value="p1">{ROTULO_PRIORIDADE.p1}</SelectItem>
+                  <SelectItem value="p2">{ROTULO_PRIORIDADE.p2}</SelectItem>
+                  <SelectItem value="p3">{ROTULO_PRIORIDADE.p3}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -18,6 +18,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useRouter, Link } from "@tanstack/react-router";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export function PropostaSkeleton() {
   return (
@@ -115,7 +116,7 @@ export function PropostaErro({ error, reset, id }: { error: any; reset: () => vo
   const title = isNetworkError ? "Falha de conexão" : "Erro ao carregar proposta";
   const msg = isNetworkError
     ? "Não foi possível conectar ao servidor. Verifique sua internet."
-    : e?.message || "Ocorreu um erro inesperado ao tentar abrir esta proposta.";
+    : mensagemDeErro(e, "Ocorreu um erro inesperado ao tentar abrir esta proposta.");
 
   return (
     <div className="p-8 max-w-3xl mx-auto space-y-6">

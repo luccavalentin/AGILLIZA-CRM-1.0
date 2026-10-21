@@ -1,5 +1,16 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Activity,
+  Cable,
+  LifeBuoy,
+  Newspaper,
+  Store,
+  Network,
+  ScrollText,
+  KeySquare,
+  Tags,
+  CircleDollarSign,
+  KeyRound,
   LayoutDashboard,
   Users,
   KanbanSquare,
@@ -72,14 +83,16 @@ export const navInterno: NavGroup[] = [
   {
     id: "visao-geral",
     label: "Visão Geral",
-    items: [{ label: "Painel", icon: Gauge, to: "/visao-geral/painel" }],
+    // Três itens "Painel" no menu (Visão Geral, CRM e Operacional) confundiam:
+    // cada um ganhou o nome do que mostra.
+    items: [{ label: "Painel geral", icon: Gauge, to: "/visao-geral/painel" }],
   },
   {
     id: "crm",
     label: "CRM",
     items: [
-      { label: "Clientes", icon: Users, to: "/crm/clientes" },
-      { label: "Painel", icon: KanbanSquare, to: "/crm/painel" },
+      { label: "Clientes", icon: Users, to: "/crm/clientes", perm: { modulo: "crm.clientes" } },
+      { label: "Esteira", icon: KanbanSquare, to: "/crm/painel", perm: { modulo: "crm.clientes" } },
       {
         // Consulta a bureau de crédito (SPC/Serasa). Fica no CRM porque é
         // decisão sobre a pessoa, e não sobre uma proposta já aberta.
@@ -92,19 +105,20 @@ export const navInterno: NavGroup[] = [
         label: "Chat e Follow-up Cliente",
         icon: MessagesSquare,
         to: "/crm/chat",
-        perm: { modulo: "crm.clientes" },
+        perm: { modulo: "crm.chat" },
       },
       {
         label: "Scan IA",
         icon: ScanLine,
         to: "/crm/scan-ia",
-        perm: { modulo: "crm.clientes" },
+        // O grupo abre para quem vê a leitura de documentos ou o Consultor IA.
+        perm: { modulo: "crm.clientes", equivalentes: ["crm.scan_ia"] },
         children: [
           {
             label: "Leitura de documentos",
             icon: ScanLine,
             to: "/crm/scan-ia",
-            perm: { modulo: "crm.clientes" },
+            perm: { modulo: "crm.scan_ia", equivalentes: ["crm.clientes"] },
           },
           {
             label: "Consultor IA",
@@ -116,7 +130,9 @@ export const navInterno: NavGroup[] = [
             label: "Base de Conhecimento",
             icon: Bot,
             to: "/admin/consultor-ia-base",
-            perm: { modulo: "crm.clientes" },
+            // Mesma regra da rota (admin.parametros): sem isso o item aparecia
+            // para quem só vê clientes e o clique voltava para o início.
+            perm: { modulo: "admin.parametros" },
           },
         ],
       },
@@ -127,6 +143,13 @@ export const navInterno: NavGroup[] = [
         to: "/crm/documentos",
         perm: { modulo: "crm.clientes" },
       },
+      {
+        // Imobiliárias e corretores parceiros (somente consulta).
+        label: "Parceiros",
+        icon: Building2,
+        to: "/crm/parceiros",
+        perm: { modulo: "crm.parceiros" },
+      },
     ],
   },
   {
@@ -134,7 +157,7 @@ export const navInterno: NavGroup[] = [
     label: "Operacional",
     items: [
       {
-        label: "Painel",
+        label: "Indicadores",
         icon: Gauge,
         to: "/operacional/painel",
         perm: { modulo: "operacional.propostas" },
@@ -254,19 +277,19 @@ export const navInterno: NavGroup[] = [
         label: "Arquivos",
         icon: FolderOpen,
         to: "/documentos",
-        perm: { modulo: "crm.clientes" },
+        perm: { modulo: "documentos.arquivos" },
       },
       {
         label: "Formulários",
         icon: FileText,
         to: "/formularios",
-        perm: { modulo: "crm.clientes" },
+        perm: { modulo: "documentos.formularios" },
         children: [
           {
             label: "Itaú",
             icon: Landmark,
             to: "/formularios/itau",
-            perm: { modulo: "crm.clientes" },
+            perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Bradesco",
@@ -488,16 +511,43 @@ export const navInterno: NavGroup[] = [
         to: "/rh",
         perm: { modulo: "rh.dashboard" },
         children: [
+          // Cada filho usa o módulo que a própria rota exige: herdando o do pai,
+          // quem só via o painel de RH enxergava telas que o devolviam ao início.
           { label: "Dashboard", icon: Gauge, to: "/rh" },
-          { label: "Funcionários", icon: Users, to: "/rh/funcionarios" },
-          { label: "Novo funcionário", icon: UserRound, to: "/rh/funcionarios/novo" },
+          {
+            label: "Funcionários",
+            icon: Users,
+            to: "/rh/funcionarios",
+            perm: { modulo: "rh.funcionarios" },
+          },
+          {
+            label: "Novo funcionário",
+            icon: UserRound,
+            to: "/rh/funcionarios/novo",
+            perm: { modulo: "rh.funcionarios" },
+          },
           // Documentos, Férias, Faltas/Ocorrências, Atestados, Benefícios,
           // Adiantamentos, Descontos, Alterações salariais e Prévia da folha
           // ficam centralizados nas abas da ficha do funcionário.
 
-          { label: "Holerites", icon: FileText, to: "/rh/holerites" },
-          { label: "Relatórios", icon: BarChart3, to: "/rh/relatorios" },
-          { label: "Configurações", icon: SlidersHorizontal, to: "/rh/configuracoes" },
+          {
+            label: "Holerites",
+            icon: FileText,
+            to: "/rh/holerites",
+            perm: { modulo: "rh.holerites" },
+          },
+          {
+            label: "Relatórios",
+            icon: BarChart3,
+            to: "/rh/relatorios",
+            perm: { modulo: "rh.relatorios" },
+          },
+          {
+            label: "Configurações",
+            icon: SlidersHorizontal,
+            to: "/rh/configuracoes",
+            perm: { modulo: "rh.configuracoes" },
+          },
         ],
       },
     ],
@@ -603,6 +653,103 @@ export const navInterno: NavGroup[] = [
             perm: { modulo: "relatorios.geral" },
           },
         ],
+      },
+    ],
+  },
+  {
+    // Gestão do Corretor 2.0 (assinantes) feita pelo Agilliza — ponte 0175.
+    id: "plataforma",
+    label: "Plataforma (Corretor 2.0)",
+    items: [
+      {
+        label: "Licenças e assinantes",
+        icon: KeyRound,
+        to: "/plataforma/licencas",
+        perm: { modulo: "saas.licencas" },
+      },
+      {
+        label: "Receita e cobrança",
+        icon: CircleDollarSign,
+        to: "/plataforma/receita",
+        perm: { modulo: "saas.receita" },
+      },
+      {
+        label: "Planos, preços e créditos",
+        icon: Tags,
+        to: "/plataforma/planos",
+        perm: { modulo: "saas.planos" },
+      },
+      {
+        label: "Chaves dos provedores",
+        icon: KeySquare,
+        to: "/plataforma/provedores",
+        perm: { modulo: "saas.provedores" },
+      },
+      {
+        label: "Monitoramento e incidentes",
+        icon: Activity,
+        to: "/plataforma/monitoramento",
+        perm: { modulo: "saas.monitoramento" },
+      },
+      {
+        label: "Fila de propostas dos assinantes",
+        icon: Inbox,
+        to: "/plataforma/fila",
+        perm: { modulo: "saas.fila" },
+      },
+      {
+        label: "Consultas pagas",
+        icon: FileSearch,
+        to: "/plataforma/consultas",
+        perm: { modulo: "saas.consultas" },
+      },
+      {
+        label: "Integrações e filas",
+        icon: Cable,
+        to: "/plataforma/integracoes",
+        perm: { modulo: "saas.integracoes" },
+      },
+      {
+        label: "Suporte aos assinantes",
+        icon: LifeBuoy,
+        to: "/plataforma/suporte",
+        perm: { modulo: "saas.suporte" },
+      },
+      {
+        label: "Agilliza News",
+        icon: Newspaper,
+        to: "/plataforma/news",
+        perm: { modulo: "saas.news" },
+      },
+      {
+        label: "Marketplace",
+        icon: Store,
+        to: "/plataforma/marketplace",
+        perm: { modulo: "saas.marketplace" },
+      },
+      {
+        label: "Rede de corretores",
+        icon: Network,
+        to: "/plataforma/rede",
+        perm: { modulo: "saas.marketplace" },
+      },
+      {
+        label: "Auditoria da plataforma",
+        icon: ScrollText,
+        to: "/plataforma/auditoria",
+        perm: { modulo: "saas.auditoria" },
+      },
+      {
+        label: "LGPD",
+        icon: ShieldCheck,
+        to: "/plataforma/lgpd",
+        perm: { modulo: "saas.lgpd" },
+      },
+      {
+        label: "Configurações globais",
+        icon: SlidersHorizontal,
+        to: "/plataforma/configuracoes",
+        perm: { modulo: "saas.configuracoes" },
       },
     ],
   },

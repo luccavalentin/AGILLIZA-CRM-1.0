@@ -13,9 +13,16 @@ import { useEffect } from "react";
  * reconciliação junto do seu próprio polling.
  */
 
-/** Chave publicável usada pelo endpoint para autorizar a chamada. */
-const SUPABASE_PUBLISHABLE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqZGdkd294d2ZxYnd4bWthdGNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTg0OTMsImV4cCI6MjA5ODY3NDQ5M30.5X1Gu_XUAqX8m6s57gcxUBoidZr3rh9w97KEuMXoffw";
+/**
+ * Chave publicável usada pelo endpoint para autorizar a chamada.
+ *
+ * Vem do ambiente, a mesma do cliente Supabase (`integrations/supabase/client.ts`).
+ * Antes ficava fixa no código a chave do projeto da nuvem: no banco único da
+ * VPS a chave é outra e toda chamada voltava 401 — a reconciliação nunca
+ * rodava pelo navegador. Além da chave, mandamos o token do usuário logado:
+ * a rota aceita qualquer um dos dois.
+ */
+const SUPABASE_PUBLISHABLE_KEY: string = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
 
 let ultimoDisparo = 0;
 
@@ -32,13 +39,17 @@ export async function pedirReconciliacao(intervaloMinimoMs = 10000): Promise<voi
   ultimoDisparo = agora;
 
   try {
-    await fetch("/api/public/reconciliar-simulacoes", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_PUBLISHABLE_KEY,
-      },
-    });
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (SUPABASE_PUBLISHABLE_KEY) headers.apikey = SUPABASE_PUBLISHABLE_KEY;
+    // Token da sessão: autoriza a chamada mesmo se a chave do build e a do
+    // servidor não baterem.
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (!headers.apikey && !headers.Authorization) return;
+
+    await fetch("/api/public/reconciliar-simulacoes", { method: "POST", headers });
   } catch (e) {
     console.error("[reconciliar] falha ao pedir reconciliação:", e);
   }

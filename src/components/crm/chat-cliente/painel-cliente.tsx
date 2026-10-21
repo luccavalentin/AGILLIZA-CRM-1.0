@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { exibirDocumento, formatarCelular } from "@/lib/crm/documento";
 import { obterPainelChatCliente } from "@/lib/crm/chat-cliente.functions";
 import { type ChatEtiqueta } from "@/lib/crm/chat-gestao.functions";
 
@@ -32,7 +35,7 @@ export function PainelChatCliente({
 }) {
   const [tab, setTab] = useState<TabId>("cliente");
   const painelFn = useServerFn(obterPainelChatCliente);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["painel-chat-cliente", clienteId],
     queryFn: () => painelFn({ data: { cliente_id: clienteId } }),
     staleTime: 30_000,
@@ -77,6 +80,16 @@ export function PainelChatCliente({
           <div className="flex h-full items-center justify-center">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
           </div>
+        ) : isError && !data ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+            <AlertCircle className="size-5 text-destructive" />
+            <p className="text-sm text-muted-foreground">
+              {mensagemDeErro(error, "Não foi possível carregar os dados do cliente.")}
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
+              Tentar de novo
+            </Button>
+          </div>
         ) : !data ? (
           <p className="text-sm text-muted-foreground">Cliente não encontrado.</p>
         ) : tab === "cliente" ? (
@@ -91,8 +104,14 @@ export function PainelChatCliente({
         ) : tab === "detalhes" ? (
           <div className="space-y-3 text-sm">
             <LinhaResumo rotulo="Nome" valor={data.nome ?? "—"} />
-            <LinhaResumo rotulo="Documento" valor={data.documento ?? "—"} />
-            <LinhaResumo rotulo="Celular" valor={data.celular ?? "—"} />
+            <LinhaResumo
+              rotulo="Documento"
+              valor={data.documento ? exibirDocumento(data.documento) : "—"}
+            />
+            <LinhaResumo
+              rotulo="Celular"
+              valor={data.celular ? formatarCelular(data.celular) : "—"}
+            />
             <LinhaResumo rotulo="E-mail" valor={data.email ?? "—"} />
             <LinhaResumo rotulo="Etapa" valor={data.etapa_nome ?? "—"} />
             <LinhaResumo rotulo="Responsável" valor={data.responsavel_nome ?? "—"} />

@@ -2,6 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatarCelular } from "@/lib/crm/documento";
 import { Linha, formatarDataCivil } from "./utils";
 import { TransferirAtendimentoDialog } from "./transferir-atendimento-dialog";
+import { usePermissao } from "@/hooks/use-permissao";
+
+/** Rótulo da origem do cliente (o banco guarda o código: "direto", "indicacao"…). */
+const ORIGEM_CLIENTE: Record<string, string> = {
+  direto: "Atendimento direto",
+  parceiro: "Parceiro",
+  indicacao: "Indicação",
+  importacao: "Importação",
+};
 
 export function ResumoTab({
   cliente: c,
@@ -14,6 +23,8 @@ export function ResumoTab({
   responsavelNome: string | null | undefined;
   etapaNome: string;
 }) {
+  // Transferir atendimento exige "Editar" em Clientes (a função do banco recusa).
+  const podeEditar = usePermissao("crm.clientes", "edit");
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Card>
@@ -62,15 +73,17 @@ export function ResumoTab({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
           <CardTitle className="text-sm">Atendimento</CardTitle>
-          <TransferirAtendimentoDialog
-            clienteId={c.id}
-            responsavelAtualId={c.responsavel_id ?? null}
-          />
+          {podeEditar && (
+            <TransferirAtendimentoDialog
+              clienteId={c.id}
+              responsavelAtualId={c.responsavel_id ?? null}
+            />
+          )}
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
           <Linha rotulo="Responsável" valor={responsavelNome ?? "—"} />
           <Linha rotulo="Etapa atual" valor={etapaNome} />
-          <Linha rotulo="Origem" valor={c.origem} />
+          <Linha rotulo="Origem" valor={ORIGEM_CLIENTE[c.origem] ?? c.origem} />
           <Linha
             rotulo="Cadastrado em"
             valor={new Date(c.created_at).toLocaleDateString("pt-BR", {

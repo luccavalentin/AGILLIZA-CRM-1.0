@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { PRIORIDADE, type Prioridade } from "@/components/operacional/status";
+import { NOME_PRIORIDADE, PRIORIDADE, type Prioridade } from "@/components/operacional/status";
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 
 /** Cabeçalho editorial dos hubs de Tarefas e Demandas. */
 export function OpHero({
@@ -127,11 +128,7 @@ export function OpStat({
 /** Chip de prioridade refinado (ponto colorido + rótulo, tom monocromático). */
 export function PriorityChip({ prioridade }: { prioridade: Prioridade }) {
   const p = PRIORIDADE[prioridade];
-  const suf: Record<Prioridade, string> = {
-    p1: "Urgente",
-    p2: "Alta",
-    p3: "Normal",
-  };
+  const suf = NOME_PRIORIDADE;
   const classes: Record<Prioridade, string> = {
     p1: "text-destructive ring-destructive/25 bg-destructive/8",
     p2: "text-warning ring-warning/25 bg-warning/8",
@@ -160,9 +157,7 @@ export function PriorityChip({ prioridade }: { prioridade: Prioridade }) {
 
 /** Iniciais de um nome para avatares. */
 export function iniciais(nome?: string | null): string {
-  if (!nome) return "—";
-  const p = nome.trim().split(/\s+/);
-  return ((p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
+  return iniciaisDoNome(nome, "—");
 }
 
 /** Avatar circular refinado com gradiente suave e anel sutil. */

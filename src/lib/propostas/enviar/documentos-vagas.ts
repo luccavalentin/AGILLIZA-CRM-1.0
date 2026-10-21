@@ -294,7 +294,7 @@ export const ROTULO_SITUACAO_DOCUMENTO: Record<
   SituacaoDocumentoBanco,
   { label: string; tone: "info" | "success" | "danger" }
 > = {
-  homefin: { label: "Enviado à HomeFin", tone: "info" },
+  homefin: { label: "Enviado à integração bancária", tone: "info" },
   aprovado: { label: "Documento aprovado", tone: "success" },
   enviado: { label: "Documento aprovado", tone: "success" },
   erro: { label: "Documento recusado", tone: "danger" },
@@ -326,12 +326,12 @@ export function situacaoDoItem(
     const comentario = String(item?.comentarioAnalise ?? "").trim();
     return {
       situacao: "erro",
-      mensagem: `Recusado na análise da HomeFin${comentario ? `: ${comentario}` : "."}`,
+      mensagem: `Recusado na análise da integração bancária${comentario ? `: ${comentario}` : "."}`,
     };
   }
   // "A" é a aprovação da HomeFin — a única que autoriza chamar o documento de
   // aprovado no nosso sistema.
-  if (analise === "A") return { situacao: "aprovado", mensagem: "Aprovado na HomeFin." };
+  if (analise === "A") return { situacao: "aprovado", mensagem: "Aprovado na integração bancária." };
   // O texto da HomeFin é técnico ("use documentoAprovado=true…"): o usuário vê
   // só o que aconteceu com o documento.
   if (ignorado) {
@@ -360,13 +360,13 @@ export function statusPelaHomefin(
   return {};
 }
 
-const MENSAGEM_EM_ANALISE = "Enviado à HomeFin, aguardando a análise.";
-const MENSAGEM_HOMEFIN = "Enviado à HomeFin.";
+const MENSAGEM_EM_ANALISE = "Enviado à integração bancária, aguardando a análise.";
+const MENSAGEM_HOMEFIN = "Enviado à integração bancária.";
 const MENSAGEM_IGNORADO: Record<string, string> = {
   documento_nao_aprovado: MENSAGEM_EM_ANALISE,
-  sem_codigo_integracao_bradesco: "Enviado à HomeFin.",
+  sem_codigo_integracao_bradesco: "Enviado à integração bancária.",
   sem_correspondencia_checklist_banco:
-    "Enviado à HomeFin. Este documento ainda não foi solicitado.",
+    "Enviado à integração bancária. Este documento ainda não foi solicitado.",
 };
 
 // ---------------------------------------------------------------------------

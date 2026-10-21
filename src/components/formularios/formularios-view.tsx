@@ -41,6 +41,8 @@ import { DpsView } from "@/components/formularios/dps-view";
 import { OpHero, OpStat } from "@/components/operacional/ui";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export const CATEGORIA_LABEL: Record<BancoFormulario, string> = {
   itau: "Itaú",
@@ -77,6 +79,8 @@ export function FormulariosView({ banco }: { banco: BancoFormulario }) {
 function FormulariosLista({ banco }: { banco: BancoFormulario }) {
   const listar = useServerFn(listarFormularios);
   const qc = useQueryClient();
+  // Enviar, editar e excluir: "Formulários: enviar" (o servidor confere).
+  const podeEnviar = usePermissao("documentos.formularios", "create");
   const { data, isLoading } = useQuery({
     queryKey: ["formularios"],
     queryFn: () => listar(),
@@ -94,7 +98,7 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
   const visualizar = useMutation({
     mutationFn: (id: string) => abrirArquivo({ data: { id } }),
     onSuccess: (r) => window.open(r.url, "_blank", "noopener,noreferrer"),
-    onError: (e: any) => toast.error(e?.message ?? "Não foi possível abrir o arquivo."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível abrir o arquivo.")),
   });
 
   const excluir = useMutation({
@@ -104,7 +108,7 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
       setExcluindo(null);
       qc.invalidateQueries({ queryKey: ["formularios"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir.")),
   });
 
   const label = CATEGORIA_LABEL[banco];
@@ -121,13 +125,15 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
         titulo={label}
         descricao={`Modelos de formulários em PDF da categoria ${label}.`}
         acoes={
-          <Button
-            onClick={() => setUploadOpen(true)}
-            style={accent ? { backgroundColor: accent, borderColor: accent } : undefined}
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            Enviar formulário
-          </Button>
+          podeEnviar ? (
+            <Button
+              onClick={() => setUploadOpen(true)}
+              style={accent ? { backgroundColor: accent, borderColor: accent } : undefined}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Enviar formulário
+            </Button>
+          ) : undefined
         }
       />
 
@@ -190,18 +196,23 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
                   <Eye className="mr-1 h-4 w-4" />
                   Ver
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setEditando(f)}>
-                  <Pencil className="mr-1 h-4 w-4" />
-                  Editar
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setExcluindo(f)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {podeEnviar && (
+                  <>
+                    <Button variant="ghost" size="sm" onClick={() => setEditando(f)}>
+                      <Pencil className="mr-1 h-4 w-4" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Excluir formulário"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setExcluindo(f)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           ))
@@ -304,7 +315,7 @@ function UploadDialog({
       toast.success("Formulário enviado.");
       onDone();
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha no envio.");
+      toast.error(mensagemDeErro(e, "Falha no envio."));
     } finally {
       setSalvando(false);
     }
@@ -402,7 +413,7 @@ function EditarDialog({
       const r = await baixar({ data: { id: formulario.id } });
       window.open(r.url, "_blank", "noopener,noreferrer");
     } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível abrir.");
+      toast.error(mensagemDeErro(e, "Não foi possível abrir."));
     }
   }
 
@@ -429,7 +440,7 @@ function EditarDialog({
       toast.success("Formulário atualizado.");
       onDone();
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao salvar.");
+      toast.error(mensagemDeErro(e, "Falha ao salvar."));
     } finally {
       setSalvando(false);
     }

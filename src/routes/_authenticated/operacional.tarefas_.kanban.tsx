@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
 
 export const Route = createFileRoute("/_authenticated/operacional/tarefas_/kanban")({
   head: () => ({
@@ -243,9 +244,9 @@ function Pagina() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Prioridade: Todas</SelectItem>
-            <SelectItem value="p1">P1 · Urgente</SelectItem>
-            <SelectItem value="p2">P2 · Alta</SelectItem>
-            <SelectItem value="p3">P3 · Normal</SelectItem>
+            <SelectItem value="p1">{ROTULO_PRIORIDADE.p1}</SelectItem>
+            <SelectItem value="p2">{ROTULO_PRIORIDADE.p2}</SelectItem>
+            <SelectItem value="p3">{ROTULO_PRIORIDADE.p3}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -394,20 +395,24 @@ function Pagina() {
                 )}
               </div>
 
-              <footer className="border-t border-border/60 p-2">
-                <NovaTarefaDialog
-                  onCriada={refetch}
-                  trigger={
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-full justify-center text-[12px] text-muted-foreground hover:text-foreground"
-                    >
-                      + Adicionar tarefa
-                    </Button>
-                  }
-                />
-              </footer>
+              {/* Tarefa nova sempre nasce "Aberta": o atalho fica só nessa coluna
+                  (nas outras, criava em Aberta mesmo clicando em outra etapa). */}
+              {col.id === "aberta" && (
+                <footer className="border-t border-border/60 p-2">
+                  <NovaTarefaDialog
+                    onCriada={refetch}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-full justify-center text-[12px] text-muted-foreground hover:text-foreground"
+                      >
+                        + Adicionar tarefa
+                      </Button>
+                    }
+                  />
+                </footer>
+              )}
             </section>
           );
         })}

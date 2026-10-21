@@ -125,6 +125,8 @@ export function DialogVendedor({
             <Campo label={pf ? "CPF" : "CNPJ"}>
               <Input
                 value={form.documento}
+                // Documento mascarado (sem "Ver dados sensíveis") não é editável: o servidor o ignora.
+                readOnly={form.documento.includes("*")}
                 inputMode="numeric"
                 placeholder={pf ? "000.000.000-00" : "00.000.000/0000-00"}
                 onChange={(e) =>

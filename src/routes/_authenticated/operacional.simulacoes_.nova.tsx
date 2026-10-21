@@ -51,6 +51,8 @@ function Pagina() {
     w,
     set,
     valido,
+    erroNascimento,
+    erroCpf,
     ltvMax,
     maxPrazoIdade,
     entradaSugerida,
@@ -177,9 +179,10 @@ function Pagina() {
   useEffect(() => {
     if (!mostrarRapida || comparativo.length === 0 || jaBaixou.current) return;
     jaBaixou.current = true;
+    // Só rola até o resultado: o PDF é baixado pelo botão "Baixar" (antes
+    // baixava sozinho a cada simulação).
     const t = setTimeout(() => {
       resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      void baixarSimulacao();
     }, 150);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -237,6 +240,8 @@ function Pagina() {
             definirPrazo={definirPrazo}
             maxPrazoIdade={maxPrazoIdade}
             melhorTaxaAno={melhorTaxaAno}
+            erroNascimento={erroNascimento}
+            erroCpf={erroCpf}
           />
 
           <div className="mt-2 flex justify-center">
@@ -265,6 +270,7 @@ function Pagina() {
               ref={resultadoRef}
               comparativo={comparativo}
               valorFinanciamento={w.valor_financiamento}
+              valorImovel={w.valor_imovel}
               prazoMeses={w.prazo_meses}
               sistema={w.sistema_amortizacao === "P" ? "PRICE" : "SAC"}
               baixando={baixando}

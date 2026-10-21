@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { clienteListarAtendentes } from "@/lib/portal/cliente.functions";
+import { pollingPortal, POLL_ATENDENTES_MS } from "@/lib/portal/polling";
 import {
   signalIncomingChat,
   pedirPermissaoNotificacao,
@@ -20,10 +21,10 @@ export function ClienteChatWatcher() {
   const { data: atendentes } = useQuery({
     queryKey: ["cliente", "atendentes"],
     queryFn: () => clienteListarAtendentes(),
-    // Só faz polling agressivo quando a aba está visível. Em segundo plano
-    // o alerta sonoro é bloqueado pelo navegador de qualquer forma, então
-    // aliviamos servidor/bateria pausando o poll.
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 3000), // Aumentamos a frequência para 3s para ser quase imediato
+    // Mesmo intervalo das outras telas (a chave é a mesma e o menor valia para
+    // todas). Em segundo plano não consulta: o alerta sonoro é bloqueado pelo
+    // navegador de qualquer forma.
+    ...pollingPortal(POLL_ATENDENTES_MS),
   });
 
   useEffect(() => {

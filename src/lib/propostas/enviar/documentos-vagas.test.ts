@@ -192,7 +192,7 @@ describe("estado do documento na HomeFin", () => {
     );
     expect(situacaoDoItem(item, ignorado)).toEqual({
       situacao: "homefin",
-      mensagem: "Enviado à HomeFin, aguardando a análise.",
+      mensagem: "Enviado à integração bancária, aguardando a análise.",
     });
     expect(situacaoDoItem(item).situacao).toBe("homefin");
   });

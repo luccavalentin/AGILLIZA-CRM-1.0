@@ -22,7 +22,7 @@ import { BarraFiltros } from "@/components/admin/auditoria-page/filtros";
 import { TimelineAuditoria, VazioAuditoria } from "@/components/admin/auditoria-page/timeline";
 import { DetalheAuditoria } from "@/components/admin/auditoria-page/detalhe";
 
-export const Route = createFileRoute("/_authenticated/admin/auditoria")({
+export const Route = createFileRoute("/_authenticated/admin/auditoria/")({
   head: () => ({ meta: [{ title: "Auditoria — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("admin.auditoria"),
   component: Pagina,

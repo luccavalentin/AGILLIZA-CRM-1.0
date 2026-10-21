@@ -7,7 +7,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { calcularCLT } from "@/lib/rh/clt";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { calcularHolerite, type HoleriteEntrada } from "@/lib/rh/holerite-calc";
+import {
+  limitesDaCompetencia,
+  montarEntradaDaCompetencia,
+  type DadosCompetencia,
+} from "@/lib/rh/entrada-competencia";
 
 export type StatusCompetencia = "aberta" | "conferida" | "fechada" | "cancelada";
 
@@ -61,6 +67,23 @@ export interface FolhaCompetencia {
   created_at: string;
 }
 
+/**
+ * Competência já fechada não muda: os itens e as contas a pagar já foram
+ * gerados com os valores daquele momento.
+ */
+async function garantirCompetenciaAberta(supabase: any, mes: number, ano: number) {
+  const { data, error } = await supabase
+    .from("rh_folha_competencias")
+    .select("status")
+    .eq("mes", mes)
+    .eq("ano", ano)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (data?.status === "fechada") {
+    throw new Error(`A competência ${String(mes).padStart(2, "0")}/${ano} já foi fechada.`);
+  }
+}
+
 async function correspondenteId(supabase: any, userId: string) {
   const { data } = await supabase
     .from("profiles")
@@ -68,26 +91,51 @@ async function correspondenteId(supabase: any, userId: string) {
     .eq("id", userId)
     .maybeSingle();
   const cid = data?.correspondente_id as string | undefined;
-  if (!cid) throw new Error("Correspondente do usuário não encontrado.");
+  if (!cid) {
+    throw new Error(
+      "Seu usuário não está vinculado a uma empresa. Peça ao administrador para revisar o cadastro.",
+    );
+  }
   return cid;
 }
 
-async function calcularPrevia(supabase: any, mes: number, ano: number): Promise<FolhaItem[]> {
-  const { data: funcs } = await supabase
+/**
+ * Dados lançados no sistema que entram no holerite de cada funcionário na
+ * competência — a mesma montagem para a prévia, a ficha e o "Gerar holerite".
+ */
+async function carregarDadosCompetencia(
+  supabase: any,
+  mes: number,
+  ano: number,
+  funcionarioId?: string,
+): Promise<Array<{ func: any; dados: DadosCompetencia }>> {
+  let qf = supabase
     .from("rh_funcionarios")
     .select("id, nome, salario_atual, rh_cargos(nome)")
     .is("deletado_em", null)
     .neq("status", "desligado")
     .order("nome");
+  if (funcionarioId) qf = qf.eq("id", funcionarioId);
+  const { data: funcs } = await qf;
   const ids = (funcs ?? []).map((f: any) => f.id);
   if (ids.length === 0) return [];
-  const [{ data: bens }, { data: adis }, { data: descs }, { data: ajus }, { data: deps }] =
+  const { inicio, fim } = limitesDaCompetencia({ ano, mes });
+  const [{ data: alts }, { data: bens }, { data: ocs }, { data: adis }, { data: descs }, { data: ajus }, { data: deps }] =
     await Promise.all([
+      supabase.from("rh_alteracoes_salariais").select("funcionario_id, vigencia, salario_anterior, salario_novo").in("funcionario_id", ids),
       supabase
         .from("rh_funcionario_beneficios")
-        .select("funcionario_id, valor, desconto")
+        .select("funcionario_id, valor, desconto, vigencia_inicio, vigencia_fim, rh_beneficios_tipos(nome)")
         .in("funcionario_id", ids)
         .eq("ativo", true),
+      supabase
+        .from("rh_ocorrencias")
+        .select("funcionario_id, data_inicio, data_fim, abonada")
+        .in("funcionario_id", ids)
+        .eq("tipo", "falta")
+        .lte("data_inicio", fim)
+        // termina no mês ou depois, ou (sem data de fim) começa no mês
+        .or(`data_fim.gte.${inicio},data_inicio.gte.${inicio}`),
       supabase
         .from("rh_adiantamentos")
         .select("funcionario_id, valor")
@@ -102,83 +150,89 @@ async function calcularPrevia(supabase: any, mes: number, ano: number): Promise<
         .eq("competencia_mes", mes)
         .eq("competencia_ano", ano)
         .neq("status", "cancelado"),
-      supabase
-        .from("rh_folha_ajustes")
-        .select("funcionario_id, tipo, valor")
-        .in("funcionario_id", ids)
-        .eq("mes", mes)
-        .eq("ano", ano),
-      supabase
-        .from("rh_dependentes")
-        .select("funcionario_id, ir")
-        .in("funcionario_id", ids)
-        .eq("ir", true),
+      supabase.from("rh_folha_ajustes").select("funcionario_id, tipo, valor").in("funcionario_id", ids).eq("mes", mes).eq("ano", ano),
+      supabase.from("rh_dependentes").select("funcionario_id, ir, salario_familia, data_nascimento").in("funcionario_id", ids),
     ]);
-  const bensBy = new Map<string, { valor: number; desconto: number }>();
-  (bens ?? []).forEach((b: any) => {
-    const cur = bensBy.get(b.funcionario_id) ?? { valor: 0, desconto: 0 };
-    cur.valor += Number(b.valor ?? 0);
-    cur.desconto += Number(b.desconto ?? 0);
-    bensBy.set(b.funcionario_id, cur);
-  });
-  const somaPor = (rows: any[] | null | undefined) => {
-    const m = new Map<string, number>();
-    (rows ?? []).forEach((r: any) =>
-      m.set(r.funcionario_id, (m.get(r.funcionario_id) ?? 0) + Number(r.valor ?? 0)),
-    );
-    return m;
-  };
-  const adiBy = somaPor(adis);
-  const desBy = somaPor(descs);
-  const ajProv = new Map<string, number>();
-  const ajDesc = new Map<string, number>();
-  (ajus ?? []).forEach((a: any) => {
-    const alvo = a.tipo === "provento" ? ajProv : ajDesc;
-    alvo.set(a.funcionario_id, (alvo.get(a.funcionario_id) ?? 0) + Number(a.valor ?? 0));
-  });
-  const depsBy = new Map<string, number>();
-  (deps ?? []).forEach((d: any) => {
-    depsBy.set(d.funcionario_id, (depsBy.get(d.funcionario_id) ?? 0) + 1);
-  });
-  return (funcs ?? []).map((f: any) => {
-    const salario = Number(f.salario_atual ?? 0);
-    const b = bensBy.get(f.id) ?? { valor: 0, desconto: 0 };
-    const adi = adiBy.get(f.id) ?? 0;
-    const des = desBy.get(f.id) ?? 0;
-    const provAv = ajProv.get(f.id) ?? 0;
-    const descAv = ajDesc.get(f.id) ?? 0;
-    const depIR = depsBy.get(f.id) ?? 0;
-    // Base tributável CLT: salário + proventos avulsos (benefícios em geral
-    // não são tributáveis; se algum benefício for tributável, deve ser
-    // lançado como ajuste "provento").
-    const bruto = salario + provAv;
-    const clt = calcularCLT(bruto, depIR, 0);
-    const proventos = salario + b.valor + provAv;
-    const descontos = b.desconto + adi + des + descAv + clt.inss + clt.irrf;
+  const de = (rows: any[] | null | undefined, id: string) => (rows ?? []).filter((r: any) => r.funcionario_id === id);
+  return (funcs ?? []).map((f: any) => ({
+    func: f,
+    dados: {
+      salarioAtual: Number(f.salario_atual ?? 0),
+      alteracoesSalariais: de(alts, f.id).map((a: any) => ({
+        vigencia: a.vigencia,
+        salario_anterior: a.salario_anterior == null ? null : Number(a.salario_anterior),
+        salario_novo: Number(a.salario_novo ?? 0),
+      })),
+      beneficios: de(bens, f.id).map((b: any) => ({
+        nome: b.rh_beneficios_tipos?.nome ?? "",
+        valor: Number(b.valor ?? 0),
+        desconto: Number(b.desconto ?? 0),
+        vigencia_inicio: b.vigencia_inicio,
+        vigencia_fim: b.vigencia_fim,
+      })),
+      faltas: de(ocs, f.id).map((o: any) => ({ data_inicio: o.data_inicio, data_fim: o.data_fim, abonada: !!o.abonada })),
+      adiantamentos: de(adis, f.id).map((a: any) => Number(a.valor ?? 0)),
+      descontos: de(descs, f.id).map((d: any) => Number(d.valor ?? 0)),
+      ajustes: de(ajus, f.id).map((a: any) => ({ tipo: a.tipo, valor: Number(a.valor ?? 0) })),
+      dependentes: de(deps, f.id).map((d: any) => ({ ir: !!d.ir, salario_familia: !!d.salario_familia, data_nascimento: d.data_nascimento })),
+    },
+  }));
+}
+
+const CODIGOS_BENEFICIO = new Set(["120", "121", "122", "130", "131"]);
+
+async function calcularPrevia(supabase: any, mes: number, ano: number): Promise<FolhaItem[]> {
+  const competencia = { ano, mes };
+  const linhas = await carregarDadosCompetencia(supabase, mes, ano);
+  return linhas.map(({ func: f, dados }) => {
+    const entrada = montarEntradaDaCompetencia(dados, competencia);
+    const h = calcularHolerite(entrada, competencia);
+    const valor = (codigos: Set<string>) =>
+      h.descontos.filter((l) => codigos.has(l.codigo)).reduce((s, l) => s + l.valor, 0);
+    const ajusteProv = dados.ajustes.filter((a) => a.tipo === "provento").reduce((s, a) => s + a.valor, 0);
+    const ajusteDesc = dados.ajustes.filter((a) => a.tipo === "desconto").reduce((s, a) => s + a.valor, 0);
     return {
       funcionario_id: f.id,
       funcionario_nome: f.nome,
       cargo: f.rh_cargos?.nome ?? null,
-      salario_base: salario,
-      proventos,
-      descontos,
-      liquido: proventos - descontos,
+      salario_base: entrada.salario_base,
+      proventos: h.total_proventos,
+      descontos: h.total_descontos,
+      liquido: h.liquido,
       detalhes: {
-        beneficios_valor: b.valor,
-        beneficios_desconto: b.desconto,
-        adiantamentos: adi,
-        descontos_lancados: des,
-        proventos_avulsos: provAv,
-        descontos_avulsos: descAv,
-        inss: clt.inss,
-        irrf: clt.irrf,
-        base_irrf: clt.base_irrf,
-        fgts: clt.fgts,
-        dependentes_ir: depIR,
+        // Benefício em espécie não é pago em dinheiro: só a coparticipação desconta.
+        beneficios_valor: 0,
+        beneficios_desconto: Math.round(valor(CODIGOS_BENEFICIO) * 100) / 100,
+        adiantamentos: entrada.adiantamento,
+        descontos_lancados: dados.descontos.reduce((s, x) => s + x, 0),
+        proventos_avulsos: ajusteProv,
+        descontos_avulsos: ajusteDesc,
+        inss: h.inss,
+        irrf: h.irrf,
+        base_irrf: h.base_irrf,
+        fgts: h.fgts,
+        dependentes_ir: entrada.dependentes_ir,
       },
     };
   });
 }
+
+/** Entrada do holerite de um funcionário na competência, já com os lançamentos do mês. */
+export const entradaHoleriteDaCompetencia = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        funcionario_id: z.string().uuid(),
+        mes: z.number().min(1).max(12),
+        ano: z.number().min(2020).max(2100),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }): Promise<HoleriteEntrada | null> => {
+    const [linha] = await carregarDadosCompetencia(context.supabase, data.mes, data.ano, data.funcionario_id);
+    return linha ? montarEntradaDaCompetencia(linha.dados, { ano: data.ano, mes: data.mes }) : null;
+  });
 
 /** Calcula a prévia dinamicamente para uma competência (não persiste). */
 export const previaFolha = createServerFn({ method: "GET" })
@@ -197,8 +251,10 @@ export const previaFolha = createServerFn({ method: "GET" })
 // AJUSTES AVULSOS (proventos/descontos manuais por competência)
 // ============================================================
 
+// A tabela de ajustes só separa por correspondente na RLS: sem estas checagens,
+// qualquer usuário logado lia e lançava proventos/descontos na folha.
 export const listarAjustes = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.previa_folha", "view"], ["rh.holerites", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -234,7 +290,7 @@ export const listarAjustes = createServerFn({ method: "GET" })
   });
 
 export const salvarAjuste = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.previa_folha", "edit"], ["rh.funcionarios", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -249,6 +305,7 @@ export const salvarAjuste = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
+    await garantirCompetenciaAberta(context.supabase, data.mes, data.ano);
     const cid = await correspondenteId(context.supabase, context.userId);
     const payload = {
       correspondente_id: cid,
@@ -278,9 +335,17 @@ export const salvarAjuste = createServerFn({ method: "POST" })
   });
 
 export const excluirAjuste = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.previa_folha", "edit"], ["rh.funcionarios", "edit"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
+    const { data: ajuste, error: aErr } = await context.supabase
+      .from("rh_folha_ajustes")
+      .select("mes, ano")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (aErr) throw new Error(aErr.message);
+    if (!ajuste) throw new Error("Ajuste não encontrado.");
+    await garantirCompetenciaAberta(context.supabase, ajuste.mes as number, ajuste.ano as number);
     const { error } = await context.supabase.from("rh_folha_ajustes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -323,6 +388,9 @@ export const fecharCompetencia = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
+    // Fechar de novo duplicava as contas a pagar de todos os funcionários
+    // (a tela só desabilitava o botão).
+    await garantirCompetenciaAberta(context.supabase, data.mes, data.ano);
     const cid = await correspondenteId(context.supabase, context.userId);
     const previa = await calcularPrevia(context.supabase, data.mes, data.ano);
     if (previa.length === 0) {

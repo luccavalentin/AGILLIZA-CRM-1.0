@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { recalcularComissoesUsuario } from "@/lib/financeiro/comissoes-usuario.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 /**
  * Ação de destaque para reprocessar as comissões de todos os usuários a partir
@@ -11,6 +13,7 @@ import { recalcularComissoesUsuario } from "@/lib/financeiro/comissoes-usuario.f
  */
 export function RecalcularComissoesButton({ className }: { className?: string }) {
   const qc = useQueryClient();
+  const podeEditar = usePermissao("financeiro.comissoes", "edit");
 
   const recalcular = useMutation({
     mutationFn: () => recalcularComissoesUsuario({ data: {} } as never),
@@ -26,8 +29,11 @@ export function RecalcularComissoesButton({ className }: { className?: string })
       qc.invalidateQueries({ queryKey: ["fin-com-usr-resumo"] });
       qc.invalidateQueries({ queryKey: ["fin-contas"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao recalcular."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao recalcular.")),
   });
+
+  // Recalcular grava lançamentos: só para quem edita repasses (o servidor confere).
+  if (!podeEditar) return null;
 
   return (
     <button

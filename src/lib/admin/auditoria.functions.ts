@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { normalizarBusca, rotuloAcao, rotuloEntidade } from "./auditoria-rotulos";
+import { inicioDiaBR } from "@/lib/relatorios/shared";
+import { hojeISO } from "@/lib/financeiro/format";
 
 export interface AuditoriaLinha {
   id: string;
@@ -34,38 +38,58 @@ export interface OpcoesAuditoria {
   entidades: string[];
 }
 
-/** Rótulo legível para cada tipo de ação registrada. */
-const ACAO_LABEL: Record<string, string> = {
-  "cliente.criar": "Criou cliente",
-  "cliente.atualizar": "Atualizou cliente",
-  "cliente.excluir": "Excluiu cliente",
-  "documento.anexar": "Anexou documento",
-  "documento.editar": "Editou documento",
-  "documento.excluir": "Excluiu documento",
-  "documento_pasta.criar": "Criou pasta",
-  "documento_pasta.renomear": "Renomeou pasta",
-  "documento_pasta.excluir": "Excluiu pasta",
-  "proposta.replicar": "Replicou proposta",
-  "proposta.excluir": "Excluiu proposta",
-  "proposta.enviar_banco": "Enviou proposta ao banco",
-  "simulacao.enviar_banco": "Enviou simulação ao banco",
-  "pessoa.criar": "Cadastrou pessoa",
-  "pessoa.atualizar": "Atualizou pessoa",
-  "pessoa.excluir": "Excluiu pessoa",
-  "pessoa.ativar": "Ativou pessoa",
-  "pessoa.desativar": "Desativou pessoa",
-  "pessoa.habilitar_login": "Habilitou login da pessoa",
-  "pessoa.resetar_senha": "Redefiniu senha da pessoa",
-  "nivel_acesso.criar": "Criou papel de acesso",
-  "nivel_acesso.atualizar": "Atualizou papel de acesso",
-  "nivel_acesso.excluir": "Excluiu papel de acesso",
-  "nivel_acesso.personalizar": "Personalizou papel de acesso",
-  "nivel_acesso.salvar_permissoes": "Salvou permissões",
-  "nivel_acesso.personalizar_permissoes": "Personalizou permissões",
-};
+export { rotuloAcao };
 
-export function rotuloAcao(acao: string): string {
-  return ACAO_LABEL[acao] ?? acao.replace(/[._]/g, " ");
+/** Tira da busca o que quebra a sintaxe do filtro `or=(...)` do PostgREST. */
+function limparTermo(t: string): string {
+  return t
+    .replace(/[,()"\*%]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Filtro da busca livre: além dos códigos crus (ação, descrição, entidade, IP),
+ * acha pelo que a tela mostra — o rótulo da ação ("Criou cliente"), o nome da
+ * tela ("Administração · Pessoas") e o nome de quem fez (QA 20/10).
+ */
+async function filtroDeBusca(
+  supabase: any,
+  corr: string,
+  busca: string | undefined,
+): Promise<string | null> {
+  const termo = limparTermo(busca ?? "");
+  if (!termo) return null;
+  const alvo = normalizarBusca(termo);
+  const like = `%${termo}%`;
+  const partes = [
+    `acao.ilike.${like}`,
+    `descricao.ilike.${like}`,
+    `entidade.ilike.${like}`,
+    `ip.ilike.${like}`,
+  ];
+
+  const [{ data: distintos }, { data: pessoas }] = await Promise.all([
+    supabase.rpc("admin_auditoria_opcoes"),
+    supabase
+      .from("profiles")
+      .select("id, nome")
+      .eq("correspondente_id", corr)
+      .ilike("nome", like)
+      .limit(100),
+  ]);
+  const acoes = ((distintos?.acoes ?? []) as string[]).filter(
+    (a) => a && normalizarBusca(rotuloAcao(a)).includes(alvo),
+  );
+  const entidades = ((distintos?.entidades ?? []) as string[]).filter(
+    (e) => e && normalizarBusca(rotuloEntidade(e)).includes(alvo),
+  );
+  const lista = (vs: string[]) => vs.map((v) => `"${v.replace(/"/g, "")}"`).join(",");
+  if (acoes.length) partes.push(`acao.in.(${lista(acoes)})`);
+  if (entidades.length) partes.push(`entidade.in.(${lista(entidades)})`);
+  const ids = ((pessoas ?? []) as { id: string }[]).map((p) => p.id);
+  if (ids.length) partes.push(`user_id.in.(${ids.join(",")})`);
+  return partes.join(",");
 }
 
 async function correspondenteDoUsuario(
@@ -82,7 +106,7 @@ async function correspondenteDoUsuario(
 
 /** Lista o log de auditoria administrativa do ecossistema com filtros. */
 export const listarAuditoria = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.auditoria", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -114,12 +138,8 @@ export const listarAuditoria = createServerFn({ method: "GET" })
     if (data?.userId) query = query.eq("user_id", data.userId);
     if (data?.acao) query = query.eq("acao", data.acao);
     if (data?.entidade) query = query.eq("entidade", data.entidade);
-    if (data?.busca && data.busca.trim()) {
-      const term = `%${data.busca.trim()}%`;
-      query = query.or(
-        `acao.ilike.${term},descricao.ilike.${term},entidade.ilike.${term},ip.ilike.${term}`,
-      );
-    }
+    const ou = await filtroDeBusca(supabase, corr, data?.busca);
+    if (ou) query = query.or(ou);
 
     const { data: rows, error } = await query
       .order("created_at", { ascending: false })
@@ -146,7 +166,7 @@ export const listarAuditoria = createServerFn({ method: "GET" })
 
 /** Retorna as opções distintas (atores, ações, entidades) para os filtros. */
 export const opcoesAuditoria = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.auditoria", "view"])])
   .handler(async ({ context }): Promise<OpcoesAuditoria> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -184,7 +204,7 @@ export const opcoesAuditoria = createServerFn({ method: "GET" })
  * (QA 19/09/2026). Os filtros são os mesmos da lista.
  */
 export const estatisticasAuditoria = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.auditoria", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -204,13 +224,47 @@ export const estatisticasAuditoria = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return vazio;
 
+    // Com busca livre, conta aqui com o mesmo filtro da lista (rótulos e nomes):
+    // a função do banco só compara os códigos crus e daria números diferentes
+    // da lista ao procurar "Criou cliente".
+    const ou = await filtroDeBusca(supabase, corr, data?.busca);
+    if (ou) {
+      const base = () => {
+        let q = (supabase as any)
+          .from("admin_audit_logs")
+          .select("acao, user_id", { count: "exact" })
+          .eq("correspondente_id", corr);
+        if (data?.dataInicio) q = q.gte("created_at", data.dataInicio);
+        if (data?.dataFim) q = q.lte("created_at", data.dataFim);
+        if (data?.userId) q = q.eq("user_id", data.userId);
+        if (data?.acao) q = q.eq("acao", data.acao);
+        if (data?.entidade) q = q.eq("entidade", data.entidade);
+        return q.or(ou);
+      };
+      const [todas, deHoje] = await Promise.all([
+        base().order("created_at", { ascending: false }).limit(1000),
+        base().gte("created_at", inicioDiaBR(hojeISO())).limit(1),
+      ]);
+      if (todas.error) throw new Error(todas.error.message);
+      const linhas = (todas.data ?? []) as { acao: string; user_id: string | null }[];
+      const contagem = new Map<string, number>();
+      for (const l of linhas) contagem.set(l.acao, (contagem.get(l.acao) ?? 0) + 1);
+      const topo = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+      return {
+        total: Number(todas.count ?? linhas.length),
+        hoje: Number(deHoje.count ?? 0),
+        usuarios: new Set(linhas.map((l) => l.user_id).filter(Boolean)).size,
+        topAcao: topo ? rotuloAcao(topo) : "—",
+      };
+    }
+
     const { data: linha, error } = await (supabase as any).rpc("admin_auditoria_kpis", {
       _ini: data?.dataInicio ?? null,
       _fim: data?.dataFim ?? null,
       _user: data?.userId ?? null,
       _acao: data?.acao ?? null,
       _entidade: data?.entidade ?? null,
-      _busca: data?.busca?.trim() || null,
+      _busca: null,
     });
     if (error) throw new Error(error.message);
     return {

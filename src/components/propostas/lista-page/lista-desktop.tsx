@@ -155,13 +155,17 @@ export function ListaDesktop({
                       const nb = numeroBancoParaExibir(p.numero_proposta_banco);
                       return nb ? (
                         <>
-                          <div className="text-[17px] font-bold tabular-nums leading-tight text-[var(--banco)]">
+                          {/* Número em tamanho de texto, nunca de título (pedido do dono, 21/10/2026). */}
+                          <div className="text-[14px] font-semibold tabular-nums leading-tight text-[var(--banco)]">
                             Nº banco {nb}
                           </div>
                           <div className="mt-1 flex flex-col gap-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                             <span>
                               Interno <span className="tabular-nums">{p.numero_proposta}</span>
                             </span>
+                            {p.homefin_id_oportunidade && (
+                              <span className="tabular-nums">ID {p.homefin_id_oportunidade}</span>
+                            )}
                             <span className="text-[10px] lowercase tracking-tight">
                               {formatDataHora(p.created_at)}
                             </span>
@@ -173,6 +177,11 @@ export function ListaDesktop({
                             {p.deleted_at && <Trash2 className="h-3.5 w-3.5 text-destructive" />}
                             <span>{p.numero_proposta}</span>
                           </div>
+                          {p.homefin_id_oportunidade && (
+                            <span className="text-[11px] font-medium text-muted-foreground">
+                              ID {p.homefin_id_oportunidade}
+                            </span>
+                          )}
                           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">
                             {formatDataHora(p.created_at)}
                           </span>

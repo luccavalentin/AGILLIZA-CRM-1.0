@@ -15,6 +15,8 @@ export interface HandlersLinha {
   onRestaurar: (id: string) => void | Promise<void>;
   onEncaminhar: (id: string, canal: "email" | "whatsapp" | "pdf") => void | Promise<void>;
   onDestravar: (id: string) => void | Promise<void>;
+  /** false esconde a lixeira (sem permissão de excluir). Padrão: true. */
+  podeExcluir?: boolean;
 }
 
 export function formatDataHoraBR(v?: string | null): string {

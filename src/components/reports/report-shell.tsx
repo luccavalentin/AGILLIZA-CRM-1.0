@@ -6,22 +6,26 @@ import { Button } from "@/components/ui/button";
 export function ReportShell({
   modulo,
   titulo,
-  descricao: _descricao,
   metaChips,
   scopeSelector,
   exportButtons,
   typeSelector,
   filtros,
+  onImprimir,
   children,
 }: {
   modulo: string;
   titulo: string;
-  descricao?: string;
   metaChips: string[];
   scopeSelector?: ReactNode;
   exportButtons?: ReactNode;
   typeSelector?: ReactNode;
   filtros?: ReactNode;
+  /**
+   * Imprimir também é exportar (sai do sistema em papel/PDF): quem chama confere
+   * "Exportar" e registra. Sem esta função o botão não aparece.
+   */
+  onImprimir?: () => void;
   children: ReactNode;
 }) {
   return (
@@ -58,23 +62,27 @@ export function ReportShell({
           <div className="print:hidden col-start-2 row-span-2 flex flex-col items-end gap-2 lg:col-start-auto lg:row-span-1 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end">
             {scopeSelector}
             {exportButtons}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.print()}
-              className="hidden sm:inline-flex"
-            >
-              <Printer className="mr-1.5 h-3.5 w-3.5 opacity-70" /> Imprimir
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => window.print()}
-              className="sm:hidden h-8 w-8"
-              aria-label="Imprimir"
-            >
-              <Printer className="h-4 w-4 opacity-70" />
-            </Button>
+            {onImprimir && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onImprimir}
+                  className="hidden sm:inline-flex"
+                >
+                  <Printer className="mr-1.5 h-3.5 w-3.5 opacity-70" /> Imprimir
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onImprimir}
+                  className="sm:hidden h-8 w-8"
+                  aria-label="Imprimir"
+                >
+                  <Printer className="h-4 w-4 opacity-70" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>

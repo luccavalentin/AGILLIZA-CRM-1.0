@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 import { carregarReacoes } from "@/lib/chat-core/reacoes.functions";
+import { statusDemanda } from "@/components/operacional/status";
+import { exigirAcao, exigirMesmoCorrespondente } from "./permissao-acao";
 
 export type DemandaStatus = "aberta" | "em_andamento" | "aguardando" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
@@ -360,11 +362,43 @@ export const obterDemanda = createServerFn({ method: "GET" })
       })),
       mensagens: (mensagens.data ?? []).map((m: any) => ({ ...m, nome_autor: nm(m.autor_id) })),
       participantes: (participantes.data ?? []).map((p: any) => ({ ...p, nome: nm(p.user_id) })),
-      anexos: (anexos.data ?? []).map((a: any) => ({ ...a, nome_autor: nm(a.autor_id) })),
+      // Arquivos da demanda = anexos avulsos + os enviados pelo chat (antes o
+      // arquivo mandado na conversa não aparecia na aba Arquivos nem no contador).
+      anexos: [
+        ...(anexos.data ?? []).map((a: any) => ({
+          id: a.id as string,
+          nome: (a.nome as string) ?? "Arquivo",
+          storage_path: a.storage_path as string,
+          created_at: a.created_at as string,
+          nome_autor: nm(a.autor_id),
+          origem: "anexo" as const,
+        })),
+        ...(mensagens.data ?? [])
+          .filter((m: any) => m.anexo_path && !m.excluida_em)
+          .map((m: any) => ({
+            id: m.id as string,
+            nome: nomeDoAnexoDoChat(m.anexo_nome, m.anexo_path, m.created_at),
+            storage_path: m.anexo_path as string,
+            created_at: m.created_at as string,
+            nome_autor: nm(m.autor_id),
+            origem: "chat" as const,
+          })),
+      ].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
     };
   });
 
 const IMG_EXT_DEM = /\.(png|jpe?g|gif|webp|bmp|heic|heif|svg)$/i;
+
+/**
+ * Nome para exibir de um arquivo enviado pelo chat. Mensagens antigas não
+ * guardavam o nome original — no lugar do nome técnico do Storage
+ * ("1729…-uuid.pdf") mostra "Arquivo do chat (PDF)".
+ */
+function nomeDoAnexoDoChat(nome: string | null, path: string, _criadoEm?: string): string {
+  if (nome && nome.trim()) return nome;
+  const ext = String(path).split(".").pop()?.toUpperCase();
+  return ext && ext.length <= 5 ? `Arquivo do chat (${ext})` : "Arquivo do chat";
+}
 
 /**
  * Lista as mensagens de uma demanda no formato do núcleo de chat
@@ -420,10 +454,7 @@ export const listarChatDemanda = createServerFn({ method: "GET" })
             .from("demanda-anexos")
             .createSignedUrl(m.anexo_path as string, 3600);
           anexoUrl = signed?.signedUrl ?? null;
-          if (!anexoNome) {
-            const partes = String(m.anexo_path).split("/");
-            anexoNome = partes[partes.length - 1] ?? null;
-          }
+          if (!anexoNome) anexoNome = nomeDoAnexoDoChat(null, m.anexo_path as string);
           anexoImg = IMG_EXT_DEM.test(String(m.anexo_path));
         }
 
@@ -617,6 +648,19 @@ export const transferirDemanda = createServerFn({ method: "POST" })
     if (!atual.souResponsavel && !atual.souCriador) {
       throw new Error("Apenas quem enviou ou recebeu a demanda pode transferi-la.");
     }
+    await exigirAcao(
+      supabase,
+      userId,
+      "operacional.demandas",
+      "transferir",
+      "Você não tem permissão para transferir demandas.",
+    );
+    await exigirMesmoCorrespondente(
+      supabase,
+      atual.correspondente_id,
+      [data.novo_responsavel_id],
+      "Responsável fora do seu ecossistema.",
+    );
     const anterior = atual.responsavel_id;
     const { error } = await supabase
       .from("demandas")
@@ -673,7 +717,22 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
       .single();
     if (!atual) throw new Error("Demanda não encontrada.");
     if (!transicaoDemandaPermitida(atual.status as DemandaStatus, data.status)) {
-      throw new Error(`Transição de status inválida: ${atual.status} → ${data.status}.`);
+      throw new Error(
+        `Transição de status inválida: ${statusDemanda(atual.status).label} → ${statusDemanda(data.status).label}.`,
+      );
+    }
+    // Concluir ou cancelar é a ação "Encerrar" da matriz de permissões.
+    if (
+      (data.status === "concluida" || data.status === "cancelada") &&
+      atual.status !== data.status
+    ) {
+      await exigirAcao(
+        supabase,
+        userId,
+        "operacional.demandas",
+        "encerrar",
+        "Você não tem permissão para encerrar demandas.",
+      );
     }
     const patch: Record<string, unknown> = { status: data.status };
     // Carimba/limpa `concluida_em` para reabertura consistente em relatórios/SLA.
@@ -708,7 +767,7 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
         _corr: atual.correspondente_id as string,
         _tipo: "demanda.status",
         _titulo: "Demanda atualizada: " + (atual.titulo ?? ""),
-        _corpo: "Status: " + data.status,
+        _corpo: "Situação: " + statusDemanda(data.status).label,
         _link: "/operacional/demandas/" + data.id,
       });
     }
@@ -870,15 +929,19 @@ export const escalarDemanda = createServerFn({ method: "POST" })
     return { escalonadas: (data as number) ?? 0 };
   });
 
-/** Exclui uma demanda. Criador e responsável podem remover o registro. */
+/**
+ * Exclui uma demanda. Só quem a criou — a mesma regra que as telas mostram
+ * (`pode_excluir` em obterDemanda e a lista). A gravação é sem RLS, então a
+ * checagem daqui é a única barreira.
+ */
 export const excluirDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const atual = await papelNaDemanda(supabase, data.id, userId);
-    if (!atual.souCriador && !atual.souResponsavel) {
-      throw new Error("Apenas quem enviou ou recebeu a demanda pode excluí-la.");
+    if (!atual.souCriador) {
+      throw new Error("Apenas quem enviou a demanda pode excluí-la.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("demandas").delete().eq("id", data.id);

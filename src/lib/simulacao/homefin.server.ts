@@ -81,14 +81,47 @@ export class IntegracaoBancariaError extends Error {
   }
 }
 
-function config() {
-  const base = process.env.HOMEFIN_BASE_URL;
-  const secretId = process.env.HOMEFIN_SECRET_ID;
-  const secretKey = process.env.HOMEFIN_SECRET_KEY;
-  if (!base || !secretId || !secretKey) {
-    throw new IntegracaoBancariaError("Integração bancária não configurada.");
+const BASE_HOMEFIN_PADRAO = "https://api.homefin.com.br/external";
+type ConfigIntegracao = { base: string; secretId: string; secretKey: string };
+let cacheConfig: { v: ConfigIntegracao | null; ate: number } | null = null;
+
+/**
+ * Chaves da integração bancária. Fonte principal: Agilliza › Plataforma › Chaves dos
+ * provedores (a MESMA credencial que o Corretor 2.0 usa, cifrada no banco). As variáveis
+ * `HOMEFIN_*` do servidor continuam valendo e têm prioridade, para quem já as usa.
+ * A leitura do banco fica guardada 1 minuto: trocar a chave na tela vale em seguida.
+ */
+async function carregarConfig(): Promise<ConfigIntegracao | null> {
+  const secretIdEnv = process.env.HOMEFIN_SECRET_ID;
+  const secretKeyEnv = process.env.HOMEFIN_SECRET_KEY;
+  if (secretIdEnv && secretKeyEnv) {
+    const base = process.env.HOMEFIN_BASE_URL || BASE_HOMEFIN_PADRAO;
+    return { base: base.replace(/\/$/, ""), secretId: secretIdEnv, secretKey: secretKeyEnv };
   }
-  return { base: base.replace(/\/$/, ""), secretId, secretKey };
+  if (cacheConfig && cacheConfig.ate > Date.now()) return cacheConfig.v;
+  const { credencialDoSistema } = await import("@/lib/plataforma/ponte.server");
+  const c = await credencialDoSistema("homefin");
+  const secretId = c?.segredo?.secretId;
+  const secretKey = c?.segredo?.secretKey;
+  const v =
+    secretId && secretKey
+      ? {
+          base: (c?.base_url || process.env.HOMEFIN_BASE_URL || BASE_HOMEFIN_PADRAO).replace(
+            /\/$/,
+            "",
+          ),
+          secretId,
+          secretKey,
+        }
+      : null;
+  cacheConfig = { v, ate: Date.now() + 60_000 };
+  return v;
+}
+
+async function config(): Promise<ConfigIntegracao> {
+  const c = await carregarConfig();
+  if (!c) throw new IntegracaoBancariaError("Integração bancária não configurada.");
+  return c;
 }
 
 export function sanitizarMensagemErro(msg: string | null | undefined): string {
@@ -307,7 +340,7 @@ export function validadeDoToken(token: string, agora = Date.now()): number {
 }
 
 async function solicitarToken(): Promise<TokenInfo> {
-  const { base, secretId, secretKey } = config();
+  const { base, secretId, secretKey } = await config();
   const url = `${base}/auth/token`;
   let resp: Response;
   try {
@@ -505,7 +538,7 @@ async function executarChamada<T = unknown>(
   body: unknown | undefined,
   ctx: HomefinRequestCtx = {},
 ): Promise<T> {
-  const { base } = config();
+  const { base } = await config();
   const url = `${base}${endpoint}`;
   const bodyNormalizado = body ? normalizarPayloadBanco(body) : undefined;
 
@@ -631,10 +664,8 @@ async function executarChamada<T = unknown>(
   return json;
 }
 
-export function integracaoConfigurada(): boolean {
-  return Boolean(
-    process.env.HOMEFIN_BASE_URL && process.env.HOMEFIN_SECRET_ID && process.env.HOMEFIN_SECRET_KEY,
-  );
+export async function integracaoConfigurada(): Promise<boolean> {
+  return (await carregarConfig()) !== null;
 }
 
 /** Busca a lista oficial de bancos no provedor de integração. */
@@ -697,7 +728,7 @@ export async function enviarArquivoIntegracao<T = unknown>(
   documentoAprovado: boolean,
   ctx: HomefinRequestCtx = {},
 ): Promise<T> {
-  const { base } = config();
+  const { base } = await config();
   const { token } = await obterToken();
   const url = `${base}${endpoint}`;
   const form = new FormData();

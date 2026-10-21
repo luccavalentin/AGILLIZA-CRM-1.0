@@ -4,7 +4,7 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Play, Trash2, Save } from "lucide-react";
+import { Play, Save } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,12 @@ import {
   listarFiltrosSalvos,
   salvarFiltro,
   excluirFiltro,
+  getEscopoRelatorios,
 } from "@/lib/relatorios/reports.functions";
-import { PERIODO_LABEL, type Periodo } from "@/lib/relatorios/shared";
+import { getMinhaSessao } from "@/lib/session.functions";
+import { ESCOPO_LABEL, PERIODO_LABEL, type Escopo, type Periodo } from "@/lib/relatorios/shared";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/_authenticated/relatorios/personalizados")({
   // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
@@ -34,6 +38,39 @@ export const Route = createFileRoute("/_authenticated/relatorios/personalizados"
 });
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
+// "Equipe" saiu do produto (mesmo seletor dos relatórios: Minha e Geral).
+const ESCOPOS: Escopo[] = ["minha", "geral"];
+/** Salvos antigos com "equipe" abrem como "Geral" (o servidor já trata os dois iguais). */
+const rotuloEscopo = (e: string) => ESCOPO_LABEL[(e === "equipe" ? "geral" : e) as Escopo] ?? e;
+
+/**
+ * Nome e endereço de cada base. As duas bases operacionais não têm tela própria:
+ * moram em /relatorios/operacional, escolhidas pelo `tipo` — o "Executar" delas
+ * abria uma URL inexistente (404).
+ */
+const BASES: Record<string, { rotulo: string; rota: string; busca?: Record<string, string> }> = {
+  consolidado: { rotulo: "Consolidado", rota: "/relatorios/consolidado" },
+  comerciais: { rotulo: "Comerciais", rota: "/relatorios/comerciais" },
+  simulacoes: { rotulo: "Simulações", rota: "/relatorios/simulacoes" },
+  propostas: { rotulo: "Propostas", rota: "/relatorios/propostas" },
+  crm: { rotulo: "CRM", rota: "/relatorios/crm" },
+  clientes: { rotulo: "Clientes", rota: "/relatorios/clientes" },
+  demandas: { rotulo: "Demandas", rota: "/relatorios/demandas" },
+  tarefas: { rotulo: "Tarefas", rota: "/relatorios/tarefas" },
+  financeiros: { rotulo: "Financeiros", rota: "/relatorios/financeiros" },
+  "app-cliente": { rotulo: "App do cliente", rota: "/relatorios/app-cliente" },
+  operacionais: {
+    rotulo: "Operacional consolidado",
+    rota: "/relatorios/operacional",
+    busca: { tipo: "operacional-consolidado" },
+  },
+  "operacional-simulacoes": {
+    rotulo: "Operacional — simulações",
+    rota: "/relatorios/operacional",
+    busca: { tipo: "simulacoes" },
+  },
+};
+const rotuloBase = (c: string) => BASES[c]?.rotulo ?? c;
 
 function Pagina() {
   const qc = useQueryClient();
@@ -41,13 +78,33 @@ function Pagina() {
   const listaFn = useServerFn(listarFiltrosSalvos);
   const salvarFn = useServerFn(salvarFiltro);
   const excluirFn = useServerFn(excluirFiltro);
+  const escopoFn = useServerFn(getEscopoRelatorios);
+
+  const { data: permEscopo } = useQuery({
+    queryKey: ["report-escopo"],
+    queryFn: () => escopoFn(),
+    staleTime: 5 * 60_000,
+  });
+  const { data: sessao } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => getMinhaSessao(),
+    staleTime: 5 * 60_000,
+  });
+  const meuId = sessao?.profile?.id ?? null;
+  const escoposVisiveis = ESCOPOS.filter((e) => e === "minha" || permEscopo?.podeGeral);
 
   const { data: bases } = useQuery({
     queryKey: ["report-bases"],
     queryFn: () => basesFn(),
     staleTime: Infinity,
   });
-  const { data: salvos, isLoading } = useQuery({
+  const {
+    data: salvos,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["report-saved"],
     queryFn: () => listaFn(),
     staleTime: 30_000,
@@ -56,6 +113,9 @@ function Pagina() {
   const [nome, setNome] = useState("");
   const [base, setBase] = useState("consolidado");
   const [periodo, setPeriodo] = useState<Periodo>("mes");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+  const [escopo, setEscopo] = useState<Escopo>("minha");
   const [visibilidade, setVisibilidade] = useState<"private" | "shared_team">("private");
   const [busy, setBusy] = useState(false);
 
@@ -64,21 +124,25 @@ function Pagina() {
       toast.error("Informe um nome.");
       return;
     }
+    if (periodo === "custom" && (!de || !ate || de > ate)) {
+      toast.error("No período personalizado, informe o início e o fim (o fim depois do início).");
+      return;
+    }
     setBusy(true);
     try {
       await salvarFn({
         data: {
           nome: nome.trim(),
           report_codigo: base,
-          filtros: { periodo, escopo: "minha" },
+          filtros: { periodo, escopo, ...(periodo === "custom" ? { de, ate } : {}) },
           visibilidade,
         },
       });
       toast.success("Relatório personalizado salvo.");
       setNome("");
       qc.invalidateQueries({ queryKey: ["report-saved"] });
-    } catch {
-      toast.error("Não foi possível salvar.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível salvar."));
     } finally {
       setBusy(false);
     }
@@ -88,8 +152,9 @@ function Pagina() {
     try {
       await excluirFn({ data: { id } });
       qc.invalidateQueries({ queryKey: ["report-saved"] });
-    } catch {
-      toast.error("Não foi possível excluir.");
+      toast.success("Relatório excluído.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível excluir."));
     }
   }
 
@@ -127,11 +192,13 @@ function Pagina() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(bases ?? []).map((b) => (
-                  <SelectItem key={b} value={b}>
-                    {b}
-                  </SelectItem>
-                ))}
+                {(bases ?? [])
+                  .filter((b) => BASES[b])
+                  .map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {rotuloBase(b)}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -150,6 +217,42 @@ function Pagina() {
               </SelectContent>
             </Select>
           </div>
+          {periodo === "custom" && (
+            <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground" htmlFor="rp-de">
+                  De
+                </label>
+                <Input id="rp-de" type="date" value={de} onChange={(e) => setDe(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground" htmlFor="rp-ate">
+                  Até
+                </label>
+                <Input
+                  id="rp-ate"
+                  type="date"
+                  value={ate}
+                  onChange={(e) => setAte(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Abrangência</label>
+            <Select value={escopo} onValueChange={(v) => setEscopo(v as Escopo)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {escoposVisiveis.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {ESCOPO_LABEL[e]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Compartilhamento</label>
             <Select
@@ -161,7 +264,7 @@ function Pagina() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="private">Privado</SelectItem>
-                <SelectItem value="shared_team">Compartilhado com a equipe</SelectItem>
+                <SelectItem value="shared_team">Compartilhado com os colegas</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -181,6 +284,15 @@ function Pagina() {
               <Skeleton key={i} className="h-16" />
             ))}
           </div>
+        ) : isError ? (
+          <Card className="flex flex-col items-center gap-3 p-8 text-center">
+            <p className="text-sm text-destructive">
+              {mensagemDeErro(error, "Não foi possível carregar os relatórios salvos.")}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Tentar de novo
+            </Button>
+          </Card>
         ) : !salvos?.length ? (
           <Card className="p-8 text-center text-sm text-muted-foreground">
             Nenhum relatório personalizado salvo.
@@ -195,30 +307,34 @@ function Pagina() {
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{s.nome}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    Base: {s.report_codigo} ·{" "}
+                    Base: {rotuloBase(s.report_codigo)} ·{" "}
                     {PERIODO_LABEL[(s.filtros?.periodo as Periodo) ?? "mes"]}
+                    {s.filtros?.escopo ? ` · ${rotuloEscopo(String(s.filtros.escopo))}` : ""}
                   </p>
                 </div>
                 <div className="flex flex-wrap shrink-0 items-center gap-2">
                   <Badge variant="secondary">
-                    {s.visibilidade === "shared_team" ? "Equipe" : "Privado"}
+                    {s.visibilidade === "shared_team" ? "Compartilhado" : "Privado"}
                   </Badge>
                   <Link
-                    to={`/relatorios/${s.report_codigo}` as any}
-                    search={(s.filtros ?? {}) as any}
+                    to={(BASES[s.report_codigo]?.rota ?? `/relatorios/${s.report_codigo}`) as any}
+                    search={
+                      { ...(s.filtros ?? {}), ...(BASES[s.report_codigo]?.busca ?? {}) } as any
+                    }
                   >
                     <Button variant="outline" size="sm">
                       <Play className="mr-1 h-3.5 w-3.5" /> Executar
                     </Button>
                   </Link>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => remover(s.id)}
-                    aria-label="Excluir"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  {/* Só quem salvou exclui (excluirFiltro filtra por user_id); para os
+                      compartilhados de colegas a lixeira "excluía" sem excluir. */}
+                  {s.user_id === meuId && (
+                    <ConfirmDelete
+                      titulo={`Excluir "${s.nome}"?`}
+                      descricao="O relatório salvo sai da lista. Os dados dele não são apagados."
+                      onConfirm={() => remover(s.id)}
+                    />
+                  )}
                 </div>
               </Card>
             ))}

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 const CHAVE_IA = "ia";
 
@@ -91,7 +92,7 @@ async function correspondenteDoUsuario(
 
 /** Configuração do provedor de IA (usado pelo Scan IA). Nunca retorna valores de secrets. */
 export const getConfigIA = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "view"])])
   .handler(async ({ context }): Promise<ConfigIA> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -156,7 +157,7 @@ const configSchema = z.object({
 
 /** Salva a configuração do provedor de IA (metadados, prompt, temperatura e chave da API). */
 export const salvarConfigIA = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "edit"])])
   .inputValidator((d) => configSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
@@ -199,7 +200,7 @@ export const salvarConfigIA = createServerFn({ method: "POST" })
 
 /** Testa a conexão com o provedor de IA usando a chave e URL salvas (ou informadas). */
 export const testarConexaoIA = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "edit"])])
   .inputValidator((d) =>
     z
       .object({

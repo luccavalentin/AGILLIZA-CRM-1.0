@@ -1,5 +1,6 @@
 import { AdminHero } from "@/components/admin/admin-hero";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 import { useState, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -46,10 +47,27 @@ export const Route = createFileRoute("/_authenticated/admin/compras/pedidos")({
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const STATUS_LABEL: Record<string, string> = {
+  pendente: "Pendente",
+  aprovada: "Aprovada",
+  recusada: "Recusada",
+};
+
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "aprovada") return "default";
   if (s === "recusada") return "destructive";
   return "secondary";
+}
+
+/**
+ * Valor digitado → número. "1.500,50" (pt-BR) e "1500.5" (o valor vindo do banco,
+ * na edição) dão o mesmo; texto que não é número dá NaN — e o botão não envia.
+ */
+function lerValor(v: string): number {
+  const t = v.trim();
+  if (!t) return NaN;
+  const normal = t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t;
+  return /^\d+(\.\d+)?$/.test(normal) ? Number(normal) : NaN;
 }
 
 function Pagina() {
@@ -66,6 +84,8 @@ function Pagina() {
 
   const sessao = useQuery({ queryKey: ["minha-sessao"], queryFn: () => getMinhaSessao() });
   const meuId = sessao.data?.profile?.id ?? null;
+  // Editar/excluir exigem "Pedidos de compra: editar" no servidor.
+  const podeEditar = usePermissao("admin.compras.pedidos", "edit");
 
   const q = useQuery({ queryKey: ["admin-compras"], queryFn: () => listarCompras() });
 
@@ -98,7 +118,7 @@ function Pagina() {
       criarCompra({
         data: {
           descricao: justificativa.trim() ? `${descricao} — ${justificativa.trim()}` : descricao,
-          valor: Number(valor.replace(/\./g, "").replace(",", ".")) || 0,
+          valor: lerValor(valor),
           categoria: categoria || null,
         },
       }),
@@ -176,7 +196,9 @@ function Pagina() {
               <DialogFooter>
                 <Button
                   onClick={() => criar.mutate()}
-                  disabled={criar.isPending || descricao.trim().length < 3}
+                  disabled={
+                    criar.isPending || descricao.trim().length < 3 || !(lerValor(valor) > 0)
+                  }
                 >
                   {criar.isPending ? "Enviando…" : "Enviar para aprovação"}
                 </Button>
@@ -253,25 +275,39 @@ function Pagina() {
                   <TableCell className="text-muted-foreground">{c.categoria ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{brl(c.valor)}</TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
+                    <Badge variant={statusVariant(c.status)}>
+                      {STATUS_LABEL[c.status] ?? c.status}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {new Date(c.created_at).toLocaleDateString("pt-BR")}
+                    {new Date(c.created_at).toLocaleDateString("pt-BR", {
+                      timeZone: "America/Sao_Paulo",
+                    })}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
-                      <EditarPedidoDialog
-                        pedido={c}
-                        onSalvo={() => qc.invalidateQueries({ queryKey: ["admin-compras"] })}
-                      />
-                      <ConfirmDelete
-                        descricao={`Excluir o pedido “${c.descricao}”? Essa ação não pode ser desfeita.`}
-                        onConfirm={async () => {
-                          await excluirCompra({ data: { id: c.id } });
-                          toast.success("Pedido excluído.");
-                          qc.invalidateQueries({ queryKey: ["admin-compras"] });
-                        }}
-                      />
+                      {podeEditar && (
+                        <EditarPedidoDialog
+                          pedido={c}
+                          onSalvo={() => qc.invalidateQueries({ queryKey: ["admin-compras"] })}
+                        />
+                      )}
+                      {/* Só pedido pendente sai (o servidor recusa os decididos). */}
+                      {podeEditar && c.status === "pendente" && (
+                        <ConfirmDelete
+                          descricao={`Excluir o pedido “${c.descricao}”? Essa ação não pode ser desfeita.`}
+                          onConfirm={async () => {
+                            try {
+                              await excluirCompra({ data: { id: c.id } });
+                              toast.success("Pedido excluído.");
+                              qc.invalidateQueries({ queryKey: ["admin-compras"] });
+                            } catch (e) {
+                              // O diálogo não mostra o erro sozinho.
+                              toast.error(mensagemDeErro(e, "Não foi possível excluir o pedido."));
+                            }
+                          }}
+                        />
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -321,7 +357,7 @@ function EditarPedidoDialog({ pedido, onSalvo }: { pedido: CompraLinha; onSalvo:
         data: {
           id: pedido.id,
           descricao: descricao.trim(),
-          valor: Number(valor.replace(/\./g, "").replace(",", ".")) || 0,
+          valor: lerValor(valor),
           categoria: categoria.trim() || null,
         },
       });
@@ -382,7 +418,10 @@ function EditarPedidoDialog({ pedido, onSalvo }: { pedido: CompraLinha; onSalvo:
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
-          <Button onClick={salvar} disabled={salvando || descricao.trim().length < 3}>
+          <Button
+            onClick={salvar}
+            disabled={salvando || descricao.trim().length < 3 || !(lerValor(valor) > 0)}
+          >
             {salvando ? "Salvando…" : "Salvar"}
           </Button>
         </DialogFooter>

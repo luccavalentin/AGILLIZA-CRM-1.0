@@ -183,9 +183,10 @@ export function ColunaLateral({
                       })
                     : "Sem prazo"}
               </p>
+              {/* "Prazo era" só faz sentido depois de vencido; antes é o prazo. */}
               {d.prazo_sla && (
                 <p className="text-[11px] text-muted-foreground">
-                  Prazo era{" "}
+                  {slaVencido ? "Prazo era" : d.status === "concluida" ? "Prazo" : "Vence em"}{" "}
                   {new Date(d.prazo_sla).toLocaleString("pt-BR", {
                     day: "2-digit",
                     month: "2-digit",

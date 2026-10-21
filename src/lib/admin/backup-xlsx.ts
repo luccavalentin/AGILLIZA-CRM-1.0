@@ -308,6 +308,8 @@ export function exportarBackupXLSX(dados: BackupCompleto) {
     XLSX.utils.book_append_sheet(wb, ws, nomeAba(t.label, usados));
   }
 
-  const stamp = new Date(dados.geradoEm).toISOString().slice(0, 10);
+  const stamp = new Date(dados.geradoEm).toLocaleDateString("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  });
   XLSX.writeFile(wb, `backup-agilliza-${stamp}.xlsx`);
 }

@@ -1,6 +1,5 @@
 import type React from "react";
 import { useState } from "react";
-import { z } from "zod";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -47,10 +46,14 @@ import {
   validarCPF,
   validarEmail,
   validarTelefone,
+  validarPIS,
   soDigitos,
 } from "@/lib/crm/documento";
 import { InputAutocomplete } from "@/components/ui/input-autocomplete";
 import { FuncionarioFoto } from "@/components/rh/funcionario-foto";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { formatarMoedaInput, parseMoeda } from "@/lib/rh/moeda";
+import { CONTRATO_LABEL, STATUS_FUNCIONARIO_LABEL } from "@/lib/rh/rotulos";
 
 const OPCOES_ORGAO_EMISSOR = [
   "SSP",
@@ -127,30 +130,11 @@ const OPCOES_ESTADO_CIVIL = [
   { v: "uniao_estavel", l: "União estável" },
 ];
 
-const STATUS_LABEL: Record<StatusFuncionario, string> = {
-  ativo: "Ativo",
-  experiencia: "Em experiência",
-  afastado: "Afastado",
-  ferias: "Em férias",
-  desligado: "Desligado",
-};
-
-const CONTRATO_LABEL: Record<TipoContrato, string> = {
-  clt: "CLT",
-  pj: "PJ",
-  estagio: "Estágio",
-  autonomo: "Autônomo",
-  temporario: "Temporário",
-  aprendiz: "Aprendiz",
-};
+const STATUS_LABEL = STATUS_FUNCIONARIO_LABEL;
 
 /** Classe padrão das abas da ficha (usada também pelas abas extras da página). */
 export const ABA_CLASS =
   "shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm sm:text-sm";
-
-function toEmpty<T extends string | number | null | undefined>(v: T): string {
-  return v === null || v === undefined ? "" : String(v);
-}
 
 /** Formulário completo do funcionário (usado em Novo e Editar). */
 export function FuncionarioForm({
@@ -189,7 +173,8 @@ export function FuncionarioForm({
     id: inicial?.id,
     nome: inicial?.nome ?? "",
     nome_social: inicial?.nome_social ?? "",
-    cpf: inicial?.cpf ?? "",
+    // Gravados só com dígitos: ao reabrir a ficha apareciam sem máscara.
+    cpf: inicial?.cpf ? mascararCPF(inicial.cpf) : "",
     rg: inicial?.rg ?? "",
     rg_orgao: inicial?.rg_orgao ?? "",
     rg_uf: inicial?.rg_uf ?? "",
@@ -201,8 +186,8 @@ export function FuncionarioForm({
     nome_mae: inicial?.nome_mae ?? "",
     nome_pai: inicial?.nome_pai ?? "",
     email_pessoal: inicial?.email_pessoal ?? "",
-    telefone: inicial?.telefone ?? "",
-    cep: inicial?.cep ?? "",
+    telefone: inicial?.telefone ? mascararTelefone(inicial.telefone) : "",
+    cep: inicial?.cep ? mascararCep(inicial.cep) : "",
     logradouro: inicial?.logradouro ?? "",
     numero_endereco: inicial?.numero_endereco ?? "",
     complemento: inicial?.complemento ?? "",
@@ -227,7 +212,7 @@ export function FuncionarioForm({
     jornada_descricao: inicial?.jornada_descricao ?? "Segunda a sexta, 8h às 18h",
     email_corporativo: inicial?.email_corporativo ?? "",
     salario_atual: Number(inicial?.salario_atual ?? 0),
-    salario_atual_str: toEmpty(inicial?.salario_atual ?? ""),
+    salario_atual_str: formatarMoedaInput(inicial?.salario_atual ?? null),
     salario_desde: inicial?.salario_desde ?? "",
     banco_nome: inicial?.banco_nome ?? "",
     banco_agencia: inicial?.banco_agencia ?? "",
@@ -283,7 +268,7 @@ export function FuncionarioForm({
       qc.invalidateQueries({ queryKey: ["rh-kpis"] });
       navigate({ to: "/rh/funcionarios/$id", params: { id } });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   function validar(): boolean {
@@ -294,6 +279,7 @@ export function FuncionarioForm({
     if (f.email_pessoal && !validarEmail(f.email_pessoal)) req.add("email_pessoal");
     if (f.email_corporativo && !validarEmail(f.email_corporativo)) req.add("email_corporativo");
     if (f.telefone && !validarTelefone(f.telefone)) req.add("telefone");
+    if (f.pis && !validarPIS(f.pis)) req.add("pis");
     setErros(req);
     if (req.size > 0) {
       const msg = req.has("nome")
@@ -306,9 +292,15 @@ export function FuncionarioForm({
               ? "E-mail inválido."
               : req.has("telefone")
                 ? "Telefone inválido."
-                : "Verifique os campos destacados.";
+                : req.has("pis")
+                  ? "PIS/PASEP inválido."
+                  : "Verifique os campos destacados.";
       toast.error(msg);
-      setTab(req.has("data_admissao") ? "profissional" : "pessoal");
+      setTab(
+        req.has("nome") || req.has("cpf") || req.has("email_pessoal") || req.has("telefone")
+          ? "pessoal"
+          : "profissional",
+      );
       return false;
     }
     return true;
@@ -320,7 +312,7 @@ export function FuncionarioForm({
       ...f,
       cpf: soDigitos(f.cpf),
       telefone: f.telefone ? soDigitos(f.telefone) : f.telefone,
-      salario_atual: Number(f.salario_atual_str.replace(/[^0-9,]/g, "").replace(",", ".") || 0),
+      salario_atual: parseMoeda(f.salario_atual_str),
     };
     delete (payload as any).salario_atual_str;
     mut.mutate(payload);
@@ -388,7 +380,8 @@ export function FuncionarioForm({
                   {(() => {
                     if (!f.user_id) return "Nenhum usuário vinculado — clique para escolher";
                     const u = (usuarios.data ?? []).find((x) => x.id === f.user_id);
-                    return u?.nome ?? u?.email ?? f.user_id;
+                    if (u) return u.nome ?? u.email ?? "Usuário sem nome";
+                    return usuarios.isLoading ? "Carregando…" : "Usuário vinculado";
                   })()}
                 </span>
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -417,7 +410,7 @@ export function FuncionarioForm({
                       <span className="text-muted-foreground">Nenhum (sem vínculo)</span>
                     </CommandItem>
                     {(usuarios.data ?? []).map((u) => {
-                      const label = u.nome ?? u.email ?? u.id;
+                      const label = u.nome ?? u.email ?? "Usuário sem nome";
                       const bloqueado = !!u.ja_vinculado_a;
                       return (
                         <CommandItem
@@ -803,20 +796,30 @@ export function FuncionarioForm({
               <div className="space-y-1.5">
                 <Label>CTPS nº</Label>
                 <Input
+                  inputMode="numeric"
+                  maxLength={7}
                   value={f.ctps_numero ?? ""}
-                  onChange={(e) => set("ctps_numero", e.target.value)}
+                  onChange={(e) => set("ctps_numero", soDigitos(e.target.value).slice(0, 7))}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>CTPS série</Label>
                 <Input
+                  inputMode="numeric"
+                  maxLength={5}
                   value={f.ctps_serie ?? ""}
-                  onChange={(e) => set("ctps_serie", e.target.value)}
+                  onChange={(e) => set("ctps_serie", soDigitos(e.target.value).slice(0, 5))}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>PIS</Label>
-                <Input value={f.pis ?? ""} onChange={(e) => set("pis", e.target.value)} />
+                <Input
+                  inputMode="numeric"
+                  placeholder="000.00000.00-0"
+                  className={errClass("pis")}
+                  value={mascararPIS(f.pis ?? "")}
+                  onChange={(e) => set("pis", soDigitos(e.target.value).slice(0, 11))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Jornada (h/semana)</Label>
@@ -989,5 +992,11 @@ export function FuncionarioForm({
   );
 }
 
-// util reserved for future validation extensions
-export const _schemaGuard = z.any();
+/** Máscara progressiva do PIS/PASEP (000.00000.00-0). */
+function mascararPIS(v: string): string {
+  const d = soDigitos(v).slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 8) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 10) return `${d.slice(0, 3)}.${d.slice(3, 8)}.${d.slice(8)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 8)}.${d.slice(8, 10)}-${d.slice(10)}`;
+}

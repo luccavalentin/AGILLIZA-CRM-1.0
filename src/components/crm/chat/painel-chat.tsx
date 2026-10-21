@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ChatClienteTab } from "@/components/crm/chat-cliente-tab";
 import { ChatParticipantes } from "@/components/crm/chat-participantes";
+import { usePermissao } from "@/hooks/use-permissao";
 import type { UseChatConversas } from "./use-chat-conversas";
 
 type Props = {
@@ -18,6 +19,8 @@ type Props = {
  */
 export function PainelChat({ hook, acoes }: Props) {
   const { alvoAtual, selecionado, setSelecionado } = hook;
+  const podeResponder = usePermissao("crm.chat", "create");
+  const podeGerir = usePermissao("crm.chat", "gerir");
 
   return (
     <div
@@ -39,11 +42,15 @@ export function PainelChat({ hook, acoes }: Props) {
           {(() => {
             // Só é leitura quando a thread não é minha e eu não fui incluído
             // como participante. Convidados conversam na mesma conversa.
-            const somenteLeitura = !alvoAtual.minha && !alvoAtual.participo;
-            const podeGerir = !somenteLeitura && !!alvoAtual.atendente_id;
+            const threadAlheia = !alvoAtual.minha && !alvoAtual.participo;
+            // Sem crm.chat › create, a conversa abre só para leitura (o servidor recusaria).
+            const somenteLeitura = threadAlheia || !podeResponder;
+            // Participantes: quem atende a conversa ou quem gere o chat.
+            const mostrarParticipantes =
+              !!alvoAtual.atendente_id && ((!threadAlheia && podeResponder) || podeGerir);
             return (
               <>
-                {podeGerir && (
+                {mostrarParticipantes && (
                   <div className="flex shrink-0 justify-end">
                     <ChatParticipantes
                       clienteId={alvoAtual.cliente_id}
@@ -57,7 +64,9 @@ export function PainelChat({ hook, acoes }: Props) {
                     clienteId={alvoAtual.cliente_id}
                     atendenteId={alvoAtual.atendente_id ?? undefined}
                     somenteLeitura={somenteLeitura}
-                    atendenteNome={alvoAtual.atendente_nome ?? undefined}
+                    atendenteNome={
+                      threadAlheia ? (alvoAtual.atendente_nome ?? "outro atendente") : undefined
+                    }
                     acoes={acoes}
                     info={{
                       nome: alvoAtual.nome,

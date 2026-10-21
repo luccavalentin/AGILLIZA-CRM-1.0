@@ -24,20 +24,20 @@ import {
   atualizarItemChecklist,
   type ItemChecklist,
 } from "@/lib/rh/checklist.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 const STATUS_LABEL: Record<ItemChecklist["status"], string> = {
   pendente: "Pendente",
-  recebido: "Recebido",
-  aprovado: "Aprovado",
+  entregue: "Entregue",
   vencido: "Vencido",
-  dispensado: "Dispensado",
+  nao_aplicavel: "Não se aplica",
 };
 
 function StatusIcon({ s }: { s: ItemChecklist["status"] }) {
-  if (s === "aprovado" || s === "recebido")
+  if (s === "entregue")
     return <CheckCircle2 className="h-4 w-4 text-success" />;
   if (s === "vencido") return <AlertTriangle className="h-4 w-4 text-destructive" />;
-  if (s === "dispensado") return <MinusCircle className="h-4 w-4 text-muted-foreground" />;
+  if (s === "nao_aplicavel") return <MinusCircle className="h-4 w-4 text-muted-foreground" />;
   return <Circle className="h-4 w-4 text-muted-foreground" />;
 }
 
@@ -63,14 +63,14 @@ export function ChecklistClt({ funcionarioId }: { funcionarioId: string }) {
       qc.invalidateQueries({ queryKey: ["rh-checklist-clt", funcionarioId] });
       toast.success("Checklist atualizado.");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao atualizar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao atualizar.")),
     onSettled: () => setSalvando(null),
   });
 
   const itens = q.data ?? [];
   const totalObrig = itens.filter((i) => i.obrigatorio).length;
   const okObrig = itens.filter(
-    (i) => i.obrigatorio && (i.status === "aprovado" || i.status === "recebido"),
+    (i) => i.obrigatorio && i.status === "entregue",
   ).length;
 
   return (

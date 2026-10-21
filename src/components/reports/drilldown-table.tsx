@@ -263,7 +263,8 @@ export function DrilldownTable({ columns, rows }: { columns: ReportColumn[]; row
           <span className="inline-flex items-center gap-2">
             <span className="size-1.5 rounded-full bg-primary/60" />
             <span className="tabular-nums">
-              {filtradas.length.toLocaleString("pt-BR")} registros
+              {filtradas.length.toLocaleString("pt-BR")}{" "}
+              {filtradas.length === 1 ? "registro" : "registros"}
               {busca && ` · filtrado de ${rows.length.toLocaleString("pt-BR")}`}
             </span>
           </span>

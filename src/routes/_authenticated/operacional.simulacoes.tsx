@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Calculator, ListChecks, Building2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import { supabase } from "@/integrations/supabase/client";
 import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import {
@@ -36,15 +37,9 @@ import type { HandlersLinha } from "@/components/simulacao/lista-page/tipos";
 import { BarraSelecao } from "@/components/shared/barra-selecao";
 import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 
-/** Primeiro e último dia do mês atual como intervalo ISO (filtro padrão). */
-function intervaloMesAtual(): { inicio: string; fim: string } {
-  const agora = new Date(); // padding-reductions
-  const primeiro = new Date(agora.getFullYear(), agora.getMonth(), 1);
-  const ultimo = new Date(agora.getFullYear(), agora.getMonth() + 1, 0);
-  const iso = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  return { inicio: iso(primeiro), fim: iso(ultimo) };
-}
+import { SeletorDeConta } from "@/components/crm/clientes-page/seletor-de-conta";
+import { SimulacoesDaContaNativas } from "@/components/plataforma/conta-nativa/simulacoes-da-conta";
+import type { ContaAssinante } from "@/lib/plataforma/contas.functions";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
   head: () => ({ meta: [{ title: "Simulações — Agilliza" }] }),
@@ -58,16 +53,21 @@ export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
 });
 
 function Pagina() {
+  // Base exibida: a do Agilliza (null) ou a de uma conta assinante do Corretor 2.0.
+  const [conta, setConta] = useState<ContaAssinante | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
+  // Mesma regra de excluirSimulacao: "edit", ou "create" para quem criou.
+  const podeEditarSim = usePermissao("operacional.simulacoes", "edit");
+  const podeCriarSim = usePermissao("operacional.simulacoes", "create");
+  const podeExcluir = podeEditarSim || podeCriarSim;
   const restaurar = useServerFn(restaurarSimulacao);
   const criar = useServerFn(criarProposta);
   const destravar = useServerFn(destravarSimulacao);
 
   const obter = useServerFn(obterSimulacao);
   const listarColegasFn = useServerFn(listarColegas);
-  const padrao = useMemo(() => ({ inicio: "", fim: "" }), []);
   const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
@@ -147,6 +147,8 @@ function Pagina() {
       return emAndamento ? 5000 : 30000;
     },
     staleTime: 0,
+    // Com a Conta numa licença assinante, a lista vem da base dela (SimulacoesDaContaNativas).
+    enabled: !conta,
     queryFn: () =>
       listarSimulacoes({
         data: {
@@ -210,8 +212,8 @@ function Pagina() {
       queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
       queryClient.invalidateQueries({ queryKey: ["crm-painel"] });
       queryClient.invalidateQueries({ queryKey: ["clientes"] });
-    } catch {
-      toast.error("Não foi possível excluir a simulação.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível excluir a simulação."));
     }
   }
 
@@ -220,8 +222,8 @@ function Pagina() {
       await restaurar({ data: { id } });
       toast.success("Simulação restaurada.");
       queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
-    } catch {
-      toast.error("Não foi possível restaurar a simulação.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível restaurar a simulação."));
     }
   }
 
@@ -387,29 +389,6 @@ function Pagina() {
       setEnviandoBancoId(null);
     }
   }
-  async function enviarTodos(bancos: any[]) {
-    if (!envio) return;
-    // Dispara todos em paralelo no Hook, mas aqui na UI apenas iteramos
-    // O Hook useEnviarProposta agora gerencia o estado individual.
-    // Um popup só para o lote: perguntas em paralelo se atropelariam.
-    let agenciaBradesco: string | undefined;
-    const bradesco = bancos.find((b) => /bradesco/i.test(String(b?.nome_banco ?? "")));
-    if (bradesco) {
-      const resposta = await perguntarAgenciaSeBradesco(bradesco.nome_banco);
-      if (resposta.cancelado) return;
-      agenciaBradesco = resposta.agencia;
-    }
-    await Promise.allSettled(
-      bancos.map((b) =>
-        enviarBancoIndividual(
-          b,
-          // Demais bancos seguem sem agência e não abrem popup.
-          /bradesco/i.test(String(b?.nome_banco ?? "")) ? agenciaBradesco : undefined,
-        ),
-      ),
-    );
-  }
-
   const itens = data?.itens ?? [];
   // Simulação em "enviando" quer dizer banco assíncrono (Santander) ainda sem
   // resposta. Enquanto houver alguma na lista, pedimos a reconciliação — antes
@@ -420,10 +399,13 @@ function Pagina() {
   const kpiTotal = data?.total ?? itens.length;
   const kpiValor =
     data?.stats?.volumeTotal ??
-    itens.reduce((acc, s) => acc + (Number(s.valor_financiamento) || 0), 0);
+    itens
+      .filter((s: any) => ["simulada", "parcialmente_simulada", "promovida"].includes(s?.status))
+      .reduce((acc, s) => acc + (Number(s.valor_financiamento) || 0), 0);
   const bancosUnicos = new Set<string>();
   itens.forEach((s) => {
     (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
+      if (b?.status_banco === "erro") return;
       bancosUnicos.add(String(b.nome_banco ?? b.nome ?? b.banco_nome ?? "Banco"));
     });
   });
@@ -445,6 +427,7 @@ function Pagina() {
     cotacoesFiltro ??
     itens.reduce<Record<string, number>>((acc, s) => {
       (Array.isArray(s.bancos) ? s.bancos : []).forEach((b: any) => {
+        if (b?.status_banco === "erro") return;
         const nome = b.nome_banco ?? b.nome ?? b.banco_nome ?? "Banco";
         acc[nome] = (acc[nome] ?? 0) + 1;
       });
@@ -467,12 +450,14 @@ function Pagina() {
   }[] = [
     {
       id: "simulacoes",
-      label: "Simulações",
+      // A lista agrupa por oportunidade (uma linha por cliente/agrupador): o
+      // número é de oportunidades, não de simulações individuais.
+      label: "Oportunidades simuladas",
       valor: String(kpiTotal),
       icon: Calculator,
       detalhe: (
         <DetalheSimulacoes
-          descricao="Todas as simulações do filtro atual."
+          descricao="Oportunidades do filtro atual (cada uma pode ter várias simulações)."
           resumo={Object.entries(porStatus)
             .sort((a, b) => b[1] - a[1])
             .map(([status, qtd]) => ({ rotulo: statusLabel(status), valor: String(qtd) }))}
@@ -489,7 +474,7 @@ function Pagina() {
       icon: Calculator,
       detalhe: (
         <DetalheSimulacoes
-          descricao="Valor de financiamento de cada simulação."
+          descricao="Soma do valor de financiamento das simulações com retorno do banco (simulada, parcial ou promovida). Rascunhos e erros não entram."
           resumo={[{ rotulo: "Volume total", valor: formatBRL(kpiValor) }]}
           itens={itens
             .slice()
@@ -547,14 +532,15 @@ function Pagina() {
     onDuplicar: handleDuplicar,
     onEnviarProposta: handleEnviarProposta,
     onExcluir: handleExcluir,
+    podeExcluir,
     onRestaurar: handleRestaurar,
     onDestravar: async (id) => {
       try {
         await destravar({ data: { id } });
-        toast.success("Simulação destravada com sucesso.");
+        toast.success("Simulação destravada.");
         queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
       } catch (e) {
-        toast.error("Não foi possível destravar a simulação.");
+        toast.error(mensagemDeErro(e, "Não foi possível destravar a simulação."));
       }
     },
 
@@ -603,7 +589,7 @@ function Pagina() {
         // Gera o PDF real com layout profissional para compartilhamento
         const { baixarSimulacaoDetalhadaPDF } = await import("@/lib/simulacao/simulacao-pdf");
         baixarSimulacaoDetalhadaPDF({ simulacao: sim, bancos: bancosParaPdf });
-        toast.success("PDF gerado com sucesso! Agora você pode compartilhá-lo.");
+        toast.success("PDF gerado.");
         return;
       }
 
@@ -621,8 +607,8 @@ function Pagina() {
         const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${dados.email}&su=${subject}&body=${body}`;
         window.open(url, "_blank");
       }
-    } catch {
-      toast.error("Erro ao processar encaminhamento.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível encaminhar a simulação."));
     }
   };
 
@@ -649,6 +635,7 @@ function Pagina() {
             </p>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+            <SeletorDeConta conta={conta} onConta={setConta} />
             <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
               <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
                 <Calculator className="h-4 w-4" />
@@ -665,163 +652,170 @@ function Pagina() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-4">
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-3 shadow-sm"
-              >
-                <div className="size-10 shrink-0 animate-pulse rounded-xl bg-muted" />
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-                  <div className="h-2.5 w-1/2 animate-pulse rounded bg-muted/70" />
-                </div>
-              </div>
-            ))
-          : kpis.map((k) => (
-              <button
-                key={k.id}
-                type="button"
-                onClick={() => setKpiAberto(k.id)}
-                className="group relative flex flex-col items-start gap-2 overflow-hidden rounded-xl border border-border/60 bg-card px-2.5 py-2.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:flex-row sm:items-center sm:gap-3"
-              >
-                <span className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-primary to-primary/40 transition-transform duration-300 group-hover:scale-x-100" />
-                <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/60" />
-                <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15 transition-colors group-hover:bg-primary/15">
-                  <k.icon className="size-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-mono text-base font-semibold leading-tight tracking-tight tabular-nums text-foreground sm:text-xl">
-                    {k.valor}
-                  </p>
-                  <p className="mt-0.5 text-[10.5px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">
-                    {k.label}
-                  </p>
-                </div>
-                <span className="ml-auto hidden shrink-0 text-[10px] font-medium text-primary/0 transition-colors group-hover:text-primary/70 sm:block">
-                  ver detalhes
-                </span>
-              </button>
-            ))}
-      </div>
-
-      {/* Detalhe do KPI clicado */}
-      <KpiDetalheDialog kpis={kpis} aberto={kpiAberto} onClose={() => setKpiAberto(null)} />
-
-      {/* Barra de filtros */}
-      <FiltrosLista
-        escopo={escopo}
-        // Todo filtro volta para a página 1 (antes só a busca voltava: na
-        // página 3, trocar o filtro podia mostrar a lista vazia).
-        setEscopo={(v) => {
-          setEscopo(v);
-          setPagina(1);
-        }}
-        q={q}
-        setQ={(val) => {
-          setQ(val);
-          setPagina(1);
-        }}
-        onBuscar={() => {
-          setBusca(q);
-          setPagina(1);
-        }}
-        responsavel={responsavel}
-        setResponsavel={(v) => {
-          setResponsavel(v);
-          setPagina(1);
-        }}
-        colegas={colegas}
-        desde={desde}
-        setDesde={(v) => {
-          setDesde(v);
-          setPagina(1);
-        }}
-        ate={ate}
-        setAte={(v) => {
-          setAte(v);
-          setPagina(1);
-        }}
-        onLimpar={() => {
-          setDesde("");
-          setAte("");
-          setResponsavel("todos");
-          setPagina(1);
-        }}
-        verExcluidas={verExcluidas}
-        toggleExcluidas={() => {
-          setVerExcluidas((v) => !v);
-          setPagina(1);
-        }}
-      />
-
-      {/* Enquanto houver banco sem retorno, o cron reenvia sozinho; a tela
-          precisa dizer isso, senão "Em análise" parece um travamento. */}
-      <AvisoReenvioAutomatico
-        quantidade={
-          (data?.itens ?? []).filter((s: any) =>
-            (s?.bancos ?? []).some((b: any) => b?.status_banco === "aguardando"),
-          ).length
-        }
-      />
-
-      {/* Tabela (telas médias e maiores) */}
-      <TabelaSimulacoes
-        itens={data?.itens ?? []}
-        isLoading={isLoading}
-        escopo={escopo}
-        verExcluidas={verExcluidas}
-        handlers={handlersLinha}
-        selecionados={selecionados}
-        onToggleSelecionado={toggleSelecionado}
-        onToggleTodos={toggleTodos}
-      />
-
-      <BarraSelecao
-        quantidade={selecionados.length}
-        onLimpar={() => setSelecionados([])}
-        onExcluir={excluirSelecionados}
-        excluindo={excluindoLote}
-        rotulo="simulação(ões) selecionada(s)"
-      />
-
-      {/* Cartões (telas pequenas) */}
-      <CartoesSimulacoes
-        itens={data?.itens ?? []}
-        isLoading={isLoading}
-        escopo={escopo}
-        verExcluidas={verExcluidas}
-        handlers={handlersLinha}
-      />
-
-      {/* Paginação */}
-      {!isLoading && data && data.total > porPagina && (
-        <div className="flex items-center justify-center gap-2 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPagina((p) => Math.max(1, p - 1))}
-            disabled={pagina === 1}
-          >
-            Anterior
-          </Button>
-          <div className="flex items-center gap-1.5 px-2">
-            <span className="text-xs font-semibold text-foreground">Página {pagina}</span>
-            <span className="text-[10px] font-medium text-muted-foreground">
-              de {Math.ceil(data.total / porPagina)}
-            </span>
+      {conta ? (
+        // Base de uma conta assinante: mesmos cartões e ações, com o selo da conta.
+        <SimulacoesDaContaNativas conta={conta} handlers={handlersLinha} />
+      ) : (
+        <>
+          {/* KPIs */}
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-4">
+            {isLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-3 shadow-sm"
+                  >
+                    <div className="size-10 shrink-0 animate-pulse rounded-xl bg-muted" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+                      <div className="h-2.5 w-1/2 animate-pulse rounded bg-muted/70" />
+                    </div>
+                  </div>
+                ))
+              : kpis.map((k) => (
+                  <button
+                    key={k.id}
+                    type="button"
+                    onClick={() => setKpiAberto(k.id)}
+                    className="group relative flex flex-col items-start gap-2 overflow-hidden rounded-xl border border-border/60 bg-card px-2.5 py-2.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:flex-row sm:items-center sm:gap-3"
+                  >
+                    <span className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-primary to-primary/40 transition-transform duration-300 group-hover:scale-x-100" />
+                    <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/60" />
+                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15 transition-colors group-hover:bg-primary/15">
+                      <k.icon className="size-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono text-base font-semibold leading-tight tracking-tight tabular-nums text-foreground sm:text-xl">
+                        {k.valor}
+                      </p>
+                      <p className="mt-0.5 text-[10.5px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">
+                        {k.label}
+                      </p>
+                    </div>
+                    <span className="ml-auto hidden shrink-0 text-[10px] font-medium text-primary/0 transition-colors group-hover:text-primary/70 sm:block">
+                      ver detalhes
+                    </span>
+                  </button>
+                ))}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPagina((p) => p + 1)}
-            disabled={pagina >= Math.ceil(data.total / porPagina)}
-          >
-            Próxima
-          </Button>
-        </div>
+
+          {/* Detalhe do KPI clicado */}
+          <KpiDetalheDialog kpis={kpis} aberto={kpiAberto} onClose={() => setKpiAberto(null)} />
+
+          {/* Barra de filtros */}
+          <FiltrosLista
+            escopo={escopo}
+            // Todo filtro volta para a página 1 (antes só a busca voltava: na
+            // página 3, trocar o filtro podia mostrar a lista vazia).
+            setEscopo={(v) => {
+              setEscopo(v);
+              setPagina(1);
+            }}
+            q={q}
+            setQ={(val) => {
+              setQ(val);
+              setPagina(1);
+            }}
+            onBuscar={() => {
+              setBusca(q);
+              setPagina(1);
+            }}
+            responsavel={responsavel}
+            setResponsavel={(v) => {
+              setResponsavel(v);
+              setPagina(1);
+            }}
+            colegas={colegas}
+            desde={desde}
+            setDesde={(v) => {
+              setDesde(v);
+              setPagina(1);
+            }}
+            ate={ate}
+            setAte={(v) => {
+              setAte(v);
+              setPagina(1);
+            }}
+            onLimpar={() => {
+              setDesde("");
+              setAte("");
+              setResponsavel("todos");
+              setPagina(1);
+            }}
+            verExcluidas={verExcluidas}
+            toggleExcluidas={() => {
+              setVerExcluidas((v) => !v);
+              setPagina(1);
+            }}
+          />
+
+          {/* Enquanto houver banco sem retorno, o cron reenvia sozinho; a tela
+          precisa dizer isso, senão "Em análise" parece um travamento. */}
+          <AvisoReenvioAutomatico
+            quantidade={
+              (data?.itens ?? []).filter((s: any) =>
+                (s?.bancos ?? []).some((b: any) => b?.status_banco === "aguardando"),
+              ).length
+            }
+          />
+
+          {/* Tabela (telas médias e maiores) */}
+          <TabelaSimulacoes
+            itens={data?.itens ?? []}
+            isLoading={isLoading}
+            escopo={escopo}
+            verExcluidas={verExcluidas}
+            handlers={handlersLinha}
+            selecionados={selecionados}
+            onToggleSelecionado={toggleSelecionado}
+            onToggleTodos={toggleTodos}
+          />
+
+          <BarraSelecao
+            quantidade={podeExcluir ? selecionados.length : 0}
+            onLimpar={() => setSelecionados([])}
+            onExcluir={excluirSelecionados}
+            excluindo={excluindoLote}
+            rotulo="simulação(ões) selecionada(s)"
+          />
+
+          {/* Cartões (telas pequenas) */}
+          <CartoesSimulacoes
+            itens={data?.itens ?? []}
+            isLoading={isLoading}
+            escopo={escopo}
+            verExcluidas={verExcluidas}
+            handlers={handlersLinha}
+          />
+
+          {/* Paginação */}
+          {!isLoading && data && data.total > porPagina && (
+            <div className="flex items-center justify-center gap-2 py-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                disabled={pagina === 1}
+              >
+                Anterior
+              </Button>
+              <div className="flex items-center gap-1.5 px-2">
+                <span className="text-xs font-semibold text-foreground">Página {pagina}</span>
+                <span className="text-[10px] font-medium text-muted-foreground">
+                  de {Math.ceil(data.total / porPagina)}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPagina((p) => p + 1)}
+                disabled={pagina >= Math.ceil(data.total / porPagina)}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Enviar proposta: escolher UM banco por vez */}
@@ -832,7 +826,6 @@ function Pagina() {
         statusPorBanco={statusPorBanco}
         criandoBancoId={enviandoBancoId}
         onEnviarBanco={enviarBancoIndividual}
-        onEnviarTodos={enviarTodos}
       />
 
       <SelecionarBancosPdfDialog

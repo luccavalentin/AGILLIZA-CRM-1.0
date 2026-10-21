@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import {
   listarBancosAdmin,
   salvarBancoAdmin,
@@ -53,6 +54,8 @@ export const Route = createFileRoute("/_authenticated/admin/bancos")({
 
 function Pagina() {
   const qc = useQueryClient();
+  // Ações que gravam exigem "edit" no servidor; sem ela os botões só davam erro.
+  const podeEditar = usePermissao("admin.integracoes", "edit");
   const [edit, setEdit] = useState<BancoAdmin | null>(null);
   const q = useQuery({ queryKey: ["admin-bancos"], queryFn: () => listarBancosAdmin() });
 
@@ -100,7 +103,7 @@ function Pagina() {
                 <Switch
                   aria-label={`Ativar ${b.nome_banco}`}
                   checked={b.ativo}
-                  disabled={toggle.isPending}
+                  disabled={!podeEditar || toggle.isPending}
                   onCheckedChange={(v) => toggle.mutate({ id: b.id, ativo: v })}
                 />
               </div>
@@ -111,7 +114,12 @@ function Pagina() {
                 {b.credencial ? (
                   <Badge variant="default">{b.credencial.ambiente}</Badge>
                 ) : (
-                  <Badge variant="secondary">Credencial não configurada</Badge>
+                  <Badge
+                    variant="outline"
+                    title="Sem credencial própria do banco: o envio usa a integração bancária central (Plataforma › Chaves dos provedores)."
+                  >
+                    Via integração bancária
+                  </Badge>
                 )}
               </div>
 
@@ -124,6 +132,7 @@ function Pagina() {
                   variant="outline"
                   size="sm"
                   className="mt-3 w-full"
+                  disabled={!podeEditar}
                   onClick={() => setEdit(b)}
                 >
                   <Settings2 className="mr-1 size-4" /> Configurar
@@ -185,7 +194,14 @@ function Pagina() {
                     {b.credencial ? (
                       <Badge variant="default">{b.credencial.ambiente}</Badge>
                     ) : (
-                      <span className="text-xs text-muted-foreground">não configurada</span>
+                      // Sem credencial própria o envio usa a integração bancária central —
+                      // "não configurada" contradizia Plataforma › Chaves dos provedores.
+                      <span
+                        className="text-xs text-muted-foreground"
+                        title="Sem credencial própria do banco: o envio usa a integração bancária central (Plataforma › Chaves dos provedores)."
+                      >
+                        via integração bancária
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -195,13 +211,18 @@ function Pagina() {
                     <Switch
                       aria-label={`Ativar ${b.nome_banco}`}
                       checked={b.ativo}
-                      disabled={toggle.isPending}
+                      disabled={!podeEditar || toggle.isPending}
                       onCheckedChange={(v) => toggle.mutate({ id: b.id, ativo: v })}
                     />
                   </TableCell>
                   <TableCell className="text-right">
                     {!b.ativo && (
-                      <Button variant="ghost" size="sm" onClick={() => setEdit(b)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={!podeEditar}
+                        onClick={() => setEdit(b)}
+                      >
                         <Settings2 className="mr-1 size-4" /> Configurar
                       </Button>
                     )}

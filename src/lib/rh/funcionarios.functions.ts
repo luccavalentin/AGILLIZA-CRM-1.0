@@ -1,6 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { hojeISO } from "@/lib/financeiro/format";
+import { validarCPF, validarPIS } from "@/lib/crm/documento";
+import { apagarArquivoRh } from "@/lib/rh/submodulos.functions";
+import {
+  CONTRATO_LABEL as CONTRATO_LABEL_RH,
+  STATUS_FUNCIONARIO_LABEL as STATUS_FUNCIONARIO_LABEL_RH,
+} from "@/lib/rh/rotulos";
 
 /** Status possível de um funcionário. */
 export type StatusFuncionario = "ativo" | "experiencia" | "afastado" | "ferias" | "desligado";
@@ -82,8 +90,8 @@ const funcionarioSchema = z.object({
   nome_social: z.string().optional().nullable(),
   cpf: z
     .string()
-    .min(11, "CPF inválido.")
-    .transform((v) => v.replace(/\D/g, "")),
+    .transform((v) => v.replace(/\D/g, ""))
+    .refine(validarCPF, "CPF inválido."),
   rg: z.string().optional().nullable(),
   rg_orgao: z.string().optional().nullable(),
   rg_uf: z.string().optional().nullable(),
@@ -116,7 +124,12 @@ const funcionarioSchema = z.object({
   ctps_numero: z.string().optional().nullable(),
   ctps_serie: z.string().optional().nullable(),
   ctps_uf: z.string().optional().nullable(),
-  pis: z.string().optional().nullable(),
+  pis: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v ? v.replace(/\D/g, "") : v))
+    .refine((v) => !v || validarPIS(v), "PIS/PASEP inválido."),
   data_admissao: z.string().min(10, "Informe a data de admissão."),
   fim_experiencia: z.string().optional().nullable(),
   data_demissao: z.string().optional().nullable(),
@@ -185,8 +198,13 @@ export const listarFuncionarios = createServerFn({ method: "GET" })
     if (data.departamento_id) query = query.eq("departamento_id", data.departamento_id);
     if (data.cargo_id) query = query.eq("cargo_id", data.cargo_id);
     if (data.q && data.q.trim().length >= 2) {
-      const term = data.q.trim();
-      query = query.or(`nome.ilike.%${term}%,cpf.ilike.%${term}%,numero.ilike.%${term}%`);
+      // Vírgula e parênteses quebram a sintaxe do `or` do PostgREST.
+      const term = data.q.trim().replace(/[,()]/g, " ");
+      // O CPF é gravado só com dígitos: "123.456.789-01" não achava ninguém.
+      const digitos = term.replace(/\D/g, "");
+      const partes = [`nome.ilike.%${term}%`, `cpf.ilike.%${term}%`, `numero.ilike.%${term}%`];
+      if (digitos.length >= 3 && digitos !== term) partes.push(`cpf.ilike.%${digitos}%`);
+      query = query.or(partes.join(","));
     }
 
     const { data: rows, error } = await query.limit(500);
@@ -269,6 +287,18 @@ export const obterFuncionario = createServerFn({ method: "GET" })
   });
 
 /** Cria um novo funcionário. */
+/** Um CPF por funcionário ativo no ecossistema (a RLS já restringe ao correspondente). */
+async function garantirCpfLivre(supabase: any, cpf: string, ignorarId?: string) {
+  let q = supabase
+    .from("rh_funcionarios")
+    .select("numero, nome")
+    .eq("cpf", cpf)
+    .is("deletado_em", null);
+  if (ignorarId) q = q.neq("id", ignorarId);
+  const { data } = await q.limit(1).maybeSingle();
+  if (data) throw new Error(`Este CPF já é do funcionário ${data.numero} — ${data.nome}.`);
+}
+
 export const criarFuncionario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => funcionarioSchema.parse(data))
@@ -277,6 +307,7 @@ export const criarFuncionario = createServerFn({ method: "POST" })
     const correspondenteId = await correspondenteDoUsuario(supabase, userId);
     if (!correspondenteId) throw new Error("Ecossistema não identificado.");
 
+    await garantirCpfLivre(supabase, data.cpf);
     const payload = {
       ...data,
       correspondente_id: correspondenteId,
@@ -324,6 +355,7 @@ export const atualizarFuncionario = createServerFn({ method: "POST" })
     if (!correspondenteId) throw new Error("Ecossistema não identificado.");
 
     const { id, ...rest } = data;
+    await garantirCpfLivre(supabase, rest.cpf, id);
     const payload: any = {
       ...rest,
       data_nascimento: rest.data_nascimento || null,
@@ -381,7 +413,7 @@ export const desligarFuncionario = createServerFn({ method: "POST" })
       throw new Error("Data de desligamento inválida.");
     }
     // Compara em UTC pelo dia (evita falso-positivo por fuso).
-    const hojeUtc = new Date(new Date().toISOString().slice(0, 10));
+    const hojeUtc = new Date(hojeISO());
     if (dtDem.getTime() > hojeUtc.getTime()) {
       throw new Error("Data de desligamento não pode ser futura.");
     }
@@ -401,15 +433,21 @@ export const desligarFuncionario = createServerFn({ method: "POST" })
     }
 
     const correspondenteId = (await correspondenteDoUsuario(supabase, userId)) ?? null;
-    const { error } = await supabase
+    const { data: atualizados, error } = await supabase
       .from("rh_funcionarios")
       .update({
         status: "desligado",
         data_demissao: data.data_demissao,
         motivo_demissao: data.motivo_demissao ?? null,
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("id");
     if (error) throw new Error(error.message);
+    // Sem permissão de edição a RLS não atualiza nada e não dá erro: a tela
+    // dizia "desligado" e o funcionário continuava ativo.
+    if (!atualizados || atualizados.length === 0) {
+      throw new Error("Você não tem permissão para desligar funcionários.");
+    }
 
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
@@ -489,8 +527,16 @@ const dependenteSchema = z.object({
   id: z.string().uuid().optional(),
   funcionario_id: z.string().uuid(),
   nome: z.string().min(2),
-  cpf: z.string().optional().nullable(),
-  data_nascimento: z.string().optional().nullable(),
+  cpf: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((v) => !v || validarCPF(v), "CPF do dependente inválido."),
+  data_nascimento: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((v) => !v || v <= hojeISO(), "A data de nascimento não pode estar no futuro."),
   parentesco: z.string().min(1),
   ir: z.boolean().default(false),
   plano_saude: z.boolean().default(false),
@@ -541,8 +587,10 @@ export const salvarDependente = createServerFn({ method: "POST" })
     return row as { id: string };
   });
 
+// A RLS de dependentes libera DELETE a quem só pode ver (USING de "ver");
+// a exclusão exige "editar", como a gravação.
 export const excluirDependente = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { error } = await context.supabase.from("rh_dependentes").delete().eq("id", data.id);
@@ -555,12 +603,78 @@ export const excluirDependente = createServerFn({ method: "POST" })
 export interface HistoricoItem {
   id: string;
   campo: string;
+  /** Nome do campo como a tela mostra ("Cargo", não "cargo_id"). */
+  campo_label: string;
   valor_anterior: string | null;
   valor_novo: string | null;
   motivo: string | null;
   ator_id: string | null;
   ator_nome: string | null;
   created_at: string;
+}
+
+const CAMPO_HISTORICO: Record<string, string> = {
+  status: "Situação",
+  nome: "Nome",
+  cpf: "CPF",
+  data_nascimento: "Data de nascimento",
+  estado_civil: "Estado civil",
+  telefone: "Telefone",
+  email_pessoal: "E-mail pessoal",
+  cargo_id: "Cargo",
+  departamento_id: "Departamento",
+  gestor_id: "Gestor",
+  tipo_contrato: "Tipo de contrato",
+  data_admissao: "Data de admissão",
+  fim_experiencia: "Fim da experiência",
+  data_demissao: "Data de desligamento",
+  motivo_demissao: "Motivo do desligamento",
+  jornada_horas_semanais: "Jornada (h/semana)",
+  salario_atual: "Salário",
+  salario_desde: "Salário desde",
+  banco_nome: "Banco",
+  banco_agencia: "Agência",
+  banco_conta: "Conta",
+  banco_pix: "Chave PIX",
+  cep: "CEP",
+  logradouro: "Logradouro",
+  numero_endereco: "Número",
+  bairro: "Bairro",
+  cidade: "Cidade",
+  uf: "UF",
+};
+
+const STATUS_FUNCIONARIO_LABEL: Record<string, string> = STATUS_FUNCIONARIO_LABEL_RH;
+const CONTRATO_LABEL: Record<string, string> = CONTRATO_LABEL_RH;
+
+const DATAS_HISTORICO = new Set([
+  "data_nascimento",
+  "data_admissao",
+  "fim_experiencia",
+  "data_demissao",
+  "salario_desde",
+]);
+
+/** Valor do histórico em texto legível (o cargo aparecia como UUID). */
+function valorHistorico(
+  campo: string,
+  v: string | null,
+  nomes: Map<string, string>,
+): string | null {
+  if (v == null || v === "") return null;
+  if (campo === "cargo_id" || campo === "departamento_id" || campo === "gestor_id") {
+    return nomes.get(v) ?? "(registro removido)";
+  }
+  if (campo === "status") return STATUS_FUNCIONARIO_LABEL[v] ?? v;
+  if (campo === "tipo_contrato") return CONTRATO_LABEL[v] ?? v;
+  if (DATAS_HISTORICO.has(campo) && /^\d{4}-\d{2}-\d{2}/.test(v)) {
+    const [a, m, d] = v.slice(0, 10).split("-");
+    return `${d}/${m}/${a}`;
+  }
+  if (campo === "salario_atual" && Number.isFinite(Number(v))) {
+    return Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+  return v;
 }
 
 export const listarHistoricoFuncionario = createServerFn({ method: "GET" })
@@ -584,8 +698,40 @@ export const listarHistoricoFuncionario = createServerFn({ method: "GET" })
       const { data: ps } = await supabase.from("profiles").select("id, nome").in("id", atorIds);
       (ps ?? []).forEach((p: any) => nomes.set(p.id, p.nome ?? ""));
     }
+    // Cargo, departamento e gestor chegam como id: busca os nomes de uma vez.
+    const idsDe = (campo: string) =>
+      Array.from(
+        new Set(
+          (rows ?? [])
+            .filter((r: any) => r.campo === campo)
+            .flatMap((r: any) => [r.valor_anterior, r.valor_novo])
+            .filter((v: unknown): v is string => typeof v === "string" && v.length > 0),
+        ),
+      );
+    const nomesRef = new Map<string, string>();
+    const [cargos, deptos, gestores] = await Promise.all([
+      idsDe("cargo_id").length
+        ? supabase.from("rh_cargos").select("id, nome").in("id", idsDe("cargo_id"))
+        : Promise.resolve({ data: [] as any[] }),
+      idsDe("departamento_id").length
+        ? supabase.from("rh_departamentos").select("id, nome").in("id", idsDe("departamento_id"))
+        : Promise.resolve({ data: [] as any[] }),
+      idsDe("gestor_id").length
+        ? supabase.from("rh_funcionarios").select("id, nome").in("id", idsDe("gestor_id"))
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    for (const lista of [cargos.data, deptos.data, gestores.data]) {
+      for (const x of (lista ?? []) as any[]) nomesRef.set(x.id, x.nome ?? "—");
+    }
+
     return (rows ?? []).map((r: any) => ({
       ...r,
+      campo_label:
+        r.campo === "__criacao__"
+          ? "Admissão registrada"
+          : (CAMPO_HISTORICO[r.campo] ?? String(r.campo).replace(/_/g, " ")),
+      valor_anterior: valorHistorico(r.campo, r.valor_anterior, nomesRef),
+      valor_novo: valorHistorico(r.campo, r.valor_novo, nomesRef),
       ator_nome: r.ator_id ? (nomes.get(r.ator_id) ?? null) : null,
     })) as HistoricoItem[];
   });
@@ -652,10 +798,25 @@ export const salvarFotoFuncionario = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), foto_url: z.string().nullable() }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { data: atual } = await context.supabase
+      .from("rh_funcionarios")
+      .select("foto_url")
+      .eq("id", data.id)
+      .maybeSingle();
+    const { data: rows, error } = await context.supabase
       .from("rh_funcionarios")
       .update({ foto_url: data.foto_url })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("id");
     if (error) throw new Error(error.message);
-    return { ok: true };
+    if (!rows || rows.length === 0) {
+      throw new Error("Você não tem permissão para alterar este funcionário.");
+    }
+    // A foto anterior só sai do bucket depois que o registro já aponta para a nova.
+    const anterior = (atual as { foto_url?: string | null } | null)?.foto_url ?? null;
+    const arquivoApagado =
+      anterior && anterior !== data.foto_url
+        ? await apagarArquivoRh(context.supabase, anterior)
+        : true;
+    return { ok: true, arquivoApagado };
   });

@@ -5,7 +5,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { FileText, Upload, Trash2, Download } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,11 +36,14 @@ import {
 import { FuncionarioPicker } from "@/components/rh/funcionario-picker";
 import {
   excluirDocumento,
-  gerarUrlAssinada,
   listarDocumentos,
-  listarFuncionariosAtivos,
   registrarDocumento,
 } from "@/lib/rh/submodulos.functions";
+import { formatData } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
+import { abrirArquivoRh, enviarArquivoRh, extensaoDe } from "@/lib/rh/arquivos";
 
 const TIPOS = [
   "RG",
@@ -64,10 +66,8 @@ export const Route = createFileRoute("/_authenticated/rh/documentos")({
 function Pagina() {
   const qc = useQueryClient();
   const fnList = useServerFn(listarDocumentos);
-  const fnFuncs = useServerFn(listarFuncionariosAtivos);
   const fnRegistrar = useServerFn(registrarDocumento);
   const fnExcluir = useServerFn(excluirDocumento);
-  const fnUrl = useServerFn(gerarUrlAssinada);
 
   const [funcionarioId, setFuncionarioId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -79,7 +79,6 @@ function Pagina() {
     file: null as File | null,
   });
 
-  const funcs = useQuery({ queryKey: ["rh-func-ativos"], queryFn: () => fnFuncs() });
   const docs = useQuery({
     queryKey: ["rh-documentos", funcionarioId],
     queryFn: () => fnList({ data: funcionarioId ? { funcionario_id: funcionarioId } : {} }),
@@ -89,22 +88,11 @@ function Pagina() {
     mutationFn: async () => {
       if (!form.funcionario_id || !form.file)
         throw new Error("Selecione o funcionário e o arquivo.");
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error("Sessão expirada.");
-      const cid = funcs.data?.find((f) => f.id === form.funcionario_id)?.id ?? form.funcionario_id;
-      const cidReal = await supabase
-        .from("profiles")
-        .select("correspondente_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      const correspondente = cidReal.data?.correspondente_id as string | undefined;
-      if (!correspondente) throw new Error("Correspondente não encontrado.");
-      const ext = form.file.name.split(".").pop() || "bin";
-      const path = `${correspondente}/${cid}/${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("rh-documentos")
-        .upload(path, form.file, { contentType: form.file.type });
-      if (upErr) throw new Error(upErr.message);
+      const path = await enviarArquivoRh(
+        `${form.funcionario_id}/${crypto.randomUUID()}.${extensaoDe(form.file.name)}`,
+        form.file,
+        { contentType: form.file.type },
+      );
       await fnRegistrar({
         data: {
           funcionario_id: form.funcionario_id,
@@ -124,21 +112,15 @@ function Pagina() {
       setOpen(false);
       setForm({ funcionario_id: "", tipo: TIPOS[0], descricao: "", validade: "", file: null });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao anexar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao anexar.")),
   });
 
-  const excluir = useMutation({
-    mutationFn: (id: string) => fnExcluir({ data: { id } }),
-    onSuccess: () => {
-      toast.success("Documento removido.");
-      qc.invalidateQueries({ queryKey: ["rh-documentos"] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao remover."),
-  });
-
-  async function abrir(path: string) {
-    const { url } = await fnUrl({ data: { path, expira_em: 300 } });
-    window.open(url, "_blank", "noopener");
+  // Sem try/catch: o ConfirmDelete mostra o erro e continua aberto.
+  async function excluir(id: string) {
+    await fnExcluir({ data: { id } });
+    toast.success("Documento excluído.");
+    qc.invalidateQueries({ queryKey: ["rh-documentos"] });
+    qc.invalidateQueries({ queryKey: ["rh-ficha-docs"] });
   }
 
   return (
@@ -253,33 +235,45 @@ function Pagina() {
                     <TableCell className="font-medium">{d.funcionario_nome}</TableCell>
                     <TableCell>{d.tipo}</TableCell>
                     <TableCell className="max-w-[260px] truncate">{d.arquivo_nome}</TableCell>
-                    <TableCell>
-                      {d.validade ? new Date(d.validade).toLocaleDateString("pt-BR") : "—"}
-                    </TableCell>
+                    <TableCell>{d.validade ? formatData(d.validade) : "—"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {new Date(d.created_at).toLocaleDateString("pt-BR")}
+                      {formatData(d.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => abrir(d.arquivo_path)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Abrir ${d.arquivo_nome}`}
+                          onClick={() => abrirArquivoRh(d.arquivo_path)}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => excluir.mutate(d.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <ConfirmDelete
+                          titulo={`Excluir "${d.arquivo_nome}"?`}
+                          descricao={`O documento sai da ficha de ${d.funcionario_nome}.`}
+                          onConfirm={() => excluir(d.id)}
+                          trigger={
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label={`Excluir ${d.arquivo_nome}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          }
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
                 {(!docs.data || docs.data.length === 0) && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="py-10 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhum documento cadastrado.
-                    </TableCell>
-                  </TableRow>
+                  <LinhaEstadoLista
+                    colSpan={6}
+                    q={docs}
+                    vazio="Nenhum documento cadastrado."
+                    erro="Não foi possível carregar os documentos."
+                  />
                 )}
               </TableBody>
             </Table>

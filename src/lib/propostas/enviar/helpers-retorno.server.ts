@@ -756,3 +756,23 @@ export function statusDaAtividade(atividades: any[]): {
   }
   return { status: null, detalhe: null };
 }
+
+/**
+ * Motivo do desfecho dado pelo banco, em texto (ex.: `codigoSituacaoBanco` =
+ * "514 - ANALISE AUTOMATICA DESFAVORAVEL" → "514 – Analise automatica desfavoravel").
+ *
+ * Vai para `mensagem_banco`: sem isso a proposta aparecia só como "Recusada", e nem o
+ * correspondente nem o corretor sabiam o porquê — o motivo ficava enterrado no
+ * `raw_response` (teste real de 20/10/2026, Santander 56320715). Código de uma letra
+ * (S/P/N/A/R/E) é estado técnico, não motivo, e não vira mensagem.
+ */
+export function motivoDoBanco(sim: any): string | null {
+  const bruto = String(sim?.codigoSituacaoBanco ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (bruto.length < 3) return null;
+  const m = bruto.match(/^(\d+)\s*[-–]\s*(.+)$/);
+  const texto = (m ? m[2] : bruto).toLowerCase();
+  const frase = texto.charAt(0).toUpperCase() + texto.slice(1);
+  return m ? `${m[1]} – ${frase}` : frase;
+}

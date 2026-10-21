@@ -41,6 +41,8 @@ import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { ToneBadge } from "@/components/crm/tone-badge";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 
+import { problemaNoDocumento } from "@/lib/storage/tipos-documento";
+
 const TIPOS_DOC = [
   "RG",
   "CPF",
@@ -88,8 +90,9 @@ export function TabDocumentos({
   }
 
   async function onFile(file: File) {
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Arquivo acima de 10 MB. Escolha um arquivo menor.");
+    const recusa = problemaNoDocumento(file);
+    if (recusa) {
+      toast.error(`${recusa} Envie PDF, JPG ou PNG de até 10 MB.`);
       return;
     }
     setUploading(true);
@@ -215,6 +218,7 @@ export function TabDocumentos({
                 <TableCell className="text-right">
                   <Button
                     size="icon"
+                    aria-label="Baixar documento"
                     variant="ghost"
                     onClick={() => baixar(d.storage_path, d.nome_documento ?? "documento")}
                   >

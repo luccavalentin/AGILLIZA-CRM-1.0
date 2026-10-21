@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export interface BancoAdmin {
   id: string;
@@ -39,7 +40,7 @@ async function correspondenteDoUsuario(
 
 /** Lista todos os bancos parceiros com a credencial vinculada (nomes de secrets, nunca valores). */
 export const listarBancosAdmin = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "view"])])
   .handler(async ({ context }): Promise<BancoAdmin[]> => {
     const { supabase, userId } = context;
     const { data: bancos, error } = await supabase
@@ -92,7 +93,7 @@ const bancoSchema = z.object({
 
 /** Atualiza os dados de configuração de um banco parceiro. */
 export const salvarBancoAdmin = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "edit"])])
   .inputValidator((d) => bancoSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const payload = {
@@ -127,7 +128,7 @@ const credSchema = z.object({
 
 /** Cria/atualiza a credencial (nomes de secrets) de um banco para o correspondente. */
 export const salvarCredencialBanco = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "edit"])])
   .inputValidator((d) => credSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;

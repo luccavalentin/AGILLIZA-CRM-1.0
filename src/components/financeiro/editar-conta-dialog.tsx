@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CurrencyInput } from "@/components/simulacao/currency-input";
+import { atualizarFinanceiro } from "./atualizar-cache";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 /**
  * Edição de qualquer conta a pagar/receber (inclusive baixadas ou canceladas).
@@ -85,12 +87,10 @@ export function EditarContaDialog({
       }),
     onSuccess: () => {
       toast.success("Conta atualizada.");
-      qc.invalidateQueries({ queryKey: ["fin-contas"] });
-      qc.invalidateQueries({ queryKey: ["fin-contas-resumo"] });
-      qc.invalidateQueries({ queryKey: ["fin-conta"] });
+      void atualizarFinanceiro(qc);
       onOpenChange(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar alterações."),
+    onError: (e: unknown) => toast.error(mensagemDeErro(e, "Não foi possível salvar as alterações.")),
   });
 
   function submit() {

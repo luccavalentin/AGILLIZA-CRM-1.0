@@ -8,23 +8,10 @@ import { drawBrandHeader } from "@/lib/relatorios/report-pdf";
 import { getPdfPalette, type PdfPalette } from "@/lib/relatorios/pdf-theme";
 import { formatBRL } from "@/lib/simulacao/format";
 import type { Funcionario } from "@/lib/rh/funcionarios.functions";
+import { CONTRATO_LABEL, STATUS_FUNCIONARIO_LABEL } from "@/lib/rh/rotulos";
 
-const CONTRATO: Record<string, string> = {
-  clt: "CLT",
-  pj: "PJ",
-  estagio: "Estágio",
-  autonomo: "Autônomo",
-  temporario: "Temporário",
-  aprendiz: "Aprendiz",
-};
-
-const STATUS: Record<string, string> = {
-  ativo: "Ativo",
-  experiencia: "Em experiência",
-  afastado: "Afastado",
-  ferias: "Em férias",
-  desligado: "Desligado",
-};
+const CONTRATO: Record<string, string> = CONTRATO_LABEL;
+const STATUS: Record<string, string> = STATUS_FUNCIONARIO_LABEL;
 
 function fmtCpf(cpf?: string | null) {
   if (!cpf) return "—";

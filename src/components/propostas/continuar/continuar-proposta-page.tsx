@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -40,6 +41,8 @@ import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 import { EtapaConferencia, type EnvioConferencia } from "./etapa-conferencia";
 import { EtapasKanban, type DestinoManual } from "./etapas-kanban";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type EtapaContinuar = "dados" | "documentos" | "etapas";
 type Etapa = EtapaContinuar;
@@ -107,10 +110,13 @@ export function ContinuarPropostaPage({
   }, [propostaId]);
 
   // Sem refetch no foco: recarregar no meio da conferência apagaria o que foi digitado.
+  // Endereço com id inválido (/propostas/abc/continuar) nem consulta: é "não encontrada".
+  const idValido = UUID_RE.test(propostaId);
   const { data, isLoading, error } = useQuery({
     queryKey: ["proposta", propostaId],
     queryFn: () => obter({ data: { id: propostaId } }),
     refetchOnWindowFocus: false,
+    enabled: idValido,
   });
 
   const [etapa, setEtapaLocal] = useState<Etapa>(etapaUrl ?? "dados");
@@ -161,21 +167,21 @@ export function ContinuarPropostaPage({
       if (r.errosHomefin.length > 0) {
         // O CRM ficou gravado; a HomeFin não. Não avança até resolver.
         setFalhaHomefin(r.errosHomefin);
-        toast.error("Dados gravados no CRM, mas a HomeFin recusou a atualização.");
+        toast.error("Dados gravados no CRM, mas a integração bancária recusou a atualização.");
         return;
       }
       toast.success(
-        r.alterou ? "Dados gravados no CRM e na HomeFin." : "Dados conferidos, nada foi alterado.",
+        r.alterou ? "Dados gravados no CRM e na integração bancária." : "Dados conferidos, nada foi alterado.",
       );
       const v = r.vendedores;
-      if (v?.enviados.length) toast.success(`Vendedor na HomeFin: ${v.enviados.join(", ")}.`);
+      if (v?.enviados.length) toast.success(`Vendedor na integração bancária: ${v.enviados.join(", ")}.`);
       for (const p of v?.pendentes ?? []) {
-        toast.warning(`Vendedor ${p.nome} não foi à HomeFin. Falta: ${p.faltando.join(", ")}.`, {
+        toast.warning(`Vendedor ${p.nome} não foi à integração bancária. Falta: ${p.faltando.join(", ")}.`, {
           duration: 12_000,
         });
       }
       for (const e of v?.erros ?? []) {
-        toast.error(`Vendedor ${e.nome}: ${e.mensagem}`, { duration: 12_000 });
+        toast.error(`Vendedor ${e.nome}: ${semMarcaIntegracao(e.mensagem)}`, { duration: 12_000 });
       }
       setEtapa("documentos");
     } catch (e) {
@@ -252,7 +258,9 @@ export function ContinuarPropostaPage({
             <p className="truncate text-sm text-muted-foreground">
               {p
                 ? `${p.nome_cliente ?? "Cliente"} · ${p.cpf_cnpj ? maskCpfCnpj(p.cpf_cnpj) : "sem CPF"}`
-                : "Carregando…"}
+                : isLoading
+                  ? "Carregando…"
+                  : "Proposta não encontrada"}
               {status && ` · ${status.label}`}
             </p>
           </div>
@@ -340,9 +348,14 @@ export function ContinuarPropostaPage({
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando proposta…
           </div>
         )}
-        {error && (
+        {error && idValido && (
           <p className="py-10 text-center text-sm text-destructive">
             {mensagemDeErro(error, "Não foi possível carregar a proposta.")}
+          </p>
+        )}
+        {!isLoading && !p && (!error || !idValido) && (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Proposta não encontrada. Ela pode ter sido excluída ou o endereço está incorreto.
           </p>
         )}
         {p && !elegivel && (
@@ -357,12 +370,12 @@ export function ContinuarPropostaPage({
             {falhaHomefin && (
               <div className="mb-4 space-y-2 rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm">
                 <p className="flex items-center gap-2 font-semibold text-destructive">
-                  <XCircle className="h-4 w-4" /> Gravado no CRM, mas não na HomeFin
+                  <XCircle className="h-4 w-4" /> Gravado no CRM, mas não na integração bancária
                 </p>
                 {falhaHomefin.map((f) => (
                   <p key={f.bloco} className="text-xs text-muted-foreground">
                     <strong className="text-foreground">{BLOCO_LABEL[f.bloco] ?? f.bloco}:</strong>{" "}
-                    {f.mensagem}
+                    {semMarcaIntegracao(f.mensagem)}
                   </p>
                 ))}
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -438,7 +451,7 @@ export function ContinuarPropostaPage({
                 )}
                 {envioDocs?.enviando
                   ? "Enviando…"
-                  : `Enviar documentos à HomeFin${envioDocs?.pendentes ? ` (${envioDocs.pendentes})` : ""}`}
+                  : `Enviar documentos ao banco${envioDocs?.pendentes ? ` (${envioDocs.pendentes})` : ""}`}
               </Button>
               <Button className="gap-1.5" onClick={() => setEtapa("etapas")}>
                 Próximas etapas <ArrowRight className="h-4 w-4" />

@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import {
   AlertTriangle,
   Check,
@@ -15,6 +16,7 @@ import {
   type SituacaoDocumentoBanco,
 } from "@/lib/propostas/enviar/documentos-vagas";
 import { CATEGORIA_LABEL, statusTone, type Categoria } from "./types";
+import { hojeISO } from "@/lib/financeiro/format";
 
 /**
  * Situação do documento na integração (`situacao_integracao`), com o rótulo e
@@ -33,7 +35,7 @@ function formatarValidade(iso: string): string {
 
 /** true quando `expira_em` é menor que hoje (comparação lexicográfica em ISO). */
 function estaVencido(iso: string): boolean {
-  return iso < new Date().toISOString().slice(0, 10);
+  return iso < hojeISO();
 }
 
 export function LinhaDocumento({
@@ -105,7 +107,7 @@ export function LinhaDocumento({
             tone={
               SITUACAO_HOMEFIN[doc.situacao_integracao as SituacaoDocumentoBanco]?.tone ?? "muted"
             }
-            title={doc.erro_integracao ?? undefined}
+            title={semMarcaIntegracao(doc.erro_integracao) ?? undefined}
           >
             {SITUACAO_HOMEFIN[doc.situacao_integracao as SituacaoDocumentoBanco]?.label ??
               doc.situacao_integracao}
@@ -116,8 +118,8 @@ export function LinhaDocumento({
             size="icon"
             variant="ghost"
             onClick={() => onEnviarBanco(doc)}
-            title="Enviar à HomeFin (vincular a uma proposta)"
-            aria-label="Enviar documento à HomeFin"
+            title="Enviar à integração bancária (vincular a uma proposta)"
+            aria-label="Enviar documento à integração bancária"
           >
             <Landmark className="size-4 text-primary" />
           </Button>

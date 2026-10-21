@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export const BANCOS_FORMULARIO = [
   "itau",
@@ -42,7 +42,7 @@ function validarPdf(content_type: string | null | undefined, tamanho: number | n
 
 /** Lista todos os formulários bancários. */
 export const listarFormularios = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.formularios", "view"])])
   .handler(async ({ context }): Promise<FormularioBancario[]> => {
     const { supabase } = context;
     const { data, error } = await supabase
@@ -55,7 +55,7 @@ export const listarFormularios = createServerFn({ method: "GET" })
 
 /** Registra os metadados de um formulário recém-enviado ao storage. */
 export const criarFormulario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.formularios", "create"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -100,7 +100,7 @@ export const criarFormulario = createServerFn({ method: "POST" })
 
 /** Atualiza nome, descrição, banco e, opcionalmente, substitui o arquivo. */
 export const atualizarFormulario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.formularios", "create"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -175,7 +175,7 @@ export const atualizarFormulario = createServerFn({ method: "POST" })
 
 /** Exclui um formulário e o arquivo correspondente. */
 export const excluirFormulario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.formularios", "create"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
@@ -197,7 +197,7 @@ export const excluirFormulario = createServerFn({ method: "POST" })
 
 /** Gera uma URL assinada temporária para visualizar/baixar o arquivo. */
 export const urlFormulario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.formularios", "view"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ url: string }> => {
     const { supabase } = context;

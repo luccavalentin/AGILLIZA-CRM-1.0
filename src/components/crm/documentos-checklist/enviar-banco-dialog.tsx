@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -60,6 +61,13 @@ export function EnviarBancoDialog({
     [documentos],
   );
 
+  // Só conta/envia o que está na lista: a pré-seleção podia trazer documento que não
+  // aparece aqui (formato não aceito), e o botão dizia "Enviar (2)" com 1 visível.
+  const selecionados = useMemo(
+    () => aptos.filter((d) => marcados.has(d.id)).map((d) => d.id as string),
+    [aptos, marcados],
+  );
+
   // Reinicia só ao abrir ou quando a pré-seleção muda de conteúdo.
   const chavePre = (preSelecionados ?? []).join(",");
   useEffect(() => {
@@ -80,11 +88,11 @@ export function EnviarBancoDialog({
 
   async function confirmar() {
     if (!propostaId) return toast.error("Escolha a proposta.");
-    if (marcados.size === 0) return toast.error("Escolha ao menos um documento.");
+    if (selecionados.length === 0) return toast.error("Escolha ao menos um documento.");
     setEnviando(true);
     try {
       const r = await enviar({
-        data: { proposta_id: propostaId, documento_ids: Array.from(marcados) },
+        data: { proposta_id: propostaId, documento_ids: selecionados },
       });
       setResultado(r);
       qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
@@ -115,7 +123,7 @@ export function EnviarBancoDialog({
             <Landmark className="h-4 w-4 text-primary" /> Enviar documentos ao banco
           </DialogTitle>
           <DialogDescription>
-            Escolha a proposta: os documentos vão para ela na HomeFin, cada um no nome do dono
+            Escolha a proposta: os documentos vão para ela na integração bancária, cada um no nome do dono
             (comprador, cônjuge, vendedor ou imóvel), e o envio fica registrado na proposta e no
             cliente.
           </DialogDescription>
@@ -202,10 +210,10 @@ export function EnviarBancoDialog({
               <Linha key={`s${i}`} tom="ok" texto={`${s.nome} — no banco`} />
             ))}
             {resultado.naHomefin.map((s: any, i: number) => (
-              <Linha key={`h${i}`} tom="alerta" texto={`${s.nome} — ${s.motivo}`} />
+              <Linha key={`h${i}`} tom="alerta" texto={`${s.nome} — ${semMarcaIntegracao(s.motivo)}`} />
             ))}
             {resultado.erros.map((s: any, i: number) => (
-              <Linha key={`e${i}`} tom="erro" texto={`${s.nome} — ${s.motivo}`} />
+              <Linha key={`e${i}`} tom="erro" texto={`${s.nome} — ${semMarcaIntegracao(s.motivo)}`} />
             ))}
             {propostaId && (
               <Link
@@ -225,12 +233,12 @@ export function EnviarBancoDialog({
             Fechar
           </Button>
           <Button
-            disabled={enviando || !propostaId || marcados.size === 0}
+            disabled={enviando || !propostaId || selecionados.length === 0}
             onClick={confirmar}
             className="gap-1.5"
           >
             {enviando && <Loader2 className="h-4 w-4 animate-spin" />}
-            Enviar {marcados.size > 0 ? `(${marcados.size})` : ""}
+            Enviar {selecionados.length > 0 ? `(${selecionados.length})` : ""}
           </Button>
         </DialogFooter>
       </DialogContent>

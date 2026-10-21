@@ -31,15 +31,16 @@ export function HeaderPainel({
   onLimparFiltros,
 }: Props) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:rounded-2xl sm:p-6">
+    // Mesmo padrão do `PageHeader` (sem cartão, título 24/500, descrição 14/400).
+    <div>
       <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
             <Workflow className="size-5" />
           </span>
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              Painel da Esteira
+          <div className="min-w-0 space-y-0.5">
+            <h1 className="truncate text-xl font-medium tracking-tight text-foreground sm:text-2xl">
+              Esteira de clientes
             </h1>
             <p className="truncate text-sm text-muted-foreground">
               Acompanhe o fluxo dos clientes em cada etapa do processo.
@@ -75,6 +76,7 @@ export function HeaderPainel({
                 size="icon"
                 className="size-9 shrink-0 rounded-full"
                 title="Mais ações"
+                aria-label="Mais ações"
               >
                 <MoreHorizontal className="size-4" />
               </Button>

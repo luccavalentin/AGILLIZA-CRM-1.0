@@ -76,7 +76,7 @@ export function FiltrosClientes({
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="h-11 rounded-xl bg-muted/40 pl-9"
-            placeholder="Buscar por nome, documento ou e-mail..."
+            placeholder="Buscar por nome, código, documento ou e-mail..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -96,6 +96,8 @@ export function FiltrosClientes({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="__andamento">Em andamento (todas as etapas)</SelectItem>
+                <SelectItem value="__completo">Cadastro completo (todas as etapas)</SelectItem>
                 {(etapas ?? []).map((e) => (
                   <SelectItem key={e.codigo} value={e.codigo}>
                     {e.nome}

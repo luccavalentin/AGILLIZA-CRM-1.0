@@ -26,13 +26,20 @@ export const Route = createFileRoute("/_authenticated/matriculas")({
 
 function Pagina() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["matriculas"],
     queryFn: () => obterControleMatriculas(),
   });
 
   const invalidar = () => qc.invalidateQueries({ queryKey: ["matriculas"] });
 
+  // Com erro, a tela ficava em "Carregando…" para sempre.
+  if (isError)
+    return (
+      <div className="p-6 text-sm text-muted-foreground">
+        Não foi possível carregar o controle de matrículas.
+      </div>
+    );
   if (isLoading || !data)
     return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
 
@@ -42,7 +49,7 @@ function Pagina() {
         icon={<GraduationCap className="h-6 w-6" />}
         eyebrow="Documentos"
         titulo="Controle de Matrículas"
-        descricao="A Agilliza tira e paga as matrículas a pedido dos corretores — e recebe o reembolso deles depois."
+        descricao="Matrículas pagas a pedido dos corretores e o reembolso de cada uma."
       />
 
       <PixBanner />

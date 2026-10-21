@@ -85,9 +85,6 @@ function AuthPage() {
       queryClient.setQueryData(["minha-sessao"], sessao);
       if (permissoes) queryClient.setQueryData(["minhas-permissoes"], permissoes);
 
-      // Salva o e-mail para habilitar biometria futura
-      localStorage.setItem("last_logged_in_email", email);
-
       // Quem acabou de entrar com a senha não deve cair na tela de bloqueio.
       marcarAppDesbloqueado();
       router.invalidate();

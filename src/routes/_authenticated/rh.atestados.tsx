@@ -14,6 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listarOcorrencias } from "@/lib/rh/submodulos.functions";
+import { formatData } from "@/lib/financeiro/format";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 
 export const Route = createFileRoute("/_authenticated/rh/atestados")({
   head: () => ({ meta: [{ title: "Atestados — Agilliza" }] }),
@@ -36,11 +38,13 @@ function Pagina() {
             <FileText className="h-5 w-5 text-primary" /> Atestados médicos
           </h1>
           <p className="text-sm text-muted-foreground">
-            Visão filtrada apenas dos atestados. Para registrar, use Faltas e ocorrências.
+            Visão filtrada apenas dos atestados. O registro fica em Faltas e ocorrências.
           </p>
         </div>
         <Button asChild>
-          <Link to="/rh/faltas-ocorrencias">Registrar atestado</Link>
+          <Link to="/rh/faltas-ocorrencias" search={{ novo: "atestado" }}>
+            Registrar atestado
+          </Link>
         </Button>
       </div>
 
@@ -62,10 +66,8 @@ function Pagina() {
                 {(q.data ?? []).map((o) => (
                   <TableRow key={o.id}>
                     <TableCell className="font-medium">{o.funcionario_nome}</TableCell>
-                    <TableCell>{new Date(o.data_inicio).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell>
-                      {o.data_fim ? new Date(o.data_fim).toLocaleDateString("pt-BR") : "—"}
-                    </TableCell>
+                    <TableCell>{formatData(o.data_inicio)}</TableCell>
+                    <TableCell>{o.data_fim ? formatData(o.data_fim) : "—"}</TableCell>
                     <TableCell>{o.dias ?? "—"}</TableCell>
                     <TableCell>{o.cid ?? "—"}</TableCell>
                     <TableCell className="max-w-[320px] truncate">
@@ -74,14 +76,7 @@ function Pagina() {
                   </TableRow>
                 ))}
                 {(!q.data || q.data.length === 0) && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="py-10 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhum atestado registrado.
-                    </TableCell>
-                  </TableRow>
+                  <LinhaEstadoLista colSpan={6} q={q} vazio="Nenhum atestado registrado." />
                 )}
               </TableBody>
             </Table>

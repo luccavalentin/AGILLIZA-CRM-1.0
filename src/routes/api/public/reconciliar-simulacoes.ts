@@ -9,13 +9,29 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const anon = process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY;
+        // Autoriza por chave pública (agendador / disparo do servidor) OU pelo
+        // token do usuário logado (navegador). As duas variáveis de chave são
+        // aceitas: no banco único da VPS só SUPABASE_ANON_KEY vem preenchida.
+        const chaves = [process.env.SUPABASE_ANON_KEY, process.env.SUPABASE_PUBLISHABLE_KEY].filter(
+          (c): c is string => !!c,
+        );
         const provided = request.headers.get("apikey");
-        if (!anon || provided !== anon) {
-          return new Response("Unauthorized", { status: 401 });
-        }
+        const chaveOk = !!provided && chaves.includes(provided);
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        if (!chaveOk) {
+          const auth = request.headers.get("authorization") ?? "";
+          const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+          let usuarioOk = false;
+          if (token) {
+            const { data, error } = await supabaseAdmin.auth.getUser(token);
+            usuarioOk = !error && !!data?.user;
+          }
+          if (!usuarioOk) {
+            return new Response("Unauthorized", { status: 401 });
+          }
+        }
 
         // Uma rodada por vez para o sistema todo. Esta rota é chamada pelo
         // agendador e pelo navegador de cada usuário logado (a cada 12 s

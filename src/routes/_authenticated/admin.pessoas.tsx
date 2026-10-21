@@ -73,6 +73,8 @@ import {
   type ResultadoCriarPessoa,
 } from "@/lib/admin/pessoas.functions";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export const Route = createFileRoute("/_authenticated/admin/pessoas")({
   head: () => ({ meta: [{ title: "Pessoas do meu ecossistema — Agilliza" }] }),
@@ -141,13 +143,13 @@ function PessoasPage() {
       await qc.invalidateQueries({ queryKey: ["pessoas"] });
       toast.success(v.ativar ? "Pessoa ativada." : "Pessoa desativada.");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const resetMut = useMutation({
     mutationFn: (id: string) => resetarSenhaFn({ data: { id } }),
     onSuccess: (res) => setCredenciais(res),
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const excluirMut = useMutation({
@@ -157,7 +159,7 @@ function PessoasPage() {
       toast.success("Pessoa excluída.");
       setExcluindo(null);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const habilitarMut = useMutation({
@@ -169,10 +171,14 @@ function PessoasPage() {
       setCredenciais(res);
       toast.success("Login habilitado.");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const podeGerenciar = sessaoQuery.data?.podeGerenciarPessoas ?? false;
+  // As ações da linha exigem também "Pessoas: editar" no servidor; sem isso o menu
+  // aparecia e cada clique dava "sem permissão".
+  const podeEditarPessoas = usePermissao("admin.pessoas", "edit");
+  const meuId = sessaoQuery.data?.profile?.id ?? null;
 
   const pessoas = (pessoasQuery.data ?? [])
     .filter((p) => (filtro === "todos" ? true : p.acesso_tipo === filtro))
@@ -191,7 +197,7 @@ function PessoasPage() {
           descricao="Gerenciamento de equipe interna, parceiros, níveis de acesso e foto de perfil."
         />
         <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 h-auto max-w-full flex-wrap justify-start">
             <TabsTrigger value="pessoas">Pessoas</TabsTrigger>
             <TabsTrigger value="regras">Papéis & Permissões</TabsTrigger>
             <TabsTrigger value="tipos">Tipos de Pessoa</TabsTrigger>
@@ -218,10 +224,19 @@ function PessoasPage() {
               <div className="mt-6">
                 <NovaPessoaInline
                   onCancel={() => setCriando(false)}
+                  onAbrirPermissoes={() => {
+                    setCriando(false);
+                    setAba("regras");
+                  }}
                   onCreated={(res) => {
                     setCriando(false);
-                    setCredenciais(res);
-                    toast.success("Pessoa criada com sucesso.");
+                    // Sem login não há senha: o modal abria com o campo vazio.
+                    if (res.senha_temporaria) {
+                      setCredenciais(res);
+                      toast.success("Pessoa criada com sucesso.");
+                    } else {
+                      toast.success("Pessoa cadastrada sem acesso ao sistema.");
+                    }
                   }}
                 />
               </div>
@@ -229,9 +244,9 @@ function PessoasPage() {
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Tabs value={filtro} onValueChange={(v) => setFiltro(v as typeof filtro)}>
-                <TabsList>
+                <TabsList className="h-auto max-w-full flex-wrap justify-start">
                   <TabsTrigger value="todos">Todos</TabsTrigger>
-                  <TabsTrigger value="sistema">Correspondente</TabsTrigger>
+                  <TabsTrigger value="sistema">Equipe interna</TabsTrigger>
                   <TabsTrigger value="portal_parceiro">Parceiros</TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -280,8 +295,12 @@ function PessoasPage() {
                   ) : (
                     pessoas.map((p: any) => {
                       const ativo = p.ativo && !p.bloqueado_em;
+                      // O próprio cadastro não se altera por aqui (o servidor recusa).
                       const gerenciavel =
-                        !p.roles.includes("correspondente") && !p.roles.includes("admin");
+                        podeEditarPessoas &&
+                        p.id !== meuId &&
+                        !p.roles.includes("correspondente") &&
+                        !p.roles.includes("admin");
                       return (
                         <TableRow key={p.id}>
                           <TableCell className="font-medium">
@@ -436,9 +455,10 @@ function PessoasPage() {
       <Dialog open={!!credenciais} onOpenChange={(o) => !o && setCredenciais(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Copiar senha temporária</DialogTitle>
+            <DialogTitle>Acesso criado</DialogTitle>
             <DialogDescription>
-              Esta senha não será exibida novamente — repasse por canal seguro.
+              A senha provisória é o próprio e-mail. No primeiro acesso a pessoa define a senha
+              dela antes de usar o sistema.
             </DialogDescription>
           </DialogHeader>
           {credenciais && (
@@ -448,13 +468,14 @@ function PessoasPage() {
                 <Input readOnly value={credenciais.email} />
               </div>
               <div className="space-y-1">
-                <Label>Senha temporária</Label>
+                <Label>Senha provisória</Label>
                 <div className="flex gap-2">
                   <Input readOnly value={credenciais.senha_temporaria} className="font-mono" />
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
+                    aria-label="Copiar senha provisória"
                     onClick={() => {
                       navigator.clipboard.writeText(credenciais.senha_temporaria);
                       toast.success("Senha copiada.");
@@ -486,8 +507,8 @@ function PessoasPage() {
           <DialogHeader>
             <DialogTitle>Habilitar login</DialogTitle>
             <DialogDescription>
-              Informe o e-mail de acesso de {habilitando?.nome ?? "esta pessoa"}. Uma senha
-              provisória será gerada para o primeiro acesso.
+              Informe o e-mail de acesso de {habilitando?.nome ?? "esta pessoa"}. A senha
+              provisória será o próprio e-mail, trocada no primeiro acesso.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

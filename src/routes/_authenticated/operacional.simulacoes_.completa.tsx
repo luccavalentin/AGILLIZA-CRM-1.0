@@ -430,7 +430,6 @@ function Pagina() {
         carregando={false}
         statusPorBanco={ctx.statusPorBanco}
         onEnviarBanco={ctx.enviarBancoIndividual}
-        onEnviarTodos={ctx.enviarTodosBancos}
       />
 
       {/* O bloqueio preventivo foi removido. A renda mínima agora é apenas informativa no painel de resultados. */}
@@ -514,6 +513,7 @@ function ComparativoTaxasDialog({
                 size="icon"
                 className="h-10 w-10 rounded-full"
                 onClick={onClose}
+                aria-label="Fechar"
               >
                 <X className="h-5 w-5 text-muted-foreground" />
               </Button>

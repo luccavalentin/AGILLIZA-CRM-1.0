@@ -21,6 +21,16 @@ export function validarCPF(cpf: string): boolean {
 }
 
 /** Valida CNPJ (14 dígitos). */
+/** PIS/PASEP/NIT: 11 dígitos com dígito verificador (pesos 3,2,9,8,7,6,5,4,3,2). */
+export function validarPIS(pis: string): boolean {
+  const d = soDigitos(pis);
+  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
+  const pesos = [3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const soma = pesos.reduce((s, p, i) => s + p * Number(d[i]), 0);
+  const resto = soma % 11;
+  return Number(d[10]) === (resto < 2 ? 0 : 11 - resto);
+}
+
 export function validarCNPJ(cnpj: string): boolean {
   const d = soDigitos(cnpj);
   if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
@@ -49,6 +59,17 @@ export function formatarDocumento(doc: string): string {
   if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
   return d;
+}
+
+/**
+ * CPF/CNPJ pontuado para exibir. Documento já mascarado ("***.***.123-**") ou em
+ * formato desconhecido fica como veio — `formatarDocumento` perderia os asteriscos.
+ */
+export function exibirDocumento(doc: string | null | undefined): string {
+  if (!doc) return "";
+  if (doc.includes("*")) return doc;
+  const d = soDigitos(doc);
+  return d.length === 11 || d.length === 14 ? formatarDocumento(d) : doc;
 }
 
 /** Mascara documento para quem não tem permissão pii:view. */

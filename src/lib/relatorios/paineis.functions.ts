@@ -1,15 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
-import { cn } from "@/lib/utils";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   resolverIntervalo,
+  limitarEscopoAoPermitido,
   inicioDiaBR,
   fimDiaBR,
   dataBR,
   type ReportFiltros,
 } from "@/lib/relatorios/shared";
 import { grupoDoStatus } from "@/lib/propostas/status-grupos";
+import { statusDemanda, statusTarefa } from "@/components/operacional/status";
 import { criarEscopoEq, listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 
 /** Status terminais de contrato — a proposta já virou contrato emitido. */
@@ -455,6 +456,8 @@ export const getPanelDados = createServerFn({ method: "POST" })
   .validator(schema)
   .handler(async ({ data, context }): Promise<any> => {
     const { supabase, userId } = context;
+    // Escopo/responsável conferidos no servidor (a tela só esconde as opções).
+    Object.assign(data, await limitarEscopoAoPermitido(supabase, userId, data));
     const f = data as ReportFiltros;
     try {
       const { de, ate } = resolverIntervalo(f);
@@ -575,7 +578,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
               escopoEq(
                 supabase
                   .from("financial_receivables")
-                  .select("valor,valor_pago,status,vencimento,criador_id")
+                  .select("valor,valor_pago,status,vencimento,criador_id,comissao_id")
                   .in("status", ["aberta", "parcial"] as any)
                   .order("id"),
                 "criador_id",
@@ -654,9 +657,10 @@ export const getPanelDados = createServerFn({ method: "POST" })
           (s, p) => s + (p.valor_financiamento_aprovado ?? p.valor_financiamento ?? 0),
           0,
         );
-        const volumeMedio = volume + volumeSimulado;
-        const totalContatosEsims = contratosCount + simConcluidas;
-        const ticket = totalContatosEsims ? volumeMedio / totalContatosEsims : 0;
+        // Ticket médio = volume contratado ÷ contratos emitidos — a mesma
+        // definição do Painel Operacional e do relatório. Antes misturava
+        // simulações e mostrava "R$ 448 mil" com zero contratos.
+        const ticket = contratosCount ? volume / contratosCount : 0;
         const taxa = enviadas.length ? (aprovadasCount / enviadas.length) * 100 : 0;
         const conversao = simCount ? (contratosCount / simCount) * 100 : 0;
 
@@ -724,7 +728,9 @@ export const getPanelDados = createServerFn({ method: "POST" })
           );
         const aReceber = somaAberto(recRows);
         const aPagar = somaAberto(payRows);
-        const comissoesPrevistas = 0; // Removido filtro por coluna 'tipo' inexistente
+        // Comissões em aberto = recebíveis ligados a uma comissão (repasse do banco
+        // ainda não recebido). Antes o item "Comissões" repetia o total de "A receber".
+        const comissoesPrevistas = somaAberto(recRows.filter((r) => !!r.comissao_id));
 
         // Simulações por tipo
         const tipoSimMap = new Map<string, number>();
@@ -943,7 +949,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
                     { label: "A pagar", valor: brlCompacto(aPagar), tone: "warning" },
                     {
                       label: "Comissões",
-                      valor: brlCompacto(aReceber),
+                      valor: brlCompacto(comissoesPrevistas),
                       tone: "brand",
                     },
                   ],
@@ -1217,7 +1223,7 @@ export const getPanelDados = createServerFn({ method: "POST" })
               {
                 label: "Contratos emitidos",
                 valor: int(contratos),
-                hint: `${brlCompacto(volumeContratos + volumeSimulado)} · ticket ${brlCompacto(ticket)}`,
+                hint: `${brlCompacto(volumeContratos)} · ticket ${brlCompacto(ticket)}`,
                 tone: "success",
                 delta: mkDelta(contratos, ant.contratos),
               },
@@ -1387,31 +1393,13 @@ function itemSimulacao(s: any): PanelDrilldownItem {
   };
 }
 
-async function carregarVariaveisDrilldown(supabase: any, de: string, ate: string) {
-  const [sims] = await Promise.all([
-    supabase
-      .from("simulacoes")
-      .select("id, status, valor_financiamento, created_at")
-      .is("deleted_at", null)
-      .gte("created_at", inicioDiaBR(de))
-      .lte("created_at", fimDiaBR(ate)),
-  ]);
-
-  const simRows = (sims.data ?? []) as any[];
-  const simConcluidasRows = simRows.filter((s) =>
-    ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
-  );
-  const volumeSimulado = simConcluidasRows.reduce((s, r) => s + (r.valor_financiamento ?? 0), 0);
-
-  return { simRows, volumeSimulado };
-}
-
 export const getPanelDrilldown = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => drillSchema.parse(d))
   .handler(async ({ data, context }): Promise<PanelDrilldown> => {
     const toSafeJSON = (val: any) => JSON.parse(JSON.stringify(val ?? null));
     const { supabase, userId } = context;
+    Object.assign(data, await limitarEscopoAoPermitido(supabase, userId, data));
     const f = data as unknown as ReportFiltros;
     const { de, ate } = resolverIntervalo(f);
     const deIni = inicioDiaBR(de);
@@ -1430,7 +1418,6 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
       const dentroPeriodo = (iso?: string | null) =>
         !!iso && dataBR(iso) >= de && dataBR(iso) <= ate;
 
-      const { simRows, volumeSimulado } = await carregarVariaveisDrilldown(supabase, de, ate);
       const drilldownResult: any = await (async () => {
         const chaveRaw = data.metrica;
         const chave = normLabel(chaveRaw);
@@ -1522,12 +1509,21 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
 
         if (chave === "simulacoes") {
           const rows = await simulacoesNoPeriodo();
-          const somaValor = rows.reduce((s, r) => s + (Number(r.valor_financiamento) || 0), 0);
+          // Mesmo critério do card: o volume só soma as simulações concluídas
+          // (com retorno do banco). Antes somava também erro/rascunho e o
+          // detalhe mostrava R$ 400 mil com o card em R$ 0 (QA 20/10).
+          const concluidas = rows.filter((s) =>
+            ["simulada", "parcialmente_simulada", "promovida"].includes(s.status),
+          );
+          const somaValor = concluidas.reduce(
+            (s, r) => s + (Number(r.valor_financiamento) || 0),
+            0,
+          );
           return {
             titulo: "Simulações do período",
             subtitulo: "Ordenadas da mais recente para a mais antiga",
             valor: int(rows.length),
-            descricao: `Volume total simulado: ${brlCompacto(somaValor)}.`,
+            descricao: `Volume simulado (${int(concluidas.length)} concluídas com retorno do banco): ${brlCompacto(somaValor)}.`,
             itens: rows.map(itemSimulacao),
             linkAbrir: "/operacional/simulacoes",
             linkAbrirLabel: "Abrir lista completa de simulações",
@@ -1712,15 +1708,16 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
               ) || 0),
             0,
           );
-          const qtd = detalhes.length + simRows.length;
-          const ticket = qtd ? (soma + volumeSimulado) / qtd : 0;
+          // Mesma definição do card: só contratos (sem somar simulações).
+          const qtd = detalhes.length;
+          const ticket = qtd ? soma / qtd : 0;
           return {
             titulo: "Ticket médio",
             subtitulo: "Volume contratado ÷ contratos emitidos",
             valor: brlCompacto(ticket),
             formula: [
-              { label: "Volume total", valor: brlCompacto(soma + volumeSimulado), tone: "success" },
-              { label: "Contratos + Simulações", valor: int(qtd), tone: "brand" },
+              { label: "Volume contratado", valor: brlCompacto(soma), tone: "success" },
+              { label: "Contratos emitidos", valor: int(qtd), tone: "brand" },
               { label: "Ticket médio", valor: brlCompacto(ticket), tone: "success" },
             ],
             itens: detalhes.map(({ cliente, prop }) => {
@@ -1871,7 +1868,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
               supabase
                 .from("demandas")
                 .select(
-                  "id,numero,titulo,status,prazo_sla,created_at,descricao,prioridade,sla_horas",
+                  "id,numero,titulo,status,prazo_sla,created_at,descricao,prioridade,sla_horas,criador_id",
                 )
                 .is("deleted_at", null)
                 .order("id"),
@@ -1897,9 +1894,12 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
             itens: rows.map((d) => ({
               id: d.id,
               tipo: "demanda",
-              raw: d, // Passamos o objeto completo para edição
+              // Objeto completo para a edição; pode_excluir segue excluirDemanda (só quem criou).
+              raw: { ...d, pode_excluir: d.criador_id === userId },
               label: d.titulo ?? "Demanda",
-              sub: [d.numero && `Nº ${d.numero}`, d.status].filter(Boolean).join(" · "),
+              sub: [d.numero && `Nº ${d.numero}`, d.status && statusDemanda(d.status).label]
+                .filter(Boolean)
+                .join(" · "),
               data: fmtData(d.prazo_sla ?? d.created_at),
               to: `/operacional/demandas/${d.id}`,
               tone: isVencido ? "danger" : "warning",
@@ -1938,9 +1938,11 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
               tipo: "tarefa",
               raw: t,
               label: t.titulo ?? "Tarefa",
-              sub: [t.numero && `Nº ${t.numero}`, t.status].filter(Boolean).join(" · "),
+              sub: [t.numero && `Nº ${t.numero}`, t.status && statusTarefa(t.status).label]
+                .filter(Boolean)
+                .join(" · "),
               data: fmtData(t.prazo ?? t.created_at),
-              to: `/operacional/tarefas/${t.id}`,
+              to: "/operacional/tarefas",
               tone: atrasadas ? "danger" : "neutral",
             })),
             linkAbrir: "/operacional/tarefas",
@@ -1984,7 +1986,9 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
               .slice(0, LIMITE)
               .map((d) => ({
                 label: d.titulo ?? "Demanda",
-                sub: [d.numero && `Nº ${d.numero}`, d.status].filter(Boolean).join(" · "),
+                sub: [d.numero && `Nº ${d.numero}`, d.status && statusDemanda(d.status).label]
+                  .filter(Boolean)
+                  .join(" · "),
                 data: fmtData(d.prazo_sla ?? d.created_at),
                 to: `/operacional/demandas/${d.id}`,
                 tone: "success",
@@ -2023,9 +2027,11 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
             ],
             itens: rows.slice(0, LIMITE).map((t) => ({
               label: t.titulo ?? "Tarefa",
-              sub: [t.numero && `Nº ${t.numero}`, t.status].filter(Boolean).join(" · "),
+              sub: [t.numero && `Nº ${t.numero}`, t.status && statusTarefa(t.status).label]
+                .filter(Boolean)
+                .join(" · "),
               data: fmtData(t.created_at),
-              to: `/operacional/tarefas/${t.id}`,
+              to: "/operacional/tarefas",
               tone: t.status === "concluida" ? "success" : "neutral",
             })),
             linkAbrir: "/operacional/tarefas",

@@ -31,6 +31,11 @@ function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   try {
     if (!audioCtx) {
+      // Antes de qualquer clique/tecla o navegador bloqueia o áudio e avisa no
+      // console ("AudioContext was not allowed to start"). Sem interação, não toca.
+      const ativacao = (navigator as unknown as { userActivation?: { hasBeenActive: boolean } })
+        .userActivation;
+      if (ativacao && !ativacao.hasBeenActive) return null;
       const Ctor =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;

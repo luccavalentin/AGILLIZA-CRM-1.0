@@ -25,7 +25,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
-import { TIPOS_DOCUMENTO, TIPO_DOCUMENTO_LABEL, rotuloTipo } from "@/lib/crm/scan-ia-tipos";
+import {
+  TIPOS_DOCUMENTO,
+  TIPO_DOCUMENTO_LABEL,
+  rotuloStatusLeitura,
+  rotuloTipo,
+} from "@/lib/crm/scan-ia-tipos";
+import { usePermissao } from "@/hooks/use-permissao";
 import {
   contextoScanIa,
   listarLeituras,
@@ -33,10 +39,13 @@ import {
   processarLeitura,
   excluirLeitura,
 } from "@/lib/crm/scan-ia.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { problemaNoDocumento } from "@/lib/storage/tipos-documento";
 
 export const Route = createFileRoute("/_authenticated/crm/scan-ia")({
   head: () => ({ meta: [{ title: "Scan IA — Agilliza" }] }),
-  beforeLoad: () => assertModuloPermitido("crm.clientes"),
+  // Módulo próprio (crm.scan_ia); quem já usava pela permissão de Clientes continua entrando.
+  beforeLoad: () => assertModuloPermitido("crm.scan_ia", ["crm.clientes"]),
   component: Pagina,
 });
 
@@ -50,7 +59,7 @@ const STATUS_TONE: Record<string, "default" | "secondary" | "destructive" | "out
 };
 
 function StatusBadge({ status }: { status: string }) {
-  return <Badge variant={STATUS_TONE[status] ?? "secondary"}>{status}</Badge>;
+  return <Badge variant={STATUS_TONE[status] ?? "secondary"}>{rotuloStatusLeitura(status)}</Badge>;
 }
 
 function Pagina() {
@@ -59,6 +68,13 @@ function Pagina() {
   const [tipo, setTipo] = useState("");
   const [dragging, setDragging] = useState(false);
   const [enviando, setEnviando] = useState(false);
+
+  // Enviar, reprocessar e excluir: "Processar" no Scan IA (ou criar/editar clientes), como no servidor.
+  const podeProcessarScan = usePermissao("crm.scan_ia", "create");
+  const podeCriarCliente = usePermissao("crm.clientes", "create");
+  const podeEditarCliente = usePermissao("crm.clientes", "edit");
+  const podeProcessar = podeProcessarScan || podeCriarCliente || podeEditarCliente;
+  const podeVerClientes = usePermissao("crm.clientes", "view");
 
   const leituras = useQuery({ queryKey: ["scan-ia-leituras"], queryFn: () => listarLeituras() });
 
@@ -69,20 +85,26 @@ function Pagina() {
       else toast.error(r.erro ?? "Falha ao processar.");
       qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao processar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao processar.")),
   });
 
   const excluir = useMutation({
     mutationFn: (id: string) => excluirLeitura({ data: { id } }),
     onSuccess: () => {
-      toast.success("Leitura excluída (registrada em auditoria).");
+      toast.success("Leitura excluída.");
       qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir.")),
   });
 
   async function enviarArquivo(file: File) {
     if (!file) return;
+    // Mesma regra do Storage: só PDF, JPG ou PNG de até 10 MB (antes aceitava .exe).
+    const recusa = problemaNoDocumento(file);
+    if (recusa) {
+      toast.error(`${recusa} Envie PDF, JPG ou PNG de até 10 MB.`);
+      return;
+    }
     setEnviando(true);
     try {
       const { correspondenteId } = await contextoScanIa();
@@ -103,7 +125,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
       processar.mutate(id);
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha no envio.");
+      toast.error(mensagemDeErro(e, "Falha no envio."));
     } finally {
       setEnviando(false);
     }
@@ -119,73 +141,77 @@ function Pagina() {
             Leitura automática de documentos com extração de campos por IA.
           </p>
         </div>
-        <Button asChild variant="outline" className="col-span-2 w-full sm:w-auto">
-          <Link to="/crm/consultor-ia">
-            <Bot className="mr-2 h-4 w-4" />
-            Consultor IA
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Link>
-        </Button>
+        {/* O Consultor IA exige "Ver" em Clientes; sem ela o link só voltava ao início. */}
+        {podeVerClientes && (
+          <Button asChild variant="outline" className="col-span-2 w-full sm:w-auto">
+            <Link to="/crm/consultor-ia">
+              <Bot className="mr-2 h-4 w-4" />
+              Consultor IA
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        )}
       </div>
 
-      <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-        <div className="grid gap-2 sm:max-w-sm">
-          <Label htmlFor="tipo-doc">Tipo de documento (opcional)</Label>
-          <Select value={tipo} onValueChange={setTipo}>
-            <SelectTrigger id="tipo-doc">
-              <SelectValue placeholder="Deixe em branco para a IA detectar" />
-            </SelectTrigger>
-            <SelectContent>
-              {TIPOS_DOCUMENTO.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {TIPO_DOCUMENTO_LABEL[t]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            A IA classifica o documento sozinha; o tipo final é sempre confirmado por você na tela
-            de revisão.
-          </p>
+      {podeProcessar && (
+        <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+          <div className="grid gap-2 sm:max-w-sm">
+            <Label htmlFor="tipo-doc">Tipo de documento (opcional)</Label>
+            <Select value={tipo} onValueChange={setTipo}>
+              <SelectTrigger id="tipo-doc">
+                <SelectValue placeholder="Deixe em branco para a IA detectar" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIPOS_DOCUMENTO.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {TIPO_DOCUMENTO_LABEL[t]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Em branco, a IA identifica o tipo. Você confirma o tipo na revisão.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            disabled={enviando}
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f) enviarArquivo(f);
+            }}
+            className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center transition-colors ${
+              dragging ? "border-primary bg-accent" : "border-border hover:border-primary"
+            } ${enviando ? "opacity-60" : ""}`}
+          >
+            <UploadCloud className="h-8 w-8 text-muted-foreground" />
+            <span className="text-sm font-medium">
+              {enviando ? "Enviando…" : "Arraste um arquivo ou clique para selecionar"}
+            </span>
+            <span className="text-xs text-muted-foreground">PDF, JPG ou PNG de até 10 MB</span>
+          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) enviarArquivo(f);
+              e.target.value = "";
+            }}
+          />
         </div>
-
-        <button
-          type="button"
-          disabled={enviando}
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            const f = e.dataTransfer.files?.[0];
-            if (f) enviarArquivo(f);
-          }}
-          className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center transition-colors ${
-            dragging ? "border-primary bg-accent" : "border-border hover:border-primary"
-          } ${enviando ? "opacity-60" : ""}`}
-        >
-          <UploadCloud className="h-8 w-8 text-muted-foreground" />
-          <span className="text-sm font-medium">
-            {enviando ? "Enviando…" : "Arraste um arquivo ou clique para selecionar"}
-          </span>
-          <span className="text-xs text-muted-foreground">PDF, JPG ou PNG</span>
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="application/pdf,image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) enviarArquivo(f);
-            e.target.value = "";
-          }}
-        />
-      </div>
+      )}
 
       <div className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border p-4">
@@ -205,10 +231,19 @@ function Pagina() {
               <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
+        ) : leituras.isError ? (
+          <div className="flex flex-col items-center gap-3 p-10 text-center">
+            <p className="text-sm text-destructive">
+              {mensagemDeErro(leituras.error, "Não foi possível carregar as leituras.")}
+            </p>
+            <Button size="sm" variant="outline" onClick={() => leituras.refetch()}>
+              Tentar de novo
+            </Button>
+          </div>
         ) : (leituras.data?.length ?? 0) === 0 ? (
           <div className="flex flex-col items-center gap-2 p-10 text-center text-muted-foreground">
             <FileText className="h-8 w-8" />
-            <p className="text-sm">Nenhuma leitura ainda. Envie um documento para começar.</p>
+            <p className="text-sm">Nenhuma leitura ainda.</p>
           </div>
         ) : (
           <>
@@ -220,7 +255,8 @@ function Pagina() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">
                         {rotuloTipo(l.tipo_documento ?? l.tipo_documento_sugerido)}
-                        {!l.tipo_confirmado ? (
+                        {/* Sem tipo nenhum aparecia "— (sugerido)". */}
+                        {!l.tipo_confirmado && (l.tipo_documento ?? l.tipo_documento_sugerido) ? (
                           <span className="ml-1 text-xs font-normal text-muted-foreground">
                             (sugerido pela IA)
                           </span>
@@ -243,7 +279,7 @@ function Pagina() {
                     <span className="shrink-0">{l.total_campos} campos</span>
                   </div>
                   <div className="flex flex-wrap justify-end gap-2 pt-1">
-                    {(l.status === "erro" || l.status === "pendente") && (
+                    {podeProcessar && (l.status === "erro" || l.status === "pendente") && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -258,11 +294,13 @@ function Pagina() {
                         Revisar <ChevronRight className="ml-1 h-4 w-4" />
                       </Link>
                     </Button>
-                    <ConfirmDelete
-                      titulo="Excluir leitura"
-                      descricao="A leitura e seus campos serão removidos. A exclusão fica registrada nos logs de auditoria."
-                      onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
-                    />
+                    {podeProcessar && (
+                      <ConfirmDelete
+                        titulo="Excluir leitura"
+                        descricao="A leitura, os campos e o arquivo enviado serão apagados. A cópia já arquivada nos documentos do cliente continua lá."
+                        onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
+                      />
+                    )}
                   </div>
                 </li>
               ))}
@@ -287,7 +325,8 @@ function Pagina() {
                     <TableRow key={l.id}>
                       <TableCell className="font-medium">
                         {rotuloTipo(l.tipo_documento ?? l.tipo_documento_sugerido)}
-                        {!l.tipo_confirmado ? (
+                        {/* Sem tipo nenhum aparecia "— (sugerido)". */}
+                        {!l.tipo_confirmado && (l.tipo_documento ?? l.tipo_documento_sugerido) ? (
                           <span className="ml-1 text-xs font-normal text-muted-foreground">
                             (sugerido)
                           </span>
@@ -311,7 +350,7 @@ function Pagina() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          {(l.status === "erro" || l.status === "pendente") && (
+                          {podeProcessar && (l.status === "erro" || l.status === "pendente") && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -326,11 +365,13 @@ function Pagina() {
                               Revisar <ChevronRight className="ml-1 h-4 w-4" />
                             </Link>
                           </Button>
-                          <ConfirmDelete
-                            titulo="Excluir leitura"
-                            descricao="A leitura e seus campos serão removidos. A exclusão fica registrada nos logs de auditoria."
-                            onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
-                          />
+                          {podeProcessar && (
+                            <ConfirmDelete
+                              titulo="Excluir leitura"
+                              descricao="A leitura, os campos e o arquivo enviado serão apagados. A cópia já arquivada nos documentos do cliente continua lá."
+                              onConfirm={() => excluir.mutateAsync(l.id).then(() => undefined)}
+                            />
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

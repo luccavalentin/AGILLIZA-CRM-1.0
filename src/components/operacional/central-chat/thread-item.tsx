@@ -50,7 +50,7 @@ export function ThreadItem({
     thread.ultima_mensagem?.trim() ||
     (thread.kind === "demanda"
       ? thread.demanda_titulo?.trim() || "Conversa sobre demanda"
-      : "Diga oi 👋");
+      : "Nenhuma mensagem ainda");
 
   const naoLidas = thread.nao_lidas ?? 0;
 

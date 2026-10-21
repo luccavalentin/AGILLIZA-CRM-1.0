@@ -1,6 +1,13 @@
 import type { ReactNode } from "react";
+import { PageHeader } from "@/components/shared/page-header";
 
-/** Cabeçalho hero unificado (fundo da marca, compacto). */
+/**
+ * Cabeçalho das telas administrativas e da Plataforma.
+ *
+ * Mantém a API de antes, mas agora desenha o `PageHeader` único do sistema
+ * (sem cartão, título 24/500): antes era um cartão claro com filete e título
+ * 18/700, um dos 4 padrões de cabeçalho que conviviam no Agilliza.
+ */
 export function AdminHero({
   icon,
   titulo,
@@ -15,26 +22,6 @@ export function AdminHero({
   secao?: string;
 }) {
   return (
-    <div className="op-hero px-4 py-3.5 md:px-5 md:py-4">
-      <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/20 md:size-10">
-            {icon}
-          </span>
-          <div className="min-w-0 space-y-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary/80">
-              {secao}
-            </span>
-            <h1 className="truncate text-base font-bold tracking-tight text-foreground md:text-lg">
-              {titulo}
-            </h1>
-            {descricao && (
-              <p className="max-w-2xl text-xs text-muted-foreground md:text-sm">{descricao}</p>
-            )}
-          </div>
-        </div>
-        {acoes && <div className="flex flex-wrap items-center gap-2 sm:justify-end">{acoes}</div>}
-      </div>
-    </div>
+    <PageHeader icone={icon} secao={secao} titulo={titulo} descricao={descricao} acoes={acoes} />
   );
 }

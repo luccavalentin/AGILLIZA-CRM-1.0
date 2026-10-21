@@ -19,10 +19,14 @@ export const Route = createFileRoute("/cliente")({
       { rel: "apple-touch-icon", href: "/icons/cliente/apple-touch-icon.png" },
     ],
   }),
-  loader: async () => {
+  loader: async ({ location }) => {
     const { cliente } = await getSessaoCliente();
     if (!cliente) throw redirect({ to: "/portal" });
     if (!cliente.lgpd_aceito) throw redirect({ to: "/cliente-consentimento" });
+    // "/cliente" sozinho não tem página: abria em branco (QA 20/10).
+    if (location.pathname.replace(/\/+$/, "") === "/cliente") {
+      throw redirect({ to: "/cliente/visao-geral", replace: true });
+    }
     return { cliente };
   },
   component: ClienteLayout,

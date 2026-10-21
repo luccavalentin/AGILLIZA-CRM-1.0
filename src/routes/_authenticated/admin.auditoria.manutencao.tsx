@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria/manutencao")({
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/_authenticated/admin/auditoria/manutencao
 
 function PaginaManutencao() {
   const qc = useQueryClient();
+  // Ações que gravam exigem "edit" no servidor; sem ela os botões só davam erro.
+  const podeEditar = usePermissao("admin.parametros", "edit");
   const { data: sumario, isLoading } = useQuery({
     queryKey: ["admin-manutencao-sumario"],
     queryFn: () => obterSumarioDestravamento(),
@@ -137,7 +140,7 @@ function PaginaManutencao() {
                   <Sinal
                     rotulo="Banco de dados"
                     valor={`${saude.banco_mb} MB`}
-                    detalhe={`${saude.logs_mb} MB são logs da HomeFin`}
+                    detalhe={`${saude.logs_mb} MB são logs da integração bancária`}
                   />
                 </div>
 
@@ -199,7 +202,7 @@ function PaginaManutencao() {
               <div className="rounded-lg border bg-muted/30 p-4 text-center">
                 <p className="text-2xl font-bold">{isLoading ? "..." : sumario?.presasComId}</p>
                 <p className="text-xs text-muted-foreground uppercase font-medium">
-                  Com ID HomeFin
+                  Com ID
                 </p>
               </div>
               <div className="rounded-lg border bg-muted/30 p-4 text-center">
@@ -216,8 +219,8 @@ function PaginaManutencao() {
               </div>
               <ul className="list-disc list-inside space-y-1 opacity-90">
                 <li>Locks com mais de 2 minutos serão removidos.</li>
-                <li>Simulações com ID HomeFin presas há 30min serão reconsultadas na API.</li>
-                <li>Simulações que nunca chegaram à HomeFin (30min+) serão marcadas com erro.</li>
+                <li>Simulações com ID presas há 30min serão reconsultadas na API.</li>
+                <li>Simulações que nunca chegaram à integração bancária (30min+) serão marcadas com erro.</li>
                 <li>
                   Registros criados nos últimos 30 minutos <strong>não serão afetados</strong>.
                 </li>
@@ -227,7 +230,7 @@ function PaginaManutencao() {
             <div className="flex justify-end">
               <Button
                 onClick={() => mutation.mutate(true)}
-                disabled={!temAlgo || mutation.isPending}
+                disabled={!podeEditar || !temAlgo || mutation.isPending}
                 className="gap-2"
               >
                 {mutation.isPending ? (

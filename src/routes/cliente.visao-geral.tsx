@@ -27,6 +27,8 @@ import { clienteObterVisaoGeral } from "@/lib/portal/cliente.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/cliente/visao-geral")({
   head: () => ({ meta: [{ title: "Início — Meu Financiamento" }] }),
@@ -108,11 +110,28 @@ function StatCard({
 }
 
 function VisaoGeral() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["cliente", "visao-geral"],
     queryFn: () => clienteObterVisaoGeral(),
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 15000),
+    refetchIntervalInBackground: false,
   });
+
+  // Com erro a tela ficava no esqueleto para sempre.
+  if (isError && !data) {
+    return (
+      <Card className="border-border/70 shadow-sm">
+        <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+          <p className="text-sm text-destructive">
+            {mensagemDeErro(error, "Não foi possível carregar seus dados.")}
+          </p>
+          <Button variant="outline" size="sm" disabled={isFetching} onClick={() => refetch()}>
+            Tentar de novo
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading || !data) {
     return (
@@ -267,7 +286,7 @@ function VisaoGeral() {
           icon={FileText}
           label="Documentos pendentes"
           valor={String(documentos_pendentes.length)}
-          hint={documentos_pendentes.length === 0 ? "Tudo em dia!" : "Enviar pelo chat"}
+          hint={documentos_pendentes.length === 0 ? "Tudo em dia" : "Enviar pelo chat"}
           hintTone={documentos_pendentes.length === 0 ? "success" : "primary"}
           to="/cliente/chat"
         />
@@ -367,7 +386,6 @@ function VisaoGeral() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Próximas ações</p>
-                  <p className="text-xs text-muted-foreground">O que você pode fazer agora</p>
                 </div>
               </div>
               <div className="grid gap-2 sm:grid-cols-3">

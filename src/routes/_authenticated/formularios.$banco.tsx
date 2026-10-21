@@ -10,7 +10,7 @@ import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/formularios/$banco")({
   // Mesma permissão do item no menu (QA 19/09/2026).
-  beforeLoad: () => assertModuloPermitido("crm.clientes"),
+  beforeLoad: () => assertModuloPermitido("documentos.formularios"),
   validateSearch: (search: Record<string, unknown>) => {
     return z
       .object({

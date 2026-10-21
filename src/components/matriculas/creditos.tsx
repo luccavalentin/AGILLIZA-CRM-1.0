@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,8 +29,9 @@ import {
   criarCreditoMatricula,
   excluirCreditoMatricula,
 } from "@/lib/matriculas/matriculas.functions";
+import { hojeISO } from "@/lib/financeiro/format";
 
-const hoje = () => new Date().toISOString().slice(0, 10);
+const hoje = () => hojeISO();
 
 export function Creditos({
   lista,
@@ -39,6 +41,8 @@ export function Creditos({
   onMudou: () => void;
 }) {
   const total = useMemo(() => lista.reduce((s, c) => s + Number(c.valor), 0), [lista]);
+  // Créditos são configuração: "Matrículas: editar" (o servidor confere).
+  const podeEditar = usePermissao("documentos.matriculas", "edit");
   return (
     <Card className="p-0">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
@@ -46,7 +50,7 @@ export function Creditos({
           <h2 className="text-sm font-semibold text-foreground">Compras de crédito</h2>
           <p className="text-xs text-muted-foreground">Total: {formatBRL(total)}</p>
         </div>
-        <CreditoDialog onMudou={onMudou} />
+        {podeEditar && <CreditoDialog onMudou={onMudou} />}
       </div>
       <div className="overflow-x-auto">
         <Table>
@@ -76,13 +80,19 @@ export function Creditos({
                 <TableCell>{c.descricao ?? "Compra de crédito"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(c.valor)}</TableCell>
                 <TableCell className="text-right">
-                  <ConfirmDelete
-                    descricao="Excluir esta compra de crédito?"
-                    onConfirm={async () => {
-                      await excluirCreditoMatricula({ data: { id: c.id } });
-                      onMudou();
-                    }}
-                  />
+                  {podeEditar && (
+                    <ConfirmDelete
+                      descricao="Excluir esta compra de crédito?"
+                      onConfirm={async () => {
+                        try {
+                          await excluirCreditoMatricula({ data: { id: c.id } });
+                          onMudou();
+                        } catch (e) {
+                          toast.error(mensagemDeErro(e, "Não foi possível excluir o crédito."));
+                        }
+                      }}
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -101,6 +111,7 @@ function CreditoDialog({ onMudou }: { onMudou: () => void }) {
   const [salvando, setSalvando] = useState(false);
 
   async function salvar() {
+    if (parseBRL(valor) <= 0) return toast.error("Informe um valor maior que zero.");
     setSalvando(true);
     try {
       await criarCreditoMatricula({

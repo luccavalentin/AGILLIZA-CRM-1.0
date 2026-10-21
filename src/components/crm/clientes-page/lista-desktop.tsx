@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Mail, Phone, Plus, Users } from "lucide-react";
+import { ChevronRight, Mail, Phone, Plus, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,7 @@ import { ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatarCelular, formatarDocumento } from "@/lib/crm/documento";
 import { iniciais, type ClienteItem } from "./tipos";
+import { SeloDaConta } from "@/components/plataforma/conta-nativa/selo-da-conta";
 
 type Props = {
   isLoading: boolean;
@@ -22,9 +23,16 @@ type Props = {
   itens: ClienteItem[];
   total: number;
   pagina: number;
+  /** Itens por página do servidor (20 na base própria). */
+  porPagina?: number;
   setPagina: (updater: (p: number) => number) => void;
   navigateToFicha: (id: string) => void;
-  handleExcluir: (id: string) => Promise<void>;
+  /** Sem ele (base de uma conta assinante) a lixeira não aparece. */
+  handleExcluir?: (id: string) => Promise<void>;
+  /** Mostra "Novo cliente" na lista vazia (não na base de uma conta assinante). */
+  podeCadastrar?: boolean;
+  /** Há busca/filtro ativo: a lista vazia não convida a cadastrar. */
+  filtrando?: boolean;
 };
 
 export function ListaDesktop({
@@ -33,9 +41,12 @@ export function ListaDesktop({
   itens,
   total,
   pagina,
+  porPagina = 20,
   setPagina,
   navigateToFicha,
   handleExcluir,
+  podeCadastrar = true,
+  filtrando = false,
 }: Props) {
   return (
     <Card className="hidden overflow-hidden rounded-2xl border-border/60 shadow-sm md:block">
@@ -91,13 +102,19 @@ export function ListaDesktop({
                   </div>
                   <p className="text-sm font-semibold text-foreground">Nenhum cliente encontrado</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Cadastre o primeiro cliente para começar.
+                    {filtrando
+                      ? "Nenhum cliente com estes filtros."
+                      : podeCadastrar
+                        ? "Cadastre o primeiro cliente para começar."
+                        : "Esta base ainda não tem clientes."}
                   </p>
-                  <Button asChild size="sm" className="mt-4">
-                    <Link to="/crm/clientes/novo">
-                      <Plus className="size-4" /> Novo cliente
-                    </Link>
-                  </Button>
+                  {podeCadastrar && !filtrando && (
+                    <Button asChild size="sm" className="mt-4">
+                      <Link to="/crm/clientes/novo">
+                        <Plus className="size-4" /> Novo cliente
+                      </Link>
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ) : (
@@ -124,6 +141,7 @@ export function ListaDesktop({
                         <span className="mt-0.5 block font-mono text-[10.5px] leading-tight text-muted-foreground/70">
                           {c.numero_cliente}
                         </span>
+                        {c._conta && <SeloDaConta conta={c._conta} />}
                       </div>
                     </div>
                   </TableCell>
@@ -195,18 +213,38 @@ export function ListaDesktop({
                   </TableCell>
 
                   <TableCell className="px-4">
-                    <ToneBadge tone={c.portal_acesso_ativo ? "success" : "muted"}>
-                      {c.portal_acesso_ativo ? "App ativo" : "App inativo"}
-                    </ToneBadge>
+                    {/* Cliente de conta assinante não tem o app do Agilliza: o selo enganava. */}
+                    {c._conta ? (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    ) : (
+                      <ToneBadge tone={c.portal_acesso_ativo ? "success" : "muted"}>
+                        {c.portal_acesso_ativo ? "App ativo" : "App inativo"}
+                      </ToneBadge>
+                    )}
                   </TableCell>
 
                   <TableCell className="px-4 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
-                      <ConfirmDelete
-                        titulo="Excluir cliente"
-                        descricao={`O cliente "${c.nome}" e seus registros vinculados serão removidos permanentemente.`}
-                        onConfirm={() => handleExcluir(c.id)}
-                      />
+                      {/* Lixeira discreta (cinza, vermelha só no foco/hover): era a única
+                          ação de cada linha, em vermelho, puxando o olho para excluir. */}
+                      {handleExcluir && c.pode_excluir !== false && (
+                        <ConfirmDelete
+                          titulo="Excluir cliente"
+                          descricao={`O cliente "${c.nome}" e seus registros vinculados saem de todas as listas. O histórico fica guardado para auditoria; recadastrar o mesmo documento restaura o cadastro.`}
+                          onConfirm={() => handleExcluir(c.id)}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Excluir ${c.nome}`}
+                              title="Excluir"
+                              className="size-8 text-muted-foreground/70 opacity-60 transition-opacity hover:bg-destructive/10 hover:text-destructive hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-100"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          }
+                        />
+                      )}
                       <ChevronRight className="size-4 -translate-x-1 text-primary opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
                     </div>
                   </TableCell>
@@ -222,7 +260,7 @@ export function ListaDesktop({
           <span>
             {itens.length} de {total} cliente{total === 1 ? "" : "s"}
           </span>
-          {total > 20 && (
+          {total > porPagina && (
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -236,7 +274,7 @@ export function ListaDesktop({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={pagina * 20 >= total || isFetching}
+                disabled={pagina * porPagina >= total || isFetching}
                 onClick={() => setPagina((p) => p + 1)}
               >
                 Próxima

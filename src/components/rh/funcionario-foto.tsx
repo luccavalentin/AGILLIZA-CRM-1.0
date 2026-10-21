@@ -8,11 +8,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { salvarFotoFuncionario } from "@/lib/rh/funcionarios.functions";
 import { gerarUrlAssinada } from "@/lib/rh/submodulos.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { enviarArquivoRh, extensaoDe } from "@/lib/rh/arquivos";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 
 function iniciais(nome: string) {
   return nome
@@ -54,21 +56,11 @@ export function FuncionarioFoto({
 
   const enviar = useMutation({
     mutationFn: async (file: File) => {
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error("Sessão expirada.");
-      const prof = await supabase
-        .from("profiles")
-        .select("correspondente_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      const cid = prof.data?.correspondente_id as string | undefined;
-      if (!cid) throw new Error("Correspondente não encontrado.");
-      const ext = file.name.split(".").pop() || "jpg";
-      const novo = `${cid}/fotos/${funcionarioId}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("rh-documentos")
-        .upload(novo, file, { contentType: file.type, upsert: true });
-      if (error) throw new Error(error.message);
+      const novo = await enviarArquivoRh(
+        `fotos/${funcionarioId}-${Date.now()}.${extensaoDe(file.name, "jpg")}`,
+        file,
+        { contentType: file.type, upsert: true },
+      );
       await fnSalvar({ data: { id: funcionarioId, foto_url: novo } });
       return novo;
     },
@@ -77,18 +69,16 @@ export function FuncionarioFoto({
       toast.success("Foto atualizada.");
       qc.invalidateQueries({ queryKey: ["rh-funcionario", funcionarioId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao enviar a foto."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao enviar a foto.")),
   });
 
-  const remover = useMutation({
-    mutationFn: () => fnSalvar({ data: { id: funcionarioId, foto_url: null } }),
-    onSuccess: () => {
-      setPath(null);
-      toast.success("Foto removida.");
-      qc.invalidateQueries({ queryKey: ["rh-funcionario", funcionarioId] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao remover."),
-  });
+  // Sem try/catch: o ConfirmDelete mostra o erro e continua aberto.
+  async function excluirFoto() {
+    await fnSalvar({ data: { id: funcionarioId, foto_url: null } });
+    setPath(null);
+    toast.success("Foto excluída.");
+    qc.invalidateQueries({ queryKey: ["rh-funcionario", funcionarioId] });
+  }
 
   return (
     <div className="flex items-center gap-3">
@@ -120,14 +110,20 @@ export function FuncionarioFoto({
           </Button>
         </label>
         {path && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-muted-foreground hover:text-destructive"
-            onClick={() => remover.mutate()}
-          >
-            <Trash2 className="mr-2 h-3.5 w-3.5" /> Remover
-          </Button>
+          <ConfirmDelete
+            titulo="Excluir a foto?"
+            descricao={`A foto de ${nome} é apagada.`}
+            onConfirm={excluirFoto}
+            trigger={
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" /> Excluir
+              </Button>
+            }
+          />
         )}
       </div>
     </div>

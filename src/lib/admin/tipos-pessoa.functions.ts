@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export type AcessoTipo = "sistema" | "portal_parceiro";
 
@@ -98,7 +99,7 @@ const criarSchema = z.object({
 });
 
 export const criarTipoPessoa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
   .inputValidator((data: unknown) => criarSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -128,7 +129,7 @@ export const criarTipoPessoa = createServerFn({ method: "POST" })
 const atualizarSchema = criarSchema.extend({ id: z.string().uuid() });
 
 export const atualizarTipoPessoa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
   .inputValidator((data: unknown) => atualizarSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -151,7 +152,7 @@ export const atualizarTipoPessoa = createServerFn({ method: "POST" })
   });
 
 export const excluirTipoPessoa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;

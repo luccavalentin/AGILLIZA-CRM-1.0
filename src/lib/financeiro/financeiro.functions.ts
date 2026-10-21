@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hojeISO, somarMesesISO } from "@/lib/financeiro/format";
 
 export type ContaTipo = "pagar" | "receber";
 
@@ -17,6 +18,76 @@ async function correspondenteId(supabase: any, userId: string): Promise<string> 
       "Sua conta ainda não está vinculada a um correspondente. Solicite ao administrador que conclua o vínculo antes de usar este módulo.",
     );
   return data as string;
+}
+
+const MODULO_CONTA: Record<ContaTipo, string> = {
+  pagar: "financeiro.contas_pagar",
+  receber: "financeiro.contas_receber",
+};
+
+/**
+ * Confere na matriz de permissões (`usuario_tem_permissao`) a ação sobre contas a
+ * pagar/receber. A RLS das tabelas só olha o papel (admin/correspondente/gestor/
+ * financeiro): sem isto, quem tem só "Ver" baixava, editava e excluía chamando a
+ * função direto. O módulo depende do `tipo`, por isso não dá para usar
+ * `exigirPermissao` (que também não conhece a ação "baixar").
+ */
+async function exigirAcaoConta(
+  supabase: any,
+  userId: string,
+  tipo: ContaTipo,
+  acao: "view" | "create" | "edit" | "baixar",
+) {
+  const { data, error } = await supabase.rpc("usuario_tem_permissao", {
+    _user_id: userId,
+    _modulo: MODULO_CONTA[tipo],
+    _acao: acao,
+  });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Você não tem permissão para esta ação.");
+}
+
+/**
+ * Categorias, centros de custo e formas de pagamento não têm módulo próprio no
+ * catálogo: quem edita contas (a pagar ou a receber) mantém esses cadastros.
+ */
+const CONFIG_PERMISSOES: Array<[string, string]> = [
+  ["financeiro.contas_pagar", "edit"],
+  ["financeiro.contas_receber", "edit"],
+];
+
+/** Basta uma das alternativas [módulo, ação] permitir. */
+async function exigirAlgumaPermissao(
+  supabase: any,
+  userId: string,
+  alternativas: Array<[string, string]>,
+) {
+  for (const [modulo, acao] of alternativas) {
+    const { data, error } = await supabase.rpc("usuario_tem_permissao", {
+      _user_id: userId,
+      _modulo: modulo,
+      _acao: acao,
+    });
+    if (error) throw new Error(error.message);
+    if (data) return;
+  }
+  throw new Error("Você não tem permissão para esta ação.");
+}
+
+/**
+ * Lê todas as linhas de uma consulta em lotes de 1.000 (teto do PostgREST). Sem
+ * isto, KPIs e fluxo de caixa paravam silenciosamente nas primeiras 1.000 contas.
+ * A consulta precisa ter ordem estável (ex.: `.order("id")`).
+ */
+async function lerTudo(montar: () => any): Promise<{ data: any[] | null; error: any }> {
+  const linhas: any[] = [];
+  for (let ini = 0; ini < 200_000; ini += 1000) {
+    const { data: lote, error } = await montar().range(ini, ini + 999);
+    if (error) return { data: null, error };
+    linhas.push(...((lote ?? []) as any[]));
+    if (!lote || lote.length < 1000) break;
+  }
+  return { data: linhas, error: null };
 }
 
 async function registrarAuditoria(
@@ -108,7 +179,7 @@ export const listarContas = createServerFn({ method: "GET" })
 
     if (data.status === "atrasada") {
       // "atrasada" é um status derivado (não existe na coluna): abertas/parciais vencidas.
-      const hojeStr = new Date().toLocaleDateString("sv");
+      const hojeStr = hojeISO();
       query = query.in("status", ["aberta", "parcial"] as any).lt("vencimento", hojeStr);
     } else if (data.status) {
       query = query.eq("status", data.status as any);
@@ -171,21 +242,25 @@ export const resumoContas = createServerFn({ method: "GET" })
   .handler(async ({ context, data }): Promise<ContasResumo> => {
     const { supabase } = context;
     const contraCol = data.tipo === "pagar" ? "fornecedor" : "pagador";
-    let query = supabase.from(TABELA[data.tipo]).select("vencimento, valor, valor_pago, status");
+    const montar = () => {
+      let query = supabase.from(TABELA[data.tipo]).select("vencimento, valor, valor_pago, status");
 
-    if (data.status === "atrasada") {
-      const hojeStr = new Date().toLocaleDateString("sv");
-      query = query.in("status", ["aberta", "parcial"] as any).lt("vencimento", hojeStr);
-    } else if (data.status) {
-      query = query.eq("status", data.status as any);
-    }
-    if (data.categoria_id) query = query.eq("categoria_id", data.categoria_id);
-    if (data.cost_center_id) query = query.eq("cost_center_id", data.cost_center_id);
-    if (data.contraparte) query = query.ilike(contraCol, `%${data.contraparte}%`);
-    if (data.de) query = query.gte("vencimento", data.de);
-    if (data.ate) query = query.lte("vencimento", data.ate);
+      if (data.status === "atrasada") {
+        const hojeStr = hojeISO();
+        query = query.in("status", ["aberta", "parcial"] as any).lt("vencimento", hojeStr);
+      } else if (data.status) {
+        query = query.eq("status", data.status as any);
+      }
+      if (data.categoria_id) query = query.eq("categoria_id", data.categoria_id);
+      if (data.cost_center_id) query = query.eq("cost_center_id", data.cost_center_id);
+      if (data.contraparte) query = query.ilike(contraCol, `%${data.contraparte}%`);
+      if (data.de) query = query.gte("vencimento", data.de);
+      if (data.ate) query = query.lte("vencimento", data.ate);
+      return query.order("id");
+    };
 
-    const { data: rows, error } = await query;
+    // Em lotes: os totais dos cartões paravam nas primeiras 1.000 contas.
+    const { data: rows, error } = await lerTudo(montar);
     if (error) throw new Error(error.message);
 
     const resumo: ContasResumo = {
@@ -202,12 +277,16 @@ export const resumoContas = createServerFn({ method: "GET" })
       const valor = Number(r.valor) || 0;
       const pago = Number(r.valor_pago) || 0;
       const ef = statusEfetivo(r.status, r.vencimento);
+      // Cancelada e estornada não são dívida nem crédito: fora dos totais.
+      if (r.status === "cancelada" || r.status === "estornada") continue;
       resumo.totalValor += valor;
       resumo.totalQtd += 1;
       if (r.status === "paga") {
-        resumo.pagoValor += valor;
+        resumo.pagoValor += pago || valor;
         resumo.pagoQtd += 1;
       } else if (r.status === "aberta" || r.status === "parcial") {
+        // A baixa parcial já é dinheiro que entrou/saiu: soma em "pago".
+        resumo.pagoValor += pago;
         const restante = valor - pago;
         resumo.abertoValor += restante > 0 ? restante : 0;
         resumo.abertoQtd += 1;
@@ -243,6 +322,7 @@ export const criarConta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ id: string }> => {
     const { supabase, userId } = context;
+    await exigirAcaoConta(supabase, userId, data.tipo, "create");
     const correspondente_id = await correspondenteId(supabase, userId);
     const contraCol = data.tipo === "pagar" ? "fornecedor" : "pagador";
 
@@ -254,10 +334,7 @@ export const criarConta = createServerFn({ method: "POST" })
       const baseCentavos = Math.floor(totalCentavos / n);
       const resto = totalCentavos - baseCentavos * n;
 
-      const base = new Date(`${data.vencimento}T00:00:00`);
       const linhas = Array.from({ length: n }, (_, i) => {
-        const venc = new Date(base);
-        venc.setMonth(venc.getMonth() + i);
         // última parcela absorve o arredondamento
         const centavos = baseCentavos + (i === n - 1 ? resto : 0);
         return {
@@ -265,7 +342,7 @@ export const criarConta = createServerFn({ method: "POST" })
           descricao: `${data.descricao} (${i + 1}/${n})`,
           [contraCol]: data.contraparte ?? null,
           valor: centavos / 100,
-          vencimento: venc.toISOString().slice(0, 10),
+          vencimento: somarMesesISO(data.vencimento, i),
           categoria_id: data.categoria_id ?? null,
           cost_center_id: data.cost_center_id ?? null,
           payment_method_id: data.payment_method_id ?? null,
@@ -366,6 +443,7 @@ export const baixarConta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ status: string }> => {
     const { supabase, userId } = context;
+    await exigirAcaoConta(supabase, userId, data.tipo, "baixar");
     const correspondente_id = await correspondenteId(supabase, userId);
 
     const { data: conta, error: e1 } = await supabase
@@ -451,6 +529,8 @@ export const estornarConta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    // Estorno desfaz uma baixa: mesma permissão de baixar.
+    await exigirAcaoConta(supabase, userId, data.tipo, "baixar");
     const correspondente_id = await correspondenteId(supabase, userId);
 
     const { data: conta, error: e1 } = await supabase
@@ -472,7 +552,7 @@ export const estornarConta = createServerFn({ method: "POST" })
     if (Number(conta.valor_pago) > 0) {
       await supabase.from("fluxo_caixa").insert({
         correspondente_id,
-        data: new Date().toISOString().slice(0, 10),
+        data: hojeISO(),
         tipo: data.tipo === "pagar" ? "entrada" : "saida",
         origem: data.tipo === "pagar" ? "payable" : "receivable",
         ref_id: data.id,
@@ -539,6 +619,7 @@ export const cancelarConta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    await exigirAcaoConta(supabase, userId, data.tipo, "edit");
     const correspondente_id = await correspondenteId(supabase, userId);
     const { data: atual } = await supabase
       .from(TABELA[data.tipo])
@@ -597,6 +678,7 @@ export const atualizarConta = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    await exigirAcaoConta(supabase, userId, data.tipo, "edit");
     const correspondente_id = await correspondenteId(supabase, userId);
     const contraCol = data.tipo === "pagar" ? "fornecedor" : "pagador";
 
@@ -743,6 +825,7 @@ export const recalcularComissao = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ comissao_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }): Promise<{ id: string | null }> => {
     const { supabase, userId } = context;
+    await exigirAlgumaPermissao(supabase, userId, [["financeiro.comissoes", "edit"]]);
     const correspondente_id = await correspondenteId(supabase, userId);
 
     const { data: com, error } = await supabase
@@ -814,6 +897,7 @@ export const criarConfig = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ id: string }> => {
     const { supabase, userId } = context;
+    await exigirAlgumaPermissao(supabase, userId, CONFIG_PERMISSOES);
     const correspondente_id = await correspondenteId(supabase, userId);
     const tabela =
       data.entidade === "categoria"
@@ -821,7 +905,11 @@ export const criarConfig = createServerFn({ method: "POST" })
         : data.entidade === "centro"
           ? "financial_cost_centers"
           : "financial_payment_methods";
-    const registro: Record<string, unknown> = { correspondente_id, nome: data.nome };
+    const nome = data.nome.trim();
+    await garantirNomeConfigLivre(supabase, tabela, correspondente_id, nome, {
+      tipo: data.entidade === "categoria" ? (data.tipo ?? "despesa") : undefined,
+    });
+    const registro: Record<string, unknown> = { correspondente_id, nome };
     if (data.entidade === "categoria") registro.tipo = data.tipo ?? "despesa";
     const { data: ins, error } = await supabase
       .from(tabela)
@@ -831,6 +919,32 @@ export const criarConfig = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { id: ins.id };
   });
+
+/**
+ * Duas categorias (ou centros, ou formas) com o mesmo nome deixavam o filtro e
+ * os relatórios ambíguos (QA 20/10). Compara sem caixa; categoria só colide
+ * com outra do mesmo tipo (despesa x receita).
+ */
+async function garantirNomeConfigLivre(
+  supabase: any,
+  tabela: string,
+  correspondente_id: string,
+  nome: string,
+  opcoes: { ignorarId?: string; tipo?: string } = {},
+) {
+  let q = supabase
+    .from(tabela)
+    .select("id, nome")
+    .eq("correspondente_id", correspondente_id)
+    .ilike(
+      "nome",
+      nome.replace(/[%_\\]/g, (c: string) => `\\${c}`),
+    );
+  if (opcoes.tipo) q = q.eq("tipo", opcoes.tipo);
+  if (opcoes.ignorarId) q = q.neq("id", opcoes.ignorarId);
+  const { data } = await q.limit(1);
+  if (data && data.length) throw new Error(`Já existe um cadastro com o nome "${data[0].nome}".`);
+}
 
 /** ===== Configurações (CRUD completo) ===== */
 export type ConfigEntidade = "categoria" | "centro" | "forma";
@@ -888,9 +1002,28 @@ export const atualizarConfig = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    await exigirAlgumaPermissao(supabase, userId, CONFIG_PERMISSOES);
     const correspondente_id = await correspondenteId(supabase, userId);
     const patch: Record<string, unknown> = {};
-    if (data.nome !== undefined) patch.nome = data.nome;
+    if (data.nome !== undefined) {
+      patch.nome = data.nome.trim();
+      let tipoCategoria: string | undefined = data.tipo;
+      if (data.entidade === "categoria" && !tipoCategoria) {
+        const { data: atual } = await supabase
+          .from("financial_categories")
+          .select("tipo")
+          .eq("id", data.id)
+          .maybeSingle();
+        tipoCategoria = (atual as { tipo?: string } | null)?.tipo;
+      }
+      await garantirNomeConfigLivre(
+        supabase,
+        CONFIG_TABELA[data.entidade],
+        correspondente_id,
+        data.nome.trim(),
+        { ignorarId: data.id, tipo: data.entidade === "categoria" ? tipoCategoria : undefined },
+      );
+    }
     if (data.ativo !== undefined) patch.ativo = data.ativo;
     if (data.entidade === "categoria" && data.tipo !== undefined) patch.tipo = data.tipo;
     if (Object.keys(patch).length === 0) return { ok: true };
@@ -915,6 +1048,7 @@ export const excluirConfig = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ ok: true; desativado: boolean }> => {
     const { supabase, userId } = context;
+    await exigirAlgumaPermissao(supabase, userId, CONFIG_PERMISSOES);
     const correspondente_id = await correspondenteId(supabase, userId);
     const tabela = CONFIG_TABELA[data.entidade] as any;
     // Tenta excluir; se houver vínculos (FK), apenas desativa para preservar histórico.
@@ -968,58 +1102,68 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
   )
   .handler(async ({ context, data }): Promise<FinanceiroKpis> => {
     const { supabase } = context;
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    // "Hoje" no fuso de Brasília, em meia-noite UTC: o servidor roda em UTC e,
+    // depois das 21h, `new Date()` já era o dia seguinte. Toda a aritmética
+    // abaixo é em UTC para não escorregar de dia.
+    const hoje = new Date(`${hojeISO()}T00:00:00Z`);
     const iso = (d: Date) => d.toISOString().slice(0, 10);
     const hojeStr = iso(hoje);
     const em30 = new Date(hoje);
-    em30.setDate(em30.getDate() + 30);
+    em30.setUTCDate(em30.getUTCDate() + 30);
     // Janela do período: usa de/ate quando informados, senão hoje..+30d.
     const inicioStr = data.de || hojeStr;
     const fimStr = data.ate || iso(em30);
     const em30Str = fimStr;
     const limiteInadimplencia = new Date(hoje);
-    limiteInadimplencia.setDate(limiteInadimplencia.getDate() - 10);
+    limiteInadimplencia.setUTCDate(limiteInadimplencia.getUTCDate() - 10);
     const inadimStr = iso(limiteInadimplencia);
-    const doze = new Date(hoje);
-    doze.setMonth(doze.getMonth() - 11);
-    doze.setDate(1);
+    // Dia 1 antes de voltar os meses: em 31/10, "menos 11 meses" caía em 31/11 → 01/12.
+    const doze = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - 11, 1));
     const dozeStr = iso(doze);
 
     const abertos = ["aberta", "parcial"] as any;
 
-    // Limite alto (50k) para agregações; sem `.limit()`, o Supabase silencia em 1000 linhas
-    // e sub-estima os KPIs. Idealmente migrar para sum() no banco quando o volume crescer.
-    const CAP = 50000;
+    // Em lotes de 1.000: o `.limit(50000)` antigo esbarrava no teto do PostgREST
+    // (1.000 linhas) e subestimava os KPIs. Idealmente virar sum() no banco.
     const [recAll, payAll, recRealizado, payRealizado, inadim] = await Promise.all([
-      supabase
-        .from("financial_receivables")
-        .select("valor, valor_pago, vencimento, banco_nome, status")
-        .in("status", abertos)
-        .limit(CAP),
-      supabase
-        .from("financial_payables")
-        .select("valor, valor_pago, vencimento, status, categoria:financial_categories(nome)")
-        .in("status", abertos)
-        .limit(CAP),
-      supabase
-        .from("financial_receivables")
-        .select("valor_pago, data_pagamento, banco_nome")
-        .in("status", ["paga", "parcial"] as any)
-        .gte("data_pagamento", dozeStr)
-        .limit(CAP),
-      supabase
-        .from("financial_payables")
-        .select("valor_pago, data_pagamento, categoria:financial_categories(nome)")
-        .in("status", ["paga", "parcial"] as any)
-        .gte("data_pagamento", dozeStr)
-        .limit(CAP),
-      supabase
-        .from("financial_receivables")
-        .select("valor, valor_pago")
-        .in("status", abertos)
-        .lt("vencimento", inadimStr)
-        .limit(CAP),
+      lerTudo(() =>
+        supabase
+          .from("financial_receivables")
+          .select("valor, valor_pago, vencimento, banco_nome, status")
+          .in("status", abertos)
+          .order("id"),
+      ),
+      lerTudo(() =>
+        supabase
+          .from("financial_payables")
+          .select("valor, valor_pago, vencimento, status, categoria:financial_categories(nome)")
+          .in("status", abertos)
+          .order("id"),
+      ),
+      lerTudo(() =>
+        supabase
+          .from("financial_receivables")
+          .select("valor_pago, data_pagamento, banco_nome")
+          .in("status", ["paga", "parcial"] as any)
+          .gte("data_pagamento", dozeStr)
+          .order("id"),
+      ),
+      lerTudo(() =>
+        supabase
+          .from("financial_payables")
+          .select("valor_pago, data_pagamento, categoria:financial_categories(nome)")
+          .in("status", ["paga", "parcial"] as any)
+          .gte("data_pagamento", dozeStr)
+          .order("id"),
+      ),
+      lerTudo(() =>
+        supabase
+          .from("financial_receivables")
+          .select("valor, valor_pago")
+          .in("status", abertos)
+          .lt("vencimento", inadimStr)
+          .order("id"),
+      ),
     ]);
     for (const r of [recAll, payAll, recRealizado, payRealizado, inadim]) {
       if (r.error) throw new Error(`Falha ao carregar indicadores financeiros: ${r.error.message}`);
@@ -1048,9 +1192,8 @@ export const obterKpisFinanceiros = createServerFn({ method: "GET" })
     // Receita vs despesa mensal (realizado, últimos 12 meses)
     const meses: string[] = [];
     for (let i = 0; i < 12; i++) {
-      const d = new Date(hoje);
-      d.setMonth(d.getMonth() - (11 - i));
-      meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+      const d = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - (11 - i), 1));
+      meses.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
     }
     const mapMes: Record<string, { receita: number; despesa: number }> = {};
     meses.forEach((m) => (mapMes[m] = { receita: 0, despesa: 0 }));
@@ -1196,6 +1339,8 @@ export const excluirConta = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    // O catálogo não tem "excluir" para contas: vale a permissão de editar.
+    await exigirAcaoConta(supabase, userId, data.tipo, "edit");
     const correspondente_id = await correspondenteId(supabase, userId);
     const { data: atual, error: e0 } = await supabase
       .from(TABELA[data.tipo])
@@ -1251,44 +1396,6 @@ async function desvincularContaDeComissoes(supabase: any, tipo: ContaTipo, ids: 
     .in("ref_id", ids);
 }
 
-/** Limpa completamente o fluxo de caixa do correspondente. */
-export const limparFluxoCaixa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ ok: true }> => {
-    const { supabase, userId } = context;
-    const correspondente_id = await correspondenteId(supabase, userId);
-
-    // Limpa a tabela de fluxo de caixa
-    const { error: e1 } = await supabase
-      .from("fluxo_caixa")
-      .delete()
-      .eq("correspondente_id", correspondente_id);
-    if (e1) throw new Error(e1.message);
-
-    // Também limpa os históricos de baixas das contas para garantir consistência total
-    // já que o fluxo de caixa é alimentado por baixas/estornos.
-    await supabase
-      .from("financial_payables")
-      .update({ valor_pago: 0, status: "aberta", data_pagamento: null })
-      .eq("correspondente_id", correspondente_id);
-
-    await supabase
-      .from("financial_receivables")
-      .update({ valor_pago: 0, status: "aberta", data_pagamento: null })
-      .eq("correspondente_id", correspondente_id);
-
-    await registrarAuditoria(
-      supabase,
-      correspondente_id,
-      "fluxo_caixa",
-      correspondente_id,
-      "limpeza_total",
-      { executado_por: userId },
-    );
-
-    return { ok: true };
-  });
-
 /** ===== Fluxo de caixa analítico (ERP) ===== */
 export interface FluxoPontoAnalitico {
   periodo: string;
@@ -1311,6 +1418,8 @@ export interface FluxoPontoAnalitico {
 }
 
 export interface FluxoResumo {
+  /** Caixa realizado antes do início do período filtrado (0 sem filtro de início). */
+  saldoInicial: number;
   saldoRealizado: number;
   totalEntradaReal: number;
   totalSaidaReal: number;
@@ -1355,24 +1464,37 @@ export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
   .handler(async ({ context, data }): Promise<FluxoAnalitico> => {
     const { supabase } = context;
     const abertos = ["aberta", "parcial"] as any;
-    const hojeStr = new Date().toLocaleDateString("sv");
+    const hojeStr = hojeISO();
 
+    // Em lotes: sem isso a consulta parava em 1.000 linhas e o caixa saía incompleto.
     const [rec, pay, realiz] = await Promise.all([
-      supabase
-        .from("financial_receivables")
-        .select("valor, valor_pago, vencimento, descricao, pagador, banco_nome")
-        .in("status", abertos),
-      supabase
-        .from("financial_payables")
-        .select(
-          "valor, valor_pago, vencimento, descricao, fornecedor, categoria:financial_categories(nome)",
-        )
-        .in("status", abertos),
-      supabase
-        .from("fluxo_caixa")
-        .select("data, tipo, valor, descricao, ref_id")
-        .eq("realizado", true),
+      lerTudo(() =>
+        supabase
+          .from("financial_receivables")
+          .select("valor, valor_pago, vencimento, descricao, pagador, banco_nome")
+          .in("status", abertos)
+          .order("id"),
+      ),
+      lerTudo(() =>
+        supabase
+          .from("financial_payables")
+          .select(
+            "valor, valor_pago, vencimento, descricao, fornecedor, categoria:financial_categories(nome)",
+          )
+          .in("status", abertos)
+          .order("id"),
+      ),
+      lerTudo(() =>
+        supabase
+          .from("fluxo_caixa")
+          .select("data, tipo, valor, descricao, ref_id")
+          .eq("realizado", true)
+          .order("id"),
+      ),
     ]);
+    for (const r of [rec, pay, realiz]) {
+      if (r.error) throw new Error(`Falha ao carregar fluxo de caixa: ${r.error.message}`);
+    }
 
     // Filtro por período (calendário): aplica sobre vencimentos e datas realizadas.
     const dentroDoPeriodo = (iso?: string | null) => {
@@ -1393,6 +1515,17 @@ export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
       temPeriodo ? dentroDoPeriodo(r.data) : true,
     );
     const saldoAberto = (r: any) => Number(r.valor) - Number(r.valor_pago);
+    // Filtrar o período não zera o caixa: o que entrou e saiu antes do início
+    // é o saldo com que o período começa.
+    const saldoInicial = data.de
+      ? (realiz.data ?? []).reduce(
+          (s: number, r: any) =>
+            r.data && r.data < data.de!
+              ? s + (r.tipo === "entrada" ? Number(r.valor) : -Number(r.valor))
+              : s,
+          0,
+        )
+      : 0;
 
     const chave = (iso: string): string => {
       const d = new Date(iso + "T00:00:00");
@@ -1461,7 +1594,7 @@ export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
     });
 
     const chaveHoje = chave(hojeStr);
-    let saldoAcum = 0;
+    let saldoAcum = saldoInicial;
     const pontos: FluxoPontoAnalitico[] = Object.keys(mapa)
       .sort((a, b) => a.localeCompare(b))
       .map((periodo) => {
@@ -1490,7 +1623,7 @@ export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
     const totalSaidaReal = pontos.reduce((s, p) => s + p.saidaReal, 0);
     const totalEntradaProj = pontos.reduce((s, p) => s + p.entradaProj, 0);
     const totalSaidaProj = pontos.reduce((s, p) => s + p.saidaProj, 0);
-    const saldoRealizado = totalEntradaReal - totalSaidaReal;
+    const saldoRealizado = saldoInicial + totalEntradaReal - totalSaidaReal;
     const resultadoProj = totalEntradaProj - totalSaidaProj;
     const saldoFinalProj = saldoRealizado + resultadoProj;
     const n = pontos.length || 1;
@@ -1560,6 +1693,7 @@ export const obterFluxoCaixaAnalitico = createServerFn({ method: "GET" })
       granularidade: data.granularidade,
       pontos,
       resumo: {
+        saldoInicial,
         saldoRealizado,
         totalEntradaReal,
         totalSaidaReal,
@@ -1593,6 +1727,7 @@ export const excluirContasEmLote = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ excluidas: number; bloqueadas: number }> => {
     const { supabase, userId } = context;
+    await exigirAcaoConta(supabase, userId, data.tipo, "edit");
     const correspondente_id = await correspondenteId(supabase, userId);
     const { data: rows, error: e0 } = await supabase
       .from(TABELA[data.tipo])

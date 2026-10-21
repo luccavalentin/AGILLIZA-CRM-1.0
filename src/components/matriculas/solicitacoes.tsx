@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 import { toast } from "sonner";
 import { CheckCircle2, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,7 @@ export function Solicitacoes({
   totalCreditos: number;
   onMudou: () => void;
 }) {
+  const podeEditar = usePermissao("documentos.matriculas", "edit");
   const [busca, setBusca] = useState("");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
@@ -103,7 +105,7 @@ export function Solicitacoes({
 
       <div className="grid grid-cols-1 gap-3 border-b border-border p-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="space-y-1 lg:col-span-2">
-          <Label className="text-xs">Buscar (solicitante, corretor, cliente, matrícula)</Label>
+          <Label className="text-xs">Buscar (operador, solicitante, cliente, matrícula)</Label>
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
@@ -145,8 +147,9 @@ export function Solicitacoes({
           <TableHeader>
             <TableRow>
               <TableHead>Data</TableHead>
+              {/* Mesmos nomes do formulário: "Operador" é quem registrou, "Solicitante" quem pediu. */}
+              <TableHead>Operador</TableHead>
               <TableHead>Solicitante</TableHead>
-              <TableHead>Corretor</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>Nº da matrícula</TableHead>
               <TableHead className="text-right">Valor</TableHead>
@@ -185,6 +188,7 @@ export function Solicitacoes({
                     <Switch
                       aria-label="Reembolso recebido"
                       checked={s.reembolsado}
+                      disabled={!podeEditar}
                       onCheckedChange={(v) => toggle(s.id, v)}
                     />
                     {s.reembolsado ? (
@@ -213,13 +217,19 @@ export function Solicitacoes({
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
                     <SolicitacaoDialog onMudou={onMudou} inicial={s} />
-                    <ConfirmDelete
-                      descricao="Excluir esta solicitação de matrícula?"
-                      onConfirm={async () => {
-                        await excluirSolicitacaoMatricula({ data: { id: s.id } });
-                        onMudou();
-                      }}
-                    />
+                    {podeEditar && (
+                      <ConfirmDelete
+                        descricao="Excluir esta solicitação de matrícula?"
+                        onConfirm={async () => {
+                          try {
+                            await excluirSolicitacaoMatricula({ data: { id: s.id } });
+                            onMudou();
+                          } catch (e) {
+                            toast.error(mensagemDeErro(e, "Não foi possível excluir a solicitação."));
+                          }
+                        }}
+                      />
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

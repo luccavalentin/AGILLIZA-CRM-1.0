@@ -22,6 +22,8 @@ import { ExportarFinanceiro } from "@/components/financeiro/exportar-financeiro"
 import { SecaoRegrasComissao, SimuladorComissao } from "@/components/financeiro/comissoes-gestao";
 import { ComissaoStatusBadge } from "@/components/financeiro/status-badge";
 import { formatBRL } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export const Route = createFileRoute("/_authenticated/financeiro/comissoes")({
   head: () => ({ meta: [{ title: "Repasses — Agilliza" }] }),
@@ -42,6 +44,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 function Pagina() {
   const qc = useQueryClient();
+  // Recalcular grava (exclui e recria a comissão): "Repasses: editar" no servidor.
+  const podeEditar = usePermissao("financeiro.comissoes", "edit");
   const [status, setStatus] = useState<string>("");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
@@ -100,7 +104,7 @@ function Pagina() {
       toast.success("Repasse recalculado.");
       qc.invalidateQueries({ queryKey: ["fin-comissoes"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao recalcular."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao recalcular.")),
   });
 
   return (
@@ -113,7 +117,7 @@ function Pagina() {
           <div className="flex flex-wrap items-center justify-end gap-2">
             {aba === "lancamentos" && (
               <Tabs value={status} onValueChange={setStatus}>
-                <TabsList>
+                <TabsList className="h-auto max-w-full flex-wrap justify-start">
                   {STATUS.map((s) => (
                     <TabsTrigger key={s || "all"} value={s}>
                       {STATUS_LABEL[s]}
@@ -134,7 +138,7 @@ function Pagina() {
       />
 
       <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)} className="space-y-6">
-        <TabsList className="h-auto gap-1 rounded-xl bg-muted/50 p-1.5 shadow-sm">
+        <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1 rounded-xl bg-muted/50 p-1.5 shadow-sm">
           <TabsTrigger
             value="lancamentos"
             className="gap-2 rounded-lg px-4 py-2 text-sm font-medium data-[state=active]:shadow-md"
@@ -257,14 +261,16 @@ function Pagina() {
                       <ComissaoStatusBadge status={c.status} />
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={recalc.isPending}
-                        onClick={() => recalc.mutate(c.id)}
-                      >
-                        <RefreshCw className="mr-1 h-3.5 w-3.5" /> Recalcular
-                      </Button>
+                      {podeEditar && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={recalc.isPending}
+                          onClick={() => recalc.mutate(c.id)}
+                        >
+                          <RefreshCw className="mr-1 h-3.5 w-3.5" /> Recalcular
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

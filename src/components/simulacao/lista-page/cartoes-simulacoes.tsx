@@ -12,6 +12,7 @@ import { AcoesSimulacao, ProdutoBadge } from "@/components/simulacao/lista-detal
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { formatDataHoraBR, type HandlersLinha } from "./tipos";
+import { SeloDaConta } from "@/components/plataforma/conta-nativa/selo-da-conta";
 
 export function CartoesSimulacoes({
   itens,
@@ -47,10 +48,15 @@ export function CartoesSimulacoes({
       {!isLoading && itens.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-border py-12 text-center">
           <Calculator className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
-          <Button asChild size="sm">
-            <Link to="/operacional/simulacoes/completa">Criar primeira simulação</Link>
-          </Button>
+          <p className="text-sm text-muted-foreground">
+            {verExcluidas ? "Nenhuma simulação excluída." : "Nenhuma simulação encontrada."}
+          </p>
+          {/* Em "Excluídas" não faz sentido convidar a criar a primeira simulação. */}
+          {!verExcluidas && (
+            <Button asChild size="sm">
+              <Link to="/operacional/simulacoes/completa">Criar primeira simulação</Link>
+            </Button>
+          )}
         </div>
       )}
       {itens.map((s) => {
@@ -67,17 +73,24 @@ export function CartoesSimulacoes({
               } as React.CSSProperties
             }
             className="group/card relative cursor-pointer overflow-hidden rounded-xl border border-border/60 bg-card p-4 shadow-sm ring-1 ring-inset ring-[var(--banco-ring)] transition-all duration-300 ease-out hover:z-10 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_18px_40px_-12px_rgba(0,0,0,0.18),0_0_0_1px_var(--banco-ring)] active:scale-[0.99]"
-            onClick={() => (verExcluidas ? undefined : handlers.onEditar(s.id))}
+            onClick={() => (verExcluidas ? undefined : handlers.onVer(s.id))}
           >
             <span className="absolute inset-y-0 left-0 w-1 bg-[var(--banco)]" />
             <div className="flex items-start justify-between gap-2 pl-1">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-mono text-sm font-semibold leading-tight text-primary">
                   {s.numero_simulacao}
+                  {s.homefin_id_oportunidade && (
+                    <span className="font-sans text-[12px] font-medium text-muted-foreground">
+                      {" "}· ID {s.homefin_id_oportunidade}
+                    </span>
+                  )}
                 </p>
                 <p className="truncate text-sm font-medium text-foreground transition-colors group-hover/card:text-primary">
                   {s.nome_cliente ?? "—"}
                 </p>
+                {/* Base de uma conta assinante: de qual licença veio. */}
+                {s._conta && <SeloDaConta conta={s._conta} />}
                 {/* Data e IDs agrupados em linha própria: em telas estreitas eles
                     não cabiam ao lado do número e sobrepunham o badge de status. */}
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-medium uppercase tracking-tight text-muted-foreground">
@@ -154,9 +167,13 @@ export function CartoesSimulacoes({
                         onDuplicar={() => handlers.onDuplicar(s.id)}
                         onEnviarProposta={() => handlers.onEnviarProposta(s.id, s.numero_simulacao)}
                         onExcluir={() => handlers.onExcluir(s.id)}
+                        podeExcluir={handlers.podeExcluir ?? true}
                         onEncaminhar={(id, canal) => handlers.onEncaminhar(s.id, canal)}
                         onDestravar={() => handlers.onDestravar(s.id)}
                         numero={s.numero_simulacao}
+                        semCotacao={
+                          !(s.bancos ?? []).some((b: any) => b?.status_banco === "simulada")
+                        }
                       />
                     </>
                   )}

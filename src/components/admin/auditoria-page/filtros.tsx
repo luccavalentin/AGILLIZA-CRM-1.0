@@ -139,7 +139,7 @@ export function BarraFiltros({
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="Buscar por ação, entidade ou IP…"
+            placeholder="Buscar por ação, pessoa, tela ou IP…"
             value={rascunho.busca}
             onChange={(e) => setRascunho((s) => ({ ...s, busca: e.target.value }))}
             onKeyDown={(e) => e.key === "Enter" && aplicar()}

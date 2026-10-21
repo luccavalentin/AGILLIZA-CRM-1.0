@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { Folder } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,13 +35,20 @@ export const Route = createFileRoute("/_authenticated")({
       { rel: "apple-touch-icon", href: "/icons/app/apple-touch-icon.png" },
     ],
   }),
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     // getSession() lê a sessão localmente (sem round-trip de rede a cada
     // navegação), evitando lag ao trocar de tela. getUser() só valida no
     // servidor e era chamado em toda navegação — causa da lentidão.
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session?.user) {
       throw redirect({ to: "/auth" });
+    }
+    // Senha provisória (o próprio e-mail): nada abre antes de a pessoa definir a dela.
+    if (
+      data.session.user.app_metadata?.senha_provisoria === true &&
+      location.pathname !== "/conta/seguranca"
+    ) {
+      throw redirect({ to: "/conta/seguranca", search: { definir: 1 } as never });
     }
     return { user: data.session.user };
   },
@@ -176,8 +184,35 @@ function InternalLayout() {
     navigate({ to: "/auth", replace: true });
   }
 
-  const carregando = sessaoQuery.isLoading || permsQuery.isLoading;
-  const comErro = sessaoQuery.isError || permsQuery.isError || carregamentoTravado;
+  // Sessão que acabou (revogada pelo admin, expirada) ou pessoa bloqueada/excluída
+  // não é problema de conexão: "Tentar novamente" nunca resolveria. Avisa e volta
+  // ao login, limpando o que ficou no aparelho.
+  const perfil = sessaoQuery.data?.profile;
+  const naoAutorizado = [sessaoQuery.error, permsQuery.error].some((e) =>
+    /unauthorized|jwt|token|sess(ion|ão)/i.test(e instanceof Error ? e.message : String(e ?? "")),
+  );
+  const acessoEncerrado =
+    naoAutorizado ||
+    (sessaoQuery.isSuccess && (!perfil || perfil.ativo === false || !!perfil.bloqueado_em));
+  useEffect(() => {
+    if (!acessoEncerrado) return;
+    toast.error(
+      naoAutorizado
+        ? "Sua sessão terminou. Entre de novo para continuar."
+        : "Seu acesso está bloqueado. Fale com o administrador da sua conta.",
+    );
+    void (async () => {
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      limparCachePermissoes();
+      await supabase.auth.signOut({ scope: "local" });
+      navigate({ to: "/auth", replace: true });
+    })();
+  }, [acessoEncerrado]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const carregando = sessaoQuery.isLoading || permsQuery.isLoading || acessoEncerrado;
+  const comErro =
+    !acessoEncerrado && (sessaoQuery.isError || permsQuery.isError || carregamentoTravado);
 
   if (comErro) {
     return (

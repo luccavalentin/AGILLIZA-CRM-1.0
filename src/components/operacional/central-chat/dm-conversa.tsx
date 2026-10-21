@@ -9,15 +9,10 @@ import { ChatConversaCore } from "@/components/shared/chat-core/chat-conversa";
 import { useAdaptadorDm } from "@/components/shared/chat-core/adapters/dm";
 import { obterDm } from "@/lib/chats/central.functions";
 import { cn } from "@/lib/utils";
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 
 function iniciais(nome?: string | null): string {
-  if (!nome) return "?";
-  return nome
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("");
+  return iniciaisDoNome(nome);
 }
 
 /**

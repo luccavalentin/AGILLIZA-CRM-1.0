@@ -1,3 +1,4 @@
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 export const CORES = [
   { id: "blue", nome: "Azul" },
   { id: "green", nome: "Verde" },
@@ -29,9 +30,5 @@ export function rotuloDia(iso: string): string {
 }
 
 export function iniciais(nome?: string | null): string {
-  if (!nome) return "?";
-  const partes = nome.trim().split(/\s+/);
-  const primeira = partes[0]?.[0] ?? "";
-  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
-  return (primeira + ultima).toUpperCase();
+  return iniciaisDoNome(nome);
 }

@@ -52,12 +52,22 @@ export function calcularPorEntrada(
  */
 export function calcularPorFinanciamento(
   valorFinanciamento: number,
-  _ltvMax: number,
+  ltvMax: number,
   valorImovelAtual = 0,
 ): Partial<Form> {
   const fin = Math.max(0, Number(valorFinanciamento) || 0);
   const imovel = Math.max(0, Number(valorImovelAtual) || 0);
   if (imovel <= 0) {
+    // Sem imóvel informado, o valor a financiar define o resto pelo teto do banco
+    // (é o que a ajuda da tela promete): imóvel = financiamento ÷ LTV.
+    if (fin > 0 && ltvMax > 0) {
+      const imovelPeloTeto = Math.round(fin / ltvMax);
+      return {
+        valor_imovel: imovelPeloTeto,
+        valor_financiamento: fin,
+        valor_entrada: Math.max(0, imovelPeloTeto - fin),
+      };
+    }
     return { valor_financiamento: fin };
   }
   const finLimitado = Math.min(fin, imovel);

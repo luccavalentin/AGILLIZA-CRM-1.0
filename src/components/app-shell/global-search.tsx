@@ -28,6 +28,7 @@ export function GlobalSearch() {
   const [termo, setTermo] = useState("");
   const [resultados, setResultados] = useState<ResultadoBusca[]>([]);
   const [carregando, setCarregando] = useState(false);
+  const [falhou, setFalhou] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -44,6 +45,7 @@ export function GlobalSearch() {
     const t = termo.trim();
     if (t.length === 0) {
       setResultados([]);
+      setFalhou(false);
       return;
     }
     let ativo = true;
@@ -51,7 +53,17 @@ export function GlobalSearch() {
     const timer = setTimeout(async () => {
       try {
         const r = await buscar({ data: { termo: t } });
-        if (ativo) setResultados(r.resultados);
+        if (ativo) {
+          setResultados(r.resultados);
+          setFalhou(false);
+        }
+      } catch {
+        // Sem isso a falha virava "Nenhum resultado encontrado" (ou mantinha
+        // os resultados do termo anterior) e o usuário não sabia que a busca caiu.
+        if (ativo) {
+          setResultados([]);
+          setFalhou(true);
+        }
       } finally {
         if (ativo) setCarregando(false);
       }
@@ -93,7 +105,9 @@ export function GlobalSearch() {
               ? "Digite para buscar."
               : carregando
                 ? "Buscando…"
-                : "Nenhum resultado encontrado."}
+                : falhou
+                  ? "Não foi possível buscar agora. Tente de novo em instantes."
+                  : "Nenhum resultado encontrado."}
           </CommandEmpty>
           {grupos.map((g) => (
             <CommandGroup key={g.tipo} heading={ROTULO_TIPO[g.tipo]}>

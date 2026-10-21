@@ -65,11 +65,13 @@ export function useAdaptadorCliente({
       numero_proposta: ctxCliente?.numero_proposta ?? null,
       nome_banco: ctxCliente?.nome_banco ?? null,
       etapa: ctxCliente?.etapa_nome ?? info?.contexto ?? null,
+      empresa: ctxCliente?.empresa ?? null,
     }),
     [ctxCliente, info?.nome, info?.contexto],
   );
 
   const meuNome = sessao?.profile?.nome?.trim() || null;
+  const meuId = sessao?.profile?.id ?? null;
   const queryKey = useMemo(
     () => ["chat-cliente", clienteId, atendenteId ?? "eu"] as const,
     [clienteId, atendenteId],
@@ -80,6 +82,7 @@ export function useAdaptadorCliente({
       conversaId: clienteId,
       queryKey,
       meuNome,
+      meuId,
       info,
       headerClienteId: clienteId,
       contextoResposta,
@@ -103,7 +106,7 @@ export function useAdaptadorCliente({
         }),
       editar: (p) => editar({ data: p }),
       excluir: (p) => excluir({ data: p }),
-      marcarLido: () => marcarLido({ data: { cliente_id: clienteId } }),
+      marcarLido: () => marcarLido({ data: { cliente_id: clienteId, atendente_id: atendenteId } }),
 
       origem: "cliente",
       reagir: (p) =>
@@ -117,8 +120,9 @@ export function useAdaptadorCliente({
             table: "cliente_app_mensagens",
             filter: `cliente_id=eq.${clienteId}`,
           },
-          { table: "chat_reacoes", filter: `origem=eq.cliente` },
         ],
+        // Só as reações das mensagens desta conversa (antes: de todas as conversas).
+        reacoes: { table: "chat_reacoes" },
       },
 
       typing: { id: clienteId, myRole: "time" },
@@ -150,6 +154,7 @@ export function useAdaptadorCliente({
       atendenteId,
       queryKey,
       meuNome,
+      meuId,
       info,
       contextoResposta,
       acoes,

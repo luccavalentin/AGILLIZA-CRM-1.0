@@ -26,3 +26,36 @@ describe("mensagem para a tela", () => {
     expect(mensagemDeErro(new Error(msg), "x")).toBe(msg);
   });
 });
+
+describe("erro técnico vira frase", () => {
+  it("validação do servidor (Zod) vira frase por campo", () => {
+    const zod = JSON.stringify([
+      { code: "too_big", maximum: 31, path: ["dia_pagamento_salario"], message: "Number must be less than or equal to 31" },
+    ]);
+    expect(mensagemDeErro(new Error(zod), "x")).toBe("Dia pagamento salario: o máximo é 31.");
+  });
+
+  it("data vazia no banco vira aviso de data", () => {
+    expect(mensagemDeErro(new Error('invalid input syntax for type date: ""'), "x")).toBe(
+      "Data inválida ou não informada.",
+    );
+  });
+
+  it("restrição do banco não aparece crua", () => {
+    const pg = 'new row for relation "rh_documentos_checklist" violates check constraint "rh_documentos_checklist_status_check"';
+    expect(mensagemDeErro(new Error(pg), "x")).toBe("Valor não permitido para este campo.");
+  });
+
+  it("texto que começa com colchete mas não é validação passa intacto", () => {
+    expect(mensagemDeErro(new Error("[Banco] recusou"), "x")).toBe("[Banco] recusou");
+  });
+});
+
+describe("mensagem própria do schema", () => {
+  it("mensagem em português definida no schema é a que aparece", () => {
+    const zod = JSON.stringify([
+      { code: "too_small", minimum: 0, path: ["valor"], message: "Informe um valor maior que zero." },
+    ]);
+    expect(mensagemDeErro(new Error(zod), "x")).toBe("Informe um valor maior que zero.");
+  });
+});

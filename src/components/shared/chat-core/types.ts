@@ -11,6 +11,9 @@ export type ChatSendPayload = {
   responde_a?: string;
   interna?: boolean;
   anexo_path?: string;
+  /** Nome original do arquivo (sem ele a conversa mostrava o nome técnico do Storage). */
+  anexo_nome?: string;
+  anexo_tamanho?: number;
 };
 
 /**
@@ -64,6 +67,11 @@ export interface ChatAdapter {
 
   /** Nome exibido para o usuário logado (usado na citação otimista). */
   meuNome: string | null;
+  /**
+   * Id do usuário logado. Quando informado, editar/excluir só aparecem nas mensagens
+   * dele (o servidor recusa as de colegas).
+   */
+  meuId?: string | null;
   /** Info do "outro lado" (cliente/usuário/demanda) para o cabeçalho. */
   info?: ChatClienteInfo;
   /** clienteId para atalhos no cabeçalho (quando aplicável). */
@@ -106,6 +114,11 @@ export interface ChatAdapter {
   realtime: {
     channel: string;
     bindings: { table: string; filter: string }[];
+    /**
+     * Tabela de reações: o núcleo escuta só as mensagens carregadas desta conversa
+     * (`mensagem_id=in.(...)`), e não as reações de todas as conversas.
+     */
+    reacoes?: { table: string };
   };
 
   /** Identificador e papel para o hook de "digitando". */

@@ -1324,6 +1324,7 @@ export type Database = {
           nacionalidade: string | null
           naturalidade: string | null
           nome: string
+          nome_busca: string | null
           numero_cliente: string
           numero_documento: string | null
           orgao_expedidor: string | null
@@ -1419,6 +1420,7 @@ export type Database = {
           nacionalidade?: string | null
           naturalidade?: string | null
           nome: string
+          nome_busca?: never
           numero_cliente: string
           numero_documento?: string | null
           orgao_expedidor?: string | null
@@ -1514,6 +1516,7 @@ export type Database = {
           nacionalidade?: string | null
           naturalidade?: string | null
           nome?: string
+          nome_busca?: never
           numero_cliente?: string
           numero_documento?: string | null
           orgao_expedidor?: string | null

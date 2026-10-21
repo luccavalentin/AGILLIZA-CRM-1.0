@@ -1,6 +1,41 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { STATUS_PROPOSTA } from "@/components/propostas/status";
+
+/**
+ * Rótulos dos status que os gatilhos do banco gravam crus no corpo da
+ * notificação (ex.: "Cliente Fulano: credito_recusado"). A tradução acontece
+ * na leitura — assim vale também para as notificações já gravadas, sem
+ * mexer no gatilho. Simulação por último: em "rascunho"/"cancelada" o texto
+ * vem do gatilho de simulação.
+ */
+const ROTULOS_STATUS: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(STATUS_PROPOSTA).map(([k, v]) => [k, v.label])),
+  rascunho: "Rascunho",
+  simulada: "Simulada",
+  parcialmente_simulada: "Parcialmente simulada",
+  em_simulacao: "Em simulação",
+  enviando: "Aguardando o banco",
+  erro_banco: "Erro no banco",
+  promovida: "Virou proposta",
+  cancelada: "Cancelada",
+};
+
+/** Troca códigos de status (snake_case ou o status no fim do texto) pelo rótulo. */
+export function traduzirCorpoNotificacao(corpo: string | null): string | null {
+  if (!corpo) return corpo;
+  return corpo
+    .replace(/\b[a-z]+(?:_[a-z]+)+\b/g, (cod) => ROTULOS_STATUS[cod] ?? cod)
+    .replace(/(:\s*)([a-z]+)\s*$/, (m, sep: string, cod: string) =>
+      ROTULOS_STATUS[cod] ? `${sep}${ROTULOS_STATUS[cod]}` : m,
+    );
+}
+
+const traduzir = (n: Notificacao): Notificacao => ({
+  ...n,
+  corpo: traduzirCorpoNotificacao(n.corpo),
+});
 
 export interface Notificacao {
   id: string;
@@ -25,12 +60,11 @@ export const listarNotificacoes = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<ResumoNotificacoes> => {
     const { supabase } = context;
     const { data, error } = await supabase.rpc("listar_minhas_notificacoes");
-    if (error) {
-      return { itens: [], naoLidas: 0 };
-    }
+    // Antes devolvia lista vazia: a falha parecia "nenhuma notificação".
+    if (error) throw new Error("Não foi possível carregar as notificações.");
     const payload = (data ?? {}) as { itens?: Notificacao[]; naoLidas?: number };
     return {
-      itens: (payload.itens ?? []) as Notificacao[],
+      itens: ((payload.itens ?? []) as Notificacao[]).map(traduzir),
       naoLidas: payload.naoLidas ?? 0,
     };
   });
@@ -40,13 +74,14 @@ export const listarTodasNotificacoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<Notificacao[]> => {
     const { supabase, userId } = context;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("notificacoes")
       .select("id, tipo, titulo, corpo, link, lida, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(200);
-    return (data ?? []) as Notificacao[];
+    if (error) throw new Error("Não foi possível carregar as notificações.");
+    return ((data ?? []) as Notificacao[]).map(traduzir);
   });
 
 /** Marca uma notificação como lida. */

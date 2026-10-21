@@ -36,12 +36,13 @@ export function ChatClienteConversa({
   /** Ações extras (ex.: "Mais ações") renderizadas no cabeçalho da conversa. */
   acoes?: React.ReactNode;
 }) {
+  // Na janela flutuante a thread vem em `info` (o estado flutuante só guarda cliente + info).
   const adapter = useAdaptadorCliente({
     clienteId,
-    atendenteId,
+    atendenteId: atendenteId ?? info?.atendenteId,
     info,
     somenteLeitura,
-    atendenteNome,
+    atendenteNome: atendenteNome ?? info?.atendenteNome,
     acoes,
   });
   return <ChatConversaCore adapter={adapter} />;
@@ -50,6 +51,7 @@ export function ChatClienteConversa({
 /**
  * Chat interno com o cliente. Permite "soltar" a conversa em uma janela
  * flutuante GLOBAL, que continua aberta ao navegar entre telas do sistema.
+ * Usado no Chat do CRM e na ficha do cliente (único lugar com o botão "Soltar chat").
  */
 export function ChatClienteTab({
   clienteId,
@@ -109,23 +111,36 @@ export function ChatClienteTab({
 
   return (
     <div className="relative h-full min-h-[24rem] min-w-0 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => abrirChatFlutuante(clienteId, info)}
-        title="Soltar em janela flutuante"
-        aria-label="Soltar em janela flutuante"
-        className="absolute right-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-      >
-        <Maximize2 className="size-3.5" />
-        <span className="hidden sm:inline">Soltar chat</span>
-      </button>
-
+      {/* "Soltar chat" vai no cabeçalho da conversa (antes ficava por cima dos botões dele). */}
       <ChatClienteConversa
         clienteId={clienteId}
         info={info}
         atendenteId={atendenteId}
         atendenteNome={atendenteNome}
-        acoes={acoes}
+        acoes={
+          <>
+            <button
+              type="button"
+              onClick={() =>
+                abrirChatFlutuante(clienteId, {
+                  nome: info?.nome ?? "Cliente",
+                  ...info,
+                  // Sem isto a janela abria a thread do próprio usuário, e não a que
+                  // estava na tela (participante, visão supervisora).
+                  atendenteId: atendenteId ?? info?.atendenteId,
+                  atendenteNome: atendenteNome ?? info?.atendenteNome,
+                })
+              }
+              title="Soltar em janela flutuante"
+              aria-label="Soltar em janela flutuante"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <Maximize2 className="size-3.5" />
+              <span className="hidden sm:inline">Soltar chat</span>
+            </button>
+            {acoes}
+          </>
+        }
       />
     </div>
   );

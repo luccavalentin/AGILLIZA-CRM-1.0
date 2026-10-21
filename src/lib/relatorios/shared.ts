@@ -45,7 +45,54 @@ export const ESCOPO_LABEL: Record<Escopo, string> = {
   geral: "Geral",
 };
 
+/** Nome de cada relatório pelo código gravado em exportações e salvos. */
+const RELATORIO_ROTULO: Record<string, string> = {
+  "app-cliente": "App do cliente",
+  clientes: "Clientes",
+  comerciais: "Comerciais",
+  comissoes: "Comissões",
+  comparativos: "Comparativo de dados",
+  consolidado: "Consolidado",
+  crm: "Clientes / CRM",
+  demandas: "Demandas",
+  financeiros: "Financeiros",
+  gerencial: "Gerencial",
+  "painel-geral": "Painel geral",
+  propostas: "Propostas",
+  simulacoes: "Simulações",
+  tarefas: "Tarefas",
+  operacionais: "Operacional consolidado",
+  "operacional-consolidado": "Operacional consolidado",
+  "operacional-simulacoes": "Operacional — simulações",
+  "propostas-enviadas": "Propostas enviadas",
+  "propostas-aprovadas": "Propostas aprovadas",
+  "propostas-recusadas": "Propostas recusadas",
+};
+export const rotuloRelatorio = (codigo: string): string =>
+  RELATORIO_ROTULO[codigo] ?? codigo.replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+
 export const filtrosPadrao = (): ReportFiltros => ({ periodo: "mes", escopo: "minha" });
+
+/**
+ * Escopo que o usuário pode de fato pedir — conferido no servidor. A tela já
+ * esconde "Geral" e o filtro por pessoa de quem só tem "Minha", mas a função
+ * do servidor é um endereço HTTP: sem esta checagem, bastava mandar
+ * `escopo: "geral"` (ou `responsavel` de outra pessoa) para ver os números de
+ * todos. Quem não tem escopo de equipe nem geral volta para "minha".
+ */
+export async function limitarEscopoAoPermitido<T extends { escopo: Escopo; responsavel?: string }>(
+  supabase: any,
+  userId: string,
+  f: T,
+): Promise<T> {
+  if (f.escopo === "minha" && (!f.responsavel || f.responsavel === userId)) return f;
+  const [{ data: geral }, { data: equipe }] = await Promise.all([
+    supabase.rpc("can_view_global_reports", { _user_id: userId }),
+    supabase.rpc("can_view_team_reports", { _user_id: userId }),
+  ]);
+  if (geral || equipe) return f;
+  return { ...f, escopo: "minha", responsavel: undefined };
+}
 
 /** Fuso oficial da operação (sem horário de verão desde 2019: UTC-03:00). */
 export const TZ_BR = "America/Sao_Paulo";

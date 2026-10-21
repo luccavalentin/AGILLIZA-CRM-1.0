@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plane, Plus } from "lucide-react";
+import { Ban, Pencil, Plane, Plus } from "lucide-react";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,13 +40,20 @@ import { FuncionarioPicker } from "@/components/rh/funcionario-picker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ControleFeriasPanel } from "@/components/rh/controle-ferias-panel";
 import { listarFerias, salvarFerias, type FeriasStatus } from "@/lib/rh/submodulos.functions";
+import { FERIAS_STATUS_LABEL as ROT } from "@/lib/rh/rotulos";
+import { formatData } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 
 const STATUS: Record<FeriasStatus, { label: string; tone: string }> = {
-  planejada: { label: "Planejada", tone: "bg-muted text-muted-foreground" },
-  aprovada: { label: "Aprovada", tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
-  em_curso: { label: "Em curso", tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
-  concluida: { label: "Concluída", tone: "bg-primary/15 text-primary" },
-  cancelada: { label: "Cancelada", tone: "bg-destructive/15 text-destructive" },
+  planejada: { label: ROT.planejada, tone: "bg-muted text-muted-foreground" },
+  aprovada: {
+    label: ROT.aprovada,
+    tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  },
+  em_curso: { label: ROT.em_curso, tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+  concluida: { label: ROT.concluida, tone: "bg-primary/15 text-primary" },
+  cancelada: { label: ROT.cancelada, tone: "bg-destructive/15 text-destructive" },
 };
 
 export const Route = createFileRoute("/_authenticated/rh/ferias")({
@@ -60,7 +68,9 @@ function Pagina() {
   const fnSalvar = useServerFn(salvarFerias);
 
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
+  // Abrir "Programar férias" começa do zero; antes reabria com o último preenchimento.
+  const formVazio = () => ({
+    id: undefined as string | undefined,
     funcionario_id: "",
     periodo_aquisitivo_inicio: "",
     periodo_aquisitivo_fim: "",
@@ -72,6 +82,7 @@ function Pagina() {
     status: "planejada" as FeriasStatus,
     observacoes: "",
   });
+  const [form, setForm] = useState(formVazio);
 
   const q = useQuery({ queryKey: ["rh-ferias"], queryFn: () => fnList() });
 
@@ -79,6 +90,7 @@ function Pagina() {
     mutationFn: () =>
       fnSalvar({
         data: {
+          id: form.id,
           funcionario_id: form.funcionario_id,
           periodo_aquisitivo_inicio: form.periodo_aquisitivo_inicio,
           periodo_aquisitivo_fim: form.periodo_aquisitivo_fim,
@@ -97,8 +109,31 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["rh-kpis"] });
       setOpen(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
+
+  // Cancelar mantém o registro (histórico e avos já calculados); só muda o status.
+  // Sem try/catch: o ConfirmDelete mostra o erro e continua aberto.
+  async function cancelarFerias(f: NonNullable<typeof q.data>[number]) {
+    await fnSalvar({
+      data: {
+        id: f.id,
+        funcionario_id: f.funcionario_id,
+        periodo_aquisitivo_inicio: f.periodo_aquisitivo_inicio,
+        periodo_aquisitivo_fim: f.periodo_aquisitivo_fim,
+        data_inicio: f.data_inicio,
+        data_fim: f.data_fim,
+        dias_gozados: f.dias_gozados,
+        abono_dias: f.abono_dias,
+        adiantar_13o: f.adiantar_13o,
+        status: "cancelada",
+        observacoes: f.observacoes,
+      },
+    });
+    toast.success("Férias canceladas.");
+    qc.invalidateQueries({ queryKey: ["rh-ferias"] });
+    qc.invalidateQueries({ queryKey: ["rh-kpis"] });
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 sm:p-4 md:p-6">
@@ -112,15 +147,18 @@ function Pagina() {
             planejamento e execução das férias.
           </p>
         </div>
+        <Button
+          onClick={() => {
+            setForm(formVazio());
+            setOpen(true);
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" /> Programar férias
+        </Button>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Programar férias
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-xl">
             <DialogHeader>
-              <DialogTitle>Programar férias</DialogTitle>
+              <DialogTitle>{form.id ? "Editar férias" : "Programar férias"}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2">
@@ -247,8 +285,8 @@ function Pagina() {
         <TabsContent value="controle" className="space-y-3">
           <ControleFeriasPanel
             onProgramar={(f, periodo) => {
-              setForm((p) => ({
-                ...p,
+              setForm(() => ({
+                ...formVazio(),
                 funcionario_id: f.funcionario_id,
                 periodo_aquisitivo_inicio: periodo.inicio,
                 periodo_aquisitivo_fim: periodo.fim,
@@ -271,6 +309,7 @@ function Pagina() {
                       <TableHead>Dias</TableHead>
                       <TableHead>Abono</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="w-[1%] text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -278,13 +317,13 @@ function Pagina() {
                       <TableRow key={f.id}>
                         <TableCell className="font-medium">{f.funcionario_nome}</TableCell>
                         <TableCell className="text-xs">
-                          {new Date(f.periodo_aquisitivo_inicio).toLocaleDateString("pt-BR")} →{" "}
-                          {new Date(f.periodo_aquisitivo_fim).toLocaleDateString("pt-BR")}
+                          {formatData(f.periodo_aquisitivo_inicio)} →{" "}
+                          {formatData(f.periodo_aquisitivo_fim)}
                         </TableCell>
                         <TableCell className="text-xs">
                           {f.data_inicio
-                            ? `${new Date(f.data_inicio).toLocaleDateString("pt-BR")} → ${
-                                f.data_fim ? new Date(f.data_fim).toLocaleDateString("pt-BR") : "—"
+                            ? `${formatData(f.data_inicio)} → ${
+                                f.data_fim ? formatData(f.data_fim) : "—"
                               }`
                             : "—"}
                         </TableCell>
@@ -293,17 +332,59 @@ function Pagina() {
                         <TableCell>
                           <Badge className={STATUS[f.status].tone}>{STATUS[f.status].label}</Badge>
                         </TableCell>
+                        <TableCell className="whitespace-nowrap text-right">
+                          {f.status !== "concluida" && f.status !== "cancelada" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`Editar férias de ${f.funcionario_nome}`}
+                                onClick={() => {
+                                  setForm({
+                                    id: f.id,
+                                    funcionario_id: f.funcionario_id,
+                                    periodo_aquisitivo_inicio: f.periodo_aquisitivo_inicio,
+                                    periodo_aquisitivo_fim: f.periodo_aquisitivo_fim,
+                                    data_inicio: f.data_inicio ?? "",
+                                    data_fim: f.data_fim ?? "",
+                                    dias_gozados: f.dias_gozados,
+                                    abono_dias: f.abono_dias,
+                                    adiantar_13o: f.adiantar_13o,
+                                    status: f.status,
+                                    observacoes: f.observacoes ?? "",
+                                  });
+                                  setOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <ConfirmDelete
+                                titulo="Cancelar estas férias?"
+                                descricao={`A programação de ${f.funcionario_nome} fica registrada como cancelada.`}
+                                confirmarLabel="Cancelar férias"
+                                onConfirm={() => cancelarFerias(f)}
+                                trigger={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={`Cancelar férias de ${f.funcionario_nome}`}
+                                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  >
+                                    <Ban className="h-4 w-4" />
+                                  </Button>
+                                }
+                              />
+                            </>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                     {(!q.data || q.data.length === 0) && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="py-10 text-center text-sm text-muted-foreground"
-                        >
-                          Nenhum período de férias cadastrado.
-                        </TableCell>
-                      </TableRow>
+                      <LinhaEstadoLista
+                        colSpan={7}
+                        q={q}
+                        vazio="Nenhum período de férias cadastrado."
+                      />
                     )}
                   </TableBody>
                 </Table>

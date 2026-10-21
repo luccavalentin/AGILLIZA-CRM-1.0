@@ -45,6 +45,7 @@ import {
   type RegraComissaoUsuario,
   type TipoVinculoComissao,
 } from "@/lib/financeiro/comissoes-usuario.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 const TIPOS_VINCULO_VALIDOS = new Set(TIPOS_VINCULO_COMISSAO.map((t) => t.valor));
 
@@ -174,7 +175,7 @@ export function RegraComissaoUsuarioForm({ aberto, onFechar, tipoInicial, regra 
       onFechar();
     },
 
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar regra."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar regra.")),
   });
 
   const podeSalvar = usuarioId && percentual && Number(percentual.replace(",", ".")) >= 0;

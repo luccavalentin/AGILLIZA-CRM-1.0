@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -74,6 +75,7 @@ import {
   Upload,
   MessageSquare,
 } from "lucide-react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 const TAB_ICONS: Record<Tab, React.ComponentType<{ className?: string }>> = {
   RESUMO: LayoutDashboard,
@@ -187,24 +189,26 @@ export function PropostaView({
                   "financiamento_imobiliario"). */}
               {PRODUTOS.find((x) => x.value === p.produto)?.label ?? p.produto ?? "Operação"}
             </span>
-            <h1 className="mt-2 truncate text-2xl font-semibold text-foreground">
-              {(() => {
-                const nb = numeroBancoParaExibir(p.numero_proposta_banco);
-                return nb ? `Proposta banco ${nb}` : `Proposta ${p.numero_proposta}`;
-              })()}
+            {/* Pedido do dono (21/10/2026): número nunca em letra de título. O título é
+                curto; número interno, número no banco e ID ficam na linha de apoio. */}
+            <h1 className="mt-2 truncate text-lg font-semibold tracking-tight text-foreground">
+              Proposta <span className="tabular-nums">{p.numero_proposta}</span>
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {numeroBancoParaExibir(p.numero_proposta_banco) && (
-                <span className="mr-2">Interno {p.numero_proposta} ·</span>
-              )}
-              {/* Oportunidade na HomeFin — a mesma pode ter várias simulações
-                  e propostas, uma por banco. */}
-              {p.codigo_oportunidade_homefin && (
                 <span className="mr-2 tabular-nums">
-                  Oportunidade {p.codigo_oportunidade_homefin} ·
+                  Nº no banco {numeroBancoParaExibir(p.numero_proposta_banco)} ·
                 </span>
               )}
-              {status === "cancelada" ? "Proposta cancelada" : `Ativa há ${diasDesde} dia(s)`}
+              {/* ID da operação na integração bancária — escrito só "ID". */}
+              {p.homefin_id_oportunidade && (
+                <span className="mr-2 tabular-nums">ID {p.homefin_id_oportunidade} ·</span>
+              )}
+              {status === "cancelada"
+                ? "Proposta cancelada"
+                : status === "credito_recusado"
+                  ? "Encerrada · crédito recusado"
+                  : `Ativa há ${diasDesde} ${diasDesde === 1 ? "dia" : "dias"}`}
             </p>
           </div>
           <AcoesTopo
@@ -366,7 +370,9 @@ export function PropostaView({
                               { id: tid },
                             );
                           } catch (e: any) {
-                            toast.error(e.message || "Falha ao ajustar e reenviar.", { id: tid });
+                            toast.error(mensagemDeErro(e, "Falha ao ajustar e reenviar."), {
+                              id: tid,
+                            });
                           }
                         }}
                       >
@@ -419,7 +425,7 @@ export function PropostaView({
         <div className="p-5">
           <PipelineStepper
             status={status}
-            detalheStatus={p.detalhe_status_atual}
+            detalheStatus={semMarcaIntegracao(p.detalhe_status_atual)}
             banco={p.nome_banco}
             propostaId={id}
             documentacao={data.documentacao}

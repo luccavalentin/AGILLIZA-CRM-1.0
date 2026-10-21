@@ -204,7 +204,7 @@ export async function espelharPropostaNaHomefin({
     await supabase.from("proposta_historico").insert({
       proposta_id: propostaId,
       tipo_evento: "erro_envio",
-      descricao: `Atualização cadastral não chegou à HomeFin: ${out.erros
+      descricao: `Atualização cadastral não chegou à integração bancária: ${out.erros
         .map((e) => e.mensagem)
         .join(" · ")}`,
     } as any);
@@ -227,9 +227,7 @@ export async function propagarClienteParaPropostas({
   supabase: Db;
   clienteId: string;
 }): Promise<void> {
-  emSegundoPlano(`espelho-crm cliente ${clienteId}`, () =>
-    propagarAgora({ supabase, clienteId }),
-  );
+  emSegundoPlano(`espelho-crm cliente ${clienteId}`, () => propagarAgora({ supabase, clienteId }));
 }
 
 async function propagarAgora({ supabase, clienteId }: { supabase: Db; clienteId: string }) {
@@ -256,6 +254,33 @@ async function propagarAgora({ supabase, clienteId }: { supabase: Db; clienteId:
 const STATUS_FECHADOS = ["contrato_emitido", "cancelada", "credito_recusado", "registrado"];
 
 /** Traz para a proposta o que mudou no CRM depois dela. */
+/** Colunas do cliente (CRM) que alimentam o imóvel da proposta. */
+export const COLUNAS_IMOVEL_DO_CLIENTE =
+  "updated_at, documentos_checklist, iq_nome, iq_comentario, imovel_cep, imovel_logradouro, imovel_numero, imovel_complemento, imovel_bairro, imovel_cidade, imovel_uf, imovel_tipo, imovel_uso, imovel_situacao";
+
+/** Imóvel e contato da vistoria da proposta, a partir do cadastro do cliente (CRM). */
+export function imovelDaPropostaPeloCrm(c: any): Record<string, unknown> {
+  const checklist = (c?.documentos_checklist ?? {}) as Record<string, any>;
+  return {
+    cep_imovel: c?.imovel_cep ? String(c.imovel_cep).replace(/\D/g, "") : null,
+    endereco_imovel: c?.imovel_logradouro,
+    numero_imovel: c?.imovel_numero,
+    complemento_imovel: c?.imovel_complemento,
+    bairro_imovel: c?.imovel_bairro,
+    cidade_imovel: c?.imovel_cidade,
+    uf: c?.imovel_uf,
+    tipo_imovel: c?.imovel_tipo,
+    uso_imovel: c?.imovel_uso,
+    situacao_imovel: c?.imovel_situacao,
+    contato_avaliacao_nome: checklist.i_vistoria_nome,
+    contato_avaliacao_telefone: checklist.i_vistoria_tel
+      ? String(checklist.i_vistoria_tel).replace(/\D/g, "")
+      : null,
+    iq_nome: c?.iq_nome,
+    iq_comentario: c?.iq_comentario,
+  };
+}
+
 export async function sincronizarPropostaComCrmImpl({
   supabase,
   propostaId,
@@ -300,9 +325,7 @@ export async function sincronizarPropostaComCrmImpl({
       .is("conjuge_de", null),
     supabase
       .from("clientes")
-      .select(
-        "updated_at, documentos_checklist, iq_nome, iq_comentario, imovel_cep, imovel_logradouro, imovel_numero, imovel_complemento, imovel_bairro, imovel_cidade, imovel_uf, imovel_tipo, imovel_uso, imovel_situacao",
-      )
+      .select(COLUNAS_IMOVEL_DO_CLIENTE)
       .eq("id", prop.cliente_id)
       .maybeSingle(),
   ]);
@@ -345,25 +368,7 @@ export async function sincronizarPropostaComCrmImpl({
   // Imóvel e contato da vistoria: CRM mais novo que a proposta vence.
   const c = cliente as any;
   if (c && new Date(c.updated_at ?? 0).getTime() > new Date(prop.updated_at ?? 0).getTime()) {
-    const checklist = (c.documentos_checklist ?? {}) as Record<string, any>;
-    const doCrm: Record<string, unknown> = {
-      cep_imovel: c.imovel_cep ? String(c.imovel_cep).replace(/\D/g, "") : null,
-      endereco_imovel: c.imovel_logradouro,
-      numero_imovel: c.imovel_numero,
-      complemento_imovel: c.imovel_complemento,
-      bairro_imovel: c.imovel_bairro,
-      cidade_imovel: c.imovel_cidade,
-      uf: c.imovel_uf,
-      tipo_imovel: c.imovel_tipo,
-      uso_imovel: c.imovel_uso,
-      situacao_imovel: c.imovel_situacao,
-      contato_avaliacao_nome: checklist.i_vistoria_nome,
-      contato_avaliacao_telefone: checklist.i_vistoria_tel
-        ? String(checklist.i_vistoria_tel).replace(/\D/g, "")
-        : null,
-      iq_nome: c.iq_nome,
-      iq_comentario: c.iq_comentario,
-    };
+    const doCrm = imovelDaPropostaPeloCrm(c);
     const patch: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(doCrm)) {
       if (v === null || v === undefined || String(v).trim() === "") continue;

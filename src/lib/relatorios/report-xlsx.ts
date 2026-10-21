@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import type { ReportColumn, ReportRow, ReportCell } from "@/lib/relatorios/shared";
-import { formatCell, footerValue } from "@/lib/relatorios/report-format";
+import { formatCell } from "@/lib/relatorios/report-format";
 
 // Paleta Agilliza (evitar tokens CSS aqui: XLSX exige cores ARGB literais).
 const BRAND = "FF000F9F"; // Azul Agilliza
@@ -40,8 +40,21 @@ function excelValue(
     return Number.isFinite(n) ? n : formatCell(value, format);
   }
   if (format === "date") {
-    const d = new Date(String(value));
-    return Number.isNaN(d.getTime()) ? formatCell(value, format) : d;
+    // A planilha grava a data no fuso de quem abre: "2026-10-20" virava
+    // 20/10 00:00 UTC = 19/10 21:00 em Brasília, e a célula mostrava o dia
+    // anterior. Monta a data local com o dia de Brasília.
+    const txt = String(value);
+    const soData = /^\d{4}-\d{2}-\d{2}$/.test(txt)
+      ? txt
+      : (() => {
+          const t = new Date(txt);
+          return Number.isNaN(t.getTime())
+            ? null
+            : t.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+        })();
+    if (!soData) return formatCell(value, format);
+    const [a, m, d] = soData.split("-").map(Number);
+    return new Date(a, m - 1, d);
   }
   return String(value);
 }

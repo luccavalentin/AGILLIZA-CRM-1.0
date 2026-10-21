@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import {
   obterParametros,
   salvarParametros,
@@ -236,6 +237,8 @@ function Pagina() {
     }
   }, [q.data]);
 
+  // Salvar exige "Parâmetros: editar" (o servidor confere).
+  const podeEditar = usePermissao("admin.parametros", "edit");
   const salvar = useMutation({
     mutationFn: () => salvarParametros({ data: form }),
     onSuccess: () => {
@@ -529,7 +532,8 @@ function Pagina() {
           <Button
             type="button"
             onClick={() => salvar.mutate()}
-            disabled={salvar.isPending || !alterado}
+            disabled={!podeEditar || salvar.isPending || !alterado}
+            title={podeEditar ? undefined : "Você não tem permissão para alterar o cadastro."}
           >
             <Save className="mr-2 size-4" />
             {salvar.isPending ? "Salvando…" : "Salvar cadastro"}

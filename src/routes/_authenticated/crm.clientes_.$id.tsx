@@ -8,6 +8,16 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PipelineTimeline } from "@/components/crm/pipeline-timeline";
 import { ClienteForm } from "@/components/crm/cliente-form";
@@ -32,6 +42,7 @@ import {
 } from "@/lib/crm/clientes.functions";
 import { formatarDocumento, formatarCelular } from "@/lib/crm/documento";
 import { usePipelineRealtime } from "@/hooks/use-pipeline-realtime";
+import { usePermissao } from "@/hooks/use-permissao";
 
 import { ClienteHeader } from "@/components/crm/cliente-detalhe/header";
 import { TabsNav } from "@/components/crm/cliente-detalhe/tabs-nav";
@@ -40,6 +51,8 @@ import { NegociosTab } from "@/components/crm/cliente-detalhe/negocios-tab";
 import { HistoricoTab } from "@/components/crm/cliente-detalhe/historico-tab";
 import { clienteParaFormInicial } from "@/components/crm/cliente-detalhe/form-mapper";
 import { AppClienteAcesso } from "@/components/crm/cliente-detalhe/app-cliente-acesso";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { etapaEhComercial, MSG_ETAPA_SINCRONIZADA } from "@/lib/crm/etapas";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes_/$id")({
   head: () => ({ meta: [{ title: "Cliente — Agilliza" }] }),
@@ -65,10 +78,38 @@ function Pagina() {
   const getNeg = useServerFn(getClienteNegocios);
   const setEtapa = useServerFn(definirEtapa);
   const [movendoEtapa, setMovendoEtapa] = useState(false);
+  // Mover etapa e ligar o app do cliente exigem "Editar" em Clientes (o servidor recusa).
+  const podeEditar = usePermissao("crm.clientes", "edit");
   const [aba, setAba] = useState("resumo");
   const [previewSimId, setPreviewSimId] = useState<string | null>(null);
+  /** Avanço que pula etapas, aguardando confirmação. */
+  const [pulo, setPulo] = useState<{ codigo: string; nome: string; puladas: string[] } | null>(
+    null,
+  );
+
+  /**
+   * Clique numa etapa da esteira. Avançar pulando etapas pede confirmação: um
+   * clique só levava o cliente direto a "Cadastro Completo" com o cadastro no começo.
+   */
+  function pedirMoverEtapa(codigo: string) {
+    if (!etapaEhComercial(codigo)) return toast.info(MSG_ETAPA_SINCRONIZADA);
+    const lista = [...((stages ?? []) as any[])].sort((a, b) => a.ordem - b.ordem);
+    const destino = lista.find((s) => s.codigo === codigo);
+    const atual = pipe?.ordem ?? 0;
+    if (destino && destino.ordem > atual) {
+      const puladas = lista
+        .filter((s) => s.ordem > atual && s.ordem < destino.ordem)
+        .map((s) => s.nome as string);
+      if (puladas.length > 0) {
+        setPulo({ codigo, nome: destino.nome, puladas });
+        return;
+      }
+    }
+    void moverParaEtapa(codigo);
+  }
 
   async function moverParaEtapa(codigo: string) {
+    if (!etapaEhComercial(codigo)) return toast.info(MSG_ETAPA_SINCRONIZADA);
     setMovendoEtapa(true);
     try {
       await setEtapa({ data: { cliente_id: id, codigo_destino: codigo } });
@@ -76,13 +117,18 @@ function Pagina() {
       await qc.invalidateQueries({ queryKey: ["cliente-hist", id] });
       toast.success("Etapa atualizada.");
     } catch (err: any) {
-      toast.error(err?.message ?? "Não foi possível mover a etapa.");
+      toast.error(mensagemDeErro(err, "Não foi possível mover a etapa."));
     } finally {
       setMovendoEtapa(false);
     }
   }
 
-  const { data: det, isLoading } = useQuery({
+  const {
+    data: det,
+    isLoading,
+    isError,
+    error: erroCliente,
+  } = useQuery({
     queryKey: ["cliente", id],
     queryFn: () => getCli({ data: { id } }),
   });
@@ -103,6 +149,20 @@ function Pagina() {
     queryKey: ["cliente-negocios", id],
     queryFn: () => getNeg({ data: { cliente_id: id } }),
   });
+
+  // Excluído, de outra carteira ou falha de rede: antes a tela ficava no esqueleto para sempre.
+  if (isError) {
+    return (
+      <div className="space-y-3 p-6">
+        <p className="text-sm text-destructive">
+          {mensagemDeErro(erroCliente, "Não foi possível carregar o cliente.")}
+        </p>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/crm/clientes">Voltar aos clientes</Link>
+        </Button>
+      </div>
+    );
+  }
 
   if (isLoading || !det) {
     return (
@@ -141,12 +201,38 @@ function Pagina() {
               <PipelineTimeline
                 stages={stages}
                 atualOrdem={pipe.ordem}
-                onSelecionar={moverParaEtapa}
+                onSelecionar={podeEditar ? pedirMoverEtapa : undefined}
                 disabled={movendoEtapa}
               />
-              <p className="text-xs text-muted-foreground">
-                Clique em qualquer etapa para mover o cliente na esteira.
-              </p>
+              <AlertDialog open={pulo !== null} onOpenChange={(o) => !o && setPulo(null)}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Avançar direto para “{pulo?.nome}”?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {pulo && pulo.puladas.length === 1
+                        ? `A etapa “${pulo.puladas[0]}” será pulada.`
+                        : `${pulo?.puladas.length ?? 0} etapas serão puladas: ${pulo?.puladas.join(", ")}.`}{" "}
+                      Confira se o cadastro do cliente já está completo para esta etapa.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        if (pulo) void moverParaEtapa(pulo.codigo);
+                        setPulo(null);
+                      }}
+                    >
+                      Avançar mesmo assim
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              {podeEditar && (
+                <p className="text-xs text-muted-foreground">
+                  Clique em uma etapa para mover o cliente na esteira.
+                </p>
+              )}
             </>
           ) : (
             <Skeleton className="h-8 w-full" />
@@ -199,7 +285,9 @@ function Pagina() {
         </TabsContent>
 
         <TabsContent value="mensagens" className="mt-4">
-          <AppClienteAcesso clienteId={id} ativo={Boolean((c as any)?.portal_acesso_ativo)} />
+          {podeEditar && (
+            <AppClienteAcesso clienteId={id} ativo={Boolean((c as any)?.portal_acesso_ativo)} />
+          )}
           <div className="h-[68dvh] max-h-[680px] min-h-[420px]">
             <ChatClienteInstagram
               clienteId={id}

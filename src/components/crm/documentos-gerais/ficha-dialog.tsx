@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { obterFichaConsolidada } from "@/lib/crm/documentos-gerais.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { imprimirFichaPDF } from "@/lib/crm/pdf-lazy";
 import { Campo } from "./card-cliente";
-import { brl, fmtData, titulo } from "./helpers";
+import { brl, celularExib, docExib, estadoCivilExib, fmtData, titulo } from "./helpers";
 
 export function FichaDialog({
   clienteId,
@@ -22,7 +23,7 @@ export function FichaDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const obter = useServerFn(obterFichaConsolidada);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["crm-ficha-consolidada", clienteId],
     queryFn: () => obter({ data: { cliente_id: clienteId } }),
     enabled: open,
@@ -59,7 +60,16 @@ export function FichaDialog({
           </div>
         </DialogHeader>
         <div className="max-h-[calc(90vh-5.5rem)] overflow-y-auto p-5">
-          {isLoading || !data ? (
+          {isError ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-center text-sm">
+              <p className="text-destructive">
+                {mensagemDeErro(error, "Não foi possível carregar a ficha.")}
+              </p>
+              <Button size="sm" variant="outline" onClick={() => refetch()}>
+                Tentar de novo
+              </Button>
+            </div>
+          ) : isLoading || !data ? (
             <div className="space-y-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-8 w-full" />
@@ -80,13 +90,16 @@ export function FichaDialog({
                 {data.comprador ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Campo rotulo="Nome" valor={data.comprador.nome} />
-                    <Campo rotulo="Documento" valor={data.comprador.documento} />
+                    <Campo rotulo="Documento" valor={docExib(data.comprador.documento)} />
                     <Campo rotulo="Nascimento" valor={fmtData(data.comprador.data_nascimento)} />
-                    <Campo rotulo="Estado civil" valor={data.comprador.estado_civil} />
+                    <Campo
+                      rotulo="Estado civil"
+                      valor={estadoCivilExib(data.comprador.estado_civil)}
+                    />
                     <Campo rotulo="Profissão" valor={data.comprador.profissao} />
                     <Campo rotulo="Nacionalidade" valor={data.comprador.nacionalidade} />
                     <Campo rotulo="E-mail" valor={data.comprador.email} />
-                    <Campo rotulo="Celular" valor={data.comprador.telefone_celular} />
+                    <Campo rotulo="Celular" valor={celularExib(data.comprador.telefone_celular)} />
                     <Campo
                       rotulo="Renda declarada"
                       valor={brl(data.comprador.renda_total_declarada)}
@@ -111,12 +124,12 @@ export function FichaDialog({
                 <TabsContent value="conjuge" className="mt-4">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Campo rotulo="Nome" valor={data.conjuge.nome} />
-                    <Campo rotulo="Documento" valor={data.conjuge.documento} />
+                    <Campo rotulo="Documento" valor={docExib(data.conjuge.documento)} />
                     <Campo rotulo="Nascimento" valor={fmtData(data.conjuge.data_nascimento)} />
                     <Campo rotulo="Profissão" valor={data.conjuge.profissao} />
                     <Campo rotulo="Nacionalidade" valor={data.conjuge.nacionalidade} />
                     <Campo rotulo="E-mail" valor={data.conjuge.email} />
-                    <Campo rotulo="Celular" valor={data.conjuge.telefone_celular} />
+                    <Campo rotulo="Celular" valor={celularExib(data.conjuge.telefone_celular)} />
                     <Campo rotulo="Renda" valor={brl(data.conjuge.renda)} />
                     <Campo rotulo="Nome da mãe" valor={data.conjuge.nome_mae} />
                     <Campo rotulo="Empresa" valor={data.conjuge.empresa} />
@@ -143,11 +156,11 @@ export function FichaDialog({
                         {v.nome ?? `Vendedor ${i + 1}`}
                       </p>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <Campo rotulo="Documento" valor={v.documento ?? v.cpf_cnpj} />
-                        <Campo rotulo="Estado civil" valor={v.estado_civil} />
+                        <Campo rotulo="Documento" valor={docExib(v.documento ?? v.cpf_cnpj)} />
+                        <Campo rotulo="Estado civil" valor={estadoCivilExib(v.estado_civil)} />
                         <Campo rotulo="Profissão" valor={v.profissao} />
                         <Campo rotulo="E-mail" valor={v.email} />
-                        <Campo rotulo="Celular" valor={v.telefone_celular} />
+                        <Campo rotulo="Celular" valor={celularExib(v.telefone_celular)} />
                         <Campo rotulo="Banco" valor={v.banco_conta} />
                         <Campo
                           rotulo="Agência / Conta"

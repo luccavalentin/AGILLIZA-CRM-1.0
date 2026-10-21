@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { validarCPF, validarCNPJ } from "@/lib/crm/documento";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { mascararDocumento, validarCPF, validarCNPJ } from "@/lib/crm/documento";
+import { temPiiCliente } from "@/lib/crm/pii";
 import {
   PROVEDORES_BUREAU,
   provedorDoCatalogo,
@@ -22,9 +23,40 @@ function db(supabase: unknown): any {
   return supabase as any;
 }
 
+/**
+ * Client de serviço. As chaves do bureau só são lidas e gravadas por aqui: a
+ * coluna `credenciais` não é legível pela API (20261021090400), e cada função
+ * confere a permissão antes de usar este client.
+ */
+async function clienteServico(): Promise<any> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
+
 async function correspondenteDoUsuario(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+  const { data, error } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+  if (error) throw new Error("Não foi possível identificar o ecossistema.");
   return (data as string) ?? null;
+}
+
+interface LinhaConfig {
+  id: string;
+  provedor: string;
+  nome: string;
+  base_url: string | null;
+  ativo: boolean;
+  credenciais: Record<string, string> | null;
+}
+
+async function lerConfig(corr: string): Promise<LinhaConfig | null> {
+  const admin = await clienteServico();
+  const { data, error } = await admin
+    .from("bureau_credenciais")
+    .select("id, provedor, nome, base_url, ativo, credenciais")
+    .eq("correspondente_id", corr)
+    .maybeSingle();
+  if (error) throw new Error("Não foi possível ler a configuração do bureau.");
+  return (data as LinhaConfig | null) ?? null;
 }
 
 /** O que a tela precisa saber da configuração — nunca os valores das chaves. */
@@ -38,8 +70,10 @@ export interface ConfigBureau {
   catalogo: ProvedorCatalogo[];
 }
 
+// A tela de consulta (CRM) só precisa saber se há bureau ativo; a de
+// Integrações mostra o cadastro. Nenhuma das duas recebe o valor das chaves.
 export const obterConfigBureau = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "view"], ["admin.integracoes", "view"])])
   .handler(async ({ context }): Promise<ConfigBureau> => {
     const { supabase, userId } = context;
     const vazio: ConfigBureau = {
@@ -54,21 +88,15 @@ export const obterConfigBureau = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return vazio;
 
-    const { data } = await db(supabase)
-      .from("bureau_credenciais")
-      .select("provedor, nome, base_url, ativo, credenciais")
-      .eq("correspondente_id", corr)
-      .maybeSingle();
+    const data = await lerConfig(corr);
     if (!data) return vazio;
 
-    // Só os NOMES dos campos preenchidos saem daqui. Valor de credencial não
-    // trafega para o navegador em nenhuma hipótese.
-    const creds = ((data as any).credenciais ?? {}) as Record<string, unknown>;
+    const creds = data.credenciais ?? {};
     return {
-      provedor: (data as any).provedor,
-      nome: (data as any).nome,
-      base_url: (data as any).base_url,
-      ativo: Boolean((data as any).ativo),
+      provedor: data.provedor,
+      nome: data.nome,
+      base_url: data.base_url,
+      ativo: Boolean(data.ativo),
       camposPreenchidos: Object.entries(creds)
         .filter(([, v]) => String(v ?? "").trim().length > 0)
         .map(([k]) => k),
@@ -77,7 +105,7 @@ export const obterConfigBureau = createServerFn({ method: "GET" })
   });
 
 export const salvarConfigBureau = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -95,22 +123,26 @@ export const salvarConfigBureau = createServerFn({ method: "POST" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Ecossistema não identificado.");
 
-    if (!provedorDoCatalogo(data.provedor)) {
-      throw new Error("Fornecedor de bureau desconhecido.");
-    }
+    const catalogo = provedorDoCatalogo(data.provedor);
+    if (!catalogo) throw new Error("Fornecedor de bureau desconhecido.");
 
-    const { data: atual } = await db(supabase)
-      .from("bureau_credenciais")
-      .select("id, credenciais")
-      .eq("correspondente_id", corr)
-      .maybeSingle();
+    const atual = await lerConfig(corr);
 
     // Campo enviado em branco preserva o valor guardado: a tela nunca recebe
-    // o segredo de volta, então vazio significa "não mexi nele".
-    const anteriores = (((atual as any)?.credenciais ?? {}) as Record<string, string>) || {};
-    const mescladas: Record<string, string> = { ...anteriores };
+    // o segredo de volta, então vazio significa "não mexi nele". Na troca de
+    // fornecedor nada do anterior é aproveitado (campos de mesmo nome, como
+    // "usuario", não são a mesma chave em outro contrato).
+    const mesmoProvedor = atual?.provedor === data.provedor;
+    const anteriores = mesmoProvedor ? (atual?.credenciais ?? {}) : {};
+    const camposValidos = new Set(catalogo.campos.map((c) => c.chave));
+    const mescladas: Record<string, string> = {};
+    for (const [chave, valor] of Object.entries(anteriores)) {
+      if (camposValidos.has(chave)) mescladas[chave] = valor;
+    }
     for (const [chave, valor] of Object.entries(data.credenciais)) {
-      if (String(valor ?? "").trim().length > 0) mescladas[chave] = valor;
+      if (camposValidos.has(chave) && String(valor ?? "").trim().length > 0) {
+        mescladas[chave] = valor;
+      }
     }
 
     const linha = {
@@ -120,25 +152,20 @@ export const salvarConfigBureau = createServerFn({ method: "POST" })
       base_url: data.base_url ?? null,
       credenciais: mescladas,
       ativo: data.ativo,
-      criado_por: userId,
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = (atual as any)?.id
-      ? await db(supabase)
-          .from("bureau_credenciais")
-          .update(linha as any)
-          .eq("id", (atual as any).id)
-      : await db(supabase)
-          .from("bureau_credenciais")
-          .insert(linha as any);
+    const admin = await clienteServico();
+    const { error } = atual?.id
+      ? await admin.from("bureau_credenciais").update(linha).eq("id", atual.id)
+      : await admin.from("bureau_credenciais").insert({ ...linha, criado_por: userId });
     if (error) throw new Error(error.message);
 
     return { ok: true };
   });
 
 export const consultarFichaBureau = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "view"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -158,15 +185,15 @@ export const consultarFichaBureau = createServerFn({ method: "POST" })
     const valido = tipoPessoa === "F" ? validarCPF(documento) : validarCNPJ(documento);
     if (!valido) throw new ErroBureau("documento_invalido");
 
-    const { data: cfg } = await db(supabase)
-      .from("bureau_credenciais")
-      .select("provedor, base_url, credenciais, ativo")
-      .eq("correspondente_id", corr)
-      .maybeSingle();
+    const cfg = await lerConfig(corr);
 
-    /** Toda consulta vira registro, inclusive a que falhou: é o rastro LGPD. */
-    const registrar = async (erro: string) => {
-      await db(supabase)
+    /**
+     * Toda consulta vira registro, inclusive a que falhou: é o rastro LGPD.
+     * Gravado em nome do usuário (a política confere conta e autor) e antes de
+     * chamar o fornecedor; sem registro, a consulta não sai.
+     */
+    const registrar = async (erro: string): Promise<string> => {
+      const { data: reg, error } = await db(supabase)
         .from("bureau_consultas")
         .insert({
           correspondente_id: corr,
@@ -174,20 +201,28 @@ export const consultarFichaBureau = createServerFn({ method: "POST" })
           documento,
           tipo_pessoa: tipoPessoa,
           finalidade: data.finalidade,
-          provedor: (cfg as any)?.provedor ?? "nenhum",
+          provedor: cfg?.provedor ?? "nenhum",
           sucesso: false,
           erro,
           ator_id: userId,
-        } as any);
+        })
+        .select("id")
+        .single();
+      if (error || !reg) {
+        throw new Error(
+          "Não foi possível registrar a consulta no histórico. Por exigência da LGPD, a consulta não foi feita.",
+        );
+      }
+      return reg.id as string;
     };
 
-    if (!cfg || !(cfg as any).ativo) {
+    if (!cfg || !cfg.ativo) {
       await registrar("sem_provedor");
       throw new ErroBureau("sem_provedor");
     }
 
-    const catalogo = provedorDoCatalogo((cfg as any).provedor);
-    const creds = (((cfg as any).credenciais ?? {}) as Record<string, string>) || {};
+    const catalogo = provedorDoCatalogo(cfg.provedor);
+    const creds = cfg.credenciais ?? {};
     const faltando = (catalogo?.campos ?? [])
       .map((c) => c.chave)
       .filter((c) => !String(creds[c] ?? "").trim());
@@ -197,47 +232,47 @@ export const consultarFichaBureau = createServerFn({ method: "POST" })
     }
 
     const { adaptadorDe } = await import("./provedores");
-    const adaptador = adaptadorDe((cfg as any).provedor);
+    const adaptador = adaptadorDe(cfg.provedor);
     if (!adaptador) {
       await registrar("adaptador_ausente");
       throw new ErroBureau(
         "sem_provedor",
-        `O adaptador do ${catalogo?.nome ?? (cfg as any).provedor} ainda não foi escrito. Envie a documentação da API do fornecedor para concluir a integração.`,
+        `O adaptador do ${catalogo?.nome ?? cfg.provedor} ainda não foi escrito. Envie a documentação da API do fornecedor para concluir a integração.`,
       );
     }
 
+    // Registro antes da chamada; o resultado é anotado nele depois, pelo
+    // servidor (pela API ninguém altera o histórico).
+    const registroId = await registrar("sem_retorno");
+    const concluir = async (campos: Record<string, unknown>) => {
+      const admin = await clienteServico();
+      const { error } = await admin.from("bureau_consultas").update(campos).eq("id", registroId);
+      // O rastro (quem, quando, documento, finalidade) já está gravado; aqui só
+      // falta o resultado. Não derruba a ficha que o fornecedor já cobrou.
+      if (error) console.error("[bureau] resultado da consulta não anotado", registroId, error.message);
+    };
+
+    let ficha: FichaBureau;
     try {
-      const ficha = await adaptador.consultar(
+      ficha = await adaptador.consultar(
         { documento, finalidade: data.finalidade, clienteId: data.cliente_id ?? null },
         {
           ...creds,
-          base_url: (cfg as any).base_url ?? catalogo?.baseUrlPadrao ?? "",
+          base_url: cfg.base_url ?? catalogo?.baseUrlPadrao ?? "",
         },
       );
-
-      await db(supabase)
-        .from("bureau_consultas")
-        .insert({
-          correspondente_id: corr,
-          cliente_id: data.cliente_id ?? null,
-          documento,
-          tipo_pessoa: tipoPessoa,
-          finalidade: data.finalidade,
-          provedor: (cfg as any).provedor,
-          sucesso: true,
-          ficha: ficha as any,
-          ator_id: userId,
-        } as any);
-
-      return ficha;
     } catch (e) {
-      await registrar(e instanceof Error ? e.message : String(e));
+      await concluir({ erro: e instanceof Error ? e.message : String(e) });
       throw e;
     }
+
+    await concluir({ sucesso: true, erro: null, ficha });
+    return ficha;
   });
 
 export interface ConsultaHistorico {
   id: string;
+  /** Inteiro só para quem vê dados sensíveis; os demais recebem mascarado. */
   documento: string;
   tipo_pessoa: string;
   finalidade: string;
@@ -248,16 +283,23 @@ export interface ConsultaHistorico {
 }
 
 export const listarConsultasBureau = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "view"])])
   .handler(async ({ context }): Promise<ConsultaHistorico[]> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return [];
-    const { data } = await db(supabase)
-      .from("bureau_consultas")
-      .select("id, documento, tipo_pessoa, finalidade, provedor, sucesso, erro, created_at")
-      .eq("correspondente_id", corr)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    return (data ?? []) as unknown as ConsultaHistorico[];
+    const [consultas, podePii] = await Promise.all([
+      db(supabase)
+        .from("bureau_consultas")
+        .select("id, documento, tipo_pessoa, finalidade, provedor, sucesso, erro, created_at")
+        .eq("correspondente_id", corr)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      temPiiCliente(supabase, userId),
+    ]);
+    if (consultas.error) throw new Error("Não foi possível carregar o histórico de consultas.");
+    return ((consultas.data ?? []) as ConsultaHistorico[]).map((c) => ({
+      ...c,
+      documento: podePii ? c.documento : mascararDocumento(c.documento ?? ""),
+    }));
   });

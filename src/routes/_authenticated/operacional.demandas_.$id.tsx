@@ -40,11 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ColunaLateral } from "@/components/operacional/demanda-page/coluna-lateral";
 import { ChatFlutuandoAviso, StatPill, TabBtn } from "@/components/operacional/demanda-page/ui";
-import {
-  ArquivosTab,
-  AtividadesTab,
-  NotasInternas,
-} from "@/components/operacional/demanda-page/tabs";
+import { ArquivosTab, AtividadesTab } from "@/components/operacional/demanda-page/tabs";
 import { formatarTempoAberto } from "@/components/operacional/demanda-page/helpers";
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas_/$id")({
@@ -53,7 +49,8 @@ export const Route = createFileRoute("/_authenticated/operacional/demandas_/$id"
   component: Pagina,
 });
 
-type Aba = "conversas" | "notas" | "arquivos" | "atividades";
+// "Notas internas" saiu: a aba não tinha campo nenhum (só um texto de "espaço reservado").
+type Aba = "conversas" | "arquivos" | "atividades";
 
 function Pagina() {
   const { id } = useParams({ from: "/_authenticated/operacional/demandas_/$id" });
@@ -181,6 +178,7 @@ function Pagina() {
             <Button
               variant="outline"
               size="icon"
+              aria-label="Expandir para tela cheia"
               className="size-9"
               onClick={() => document.documentElement.requestFullscreen?.()}
               title="Expandir"
@@ -195,9 +193,6 @@ function Pagina() {
             <div className="flex">
               <TabBtn active={aba === "conversas"} onClick={() => setAba("conversas")}>
                 Conversas
-              </TabBtn>
-              <TabBtn active={aba === "notas"} onClick={() => setAba("notas")}>
-                Notas internas
               </TabBtn>
               <TabBtn active={aba === "arquivos"} onClick={() => setAba("arquivos")}>
                 Arquivos{" "}
@@ -239,7 +234,13 @@ function Pagina() {
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Mais ações da demanda"
+                    title="Mais ações"
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -265,7 +266,6 @@ function Pagina() {
                   }}
                 />
               ))}
-            {aba === "notas" && <NotasInternas />}
             {aba === "arquivos" && <ArquivosTab anexos={anexos} />}
             {aba === "atividades" && <AtividadesTab historico={historico} />}
           </div>

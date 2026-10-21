@@ -20,9 +20,11 @@ function derivarCrumbs(nav: NavGroup[], pathname: string): Crumb[] {
       const filhos = item.children ?? [];
       for (const child of filhos) {
         if (child.to && (pathname === child.to || pathname.startsWith(child.to + "/"))) {
+          // Item com o mesmo nome do grupo ("Administração › Administração",
+          // "Relatórios gerenciais › Relatórios gerenciais") não repete na trilha.
           return [
             { label: group.label, to: rotaDoGrupo },
-            { label: item.label, to: item.to ?? child.to },
+            ...(item.label === group.label ? [] : [{ label: item.label, to: item.to ?? child.to }]),
             { label: child.label, to: child.to },
           ];
         }

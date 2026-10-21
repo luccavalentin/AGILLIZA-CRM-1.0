@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Gift, Plus } from "lucide-react";
+import { Ban, Gift, Pencil, Plus } from "lucide-react";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 import { FuncionarioPicker } from "@/components/rh/funcionario-picker";
 import {
   listarBeneficiosDoFuncionario,
@@ -41,7 +44,8 @@ import {
   salvarBeneficioTipo,
   vincularBeneficio,
 } from "@/lib/rh/submodulos.functions";
-import { formatBRL } from "@/lib/financeiro/format";
+import { formatBRL, formatData, hojeISO } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/_authenticated/rh/beneficios")({
   head: () => ({ meta: [{ title: "Benefícios — Agilliza" }] }),
@@ -73,15 +77,18 @@ function Pagina() {
   });
 
   const [openVinc, setOpenVinc] = useState(false);
-  const [vinc, setVinc] = useState({
+  const vincVazio = () => ({
+    id: undefined as string | undefined,
     funcionario_id: "",
     tipo_id: "",
     valor: 0,
     desconto: 0,
-    vigencia_inicio: new Date().toISOString().slice(0, 10),
+    vigencia_inicio: hojeISO(),
     vigencia_fim: "",
     ativo: true,
+    observacoes: "",
   });
+  const [vinc, setVinc] = useState(vincVazio);
 
   const criarTipo = useMutation({
     mutationFn: () => fnSalvarTipo({ data: tipo }),
@@ -98,6 +105,7 @@ function Pagina() {
         ativo: true,
       });
     },
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível salvar o tipo.")),
   });
 
   const criarVinc = useMutation({
@@ -106,15 +114,36 @@ function Pagina() {
         data: {
           ...vinc,
           vigencia_fim: vinc.vigencia_fim || null,
+          observacoes: vinc.observacoes.trim() || null,
         },
       }),
     onSuccess: () => {
-      toast.success("Benefício atribuído.");
+      toast.success(vinc.id ? "Benefício atualizado." : "Benefício atribuído.");
       qc.invalidateQueries({ queryKey: ["rh-ben-vinculos"] });
       setOpenVinc(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível salvar o benefício.")),
   });
+
+  // Encerrar, não apagar: a folha de meses passados ainda lê este benefício.
+  // Sem try/catch: o ConfirmDelete mostra o erro e continua aberto.
+  async function encerrar(v: NonNullable<typeof vincs.data>[number]) {
+    await fnVincular({
+      data: {
+        id: v.id,
+        funcionario_id: v.funcionario_id,
+        tipo_id: v.tipo_id,
+        valor: v.valor,
+        desconto: v.desconto,
+        vigencia_inicio: v.vigencia_inicio,
+        vigencia_fim: v.vigencia_fim && v.vigencia_fim < hojeISO() ? v.vigencia_fim : hojeISO(),
+        ativo: false,
+        observacoes: v.observacoes ?? null,
+      },
+    });
+    toast.success("Benefício encerrado.");
+    qc.invalidateQueries({ queryKey: ["rh-ben-vinculos"] });
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 sm:p-4 md:p-6">
@@ -135,15 +164,18 @@ function Pagina() {
 
         <TabsContent value="vinculos" className="mt-4 space-y-4">
           <div className="flex justify-end">
+            <Button
+              onClick={() => {
+                setVinc(vincVazio());
+                setOpenVinc(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Atribuir benefício
+            </Button>
             <Dialog open={openVinc} onOpenChange={setOpenVinc}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" /> Atribuir benefício
-                </Button>
-              </DialogTrigger>
               <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Atribuir benefício</DialogTitle>
+                  <DialogTitle>{vinc.id ? "Editar benefício" : "Atribuir benefício"}</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5 sm:col-span-2">
@@ -223,6 +255,14 @@ function Pagina() {
                     />
                     <Label htmlFor="ben-ativo">Ativo</Label>
                   </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label>Observações</Label>
+                    <Textarea
+                      rows={2}
+                      value={vinc.observacoes}
+                      onChange={(e) => setVinc((p) => ({ ...p, observacoes: e.target.value }))}
+                    />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOpenVinc(false)}>
@@ -251,6 +291,7 @@ function Pagina() {
                       <TableHead>Desconto</TableHead>
                       <TableHead>Vigência</TableHead>
                       <TableHead>Ativo</TableHead>
+                      <TableHead className="w-[1%] text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -261,23 +302,60 @@ function Pagina() {
                         <TableCell>{formatBRL(v.valor)}</TableCell>
                         <TableCell>{formatBRL(v.desconto)}</TableCell>
                         <TableCell className="text-xs">
-                          {new Date(v.vigencia_inicio).toLocaleDateString("pt-BR")}
-                          {v.vigencia_fim
-                            ? ` → ${new Date(v.vigencia_fim).toLocaleDateString("pt-BR")}`
-                            : ""}
+                          {formatData(v.vigencia_inicio)}
+                          {v.vigencia_fim ? ` → ${formatData(v.vigencia_fim)}` : ""}
                         </TableCell>
                         <TableCell>{v.ativo ? "Sim" : "Não"}</TableCell>
+                        <TableCell className="whitespace-nowrap text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Editar ${v.tipo_nome} de ${v.funcionario_nome}`}
+                            onClick={() => {
+                              setVinc({
+                                id: v.id,
+                                funcionario_id: v.funcionario_id,
+                                tipo_id: v.tipo_id,
+                                valor: v.valor,
+                                desconto: v.desconto,
+                                vigencia_inicio: v.vigencia_inicio,
+                                vigencia_fim: v.vigencia_fim ?? "",
+                                ativo: v.ativo,
+                                observacoes: v.observacoes ?? "",
+                              });
+                              setOpenVinc(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {v.ativo && (
+                            <ConfirmDelete
+                              titulo={`Encerrar ${v.tipo_nome}?`}
+                              descricao={`O benefício de ${v.funcionario_nome} para de valer hoje. As folhas já fechadas não mudam.`}
+                              confirmarLabel="Encerrar"
+                              onConfirm={() => encerrar(v)}
+                              trigger={
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label={`Encerrar ${v.tipo_nome} de ${v.funcionario_nome}`}
+                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                >
+                                  <Ban className="h-4 w-4" />
+                                </Button>
+                              }
+                            />
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                     {(!vincs.data || vincs.data.length === 0) && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="py-10 text-center text-sm text-muted-foreground"
-                        >
-                          Nenhum benefício atribuído.
-                        </TableCell>
-                      </TableRow>
+                      <LinhaEstadoLista
+                        colSpan={7}
+                        q={vincs}
+                        vazio="Nenhum benefício atribuído."
+                        erro="Não foi possível carregar os benefícios."
+                      />
                     )}
                   </TableBody>
                 </Table>
@@ -382,14 +460,12 @@ function Pagina() {
                       </TableRow>
                     ))}
                     {(!tipos.data || tipos.data.length === 0) && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={5}
-                          className="py-10 text-center text-sm text-muted-foreground"
-                        >
-                          Nenhum tipo cadastrado.
-                        </TableCell>
-                      </TableRow>
+                      <LinhaEstadoLista
+                        colSpan={5}
+                        q={tipos}
+                        vazio="Nenhum tipo cadastrado."
+                        erro="Não foi possível carregar os tipos."
+                      />
                     )}
                   </TableBody>
                 </Table>

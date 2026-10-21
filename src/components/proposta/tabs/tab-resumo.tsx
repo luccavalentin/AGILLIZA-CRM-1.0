@@ -162,6 +162,11 @@ export function TabResumo({
     }
   }
 
+  // O banco nem sempre devolve financiamento/prazo máximos na linha da proposta;
+  // nesse caso vale o que foi simulado (cabeçalho da proposta), em vez de "—".
+  const financiamentoDe = (b: any) => b.valor_financiamento_max ?? proposta.valor_financiamento;
+  const prazoDe = (b: any) => b.prazo_pagamento_max ?? proposta.prazo ?? null;
+
   const bancoReprovado =
     (bancos || []).find(
       (b: any) => b.situacao_credito === "reprovado" || b.status_banco === "credito_recusado",
@@ -176,6 +181,7 @@ export function TabResumo({
         etapas={proposta.etapas_banco}
         statusProposta={proposta.status}
         bancoReprovado={bancoReprovado}
+        criadaEm={proposta.created_at}
       />
 
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -230,10 +236,7 @@ export function TabResumo({
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
-                <MetricaBanco
-                  label="R$ Financiamento"
-                  valor={formatBRL(b.valor_financiamento_max)}
-                />
+                <MetricaBanco label="R$ Financiamento" valor={formatBRL(financiamentoDe(b))} />
                 <MetricaBanco
                   label="Parcela"
                   valor={formatBRL(b.valor_parcela)}
@@ -243,7 +246,7 @@ export function TabResumo({
                       : undefined
                   }
                 />
-                <MetricaBanco label="Prazo" valor={String(b.prazo_pagamento_max ?? "—")} />
+                <MetricaBanco label="Prazo" valor={String(prazoDe(b) ?? "—")} />
                 <MetricaBanco
                   label="Taxa/ano"
                   valor={formatTaxa(b.taxa_juros_ano)}
@@ -392,7 +395,7 @@ export function TabResumo({
                     })()}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {formatBRL(b.valor_financiamento_max)}
+                    {formatBRL(financiamentoDe(b))}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     <div className="flex flex-col items-end">
@@ -404,9 +407,7 @@ export function TabResumo({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {b.prazo_pagamento_max ?? "—"}
-                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{prazoDe(b) ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">
                     <div className="flex flex-col items-end">
                       <span>{formatTaxa(b.taxa_juros_ano)}</span>
@@ -439,13 +440,18 @@ export function TabResumo({
                           ))}
                         </SelectContent>
                       </Select>
+                      {/* Só o ícone até telas bem largas: com o rótulo, o botão
+                          ficava cortado na borda da tabela em 1440 px. */}
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-8 shrink-0"
+                        className="h-8 shrink-0 px-2"
                         onClick={() => setDetalheBanco(b)}
+                        aria-label={`Detalhamento de ${b.nome_banco ?? "banco"}`}
+                        title="Detalhamento"
                       >
-                        <Info className="mr-1 h-4 w-4" /> Detalhamento
+                        <Info className="h-4 w-4 2xl:mr-1" />
+                        <span className="hidden 2xl:inline">Detalhamento</span>
                       </Button>
                     </div>
                   </TableCell>

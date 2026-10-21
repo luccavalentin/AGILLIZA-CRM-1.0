@@ -23,6 +23,7 @@ import { AcoesSimulacao, ProdutoBadge } from "@/components/simulacao/lista-detal
 import { formatBRL } from "@/lib/simulacao/format";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { formatDataHoraBR, type HandlersLinha } from "./tipos";
+import { SeloDaConta } from "@/components/plataforma/conta-nativa/selo-da-conta";
 
 export function TabelaSimulacoes({
   itens,
@@ -106,10 +107,15 @@ export function TabelaSimulacoes({
               <TableCell colSpan={selecionaveis ? 9 : 8}>
                 <div className="flex flex-col items-center gap-3 py-12 text-center">
                   <Calculator className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Nenhuma simulação encontrada.</p>
-                  <Button asChild size="sm">
-                    <Link to="/operacional/simulacoes/completa">Criar primeira simulação</Link>
-                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    {verExcluidas ? "Nenhuma simulação excluída." : "Nenhuma simulação encontrada."}
+                  </p>
+                  {/* Em "Excluídas" não faz sentido convidar a criar a primeira simulação. */}
+                  {!verExcluidas && (
+                    <Button asChild size="sm">
+                      <Link to="/operacional/simulacoes/completa">Criar primeira simulação</Link>
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
@@ -127,7 +133,7 @@ export function TabelaSimulacoes({
                   } as React.CSSProperties
                 }
                 className="group/row relative cursor-pointer border-border/50 transition-colors duration-200 ease-out odd:bg-muted/[0.18] hover:z-10 hover:bg-[var(--banco-tint)] hover:shadow-[inset_3px_0_0_0_var(--banco),0_12px_28px_-8px_rgba(0,0,0,0.12)]"
-                onClick={() => (verExcluidas ? undefined : handlers.onEditar(s.id))}
+                onClick={() => (verExcluidas ? undefined : handlers.onVer(s.id))}
               >
                 {selecionaveis && (
                   <TableCell className="py-3 px-1 w-8" onClick={(e) => e.stopPropagation()}>
@@ -144,14 +150,10 @@ export function TabelaSimulacoes({
                     <span className="inline-flex w-fit items-center rounded-md bg-primary/5 px-1.5 py-0.5 font-mono text-[13px] font-bold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
                       {s.numero_simulacao}
                     </span>
-                    {/* Oportunidade na HomeFin: é o número que o parceiro usa
-                        para achar a operação do lado de lá. */}
-                    {s.codigo_oportunidade_homefin && (
-                      <span
-                        className="font-mono text-[10px] tabular-nums text-muted-foreground"
-                        title="Oportunidade na HomeFin"
-                      >
-                        OP {s.codigo_oportunidade_homefin}
+                    {/* ID da operação na integração bancária — escrito só "ID". */}
+                    {s.homefin_id_oportunidade && (
+                      <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                        ID {s.homefin_id_oportunidade}
                       </span>
                     )}
                     {s._multi_prazo && s._agrupadas_ids?.length > 0 && (
@@ -173,6 +175,8 @@ export function TabelaSimulacoes({
                   <p className="truncate text-[13px] font-bold leading-tight">
                     {s.nome_cliente ?? "—"}
                   </p>
+                  {/* Base de uma conta assinante: de qual licença veio. */}
+                  {s._conta && <SeloDaConta conta={s._conta} />}
                   {/* Crachá curto para não truncar; o nome do cônjuge vai na
                       linha de baixo, onde cabe inteiro. */}
                   {s.teste_casal && (
@@ -253,9 +257,13 @@ export function TabelaSimulacoes({
                         onDuplicar={() => handlers.onDuplicar(s.id)}
                         onEnviarProposta={() => handlers.onEnviarProposta(s.id, s.numero_simulacao)}
                         onExcluir={() => handlers.onExcluir(s.id)}
+                        podeExcluir={handlers.podeExcluir ?? true}
                         onEncaminhar={(id, canal) => handlers.onEncaminhar(s.id, canal)}
                         onDestravar={() => handlers.onDestravar(s.id)}
                         numero={s.numero_simulacao}
+                        semCotacao={
+                          !(s.bancos ?? []).some((b: any) => b?.status_banco === "simulada")
+                        }
                       />
                     </div>
                   )}

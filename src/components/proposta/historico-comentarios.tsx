@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { ToneBadge } from "@/components/crm/tone-badge";
 
 /** "Hoje", "Ontem" ou a data — o separador de dia da conversa. */
@@ -37,8 +38,8 @@ export function HistoricoComentarios({ followups }: { followups: any[] }) {
         const autor = nosso
           ? `Agilliza · ${f.autor_nome ?? "operador"}`
           : f.tipo === "homefin_documento"
-            ? "HomeFin · análise de documento"
-            : "HomeFin · integração";
+            ? "Integração · análise de documento"
+            : "Integração bancária";
         return (
           <div key={f.id} className="flex flex-col gap-2.5">
             {novoDia && (
@@ -62,12 +63,12 @@ export function HistoricoComentarios({ followups }: { followups: any[] }) {
                   <span className="text-xs font-semibold text-foreground">{autor}</span>
                   {nosso && (
                     <ToneBadge tone={f.tipo === "externo" ? "info" : "muted"}>
-                      {f.tipo === "externo" ? "enviado à HomeFin" : "interno"}
+                      {f.tipo === "externo" ? "enviado à integração" : "interno"}
                     </ToneBadge>
                   )}
                 </div>
-                {f.titulo && <p className="mt-1 font-medium text-foreground">{f.titulo}</p>}
-                <p className="whitespace-pre-wrap text-sm text-foreground/80">{f.comentario}</p>
+                {f.titulo && <p className="mt-1 font-medium text-foreground">{semMarcaIntegracao(f.titulo)}</p>}
+                <p className="whitespace-pre-wrap text-sm text-foreground/80">{semMarcaIntegracao(f.comentario)}</p>
                 <p className="mt-1 text-right text-[10px] tabular-nums text-muted-foreground">
                   {quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                 </p>

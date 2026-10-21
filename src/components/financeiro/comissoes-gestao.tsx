@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -88,6 +89,10 @@ const TODOS_BANCOS = "__todos__";
 
 export function SecaoRegrasComissao() {
   const qc = useQueryClient();
+  // O servidor aceita "Repasses (regras): editar" ou "Repasses: editar".
+  const podeAdminComissoes = usePermissao("admin.comissoes", "edit");
+  const podeFinComissoes = usePermissao("financeiro.comissoes", "edit");
+  const podeEditar = podeAdminComissoes || podeFinComissoes;
   const listar = useServerFn(listarRegrasComissaoAdmin);
   const listarBancos = useServerFn(listarBancosParaComissao);
   const salvar = useServerFn(salvarRegraComissao);
@@ -173,9 +178,11 @@ export function SecaoRegrasComissao() {
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0">
         <CardTitle className="text-base">Regras de comissão</CardTitle>
-        <Button size="sm" onClick={novo}>
-          <Plus className="mr-1 h-4 w-4" /> Nova regra
-        </Button>
+        {podeEditar && (
+          <Button size="sm" onClick={novo}>
+            <Plus className="mr-1 h-4 w-4" /> Nova regra
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -224,30 +231,34 @@ export function SecaoRegrasComissao() {
                     </TableCell>
                     <TableCell>{r.ativo ? "Sim" : "Não"}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => editar(r)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <ConfirmDelete
-                          titulo="Remover regra de comissão?"
-                          descricao="Operações futuras deixarão de aplicar esta regra."
-                          onConfirm={() => excluirM.mutateAsync(r.id).then(() => {})}
-                          trigger={
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          }
-                        />
-                      </div>
+                      {podeEditar && (
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            aria-label="Editar regra"
+                            onClick={() => editar(r)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <ConfirmDelete
+                            titulo="Remover regra de comissão?"
+                            descricao="Operações futuras deixarão de aplicar esta regra."
+                            onConfirm={() => excluirM.mutateAsync(r.id).then(() => {})}
+                            trigger={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive"
+                                aria-label="Excluir regra"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

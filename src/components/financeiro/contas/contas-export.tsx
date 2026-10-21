@@ -70,7 +70,10 @@ export function ContasExport({
     vencimento: c.vencimento,
     valor: Number(c.valor) || 0,
     pago: Number(c.valor_pago) || 0,
-    status: STATUS_LABEL[c.status_efetivo] ?? c.status_efetivo,
+    status:
+      tipo === "receber" && c.status_efetivo === "paga"
+        ? "Recebida"
+        : (STATUS_LABEL[c.status_efetivo] ?? c.status_efetivo),
   }));
 
   const kpis = resumo

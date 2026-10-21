@@ -149,7 +149,7 @@ export function ContasTabela({
                   {formatBRL(c.valor)}
                 </TableCell>
                 <TableCell>
-                  <ContaStatusBadge status={c.status_efetivo} />
+                  <ContaStatusBadge status={c.status_efetivo} tipo={tipo} />
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <AcoesMenu

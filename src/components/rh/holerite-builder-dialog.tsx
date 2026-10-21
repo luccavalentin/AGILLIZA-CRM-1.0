@@ -4,12 +4,11 @@
  * o recibo é calculado ao vivo. Ao confirmar, gera o PDF com a identidade
  * Agilliza, envia ao Storage e registra o holerite do funcionário.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Calculator, FileDown, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +43,9 @@ import { anexarHolerite } from "@/lib/rh/submodulos.functions";
 import { gerarHoleritePdf } from "@/lib/rh/pdf-lazy";
 import { calcularHolerite, ENTRADA_PADRAO, type HoleriteEntrada } from "@/lib/rh/holerite-calc";
 import { formatBRL } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { entradaHoleriteDaCompetencia } from "@/lib/rh/folha.functions";
+import { caminhoHolerite, enviarArquivoRh } from "@/lib/rh/arquivos";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -128,26 +130,39 @@ export function HoleriteBuilderDialog({
     ...((edicao?.entrada ?? {}) as Partial<HoleriteEntrada>),
   });
 
-  const set = <K extends keyof HoleriteEntrada>(k: K, v: HoleriteEntrada[K]) =>
+  // Campos que o usuário já mexeu: trocar o mês não pode apagar o que foi digitado.
+  const editados = useRef(new Set<keyof HoleriteEntrada>());
+  const set = <K extends keyof HoleriteEntrada>(k: K, v: HoleriteEntrada[K]) => {
+    editados.current.add(k);
     setE((p) => ({ ...p, [k]: v }));
+  };
 
   const qFunc = useQuery({
     queryKey: ["rh-holerite-func", funcionarioId],
     enabled: !!funcionarioId,
-    queryFn: async () => {
-      const f = await fnFunc({ data: { id: funcionarioId! } });
-      // Em edição os valores salvos prevalecem sobre o salário atual da ficha.
-      if (f && !(editando && edicao?.entrada)) {
-        setE((p) => ({
-          ...p,
-          salario_base: Number(f.salario_atual ?? 0),
-        }));
-      }
-      return f;
-    },
+    queryFn: () => fnFunc({ data: { id: funcionarioId! } }),
   });
 
-  const calc = useMemo(() => calcularHolerite(e), [e]);
+  // Holerite novo já vem com o que foi lançado na competência (faltas, adiantamento,
+  // VT, descontos, dependentes) — a mesma montagem da prévia da folha. O DP ajusta
+  // o que precisar. Em edição, prevalecem os valores salvos.
+  const fnEntrada = useServerFn(entradaHoleriteDaCompetencia);
+  const qEntrada = useQuery({
+    queryKey: ["rh-holerite-entrada", funcionarioId, mes, ano],
+    enabled: !!funcionarioId && !(editando && edicao?.entrada),
+    queryFn: () => fnEntrada({ data: { funcionario_id: funcionarioId!, mes, ano } }),
+  });
+  useEffect(() => {
+    const entrada = qEntrada.data;
+    if (!entrada) return;
+    setE((atual) => {
+      const novo = { ...entrada } as HoleriteEntrada;
+      for (const k of editados.current) (novo as any)[k] = atual[k];
+      return novo;
+    });
+  }, [qEntrada.data]);
+
+  const calc = useMemo(() => calcularHolerite(e, { ano, mes }), [e, ano, mes]);
   const func = qFunc.data;
 
   const gerar = useMutation({
@@ -187,24 +202,15 @@ export function HoleriteBuilderDialog({
 
       let anexado = false;
       try {
-        const user = (await supabase.auth.getUser()).data.user;
-        if (!user) throw new Error("Sessão expirada.");
-        const prof = await supabase
-          .from("profiles")
-          .select("correspondente_id")
-          .eq("id", user.id)
-          .maybeSingle();
-        const cid = prof.data?.correspondente_id as string | undefined;
-        if (!cid) throw new Error("Correspondente não encontrado.");
-
-        const path = `${cid}/holerites/${funcionarioId}/${ano}-${String(mes).padStart(2, "0")}.pdf`;
-        const { error } = await supabase.storage
-          .from("rh-documentos")
-          .upload(path, blob, { contentType: "application/pdf", upsert: true });
-        if (error) throw new Error(error.message);
+        const path = await enviarArquivoRh(caminhoHolerite(funcionarioId, ano, mes), blob, {
+          contentType: "application/pdf",
+          upsert: true,
+        });
 
         await fnAnexar({
           data: {
+            // Em edição, atualiza o próprio holerite (não procura outro pelo mês).
+            ...(edicao?.id ? { id: edicao.id } : {}),
             funcionario_id: funcionarioId,
             mes,
             ano,
@@ -215,9 +221,9 @@ export function HoleriteBuilderDialog({
           },
         });
         anexado = true;
-      } catch (err: any) {
+      } catch (err) {
         toast.warning(
-          `PDF baixado, mas não foi possível anexar à ficha: ${err?.message ?? "erro desconhecido"}`,
+          `PDF baixado, mas não foi possível anexar à ficha: ${mensagemDeErro(err, "tente de novo.")}`,
         );
       }
       return { anexado };
@@ -238,7 +244,7 @@ export function HoleriteBuilderDialog({
       setOpen(false);
     },
 
-    onError: (err: any) => toast.error(err?.message ?? "Falha ao gerar o holerite."),
+    onError: (err: any) => toast.error(mensagemDeErro(err, "Falha ao gerar o holerite.")),
   });
 
   return (
@@ -276,12 +282,22 @@ export function HoleriteBuilderDialog({
                       {func?.nome ?? "Carregando…"}
                     </div>
                   ) : (
-                    <FuncionarioPicker value={funcionarioId} onChange={setFuncionarioId} />
+                    <FuncionarioPicker
+                      value={funcionarioId}
+                      onChange={(v) => {
+                        editados.current.clear();
+                        setFuncionarioId(v);
+                      }}
+                    />
                   )}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Mês</Label>
-                  <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
+                  <Select
+                    value={String(mes)}
+                    onValueChange={(v) => setMes(Number(v))}
+                    disabled={editando}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -296,7 +312,7 @@ export function HoleriteBuilderDialog({
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Ano</Label>
-                  <YearPicker value={ano} onChange={setAno} />
+                  <YearPicker value={ano} onChange={setAno} disabled={editando} />
                 </div>
               </div>
 

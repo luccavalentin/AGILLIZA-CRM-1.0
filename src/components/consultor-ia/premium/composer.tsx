@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowUp, Bot, Sparkles, Zap, BookMarked, Cpu, MessageSquarePlus } from "lucide-react";
+import { ArrowUp, Sparkles, Zap, BookMarked, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,9 @@ export function ConsultorComposer({
           value={pergunta}
           onChange={(e) => setPergunta(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Pergunte qualquer coisa ao Consultor de IA..."
+          // Mesmo teto da rota de streaming.
+          maxLength={4000}
+          placeholder="Pergunte ao Consultor IA"
           disabled={streaming}
           className="max-h-40 min-h-[52px] w-full resize-none border-0 bg-transparent px-4 py-4 text-[15px] font-medium leading-relaxed placeholder:text-muted-foreground/50 focus-visible:ring-0 shadow-none custom-scrollbar"
         />
@@ -49,7 +51,9 @@ export function ConsultorComposer({
           <div className="flex gap-1">{/* Espaço para futuras ações de anexo */}</div>
           <Button
             size="icon"
-            onClick={onEnviar}
+            onClick={() => onEnviar()}
+            aria-label="Enviar pergunta"
+            title="Enviar pergunta"
             disabled={!pergunta.trim() || streaming}
             className={cn(
               "size-9 shrink-0 rounded-xl bg-primary transition-all hover:scale-105",

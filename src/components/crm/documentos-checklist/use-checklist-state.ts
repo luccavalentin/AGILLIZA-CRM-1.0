@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { anexarDocumento, salvarChecklist } from "@/lib/crm/clientes.functions";
 import type { Categoria, GrupoChecklist } from "./types";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
+import { problemaNoDocumento } from "@/lib/storage/tipos-documento";
 
 type Dados = { cliente?: { documentos_checklist?: unknown; utiliza_fgts?: boolean | null } | null };
 
@@ -255,7 +256,8 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) return toast.error("Arquivo acima de 10 MB.");
+    const recusa = problemaNoDocumento(file);
+    if (recusa) return toast.error(`${recusa} Envie PDF, JPG ou PNG de até 10 MB.`);
     setSubindo(key);
     try {
       const path = `${clienteId}/${crypto.randomUUID()}-${nomeArquivoSeguro(file.name)}`;
@@ -273,13 +275,13 @@ export function useChecklistState(clienteId: string, data: Dados | undefined) {
         },
       });
       toast.success("Documento salvo no CRM.", {
-        description: "Para mandar à HomeFin, use “HomeFin” e escolha a proposta.",
-        action: { label: "Enviar à HomeFin", onClick: () => abrirEnvioBanco(cat, key) },
+        description: "Para mandar à integração bancária, use “Banco” e escolha a proposta.",
+        action: { label: "Enviar ao banco", onClick: () => abrirEnvioBanco(cat, key) },
       });
       qc.invalidateQueries({ queryKey: ["cliente-docs", clienteId] });
       void id;
     } catch (err: any) {
-      toast.error(err?.message ?? "Falha no upload.");
+      toast.error(mensagemDeErro(err, "Falha no upload."));
     } finally {
       setSubindo(null);
     }

@@ -42,6 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 const ACESSO_LABEL: Record<AcessoTipo, string> = {
   sistema: "Interno (Correspondente)",
@@ -107,7 +108,7 @@ export function TiposPessoaPanel({ podeGerenciar }: { podeGerenciar: boolean }) 
       setForm(null);
       await qc.invalidateQueries({ queryKey: ["tipos-pessoa"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const excluirMut = useMutation({
@@ -117,7 +118,7 @@ export function TiposPessoaPanel({ podeGerenciar }: { podeGerenciar: boolean }) 
       setExcluindo(null);
       await qc.invalidateQueries({ queryKey: ["tipos-pessoa"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   return (

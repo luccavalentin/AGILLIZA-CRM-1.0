@@ -4,11 +4,12 @@ import { Link } from "@tanstack/react-router";
 import { ExternalLink, Loader2, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { listarInteracoes } from "@/lib/crm/clientes.functions";
+import { ErroPainel } from "./painel-primitivos";
 import { formatarData } from "./painel-utils";
 
 export function AbaInteracoes({ clienteId }: { clienteId: string }) {
   const fn = useServerFn(listarInteracoes);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["chat-painel-interacoes", clienteId],
     queryFn: () => fn({ data: { cliente_id: clienteId } }),
     staleTime: 30_000,
@@ -19,6 +20,15 @@ export function AbaInteracoes({ clienteId }: { clienteId: string }) {
       <div className="flex h-full items-center justify-center">
         <Loader2 className="size-5 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+  if (isError && !data) {
+    return (
+      <ErroPainel
+        erro={error}
+        alternativa="Não foi possível carregar as interações."
+        onTentarDeNovo={() => void refetch()}
+      />
     );
   }
   const lista = (data ?? []) as Array<{

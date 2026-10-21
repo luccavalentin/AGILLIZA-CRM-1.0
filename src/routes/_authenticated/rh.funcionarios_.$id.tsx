@@ -43,6 +43,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { gerarFichaFuncionarioPdf } from "@/lib/rh/pdf-lazy";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { EstadoLista } from "@/components/rh/estado-lista";
 
 export const Route = createFileRoute("/_authenticated/rh/funcionarios_/$id")({
   head: () => ({ meta: [{ title: "Funcionário — Agilliza" }] }),
@@ -80,7 +82,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["rh-kpis"] });
       navigate({ to: "/rh/funcionarios" });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir funcionário."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir funcionário.")),
   });
 
   async function imprimirFicha() {
@@ -103,7 +105,7 @@ function Pagina() {
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao gerar a ficha.");
+      toast.error(mensagemDeErro(e, "Falha ao gerar a ficha."));
     }
   }
 
@@ -112,6 +114,11 @@ function Pagina() {
       <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
       </div>
+    );
+  }
+  if (q.isError) {
+    return (
+      <EstadoLista q={q} vazio="" erro="Não foi possível carregar o funcionário." className="p-6" />
     );
   }
   if (!q.data) {
@@ -166,6 +173,8 @@ function Pagina() {
           <CardContent>
             {hist.isLoading ? (
               <p className="text-sm text-muted-foreground">Carregando…</p>
+            ) : hist.isError ? (
+              <EstadoLista q={hist} vazio="" className="py-4" />
             ) : (hist.data?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma alteração registrada.</p>
             ) : (
@@ -178,9 +187,7 @@ function Pagina() {
                       })}
                       {h.ator_nome ? ` · ${h.ator_nome}` : ""}
                     </p>
-                    <p className="font-medium text-foreground">
-                      {h.campo === "__criacao__" ? "Admissão registrada" : h.campo}
-                    </p>
+                    <p className="font-medium text-foreground">{h.campo_label}</p>
                     {h.campo !== "__criacao__" && (
                       <p className="break-words text-xs text-muted-foreground">
                         <span className="line-through">{h.valor_anterior ?? "—"}</span>

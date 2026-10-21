@@ -7,6 +7,7 @@ import { KeyRound, Loader2, ShieldCheck, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { definirAcessoPortal } from "@/lib/crm/clientes.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 /**
  * Barra de acesso ao App do Cliente exibida na aba "App cliente" da ficha,
@@ -27,7 +28,7 @@ export function AppClienteAcesso({ clienteId, ativo }: { clienteId: string; ativ
       await qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
       toast.success(novo ? "App do cliente habilitado." : "App do cliente desabilitado.");
     } catch (err: any) {
-      toast.error(err?.message ?? "Não foi possível alterar o acesso ao app.");
+      toast.error(mensagemDeErro(err, "Não foi possível alterar o acesso ao app."));
     } finally {
       setSalvando(false);
     }

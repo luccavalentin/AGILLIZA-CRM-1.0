@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export type EscopoDados = "todos" | "equipe" | "proprios" | "personalizado";
 
@@ -220,6 +221,120 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     acoes: [
       { acao: "view", label: "Ver" },
       { acao: "export", label: "Exportar" },
+    ],
+  },
+  // Gestão da plataforma (Corretor 2.0): o Agilliza correspondente administra as
+  // licenças dos assinantes, a receita, o monitoramento e a fila de propostas deles.
+  // Ponte no banco: plataforma.abrir_contexto_agilliza (migração 0175 do Corretor).
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.licencas",
+    label: "Licenças e assinantes",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Alterar (situação, teste, plano, créditos)" },
+    ],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.receita",
+    label: "Receita e cobrança",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Dar baixa e cancelar faturas" },
+    ],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.planos",
+    label: "Planos, preços e créditos",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Alterar preços, limites, pacotes e SLA" },
+    ],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.provedores",
+    label: "Chaves dos provedores",
+    acoes: [
+      { acao: "view", label: "Ver (só as dicas)" },
+      { acao: "edit", label: "Guardar, ligar e apagar chaves (o banco só aceita de administradores)" },
+    ],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.monitoramento",
+    label: "Monitoramento e incidentes",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Tratar incidentes" },
+    ],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.contas",
+    label: "Clientes das contas (corretores e imobiliárias)",
+    acoes: [
+      { acao: "view", label: "Ver a base da conta" },
+      { acao: "edit", label: "Editar clientes da conta" },
+    ],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.consultas",
+    label: "Consultas pagas",
+    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Alterar preços e configurações" }],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.integracoes",
+    label: "Integrações e filas",
+    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Reprocessar mensagens com erro" }],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.suporte",
+    label: "Suporte aos assinantes",
+    acoes: [{ acao: "view", label: "Ver chamados" }, { acao: "edit", label: "Responder e atender" }],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.auditoria",
+    label: "Auditoria da plataforma",
+    acoes: [{ acao: "view", label: "Ver" }],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.lgpd",
+    label: "LGPD da plataforma",
+    acoes: [{ acao: "view", label: "Ver solicitações" }, { acao: "edit", label: "Atender (exclusão definitiva só administradores)" }],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.configuracoes",
+    label: "Configurações globais",
+    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Alterar" }],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.marketplace",
+    label: "Marketplace e rede de corretores",
+    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Moderar e verificar" }],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.news",
+    label: "Agilliza News (curadoria)",
+    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Curar e publicar" }],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.fila",
+    label: "Fila de propostas dos assinantes",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Assumir e designar" },
     ],
   },
   {
@@ -465,7 +580,6 @@ export type AcessoTipo = "sistema" | "portal_parceiro";
 export const PAPEIS_POR_PORTAL: Record<AcessoTipo, { value: PapelNivel; label: string }[]> = {
   sistema: [
     { value: "gestor", label: "Gestor" },
-    { value: "gestor", label: "Gestão" },
     { value: "comercial", label: "Comercial" },
     { value: "analista", label: "Analista" },
   ],
@@ -653,7 +767,7 @@ async function forkNivelPadrao(
  *  Já nasce com uma matriz de permissões: copiada de outro nível (`copiar_de`)
  *  ou um baseline "somente leitura" (view = próprios) em todos os módulos. */
 export const criarNivelAcesso = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.regras", "edit"])])
   .inputValidator(
     (d: {
       nome: string;
@@ -724,8 +838,13 @@ export const criarNivelAcesso = createServerFn({ method: "POST" })
         }));
       }
     } else {
-      // Baseline: acesso de visualização (próprios) a cada módulo do catálogo.
-      rows = CATALOGO_MODULOS.filter((m) => m.acoes.some((a) => a.acao === "view")).map((m) => ({
+      // Baseline: visualização (próprios) dos módulos do dia a dia. Administração,
+      // RH (salários) e Financeiro ficam de fora: nível novo nasce sem ver backup,
+      // folha ou caixa — quem precisar recebe na matriz, de propósito.
+      const SENSIVEL = /^(admin|rh|financeiro|saas)\./;
+      rows = CATALOGO_MODULOS.filter(
+        (m) => !SENSIVEL.test(m.modulo) && m.acoes.some((a) => a.acao === "view"),
+      ).map((m) => ({
         nivel_acesso_id: novo.id,
         modulo: m.modulo,
         acao: "view",
@@ -848,7 +967,7 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
 
 /** Exclui um nível de acesso customizado (e suas permissões). */
 export const excluirNivelAcesso = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.regras", "edit"])])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;

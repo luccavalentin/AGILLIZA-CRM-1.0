@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash } from "node:crypto";
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import {
   gravarCookieSessao,
   limparCookieSessao,
@@ -90,6 +91,20 @@ export interface NotificacaoCliente {
 
 function hashDoc(doc: string): string {
   return createHash("sha256").update(doc).digest("hex");
+}
+
+/**
+ * Extensão só com letras e números. O nome vem do aparelho do cliente e entra
+ * no caminho do arquivo no storage: "foto./../../outro-cliente/x" escaparia
+ * da pasta do próprio cliente.
+ */
+function extensaoSegura(nomeArquivo: string): string {
+  const bruta = nomeArquivo.includes(".") ? (nomeArquivo.split(".").pop() ?? "") : "";
+  const limpa = bruta
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 10)
+    .toLowerCase();
+  return limpa || "bin";
 }
 
 function normalizarDoc(doc: string): string {
@@ -282,7 +297,7 @@ export const clienteObterVisaoGeral = createServerFn({ method: "GET" }).handler(
       cliente_id: sess.cid,
       processo: {
         etapa_atual: v.etapa_atual ?? null,
-        descricao: v.descricao ?? null,
+        descricao: semMarcaIntegracao(v.descricao) ?? null,
         ordem_atual: v.ordem_atual ?? 0,
         total: v.total ?? 0,
         ultima_atualizacao: v.ultima_atualizacao ?? null,
@@ -362,7 +377,7 @@ export const clienteObterAcompanhamento = createServerFn({ method: "GET" }).hand
     return {
       processo: {
         etapa_atual: v.processo?.etapa_atual ?? null,
-        descricao: v.processo?.descricao ?? null,
+        descricao: semMarcaIntegracao(v.processo?.descricao) ?? null,
         ordem_atual: v.processo?.ordem_atual ?? 0,
         total: v.processo?.total ?? 0,
         ultima_atualizacao: v.processo?.ultima_atualizacao ?? null,
@@ -384,7 +399,8 @@ export const clienteMeusDocumentos = createServerFn({ method: "GET" }).handler(
   async (): Promise<DocumentoCliente[]> => {
     const sess = requireClienteSession();
     const { portalDb } = await import("./portal-db.server");
-    const { data } = await portalDb().rpc("portal_meus_documentos", { _cid: sess.cid });
+    const { data, error } = await portalDb().rpc("portal_meus_documentos", { _cid: sess.cid });
+    if (error) throw new Error("Não foi possível carregar seus documentos.");
     return ((data as any[]) ?? []) as DocumentoCliente[];
   },
 );
@@ -461,7 +477,9 @@ export const clienteListarAtendentes = createServerFn({ method: "GET" }).handler
   async (): Promise<AtendenteCliente[]> => {
     const sess = requireClienteSession();
     const { portalDb } = await import("./portal-db.server");
-    const { data } = await portalDb().rpc("portal_listar_atendentes", { _cid: sess.cid });
+    const { data, error } = await portalDb().rpc("portal_listar_atendentes", { _cid: sess.cid });
+    // Erro não pode virar "nenhuma conversa".
+    if (error) throw new Error("Não foi possível carregar suas conversas.");
     return ((data as any[]) ?? []).map((a) => ({
       atendente_id: a.atendente_id,
       nome: (a.nome && String(a.nome).trim()) || "Atendente",
@@ -612,7 +630,7 @@ export const clienteEnviarMensagemAnexo = createServerFn({ method: "POST" })
 
     const bin = Buffer.from(data.conteudo_base64, "base64");
     if (bin.length > 10 * 1024 * 1024) throw new Error("Arquivo muito grande (máx. 10MB).");
-    const ext = data.nome_arquivo.split(".").pop() ?? "bin";
+    const ext = extensaoSegura(data.nome_arquivo);
     const path = `${sess.cid}/chat/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
     const { error: upErr } = await db.storage
@@ -684,7 +702,7 @@ export const clienteEnviarDocumentoPendente = createServerFn({ method: "POST" })
 
     const bin = Buffer.from(data.conteudo_base64, "base64");
     if (bin.length > 10 * 1024 * 1024) throw new Error("Arquivo muito grande (máx. 10MB).");
-    const ext = data.nome_arquivo.split(".").pop() ?? "bin";
+    const ext = extensaoSegura(data.nome_arquivo);
     const path = `${sess.cid}/app/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
     const db = portalDb();
@@ -713,8 +731,14 @@ export const clienteEnviarDocumentoPendente = createServerFn({ method: "POST" })
 export const clienteBaixarMeusDados = createServerFn({ method: "GET" }).handler(async () => {
   const sess = requireClienteSession();
   const { portalDb } = await import("./portal-db.server");
-  const { data } = await portalDb().rpc("portal_baixar_dados", { _cid: sess.cid });
+  const { data, error } = await portalDb().rpc("portal_baixar_dados", { _cid: sess.cid });
+  // Antes o erro era ignorado e o PDF saía vazio, como se estivesse certo.
+  if (error) {
+    console.error("[portal_baixar_dados]", error.message);
+    throw new Error("Não foi possível reunir seus dados agora. Tente novamente.");
+  }
   const v = (data as any) ?? {};
+  if (!v.cliente) throw new Error("Não encontramos seu cadastro. Fale com seu consultor.");
   return {
     cliente: v.cliente ?? null,
     documentos: v.documentos ?? [],

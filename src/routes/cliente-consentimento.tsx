@@ -8,6 +8,7 @@ import {
 } from "@/lib/portal/cliente.functions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/cliente-consentimento")({
   head: () => ({
@@ -38,8 +39,10 @@ function ConsentimentoLGPD() {
     try {
       await clienteRegistrarConsentimentoLGPD();
       navigate({ to: "/cliente/visao-geral", replace: true });
-    } catch {
-      toast.error("Não foi possível registrar o consentimento. Tente novamente.");
+    } catch (e) {
+      toast.error(
+        mensagemDeErro(e, "Não foi possível registrar o consentimento. Tente novamente."),
+      );
       setEnviando(false);
     }
   }
@@ -91,8 +94,9 @@ function ConsentimentoLGPD() {
           <div>
             <h2 className="font-semibold">4. Seus direitos</h2>
             <p className="text-muted-foreground">
-              Você pode, a qualquer momento, solicitar acesso, correção, portabilidade ou exclusão
-              dos seus dados diretamente pelo App, na área "Privacidade e meus dados (LGPD)".
+              Você pode, a qualquer momento, baixar seus dados, pedir a portabilidade ou excluir
+              seus dados do App em "Meu perfil", na área "Privacidade e meus dados (LGPD)". A
+              correção de dados cadastrais é pedida pelo chat do App.
             </p>
           </div>
           <div>

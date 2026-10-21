@@ -3,6 +3,7 @@ import {
   regimeCasamentoCodigoParaCrm,
 } from "@/lib/propostas/dominios";
 import { createServerFn } from "@tanstack/react-start";
+import { ipDoCliente } from "@/lib/http/ip-cliente";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -90,6 +91,10 @@ export interface SimulacaoListaItem {
 }
 
 /** ===== Bancos e operações (cache) ===== */
+
+/** Simulações que tiveram retorno do banco: as únicas que entram no volume simulado. */
+const STATUS_COM_RETORNO = ["simulada", "parcialmente_simulada", "promovida"];
+
 export const listarBancosAtivos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<BancoAtivo[]> => {
@@ -816,7 +821,6 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           return agrupadorDoLote;
         };
 
-
         // registra bancos selecionados
         if (dd.bancos_ids && dd.bancos_ids.length > 0) {
           const { data: bancos } = await supabase
@@ -1157,7 +1161,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       ) as string[];
 
       const COLUNAS_LISTA =
-        "id, numero_simulacao, nome_cliente, cliente_id, cpf_cnpj, nome_conjuge, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id, codigo_oportunidade_homefin";
+        "id, numero_simulacao, nome_cliente, cliente_id, cpf_cnpj, nome_conjuge, produto, valor_imovel, valor_financiamento, prazo, status, created_at, usuario_criador_id, deleted_at, deleted_by, deleted_motivo, sistema_amortizacao, agrupador_id, codigo_oportunidade_homefin, homefin_id_oportunidade";
 
       /** Aplica os filtros da tela a qualquer consulta sobre `simulacoes`. */
       const aplicarFiltros = (q: any) => {
@@ -1211,7 +1215,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
       // `simulacao_bancos(nome_banco)`: o card "Bancos cotados" contava só os
       // bancos da página; agora conta o filtro inteiro, como os outros cards.
       const colunasChave =
-        "id, agrupador_id, cliente_id, created_at, valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo, simulacao_bancos(nome_banco)";
+        "id, agrupador_id, cliente_id, created_at, status, valor_financiamento, valor_despesas_financiadas, fg_financiar_despesas, prazo, simulacao_bancos(nome_banco, status_banco)";
       const { count: totalFiltro, error: errCount } = await aplicarFiltros(
         supabase.from("simulacoes").select("id", { count: "exact", head: true }),
       );
@@ -1246,15 +1250,20 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
           if (vistos.has((r as any).id)) continue;
           vistos.add((r as any).id);
           const s = r as any;
-          totalVolume +=
-            (Number(s.valor_financiamento) || 0) +
-            (s.fg_financiar_despesas ? Number(s.valor_despesas_financiadas) || 0 : 0);
+          // "Volume simulado" tem uma definição só (painel, lista e relatório):
+          // soma de `valor_financiamento` das simulações que tiveram retorno
+          // (simulada, parcialmente simulada, promovida). Rascunho e erro não entram.
+          if (STATUS_COM_RETORNO.includes(s.status)) {
+            totalVolume += Number(s.valor_financiamento) || 0;
+          }
           const prazo = Number(s.prazo);
           if (prazo > 0) {
             somaPrazos += prazo;
             qtdPrazos++;
           }
           for (const b of (s.simulacao_bancos ?? []) as any[]) {
+            // Banco que deu erro não cotou: não entra em "Bancos cotados".
+            if (b?.status_banco === "erro") continue;
             const nome = String(b?.nome_banco ?? "Banco");
             cotacoesPorBanco.set(nome, (cotacoesPorBanco.get(nome) ?? 0) + 1);
           }
@@ -1611,7 +1620,7 @@ export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const ip = getRequestHeader("x-forwarded-for") ?? null;
+    const ip = ipDoCliente(getRequestHeader);
     const { enviarSimulacaoImpl } = await import("./enviar.server");
 
     // Identifica se há uma simulação secundária vinculada (comparativo de CPF)
@@ -1732,8 +1741,11 @@ export const reenviarSimulacaoBanco = enviarSimulacaoBanco;
 
 export { humanizarErroBanco };
 
-/** Exclui (logicamente) uma simulação. */
-/** Exclui (logicamente) uma simulação. */
+/**
+ * Exclui (logicamente) uma simulação. O catálogo não tem "excluir" em
+ * Simulações: exige "edit"; quem criou a simulação também pode com "create"
+ * (mesma ideia da RLS de DELETE, que libera o criador).
+ */
 export const excluirSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -1743,12 +1755,32 @@ export const excluirSimulacao = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: sim } = await supabase
       .from("simulacoes")
-      .select("cliente_id, homefin_id_oportunidade, correspondente_id")
+      .select("cliente_id, homefin_id_oportunidade, correspondente_id, usuario_criador_id")
       .eq("id", data.id)
       .maybeSingle();
     if (!sim) throw new Error("Simulação não encontrada.");
 
-    const { error } = await supabase
+    const { exigirAcao } = await import("@/lib/operacional/permissao-acao");
+    let podeComoCriador = false;
+    if ((sim as any).usuario_criador_id === userId) {
+      const { data: podeCriar } = await supabase.rpc("usuario_tem_permissao", {
+        _user_id: userId,
+        _modulo: "operacional.simulacoes",
+        _acao: "create",
+      });
+      podeComoCriador = !!podeCriar;
+    }
+    if (!podeComoCriador) {
+      await exigirAcao(
+        supabase,
+        userId,
+        "operacional.simulacoes",
+        "edit",
+        "Você não tem permissão para excluir simulações.",
+      );
+    }
+
+    const { data: alteradas, error } = await supabase
       .from("simulacoes")
       .update({
         deleted_at: new Date().toISOString(),
@@ -1756,8 +1788,13 @@ export const excluirSimulacao = createServerFn({ method: "POST" })
         deleted_motivo: data.motivo ?? null,
       })
       .eq("id", data.id)
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .select("id");
     if (error) throw error;
+    // A RLS de UPDATE pode filtrar a linha sem erro: sem isso a tela dizia "excluída".
+    if (!alteradas || alteradas.length === 0) {
+      throw new Error("Não foi possível excluir esta simulação. Ela pode já ter sido excluída.");
+    }
 
     // Espelhamento na HomeFin (Exclusão = Cancelamento Oportunidade)
     if (sim.homefin_id_oportunidade) {
@@ -2109,11 +2146,7 @@ export function estadoCivilCrmParaCodigo(v: string | null | undefined): string {
 }
 
 export type StatusSimulacaoCalculado =
-  | "enviando"
-  | "simulada"
-  | "parcialmente_simulada"
-  | "erro_banco"
-  | "rascunho";
+  "enviando" | "simulada" | "parcialmente_simulada" | "erro_banco" | "rascunho";
 
 /**
  * Status da simulação a partir do status de cada banco.

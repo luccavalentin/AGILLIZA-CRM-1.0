@@ -23,6 +23,8 @@ import {
   parceiroAtendeTipos,
   type TipoVinculo,
 } from "@/lib/crm/clientes.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export function VinculoTab({
   clienteId,
@@ -37,6 +39,8 @@ export function VinculoTab({
   const vincular = useServerFn(vincularParceiro);
   const desvincular = useServerFn(desvincularParceiro);
   const [selecao, setSelecao] = useState<Record<string, string>>({});
+  // Vincular e remover vínculo exigem "Editar" em Clientes (o servidor recusa).
+  const podeEditar = usePermissao("crm.clientes", "edit");
 
   const vinculos = useQuery({
     queryKey: ["cliente-vinculos", clienteId],
@@ -45,6 +49,7 @@ export function VinculoTab({
   const disponiveis = useQuery({
     queryKey: ["parceiros-disponiveis"],
     queryFn: () => listarDisp(),
+    enabled: podeEditar,
   });
 
   const adicionar = useMutation({
@@ -55,7 +60,7 @@ export function VinculoTab({
       setSelecao((prev) => ({ ...prev, [v.tipo_vinculo]: "" }));
       qc.invalidateQueries({ queryKey: ["cliente-vinculos", clienteId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Não foi possível vincular."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível vincular.")),
   });
 
   const remover = useMutation({
@@ -64,7 +69,7 @@ export function VinculoTab({
       toast.success("Vínculo removido.");
       qc.invalidateQueries({ queryKey: ["cliente-vinculos", clienteId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Não foi possível remover."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível remover.")),
   });
 
   return (
@@ -75,9 +80,6 @@ export function VinculoTab({
         </CardHeader>
         <CardContent className="text-sm">
           <p className="font-medium text-foreground">{responsavelNome ?? "—"}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Usuário que criou o cadastro do cliente.
-          </p>
         </CardContent>
       </Card>
 
@@ -98,48 +100,60 @@ export function VinculoTab({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <Select
-                      value={sel}
-                      onValueChange={(val) =>
-                        setSelecao((prev) => ({ ...prev, [tipo.valor]: val }))
+                {podeEditar && (
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <Select
+                        value={sel}
+                        onValueChange={(val) =>
+                          setSelecao((prev) => ({ ...prev, [tipo.valor]: val }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um usuário" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {opcoes.length === 0 ? (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              Nenhum usuário disponível
+                            </div>
+                          ) : (
+                            opcoes.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.nome ?? p.email ?? p.id}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      aria-label="Adicionar vínculo"
+                      disabled={!sel || adicionar.isPending}
+                      onClick={() =>
+                        adicionar.mutate({ parceiro_id: sel, tipo_vinculo: tipo.valor })
                       }
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um usuário" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {opcoes.length === 0 ? (
-                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                            Nenhum usuário disponível
-                          </div>
-                        ) : (
-                          opcoes.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.nome ?? p.email ?? p.id}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                      {adicionar.isPending ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <UserPlus className="size-4" />
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    disabled={!sel || adicionar.isPending}
-                    onClick={() => adicionar.mutate({ parceiro_id: sel, tipo_vinculo: tipo.valor })}
-                  >
-                    {adicionar.isPending ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <UserPlus className="size-4" />
-                    )}
-                  </Button>
-                </div>
+                )}
 
                 {vinculos.isLoading ? (
                   <p className="text-sm text-muted-foreground">Carregando…</p>
+                ) : vinculos.isError ? (
+                  <div className="flex flex-col items-center gap-2 py-4 text-center text-xs">
+                    <p className="text-destructive">Não foi possível carregar os vínculos.</p>
+                    <Button size="sm" variant="outline" onClick={() => vinculos.refetch()}>
+                      Tentar de novo
+                    </Button>
+                  </div>
                 ) : desteTipo.length === 0 ? (
                   <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
                     Nenhum vínculo neste tipo.
@@ -159,11 +173,13 @@ export function VinculoTab({
                             <p className="truncate text-xs text-muted-foreground">{v.email}</p>
                           )}
                         </div>
-                        <ConfirmDelete
-                          titulo="Remover vínculo"
-                          descricao="O vínculo deste usuário com o cliente será removido."
-                          onConfirm={() => remover.mutateAsync(v.id).then(() => undefined)}
-                        />
+                        {podeEditar && (
+                          <ConfirmDelete
+                            titulo="Remover vínculo"
+                            descricao="O vínculo deste usuário com o cliente será removido."
+                            onConfirm={() => remover.mutateAsync(v.id).then(() => undefined)}
+                          />
+                        )}
                       </div>
                     ))}
                   </div>

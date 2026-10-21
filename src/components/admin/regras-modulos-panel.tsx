@@ -30,6 +30,8 @@ import {
   DialogNovoNivel,
 } from "./regras-modulos/dialogs-nivel";
 import { DialogAlvos } from "./regras-modulos/dialog-alvos";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export function RegrasModulosPanel() {
   const qc = useQueryClient();
@@ -38,6 +40,7 @@ export function RegrasModulosPanel() {
   const atualizar = useServerFn(atualizarNivelAcesso);
   const excluir = useServerFn(excluirNivelAcesso);
   const salvar = useServerFn(salvarPermissoes);
+  const podeEditarRegras = usePermissao("admin.regras", "edit");
 
   const { data: niveis, isLoading } = useQuery({
     queryKey: ["niveis-acesso"],
@@ -102,7 +105,7 @@ export function RegrasModulosPanel() {
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
       setSelecionadoId(r.id);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const atualizarMut = useMutation({
@@ -122,7 +125,7 @@ export function RegrasModulosPanel() {
         setCarregadoPara("");
       }
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const excluirMut = useMutation({
@@ -134,7 +137,7 @@ export function RegrasModulosPanel() {
       setCarregadoPara("");
       await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const salvarMut = useMutation({
@@ -166,7 +169,7 @@ export function RegrasModulosPanel() {
         setCarregadoPara("");
       }
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const editavel = selecionado?.editavel ?? false;
@@ -270,9 +273,12 @@ export function RegrasModulosPanel() {
                 Cadastre e configure os papéis/funções (níveis de acesso) do seu ecossistema.
               </p>
             </div>
-            <Button onClick={() => setNovoOpen(true)}>
-              <Plus className="h-4 w-4" /> Novo papel
-            </Button>
+            {/* Criar nível exige "Regras & Módulos: editar" no servidor. */}
+            {podeEditarRegras && (
+              <Button onClick={() => setNovoOpen(true)}>
+                <Plus className="h-4 w-4" /> Novo papel
+              </Button>
+            )}
           </div>
 
           {isLoading ? (

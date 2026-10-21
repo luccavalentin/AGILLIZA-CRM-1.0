@@ -26,6 +26,9 @@ import { Paperclip } from "lucide-react";
 import { hojeISO, formatBRL } from "@/lib/financeiro/format";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 
+import { atualizarFinanceiro } from "./atualizar-cache";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+
 interface Props {
   tipo: ContaTipo;
   conta: { id: string; valor: number; valor_pago: number; descricao: string } | null;
@@ -68,11 +71,9 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
       }),
     onSuccess: () => {
       toast.success(tipo === "pagar" ? "Pagamento registrado." : "Recebimento confirmado.");
-      qc.invalidateQueries({ queryKey: ["fin-contas", tipo] });
-      qc.invalidateQueries({ queryKey: ["fin-kpis"] });
+      void atualizarFinanceiro(qc);
       onOpenChange(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha na baixa."),
   });
 
   async function submit() {
@@ -93,7 +94,7 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
       }
       await mut.mutateAsync({ comprovante_path: path, valorFinal: v });
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha no upload.");
+      toast.error(mensagemDeErro(e, "Não foi possível registrar a baixa."));
     } finally {
       setEnviando(false);
     }
@@ -108,7 +109,7 @@ export function BaixarDialog({ tipo, conta, open, onOpenChange }: Props) {
         {conta && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {conta.descricao} · Saldo devedor{" "}
+              {conta.descricao} · {tipo === "pagar" ? "Saldo a pagar" : "Saldo a receber"}{" "}
               <span className="font-medium tabular-nums text-foreground">
                 {formatBRL(restante)}
               </span>

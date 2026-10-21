@@ -2,6 +2,7 @@
  * Aba "Histórico" da página de detalhe da simulação. Extraído sem
  * qualquer alteração visual/funcional para reduzir o tamanho da rota.
  */
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { Card } from "@/components/ui/card";
 import { History, CheckCircle2, XCircle, Send, Plus, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -85,7 +86,7 @@ export function HistoricoTimeline({ historico }: { historico: any[] }) {
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                   <div className="min-w-0">
                     <p className="text-sm font-medium leading-snug text-foreground">
-                      {h.descricao}
+                      {semMarcaIntegracao(h.descricao)}
                     </p>
                     {h.ator_nome && (
                       <p className="mt-0.5 text-xs text-muted-foreground">por {h.ator_nome}</p>

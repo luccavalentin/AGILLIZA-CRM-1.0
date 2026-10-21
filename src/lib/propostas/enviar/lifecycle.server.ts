@@ -104,7 +104,7 @@ export async function cancelarPropostaHomefinImpl({
     await supabase.from("proposta_historico").insert({
       proposta_id: propostaId,
       tipo_evento: "cancelada",
-      descricao: "Cancelamento confirmado no banco parceiro (HomeFin).",
+      descricao: "Cancelamento confirmado no banco parceiro.",
       status_novo: "cancelada",
     });
 

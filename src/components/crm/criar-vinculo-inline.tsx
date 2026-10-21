@@ -25,6 +25,7 @@ import {
 import { listarNiveisAcesso } from "@/lib/admin/regras-modulos.functions";
 import { criarPessoaComAcesso } from "@/lib/admin/pessoas.functions";
 import { validarEmail } from "@/lib/crm/documento";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 /**
  * Diálogo para criar rapidamente uma pessoa (imobiliária, corretor ou comercial)
@@ -119,7 +120,7 @@ export function CriarVinculoInline({
         onOpenChange(false);
       }
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   function limpar() {
@@ -141,8 +142,8 @@ export function CriarVinculoInline({
         <DialogHeader>
           <DialogTitle>Novo cadastro — {rotuloTipo}</DialogTitle>
           <DialogDescription>
-            Cadastre rapidamente sem sair da proposta. Ao salvar, o cadastro já fica vinculado e
-            você continua o fluxo.
+            Cadastre rapidamente sem sair desta tela. Ao salvar, o cadastro já fica vinculado e você
+            continua de onde parou.
           </DialogDescription>
         </DialogHeader>
 
@@ -252,6 +253,7 @@ export function CriarVinculoInline({
                     type="button"
                     variant="outline"
                     size="icon"
+                    aria-label="Copiar senha"
                     onClick={() => {
                       void navigator.clipboard.writeText(credenciais.senha);
                       toast.success("Senha copiada.");

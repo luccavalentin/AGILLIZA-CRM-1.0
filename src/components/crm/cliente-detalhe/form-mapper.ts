@@ -1,4 +1,12 @@
 import { aplicarPadroesIdentificacao } from "@/lib/crm/padroes-cadastro";
+import { formatarMoedaBR } from "@/components/crm/cliente-form/constants";
+
+/** Número do banco -> "1.234,56" (o formulário lê nesse formato); vazio se não houver. */
+export function moedaOuVazio(n: unknown): string {
+  if (n == null || n === "") return "";
+  const x = Number(n);
+  return Number.isFinite(x) ? formatarMoedaBR(x) : "";
+}
 
 /**
  * Converte o cliente em `inicial` para o `<ClienteForm />`. Nacionalidade,
@@ -27,6 +35,11 @@ export function clienteParaFormInicial(c: any) {
     data_expedicao: c.data_expedicao ?? "",
     profissao: c.profissao ?? "",
     empresa: c.empresa ?? "",
+    // Dados da empresa (PJ): sem eles a edição abria vazia e salvar apagava o que havia.
+    tipo_empresa: c.tipo_empresa ?? "",
+    faturamento_empresa: moedaOuVazio(c.faturamento_empresa),
+    patrimonio_liquido_empresa: moedaOuVazio(c.patrimonio_liquido_empresa),
+    capital_social_empresa: moedaOuVazio(c.capital_social_empresa),
     banco_conta: c.banco_conta ?? "",
     agencia: c.agencia ?? "",
     conta_corrente: c.conta_corrente ?? "",

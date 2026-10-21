@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { todasAsLinhas } from "@/lib/paginar";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export interface ItemBackupDoc {
   pasta: string;
@@ -39,7 +40,7 @@ type Bruto = { bucket: string; path: string; pasta: string; nome: string };
 
 /** Monta o inventário de todos os documentos do sistema com links assinados, organizados por pasta. */
 export const montarInventarioDocumentos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.backup", "create"])])
   .handler(async ({ context }): Promise<{ itens: ItemBackupDoc[]; falhas: number }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);

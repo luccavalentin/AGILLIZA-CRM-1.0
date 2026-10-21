@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ function monogramaBanco(nome: string): string {
 
 export function ChecklistBancosView() {
   const search = useSearch({ from: "/_authenticated/formularios/$banco" });
+  const navigate = useNavigate({ from: "/formularios/$banco" });
   const [bancoSelecionado, setBancoSelecionado] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [bancoParaCompartilhar, setBancoParaCompartilhar] = useState<{
@@ -68,8 +69,6 @@ export function ChecklistBancosView() {
 
   const bancos = [
     { id: "itau", nome: "Itaú" },
-    { id: "caixa", nome: "Caixa Econômica" },
-    { id: "inter", nome: "Inter" },
     { id: "bradesco", nome: "Bradesco" },
     { id: "santander", nome: "Santander" },
   ];
@@ -219,7 +218,12 @@ export function ChecklistBancosView() {
               className={`cursor-pointer transition-all hover:shadow-md ${
                 isSelected ? "ring-2 ring-primary bg-primary/5" : "hover:bg-accent/50"
               }`}
-              onClick={() => setBancoSelecionado(b.id)}
+              onClick={() => {
+                setBancoSelecionado(b.id);
+                // Mantém o banco no endereço (?banco=…): antes o parâmetro sumia ao
+                // trocar de banco e o link copiado abria outro.
+                void navigate({ search: { banco: b.id }, replace: true });
+              }}
             >
               <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-4">
                 {/*
@@ -256,7 +260,7 @@ export function ChecklistBancosView() {
 
       {bancoSelecionado && (
         <Card className="animate-in slide-in-from-bottom-4 duration-500 border-none shadow-xl bg-white/50 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 px-8 py-6 rounded-t-xl">
+          <CardHeader className="flex flex-col gap-4 border-b bg-muted/30 px-4 py-6 rounded-t-xl sm:px-8 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl flex items-center gap-3">
                 <div
@@ -266,10 +270,11 @@ export function ChecklistBancosView() {
                 Checklist {bancos.find((b) => b.id === bancoSelecionado)?.nome}
               </CardTitle>
               <CardDescription>
-                Personalize a relação de documentos antes de baixar ou enviar.
+                Personalize a relação de documentos antes de baixar ou enviar. As mudanças valem só
+                para este envio — a lista padrão do banco não é alterada.
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 onClick={adicionarItem}
@@ -339,6 +344,7 @@ export function ChecklistBancosView() {
                         />
                         <Button
                           size="icon"
+                          aria-label="Salvar item"
                           variant="ghost"
                           className="h-8 w-8 text-green-600"
                           onClick={() => salvarEdicao(idx)}
@@ -347,6 +353,7 @@ export function ChecklistBancosView() {
                         </Button>
                         <Button
                           size="icon"
+                          aria-label="Cancelar edição"
                           variant="ghost"
                           className="h-8 w-8 text-red-600"
                           onClick={() => setEditandoIndex(null)}
@@ -383,6 +390,7 @@ export function ChecklistBancosView() {
                         >
                           <Button
                             size="icon"
+                            aria-label="Editar item"
                             variant="ghost"
                             className="h-7 w-7 text-muted-foreground hover:text-primary"
                             onClick={() => iniciarEdicao(idx, item.nome)}
@@ -391,6 +399,7 @@ export function ChecklistBancosView() {
                           </Button>
                           <Button
                             size="icon"
+                            aria-label="Remover item"
                             variant="ghost"
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
                             onClick={() => removerItem(idx)}

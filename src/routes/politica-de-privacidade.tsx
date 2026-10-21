@@ -4,9 +4,9 @@ import { ShieldCheck } from "lucide-react";
 /**
  * Política de Privacidade pública (LGPD - Lei 13.709/2018).
  *
- * IMPORTANTE: os campos entre colchetes [ ... ] devem ser preenchidos com os
- * dados reais do controlador (razão social, CNPJ, endereço e contato do
- * Encarregado/DPO). Não substitua por dados fictícios.
+ * Os dados do controlador ficam em DADOS_CONTROLADOR, logo abaixo. Preencha com
+ * os dados reais (nunca fictícios). Enquanto um campo estiver vazio, a página
+ * mostra um texto neutro no lugar, sem colchetes.
  */
 export const Route = createFileRoute("/politica-de-privacidade")({
   head: () => ({
@@ -23,12 +23,20 @@ export const Route = createFileRoute("/politica-de-privacidade")({
   component: PoliticaPrivacidade,
 });
 
-const CONTROLADOR = "[Razão Social do Controlador]";
-const CNPJ = "[CNPJ]";
-const ENDERECO = "[Endereço completo do controlador]";
-const DPO_NOME = "[Nome do Encarregado (DPO)]";
-const DPO_EMAIL = "[e-mail do Encarregado (DPO)]";
-const ATUALIZADO_EM = "[data da última atualização]";
+// Preencher com os dados reais do controlador. Vazio = texto neutro na página.
+const DADOS_CONTROLADOR = {
+  razaoSocial: "",
+  cnpj: "",
+  endereco: "",
+  dpoNome: "",
+  dpoEmail: "",
+  /** Data da última atualização desta política, ex.: "21/10/2026". */
+  atualizadoEm: "",
+};
+
+const EM_ATUALIZACAO = "dados do controlador em atualização";
+const temControlador = !!DADOS_CONTROLADOR.razaoSocial.trim();
+const temDpo = !!(DADOS_CONTROLADOR.dpoNome.trim() || DADOS_CONTROLADOR.dpoEmail.trim());
 
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -55,22 +63,51 @@ function PoliticaPrivacidade() {
       </header>
 
       <main className="mx-auto w-full max-w-3xl flex-1 space-y-8 px-4 py-8">
-        <p className="text-sm text-muted-foreground">Última atualização: {ATUALIZADO_EM}</p>
+        {DADOS_CONTROLADOR.atualizadoEm.trim() && (
+          <p className="text-sm text-muted-foreground">
+            Última atualização: {DADOS_CONTROLADOR.atualizadoEm}
+          </p>
+        )}
 
         <Secao titulo="1. Controlador dos dados">
-          <p>
-            O controlador dos dados pessoais tratados nesta plataforma é{" "}
-            <strong className="text-foreground">{CONTROLADOR}</strong>, inscrito no CNPJ {CNPJ}, com
-            sede em {ENDERECO}.
-          </p>
+          {temControlador ? (
+            <p>
+              O controlador dos dados pessoais tratados nesta plataforma é{" "}
+              <strong className="text-foreground">{DADOS_CONTROLADOR.razaoSocial}</strong>
+              {DADOS_CONTROLADOR.cnpj.trim() && <>, inscrito no CNPJ {DADOS_CONTROLADOR.cnpj}</>}
+              {DADOS_CONTROLADOR.endereco.trim() && <>, com sede em {DADOS_CONTROLADOR.endereco}</>}
+              .
+            </p>
+          ) : (
+            <p>Controlador dos dados pessoais tratados nesta plataforma: {EM_ATUALIZACAO}.</p>
+          )}
         </Secao>
 
         <Secao titulo="2. Encarregado (DPO)">
-          <p>
-            Para exercer seus direitos ou esclarecer dúvidas sobre o tratamento dos seus dados,
-            entre em contato com o Encarregado pela Proteção de Dados:{" "}
-            <strong className="text-foreground">{DPO_NOME}</strong> — {DPO_EMAIL}.
-          </p>
+          {temDpo ? (
+            <p>
+              Para exercer seus direitos ou esclarecer dúvidas sobre o tratamento dos seus dados,
+              fale com o Encarregado pela Proteção de Dados:{" "}
+              {DADOS_CONTROLADOR.dpoNome.trim() && (
+                <strong className="text-foreground">{DADOS_CONTROLADOR.dpoNome}</strong>
+              )}
+              {DADOS_CONTROLADOR.dpoNome.trim() && DADOS_CONTROLADOR.dpoEmail.trim() && ", "}
+              {DADOS_CONTROLADOR.dpoEmail.trim() && (
+                <a
+                  href={`mailto:${DADOS_CONTROLADOR.dpoEmail}`}
+                  className="font-medium text-primary underline underline-offset-2"
+                >
+                  {DADOS_CONTROLADOR.dpoEmail}
+                </a>
+              )}
+              .
+            </p>
+          ) : (
+            <p>
+              Contato do Encarregado pela Proteção de Dados: {EM_ATUALIZACAO}. Até lá, clientes
+              podem fazer seus pedidos pelo chat do Portal do Cliente.
+            </p>
+          )}
         </Secao>
 
         <Secao titulo="3. Dados pessoais que tratamos">
@@ -122,9 +159,14 @@ function PoliticaPrivacidade() {
           <p>
             Nos termos do art. 18 da LGPD, você pode solicitar: confirmação e acesso aos dados,
             correção, anonimização, portabilidade, eliminação, informação sobre compartilhamento e
-            revogação do consentimento. Clientes cadastrados podem exercer esses direitos
-            diretamente no portal, em <em>Perfil → Privacidade</em>, ou pelo contato do Encarregado
-            acima.
+            revogação do consentimento.
+          </p>
+          <p>
+            No Portal do Cliente, em <em>Meu perfil → Privacidade e meus dados (LGPD)</em>, você
+            pode baixar uma cópia dos seus dados em PDF, pedir a portabilidade dos dados e excluir
+            seus dados do aplicativo. A correção de dados cadastrais, a revogação do consentimento e
+            os demais pedidos são feitos pelo chat do portal com o seu consultor ou pelo contato do
+            Encarregado acima.
           </p>
         </Secao>
 
@@ -138,9 +180,9 @@ function PoliticaPrivacidade() {
 
         <Secao titulo="10. Cookies">
           <p>
-            Utilizamos cookies essenciais ao funcionamento da plataforma e, mediante consentimento,
-            cookies para melhoria da experiência. Você pode gerenciar sua escolha a qualquer momento
-            no aviso exibido ao acessar a plataforma.
+            Utilizamos apenas cookies e armazenamento local essenciais ao funcionamento da
+            plataforma, como manter a sessão e guardar preferências de tela. Não usamos cookies de
+            publicidade nem de análise de navegação.
           </p>
         </Secao>
 

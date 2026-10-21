@@ -7,15 +7,28 @@ import { ToneBadge } from "@/components/crm/tone-badge";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { formatarCelular, formatarDocumento } from "@/lib/crm/documento";
 import { iniciais, type ClienteItem } from "./tipos";
+import { SeloDaConta } from "@/components/plataforma/conta-nativa/selo-da-conta";
 
 type Props = {
   isLoading: boolean;
   itens: ClienteItem[];
   navigateToFicha: (id: string) => void;
-  handleExcluir: (id: string) => Promise<void>;
+  /** Sem ele (base de uma conta assinante) a lixeira não aparece. */
+  handleExcluir?: (id: string) => Promise<void>;
+  /** Mostra "Novo cliente" na lista vazia (não na base de uma conta assinante). */
+  podeCadastrar?: boolean;
+  /** Há busca/filtro ativo: a lista vazia não convida a cadastrar. */
+  filtrando?: boolean;
 };
 
-export function ListaMobile({ isLoading, itens, navigateToFicha, handleExcluir }: Props) {
+export function ListaMobile({
+  isLoading,
+  itens,
+  navigateToFicha,
+  handleExcluir,
+  podeCadastrar = true,
+  filtrando = false,
+}: Props) {
   return (
     <div className="space-y-3 md:hidden">
       {isLoading ? (
@@ -41,13 +54,19 @@ export function ListaMobile({ isLoading, itens, navigateToFicha, handleExcluir }
           </div>
           <p className="text-sm font-semibold text-foreground">Nenhum cliente encontrado</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Cadastre o primeiro cliente para começar.
+            {filtrando
+              ? "Nenhum cliente com estes filtros."
+              : podeCadastrar
+                ? "Cadastre o primeiro cliente para começar."
+                : "Esta base ainda não tem clientes."}
           </p>
-          <Button asChild size="sm" className="mt-4">
-            <Link to="/crm/clientes/novo">
-              <Plus className="size-4" /> Novo cliente
-            </Link>
-          </Button>
+          {podeCadastrar && !filtrando && (
+            <Button asChild size="sm" className="mt-4">
+              <Link to="/crm/clientes/novo">
+                <Plus className="size-4" /> Novo cliente
+              </Link>
+            </Button>
+          )}
         </Card>
       ) : (
         itens.map((c, idx) => (
@@ -75,6 +94,7 @@ export function ListaMobile({ isLoading, itens, navigateToFicha, handleExcluir }
                   <h2 className="truncate text-base font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
                     {c.nome}
                   </h2>
+                  {c._conta && <SeloDaConta conta={c._conta} />}
                   <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                     <span className="font-mono tabular-nums">{c.numero_cliente}</span>
                     <span className="max-w-full truncate font-mono tabular-nums">
@@ -83,9 +103,12 @@ export function ListaMobile({ isLoading, itens, navigateToFicha, handleExcluir }
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
-                  <ToneBadge tone={c.portal_acesso_ativo ? "success" : "muted"}>
-                    {c.portal_acesso_ativo ? "App ativo" : "App inativo"}
-                  </ToneBadge>
+                  {/* Cliente de conta assinante não tem o app do Agilliza: o selo enganava. */}
+                  {!c._conta && (
+                    <ToneBadge tone={c.portal_acesso_ativo ? "success" : "muted"}>
+                      {c.portal_acesso_ativo ? "App ativo" : "App inativo"}
+                    </ToneBadge>
+                  )}
                   <ChevronRight className="size-4 text-primary/70 transition-transform duration-300 group-hover:translate-x-0.5" />
                 </div>
               </div>
@@ -156,13 +179,15 @@ export function ListaMobile({ isLoading, itens, navigateToFicha, handleExcluir }
                 Abrir ficha do cliente
                 <ChevronRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
               </span>
-              <div onClick={(e) => e.stopPropagation()}>
-                <ConfirmDelete
-                  titulo="Excluir cliente"
-                  descricao={`O cliente "${c.nome}" e seus registros vinculados serão removidos permanentemente.`}
-                  onConfirm={() => handleExcluir(c.id)}
-                />
-              </div>
+              {handleExcluir && c.pode_excluir !== false && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <ConfirmDelete
+                    titulo="Excluir cliente"
+                    descricao={`O cliente "${c.nome}" e seus registros vinculados saem de todas as listas. O histórico fica guardado para auditoria; recadastrar o mesmo documento restaura o cadastro.`}
+                    onConfirm={() => handleExcluir(c.id)}
+                  />
+                </div>
+              )}
             </div>
           </Card>
         ))

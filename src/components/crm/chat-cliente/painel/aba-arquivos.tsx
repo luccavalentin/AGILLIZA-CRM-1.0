@@ -7,12 +7,13 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { listarDocumentos, urlDocumento } from "@/lib/crm/clientes.functions";
+import { ErroPainel } from "./painel-primitivos";
 import { formatarData, formatarTamanho } from "./painel-utils";
 
 export function AbaArquivos({ clienteId }: { clienteId: string }) {
   const fn = useServerFn(listarDocumentos);
   const urlFn = useServerFn(urlDocumento);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["chat-painel-arquivos", clienteId],
     queryFn: () => fn({ data: { cliente_id: clienteId } }),
     staleTime: 30_000,
@@ -36,6 +37,15 @@ export function AbaArquivos({ clienteId }: { clienteId: string }) {
       <div className="flex h-full items-center justify-center">
         <Loader2 className="size-5 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+  if (isError && !data) {
+    return (
+      <ErroPainel
+        erro={error}
+        alternativa="Não foi possível carregar os arquivos."
+        onTentarDeNovo={() => void refetch()}
+      />
     );
   }
   const lista = (data ?? []) as Array<{
@@ -100,7 +110,7 @@ export function AbaArquivos({ clienteId }: { clienteId: string }) {
                     : "border-border bg-muted text-muted-foreground",
               )}
             >
-              {a.status}
+              {a.status.charAt(0).toUpperCase() + a.status.slice(1).replace(/_/g, " ")}
             </Badge>
           )}
         </button>

@@ -27,7 +27,11 @@ export function PipelineTimeline({
   const total = ordenadas.length;
   const atualIdx = ordenadas.findIndex((s) => s.ordem === atualOrdem);
   const posicao = atualIdx >= 0 ? atualIdx + 1 : 0;
-  const percent = total > 1 ? Math.round((Math.max(0, posicao - 1) / (total - 1)) * 100) : 0;
+  // Fração de etapas CONCLUÍDAS (as anteriores à atual). Antes o número era
+  // (posição-1)/(total-1) ao lado de "3 de 9 etapas" — 25% contra 33% na
+  // mesma linha. Na última etapa, a esteira está completa.
+  const concluidas = posicao === 0 ? 0 : posicao === total ? total : posicao - 1;
+  const percent = total > 0 ? Math.round((concluidas / total) * 100) : 0;
   const nomeAtual = atualIdx >= 0 ? ordenadas[atualIdx].nome : "—";
 
   // Etapa atual não corresponde a nenhuma etapa cadastrada (esteira reconfigurada).
@@ -53,7 +57,11 @@ export function PipelineTimeline({
         <div className="text-right">
           <span className="text-2xl font-bold tabular-nums text-primary">{percent}%</span>
           <p className="text-[11px] text-muted-foreground">
-            {posicao > 0 ? `${posicao} de ${total} etapas` : `${total} etapas`}
+            {posicao === 0
+              ? `${total} etapas`
+              : posicao === total
+                ? `${total} de ${total} concluídas`
+                : `${concluidas} de ${total} concluídas · etapa ${posicao} atual`}
           </p>
         </div>
       </div>

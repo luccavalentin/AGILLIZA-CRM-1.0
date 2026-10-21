@@ -5,6 +5,7 @@ import { MessageCircle } from "lucide-react";
 import { FloatingWindow } from "@/components/shared/pop-out-panel";
 import { ThreadChat } from "@/components/cliente/chat-cliente";
 import { clienteListarAtendentes, type AtendenteCliente } from "@/lib/portal/cliente.functions";
+import { pollingPortal, POLL_ATENDENTES_MS } from "@/lib/portal/polling";
 import { useChatFlash } from "@/components/shared/chat-alert-store";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +25,7 @@ export function ClienteChatFlutuante() {
   const { data: atendentes } = useQuery({
     queryKey: ["cliente", "atendentes"],
     queryFn: () => clienteListarAtendentes(),
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 8000),
+    ...pollingPortal(POLL_ATENDENTES_MS),
   });
 
   const totalNaoLidas = useMemo(

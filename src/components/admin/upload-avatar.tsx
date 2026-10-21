@@ -129,7 +129,8 @@ export function UploadAvatar({ currentUrl, onUploadComplete, userId }: UploadAva
             type="button"
             variant="destructive"
             size="icon"
-            className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+            aria-label="Remover foto"
+            className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-lg transition-opacity md:opacity-0 md:group-hover:opacity-100"
             onClick={() => onUploadComplete("")}
           >
             <X className="h-3 w-3" />

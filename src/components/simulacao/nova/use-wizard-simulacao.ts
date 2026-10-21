@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ajustarPrazoPorIdade, prazoMaximoPorIdade } from "@/lib/simulacao/prazo";
+import { hojeISO } from "@/lib/financeiro/format";
+import { maskCelular, maskCpfCnpj } from "@/lib/simulacao/format";
+import { soDigitos, validarDocumento } from "@/lib/crm/documento";
 import {
   calcularEntradaSugerida,
   calcularPorEntrada,
@@ -175,10 +178,27 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   const prazoMaxProduto = w.produto === "home_equity" ? 240 : PRAZO_MAX;
   const prazoMaxEfetivo = Math.min(maxPrazoIdade ?? PRAZO_MAX, prazoMaxProduto);
 
+  // Nascimento no futuro e CPF/CNPJ inválido eram aceitos na simulação rápida.
+  const erroNascimento =
+    w.data_nascimento && w.data_nascimento > hojeISO()
+      ? "A data de nascimento não pode estar no futuro."
+      : maxPrazoIdade != null && maxPrazoIdade < PRAZO_MIN && w.data_nascimento
+        ? `Pela idade, o prazo máximo seria de ${maxPrazoIdade} meses — abaixo do mínimo de ${PRAZO_MIN}. Não é possível simular.`
+        : null;
+  const docDigitos = soDigitos(w.cpf_cnpj || "");
+  const erroCpf =
+    docDigitos && !validarDocumento(docDigitos, docDigitos.length > 11 ? "PJ" : "PF")
+      ? docDigitos.length > 11
+        ? "CNPJ inválido."
+        : "CPF inválido."
+      : null;
+
   const valido =
     w.valor_imovel > 0 &&
     w.valor_financiamento > 0 &&
     w.data_nascimento !== "" &&
+    !erroNascimento &&
+    !erroCpf &&
     w.sexo !== "" &&
     w.prazo_meses >= PRAZO_MIN &&
     w.prazo_meses <= prazoMaxEfetivo &&
@@ -217,6 +237,9 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
   }
 
   useEffect(() => {
+    // Abaixo do prazo mínimo não há prazo possível: mantém o que estava (antes o
+    // campo virava 0 e sumia) e o aviso aparece abaixo da data de nascimento.
+    if (maxPrazoIdade != null && maxPrazoIdade < PRAZO_MIN) return;
     if (maxPrazoIdade != null && w.prazo_meses > maxPrazoIdade) {
       const { mensagem } = ajustarPrazoPorIdade(w.prazo_meses, {
         nome: w.nome_cliente || "Titular",
@@ -237,9 +260,9 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
     setW((prev) => ({
       ...prev,
       nome_cliente: c.nome ?? "",
-      cpf_cnpj: c.documento ? c.documento.replace(/\D/g, "") : "",
+      cpf_cnpj: c.documento ? maskCpfCnpj(c.documento) : "",
       email: c.email || "",
-      celular: c.telefone_celular || "",
+      celular: c.telefone_celular ? maskCelular(c.telefone_celular) : "",
       data_nascimento: nascimento,
       sexo: sexoCrm === "M" || sexoCrm === "F" ? sexoCrm : prev.sexo,
       renda_familiar: c.renda_total_declarada ?? prev.renda_familiar,
@@ -262,6 +285,8 @@ export function useWizardSimulacao(melhorTaxaAno = 0.1199) {
     w,
     set,
     valido,
+    erroNascimento,
+    erroCpf,
     ltvMax,
     maxPrazoIdade,
     entradaSugerida,

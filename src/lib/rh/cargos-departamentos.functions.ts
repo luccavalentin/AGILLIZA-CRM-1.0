@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export interface Cargo {
   id: string;
@@ -87,4 +88,53 @@ export const criarDepartamento = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     return row as Departamento;
+  });
+
+/*
+ * Editar e desativar. Desativar, não apagar: funcionário e histórico salarial
+ * apontam para o cargo/departamento, e o registro antigo precisa continuar legível.
+ * Desativado sai das listas de escolha (listar* filtra `ativo`).
+ */
+const editarSchema = z.object({
+  id: z.string().uuid(),
+  nome: z.string().trim().min(1, "Informe o nome."),
+  cbo: z.string().trim().optional().nullable(),
+});
+
+export const editarCargo = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
+  .inputValidator((data: unknown) => editarSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("rh_cargos")
+      .update({ nome: data.nome, cbo: data.cbo || null } as never)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const editarDepartamento = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
+  .inputValidator((data: unknown) => editarSchema.omit({ cbo: true }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("rh_departamentos")
+      .update({ nome: data.nome } as never)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const desativarCargoOuDepartamento = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["rh.configuracoes", "delete"], ["rh.configuracoes", "edit"])])
+  .inputValidator((data: unknown) =>
+    z.object({ id: z.string().uuid(), tipo: z.enum(["cargo", "departamento"]) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from(data.tipo === "cargo" ? "rh_cargos" : "rh_departamentos")
+      .update({ ativo: false } as never)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

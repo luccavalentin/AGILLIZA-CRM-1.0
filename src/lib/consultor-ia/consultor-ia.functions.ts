@@ -5,10 +5,12 @@
  * A IA NUNCA escreve na base: ela apenas lê os trechos recuperados e responde
  * fundamentada neles. A atualização do conhecimento é curadoria manual feita
  * na tela de administração.
+ *
+ * A pergunta em si vai pela rota de streaming (`/api/consultor-ia/stream`).
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export interface FonteCitada {
   id: string;
@@ -54,112 +56,60 @@ export const CATEGORIAS_BASE = [
   "Duvidas_Frequentes",
 ] as const;
 
-const STOPWORDS = new Set([
-  "a",
-  "o",
-  "as",
-  "os",
-  "de",
-  "da",
-  "do",
-  "das",
-  "dos",
-  "e",
-  "em",
-  "um",
-  "uma",
-  "para",
-  "por",
-  "com",
-  "que",
-  "qual",
-  "quais",
-  "como",
-  "quando",
-  "onde",
-  "é",
-  "sao",
-  "são",
-  "no",
-  "na",
-  "nos",
-  "nas",
-  "ao",
-  "aos",
-  "se",
-  "sobre",
-  "meu",
-  "minha",
-  "the",
-  "of",
-]);
-
-function tokens(texto: string): string[] {
-  return texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .split(/[^a-z0-9]+/)
-    .filter((t) => t.length > 2 && !STOPWORDS.has(t));
-}
+/** Quem usa o Consultor (mesma regra da rota /crm/consultor-ia e do streaming). */
+const usaConsultor = exigirPermissao(["crm.clientes", "view"]);
 
 async function correspondenteDoUsuario(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("correspondente_id")
     .eq("id", userId)
     .maybeSingle();
+  if (error) throw new Error("Não foi possível identificar a sua conta.");
   return data?.correspondente_id ?? null;
 }
 
-/** Ranqueia os trechos da base por sobreposição de termos com a pergunta. */
-function selecionarTrechos(itens: ItemBase[], pergunta: string, limite = 5): ItemBase[] {
-  const termos = tokens(pergunta);
-  if (termos.length === 0) return itens.slice(0, limite);
-  const pontuados = itens.map((it) => {
-    const alvoTitulo = tokens(`${it.titulo} ${it.tags.join(" ")}`);
-    const alvoConteudo = tokens(it.conteudo);
-    let score = 0;
-    for (const t of termos) {
-      if (alvoTitulo.some((x) => x.startsWith(t) || t.startsWith(x))) score += 3;
-      score += Math.min(alvoConteudo.filter((x) => x === t).length, 4);
-    }
-    return { it, score };
-  });
-  return pontuados
-    .filter((p) => p.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limite)
-    .map((p) => p.it);
+/**
+ * Verbete global (sem conta) vale para todas as contas: só a administração da
+ * plataforma cria, altera ou apaga. Mesma regra da RLS (`pode_editar_base_global`).
+ */
+export async function podeEditarBaseGlobal(supabase: any, userId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("pode_editar_base_global", { _user_id: userId });
+  if (error) throw new Error("Não foi possível conferir suas permissões.");
+  return data === true;
 }
+
+export const MSG_SO_PLATAFORMA = "Só a administração da plataforma altera conteúdo global.";
 
 /** Lista as conversas do usuário logado. */
 export const listarConversasConsultor = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([usaConsultor])
   .handler(async ({ context }): Promise<ConversaConsultor[]> => {
     const { supabase, userId } = context as any;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("consultor_ia_conversas")
       .select("id, titulo, created_at, updated_at")
       .eq("usuario_id", userId)
       .order("updated_at", { ascending: false })
       .limit(50);
+    if (error) throw new Error("Não foi possível carregar as conversas.");
     return (data ?? []) as ConversaConsultor[];
   });
 
 /** Mensagens de uma conversa (RLS garante que é do próprio usuário). */
 export const listarMensagensConsultor = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([usaConsultor])
   .inputValidator((d: { conversa_id: string }) =>
     z.object({ conversa_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<MensagemConsultor[]> => {
     const { supabase } = context as any;
-    const { data: msgs } = await supabase
+    const { data: msgs, error } = await supabase
       .from("consultor_ia_mensagens")
       .select("id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at")
       .eq("conversa_id", data.conversa_id)
       .order("created_at", { ascending: true });
+    if (error) throw new Error("Não foi possível carregar a conversa.");
     return (msgs ?? []).map((m: any) => ({
       ...m,
       fontes_usadas: Array.isArray(m.fontes_usadas) ? m.fontes_usadas : [],
@@ -167,7 +117,7 @@ export const listarMensagensConsultor = createServerFn({ method: "GET" })
   });
 
 export const excluirConversaConsultor = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([usaConsultor])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context as any;
@@ -177,7 +127,7 @@ export const excluirConversaConsultor = createServerFn({ method: "POST" })
   });
 
 export const avaliarRespostaConsultor = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([usaConsultor])
   .inputValidator((d: { mensagem_id: string; avaliacao: "util" | "nao_util" | null }) =>
     z
       .object({
@@ -198,9 +148,11 @@ export const avaliarRespostaConsultor = createServerFn({ method: "POST" })
 
 /** Envia uma sugestão de conteúdo (lacuna de conhecimento) para curadoria. */
 export const sugerirConteudoBase = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([usaConsultor])
   .inputValidator((d: { pergunta: string; observacao?: string }) =>
-    z.object({ pergunta: z.string().min(3), observacao: z.string().optional() }).parse(d),
+    z
+      .object({ pergunta: z.string().min(3).max(4000), observacao: z.string().max(2000).optional() })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
@@ -217,22 +169,23 @@ export const sugerirConteudoBase = createServerFn({ method: "POST" })
 
 /** Conteúdo completo de um item da base (para a citação clicável). */
 export const obterItemBase = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "view"], ["admin.parametros", "view"])])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<ItemBase | null> => {
     const { supabase } = context as any;
-    const { data: row } = await supabase
+    const { data: row, error } = await supabase
       .from("consultor_ia_base")
       .select("id, categoria, titulo, conteudo, tags, ativo, correspondente_id, updated_at")
       .eq("id", data.id)
       .maybeSingle();
+    if (error) throw new Error("Não foi possível abrir o verbete.");
     return (row as ItemBase) ?? null;
   });
 
 /* ─────────────── Administração da base de conhecimento ─────────────── */
 
 export const listarBaseConhecimento = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.parametros", "view"])])
   .inputValidator((d?: { q?: string; categoria?: string; incluirInativos?: boolean }) =>
     z
       .object({
@@ -252,16 +205,25 @@ export const listarBaseConhecimento = createServerFn({ method: "GET" })
     if (data.categoria && data.categoria !== "todas") q = q.eq("categoria", data.categoria);
     if (!data.incluirInativos) q = q.eq("ativo", true);
     if (data.q && data.q.trim()) {
-      const termo = `%${data.q.trim()}%`;
-      q = q.or(`titulo.ilike.${termo},conteudo.ilike.${termo}`);
+      // Vírgula, parêntese e curingas quebravam o filtro `or` do PostgREST.
+      const termo = `%${data.q.trim().replace(/[,()%*"\\]/g, " ")}%`;
+      q = q.or(`titulo.ilike."${termo}",conteudo.ilike."${termo}"`);
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     return (rows ?? []) as ItemBase[];
   });
 
+/** O que a tela da base pode oferecer a este usuário. */
+export const obterPermissoesBase = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["admin.parametros", "view"])])
+  .handler(async ({ context }): Promise<{ global: boolean }> => {
+    const { supabase, userId } = context as any;
+    return { global: await podeEditarBaseGlobal(supabase, userId) };
+  });
+
 export const salvarItemBase = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.parametros", "edit"])])
   .inputValidator(
     (d: {
       id?: string;
@@ -286,7 +248,31 @@ export const salvarItemBase = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ id: string }> => {
     const { supabase, userId } = context as any;
-    const corr = await correspondenteDoUsuario(supabase, userId);
+    const [corr, podeGlobal] = await Promise.all([
+      correspondenteDoUsuario(supabase, userId),
+      podeEditarBaseGlobal(supabase, userId),
+    ]);
+
+    if (data.id) {
+      const { data: atual, error: erroAtual } = await supabase
+        .from("consultor_ia_base")
+        .select("id, correspondente_id")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (erroAtual) throw new Error(erroAtual.message);
+      if (!atual) throw new Error("Verbete não encontrado.");
+      const eraGlobal = atual.correspondente_id === null;
+      // Antes, salvar um global com "global" desligado o puxava para a conta de
+      // quem editou, e ele sumia para todas as outras.
+      if ((eraGlobal || data.global) && !podeGlobal) throw new Error(MSG_SO_PLATAFORMA);
+      if (!eraGlobal && atual.correspondente_id !== corr) {
+        throw new Error("Verbete não encontrado.");
+      }
+    } else if (data.global && !podeGlobal) {
+      throw new Error(MSG_SO_PLATAFORMA);
+    }
+    if (!data.global && !corr) throw new Error("Conta não identificada.");
+
     const payload = {
       categoria: data.categoria,
       titulo: data.titulo,
@@ -297,8 +283,13 @@ export const salvarItemBase = createServerFn({ method: "POST" })
       atualizado_por: userId,
     };
     if (data.id) {
-      const { error } = await supabase.from("consultor_ia_base").update(payload).eq("id", data.id);
+      const { data: alterados, error } = await supabase
+        .from("consultor_ia_base")
+        .update(payload)
+        .eq("id", data.id)
+        .select("id");
       if (error) throw new Error(error.message);
+      if (!alterados?.length) throw new Error("Você não tem permissão para alterar este verbete.");
       return { id: data.id };
     }
     const { data: row, error } = await supabase
@@ -311,25 +302,41 @@ export const salvarItemBase = createServerFn({ method: "POST" })
   });
 
 export const excluirItemBase = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.parametros", "edit"])])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context as any;
-    const { error } = await supabase.from("consultor_ia_base").delete().eq("id", data.id);
+    const { supabase, userId } = context as any;
+    const { data: atual, error: erroAtual } = await supabase
+      .from("consultor_ia_base")
+      .select("id, correspondente_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (erroAtual) throw new Error(erroAtual.message);
+    if (!atual) throw new Error("Verbete não encontrado.");
+    if (atual.correspondente_id === null && !(await podeEditarBaseGlobal(supabase, userId))) {
+      throw new Error(MSG_SO_PLATAFORMA);
+    }
+    const { data: apagados, error } = await supabase
+      .from("consultor_ia_base")
+      .delete()
+      .eq("id", data.id)
+      .select("id");
     if (error) throw new Error(error.message);
+    if (!apagados?.length) throw new Error("Você não tem permissão para apagar este verbete.");
     return { ok: true };
   });
 
 export const listarSugestoesBase = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.parametros", "view"])])
   .handler(async ({ context }) => {
     const { supabase } = context as any;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("consultor_ia_sugestoes")
       .select("id, pergunta, observacao, status, created_at")
       .eq("status", "aberta")
       .order("created_at", { ascending: false })
       .limit(50);
+    if (error) throw new Error("Não foi possível carregar as sugestões.");
     return (data ?? []) as Array<{
       id: string;
       pergunta: string;
@@ -340,7 +347,7 @@ export const listarSugestoesBase = createServerFn({ method: "GET" })
   });
 
 export const resolverSugestaoBase = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.parametros", "edit"])])
   .inputValidator((d: { id: string; status: "resolvida" | "descartada" }) =>
     z.object({ id: z.string().uuid(), status: z.enum(["resolvida", "descartada"]) }).parse(d),
   )
@@ -352,119 +359,4 @@ export const resolverSugestaoBase = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
-  });
-
-/* ───────────────────────── Consulta (RAG) ───────────────────────── */
-
-const MARCADOR_SEM_INFO = "SEM_INFORMACAO_NA_BASE";
-
-export interface RespostaConsultor {
-  conversa_id: string;
-  mensagem_id: string;
-  resposta: string;
-  fontes: FonteCitada[];
-  sem_resposta: boolean;
-}
-
-export const consultarAssistenteIA = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: { conversa_id?: string | null; pergunta: string }) =>
-    z
-      .object({
-        conversa_id: z.string().uuid().nullable().optional(),
-        pergunta: z.string().min(2).max(2000),
-      })
-      .parse(d),
-  )
-  .handler(async ({ data, context }): Promise<RespostaConsultor> => {
-    const { supabase, userId } = context as any;
-    const nucleo = await import("./consultor-ia.server");
-    const preparo = await nucleo.prepararConsulta(supabase, userId, {
-      conversa_id: data.conversa_id ?? null,
-      pergunta: data.pergunta,
-    });
-    const bruto = await nucleo.gerarTexto(preparo);
-    const fim = await nucleo.finalizarResposta(
-      supabase,
-      preparo.conversaId,
-      preparo.trechos,
-      bruto,
-    );
-    return { conversa_id: preparo.conversaId, ...fim };
-  });
-
-/* ───────── Base de conhecimento: perguntas já respondidas ───────── */
-
-export interface PerguntaRespondida {
-  id: string;
-  conversa_id: string;
-  pergunta: string;
-  resposta: string;
-  fontes: FonteCitada[];
-  sem_resposta: boolean;
-  avaliacao: "util" | "nao_util" | null;
-  palavras_chave: string[];
-  created_at: string;
-}
-
-/**
- * Consolida o histórico de perguntas e respostas do consultor em uma base
- * pesquisável por palavra-chave. A RLS já limita ao que o usuário pode ver.
- */
-export const listarPerguntasRespondidas = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d?: { q?: string; limite?: number }) =>
-    z
-      .object({ q: z.string().optional(), limite: z.number().min(1).max(500).optional() })
-      .parse(d ?? {}),
-  )
-  .handler(async ({ data, context }): Promise<PerguntaRespondida[]> => {
-    const { supabase } = context as any;
-    const { data: rows, error } = await supabase
-      .from("consultor_ia_mensagens")
-      .select(
-        "id, conversa_id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at",
-      )
-      .order("created_at", { ascending: true })
-      .limit(1000);
-    if (error) throw new Error(error.message);
-
-    const porConversa = new Map<string, any[]>();
-    for (const m of rows ?? []) {
-      const arr = porConversa.get(m.conversa_id) ?? [];
-      arr.push(m);
-      porConversa.set(m.conversa_id, arr);
-    }
-
-    const itens: PerguntaRespondida[] = [];
-    for (const msgs of porConversa.values()) {
-      for (let i = 0; i < msgs.length; i++) {
-        if (msgs[i].papel !== "usuario") continue;
-        const resposta = msgs.slice(i + 1).find((m: any) => m.papel === "assistente");
-        if (!resposta) continue;
-        itens.push({
-          id: resposta.id,
-          conversa_id: resposta.conversa_id,
-          pergunta: msgs[i].conteudo,
-          resposta: resposta.conteudo,
-          fontes: Array.isArray(resposta.fontes_usadas) ? resposta.fontes_usadas : [],
-          sem_resposta: !!resposta.sem_resposta,
-          avaliacao: resposta.avaliacao ?? null,
-          palavras_chave: Array.from(new Set(tokens(msgs[i].conteudo))).slice(0, 6),
-          created_at: resposta.created_at,
-        });
-      }
-    }
-
-    const termos = tokens(data.q ?? "");
-    const filtrados = termos.length
-      ? itens.filter((it) => {
-          const alvo = tokens(`${it.pergunta} ${it.resposta} ${it.palavras_chave.join(" ")}`);
-          return termos.every((t) => alvo.some((x) => x.startsWith(t) || t.startsWith(x)));
-        })
-      : itens;
-
-    return filtrados
-      .sort((a, b) => b.created_at.localeCompare(a.created_at))
-      .slice(0, data.limite ?? 100);
   });

@@ -16,6 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { atualizarFinanceiro } from "./atualizar-cache";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 interface Props {
   tipo: ContaTipo;
@@ -36,12 +38,11 @@ export function EstornarDialog({ tipo, acao, contaId, open, onOpenChange }: Prop
         : cancelarConta({ data: { tipo, id: contaId!, motivo: motivo.trim() } }),
     onSuccess: () => {
       toast.success(acao === "estornar" ? "Conta estornada." : "Conta cancelada.");
-      qc.invalidateQueries({ queryKey: ["fin-contas", tipo] });
-      qc.invalidateQueries({ queryKey: ["fin-kpis"] });
+      void atualizarFinanceiro(qc);
       onOpenChange(false);
       setMotivo("");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha na operação."),
+    onError: (e: unknown) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   return (

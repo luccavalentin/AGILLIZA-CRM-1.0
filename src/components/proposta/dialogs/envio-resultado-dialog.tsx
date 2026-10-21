@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { CheckCircle2, XCircle } from "lucide-react";
 import {
   Dialog,
@@ -80,7 +81,7 @@ export function EnvioResultadoDialog({
               <BancoLogo nome={r.nome_banco} size="lg" className="shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground">{r.nome_banco ?? "Banco"}</p>
-                {r.mensagem && <p className="text-xs text-muted-foreground">{r.mensagem}</p>}
+                {r.mensagem && <p className="text-xs text-muted-foreground">{semMarcaIntegracao(r.mensagem)}</p>}
               </div>
               <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
             </div>

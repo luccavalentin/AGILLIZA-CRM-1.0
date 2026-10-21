@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export type Prioridade = string;
 
@@ -74,7 +75,7 @@ async function correspondenteId(supabase: any, userId: string): Promise<string> 
 
 /** Lista as configurações de SLA (tipo × prioridade → horas úteis). */
 export const listarSlaConfiguracoes = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.sla", "view"])])
   .handler(async ({ context }): Promise<SlaConfig[]> => {
     const { supabase } = context;
     const { data, error } = await supabase
@@ -88,7 +89,7 @@ export const listarSlaConfiguracoes = createServerFn({ method: "GET" })
 
 /** Cria ou atualiza uma configuração de SLA. */
 export const salvarSlaConfiguracao = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.sla", "edit"])])
   .inputValidator((d) =>
     z
       .object({
@@ -126,7 +127,7 @@ export const salvarSlaConfiguracao = createServerFn({ method: "POST" })
 
 /** Remove uma configuração de SLA. */
 export const excluirSlaConfiguracao = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.sla", "edit"])])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("sla_configuracoes").delete().eq("id", data.id);
@@ -136,7 +137,7 @@ export const excluirSlaConfiguracao = createServerFn({ method: "POST" })
 
 /** Lista os feriados (globais + do correspondente). */
 export const listarFeriados = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.sla", "view"])])
   .handler(async ({ context }): Promise<Feriado[]> => {
     const { data, error } = await context.supabase
       .from("feriados")
@@ -148,7 +149,7 @@ export const listarFeriados = createServerFn({ method: "GET" })
 
 /** Cadastra um feriado do correspondente. */
 export const criarFeriado = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.sla", "edit"])])
   .inputValidator((d) =>
     z.object({ data: z.string().min(1), descricao: z.string().trim().min(2).max(200) }).parse(d),
   )
@@ -166,7 +167,7 @@ export const criarFeriado = createServerFn({ method: "POST" })
 
 /** Remove um feriado (apenas os do próprio correspondente). */
 export const excluirFeriado = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.sla", "edit"])])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("feriados").delete().eq("id", data.id);
@@ -184,7 +185,7 @@ const CATEGORIAS: CategoriaCatalogo[] = ["tipo_demanda", "prioridade", "canal"];
  * até os itens "de fábrica" podem ser editados ou excluídos.
  */
 export const listarCatalogoSla = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.sla", "view"])])
   .inputValidator((d) =>
     z.object({ categoria: z.enum(["tipo_demanda", "prioridade", "canal"]) }).parse(d),
   )
@@ -224,7 +225,7 @@ export const listarCatalogoSla = createServerFn({ method: "GET" })
 
 /** Cria ou atualiza um item de catálogo. */
 export const salvarCatalogoItem = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.sla", "edit"])])
   .inputValidator((d) =>
     z
       .object({
@@ -266,7 +267,7 @@ export const salvarCatalogoItem = createServerFn({ method: "POST" })
 
 /** Remove um item de catálogo. */
 export const excluirCatalogoItem = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.sla", "edit"])])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("sla_catalogo_itens").delete().eq("id", data.id);

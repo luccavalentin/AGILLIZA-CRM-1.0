@@ -193,7 +193,7 @@ export async function enviarDocumentosBancoImpl({
 
   const docs = (docsRaw ?? []).filter((d: any) => d.storage_path && ehFormatoAceito(d));
   if (docs.length === 0) {
-    throw new Error("Nenhum documento em PDF/JPG/PNG disponível para enviar à HomeFin.");
+    throw new Error("Nenhum documento em PDF/JPG/PNG disponível para enviar à integração bancária.");
   }
 
   const ctx = { proposta_id: propostaId, correspondente_id: prop.correspondente_id };
@@ -278,7 +278,7 @@ export async function enviarDocumentosBancoImpl({
 
   if (itens.length === 0) {
     throw new Error(
-      "A HomeFin ainda não gerou o checklist de documentos desta oportunidade. Envie a proposta antes de enviar os documentos.",
+      "A integração bancária ainda não gerou o checklist de documentos desta oportunidade. Envie a proposta antes de enviar os documentos.",
     );
   }
 
@@ -527,12 +527,12 @@ export async function enviarDocumentosBancoImpl({
       falhaLote = /INT-007/i.test(bruto)
         ? "Já existe um envio de documentos em andamento para esta oportunidade. Aguarde alguns segundos e tente novamente."
         : sanitizarMensagemErro(bruto);
-      erros.push({ nome: "Envio à HomeFin", motivo: falhaLote, participante: null });
+      erros.push({ nome: "Envio à integração bancária", motivo: falhaLote, participante: null });
       try {
         await supabase.from("proposta_historico").insert({
           proposta_id: propostaId,
           tipo_evento: "erro_envio",
-          descricao: `Documentos na HomeFin, mas a integração retornou erro: ${falhaLote}`,
+          descricao: `Documentos recebidos pela integração bancária, mas ela retornou erro: ${falhaLote}`,
           ator_id: userId,
         });
       } catch {
@@ -559,8 +559,8 @@ export async function enviarDocumentosBancoImpl({
       if (situacao === "homefin" && !loteDoBanco) {
         mensagem =
           ehAgenciaDoBradesco(banco?.nome_banco) && !bancoJaEnviado(banco ?? {})
-            ? "Enviado à HomeFin. Segue assim que a proposta estiver criada."
-            : "Enviado à HomeFin, aguardando a análise.";
+            ? "Enviado à integração bancária. Segue assim que a proposta estiver criada."
+            : "Enviado à integração bancária, aguardando a análise.";
       }
       if (situacao === "homefin" && falhaLote) mensagem = falhaLote;
       await marcarDoc(doc.id, situacao, mensagem);
@@ -631,7 +631,7 @@ export async function enviarDocumentosBancoImpl({
       await supabase.from("proposta_historico").insert({
         proposta_id: propostaId,
         tipo_evento: erros.length > 0 ? "erro_envio" : "sincronizacao",
-        descricao: `Documentos: ${sucesso.length} no banco, ${naHomefin.length} na HomeFin, ${erros.length} com erro.${
+        descricao: `Documentos: ${sucesso.length} no banco, ${naHomefin.length} na integração bancária, ${erros.length} com erro.${
           erros.length > 0 ? ` ${erros.map((e) => `${e.nome}: ${e.motivo}`).join(" · ")}` : ""
         }`,
         ator_id: userId,
@@ -650,7 +650,7 @@ export async function enviarDocumentosBancoImpl({
       acao: "proposta.documentos_enviados",
       entidade: "propostas",
       entidadeId: propostaId,
-      descricao: `enviou ${itemDoDoc.size} documento(s): ${sucesso.length} no banco, ${naHomefin.length} na HomeFin`,
+      descricao: `enviou ${itemDoDoc.size} documento(s): ${sucesso.length} no banco, ${naHomefin.length} na integração bancária`,
       payloadNovo: { banco: sucesso.length, homefin: naHomefin.length, erros: erros.length },
     });
   } catch {

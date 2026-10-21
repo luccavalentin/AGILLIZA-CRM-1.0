@@ -104,7 +104,7 @@ export function FiltrosPainel(p: Props) {
               <Input
                 value={p.busca}
                 onChange={(e) => p.onBusca(e.target.value)}
-                placeholder="Cliente ou nº..."
+                placeholder="Buscar cliente"
                 className="h-10 w-full rounded-xl pl-9 pr-9 shadow-sm"
               />
               {p.busca && (

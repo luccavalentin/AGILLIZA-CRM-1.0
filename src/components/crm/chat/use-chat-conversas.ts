@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,11 @@ import {
   type ChatEtiqueta,
 } from "@/lib/crm/chat-gestao.functions";
 import { listarEstadoChatDoUsuario } from "@/lib/chats/gestao.functions";
+import { usePermissao } from "@/hooks/use-permissao";
 import type { FiltroChat } from "./helpers";
+
+/** Quantas conversas a lista traz por vez ("Carregar mais" soma outro tanto). */
+const PAGINA_CONVERSAS = 300;
 
 /**
  * Estado + queries + derivações do Chat CRM.
@@ -33,9 +37,12 @@ export function useChatConversas() {
   const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("all");
   const [selecionado, setSelecionado] = useState<string | null>(null);
   const [atendenteSel, setAtendenteSel] = useState<string | null>(null);
-  // Visão supervisora: quando ligada, gestores veem também as conversas dos
-  // demais atendentes (o back-end ignora para quem não é gestor).
-  const [verTodos, setVerTodos] = useState(false);
+  // Visão supervisora: quando ligada, quem gere o chat vê também as conversas dos
+  // demais atendentes (o back-end ignora para quem não pode).
+  const podeGerir = usePermissao("crm.chat", "gerir");
+  const [verTodosPedido, setVerTodos] = useState(false);
+  const verTodos = verTodosPedido && podeGerir;
+  const [limite, setLimite] = useState(PAGINA_CONVERSAS);
   // Tick minutal: SLA e lembrete são baseados em `Date.now()`. Sem este
   // gatilho, badges "SLA estourado"/"lembrete devido" só se atualizariam
   // quando outro estado mudasse, deixando o usuário parado com dados velhos.
@@ -55,11 +62,22 @@ export function useChatConversas() {
     [],
   );
 
-  const queryKey = ["conversas-cliente", verTodos] as const;
-  const { data: conversas, isLoading } = useQuery({
+  const queryKey = ["conversas-cliente", verTodos, limite] as const;
+  const {
+    data: listaConversas,
+    isLoading,
+    isError,
+    error: erroConversas,
+    refetch: recarregarConversas,
+    isFetching: buscandoConversas,
+  } = useQuery({
     queryKey,
-    queryFn: () => listar({ data: { ver_todos: verTodos } }),
+    queryFn: () => listar({ data: { ver_todos: verTodos, limite } }),
+    placeholderData: keepPreviousData,
   });
+  const conversas = listaConversas?.conversas;
+  const temMaisConversas = listaConversas?.tem_mais ?? false;
+  const carregarMaisConversas = () => setLimite((n) => Math.min(n + PAGINA_CONVERSAS, 2000));
 
   const { data: etiquetas } = useQuery({
     queryKey: ["chat-etiquetas"],
@@ -74,7 +92,7 @@ export function useChatConversas() {
   const estadoPorCliente = useMemo(() => {
     const m = new Map<
       string,
-      { fixado: boolean; apelido: string | null; ocultoEm: string | null }
+      { fixado: boolean; apelido: string | null; ocultoEm: string | null; arquivado: boolean }
     >();
     for (const e of estadosUsuario ?? []) {
       if (e.chat_tipo !== "cliente") continue;
@@ -82,6 +100,7 @@ export function useChatConversas() {
         fixado: !!e.pinado_em,
         apelido: e.apelido ?? null,
         ocultoEm: e.oculto_em ?? null,
+        arquivado: !!e.arquivado_em,
       });
     }
     return m;
@@ -156,8 +175,12 @@ export function useChatConversas() {
     if (!em) return false;
     return new Date(em).getTime() <= agora;
   }
+  /** Arquivada no CRM ou pelo próprio usuário na Central/ficha (a mesma função grava os dois). */
   function arquivada(clienteId: string) {
-    return metasCliente.get(clienteId)?.arquivado ?? false;
+    return (
+      (metasCliente.get(clienteId)?.arquivado ?? false) ||
+      (estadoPorCliente.get(clienteId)?.arquivado ?? false)
+    );
   }
 
   // Clientes com App habilitado (mesmo sem conversa ainda) para iniciar chat.
@@ -168,46 +191,99 @@ export function useChatConversas() {
     enabled: termoBusca.length >= 2,
   });
 
+  // Donos das conversas em que o usuário é convidado: o canal também escuta essas threads.
+  const donosConvidado = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (conversas ?? [])
+            .filter((c) => c.participo && !c.minha && c.atendente_id)
+            .map((c) => c.atendente_id as string),
+        ),
+      )
+        .sort()
+        .slice(0, 100)
+        .join(","),
+    [conversas],
+  );
+
   // Sincroniza a lista em tempo real quando qualquer mensagem chega/sai.
   // Rajadas (insert + update de read_at) são coalescidas em uma única
   // invalidação por burst.
   useEffect(() => {
     const { schedule, cancel } = createDebouncedInvalidator(() =>
-      qc.invalidateQueries({ queryKey }),
+      qc.invalidateQueries({ queryKey: ["conversas-cliente"] }),
     );
     let canal: ReturnType<typeof supabase.channel> | null = null;
     let cancelado = false;
     (async () => {
-      // Escopo do canal por usuário: sem verTodos filtra por atendente_id
-      // para evitar refetch em toda mensagem do sistema.
+      // Escopo do canal por usuário: sem verTodos filtra pelas threads que ele atende
+      // (as próprias e as em que foi convidado) para evitar refetch em toda mensagem.
       const { data: userData } = await supabase.auth.getUser();
       if (cancelado) return;
       const uid = userData.user?.id;
-      const filter = !verTodos && uid ? { filter: `atendente_id=eq.${uid}` } : {};
-      const nome = uid ? `chat-conversas:${uid}:${verTodos ? "all" : "own"}` : "chat-conversas";
-      canal = supabase
-        .channel(nome)
-        .on(
+      const nome = `chat-conversas:${uid ?? "anon"}:${verTodos ? "all" : "own"}:${crypto.randomUUID()}`;
+      let c = supabase.channel(nome);
+      if (verTodos || !uid) {
+        c = c.on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "cliente_app_mensagens", ...filter },
+          { event: "*", schema: "public", table: "cliente_app_mensagens" },
           schedule,
-        )
-        .subscribe();
+        );
+      } else {
+        c = c
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "cliente_app_mensagens",
+              filter: `atendente_id=eq.${uid}`,
+            },
+            schedule,
+          )
+          // Convite novo ou removido muda a lista.
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "crm_chat_participantes",
+              filter: `usuario_id=eq.${uid}`,
+            },
+            schedule,
+          );
+        if (donosConvidado) {
+          c = c.on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "cliente_app_mensagens",
+              filter: `atendente_id=in.(${donosConvidado})`,
+            },
+            schedule,
+          );
+        }
+      }
+      canal = c.subscribe();
     })();
     return () => {
       cancelado = true;
       cancel();
       if (canal) supabase.removeChannel(canal);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qc, verTodos]);
+  }, [qc, verTodos, donosConvidado]);
 
   const filtradas = useMemo(() => {
     const t = busca.trim().toLowerCase();
     let lista = (conversas ?? []).filter((c) => !ocultaCliente(c.cliente_id, c.ultima_em));
     if (t) {
       lista = lista.filter(
-        (c) => c.nome.toLowerCase().includes(t) || (c.documento ?? "").toLowerCase().includes(t),
+        (c) =>
+          c.nome.toLowerCase().includes(t) ||
+          (apelidoCliente(c.cliente_id) ?? "").toLowerCase().includes(t) ||
+          (c.documento ?? "").toLowerCase().includes(t),
       );
     }
     if (etiquetaFiltro !== "all") {
@@ -316,10 +392,16 @@ export function useChatConversas() {
     setAtendenteSel,
     verTodos,
     setVerTodos,
+    podeGerir,
     abrirConversa,
     // dados
     conversas,
     isLoading,
+    erroConversas: isError ? (erroConversas as unknown) : null,
+    recarregarConversas,
+    buscandoConversas,
+    temMaisConversas,
+    carregarMaisConversas,
     etiquetas,
     etiquetasCliente,
     filtradas,

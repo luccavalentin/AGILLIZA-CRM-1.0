@@ -284,6 +284,6 @@ export const TIPOS_EMPRESA = [
   { v: "MEI", l: "MEI" },
   { v: "ME", l: "ME — Microempresa" },
   { v: "EPP", l: "EPP — Empresa de Pequeno Porte" },
-  { v: "EIRELI", l: "EIRELI" },
+  { v: "EIRELI", l: "EIRELI (extinta em 2021)" },
   { v: "SA", l: "S.A." },
 ];

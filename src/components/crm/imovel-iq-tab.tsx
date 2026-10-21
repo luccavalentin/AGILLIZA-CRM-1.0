@@ -7,6 +7,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { mascararMoedaBR } from "@/components/crm/cliente-form/constants";
+import { moedaOuVazio } from "@/components/crm/cliente-detalhe/form-mapper";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -21,6 +23,7 @@ import { salvarImovelIq } from "@/lib/crm/clientes.functions";
 import { TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL } from "@/lib/simulacao/schemas";
 import { mascararCep, cepValido, consultarCep } from "@/lib/cep";
 import { mascararTelefone } from "@/lib/crm/documento";
+import { usePermissao } from "@/hooks/use-permissao";
 
 const UFS = [
   "AC",
@@ -74,12 +77,15 @@ export function ImovelTab({ clienteId, cliente }: { clienteId: string; cliente: 
 function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cliente }) {
   const qc = useQueryClient();
   const salvar = useServerFn(salvarImovelIq);
+  // Salvar exige "Editar" em Clientes (o servidor recusa).
+  const podeEditar = usePermissao("crm.clientes", "edit");
   const [salvando, setSalvando] = useState(false);
   const [f, setF] = useState({
     imovel_tipo: cliente.imovel_tipo ?? "",
     imovel_uso: cliente.imovel_uso ?? "",
     imovel_situacao: cliente.imovel_situacao ?? "",
-    imovel_valor: cliente.imovel_valor != null ? String(cliente.imovel_valor) : "",
+    // Exibido como "450.000,00" (antes era número cru, sem máscara).
+    imovel_valor: moedaOuVazio(cliente.imovel_valor),
     imovel_cep: cliente.imovel_cep ?? "",
     imovel_logradouro: cliente.imovel_logradouro ?? "",
     imovel_numero: cliente.imovel_numero ?? "",
@@ -129,7 +135,9 @@ function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cl
           imovel_tipo: f.imovel_tipo || null,
           imovel_uso: f.imovel_uso || null,
           imovel_situacao: f.imovel_situacao || null,
-          imovel_valor: f.imovel_valor ? Number(f.imovel_valor) : null,
+          imovel_valor: f.imovel_valor
+            ? Number(f.imovel_valor.replace(/\./g, "").replace(",", ".")) || null
+            : null,
           imovel_cep: f.imovel_cep || null,
           imovel_logradouro: f.imovel_logradouro || null,
           imovel_numero: f.imovel_numero || null,
@@ -205,10 +213,10 @@ function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cl
           <div>
             <Label>Valor do imóvel (R$)</Label>
             <Input
-              type="number"
-              inputMode="decimal"
+              inputMode="numeric"
+              placeholder="0,00"
               value={f.imovel_valor || ""}
-              onChange={(e) => set("imovel_valor", e.target.value)}
+              onChange={(e) => set("imovel_valor", mascararMoedaBR(e.target.value))}
             />
           </div>
           <div>
@@ -272,11 +280,13 @@ function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cl
             <Input value={f.imovel_cidade} onChange={(e) => set("imovel_cidade", e.target.value)} />
           </div>
         </div>
-        <div className="flex justify-end">
-          <Button onClick={onSalvar} disabled={salvando}>
-            {salvando ? "Salvando…" : "Salvar imóvel"}
-          </Button>
-        </div>
+        {podeEditar && (
+          <div className="flex justify-end">
+            <Button onClick={onSalvar} disabled={salvando}>
+              {salvando ? "Salvando…" : "Salvar imóvel"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Quem a vistoria procura para agendar. Vai à integração junto com o
@@ -313,6 +323,7 @@ function ImovelDadosTab({ clienteId, cliente }: { clienteId: string; cliente: Cl
 export function IqTab({ clienteId, cliente }: { clienteId: string; cliente: Cliente }) {
   const qc = useQueryClient();
   const salvar = useServerFn(salvarImovelIq);
+  const podeEditar = usePermissao("crm.clientes", "edit");
   const [salvando, setSalvando] = useState(false);
   const [nome, setNome] = useState(cliente.iq_nome ?? "");
   const [comentario, setComentario] = useState(cliente.iq_comentario ?? "");
@@ -351,11 +362,13 @@ export function IqTab({ clienteId, cliente }: { clienteId: string; cliente: Clie
         />
         <p className="mt-1 text-right text-xs text-muted-foreground">{comentario.length}/2000</p>
       </div>
-      <div className="flex justify-end">
-        <Button onClick={onSalvar} disabled={salvando}>
-          {salvando ? "Salvando…" : "Salvar IQ"}
-        </Button>
-      </div>
+      {podeEditar && (
+        <div className="flex justify-end">
+          <Button onClick={onSalvar} disabled={salvando}>
+            {salvando ? "Salvando…" : "Salvar IQ"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

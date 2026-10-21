@@ -210,6 +210,7 @@ function Pagina() {
         concluidos={concluidos}
         listaSimulacoes={listaSimulacoes}
         titulo="Enviando proposta ao banco"
+        modoProposta
       />
 
       <AlertDialog open={!!confirmRenda} onOpenChange={(o) => !o && setConfirmRenda(null)}>

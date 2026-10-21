@@ -106,7 +106,7 @@ export function NotificationSettings() {
                       Exibir
                     </Label>
                     <Switch
-                      aria-label="Exibir este aviso"
+                      aria-label={`Exibir o aviso ${t.label}`}
                       id={`notif-${t.id}-ativo`}
                       checked={p.ativo}
                       disabled={desativado}
@@ -118,7 +118,7 @@ export function NotificationSettings() {
                       Som
                     </Label>
                     <Switch
-                      aria-label="Tocar som deste aviso"
+                      aria-label={`Tocar som no aviso ${t.label}`}
                       id={`notif-${t.id}-som`}
                       checked={p.som}
                       disabled={desativado || !p.ativo}

@@ -1,0 +1,31 @@
+# Borda do Agilliza 2.0: um endereço só para o app e para a API do Supabase.
+# O navegador fala com a própria origem (sem CORS, sem segundo domínio) e a troca de
+# domínio não exige novo build. O TLS fica na frente (túnel/proxy do domínio).
+{
+	admin off
+	auto_https off
+	# IP real na auditoria: só proxies da rede privada (túnel/proxy do domínio na
+	# frente) são confiáveis para dizer quem é o cliente. Sem isto a borda trocava
+	# o X-Forwarded-For pelo gateway do Docker e todo registro saía com 172.x.
+	servers {
+		trusted_proxies static private_ranges
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
+	}
+}
+
+:80 {
+	encode zstd gzip
+
+	@supabase path /auth/v1/* /rest/v1/* /storage/v1/* /realtime/v1/* /graphql/v1/*
+	handle @supabase {
+		reverse_proxy supabase-envoy:8000
+	}
+
+	# Arquivos do build têm hash no nome: cache longo no navegador.
+	@estaticos path /assets/*
+	header @estaticos Cache-Control "public, max-age=31536000, immutable"
+
+	handle {
+		reverse_proxy agilliza-app:3000
+	}
+}

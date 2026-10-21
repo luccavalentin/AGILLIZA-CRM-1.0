@@ -10,8 +10,13 @@ const statusMap: Record<string, { tone: Tone; label: string }> = {
   estornada: { tone: "muted", label: "Estornada" },
 };
 
-export function ContaStatusBadge({ status }: { status: string }) {
-  const cfg = statusMap[status] ?? { tone: "muted" as Tone, label: status };
+/**
+ * O banco usa "paga" nos dois lados; na conta a receber isso aparece como
+ * "Recebida" (QA 20/10: "Paga" em contas a receber).
+ */
+export function ContaStatusBadge({ status, tipo }: { status: string; tipo?: "pagar" | "receber" }) {
+  const base = statusMap[status] ?? { tone: "muted" as Tone, label: status };
+  const cfg = tipo === "receber" && status === "paga" ? { ...base, label: "Recebida" } : base;
   return <ToneBadge tone={cfg.tone}>{cfg.label}</ToneBadge>;
 }
 

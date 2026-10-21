@@ -48,7 +48,7 @@ export function DetalhamentoBancoDialog({
     },
     aprovado: {
       icone: <CheckCircle2 className="h-6 w-6 text-success" />,
-      titulo: "Parabéns! Crédito aprovado 🎉",
+      titulo: "Crédito aprovado",
       mensagem:
         "O banco aprovou o crédito desta proposta. Prossiga com as próximas etapas para dar sequência ao financiamento.",
     },

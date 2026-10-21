@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { useEffect, useRef, useState, useCallback, useMemo, Fragment } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { temBancoAguardando, useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
@@ -116,8 +117,17 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
     );
     if (aindaProcessando) return;
     jaBaixou.current = true;
-    // Não executa download automático.
-  }, [data]);
+    // Não executa download automático. Mas, se nenhum banco simulou, avisa e
+    // leva ao resultado: ele aparece abaixo da dobra e a falha passava batido.
+    if (!bancos.some((b) => b.status_banco === "simulada")) {
+      toast.error("Nenhum banco devolveu simulação. Veja o motivo de cada banco no resultado.", {
+        duration: 10_000,
+      });
+      document
+        .getElementById(`resultado-simulacao-${simulacaoId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [data, simulacaoId]);
 
   async function reenviarBanco(bancoId: string, banco: any) {
     if (banco.status_banco === "simulada") {
@@ -184,7 +194,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
         },
       });
     } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível criar a proposta.", { duration: 10_000 });
+      toast.error(mensagemDeErro(e, "Não foi possível criar a proposta."), { duration: 10_000 });
     } finally {
       setCriandoBanco(null);
     }
@@ -212,7 +222,10 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
   const mostrarTitular = temMaisDeUmTitular(bancos);
 
   return (
-    <Card className="overflow-hidden border-primary/30 shadow-lg ring-1 ring-primary/10">
+    <Card
+      id={`resultado-simulacao-${simulacaoId}`}
+      className="scroll-mt-4 overflow-hidden border-primary/30 shadow-lg ring-1 ring-primary/10"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-gradient-to-br from-primary/10 via-card to-card px-5 py-4">
         <div className="min-w-0">
           <h2 className="truncate text-base font-semibold tracking-tight text-foreground">
@@ -625,7 +638,7 @@ export function ResultadoInlineCompleta({ simulacaoId, onFechar, isSecundaria }:
                   return (
                     <li key={h.id} className="flex items-start justify-between gap-3 text-sm">
                       <div className="min-w-0">
-                        <p className="font-medium text-foreground">{h.descricao}</p>
+                        <p className="font-medium text-foreground">{semMarcaIntegracao(h.descricao)}</p>
                         {h.ator_nome && (
                           <p className="text-xs text-muted-foreground">por {h.ator_nome}</p>
                         )}

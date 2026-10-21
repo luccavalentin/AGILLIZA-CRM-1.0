@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import { todasAsLinhas } from "@/lib/paginar";
 
 export interface ArquivoNo {
@@ -57,7 +58,7 @@ async function nomesDeUsuarios(
 
 /** Lista pastas e arquivos de um nível (parent_id null = raiz). */
 export const listarNos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "view"])])
   .inputValidator((data) =>
     z.object({ parent_id: z.string().uuid().nullable().optional() }).parse(data ?? {}),
   )
@@ -102,6 +103,14 @@ export const listarPastasRaiz = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<{ id: string; nome: string }[]> => {
     const { supabase, userId } = context;
+    // Roda no menu de todo usuário interno: sem "Ver" em Arquivos devolve vazio
+    // (antes listava o nome das pastas para qualquer um).
+    const { data: podeVer } = await supabase.rpc("usuario_tem_permissao", {
+      _user_id: userId,
+      _modulo: "documentos.arquivos",
+      _acao: "view",
+    });
+    if (!podeVer) return [];
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return [];
     const { data: rows, error } = await supabase
@@ -118,7 +127,7 @@ export const listarPastasRaiz = createServerFn({ method: "GET" })
 
 /** Marca/desmarca uma pasta para aparecer no menu lateral. */
 export const definirMostrarNoMenu = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "create"])])
   .inputValidator((data) => z.object({ id: z.string().uuid(), mostrar: z.boolean() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
@@ -146,7 +155,7 @@ export interface ResultadoPesquisa {
 
 /** Pesquisa global por nome em pastas e arquivos, retornando o caminho até o nó. */
 export const pesquisarArquivos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "view"])])
   .inputValidator((data) => z.object({ termo: z.string().trim().min(1).max(200) }).parse(data))
   .handler(async ({ context, data }): Promise<ResultadoPesquisa[]> => {
     const { supabase, userId } = context;
@@ -204,7 +213,7 @@ export const pesquisarArquivos = createServerFn({ method: "GET" })
 
 /** Cria uma pasta. Se já existir uma pasta com o mesmo nome no nível, retorna a existente. */
 export const criarPasta = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "create"])])
   .inputValidator((data) =>
     z
       .object({
@@ -246,7 +255,7 @@ export const criarPasta = createServerFn({ method: "POST" })
 
 /** Registra um arquivo já enviado ao storage. */
 export const registrarArquivo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "create"])])
   .inputValidator((data) =>
     z
       .object({
@@ -282,7 +291,7 @@ export const registrarArquivo = createServerFn({ method: "POST" })
   });
 
 export const renomearNo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "create"])])
   .inputValidator((data) =>
     z.object({ id: z.string().uuid(), nome: z.string().trim().min(1).max(300) }).parse(data),
   )
@@ -318,7 +327,7 @@ export const renomearNo = createServerFn({ method: "POST" })
   });
 
 export const moverNo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "create"])])
   .inputValidator((data) =>
     z
       .object({
@@ -375,7 +384,7 @@ export const moverNo = createServerFn({ method: "POST" })
 
 /** Exclui um nó (pasta recursiva ou arquivo), removendo os objetos do storage. */
 export const excluirNo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "delete"])])
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
@@ -436,7 +445,7 @@ export const excluirNo = createServerFn({ method: "POST" })
 
 /** Signed URL para abrir/baixar um arquivo. */
 export const urlArquivo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "view"])])
   .inputValidator((data) =>
     z.object({ id: z.string().uuid(), download: z.boolean().optional() }).parse(data),
   )
@@ -460,7 +469,7 @@ export const urlArquivo = createServerFn({ method: "POST" })
 
 /** Retorna o caminho (breadcrumb) até um nó. */
 export const caminhoNo = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "view"])])
   .inputValidator((data) =>
     z.object({ id: z.string().uuid().nullable().optional() }).parse(data ?? {}),
   )
@@ -487,7 +496,7 @@ export const caminhoNo = createServerFn({ method: "GET" })
 
 /** Lista todas as pastas do correspondente com caminho completo (para mover). */
 export const listarPastas = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.arquivos", "view"])])
   .handler(async ({ context }): Promise<PastaFlat[]> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);

@@ -29,6 +29,7 @@ import { buscarClientesCRM } from "@/lib/crm/clientes.functions";
 import type { FichaBureau } from "@/lib/bureau/tipos";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export const Route = createFileRoute("/_authenticated/crm/ficha-bureau")({
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
@@ -64,6 +65,16 @@ function exibirDocumento(doc: string): string {
   return doc.includes("*") ? doc : mascararDocumento(doc);
 }
 
+/** Motivo gravado no histórico (código do servidor) em texto para a tela. */
+function motivoFalha(erro: string | null): string {
+  if (!erro) return "falhou";
+  if (erro === "sem_provedor") return "sem bureau configurado";
+  if (erro.startsWith("sem_credenciais")) return "chaves incompletas";
+  if (erro === "adaptador_ausente") return "fornecedor ainda não integrado";
+  if (erro === "sem_retorno") return "sem retorno do fornecedor";
+  return erro;
+}
+
 const FINALIDADES = [
   "Análise de crédito imobiliário",
   "Cadastro de cliente",
@@ -87,6 +98,7 @@ function Pagina() {
   const [ficha, setFicha] = useState<FichaBureau | null>(null);
 
   const config = useQuery({ queryKey: ["bureau-config"], queryFn: () => obterConfigBureau() });
+  const podeConfigurar = usePermissao("admin.integracoes", "edit");
   const historico = useQuery({
     queryKey: ["bureau-historico"],
     queryFn: () => listarConsultasBureau(),
@@ -151,7 +163,18 @@ function Pagina() {
         </div>
       </div>
 
-      {!config.isLoading && !configurado && (
+      {config.isError && (
+        <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-destructive">
+            {mensagemDeErro(config.error, "Não foi possível ler a configuração do bureau.")}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
+            Tentar de novo
+          </Button>
+        </div>
+      )}
+
+      {!config.isLoading && !config.isError && !configurado && (
         <div className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
@@ -163,11 +186,13 @@ function Pagina() {
               </p>
             </div>
           </div>
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link to={"/admin/integracoes" as string}>
-              Configurar em Integrações <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
+          {podeConfigurar && (
+            <Button asChild variant="outline" size="sm" className="shrink-0">
+              <Link to={"/admin/integracoes" as string}>
+                Configurar em Integrações <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
+          )}
         </div>
       )}
 
@@ -317,7 +342,20 @@ function Pagina() {
           <CardTitle className="text-sm">Últimas consultas</CardTitle>
         </CardHeader>
         <CardContent>
-          {(historico.data ?? []).length === 0 ? (
+          {historico.isLoading ? (
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
+            </div>
+          ) : historico.isError ? (
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <p className="text-sm text-destructive">
+                {mensagemDeErro(historico.error, "Não foi possível carregar o histórico.")}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => void historico.refetch()}>
+                Tentar de novo
+              </Button>
+            </div>
+          ) : (historico.data ?? []).length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
               Nenhuma consulta registrada ainda.
             </p>
@@ -326,7 +364,7 @@ function Pagina() {
               {(historico.data ?? []).map((c) => (
                 <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
                   <span className="font-mono text-sm text-foreground">
-                    {mascararDocumento(c.documento)}
+                    {exibirDocumento(c.documento)}
                   </span>
                   <span className="text-xs text-muted-foreground">{c.finalidade}</span>
                   <span
@@ -336,7 +374,7 @@ function Pagina() {
                         : "text-[11px] font-medium text-destructive"
                     }
                   >
-                    {c.sucesso ? "consultada" : (c.erro ?? "falhou")}
+                    {c.sucesso ? "consultada" : motivoFalha(c.erro)}
                   </span>
                   <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
                     {new Date(c.created_at).toLocaleString("pt-BR", {

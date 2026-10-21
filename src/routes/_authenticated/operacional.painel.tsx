@@ -16,7 +16,7 @@ function Pagina() {
       titulo="Execução operacional"
       descricao="Como está a execução de propostas, demandas e tarefas."
       realtimeTabelas={["propostas", "simulacoes", "demandas", "tasks", "clientes"]}
-      abrirTo="/relatorios/operacionais"
+      abrirTo="/relatorios/operacional"
     />
   );
 }

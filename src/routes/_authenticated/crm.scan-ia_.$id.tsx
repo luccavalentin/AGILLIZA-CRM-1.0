@@ -30,15 +30,18 @@ import {
   TIPO_DOCUMENTO_LABEL,
   faixaConfianca,
   rotuloCampo,
+  rotuloStatusLeitura,
   rotuloTipo,
   type TipoDocumentoScan,
 } from "@/lib/crm/scan-ia-tipos";
+import { usePermissao } from "@/hooks/use-permissao";
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import { AplicarCadastroDialog } from "@/components/crm/scan-ia/aplicar-cadastro-dialog";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/_authenticated/crm/scan-ia_/$id")({
   head: () => ({ meta: [{ title: "Revisar leitura — Agilliza" }] }),
-  beforeLoad: () => assertModuloPermitido("crm.clientes"),
+  beforeLoad: () => assertModuloPermitido("crm.scan_ia", ["crm.clientes"]),
   component: Pagina,
 });
 
@@ -56,6 +59,12 @@ function Pagina() {
   const [aplicarAberto, setAplicarAberto] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoDoc, setNovoDoc] = useState("");
+  // Mesmas regras do servidor: revisar/vincular = processar no Scan IA (ou criar/editar
+  // clientes); criar cliente = "Criar" em Clientes; aplicar/arquivar = "Editar" em Clientes.
+  const podeProcessarScan = usePermissao("crm.scan_ia", "create");
+  const podeCriarCliente = usePermissao("crm.clientes", "create");
+  const podeEditarCliente = usePermissao("crm.clientes", "edit");
+  const podeProcessar = podeProcessarScan || podeCriarCliente || podeEditarCliente;
 
   const leitura = useQuery({
     queryKey: ["scan-ia-leitura", id],
@@ -100,7 +109,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
       qc.invalidateQueries({ queryKey: ["scan-ia-previa", id] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   const confirmarTipo = useMutation({
@@ -111,7 +120,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["scan-ia-leitura", id] });
       qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao confirmar tipo."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao confirmar tipo.")),
   });
 
   const vincular = useMutation({
@@ -123,7 +132,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
       qc.invalidateQueries({ queryKey: ["scan-ia-previa", id] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao vincular cliente."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao vincular cliente.")),
   });
 
   const criarCliente = useMutation({
@@ -141,7 +150,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
       qc.invalidateQueries({ queryKey: ["scan-ia-previa", id] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao criar cliente."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao criar cliente.")),
   });
 
   const arquivar = useMutation({
@@ -154,7 +163,7 @@ function Pagina() {
       );
       qc.invalidateQueries({ queryKey: ["cliente-docs"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao arquivar documento."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao arquivar documento.")),
   });
 
   const d = leitura.data;
@@ -170,6 +179,20 @@ function Pagina() {
   ).length;
 
   const podeAplicar = !!d?.cliente_id && !!d?.tipo_confirmado && (d?.campos.length ?? 0) > 0;
+
+  // Campos editados e ainda não salvos: "Aplicar ao cadastro" lê o que está gravado.
+  const camposSujos = !!d && d.campos.some((c) => (valores[c.id] ?? "") !== (c.valor ?? ""));
+
+  async function abrirAplicar() {
+    if (camposSujos) {
+      try {
+        await salvar.mutateAsync();
+      } catch {
+        return; // o erro já apareceu no aviso de salvar
+      }
+    }
+    setAplicarAberto(true);
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -187,7 +210,14 @@ function Pagina() {
           <Skeleton className="h-96 w-full" />
         </div>
       ) : leitura.isError || !d ? (
-        <p className="text-sm text-destructive">Não foi possível carregar a leitura.</p>
+        <div className="space-y-3">
+          <p className="text-sm text-destructive">
+            {mensagemDeErro(leitura.error, "Não foi possível carregar a leitura.")}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => leitura.refetch()}>
+            Tentar de novo
+          </Button>
+        </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-3">
@@ -199,7 +229,7 @@ function Pagina() {
                   {new Date(d.created_at).toLocaleString("pt-BR")}
                 </p>
               </div>
-              <Badge variant="outline">{d.status}</Badge>
+              <Badge variant="outline">{rotuloStatusLeitura(d.status)}</Badge>
             </div>
             <div className="overflow-hidden rounded-lg border border-border bg-muted">
               {d.arquivo_assinado ? (
@@ -253,7 +283,7 @@ function Pagina() {
               ) : null}
 
               <div className="flex flex-col gap-2 sm:flex-row">
-                {divergencia && (
+                {podeProcessar && divergencia && (
                   <div className="flex flex-col gap-2 w-full sm:w-auto">
                     <p className="text-[10px] uppercase font-bold text-warning mb-1">
                       A IA sugere:
@@ -272,7 +302,11 @@ function Pagina() {
                   </div>
                 )}
 
-                <Select value={tipoEscolhido} onValueChange={setTipoEscolhido}>
+                <Select
+                  value={tipoEscolhido}
+                  onValueChange={setTipoEscolhido}
+                  disabled={!podeProcessar}
+                >
                   <SelectTrigger className="sm:flex-1">
                     <SelectValue placeholder="Selecione o tipo correto" />
                   </SelectTrigger>
@@ -284,13 +318,15 @@ function Pagina() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button
-                  variant="outline"
-                  disabled={!tipoEscolhido || confirmarTipo.isPending}
-                  onClick={() => confirmarTipo.mutate(tipoEscolhido)}
-                >
-                  Confirmar tipo
-                </Button>
+                {podeProcessar && (
+                  <Button
+                    variant="outline"
+                    disabled={!tipoEscolhido || confirmarTipo.isPending}
+                    onClick={() => confirmarTipo.mutate(tipoEscolhido)}
+                  >
+                    Confirmar tipo
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -309,31 +345,31 @@ function Pagina() {
                 )}
               </div>
 
-              {!d.cliente_id ? (
+              {!d.cliente_id && podeProcessar ? (
                 <div className="flex gap-2 rounded-md border border-warning/50 bg-warning/10 p-3 text-xs">
                   <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
                   <span>
-                    Este documento ainda não pertence a nenhum cliente. Escolha{" "}
-                    <strong>uma das duas opções abaixo</strong> para continuar: <strong>A)</strong>{" "}
-                    buscar um cliente que já existe, ou <strong>B)</strong> cadastrar um cliente
-                    novo com os dados lidos do documento.
+                    Documento sem cliente. Vincule um cliente já cadastrado (A) ou cadastre um novo
+                    com os dados lidos (B).
                   </span>
                 </div>
               ) : null}
 
-              <div className="space-y-2">
-                {!d.cliente_id ? (
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    A) O cliente já é cadastrado
-                  </p>
-                ) : null}
-                <ClienteCRMPicker
-                  selecionado={d.cliente_nome ?? null}
-                  onSelect={(c) => vincular.mutate(c.id)}
-                />
-              </div>
+              {podeProcessar && (
+                <div className="space-y-2">
+                  {!d.cliente_id ? (
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      A) O cliente já é cadastrado
+                    </p>
+                  ) : null}
+                  <ClienteCRMPicker
+                    selecionado={d.cliente_nome ?? null}
+                    onSelect={(c) => vincular.mutate(c.id)}
+                  />
+                </div>
+              )}
 
-              {d.cliente_id ? (
+              {!podeProcessar ? null : d.cliente_id ? (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -342,16 +378,15 @@ function Pagina() {
                 >
                   Desvincular
                 </Button>
-              ) : (
+              ) : !podeCriarCliente ? null : (
                 <div className="space-y-3 rounded-md border-2 border-dashed border-primary/50 bg-primary/5 p-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                       B) O cliente ainda NÃO tem cadastro
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Vamos criar o cadastro agora com o nome e o CPF/CNPJ lidos do documento e já
-                      vincular esta leitura a ele. Confira os dois campos abaixo — a leitura da IA
-                      pode conter erros.
+                      O cadastro é criado com o nome e o CPF/CNPJ abaixo, lidos do documento.
+                      Confira os dois antes de criar.
                     </p>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -403,14 +438,16 @@ function Pagina() {
             <div className="space-y-3 rounded-lg border border-border bg-card p-4">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-semibold">3. Campos extraídos</h2>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={salvar.isPending || d.campos.length === 0}
-                  onClick={() => salvar.mutate()}
-                >
-                  <Save className="mr-2 h-4 w-4" /> Salvar revisão
-                </Button>
+                {podeProcessar && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={salvar.isPending || d.campos.length === 0}
+                    onClick={() => salvar.mutate()}
+                  >
+                    <Save className="mr-2 h-4 w-4" /> Salvar revisão
+                  </Button>
+                )}
               </div>
 
               {baixaConfianca > 0 ? (
@@ -448,6 +485,7 @@ function Pagina() {
                         </div>
                         <Input
                           id={campo.id}
+                          readOnly={!podeProcessar}
                           value={valores[campo.id] ?? ""}
                           onChange={(e) =>
                             setValores((v) => ({ ...v, [campo.id]: e.target.value }))
@@ -464,9 +502,8 @@ function Pagina() {
             <div className="space-y-2 rounded-lg border border-border bg-card p-4">
               <h2 className="text-sm font-semibold">4. Aplicar ao cadastro</h2>
               <p className="text-xs text-muted-foreground">
-                A revisão é obrigatória: você decide campo a campo o que entra no cadastro do
-                cliente. Nada é gravado automaticamente. Ao confirmar, o arquivo original também é
-                arquivado na aba <strong>Documentos</strong> do cliente.
+                Você escolhe campo a campo o que entra no cadastro. Ao confirmar, o arquivo também
+                vai para a aba <strong>Documentos</strong> do cliente.
               </p>
               {!podeAplicar ? (
                 <p className="text-xs text-warning">
@@ -478,17 +515,24 @@ function Pagina() {
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-2">
-                <Button disabled={!podeAplicar} onClick={() => setAplicarAberto(true)}>
-                  Aplicar ao cadastro
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={!d.cliente_id || arquivar.isPending}
-                  onClick={() => arquivar.mutate()}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  {arquivar.isPending ? "Arquivando…" : "Só arquivar em Documentos"}
-                </Button>
+                {podeEditarCliente && (
+                  <>
+                    <Button
+                      disabled={!podeAplicar || salvar.isPending}
+                      onClick={() => void abrirAplicar()}
+                    >
+                      Aplicar ao cadastro
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={!d.cliente_id || arquivar.isPending}
+                      onClick={() => arquivar.mutate()}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      {arquivar.isPending ? "Arquivando…" : "Só arquivar em Documentos"}
+                    </Button>
+                  </>
+                )}
                 {d.cliente_id ? (
                   <Button asChild variant="ghost">
                     <Link to="/crm/clientes/$id" params={{ id: d.cliente_id }}>

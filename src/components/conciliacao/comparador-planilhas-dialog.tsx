@@ -54,6 +54,7 @@ import {
 } from "@/lib/conciliacao/planilhas";
 import { abaResumo } from "@/lib/conciliacao/xlsx-tipos";
 import { baixarXlsx, gerarPdfComparativo, type ModoSaida } from "@/lib/conciliacao/exportar-lazy";
+import { hojeISO } from "@/lib/financeiro/format";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const fmtValor = (v: number | null | undefined) => (v == null ? "—" : brl.format(Number(v)));
@@ -304,7 +305,7 @@ export function ComparadorPlanilhasDialog({
     ).slice(0, 12);
 
     void baixarXlsx(
-      `agilliza-comparativo-planilhas-${new Date().toISOString().slice(0, 10)}`,
+      `agilliza-comparativo-planilhas-${hojeISO()}`,
       [
         abaResumo("Comparativo de planilhas", [
           { rotulo: "Gerado em", valor: new Date().toLocaleString("pt-BR") },
@@ -390,7 +391,7 @@ export function ComparadorPlanilhasDialog({
           : null,
         divergencias: i.detalhes.join(" · ") || null,
       })),
-      arquivo: `agilliza-comparativo-planilhas-${new Date().toISOString().slice(0, 10)}`,
+      arquivo: `agilliza-comparativo-planilhas-${hojeISO()}`,
       modo,
     });
   }

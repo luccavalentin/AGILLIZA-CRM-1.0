@@ -343,7 +343,7 @@ function Pagina() {
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <div className="op-hero grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5 md:p-6">
+      <div className="op-hero flex flex-col gap-3 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center p-5 md:p-6">
         <div className="min-w-0">
           <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
             Operacional

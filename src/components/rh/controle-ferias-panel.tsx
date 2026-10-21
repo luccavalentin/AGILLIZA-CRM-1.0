@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { formatBRL } from "@/lib/financeiro/format";
 import { cn } from "@/lib/utils";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 
 const dataBR = (iso?: string | null) =>
   iso ? new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR") : "—";
@@ -46,10 +47,11 @@ export function ControleFeriasPanel({
   onProgramar?: (f: ControleFeriasFuncionario, periodo: { inicio: string; fim: string }) => void;
 }) {
   const fn = useServerFn(obterControleFerias);
-  const { data, isLoading } = useQuery({
+  const consulta = useQuery({
     queryKey: ["rh-ferias-controle"],
     queryFn: () => fn(),
   });
+  const { data, isLoading } = consulta;
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<"todos" | "vencidas" | "a_vencer" | "saldo">("todos");
   const [aberto, setAberto] = useState<string | null>(null);
@@ -168,14 +170,13 @@ export function ControleFeriasPanel({
                   </TableRow>
                 )}
                 {!isLoading && itens.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={9}
-                      className="py-8 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhum funcionário encontrado.
-                    </TableCell>
-                  </TableRow>
+                  <LinhaEstadoLista
+                    colSpan={9}
+                    q={consulta}
+                    vazio="Nenhum funcionário encontrado."
+                    erro="Não foi possível calcular as férias."
+                    className="py-8"
+                  />
                 )}
                 {itens.map((i) => {
                   const expandido = aberto === i.funcionario_id;

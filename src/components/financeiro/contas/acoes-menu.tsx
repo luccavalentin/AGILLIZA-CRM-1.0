@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ContaTipo } from "@/lib/financeiro/financeiro.functions";
+import { usePermissoesConta } from "./use-permissoes-conta";
 
 /**
  * Menu de ações de uma conta (a pagar/receber). Extraído de `contas-page.tsx`
@@ -32,6 +33,9 @@ export function AcoesMenu({
   onCancelar: () => void;
   onExcluir: () => void;
 }) {
+  // Cada item segue a permissão que o servidor exige (baixar/estornar = baixar;
+  // editar/cancelar/excluir = editar).
+  const pode = usePermissoesConta(tipo);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -41,27 +45,35 @@ export function AcoesMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={onDetalhe}>Ver detalhes</DropdownMenuItem>
-        <DropdownMenuItem onClick={onEditar}>Editar</DropdownMenuItem>
-        {conta.status !== "paga" &&
+        {pode.editar && <DropdownMenuItem onClick={onEditar}>Editar</DropdownMenuItem>}
+        {pode.baixar &&
+          conta.status !== "paga" &&
           conta.status !== "cancelada" &&
           conta.status !== "estornada" && (
             <DropdownMenuItem onClick={onBaixar}>
               {tipo === "pagar" ? "Baixar" : "Confirmar recebimento"}
             </DropdownMenuItem>
           )}
-        {conta.status !== "estornada" && conta.valor_pago > 0 && (
+        {pode.baixar && conta.status !== "estornada" && conta.valor_pago > 0 && (
           <DropdownMenuItem className="text-destructive" onClick={onEstornar}>
             Estornar
           </DropdownMenuItem>
         )}
-        {conta.status !== "cancelada" && conta.status !== "estornada" && (
-          <DropdownMenuItem className="text-destructive" onClick={onCancelar}>
-            Cancelar
+        {/* Conta com pagamento não cancela (o servidor recusa: estorne antes) —
+            o item aparecia e sempre dava erro (QA 20/10). */}
+        {pode.editar &&
+          conta.status !== "cancelada" &&
+          conta.status !== "estornada" &&
+          !(Number(conta.valor_pago) > 0) && (
+            <DropdownMenuItem className="text-destructive" onClick={onCancelar}>
+              Cancelar conta
+            </DropdownMenuItem>
+          )}
+        {pode.editar && (
+          <DropdownMenuItem className="text-destructive" onClick={onExcluir}>
+            Excluir conta
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem className="text-destructive" onClick={onExcluir}>
-          Excluir
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

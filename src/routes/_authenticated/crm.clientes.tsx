@@ -20,6 +20,11 @@ import { FiltrosClientes } from "@/components/crm/clientes-page/filtros";
 import { ListaMobile } from "@/components/crm/clientes-page/lista-mobile";
 import { ListaDesktop } from "@/components/crm/clientes-page/lista-desktop";
 import type { Escopo, Portal, StatusF } from "@/components/crm/clientes-page/tipos";
+import { SeletorDeConta } from "@/components/crm/clientes-page/seletor-de-conta";
+import { ClientesDaContaNativos } from "@/components/plataforma/conta-nativa/clientes-da-conta";
+import type { ContaAssinante } from "@/lib/plataforma/contas.functions";
+import { usePermissao } from "@/hooks/use-permissao";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Agilliza" }] }),
@@ -40,6 +45,8 @@ function Pagina() {
   const etapasFn = useServerFn(listarEtapasPipeline);
   const colegasFn = useServerFn(listarColegas);
 
+  // Base exibida: a própria do Agilliza (null) ou a de uma conta assinante do Corretor 2.0.
+  const [conta, setConta] = useState<ContaAssinante | null>(null);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -76,7 +83,16 @@ function Pagina() {
     [busca, pagina, escopo, etapa, responsavel, portal, statusF],
   );
 
-  const { data, isLoading, isFetching } = useQuery({
+  // "Novo cliente" só para quem pode cadastrar (o servidor recusa os demais).
+  const podeCriar = usePermissao("crm.clientes", "create");
+  const filtrando =
+    !!busca ||
+    etapa !== "todas" ||
+    responsavel !== "todos" ||
+    portal !== "todos" ||
+    statusF !== "todos";
+
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["clientes", filtros],
     queryFn: () => listar({ data: filtros }),
     placeholderData: keepPreviousData,
@@ -136,108 +152,133 @@ function Pagina() {
   return (
     <div className="space-y-4 p-3 sm:space-y-6 sm:p-6">
       <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
+        {/* Mesmo padrão do `PageHeader` (título 24/500, ícone discreto). */}
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
             <Users className="size-5" />
           </span>
           <div className="min-w-0 space-y-0.5">
-            <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="truncate text-xl font-medium tracking-tight text-foreground sm:text-2xl">
               Clientes
             </h1>
             <p className="truncate text-sm text-muted-foreground">
-              Gestão de clientes do seu ecossistema.
+              {conta
+                ? `Base de clientes de ${conta.nome}.`
+                : "Gestão de clientes do seu ecossistema."}
             </p>
           </div>
         </div>
-        <Button
-          asChild
-          className="h-11 w-full shrink-0 rounded-xl bg-gradient-to-br from-primary to-primary/80 px-5 font-semibold text-primary-foreground shadow-md ring-1 ring-primary/20 transition-all hover:shadow-lg hover:brightness-105 sm:w-auto"
-        >
-          <Link to="/crm/clientes/novo">
-            <Plus className="size-4" /> Novo cliente
-          </Link>
-        </Button>
-      </div>
-
-      <KpiCards
-        kpis={kpis}
-        statusF={statusF}
-        portal={portal}
-        etapa={etapa}
-        setStatusF={setStatusF}
-        setPortal={setPortal}
-        setEtapa={setEtapa}
-        setPagina={setPagina}
-      />
-
-      <FiltrosClientes
-        q={q}
-        setQ={setQ}
-        onSubmit={() => {
-          setPagina(1);
-          setBusca(q);
-        }}
-        etapa={etapa}
-        setEtapa={setEtapa}
-        responsavel={responsavel}
-        setResponsavel={setResponsavel}
-        portal={portal}
-        setPortal={setPortal}
-        statusF={statusF}
-        setStatusF={setStatusF}
-        escopo={escopo}
-        setEscopo={setEscopo}
-        etapas={etapas}
-        colegas={colegas}
-        onLimpar={limpar}
-        setPagina={setPagina}
-      />
-
-      <ListaMobile
-        isLoading={isLoading}
-        itens={itens}
-        navigateToFicha={navigateToFicha}
-        handleExcluir={handleExcluir}
-      />
-
-      <ListaDesktop
-        isLoading={isLoading}
-        isFetching={isFetching}
-        itens={itens}
-        total={total}
-        pagina={pagina}
-        setPagina={setPagina}
-        navigateToFicha={navigateToFicha}
-        handleExcluir={handleExcluir}
-      />
-
-      {total > 0 && (
-        <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card px-4 py-3 text-xs text-muted-foreground shadow-sm md:hidden">
-          <span>
-            {itens.length} de {total} cliente{total === 1 ? "" : "s"}
-          </span>
-          {total > 20 && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagina === 1 || isFetching}
-                onClick={() => setPagina((p) => p - 1)}
-              >
-                Anterior
-              </Button>
-              <span>Página {pagina}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagina * 20 >= total || isFetching}
-                onClick={() => setPagina((p) => p + 1)}
-              >
-                Próxima
-              </Button>
-            </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <SeletorDeConta conta={conta} onConta={setConta} />
+          {!conta && podeCriar && (
+            <Button
+              asChild
+              className="h-11 w-full shrink-0 rounded-xl bg-gradient-to-br from-primary to-primary/80 px-5 font-semibold text-primary-foreground shadow-md ring-1 ring-primary/20 transition-all hover:shadow-lg hover:brightness-105 sm:w-auto"
+            >
+              <Link to="/crm/clientes/novo">
+                <Plus className="size-4" /> Novo cliente
+              </Link>
+            </Button>
           )}
         </div>
+      </div>
+
+      {conta ? (
+        // Base de uma conta assinante: a mesma lista, com o selo da conta.
+        <ClientesDaContaNativos conta={conta} />
+      ) : (
+        <>
+          <KpiCards
+            kpis={kpis}
+            statusF={statusF}
+            portal={portal}
+            etapa={etapa}
+            setStatusF={setStatusF}
+            setPortal={setPortal}
+            setEtapa={setEtapa}
+            setPagina={setPagina}
+          />
+
+          <FiltrosClientes
+            q={q}
+            setQ={setQ}
+            onSubmit={() => {
+              setPagina(1);
+              setBusca(q);
+            }}
+            etapa={etapa}
+            setEtapa={setEtapa}
+            responsavel={responsavel}
+            setResponsavel={setResponsavel}
+            portal={portal}
+            setPortal={setPortal}
+            statusF={statusF}
+            setStatusF={setStatusF}
+            escopo={escopo}
+            setEscopo={setEscopo}
+            etapas={etapas}
+            colegas={colegas}
+            onLimpar={limpar}
+            setPagina={setPagina}
+          />
+
+          {isError && (
+            <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              {mensagemDeErro(error, "Não foi possível carregar os clientes.")}
+            </p>
+          )}
+
+          <ListaMobile
+            isLoading={isLoading}
+            itens={itens}
+            navigateToFicha={navigateToFicha}
+            handleExcluir={handleExcluir}
+            podeCadastrar={podeCriar}
+            filtrando={filtrando}
+          />
+
+          <ListaDesktop
+            isLoading={isLoading}
+            isFetching={isFetching}
+            itens={itens}
+            total={total}
+            pagina={pagina}
+            setPagina={setPagina}
+            navigateToFicha={navigateToFicha}
+            handleExcluir={handleExcluir}
+            podeCadastrar={podeCriar}
+            filtrando={filtrando}
+          />
+
+          {total > 0 && (
+            <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card px-4 py-3 text-xs text-muted-foreground shadow-sm md:hidden">
+              <span>
+                {itens.length} de {total} cliente{total === 1 ? "" : "s"}
+              </span>
+              {total > 20 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pagina === 1 || isFetching}
+                    onClick={() => setPagina((p) => p - 1)}
+                  >
+                    Anterior
+                  </Button>
+                  <span>Página {pagina}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pagina * 20 >= total || isFetching}
+                    onClick={() => setPagina((p) => p + 1)}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

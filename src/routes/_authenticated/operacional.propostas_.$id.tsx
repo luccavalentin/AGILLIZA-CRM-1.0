@@ -32,6 +32,8 @@ import {
 import { PropostaView } from "@/components/proposta/visualizacao/proposta-view";
 import { EnvioProgresso } from "@/components/proposta/envio-progresso";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/$id")({
   head: () => ({ meta: [{ title: "Proposta — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
@@ -77,8 +79,12 @@ function PropostaRoute() {
   const { enviar: handleEnviarHook, statusPorBanco, busyBancoId } = useEnviarProposta();
 
   // 1. Hooks de dados
+  // Id que não é UUID (/operacional/propostas/abc) não vai ao servidor: antes a
+  // validação dele estourava e a tela mostrava o JSON do erro.
+  const idValido = UUID_RE.test(id);
   const { data, isLoading, isError, error } = useQuery({
     ...propostaQueryOptions(id),
+    enabled: idValido,
     // Rede de segurança: as mudanças chegam pelo Realtime (efeito mais abaixo).
     // Eram 15 s — 8 consultas a cada 15 s por aba aberta, por meses, enquanto
     // a proposta não chega a um status final.
@@ -303,7 +309,9 @@ function PropostaRoute() {
       })
       .catch((e: any) => {
         if (e?.cadastroIncompleto) return;
-        toast.error(e?.message ?? "Falha ao enviar a proposta ao banco.", { duration: 12_000 });
+        toast.error(mensagemDeErro(e, "Falha ao enviar a proposta ao banco."), {
+          duration: 12_000,
+        });
       })
       .finally(() => setBancoEmEnvio(null));
   }, [enviar_banco, data, id, handleEnviarHook, onCadastroIncompleto, router, agenciaEscolhida]);
@@ -403,7 +411,9 @@ function PropostaRoute() {
         // O hook não mostra toast de erro; sem isto o envio automático falhava
         // em silêncio e a proposta ficava em "aguardando envio".
         if (!e?.cadastroIncompleto) {
-          toast.error(e?.message ?? "Falha ao enviar a proposta ao banco.", { duration: 12_000 });
+          toast.error(mensagemDeErro(e, "Falha ao enviar a proposta ao banco."), {
+            duration: 12_000,
+          });
         }
       }
     })();
@@ -522,6 +532,7 @@ function PropostaRoute() {
   }, [envolvidos, participanteModal?.id]);
 
   // 6. Returns condicionais (após todos os hooks)
+  if (!idValido) return <PropostaNaoEncontrada />;
   if (isError) throw error;
   if (isLoading) return <PropostaSkeleton />;
   if (!data) return <PropostaNaoEncontrada />;

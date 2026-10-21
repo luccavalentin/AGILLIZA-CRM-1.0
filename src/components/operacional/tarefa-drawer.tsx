@@ -39,6 +39,8 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToneBadge } from "@/components/crm/tone-badge";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { usePermissao } from "@/hooks/use-permissao";
 import { PRIORIDADE, statusTarefa } from "@/components/operacional/status";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -57,6 +59,7 @@ import {
   excluirTarefa,
 } from "@/lib/operacional/tarefas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
+import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
@@ -79,9 +82,25 @@ function toDatetimeLocal(iso: string): string {
 function fmtTamanho(bytes: number | null): string {
   if (!bytes) return "";
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  const num = (n: number, casas: number) =>
+    n.toLocaleString("pt-BR", { maximumFractionDigits: casas });
+  if (bytes < 1024 * 1024) return `${num(bytes / 1024, 0)} KB`;
+  return `${num(bytes / 1024 / 1024, 1)} MB`;
 }
+
+/** Ações do histórico em português (antes apareciam os códigos). */
+const ROTULO_HISTORICO: Record<string, string> = {
+  criada: "Criada",
+  editada: "Editada",
+  status: "Status alterado",
+  concluida: "Concluída",
+  excluida: "Excluída",
+  anexo: "Anexo enviado",
+  anexo_removido: "Anexo removido",
+  comentario: "Comentário",
+  checklist_concluido: "Item do checklist concluído",
+  checklist_reaberto: "Item do checklist reaberto",
+};
 
 const CORES = ["#64748b", "#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#ec4899"];
 
@@ -116,6 +135,10 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   const urlAnexoFn = useServerFn(urlAnexoTarefa);
   const atualizarFn = useServerFn(atualizarTarefa);
   const excluirFn = useServerFn(excluirTarefa);
+  // Mesma regra de excluirTarefa: quem cria exclui as próprias; "edit" para a gestão.
+  const podeEditarTarefa = usePermissao("operacional.tarefas", "edit");
+  const podeCriarTarefa = usePermissao("operacional.tarefas", "create");
+  const podeExcluirTarefa = podeEditarTarefa || podeCriarTarefa;
 
   const { data } = useQuery({
     queryKey: ["tarefa", id],
@@ -194,7 +217,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
 
   async function excluirTarefaAtual() {
     if (!data?.tarefa) return;
-    if (!confirm("Excluir esta tarefa? Esta ação não pode ser desfeita.")) return;
+    // Confirmação pelo diálogo padrão (ConfirmDelete), não mais o confirm() do navegador.
     try {
       await excluirFn({ data: { id: data.tarefa.id } });
       toast.success("Tarefa excluída.");
@@ -231,6 +254,12 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !t) return;
+    // Mesmo limite dos demais anexos (antes um arquivo de 12 MB subia sem aviso).
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(`"${file.name}" passa de 10 MB. Envie um arquivo menor.`);
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
     setEnviando(true);
     try {
       const path = `${t.id}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
@@ -242,7 +271,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
       invalidar();
       toast.success("Anexo enviado.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha no upload.");
+      toast.error(mensagemDeErro(err, "Falha no upload."));
     } finally {
       setEnviando(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -304,14 +333,22 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                         >
                           <Pencil className="h-3.5 w-3.5" /> Editar
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={excluirTarefaAtual}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Excluir
-                        </Button>
+                        {podeExcluirTarefa && (
+                          <ConfirmDelete
+                            titulo="Excluir tarefa"
+                            descricao={`A tarefa${t?.numero ? ` ${t.numero}` : ""} será apagada. Esta ação não pode ser desfeita.`}
+                            onConfirm={excluirTarefaAtual}
+                            trigger={
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" /> Excluir
+                              </Button>
+                            }
+                          />
+                        )}
                       </>
                     ) : (
                       <>
@@ -395,9 +432,9 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="p1">P1 — Alta</SelectItem>
-                          <SelectItem value="p2">P2 — Média</SelectItem>
-                          <SelectItem value="p3">P3 — Baixa</SelectItem>
+                          <SelectItem value="p1">{ROTULO_PRIORIDADE.p1}</SelectItem>
+                          <SelectItem value="p2">{ROTULO_PRIORIDADE.p2}</SelectItem>
+                          <SelectItem value="p3">{ROTULO_PRIORIDADE.p3}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -665,6 +702,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label="Baixar anexo"
                               className="h-7 w-7"
                               onClick={() => baixarAnexo(a.storage_path, a.nome)}
                             >
@@ -673,6 +711,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label="Excluir anexo"
                               className="h-7 w-7 text-destructive"
                               onClick={async () => {
                                 await removerAnexoFn({ data: { id: a.id } });
@@ -797,8 +836,10 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                             className="flex items-center justify-between border-b border-border/40 py-1 text-xs text-muted-foreground last:border-b-0"
                           >
                             <span>
-                              {h.acao}
-                              {h.detalhe ? ` — ${h.detalhe}` : ""}
+                              {ROTULO_HISTORICO[h.acao] ?? String(h.acao ?? "").replace(/_/g, " ")}
+                              {h.detalhe
+                                ? ` — ${h.acao === "status" ? statusTarefa(String(h.detalhe)).label : h.detalhe}`
+                                : ""}
                             </span>
                             <span className="tabular-nums">{fmtData(h.created_at)}</span>
                           </div>

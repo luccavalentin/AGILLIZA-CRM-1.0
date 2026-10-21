@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ArquivoNo } from "@/lib/documentos/arquivos.functions";
 import { estiloArquivo, formatBytes } from "./arquivo-utils";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export interface NoCardProps {
   no: ArquivoNo;
@@ -47,6 +48,9 @@ export function NoCard({
   onAlternarMenu,
 }: NoCardProps) {
   const fnUrl = useServerFn(urlArquivo);
+  // Renomear/mover/menu = "Arquivos: enviar"; excluir = "Arquivos: excluir" (o servidor confere).
+  const podeEditar = usePermissao("documentos.arquivos", "create");
+  const podeExcluir = usePermissao("documentos.arquivos", "delete");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [carregandoPreview, setCarregandoPreview] = useState(false);
 
@@ -91,13 +95,17 @@ export function NoCard({
             <Download className="mr-2 h-4 w-4" /> Abrir / baixar
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={() => onRenomear(no)}>
-          <Pencil className="mr-2 h-4 w-4" /> Renomear
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onMover(no)}>
-          <Move className="mr-2 h-4 w-4" /> Mover
-        </DropdownMenuItem>
-        {podeAlternarMenu ? (
+        {podeEditar && (
+          <>
+            <DropdownMenuItem onClick={() => onRenomear(no)}>
+              <Pencil className="mr-2 h-4 w-4" /> Renomear
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onMover(no)}>
+              <Move className="mr-2 h-4 w-4" /> Mover
+            </DropdownMenuItem>
+          </>
+        )}
+        {podeEditar && podeAlternarMenu ? (
           <DropdownMenuItem onClick={() => onAlternarMenu!(no)}>
             {no.mostrar_no_menu ? (
               <>
@@ -110,13 +118,17 @@ export function NoCard({
             )}
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive"
-          onClick={() => onExcluir(no)}
-        >
-          <Trash2 className="mr-2 h-4 w-4" /> Excluir
-        </DropdownMenuItem>
+        {podeExcluir && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => onExcluir(no)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

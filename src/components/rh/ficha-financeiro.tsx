@@ -44,22 +44,16 @@ import {
   registrarAlteracaoSalarial,
   type LancamentoStatus,
 } from "@/lib/rh/submodulos.functions";
-import { formatBRL } from "@/lib/financeiro/format";
+import { formatBRL, hojeISO } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
+import { parseMoeda } from "@/lib/rh/moeda";
+import { LANCAMENTO_STATUS_LABEL, rotulo } from "@/lib/rh/rotulos";
 
 function fmtDate(iso: string | null | undefined) {
   return iso
     ? new Date(iso + (iso.length === 10 ? "T00:00:00" : "")).toLocaleDateString("pt-BR")
     : "—";
-}
-
-function Vazio({ children }: { children: React.ReactNode }) {
-  return (
-    <TableRow>
-      <TableCell colSpan={99} className="py-8 text-center text-sm text-muted-foreground">
-        {children}
-      </TableCell>
-    </TableRow>
-  );
 }
 
 function Bloco({
@@ -102,7 +96,7 @@ function LancamentosTab({
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    data: hoje.toISOString().slice(0, 10),
+    data: hojeISO(),
     valor: "",
     competencia_mes: hoje.getMonth() + 1,
     competencia_ano: hoje.getFullYear(),
@@ -142,7 +136,7 @@ function LancamentosTab({
       qc.invalidateQueries({ queryKey: [chave, funcionarioId] });
       qc.invalidateQueries({ queryKey: ["financeiro-contas-pagar"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao lançar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao lançar.")),
   });
 
   return (
@@ -253,8 +247,9 @@ function LancamentosTab({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {q.isLoading && <Vazio>Carregando…</Vazio>}
-          {!q.isLoading && (q.data?.length ?? 0) === 0 && <Vazio>Nenhum lançamento.</Vazio>}
+          {(q.data?.length ?? 0) === 0 && (
+            <LinhaEstadoLista colSpan={99} q={q} vazio="Nenhum lançamento." className="py-8" />
+          )}
           {q.data?.map((l) => (
             <TableRow key={l.id}>
               <TableCell>{fmtDate(l.data)}</TableCell>
@@ -262,7 +257,7 @@ function LancamentosTab({
                 {String(l.competencia_mes).padStart(2, "0")}/{l.competencia_ano}
               </TableCell>
               <TableCell className="max-w-[280px] truncate">{l.descricao ?? "—"}</TableCell>
-              <TableCell className="capitalize">{l.status}</TableCell>
+              <TableCell>{rotulo(LANCAMENTO_STATUS_LABEL, l.status)}</TableCell>
               <TableCell className="text-right tabular-nums">{formatBRL(l.valor)}</TableCell>
             </TableRow>
           ))}
@@ -294,7 +289,7 @@ export function FichaAlteracoesSalariais({ funcionarioId }: { funcionarioId: str
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     salario_novo: "",
-    vigencia: new Date().toISOString().slice(0, 10),
+    vigencia: hojeISO(),
     tipo: "",
     motivo: "",
   });
@@ -306,7 +301,7 @@ export function FichaAlteracoesSalariais({ funcionarioId }: { funcionarioId: str
 
   const salvar = useMutation({
     mutationFn: () => {
-      const valor = Number(String(form.salario_novo).replace(",", "."));
+      const valor = parseMoeda(form.salario_novo);
       if (!valor || valor <= 0) throw new Error("Informe o novo salário.");
       return registrar({
         data: {
@@ -325,7 +320,7 @@ export function FichaAlteracoesSalariais({ funcionarioId }: { funcionarioId: str
       qc.invalidateQueries({ queryKey: ["rh-ficha-salarios", funcionarioId] });
       qc.invalidateQueries({ queryKey: ["rh-funcionario", funcionarioId] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao registrar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao registrar.")),
   });
 
   return (
@@ -400,9 +395,13 @@ export function FichaAlteracoesSalariais({ funcionarioId }: { funcionarioId: str
           </TableRow>
         </TableHeader>
         <TableBody>
-          {q.isLoading && <Vazio>Carregando…</Vazio>}
-          {!q.isLoading && (q.data?.length ?? 0) === 0 && (
-            <Vazio>Nenhuma alteração registrada.</Vazio>
+          {(q.data?.length ?? 0) === 0 && (
+            <LinhaEstadoLista
+              colSpan={99}
+              q={q}
+              vazio="Nenhuma alteração registrada."
+              className="py-8"
+            />
           )}
           {q.data?.map((a) => (
             <TableRow key={a.id}>

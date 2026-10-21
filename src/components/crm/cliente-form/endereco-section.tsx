@@ -36,9 +36,10 @@ export function EnderecoSection({
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label>CEP</Label>
+          <Label htmlFor="cf-endereco-cep">CEP</Label>
           <div className="relative">
             <Input
+              id="cf-endereco-cep"
               inputMode="numeric"
               value={end.cep}
               onChange={(e) => {
@@ -57,41 +58,45 @@ export function EnderecoSection({
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label>Logradouro</Label>
+          <Label htmlFor="cf-endereco-logradouro">Logradouro</Label>
           <Input
+            id="cf-endereco-logradouro"
             value={end.logradouro}
             onChange={(e) => setEnd((p) => ({ ...p, logradouro: e.target.value }))}
             className={cls("logradouro")}
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Número</Label>
+          <Label htmlFor="cf-endereco-numero">Número</Label>
           <Input
+            id="cf-endereco-numero"
             value={end.numero}
             onChange={(e) => setEnd((p) => ({ ...p, numero: e.target.value }))}
             className={cls("numero")}
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Bairro</Label>
+          <Label htmlFor="cf-endereco-bairro">Bairro</Label>
           <Input
+            id="cf-endereco-bairro"
             value={end.bairro}
             onChange={(e) => setEnd((p) => ({ ...p, bairro: e.target.value }))}
             className={cls("bairro")}
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Cidade</Label>
+          <Label htmlFor="cf-endereco-cidade">Cidade</Label>
           <Input
+            id="cf-endereco-cidade"
             value={end.cidade}
             onChange={(e) => setEnd((p) => ({ ...p, cidade: e.target.value }))}
             className={cls("cidade")}
           />
         </div>
         <div className="space-y-1.5">
-          <Label>UF</Label>
+          <Label htmlFor="cf-endereco-uf">UF</Label>
           <Select value={end.uf} onValueChange={(x) => setEnd((p) => ({ ...p, uf: x }))}>
-            <SelectTrigger className={cls("uf")}>
+            <SelectTrigger id="cf-endereco-uf" className={cls("uf")}>
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>

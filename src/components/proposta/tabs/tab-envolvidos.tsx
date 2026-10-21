@@ -211,6 +211,7 @@ export function TabEnvolvidos({
               <TableCell className="text-right">
                 <Button
                   size="icon"
+                  aria-label="Remover envolvido"
                   variant="ghost"
                   onClick={(ev) => {
                     ev.stopPropagation();

@@ -1,3 +1,4 @@
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -19,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { baixarTarefasPDF } from "@/lib/operacional/pdf-lazy";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import {
   listarTarefas,
   excluirTarefa,
@@ -40,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
 
 export const Route = createFileRoute("/_authenticated/operacional/tarefas")({
   head: () => ({ meta: [{ title: "Tarefas — Agilliza" }] }),
@@ -106,6 +109,10 @@ function Pagina() {
   const [sel, setSel] = useState<string | null>(null);
   const [alternando, setAlternando] = useState<string | null>(null);
   const excluir = useServerFn(excluirTarefa);
+  // Mesma regra de excluirTarefa: quem cria exclui as próprias; "edit" para a gestão.
+  const podeEditarTarefa = usePermissao("operacional.tarefas", "edit");
+  const podeCriarTarefa = usePermissao("operacional.tarefas", "create");
+  const podeExcluir = podeEditarTarefa || podeCriarTarefa;
   const concluir = useServerFn(concluirTarefa);
   const mover = useServerFn(moverStatusTarefa);
 
@@ -167,8 +174,8 @@ function Pagina() {
       await excluir({ data: { id } });
       toast.success("Tarefa excluída.");
       refetch();
-    } catch {
-      toast.error("Não foi possível excluir a tarefa.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível excluir a tarefa."));
     }
   }
 
@@ -185,8 +192,8 @@ function Pagina() {
         toast.success("Tarefa concluída.");
       }
       await refetch();
-    } catch {
-      toast.error("Não foi possível atualizar a tarefa.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível atualizar a tarefa."));
     } finally {
       setAlternando(null);
     }
@@ -273,7 +280,7 @@ function Pagina() {
         <OpStat
           label="Conclusão"
           value={`${stats.taxaConclusao}%`}
-          hint={`${stats.concluidas} concluídas`}
+          hint={`${stats.concluidas} ${stats.concluidas === 1 ? "concluída" : "concluídas"}`}
           icon={<CheckCircle2 className="h-5 w-5" />}
           accent="var(--success)"
         />
@@ -306,9 +313,9 @@ function Pagina() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Prioridade: Todas</SelectItem>
-            <SelectItem value="p1">P1 · Urgente</SelectItem>
-            <SelectItem value="p2">P2 · Alta</SelectItem>
-            <SelectItem value="p3">P3 · Normal</SelectItem>
+            <SelectItem value="p1">{ROTULO_PRIORIDADE.p1}</SelectItem>
+            <SelectItem value="p2">{ROTULO_PRIORIDADE.p2}</SelectItem>
+            <SelectItem value="p3">{ROTULO_PRIORIDADE.p3}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={ordem} onValueChange={(v) => setOrdem(v as typeof ordem)}>
@@ -353,13 +360,13 @@ function Pagina() {
             try {
               await mover({ data: { id: t.id, status: status as any } });
               await refetch();
-            } catch {
-              toast.error("Não foi possível atualizar o status.");
+            } catch (e) {
+              toast.error(mensagemDeErro(e, "Não foi possível atualizar o status."));
             } finally {
               setAlternando(null);
             }
           }}
-          onExcluir={handleExcluir}
+          onExcluir={podeExcluir ? handleExcluir : undefined}
         />
       )}
 

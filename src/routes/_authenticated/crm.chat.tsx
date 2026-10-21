@@ -6,10 +6,12 @@ import { MaisAcoesGestao } from "@/components/crm/chat/barra-gestao";
 import { useChatConversas } from "@/components/crm/chat/use-chat-conversas";
 import { ListaConversas } from "@/components/crm/chat/lista-conversas";
 import { PainelChat } from "@/components/crm/chat/painel-chat";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export const Route = createFileRoute("/_authenticated/crm/chat")({
   head: () => ({ meta: [{ title: "Chat e Follow-up Cliente — Agilliza" }] }),
-  beforeLoad: () => assertModuloPermitido("crm.chat", ["crm.clientes"]),
+  // Só crm.chat: a equivalência com crm.clientes abria o chat para quem só vê clientes.
+  beforeLoad: () => assertModuloPermitido("crm.chat"),
   validateSearch: (s: Record<string, unknown>) => ({
     c: typeof s.c === "string" ? s.c : undefined,
   }),
@@ -27,6 +29,9 @@ function Pagina() {
     selecionado,
     abrirConversa,
   } = hook;
+
+  const podeGerir = usePermissao("crm.chat", "gerir");
+  const podeMoverEtapa = usePermissao("crm.clientes", "edit");
 
   const search = Route.useSearch();
   const autoAbertoRef = useRef<string | null>(null);
@@ -55,7 +60,7 @@ function Pagina() {
 
   const somenteLeituraAtual = !!alvoAtual && !alvoAtual.minha && !alvoAtual.participo;
   const acoesGestao =
-    alvoAtual && !somenteLeituraAtual ? (
+    alvoAtual && !somenteLeituraAtual && (podeGerir || podeMoverEtapa) ? (
       <MaisAcoesGestao
         key={alvoAtual.cliente_id}
         clienteId={alvoAtual.cliente_id}

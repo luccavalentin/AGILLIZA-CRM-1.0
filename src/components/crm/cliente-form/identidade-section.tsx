@@ -28,8 +28,9 @@ export function IdentidadeSection({
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label>Profissão</Label>
+          <Label htmlFor="cf-identidade-profissao">Profissão</Label>
           <Input
+            id="cf-identidade-profissao"
             value={v.profissao}
             onChange={(e) => set("profissao", e.target.value)}
             placeholder="Digite a profissão"
@@ -37,8 +38,12 @@ export function IdentidadeSection({
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Empresa onde trabalha</Label>
-          <Input value={v.empresa} onChange={(e) => set("empresa", e.target.value)} />
+          <Label htmlFor="cf-identidade-empresa-onde-trabalha">Empresa onde trabalha</Label>
+          <Input
+            id="cf-identidade-empresa-onde-trabalha"
+            value={v.empresa}
+            onChange={(e) => set("empresa", e.target.value)}
+          />
         </div>
       </CardContent>
     </Card>

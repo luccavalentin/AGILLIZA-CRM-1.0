@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -17,7 +17,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -42,32 +41,41 @@ import {
   registrarOcorrencia,
   type OcorrenciaTipo,
 } from "@/lib/rh/submodulos.functions";
+import { OCORRENCIA_LABEL as ROT } from "@/lib/rh/rotulos";
+import { formatData, hojeISO } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 
 const TIPOS: { value: OcorrenciaTipo; label: string; tone: string }[] = [
-  { value: "falta", label: "Falta", tone: "bg-destructive/15 text-destructive" },
+  { value: "falta", label: ROT.falta, tone: "bg-destructive/15 text-destructive" },
   {
     value: "atestado",
-    label: "Atestado",
+    label: ROT.atestado,
     tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
   },
   {
     value: "advertencia",
-    label: "Advertência",
+    label: ROT.advertencia,
     tone: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
   },
-  { value: "licenca", label: "Licença", tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
-  { value: "suspensao", label: "Suspensão", tone: "bg-destructive/15 text-destructive" },
+  { value: "licenca", label: ROT.licenca, tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+  { value: "suspensao", label: ROT.suspensao, tone: "bg-destructive/15 text-destructive" },
   {
     value: "elogio",
-    label: "Elogio",
+    label: ROT.elogio,
     tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
   },
-  { value: "outro", label: "Outro", tone: "bg-muted text-muted-foreground" },
+  { value: "outro", label: ROT.outro, tone: "bg-muted text-muted-foreground" },
 ];
 
 export const Route = createFileRoute("/_authenticated/rh/faltas-ocorrencias")({
   head: () => ({ meta: [{ title: "Faltas e ocorrências — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("rh.ocorrencias"),
+  // `?novo=atestado` (botão "Registrar atestado" da tela de Atestados) já abre
+  // o formulário com o tipo escolhido — antes só trazia para esta lista.
+  validateSearch: (s: Record<string, unknown>): { novo?: OcorrenciaTipo } =>
+    TIPOS.some((t) => t.value === s.novo) ? { novo: s.novo as OcorrenciaTipo } : {},
   component: Pagina,
 });
 
@@ -80,16 +88,31 @@ function Pagina() {
   const [filtroFuncionario, setFiltroFuncionario] = useState<string | null>(null);
   const [filtroTipo, setFiltroTipo] = useState<string>("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
+  const formVazio = (tipo: OcorrenciaTipo = "falta") => ({
     funcionario_id: "",
-    tipo: "falta" as OcorrenciaTipo,
-    data_inicio: new Date().toISOString().slice(0, 10),
+    tipo,
+    data_inicio: hojeISO(),
     data_fim: "",
     dias: "",
     cid: "",
     justificativa: "",
     abonada: false,
   });
+  const [form, setForm] = useState(() => formVazio());
+
+  // "Registrar" sempre abre limpo: reabria com o que foi digitado na anterior.
+  function abrirNovo(tipo: OcorrenciaTipo = "falta") {
+    setForm(formVazio(tipo));
+    setOpen(true);
+  }
+
+  const { novo } = Route.useSearch();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!novo) return;
+    abrirNovo(novo);
+    navigate({ to: ".", search: {}, replace: true });
+  }, [novo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const lista = useQuery({
     queryKey: ["rh-ocorrencias", filtroFuncionario, filtroTipo],
@@ -119,18 +142,22 @@ function Pagina() {
     onSuccess: () => {
       toast.success("Ocorrência registrada.");
       qc.invalidateQueries({ queryKey: ["rh-ocorrencias"] });
+      qc.invalidateQueries({ queryKey: ["rh-atestados"] });
       qc.invalidateQueries({ queryKey: ["rh-kpis"] });
       setOpen(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao registrar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao registrar.")),
   });
 
   const excluir = useMutation({
     mutationFn: (id: string) => fnExcluir({ data: { id } }),
     onSuccess: () => {
-      toast.success("Ocorrência removida.");
+      toast.success("Ocorrência excluída.");
       qc.invalidateQueries({ queryKey: ["rh-ocorrencias"] });
+      qc.invalidateQueries({ queryKey: ["rh-atestados"] });
+      qc.invalidateQueries({ queryKey: ["rh-kpis"] });
     },
+    // Erro: o ConfirmDelete mostra a mensagem e continua aberto.
   });
 
   return (
@@ -144,12 +171,10 @@ function Pagina() {
             Registro cronológico das ocorrências do quadro.
           </p>
         </div>
+        <Button onClick={() => abrirNovo()}>
+          <Plus className="mr-2 h-4 w-4" /> Registrar ocorrência
+        </Button>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Registrar ocorrência
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Nova ocorrência</DialogTitle>
@@ -299,30 +324,25 @@ function Pagina() {
                       <TableCell>
                         <Badge className={tipo?.tone}>{tipo?.label ?? o.tipo}</Badge>
                       </TableCell>
-                      <TableCell>{new Date(o.data_inicio).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>
-                        {o.data_fim ? new Date(o.data_fim).toLocaleDateString("pt-BR") : "—"}
-                      </TableCell>
+                      <TableCell>{formatData(o.data_inicio)}</TableCell>
+                      <TableCell>{o.data_fim ? formatData(o.data_fim) : "—"}</TableCell>
                       <TableCell>{o.dias ?? "—"}</TableCell>
                       <TableCell>{o.cid ?? "—"}</TableCell>
                       <TableCell>{o.abonada ? "Sim" : "Não"}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="icon" variant="ghost" onClick={() => excluir.mutate(o.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <ConfirmDelete
+                          titulo="Excluir ocorrência"
+                          descricao={`A ocorrência de ${o.funcionario_nome} (${tipo?.label ?? o.tipo}) será excluída.`}
+                          onConfirm={async () => {
+                            await excluir.mutateAsync(o.id);
+                          }}
+                        />
                       </TableCell>
                     </TableRow>
                   );
                 })}
                 {(!lista.data || lista.data.length === 0) && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="py-10 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhuma ocorrência registrada.
-                    </TableCell>
-                  </TableRow>
+                  <LinhaEstadoLista colSpan={8} q={lista} vazio="Nenhuma ocorrência registrada." />
                 )}
               </TableBody>
             </Table>

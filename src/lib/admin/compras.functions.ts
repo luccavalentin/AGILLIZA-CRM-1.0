@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export interface CompraLinha {
   id: string;
@@ -26,7 +26,7 @@ async function corr(supabase: any, userId: string): Promise<string | null> {
 }
 
 export const listarCompras = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.compras.pedidos", "view"], ["admin.compras.aprovacoes", "view"], ["admin.compras", "view"])])
   .handler(async ({ context }): Promise<CompraLinha[]> => {
     const { supabase, userId } = context;
     const c = await corr(supabase, userId);
@@ -56,12 +56,12 @@ export const listarCompras = createServerFn({ method: "GET" })
   });
 
 export const criarCompra = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.compras.pedidos", "create"], ["admin.compras", "create"])])
   .inputValidator((data: unknown) =>
     z
       .object({
         descricao: z.string().min(3, "Descreva a solicitação."),
-        valor: z.number().nonnegative(),
+        valor: z.number().positive("Informe um valor maior que zero."),
         categoria: z.string().optional().nullable(),
       })
       .parse(data),
@@ -83,20 +83,21 @@ export const criarCompra = createServerFn({ method: "POST" })
   });
 
 export const editarCompra = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.compras.pedidos", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
         id: z.string().uuid(),
         descricao: z.string().min(3, "Descreva a solicitação."),
-        valor: z.number().nonnegative(),
+        valor: z.number().positive("Informe um valor maior que zero."),
         categoria: z.string().optional().nullable(),
       })
       .parse(data),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
-    const { error } = await supabase
+    // Só pedido pendente muda: editar um aprovado trocava o valor depois da aprovação.
+    const { data: row, error } = await supabase
       .from("purchase_requests")
       .update({
         descricao: data.descricao,
@@ -104,24 +105,36 @@ export const editarCompra = createServerFn({ method: "POST" })
         categoria: data.categoria ?? null,
       })
       .eq("id", data.id)
+      .eq("status", "pendente")
       .select("id")
       .maybeSingle();
     if (error) throw error;
+    if (!row) throw new Error("Pedido não encontrado ou já decidido: só pedidos pendentes podem ser editados.");
     return { ok: true };
   });
 
 export const excluirCompra = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.compras.pedidos", "edit"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
-    const { error } = await supabase.from("purchase_requests").delete().eq("id", data.id);
+    // Aprovado/recusado fica no histórico; antes saía sem aviso (ou nem saía, pela RLS, e a tela dizia "excluído").
+    const { data: row, error } = await supabase
+      .from("purchase_requests")
+      .delete()
+      .eq("id", data.id)
+      .eq("status", "pendente")
+      .select("id")
+      .maybeSingle();
     if (error) throw error;
+    if (!row) throw new Error("Pedido não encontrado ou já decidido: só pedidos pendentes podem ser excluídos.");
     return { ok: true };
   });
 
 export const decidirCompra = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  // A matriz (Aprovação de compras: aprovar/reprovar) decide; antes era só o papel
+  // (admin/correspondente/gestor) e a ação do catálogo nunca era conferida.
+  .middleware([exigirPermissao(["admin.compras.aprovacoes", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -133,12 +146,8 @@ export const decidirCompra = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
-    const { data: pode } = await supabase.rpc("usuario_pode_admin", {
-      _user_id: userId,
-    });
-    if (!pode) throw new Error("Sem permissão para aprovar compras.");
 
-    const { error } = await supabase
+    const { data: row, error } = await supabase
       .from("purchase_requests")
       .update({
         status: data.aprovar ? "aprovada" : "recusada",
@@ -146,7 +155,12 @@ export const decidirCompra = createServerFn({ method: "POST" })
         aprovado_em: new Date().toISOString(),
         observacao: data.observacao ?? null,
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("status", "pendente")
+      .select("id")
+      .maybeSingle();
     if (error) throw error;
+    // Sem isto, um pedido já decidido era decidido de novo (e a RLS podia barrar em silêncio).
+    if (!row) throw new Error("Pedido não encontrado ou já decidido.");
     return { ok: true };
   });

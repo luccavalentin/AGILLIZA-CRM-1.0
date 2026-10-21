@@ -1,4 +1,5 @@
 import { parseBRL } from "@/lib/simulacao/format";
+import { hojeISO, somarMesesISO } from "@/lib/financeiro/format";
 
 /** Uma parcela do plano de pagamento (valores já convertidos em número). */
 export interface ParcelaDetalhe {
@@ -127,18 +128,17 @@ export function calcularCET(
 
 /** Primeiro vencimento padrão (mesmo dia do mês seguinte) quando o banco não informa a data. */
 function primeiroVencimentoPadrao(): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 1);
-  return d.toISOString().slice(0, 10);
+  // "Hoje" no fuso de Brasília: em UTC, depois das 21h, já seria o dia seguinte.
+  return somarMesesISO(hojeISO(), 1);
 }
 
-/** Soma `n` meses a uma data ISO (YYYY-MM-DD), devolvendo ISO. */
+/**
+ * Soma `n` meses a uma data ISO (YYYY-MM-DD), devolvendo ISO. Mantém o dia ou
+ * usa o último dia do mês (31/01 + 1 = 28/02); `setMonth` pulava para março.
+ */
 function addMeses(dataIso: string | null, n: number): string | null {
-  if (!dataIso) return null;
-  const base = new Date(`${dataIso}T00:00:00`);
-  if (Number.isNaN(base.getTime())) return null;
-  base.setMonth(base.getMonth() + n);
-  return base.toISOString().slice(0, 10);
+  if (!dataIso || !/^\d{4}-\d{2}-\d{2}/.test(dataIso)) return null;
+  return somarMesesISO(dataIso, n);
 }
 
 /** Aceita "dd/mm/aaaa" (Santander) ou ISO e devolve ISO (YYYY-MM-DD). */
@@ -199,11 +199,7 @@ export function calcularPlano(
   let saldo = principal;
   for (let k = 1; k <= n; k++) {
     const juros = trunc ? truncCentavos(saldo * i) : saldo * i;
-    let amort = price
-      ? parcelaFixa - juros
-      : trunc
-        ? truncCentavos(saldo / (n - k + 1))
-        : amortSac;
+    let amort = price ? parcelaFixa - juros : trunc ? truncCentavos(saldo / (n - k + 1)) : amortSac;
     // Ajuste da última parcela para zerar o saldo devedor exatamente.
     if (k === n) amort = saldo;
     const total = amort + juros;
@@ -348,8 +344,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
 
   // Santander: seguros e parcela sem seguros vêm da 1ª linha do plano do banco.
   const linha1 = brutas.find((p) => num(p?.numberInstallment ?? p?.number) === 1) as
-    | Record<string, any>
-    | undefined;
+    Record<string, any> | undefined;
   const l1Mip = num(linha1?.insuranceValueMip);
   const l1Dfi = num(linha1?.insuranceValueDfi);
   const l1Amort = num(linha1?.amortizationValue);
@@ -429,8 +424,7 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
     num(desc.propertyValue) ??
     num(r.valorImovel);
   // Entrada = valor do imóvel − financiamento base (quando o banco não devolve).
-  const entradaApi =
-    num(desc.downPayment) ?? num(desc.downPaymentAmount) ?? num(r.valorEntrada);
+  const entradaApi = num(desc.downPayment) ?? num(desc.downPaymentAmount) ?? num(r.valorEntrada);
   const entradaDerivada =
     valorImovel != null && financiamentoBase != null
       ? Math.max(0, Math.round((valorImovel - financiamentoBase) * 100) / 100)
@@ -491,12 +485,15 @@ export function extrairDetalheBanco(raw: unknown): DetalheBanco | null {
  */
 export function divisaoFinanciamento(
   d: DetalheBanco | null,
-  s: {
-    fg_financiar_despesas?: boolean | null;
-    valor_despesas_financiadas?: number | string | null;
-    valor_financiamento?: number | string | null;
-    valor_imovel?: number | string | null;
-  } | null | undefined,
+  s:
+    | {
+        fg_financiar_despesas?: boolean | null;
+        valor_despesas_financiadas?: number | string | null;
+        valor_financiamento?: number | string | null;
+        valor_imovel?: number | string | null;
+      }
+    | null
+    | undefined,
 ): {
   embutidas: boolean;
   valorSolicitado: number | null;

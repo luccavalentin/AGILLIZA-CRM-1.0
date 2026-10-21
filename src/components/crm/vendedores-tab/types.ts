@@ -92,7 +92,10 @@ export function paraForm(v: any): VendedorForm {
     ...Object.fromEntries(Object.entries(v).map(([k, val]) => [k, val ?? ""])),
     id: v.id,
     tipo_pessoa: v.tipo_pessoa === "PJ" ? "PJ" : "PF",
-    documento: mascararDocumentoTipo(v.documento ?? "", v.tipo_pessoa === "PJ" ? "PJ" : "PF"),
+    // Sem "Ver dados sensíveis" o documento chega mascarado ("***.***.123-**"): fica como veio.
+    documento: String(v.documento ?? "").includes("*")
+      ? v.documento
+      : mascararDocumentoTipo(v.documento ?? "", v.tipo_pessoa === "PJ" ? "PJ" : "PF"),
     telefone_celular: mascararTelefone(v.telefone_celular ?? ""),
     cep: mascararCep(v.cep ?? ""),
     renda_total_declarada:

@@ -12,15 +12,15 @@ import {
   excluirSimulacao,
   inverterTitularSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
-import { criarProposta } from "@/lib/propostas/propostas.functions";
-import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
+import { useEnviarAprovacao } from "@/hooks/use-enviar-aprovacao";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoricoTimeline } from "@/components/simulacao/detalhe-page/historico-timeline";
 import { HeaderAcoes } from "@/components/simulacao/detalhe-page/header-acoes";
 import { ComparativoBancos } from "@/components/simulacao/detalhe-page/comparativo-bancos";
 import { DadosEnviados } from "@/components/simulacao/detalhe-page/dados-enviados";
-import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/$id")({
   head: () => ({ meta: [{ title: "Simulação — Agilliza" }] }),
@@ -35,20 +35,24 @@ function Pagina() {
   const { id } = Route.useParams();
   const router = useRouter();
   const qc = useQueryClient();
-  const { enviar: handleEnviarHook } = useEnviarProposta();
+  const enviarAprovacao = useEnviarAprovacao();
   const [pdfDialogAberto, setPdfDialogAberto] = useState(false);
   const [detalhePdfAberto, setDetalhePdfAberto] = useState(false);
   const [reenviandoBanco, setReenviandoBanco] = useState<string | null>(null);
   const [invertendo, setInvertendo] = useState(false);
   const [criandoBanco, setCriandoBanco] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const idValido = UUID_RE.test(id);
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["simulacao", id],
     queryFn: () => obterSimulacao({ data: { id } }),
+    enabled: idValido,
     // Enquanto a simulação/algum banco ainda está processando, faz polling
     // para garantir que os retornos apareçam mesmo se o realtime falhar.
     refetchInterval: (query) => {
       const d = query.state.data as any;
+      // Erro (id inexistente): não fica consultando de novo a cada 3 s.
+      if (query.state.status === "error") return false;
       if (!d) return 3000;
       const simFinal = [
         "simulada",
@@ -209,63 +213,22 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["crm-painel"] });
       qc.invalidateQueries({ queryKey: ["clientes"] });
       router.navigate({ to: "/operacional/simulacoes" });
-    } catch {
-      toast.error("Não foi possível excluir a simulação.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível excluir a simulação."));
     }
   }
 
   async function criar(simulacaoBancoId: string, bancoId?: string) {
     const linhaBanco = ((data?.bancos as any[]) ?? []).find((b: any) => b.id === simulacaoBancoId);
-    // Bradesco: o popup de agência abre já no clique, antes de criar a proposta.
-    const resposta = await perguntarAgenciaSeBradesco(linhaBanco?.nome_banco);
-    if (resposta.cancelado) return;
-    const agencia = resposta.agencia;
-    setCriandoBanco(simulacaoBancoId);
     try {
-      const { proposta_id, envolvido_pendente_id } = await criarProposta({
-        data: { simulacao_id: id, simulacao_banco_id: simulacaoBancoId },
-      });
-
-      // A proposta exige campos que a simulação não pede (nome da mãe, sexo,
-      // documento de identidade, endereço completo...). Quando falta algum,
-      // abrimos o formulário DIRETO — nada de disparar um envio que já
-      // sabemos que o banco vai recusar. O próprio diálogo encadeia os demais
-      // participantes e envia ao final, pelo botão "Salvar e enviar ao banco".
-      if (envolvido_pendente_id) {
-        toast.info("Complete o cadastro do participante para enviar ao banco.");
-        router.navigate({
-          to: "/operacional/propostas/$id",
-          params: { id: proposta_id },
-          search: {
-            abrir_cadastro: envolvido_pendente_id,
-            ...(agencia !== undefined ? { agencia: agencia || "nao" } : {}),
-          },
-        });
-        return;
-      }
-
-      // Cadastro completo: envia uma única vez aqui e abre a proposta já
-      // enviada (sem `complementar`, que dispararia um segundo envio).
-      try {
-        await handleEnviarHook({
-          propostaId: proposta_id,
-          bancoId: bancoId ?? "todos", // Passa o ID do banco ou "todos" se não houver
-          nomeBanco: linhaBanco?.nome_banco,
-          agencia,
-        });
-      } catch (e: any) {
-        // O hook não mostra toast de erro. Seguimos para a proposta mesmo
-        // assim (ela já foi criada), mas avisando que o envio não aconteceu.
-        if (!e?.cadastroIncompleto) {
-          toast.error(mensagemDeErro(e, "A proposta foi criada, mas o envio ao banco falhou."), {
-            duration: 12_000,
-          });
-        }
-      }
-      router.navigate({
-        to: "/operacional/propostas/$id",
-        params: { id: proposta_id },
-        search: {},
+      // Agência do Bradesco, criação da proposta, cadastro pendente e envio: o fluxo de
+      // sempre, agora num hook só (o mesmo da fila das propostas dos assinantes).
+      await enviarAprovacao({
+        simulacaoId: id,
+        simulacaoBancoId,
+        bancoId,
+        nomeBanco: linhaBanco?.nome_banco,
+        aoIniciar: () => setCriandoBanco(simulacaoBancoId),
       });
     } catch (e) {
       toast.error(mensagemDeErro(e, "Falha ao criar proposta."));
@@ -274,8 +237,25 @@ function Pagina() {
     }
   }
 
-  if (isLoading || !data)
-    return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
+  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
+  // Id inexistente ou inválido: antes ficava em "Carregando…" para sempre.
+  if (!idValido || isError || !data)
+    return (
+      <div className="mx-auto max-w-md space-y-3 p-6 text-center">
+        <p className="text-base font-semibold text-foreground">Simulação não encontrada</p>
+        <p className="text-sm text-muted-foreground">
+          {idValido
+            ? mensagemDeErro(error, "Ela pode ter sido excluída ou o endereço está incorreto.")
+            : "Ela pode ter sido excluída ou o endereço está incorreto."}
+        </p>
+        <a
+          href="/operacional/simulacoes"
+          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Voltar para as simulações
+        </a>
+      </div>
+    );
   const s = data.simulacao;
   const bancos = data.bancos;
 

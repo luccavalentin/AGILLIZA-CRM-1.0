@@ -2,8 +2,19 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-const SUPABASE_URL = "https://qjdgdwoxwfqbwxmkatcs.supabase.co";
+// Banco único na VPS: o build informa VITE_SUPABASE_URL/VITE_SUPABASE_PUBLISHABLE_KEY.
+// Sem elas, vale o projeto da nuvem — o deploy atual segue idêntico.
+// "mesma-origem": a API do Supabase é servida no mesmo domínio do app, então trocar de
+// domínio não exige novo build (no servidor, vale o SUPABASE_URL do ambiente).
+const URL_CONFIGURADA = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_URL =
+  URL_CONFIGURADA === "mesma-origem"
+    ? typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.SUPABASE_URL!
+    : URL_CONFIGURADA || "https://qjdgdwoxwfqbwxmkatcs.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqZGdkd294d2ZxYnd4bWthdGNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTg0OTMsImV4cCI6MjA5ODY3NDQ5M30.5X1Gu_XUAqX8m6s57gcxUBoidZr3rh9w97KEuMXoffw";
 
 // Import the supabase client like this:

@@ -7,10 +7,10 @@ import { Search, Star, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { listarEstadoChatDoUsuario, fixarConversa } from "@/lib/chats/gestao.functions";
 import { iniciais, type ChatClienteInfo } from "./utils";
+import { exibirDocumento } from "@/lib/crm/documento";
 
 export function ChatClienteHeader({
   info,
@@ -38,6 +38,10 @@ export function ChatClienteHeader({
     queryFn: () => listar(),
   });
 
+  const linhaContexto = [info?.documento ? exibirDocumento(info.documento) : null, info?.contexto]
+    .filter(Boolean)
+    .join(" · ");
+
   const fixado = !!(
     clienteId &&
     (estados ?? []).some(
@@ -55,33 +59,23 @@ export function ChatClienteHeader({
       qc.invalidateQueries({ queryKey: ["chat-estado-usuario"] });
       qc.invalidateQueries({ queryKey: ["conversas-cliente"] });
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível favoritar.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível fixar a conversa.")),
   });
 
   return (
     <>
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 border-b bg-gradient-to-r from-card to-muted/20 px-4 py-4 sm:gap-6 sm:px-6">
         <div className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-[var(--brand-azul-escuro)] text-base font-bold text-primary-foreground shadow-[0_4px_12px_-4px_rgba(var(--primary),0.5)] ring-2 ring-background">
+          {/* Sem a bolinha verde "online": ficava acesa sempre, sem presença real. */}
           {iniciais(info?.nome)}
-          <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-background">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-          </span>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-base font-bold tracking-tight text-foreground">
-              {info?.nome ?? "Consultoria Especializada"}
-            </p>
-            <Badge
-              variant="secondary"
-              className="h-5 rounded-md border-primary/20 bg-primary/5 px-2 text-[9px] font-black uppercase tracking-wider text-primary shadow-sm"
-            >
-              VIP
-            </Badge>
-          </div>
-          <p className="mt-0.5 truncate text-[11px] font-medium uppercase tracking-widest text-muted-foreground/80">
-            Atendimento Exclusivo Agilliza
+          <p className="truncate text-base font-bold tracking-tight text-foreground">
+            {info?.nome ?? "Cliente"}
           </p>
+          {linhaContexto && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{linhaContexto}</p>
+          )}
         </div>
 
         <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 overflow-hidden sm:gap-1.5">
@@ -92,6 +86,7 @@ export function ChatClienteHeader({
             className="size-9 shrink-0 rounded-lg text-muted-foreground"
             onClick={toggleBusca}
             title={buscaAberta ? "Fechar busca" : "Buscar na conversa"}
+            aria-label={buscaAberta ? "Fechar busca" : "Buscar na conversa"}
             aria-pressed={buscaAberta}
           >
             <Search className="size-4" />
@@ -108,6 +103,7 @@ export function ChatClienteHeader({
               onClick={() => mFixar.mutate()}
               disabled={mFixar.isPending}
               title={fixado ? "Desafixar conversa" : "Fixar conversa no topo"}
+              aria-label={fixado ? "Desafixar conversa" : "Fixar conversa no topo"}
               aria-pressed={fixado}
             >
               <Star className={cn("size-4", fixado && "fill-current")} />

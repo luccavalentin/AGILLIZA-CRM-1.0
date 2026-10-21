@@ -253,7 +253,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
 
   if (!Number.isInteger(idOperacao)) {
     const msg =
-      "Não foi possível identificar a operação HomeFin para este produto. Recarregue a página e tente novamente.";
+      "Não foi possível identificar a operação da integração bancária para este produto. Recarregue a página e tente novamente.";
     setErros({ id_operacao_homefin: msg });
     toast.error(msg);
     console.error("[executarEnvioAmbos] idOperacao ausente:", idOperacao);
@@ -886,7 +886,26 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
         const bancosSim: any[] = dadosSim.bancos ?? [];
         const simulados = bancosSim.filter((b) => b.status_banco === "simulada");
         if (simulados.length === 0) {
-          toast.error("Nenhum banco aceitou a proposta. Revise os dados e envie novamente.");
+          // Mostra o motivo que cada banco devolveu: "Nenhum banco aceitou" levava a
+          // revisar dados corretos quando o problema era, por exemplo, integração fora do ar.
+          const motivos = [
+            ...new Set(
+              bancosSim
+                .map((b: any) => String(b.mensagem_banco ?? "").trim())
+                .filter(Boolean),
+            ),
+          ];
+          toast.error(
+            motivos.length === 1
+              ? `Nenhum banco devolveu proposta: ${motivos[0]}`
+              : motivos.length > 1
+                ? `Nenhum banco devolveu proposta. ${bancosSim
+                    .filter((b: any) => b.mensagem_banco)
+                    .map((b: any) => `${b.nome_banco}: ${b.mensagem_banco}`)
+                    .join(" · ")}`
+                : "Nenhum banco aceitou a proposta. Revise os dados e envie novamente.",
+            { duration: 12_000 },
+          );
           setEnviando(false);
           setConcluidos(0);
           return;

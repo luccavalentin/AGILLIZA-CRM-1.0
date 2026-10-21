@@ -25,8 +25,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   LineChart,
@@ -38,6 +36,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { BancoChip } from "@/components/bancos/banco-chip";
 
 export const Route = createFileRoute("/cliente/acompanhar-minha-proposta")({
@@ -82,11 +81,28 @@ function diasNaEtapa(iso: string | null) {
 }
 
 function Acompanhar() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["cliente", "acompanhamento"],
     queryFn: () => clienteObterAcompanhamento(),
     refetchInterval: (q: any) => (q.state.status === "error" ? false : 15000),
+    refetchIntervalInBackground: false,
   });
+
+  // Com erro a tela ficava no esqueleto para sempre.
+  if (isError && !data) {
+    return (
+      <Card className="border-border/70 shadow-sm">
+        <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+          <p className="text-sm text-destructive">
+            {mensagemDeErro(error, "Não foi possível carregar seu acompanhamento.")}
+          </p>
+          <Button variant="outline" size="sm" disabled={isFetching} onClick={() => refetch()}>
+            Tentar de novo
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading || !data) {
     return (
@@ -347,7 +363,7 @@ function Acompanhar() {
                   return (
                     <li className="flex items-center gap-2 rounded-lg bg-primary/5 p-3 text-sm text-foreground">
                       <CheckCircle2 className="h-5 w-5 text-primary" />
-                      Processo concluído. Parabéns!
+                      Processo concluído.
                     </li>
                   );
                 }
@@ -443,7 +459,7 @@ function Acompanhar() {
             icon={FileText}
             valor={String(documentos_pendentes)}
             label="Documentos pendentes"
-            linkLabel={documentos_pendentes ? "Ver documentos" : "Tudo em dia"}
+            linkLabel={documentos_pendentes ? "Enviar pelo chat" : "Tudo em dia"}
             to="/cliente/chat"
           />
           <MiniStat
@@ -518,7 +534,7 @@ function Acompanhar() {
             <Button asChild className="w-full justify-start" size="sm">
               <Link to="/cliente/chat">
                 <Upload className="mr-1.5 h-4 w-4" />
-                Enviar documentos
+                Enviar documentos pelo chat
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm" className="w-full justify-start">

@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { listarParceiros } from "@/lib/crm/parceiros.functions";
+import { Button } from "@/components/ui/button";
+import { ehImobiliariaParceiro, listarParceiros } from "@/lib/crm/parceiros.functions";
 
 export const Route = createFileRoute("/_authenticated/crm/parceiros")({
   head: () => ({ meta: [{ title: "Parceiros — Agilliza" }] }),
@@ -16,7 +17,10 @@ export const Route = createFileRoute("/_authenticated/crm/parceiros")({
 
 function Pagina() {
   const listar = useServerFn(listarParceiros);
-  const { data, isLoading } = useQuery({ queryKey: ["parceiros"], queryFn: () => listar() });
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["parceiros"],
+    queryFn: () => listar(),
+  });
 
   return (
     <div className="mx-auto w-full max-w-none space-y-5 p-4 md:p-6">
@@ -34,6 +38,15 @@ function Pagina() {
             <Skeleton key={i} className="h-16 w-full" />
           ))}
         </div>
+      ) : isError ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center text-sm">
+            <p className="text-destructive">Não foi possível carregar os parceiros.</p>
+            <Button size="sm" variant="outline" onClick={() => refetch()}>
+              Tentar de novo
+            </Button>
+          </CardContent>
+        </Card>
       ) : (data?.length ?? 0) === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
@@ -50,7 +63,7 @@ function Pagina() {
                     {p.razao_social || p.nome || "Parceiro"}
                   </span>
                   <Badge variant="secondary">
-                    {p.tipo_pessoa === "juridica" ? "Imobiliária" : "Corretor"}
+                    {ehImobiliariaParceiro(p.tipo_pessoa) ? "Imobiliária" : "Corretor"}
                   </Badge>
                 </div>
                 {p.nome && p.razao_social && (

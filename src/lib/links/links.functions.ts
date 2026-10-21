@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export interface LinkUtil {
   id: string;
@@ -34,7 +34,7 @@ function normalizarUrl(url: string): string {
 
 /** Lista todos os links do repositório. */
 export const listarLinks = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.links", "view"])])
   .handler(async ({ context }): Promise<LinkUtil[]> => {
     const { supabase } = context;
     const { data, error } = await supabase
@@ -47,7 +47,7 @@ export const listarLinks = createServerFn({ method: "GET" })
 
 /** Cria um novo link. */
 export const criarLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.links", "create"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -77,7 +77,7 @@ export const criarLink = createServerFn({ method: "POST" })
 
 /** Atualiza um link existente. */
 export const atualizarLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.links", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -108,7 +108,7 @@ export const atualizarLink = createServerFn({ method: "POST" })
 
 /** Exclui um link. */
 export const excluirLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.links", "delete"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
@@ -132,7 +132,7 @@ export interface LinkCategoria {
 
 /** Lista as categorias cadastradas. */
 export const listarCategoriasLinks = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.links", "view"])])
   .handler(async ({ context }): Promise<LinkCategoria[]> => {
     const { data, error } = await context.supabase
       .from("links_categorias")
@@ -144,7 +144,7 @@ export const listarCategoriasLinks = createServerFn({ method: "GET" })
 
 /** Cria uma categoria. */
 export const criarCategoriaLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.links", "create"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -170,7 +170,7 @@ export const criarCategoriaLink = createServerFn({ method: "POST" })
 
 /** Atualiza nome/ícone/cor de uma categoria e propaga a renomeação para os links. */
 export const atualizarCategoriaLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.links", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -214,7 +214,7 @@ export const atualizarCategoriaLink = createServerFn({ method: "POST" })
 
 /** Exclui uma categoria. Os links vinculados ficam sem categoria (ou são reatribuídos). */
 export const excluirCategoriaLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.links", "delete"])])
   .inputValidator((data: unknown) =>
     z
       .object({

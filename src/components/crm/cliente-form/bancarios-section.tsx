@@ -30,20 +30,29 @@ export function BancariosSection({ v, set }: { v: ClienteFormValues; set: SetCam
         </div>
 
         <div className="space-y-1.5">
-          <Label>Agência</Label>
-          <Input value={v.agencia} onChange={(e) => set("agencia", e.target.value)} />
+          <Label htmlFor="cf-bancarios-agencia">Agência</Label>
+          <Input
+            id="cf-bancarios-agencia"
+            value={v.agencia}
+            onChange={(e) => set("agencia", e.target.value)}
+          />
         </div>
         <div className="grid grid-cols-[1fr_auto] gap-2">
           <div className="space-y-1.5">
-            <Label>Conta corrente</Label>
+            <Label htmlFor="cf-bancarios-conta-corrente">Conta corrente</Label>
             <Input
+              id="cf-bancarios-conta-corrente"
               value={v.conta_corrente}
               onChange={(e) => set("conta_corrente", e.target.value)}
             />
           </div>
           <div className="w-20 space-y-1.5">
-            <Label>Dígito</Label>
-            <Input value={v.digito_conta} onChange={(e) => set("digito_conta", e.target.value)} />
+            <Label htmlFor="cf-bancarios-digito">Dígito</Label>
+            <Input
+              id="cf-bancarios-digito"
+              value={v.digito_conta}
+              onChange={(e) => set("digito_conta", e.target.value)}
+            />
           </div>
         </div>
 
@@ -62,23 +71,26 @@ export function BancariosSection({ v, set }: { v: ClienteFormValues; set: SetCam
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Agência</Label>
+                <Label htmlFor="cf-bancarios-agencia-2">Agência</Label>
                 <Input
+                  id="cf-bancarios-agencia-2"
                   value={v.conjuge_agencia}
                   onChange={(e) => set("conjuge_agencia", e.target.value)}
                 />
               </div>
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div className="space-y-1.5">
-                  <Label>Conta corrente</Label>
+                  <Label htmlFor="cf-bancarios-conta-corrente-2">Conta corrente</Label>
                   <Input
+                    id="cf-bancarios-conta-corrente-2"
                     value={v.conjuge_conta_corrente}
                     onChange={(e) => set("conjuge_conta_corrente", e.target.value)}
                   />
                 </div>
                 <div className="w-20 space-y-1.5">
-                  <Label>Dígito</Label>
+                  <Label htmlFor="cf-bancarios-digito-2">Dígito</Label>
                   <Input
+                    id="cf-bancarios-digito-2"
                     value={v.conjuge_digito_conta}
                     onChange={(e) => set("conjuge_digito_conta", e.target.value)}
                   />

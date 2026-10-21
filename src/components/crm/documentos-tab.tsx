@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -42,9 +43,12 @@ import {
 } from "./documentos-tab/editar-documento-dialog";
 import { categoriasDaPasta, docNaPasta, type Categoria } from "./documentos-tab/types";
 import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
+import { problemaNoDocumento } from "@/lib/storage/tipos-documento";
 
 export function DocumentosTab({ clienteId }: { clienteId: string }) {
   const qc = useQueryClient();
+  // Anexar e criar pastas exigem "Editar" em Clientes (o servidor recusa).
+  const podeEditar = usePermissao("crm.clientes", "edit");
   const listar = useServerFn(listarDocumentos);
   const anexar = useServerFn(anexarDocumento);
   const revisar = useServerFn(revisarDocumento);
@@ -154,8 +158,8 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
     if (files.length === 0 || !pasta) return;
-    if (files.some((f) => f.size > 10 * 1024 * 1024))
-      return toast.error("Cada arquivo deve ter no máximo 10 MB.");
+    const recusa = files.map(problemaNoDocumento).find(Boolean);
+    if (recusa) return toast.error(`${recusa} Envie PDF, JPG ou PNG de até 10 MB.`);
     if (!tipo.trim()) return toast.error("Informe o tipo do documento.");
     setEnviando(true);
     let ok = 0;
@@ -202,8 +206,8 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
     if (files.length === 0 || !pasta) return;
-    if (files.some((f) => f.size > 10 * 1024 * 1024))
-      return toast.error("Cada arquivo deve ter no máximo 10 MB.");
+    const recusa = files.map(problemaNoDocumento).find(Boolean);
+    if (recusa) return toast.error(`${recusa} Envie PDF, JPG ou PNG de até 10 MB.`);
     setEnviando(true);
     const cache = new Map<string, string>();
     let ok = 0;
@@ -410,14 +414,16 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           {abaBar}
-          <Button size="sm" variant="outline" onClick={() => setNovaPastaOpen(true)}>
-            <FolderPlus className="size-4" />
-            Nova pasta
-          </Button>
+          {podeEditar && (
+            <Button size="sm" variant="outline" onClick={() => setNovaPastaOpen(true)}>
+              <FolderPlus className="size-4" />
+              Nova pasta
+            </Button>
+          )}
         </div>
         <SecaoEnvioBanco
-          titulo="Enviar documentos à HomeFin"
-          descricao="Anexar salva só no CRM. Para mandar à HomeFin, clique ao lado, escolha a proposta e marque os documentos — cada um vai no nome do dono (comprador, cônjuge, vendedor, imóvel)."
+          titulo="Enviar documentos à integração bancária"
+          descricao="Anexar salva só no CRM. Para mandar à integração bancária, clique ao lado, escolha a proposta e marque os documentos — cada um vai no nome do dono (comprador, cônjuge, vendedor, imóvel)."
           rotulo="Enviar ao banco / vincular proposta"
           desabilitado={(docs ?? []).length === 0}
           onEnviar={() => setEnvioBanco([])}
@@ -446,14 +452,16 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Trilha cadeia={trilhaPastas} onRaiz={() => setPastaId(null)} onNavegar={setPastaId} />
-        <Button size="sm" variant="outline" onClick={() => setNovaPastaOpen(true)}>
-          <FolderPlus className="size-4" />
-          Nova subpasta
-        </Button>
+        {podeEditar && (
+          <Button size="sm" variant="outline" onClick={() => setNovaPastaOpen(true)}>
+            <FolderPlus className="size-4" />
+            Nova subpasta
+          </Button>
+        )}
       </div>
 
       <SecaoEnvioBanco
-        titulo={`Enviar documentos de "${pasta.nome}" à HomeFin`}
+        titulo={`Enviar documentos de "${pasta.nome}" à integração bancária`}
         descricao="Os documentos desta pasta já vêm marcados. Escolha a proposta e confirme. Em cada documento, o ícone do banco envia só aquele arquivo."
         rotulo="Enviar ao banco / vincular proposta"
         desabilitado={(docs ?? []).length === 0}
@@ -475,19 +483,21 @@ export function DocumentosTab({ clienteId }: { clienteId: string }) {
         </div>
       )}
 
-      <UploadBar
-        categoriasPasta={categoriasPasta}
-        categoria={categoria}
-        setCategoria={setCategoria}
-        tipo={tipo}
-        setTipo={setTipo}
-        tipoOutro={tipoOutro}
-        setTipoOutro={setTipoOutro}
-        tiposCategoria={tiposCategoria}
-        enviando={enviando}
-        onFile={onFile}
-        onFolder={onFolder}
-      />
+      {podeEditar && (
+        <UploadBar
+          categoriasPasta={categoriasPasta}
+          categoria={categoria}
+          setCategoria={setCategoria}
+          tipo={tipo}
+          setTipo={setTipo}
+          tipoOutro={tipoOutro}
+          setTipoOutro={setTipoOutro}
+          tiposCategoria={tiposCategoria}
+          enviando={enviando}
+          onFile={onFile}
+          onFolder={onFolder}
+        />
+      )}
 
       {docsPasta.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">

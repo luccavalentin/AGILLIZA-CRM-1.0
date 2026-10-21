@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -170,7 +171,7 @@ export function VagasBanco({
   async function remover(vaga: any, arquivo: any) {
     if (
       !window.confirm(
-        `Excluir "${semPrefixo(arquivo.nomeArquivo)}" da HomeFin? O arquivo continua salvo no cadastro do cliente.`,
+        `Excluir "${semPrefixo(arquivo.nomeArquivo)}" da integração bancária? O arquivo continua salvo no cadastro do cliente.`,
       )
     ) {
       return;
@@ -184,7 +185,7 @@ export function VagasBanco({
           documento_crm_id: arquivo.documentoCrmId,
         },
       });
-      toast.success("Arquivo excluído da HomeFin.");
+      toast.success("Arquivo excluído da integração bancária.");
       onAnexado();
     } catch (err) {
       toast.error(mensagemDeErro(err, "Não foi possível excluir o arquivo."));
@@ -221,12 +222,12 @@ export function VagasBanco({
             </span>
             <div className="text-sm">
               <p className="font-semibold text-foreground">
-                Documentos na HomeFin{data?.nomeBanco ? ` · ${data.nomeBanco}` : ""}
+                Documentos na integração bancária{data?.nomeBanco ? ` · ${data.nomeBanco}` : ""}
               </p>
               <p className="text-xs text-muted-foreground">
-                O que a HomeFin pediu e o que já recebeu. Arquivo enviado por aqui também fica salvo
+                O que a integração bancária pediu e o que já recebeu. Arquivo enviado por aqui também fica salvo
                 no cadastro do cliente.
-                {data && !data.loteAutomatico ? " A HomeFin analisa cada documento recebido." : ""}
+                {data && !data.loteAutomatico ? " A integração bancária analisa cada documento recebido." : ""}
               </p>
             </div>
           </div>
@@ -250,7 +251,7 @@ export function VagasBanco({
               <Selo tom="erro">{data.resumo.recusados} recusado(s)</Selo>
             )}
             {data.resumo.emAnalise > 0 && (
-              <Selo tom="info">{data.resumo.emAnalise} enviado(s) à HomeFin</Selo>
+              <Selo tom="info">{data.resumo.emAnalise} enviado(s) à integração bancária</Selo>
             )}
             {data.resumo.noBanco > 0 && <Selo tom="ok">{data.resumo.noBanco} aprovado(s)</Selo>}
           </div>
@@ -259,17 +260,17 @@ export function VagasBanco({
         {isLoading && (
           <p className="flex items-center text-xs text-muted-foreground">
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Consultando o checklist na
-            HomeFin…
+            integração bancária…
           </p>
         )}
         {error && (
           <p className="text-xs text-destructive">
-            {mensagemDeErro(error, "Não foi possível consultar o checklist da HomeFin.")}
+            {mensagemDeErro(error, "Não foi possível consultar o checklist da integração bancária.")}
           </p>
         )}
         {data && vagas.length === 0 && (
           <p className="text-xs text-muted-foreground">
-            A HomeFin ainda não pediu documentos para esta proposta.
+            A integração bancária ainda não pediu documentos para esta proposta.
           </p>
         )}
 
@@ -320,7 +321,7 @@ export function VagasBanco({
                                 className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-destructive hover:bg-destructive/10 disabled:opacity-50"
                                 disabled={ocupado || busy}
                                 onClick={() => remover(v, a)}
-                                title="Excluir este arquivo da HomeFin"
+                                title="Excluir este arquivo da integração bancária"
                               >
                                 <Trash2 className="h-3 w-3" /> Excluir
                               </button>
@@ -331,7 +332,7 @@ export function VagasBanco({
                     )}
                     {estado.recusado && (v.mensagemIntegracao || v.comentarioAnalise) && (
                       <p className="text-xs text-destructive">
-                        Motivo: {v.mensagemIntegracao || v.comentarioAnalise}. Envie outro arquivo.
+                        Motivo: {semMarcaIntegracao(v.mensagemIntegracao || v.comentarioAnalise)}. Envie outro arquivo.
                       </p>
                     )}
                     {pedeArquivo && (
@@ -381,7 +382,7 @@ export function VagasBanco({
           <p className="rounded-md border border-dashed border-border p-2 text-xs text-muted-foreground">
             Documentos de{" "}
             {[!temVendedor && "vendedor", !temImovel && "imóvel"].filter(Boolean).join(" e ")}: a
-            HomeFin ainda não pediu nesta etapa. Eles ficam salvos no cadastro e seguem à HomeFin
+            integração bancária ainda não pediu nesta etapa. Eles ficam salvos no cadastro e seguem à integração bancária
             quando forem pedidos.
           </p>
         )}

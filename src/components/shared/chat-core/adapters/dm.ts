@@ -157,8 +157,8 @@ export function useAdaptadorDm({
         bindings: [
           { table: "dm_mensagens", filter: `conversa_id=eq.${conversaId}` },
           { table: "dm_conversas", filter: `id=eq.${conversaId}` },
-          { table: "chat_reacoes", filter: `origem=eq.dm` },
         ],
+        reacoes: { table: "chat_reacoes" },
       },
 
       // Um papel único por usuário permite múltiplos "digitando" simultâneos.

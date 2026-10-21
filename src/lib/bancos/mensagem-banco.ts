@@ -9,6 +9,8 @@
  *  - textos longos são encurtados.
  */
 
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
+
 const LIMITE = 280;
 
 const CHAVES_MENSAGEM = ["mensagem", "message", "descricaoMotivo", "error_description", "detail"];
@@ -54,16 +56,44 @@ function encurtar(frase: string): string {
 
 export function semMotivoDoBanco(nomeBanco?: string | null): string {
   const banco = String(nomeBanco ?? "").trim() || "O banco";
-  return `${banco} recusou o envio sem informar o motivo. Tente enviar de novo em alguns minutos; se continuar, acione a HomeFin.`;
+  return `${banco} recusou o envio sem informar o motivo. Tente enviar de novo em alguns minutos; se continuar, acione o suporte da integração bancária.`;
+}
+
+const CAMPOS_ENDERECO: [string, string][] = [
+  ["cep", "CEP"],
+  ["logradouro", "logradouro"],
+  ["numeroLogradouro", "número"],
+  ["bairro", "bairro"],
+  ["municipio", "município"],
+];
+
+/**
+ * O retorno técnico do Santander traz o `auditContext` do que a integração recebeu, e o
+ * texto chega CORTADO pela integração (6.000 caracteres), então a mensagem do banco no fim
+ * se perde. Quando o contexto mostra o endereço vazio — causa real de recusa —, isso vira
+ * o motivo, em vez de "sem informar o motivo".
+ */
+function enderecoVazioNoContexto(texto: string): string[] {
+  if (!/auditContext/i.test(texto)) return [];
+  return CAMPOS_ENDERECO.filter(([chave]) =>
+    new RegExp(`"${chave}"\\s*:\\s*(null|"\\s*")`).test(texto),
+  ).map(([, rotulo]) => rotulo);
 }
 
 export function mensagemBancoLegivel(msg: unknown, nomeBanco?: string | null): string {
-  const texto = String(msg ?? "").trim();
+  // Retorno antigo pode trazer o nome do provedor da integração: some aqui.
+  const texto = semMarcaIntegracao(String(msg ?? "").trim());
   if (!texto) return "";
   if (/erro desconhecido na integra/i.test(texto) && texto.length < 80) {
     return semMotivoDoBanco(nomeBanco);
   }
   if (!ehTecnico(texto)) return encurtar(texto);
   const frase = fraseDentro(texto);
-  return frase ? encurtar(frase) : semMotivoDoBanco(nomeBanco);
+  if (frase) return encurtar(frase);
+  const vazios = enderecoVazioNoContexto(texto);
+  if (vazios.length > 0) {
+    const banco = String(nomeBanco ?? "").trim() || "O banco";
+    return `${banco} recusou o envio: o endereço do imóvel foi sem ${vazios.join(", ")}. Complete o endereço do imóvel no cadastro do cliente e envie de novo.`;
+  }
+  return semMotivoDoBanco(nomeBanco);
 }

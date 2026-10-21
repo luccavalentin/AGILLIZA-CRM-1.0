@@ -3,14 +3,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Plus, Save } from "lucide-react";
+import { Loader2, Pencil, Plus, Power, Save } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   criarCargo,
   criarDepartamento,
+  desativarCargoOuDepartamento,
+  editarCargo,
+  editarDepartamento,
   listarCargos,
   listarDepartamentos,
 } from "@/lib/rh/cargos-departamentos.functions";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import {
   listarBeneficiosTipos,
   salvarBeneficioTipo,
@@ -45,6 +49,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { EstadoLista } from "@/components/rh/estado-lista";
 
 export const Route = createFileRoute("/_authenticated/rh/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações · RH — Agilliza" }] }),
@@ -63,7 +69,7 @@ function ConfiguracoesPage() {
       </div>
 
       <Tabs defaultValue="cargos">
-        <TabsList>
+        <TabsList className="h-auto max-w-full flex-wrap justify-start">
           <TabsTrigger value="cargos">Cargos</TabsTrigger>
           <TabsTrigger value="departamentos">Departamentos</TabsTrigger>
           <TabsTrigger value="beneficios">Tipos de benefícios</TabsTrigger>
@@ -87,50 +93,96 @@ function ConfiguracoesPage() {
   );
 }
 
-function CargosTab() {
+/**
+ * Cargos e departamentos: a mesma tela para os dois. O diálogo serve para criar
+ * e para editar; "Desativar" tira da lista de escolha sem apagar o histórico.
+ */
+function CadastroSimplesRh({ tipo }: { tipo: "cargo" | "departamento" }) {
+  const ehCargo = tipo === "cargo";
+  const chave = ehCargo ? ["rh-cargos"] : ["rh-departamentos"];
   const qc = useQueryClient();
-  const fn = useServerFn(listarCargos);
-  const criar = useServerFn(criarCargo);
-  const { data, isLoading } = useQuery({ queryKey: ["rh-cargos"], queryFn: () => fn() });
+  const listarCargosFn = useServerFn(listarCargos);
+  const listarDeptosFn = useServerFn(listarDepartamentos);
+  const criarCargoFn = useServerFn(criarCargo);
+  const criarDeptoFn = useServerFn(criarDepartamento);
+  const editarCargoFn = useServerFn(editarCargo);
+  const editarDeptoFn = useServerFn(editarDepartamento);
+  const desativarFn = useServerFn(desativarCargoOuDepartamento);
+  const lista = useQuery({
+    queryKey: chave,
+    queryFn: async (): Promise<
+      Array<{ id: string; nome: string; cbo?: string | null; ativo: boolean }>
+    > => (ehCargo ? listarCargosFn() : listarDeptosFn()),
+  });
+  const { data, isLoading } = lista;
   const [open, setOpen] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
   const [cbo, setCbo] = useState("");
+  const rotulo = ehCargo ? "cargo" : "departamento";
+  const Rotulo = ehCargo ? "Cargo" : "Departamento";
+
+  function abrir(item?: { id: string; nome: string; cbo?: string | null }) {
+    setEditandoId(item?.id ?? null);
+    setNome(item?.nome ?? "");
+    setCbo(item?.cbo ?? "");
+    setOpen(true);
+  }
 
   const mut = useMutation({
-    mutationFn: async () => criar({ data: { nome, cbo: cbo || null } }),
-    onSuccess: () => {
-      toast.success("Cargo criado.");
-      qc.invalidateQueries({ queryKey: ["rh-cargos"] });
-      setOpen(false);
-      setNome("");
-      setCbo("");
+    mutationFn: async () => {
+      const n = nome.trim();
+      if (editandoId) {
+        return ehCargo
+          ? editarCargoFn({ data: { id: editandoId, nome: n, cbo: cbo.trim() || null } })
+          : editarDeptoFn({ data: { id: editandoId, nome: n } });
+      }
+      return ehCargo
+        ? criarCargoFn({ data: { nome: n, cbo: cbo.trim() || null } })
+        : criarDeptoFn({ data: { nome: n, responsavel_id: null } });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao criar."),
+    onSuccess: () => {
+      toast.success(editandoId ? `${Rotulo} atualizado.` : `${Rotulo} criado.`);
+      qc.invalidateQueries({ queryKey: chave });
+      setOpen(false);
+    },
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
+
+  // Sem try/catch: o ConfirmDelete mostra o erro e continua aberto.
+  async function desativar(id: string) {
+    await desativarFn({ data: { id, tipo } });
+    toast.success(`${Rotulo} desativado.`);
+    qc.invalidateQueries({ queryKey: chave });
+  }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Cargos</CardTitle>
+        <CardTitle className="text-base">{ehCargo ? "Cargos" : "Departamentos"}</CardTitle>
+        <Button size="sm" onClick={() => abrir()}>
+          <Plus className="mr-1 h-4 w-4" /> Novo {rotulo}
+        </Button>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="mr-1 h-4 w-4" /> Novo cargo
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Novo cargo</DialogTitle>
+              <DialogTitle>{editandoId ? `Editar ${rotulo}` : `Novo ${rotulo}`}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label>Nome</Label>
-                <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+                <Label htmlFor={`rh-${tipo}-nome`}>Nome</Label>
+                <Input
+                  id={`rh-${tipo}-nome`}
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                />
               </div>
-              <div className="space-y-1.5">
-                <Label>CBO (opcional)</Label>
-                <Input value={cbo} onChange={(e) => setCbo(e.target.value)} />
-              </div>
+              {ehCargo && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="rh-cargo-cbo">CBO (opcional)</Label>
+                  <Input id="rh-cargo-cbo" value={cbo} onChange={(e) => setCbo(e.target.value)} />
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button onClick={() => mut.mutate()} disabled={!nome.trim() || mut.isPending}>
@@ -151,9 +203,11 @@ function CargosTab() {
             <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
             Carregando…
           </div>
+        ) : lista.isError ? (
+          <EstadoLista q={lista} vazio="" className="p-6" />
         ) : (data?.length ?? 0) === 0 ? (
           <div className="p-6 text-center text-sm text-muted-foreground">
-            Nenhum cargo cadastrado.
+            Nenhum {rotulo} cadastrado.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -161,19 +215,46 @@ function CargosTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>CBO</TableHead>
+                  {ehCargo && <TableHead>CBO</TableHead>}
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-[1%] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(data ?? []).map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.nome}</TableCell>
-                    <TableCell>{c.cbo ?? "—"}</TableCell>
+                    {ehCargo && <TableCell>{c.cbo ?? "—"}</TableCell>}
                     <TableCell>
                       <Badge variant={c.ativo ? "default" : "secondary"}>
                         {c.ativo ? "Ativo" : "Inativo"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Editar ${c.nome}`}
+                        onClick={() => abrir(c)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <ConfirmDelete
+                        titulo={`Desativar "${c.nome}"?`}
+                        descricao={`O ${rotulo} sai das listas de escolha. Funcionários e históricos que já o usam continuam como estão.`}
+                        confirmarLabel="Desativar"
+                        onConfirm={() => desativar(c.id)}
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Desativar ${c.nome}`}
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Power className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -186,96 +267,12 @@ function CargosTab() {
   );
 }
 
+function CargosTab() {
+  return <CadastroSimplesRh tipo="cargo" />;
+}
+
 function DepartamentosTab() {
-  const qc = useQueryClient();
-  const fn = useServerFn(listarDepartamentos);
-  const criar = useServerFn(criarDepartamento);
-  const { data, isLoading } = useQuery({
-    queryKey: ["rh-departamentos"],
-    queryFn: () => fn(),
-  });
-  const [open, setOpen] = useState(false);
-  const [nome, setNome] = useState("");
-
-  const mut = useMutation({
-    mutationFn: async () => criar({ data: { nome, responsavel_id: null } }),
-    onSuccess: () => {
-      toast.success("Departamento criado.");
-      qc.invalidateQueries({ queryKey: ["rh-departamentos"] });
-      setOpen(false);
-      setNome("");
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao criar."),
-  });
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Departamentos</CardTitle>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="mr-1 h-4 w-4" /> Novo departamento
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Novo departamento</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-1.5">
-              <Label>Nome</Label>
-              <Input value={nome} onChange={(e) => setNome(e.target.value)} />
-            </div>
-            <DialogFooter>
-              <Button onClick={() => mut.mutate()} disabled={!nome.trim() || mut.isPending}>
-                {mut.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Salvar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
-            Carregando…
-          </div>
-        ) : (data?.length ?? 0) === 0 ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">
-            Nenhum departamento cadastrado.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(data ?? []).map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{d.nome}</TableCell>
-                    <TableCell>
-                      <Badge variant={d.ativo ? "default" : "secondary"}>
-                        {d.ativo ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+  return <CadastroSimplesRh tipo="departamento" />;
 }
 
 type BeneficioForm = {
@@ -298,10 +295,11 @@ function BeneficiosTab() {
   const qc = useQueryClient();
   const fn = useServerFn(listarBeneficiosTipos);
   const salvar = useServerFn(salvarBeneficioTipo);
-  const { data, isLoading } = useQuery({
+  const lista = useQuery({
     queryKey: ["rh-beneficios-tipos"],
     queryFn: () => fn(),
   });
+  const { data, isLoading } = lista;
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<BeneficioForm>({
@@ -356,7 +354,7 @@ function BeneficiosTab() {
       qc.invalidateQueries({ queryKey: ["rh-beneficios-tipos"] });
       setOpen(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   return (
@@ -373,6 +371,8 @@ function BeneficiosTab() {
             <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
             Carregando…
           </div>
+        ) : lista.isError ? (
+          <EstadoLista q={lista} vazio="" className="p-6" />
         ) : (data?.length ?? 0) === 0 ? (
           <div className="p-6 text-center text-sm text-muted-foreground">
             Nenhum tipo cadastrado.
@@ -535,7 +535,7 @@ function RegrasCltTab() {
     {
       titulo: "Folha e holerite",
       itens: [
-        "INSS progressivo por faixas e IRRF com dedução por dependente, conforme tabelas vigentes de 2025.",
+        "INSS progressivo e IRRF pela tabela vigente na competência (2026: Portaria MPS/MF nº 13/2026 e redução da Lei 15.270/2025 — isenção até R$ 5.000), com desconto simplificado, dependentes e pensão.",
         "FGTS de 8% é depósito do empregador e não é descontado do colaborador.",
         "Vale-transporte limitado a 6% do salário base.",
         "Horas extras a 50% em dias úteis e 100% em domingos e feriados; adicional noturno de 20%.",

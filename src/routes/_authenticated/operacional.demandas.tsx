@@ -209,7 +209,7 @@ function Pagina() {
   return (
     <div className="space-y-5 p-4 md:p-6">
       {/* Hero */}
-      <div className="op-hero grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5 md:p-6">
+      <div className="op-hero flex flex-col gap-3 p-5 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center md:p-6">
         <div className="min-w-0">
           <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
             Operacional
@@ -221,7 +221,7 @@ function Pagina() {
             Distribua tarefas, acompanhe SLAs e converse com o time em tempo real.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
             <Link to="/operacional/demandas/kanban">
               <Kanban className="mr-1.5 h-4 w-4" /> Kanban

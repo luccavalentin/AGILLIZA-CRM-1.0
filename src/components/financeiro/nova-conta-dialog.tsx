@@ -26,10 +26,15 @@ import { CurrencyInput } from "@/components/simulacao/currency-input";
 import { Paperclip, Plus } from "lucide-react";
 import { hojeISO } from "@/lib/financeiro/format";
 
+import { atualizarFinanceiro } from "./atualizar-cache";
+import { usePermissoesConta } from "./contas/use-permissoes-conta";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
   const qc = useQueryClient();
+  const pode = usePermissoesConta(tipo);
   const [open, setOpen] = useState(false);
   const [descricao, setDescricao] = useState("");
+  const [contraparte, setContraparte] = useState("");
   const [valor, setValor] = useState(0);
   const [vencimento, setVencimento] = useState(hojeISO());
   const [categoriaId, setCategoriaId] = useState<string>("");
@@ -49,6 +54,7 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
         data: {
           tipo,
           descricao: descricao.trim(),
+          contraparte: contraparte.trim() || undefined,
           valor,
           vencimento,
           categoria_id: categoriaId || undefined,
@@ -60,9 +66,10 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
       }),
     onSuccess: () => {
       toast.success("Conta criada.");
-      qc.invalidateQueries({ queryKey: ["fin-contas", tipo] });
+      void atualizarFinanceiro(qc);
       setOpen(false);
       setDescricao("");
+      setContraparte("");
       setValor(0);
       setFile(null);
       setCategoriaId("");
@@ -71,7 +78,6 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
       setParcelas(2);
       setVencimento(hojeISO());
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao criar conta."),
   });
 
   async function submit() {
@@ -104,11 +110,14 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
       }
       await criar.mutateAsync(comprovante_path);
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha no upload.");
+      toast.error(mensagemDeErro(e, "Não foi possível criar a conta."));
     } finally {
       setEnviando(false);
     }
   }
+
+  // Sem "criar" no módulo o servidor recusa: o botão nem aparece.
+  if (!pode.criar) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -128,6 +137,17 @@ export function NovaContaDialog({ tipo }: { tipo: ContaTipo }) {
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
               placeholder="Ex.: Cartório, marketing…"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="nc-contraparte">
+              {tipo === "pagar" ? "Fornecedor" : "Pagador"} (opcional)
+            </Label>
+            <Input
+              id="nc-contraparte"
+              value={contraparte}
+              onChange={(e) => setContraparte(e.target.value)}
+              placeholder={tipo === "pagar" ? "Quem vai receber" : "Quem vai pagar"}
             />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

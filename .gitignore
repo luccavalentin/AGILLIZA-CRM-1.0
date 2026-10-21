@@ -31,3 +31,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Arquivo acidental de redirecionamento no Windows
+nul

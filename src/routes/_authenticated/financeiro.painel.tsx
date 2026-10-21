@@ -61,7 +61,7 @@ function mesLabel(iso: string) {
 
 function formatCurto(v: number) {
   const abs = Math.abs(v);
-  if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
   if (abs >= 1_000) return `${(v / 1_000).toFixed(0)}k`;
   return String(v);
 }
@@ -170,7 +170,7 @@ function Ranking({
                 />
               </span>
               <span className="w-11 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground">
-                {pct.toFixed(1)}%
+                {pct.toFixed(1).replace(".", ",")}%
               </span>
             </div>
           </li>
@@ -185,7 +185,11 @@ function Pagina() {
     const hoje = new Date();
     const iso = (d: Date) =>
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    return { de: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)), ate: iso(hoje) };
+    // "Este mês" é o mês inteiro: os cards de a receber/a pagar mostram o que ainda vence.
+    return {
+      de: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
+      ate: iso(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)),
+    };
   }, []);
   const [de, setDe] = useState(padrao.de);
   const [ate, setAte] = useState(padrao.ate);
@@ -443,7 +447,7 @@ function Pagina() {
         />
         <MiniMetric
           label="Margem líquida"
-          valor={`${margem.toFixed(1)}%`}
+          valor={`${margem.toFixed(1).replace(".", ",")}%`}
           tone={margem >= 0 ? "success" : "danger"}
         />
       </div>
@@ -634,7 +638,7 @@ function Pagina() {
                         {c.nome}
                       </span>
                       <span className="font-mono tabular-nums text-muted-foreground">
-                        {pct.toFixed(1)}%
+                        {pct.toFixed(1).replace(".", ",")}%
                       </span>
                       <span
                         className={cn(

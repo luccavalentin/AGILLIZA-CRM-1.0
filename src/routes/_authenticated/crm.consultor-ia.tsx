@@ -3,16 +3,7 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Bot,
-  MessageSquarePlus,
-  PanelRight,
-  Info,
-  ChevronRight,
-  LayoutDashboard,
-  ShieldCheck,
-  Zap,
-} from "lucide-react";
+import { Bot, PanelRight, PanelLeftOpen, X, ChevronRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -40,6 +31,7 @@ import {
 } from "@/lib/consultor-ia/consultor-ia.functions";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { Markdown } from "@/components/ui/markdown";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 
 // Novos Componentes Premium
 import { ConsultorSidebar } from "@/components/consultor-ia/premium/sidebar";
@@ -79,18 +71,37 @@ function ConsultorIaPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { data: conversas } = useQuery({
+  // Celular: o histórico começa fechado (antes ocupava a tela inteira e escondia a conversa).
+  useEffect(() => {
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  }, []);
+  const fecharHistoricoNoCelular = () => {
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  };
+
+  const conversasQuery = useQuery({
     queryKey: ["consultor-ia-conversas"],
     queryFn: () => listarConversasConsultor(),
   });
+  const conversas = conversasQuery.data;
 
-  const { data: mensagens, isLoading: carregandoMsgs } = useQuery({
+  const {
+    data: mensagens,
+    isLoading: carregandoMsgs,
+    isError: erroMsgs,
+    error: erroMsgsDetalhe,
+    refetch: recarregarMsgs,
+  } = useQuery({
     queryKey: ["consultor-ia-mensagens", conversaId],
     queryFn: () => listarMensagensConsultor({ data: { conversa_id: conversaId! } }),
     enabled: !!conversaId,
   });
 
-  const { data: fonteDetalhe } = useQuery({
+  const {
+    data: fonteDetalhe,
+    isLoading: carregandoFonte,
+    isError: erroFonte,
+  } = useQuery({
     queryKey: ["consultor-ia-fonte", fonteAberta],
     queryFn: () => obterItemBase({ data: { id: fonteAberta! } }),
     enabled: !!fonteAberta,
@@ -103,18 +114,7 @@ function ConsultorIaPage() {
     setParcial("");
     setPerguntaPendente(texto);
 
-    // Adição local otimista da mensagem do usuário para evitar "flash" de carregamento e garantir data
-    const msgOtimista = {
-      id: "otimista-" + Math.random().toString(36).substring(7),
-      papel: "usuario" as const,
-      conteudo: texto,
-      created_at: new Date().toISOString(),
-    };
-
-    // Invalidamos apenas após a conclusão, mas mantemos o estado visual via perguntaPendente
-    // ou poderíamos injetar na listaMensagens se tivéssemos controle total do estado,
-    // mas ConsultorMessage já trata perguntaPendente separadamente.
-
+    // A pergunta aparece na hora via perguntaPendente; a lista é recarregada no fim.
     try {
       const { data: sessao } = await supabase.auth.getSession();
       const token = sessao.session?.access_token;
@@ -125,6 +125,8 @@ function ConsultorIaPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ conversa_id: conversaId, pergunta: texto }),
       });
+      if (resp.status === 403) throw new Error("Você não tem permissão para usar o Consultor IA.");
+      if (resp.status === 400) throw new Error("Pergunta inválida. Use até 4.000 caracteres.");
       if (!resp.ok || !resp.body) throw new Error("Falha ao consultar a IA.");
 
       const reader = resp.body.getReader();
@@ -179,6 +181,7 @@ function ConsultorIaPage() {
       await qc.invalidateQueries({ queryKey: ["consultor-ia-mensagens", conversaId] });
       toast.success("Obrigado pelo retorno.");
     },
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível registrar a avaliação.")),
   });
 
   const excluir = useMutation({
@@ -188,6 +191,7 @@ function ConsultorIaPage() {
       await qc.invalidateQueries({ queryKey: ["consultor-ia-conversas"] });
       toast.success("Conversa excluída.");
     },
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível excluir a conversa.")),
   });
 
   const enviarSugestao = useMutation({
@@ -229,25 +233,47 @@ function ConsultorIaPage() {
         conversaId={conversaId}
         busca={busca}
         setBusca={setBusca}
-        setConversaId={setConversaId}
+        setConversaId={(id) => {
+          setConversaId(id);
+          fecharHistoricoNoCelular();
+        }}
         onNovaConversa={() => {
           setConversaId(null);
           setPergunta("");
+          fecharHistoricoNoCelular();
         }}
         onExcluir={(id) => excluir.mutate(id)}
         isOpen={sidebarOpen}
         toggle={() => setSidebarOpen(!sidebarOpen)}
+        erro={
+          conversasQuery.isError
+            ? mensagemDeErro(conversasQuery.error, "Não foi possível carregar o histórico.")
+            : null
+        }
+        onTentarDeNovo={() => void conversasQuery.refetch()}
       />
 
       <main className="relative flex flex-1 flex-col overflow-hidden">
         {/* Header Superior Limpo */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border/40 px-6 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border/40 px-3 backdrop-blur-md md:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            {!sidebarOpen && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-9 shrink-0 text-muted-foreground md:hidden"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Mostrar histórico"
+                title="Mostrar histórico"
+              >
+                <PanelLeftOpen className="size-5" />
+              </Button>
+            )}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
               <Bot className="size-5 text-white" />
             </div>
-            <div>
-              <h1 className="text-sm font-bold text-foreground">
+            <div className="min-w-0">
+              <h1 className="truncate text-sm font-bold text-foreground">
                 {conversaAtiva ? conversaAtiva.titulo : "Consultor de IA"}
               </h1>
               <p className="text-[10px] font-medium text-muted-foreground">
@@ -263,6 +289,8 @@ function ConsultorIaPage() {
               className={`size-9 text-muted-foreground transition-all ${contextoOpen ? "text-primary bg-primary/5" : ""}`}
               onClick={() => setContextoOpen(!contextoOpen)}
               title="Informações da conversa"
+              aria-label="Informações da conversa"
+              aria-pressed={contextoOpen}
             >
               <PanelRight className="size-5" />
             </Button>
@@ -270,7 +298,7 @@ function ConsultorIaPage() {
         </header>
 
         <ScrollArea className="flex-1" ref={scrollRef}>
-          <div className="mx-auto w-full max-w-3xl px-6 py-10">
+          <div className="mx-auto w-full max-w-3xl px-3 py-6 md:px-6 md:py-10">
             {!conversaId && !streaming ? (
               <div className="flex flex-col items-center py-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="relative mb-10">
@@ -280,7 +308,7 @@ function ConsultorIaPage() {
                   </div>
                 </div>
 
-                <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
+                <h2 className="text-2xl font-extrabold tracking-tight text-foreground md:text-3xl">
                   Como posso ajudar?
                 </h2>
                 <p className="mt-4 text-sm font-medium text-muted-foreground/60 max-w-md">
@@ -315,6 +343,16 @@ function ConsultorIaPage() {
             ) : (
               <div className="space-y-6">
                 {carregandoMsgs && <Skeleton className="h-40 w-full rounded-2xl" />}
+                {erroMsgs && (
+                  <div className="flex flex-col items-center gap-2 py-8 text-center">
+                    <p className="text-sm text-destructive">
+                      {mensagemDeErro(erroMsgsDetalhe, "Não foi possível carregar a conversa.")}
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => void recarregarMsgs()}>
+                      Tentar de novo
+                    </Button>
+                  </div>
+                )}
 
                 {mensagensProcessadas.map((m) => (
                   <ConsultorMessage
@@ -371,53 +409,56 @@ function ConsultorIaPage() {
 
       {/* Painel de Contexto (Direita) */}
       {contextoOpen && (
-        <aside className="w-[300px] shrink-0 border-l border-border/40 bg-card/20 backdrop-blur-xl animate-in slide-in-from-right-4 duration-300">
-          <div className="flex h-16 items-center border-b border-border/40 px-6">
+        <aside className="fixed inset-y-0 right-0 z-40 w-[min(300px,85vw)] shrink-0 border-l border-border/40 bg-card backdrop-blur-xl animate-in slide-in-from-right-4 duration-300 md:static md:z-auto md:w-[300px] md:bg-card/20">
+          <div className="flex h-16 items-center justify-between border-b border-border/40 px-6">
             <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
               Informações
             </h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-muted-foreground md:hidden"
+              onClick={() => setContextoOpen(false)}
+              aria-label="Fechar informações"
+            >
+              <X className="size-4" />
+            </Button>
           </div>
           <ScrollArea className="h-full">
             <div className="p-6 space-y-8">
-              <section className="space-y-3">
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">
-                  <LayoutDashboard className="size-3" />
-                  Operação
-                </div>
-                <div className="rounded-xl border border-border/40 bg-card/40 p-4">
-                  <p className="text-xs text-muted-foreground italic">
-                    Nenhuma operação vinculada a esta conversa no momento.
-                  </p>
-                </div>
-              </section>
-
               <section className="space-y-3">
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">
                   <ShieldCheck className="size-3" />
                   Privacidade
                 </div>
                 <p className="text-[10px] leading-relaxed text-muted-foreground/60">
-                  Suas conversas são criptografadas e utilizadas exclusivamente para o aprimoramento
-                  do seu atendimento pela Agilliza.
+                  Só você vê suas conversas. As perguntas são enviadas ao provedor de IA configurado
+                  pela conta para gerar a resposta.
                 </p>
               </section>
 
               <Separator className="bg-border/40" />
 
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="ghost"
-                  className="justify-start text-xs font-semibold text-muted-foreground hover:text-primary"
-                >
-                  Exportar histórico
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="justify-start text-xs font-semibold text-muted-foreground hover:text-destructive"
-                >
-                  Limpar conversa
-                </Button>
-              </div>
+              {/* Antes havia "Exportar histórico" e "Limpar conversa" sem ação nenhuma. */}
+              {conversaId && (
+                <div className="flex flex-col gap-2">
+                  <ConfirmDelete
+                    titulo="Excluir conversa"
+                    descricao="A conversa e as respostas do Consultor IA serão apagadas."
+                    onConfirm={async () => {
+                      await excluir.mutateAsync(conversaId);
+                    }}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        className="justify-start text-xs font-semibold text-muted-foreground hover:text-destructive"
+                      >
+                        Excluir conversa
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
             </div>
           </ScrollArea>
         </aside>
@@ -430,10 +471,16 @@ function ConsultorIaPage() {
             <DialogTitle>{fonteDetalhe?.titulo ?? "Fonte"}</DialogTitle>
             <DialogDescription>{fonteDetalhe?.categoria}</DialogDescription>
           </DialogHeader>
-          {fonteDetalhe ? (
+          {carregandoFonte ? (
+            <Skeleton className="h-24 w-full" />
+          ) : erroFonte ? (
+            <p className="text-sm text-destructive">Não foi possível abrir esta fonte.</p>
+          ) : fonteDetalhe ? (
             <Markdown conteudo={fonteDetalhe.conteudo} className="text-sm" />
           ) : (
-            <Skeleton className="h-24 w-full" />
+            <p className="text-sm text-muted-foreground">
+              Este conteúdo não está mais na base de conhecimento.
+            </p>
           )}
         </DialogContent>
       </Dialog>

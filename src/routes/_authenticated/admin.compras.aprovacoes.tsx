@@ -1,7 +1,7 @@
 import { AdminHero } from "@/components/admin/admin-hero";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useState, useMemo } from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ShieldCheck, Check, X, Search, ClipboardList } from "lucide-react";
@@ -27,23 +27,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { getMinhaSessao } from "@/lib/session.functions";
+import { usePermissao } from "@/hooks/use-permissao";
 import { listarCompras, decidirCompra, type CompraLinha } from "@/lib/admin/compras.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/compras/aprovacoes")({
   head: () => ({ meta: [{ title: "Aprovação de Compras — Agilliza" }] }),
-  beforeLoad: async () => {
-    assertModuloPermitido("admin.compras.aprovacoes", ["admin.compras"]);
-    const sessao = await getMinhaSessao();
-    const pode = ["admin", "correspondente", "gestor"].some((r) =>
-      (sessao.roles ?? []).includes(r as never),
-    );
-    if (!pode) throw redirect({ to: "/admin/compras/pedidos" });
-  },
+  // Antes o guard do módulo não era aguardado (o redirecionamento se perdia) e a
+  // entrada dependia do papel (admin/correspondente/gestor), não da matriz. Agora:
+  // ver = módulo; aprovar/reprovar = "edit" (escondido abaixo; o servidor confere).
+  beforeLoad: () => assertModuloPermitido("admin.compras.aprovacoes", ["admin.compras"]),
   component: Pagina,
 });
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const STATUS_LABEL: Record<string, string> = {
+  pendente: "Pendente",
+  aprovada: "Aprovada",
+  recusada: "Recusada",
+};
 
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "aprovada") return "default";
@@ -53,6 +55,7 @@ function statusVariant(s: string): "default" | "secondary" | "destructive" | "ou
 
 function Pagina() {
   const qc = useQueryClient();
+  const podeDecidir = usePermissao("admin.compras.aprovacoes", "edit");
   const [busca, setBusca] = useState("");
   const [aba, setAba] = useState<"pendente" | "aprovada" | "recusada" | "todas">("pendente");
   const [dialogo, setDialogo] = useState<{ compra: CompraLinha; aprovar: boolean } | null>(null);
@@ -181,10 +184,12 @@ function Pagina() {
                   <TableCell className="text-muted-foreground">{c.categoria ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{brl(c.valor)}</TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
+                    <Badge variant={statusVariant(c.status)}>
+                      {STATUS_LABEL[c.status] ?? c.status}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {c.status === "pendente" ? (
+                    {podeDecidir && c.status === "pendente" ? (
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="outline"
@@ -209,7 +214,11 @@ function Pagina() {
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">
-                        {c.aprovado_em ? new Date(c.aprovado_em).toLocaleDateString("pt-BR") : "—"}
+                        {c.aprovado_em
+                          ? new Date(c.aprovado_em).toLocaleDateString("pt-BR", {
+                              timeZone: "America/Sao_Paulo",
+                            })
+                          : "—"}
                       </span>
                     )}
                   </TableCell>
@@ -291,9 +300,10 @@ function KpiCard({
   tone?: "default" | "secondary" | "destructive" | "outline";
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="min-w-0 rounded-lg border border-border bg-card p-4">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-1 flex items-baseline gap-2">
+      {/* flex-wrap: no celular o selo empurrava o cartão para fora da tela. */}
+      <div className="mt-1 flex flex-wrap items-baseline gap-2">
         <p className="text-2xl font-semibold tabular-nums">{value}</p>
         <Badge variant={tone} className="text-[10px]">
           {label}

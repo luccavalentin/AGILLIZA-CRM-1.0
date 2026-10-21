@@ -5,6 +5,7 @@ import { Loader2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCliente, getEndereco } from "@/lib/crm/clientes.functions";
 import { ClienteForm } from "@/components/crm/cliente-form";
+import { moedaOuVazio } from "@/components/crm/cliente-detalhe/form-mapper";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
@@ -122,6 +123,11 @@ export function ClienteSecao({
         data_expedicao: c.data_expedicao ?? "",
         profissao: c.profissao ?? "",
         empresa: c.empresa ?? "",
+        // Dados da empresa (PJ): sem eles a edição abria vazia e salvar apagava o que havia.
+        tipo_empresa: c.tipo_empresa ?? "",
+        faturamento_empresa: moedaOuVazio(c.faturamento_empresa),
+        patrimonio_liquido_empresa: moedaOuVazio(c.patrimonio_liquido_empresa),
+        capital_social_empresa: moedaOuVazio(c.capital_social_empresa),
         banco_conta: c.banco_conta ?? "",
         agencia: c.agencia ?? "",
         conta_corrente: c.conta_corrente ?? "",

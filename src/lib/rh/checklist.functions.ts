@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 /** Itens obrigatórios da admissão CLT + itens condicionais. */
 export const CHECKLIST_CLT: Array<{ tipo: string; rotulo: string; obrigatorio: boolean }> = [
@@ -45,15 +45,17 @@ export interface ItemChecklist {
   tipo: string;
   rotulo: string;
   obrigatorio: boolean;
-  status: "pendente" | "recebido" | "aprovado" | "vencido" | "dispensado";
+  status: "pendente" | "entregue" | "vencido" | "nao_aplicavel";
   documento_id: string | null;
   validade: string | null;
   observacoes: string | null;
 }
 
 /** Lista o checklist CLT, criando itens padrão se ainda não existirem. */
+// A RLS do checklist só separa por correspondente: a permissão do RH é
+// conferida aqui, como nas demais tabelas do módulo.
 export const listarChecklistCLT = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "view"], ["rh.documentos", "view"])])
   .inputValidator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<ItemChecklist[]> => {
     const { supabase } = context;
@@ -82,13 +84,13 @@ export const listarChecklistCLT = createServerFn({ method: "GET" })
   });
 
 export const atualizarItemChecklist = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "edit"], ["rh.documentos", "create"])])
   .inputValidator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid(),
         tipo: z.string().min(1),
-        status: z.enum(["pendente", "recebido", "aprovado", "vencido", "dispensado"]),
+        status: z.enum(["pendente", "entregue", "vencido", "nao_aplicavel"]),
         observacoes: z.string().optional().nullable(),
         validade: z.string().optional().nullable(),
       })

@@ -8,6 +8,7 @@
  * de negócio que o usuário está executando.
  */
 import { getRequestHeader } from "@tanstack/react-start/server";
+import { ipDoCliente } from "@/lib/http/ip-cliente";
 
 export interface AuditoriaEntrada {
   /** Usuário que executou a ação. */
@@ -37,9 +38,7 @@ export interface AuditoriaEntrada {
 /** Extrai o IP do cliente a partir dos cabeçalhos da requisição. */
 function obterIp(): string | null {
   try {
-    const fwd = getRequestHeader("x-forwarded-for");
-    if (fwd) return fwd.split(",")[0]!.trim();
-    return getRequestHeader("cf-connecting-ip") ?? getRequestHeader("x-real-ip") ?? null;
+    return ipDoCliente(getRequestHeader);
   } catch {
     return null;
   }

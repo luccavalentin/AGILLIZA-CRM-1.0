@@ -2,8 +2,8 @@
 // Oferece: fixar, arquivar/desarquivar, renomear (apelido pessoal) e
 // remover da minha lista ("ocultar"). Fixar/renomear/ocultar usam o
 // estado por-usuário compartilhado (chat_estado_usuario); arquivar usa
-// a API do CRM (crm_chat_meta) para manter o filtro "Arquivadas" da
-// sidebar coerente com o restante do módulo.
+// a mesma função da barra de gestão (definirArquivamentoConversa), que grava
+// o arquivamento do CRM e o estado do usuário de uma vez.
 
 import { useState } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
@@ -39,59 +39,51 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { definirArquivamentoConversa } from "@/lib/crm/chat-gestao.functions";
-import {
-  arquivarConversa,
-  fixarConversa,
-  ocultarConversa,
-  renomearConversa,
-} from "@/lib/chats/gestao.functions";
+import { fixarConversa, ocultarConversa, renomearConversa } from "@/lib/chats/gestao.functions";
 
 interface Props {
   clienteId: string;
   nome: string;
+  /** `crm.chat` › gerir: sem ela, "Arquivar" não aparece (o servidor recusaria). */
+  podeArquivar: boolean;
   arquivado: boolean;
   fixado: boolean;
   apelidoAtual: string | null;
 }
 
-export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual }: Props) {
+export function ItemAcoesMenu({
+  clienteId,
+  nome,
+  podeArquivar,
+  arquivado,
+  fixado,
+  apelidoAtual,
+}: Props) {
   const qc = useQueryClient();
   const [openMenu, setOpenMenu] = useState(false);
   const [openRen, setOpenRen] = useState(false);
   const [openDel, setOpenDel] = useState(false);
   const [apelido, setApelido] = useState(apelidoAtual ?? "");
 
-  const arquivarCrm = useServerFn(definirArquivamentoConversa);
-  const arquivarShared = useServerFn(arquivarConversa);
+  const arquivarFn = useServerFn(definirArquivamentoConversa);
   const fixarFn = useServerFn(fixarConversa);
   const renomearFn = useServerFn(renomearConversa);
   const ocultarFn = useServerFn(ocultarConversa);
 
   const invalidar = () => {
     qc.invalidateQueries({ queryKey: ["chat-overview"] });
+    qc.invalidateQueries({ queryKey: ["chat-meta", clienteId] });
     qc.invalidateQueries({ queryKey: ["chat-estado-usuario"] });
     qc.invalidateQueries({ queryKey: ["conversas-cliente"] });
   };
 
   const mArquivar = useMutation({
-    mutationFn: async () => {
-      await arquivarCrm({
-        data: { cliente_id: clienteId, arquivado: !arquivado },
-      });
-      // Espelha no estado por-usuário para consistência com a Central.
-      await arquivarShared({
-        data: {
-          chat_tipo: "cliente",
-          chat_id: clienteId,
-          arquivar: !arquivado,
-        },
-      });
-    },
+    mutationFn: () => arquivarFn({ data: { cliente_id: clienteId, arquivado: !arquivado } }),
     onSuccess: () => {
       toast.success(arquivado ? "Conversa desarquivada." : "Conversa arquivada.");
       invalidar();
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao arquivar.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível arquivar a conversa.")),
   });
 
   const mFixar = useMutation({
@@ -103,7 +95,7 @@ export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual
       toast.success(fixado ? "Conversa desafixada." : "Conversa fixada no topo.");
       invalidar();
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Falha.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível fixar a conversa.")),
   });
 
   const mRenomear = useMutation({
@@ -120,7 +112,7 @@ export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual
       setOpenRen(false);
       invalidar();
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Falha.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível renomear a conversa.")),
   });
 
   const mOcultar = useMutation({
@@ -132,12 +124,12 @@ export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual
       toast.success("Conversa removida da sua lista.");
       invalidar();
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Falha.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível remover a conversa.")),
   });
 
   return (
     <>
-      {/* Atalho de exclusão: aparece assim que o mouse passa sobre o item. */}
+      {/* Atalho de "remover da minha lista": aparece assim que o mouse passa sobre o item. */}
       <Button
         variant="ghost"
         size="icon"
@@ -147,8 +139,8 @@ export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual
           e.preventDefault();
           setOpenDel(true);
         }}
-        aria-label="Excluir conversa"
-        title="Excluir conversa"
+        aria-label="Remover da minha lista"
+        title="Remover da minha lista"
       >
         <Trash2 className="size-4" />
       </Button>
@@ -180,17 +172,19 @@ export function ItemAcoesMenu({ clienteId, nome, arquivado, fixado, apelidoAtual
               </>
             )}
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => mArquivar.mutate()}>
-            {arquivado ? (
-              <>
-                <ArchiveRestore className="mr-2 size-4" /> Desarquivar
-              </>
-            ) : (
-              <>
-                <Archive className="mr-2 size-4" /> Arquivar
-              </>
-            )}
-          </DropdownMenuItem>
+          {podeArquivar && (
+            <DropdownMenuItem onSelect={() => mArquivar.mutate()}>
+              {arquivado ? (
+                <>
+                  <ArchiveRestore className="mr-2 size-4" /> Desarquivar
+                </>
+              ) : (
+                <>
+                  <Archive className="mr-2 size-4" /> Arquivar
+                </>
+              )}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onSelect={() => {
               setApelido(apelidoAtual ?? "");

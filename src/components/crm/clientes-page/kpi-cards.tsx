@@ -29,6 +29,14 @@ export function KpiCards({
   setEtapa,
   setPagina,
 }: Props) {
+  /** O card define o filtro inteiro; clicar no card já ativo volta ao total. */
+  const aplicar = (p: Portal, e: string, jaAtivo: boolean) => {
+    setStatusF("ativo");
+    setPortal(jaAtivo ? "todos" : p);
+    setEtapa(jaAtivo ? "todas" : e);
+    setPagina(1);
+  };
+
   const cards: Array<{
     label: string;
     hint: string;
@@ -55,33 +63,24 @@ export function KpiCards({
       hint: "Com acesso liberado",
       valor: kpis?.portal_ativo,
       icon: <Smartphone className="size-3.5" />,
-      onClick: () => {
-        setPortal("ativo");
-        setPagina(1);
-      },
-      active: portal === "ativo",
+      onClick: () => aplicar("ativo", "todas", portal === "ativo" && etapa === "todas"),
+      active: portal === "ativo" && etapa === "todas",
     },
     {
       label: "Em andamento",
       hint: "Em etapas da esteira",
       valor: kpis?.em_andamento,
       icon: <Loader2 className="size-3.5" />,
-      onClick: () => {
-        setEtapa("simulacao");
-        setPagina(1);
-      },
-      active: etapa === "simulacao",
+      onClick: () => aplicar("todos", "__andamento", etapa === "__andamento"),
+      active: etapa === "__andamento",
     },
     {
       label: "Cadastro completo",
       hint: "100% preenchido",
       valor: kpis?.cadastro_completo,
       icon: <FileCheck2 className="size-3.5" />,
-      onClick: () => {
-        setEtapa("cadastro_completo");
-        setPagina(1);
-      },
-      active: etapa === "cadastro_completo",
+      onClick: () => aplicar("todos", "__completo", etapa === "__completo"),
+      active: etapa === "__completo",
     },
   ];
 

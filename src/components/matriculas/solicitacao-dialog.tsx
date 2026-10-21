@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Plus } from "lucide-react";
@@ -24,8 +25,10 @@ import {
   listarUsuariosCorrespondente,
   type MatriculaSolicitacao,
 } from "@/lib/matriculas/matriculas.functions";
+import { hojeISO } from "@/lib/financeiro/format";
+import { exibirDocumento } from "@/lib/crm/documento";
 
-const hoje = () => new Date().toISOString().slice(0, 10);
+const hoje = () => hojeISO();
 
 export function SolicitacaoDialog({
   onMudou,
@@ -45,6 +48,9 @@ export function SolicitacaoDialog({
   const [dataPagto, setDataPagto] = useState(inicial?.data_pagto_reembolso ?? "");
   const [obs, setObs] = useState(inicial?.observacao ?? "");
   const [salvando, setSalvando] = useState(false);
+  // Nova = "Matrículas: solicitar"; editar = "Matrículas: editar" (o servidor confere).
+  const podeCriar = usePermissao("documentos.matriculas", "create");
+  const podeEditar = usePermissao("documentos.matriculas", "edit");
 
   const { data: usuarios } = useQuery({
     queryKey: ["matriculas-usuarios"],
@@ -58,7 +64,9 @@ export function SolicitacaoDialog({
     return (rows ?? []).map((c: any) => ({
       value: c.id,
       label: c.nome,
-      description: [c.documento, c.email].filter(Boolean).join(" · ") || undefined,
+      description:
+        [c.documento ? exibirDocumento(c.documento) : null, c.email].filter(Boolean).join(" · ") ||
+        undefined,
     }));
   }, []);
 
@@ -72,6 +80,12 @@ export function SolicitacaoDialog({
     setReembolsado(inicial?.reembolsado ?? false);
     setDataPagto(inicial?.data_pagto_reembolso ?? "");
     setObs(inicial?.observacao ?? "");
+  }
+
+  // Ao marcar o reembolso, a data já vem com hoje (antes ficava em branco).
+  function marcarReembolso(v: boolean) {
+    setReembolsado(v);
+    if (v && !dataPagto) setDataPagto(hoje());
   }
 
   async function salvar() {
@@ -103,6 +117,8 @@ export function SolicitacaoDialog({
       setSalvando(false);
     }
   }
+
+  if (inicial ? !podeEditar : !podeCriar) return null;
 
   return (
     <Dialog
@@ -155,14 +171,22 @@ export function SolicitacaoDialog({
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label>Solicitante</Label>
-              <Combobox
+              <Label htmlFor="matricula-solicitante">Solicitante</Label>
+              {/* Quem pediu costuma ser corretor de fora da equipe: aceita qualquer nome,
+                  com a equipe como sugestão (antes só dava para escolher usuários internos). */}
+              <Input
+                id="matricula-solicitante"
+                list="matricula-solicitantes"
                 value={corretor}
-                onValueChange={setCorretor}
-                options={nomesUsuarios}
-                placeholder="Nome do solicitante"
-                searchPlaceholder="Buscar solicitante…"
+                onChange={(e) => setCorretor(e.target.value)}
+                placeholder="Nome do corretor ou de quem pediu"
+                autoComplete="off"
               />
+              <datalist id="matricula-solicitantes">
+                {nomesUsuarios.map((n) => (
+                  <option key={n} value={n} />
+                ))}
+              </datalist>
             </div>
             <div className="space-y-1">
               <Label>Nº da matrícula</Label>
@@ -192,9 +216,9 @@ export function SolicitacaoDialog({
             <Switch
               aria-label="Reembolso recebido do corretor"
               checked={reembolsado}
-              onCheckedChange={setReembolsado}
+              onCheckedChange={marcarReembolso}
             />
-            <Label className="cursor-pointer" onClick={() => setReembolsado((v) => !v)}>
+            <Label className="cursor-pointer" onClick={() => marcarReembolso(!reembolsado)}>
               Reembolso recebido do corretor
             </Label>
           </div>

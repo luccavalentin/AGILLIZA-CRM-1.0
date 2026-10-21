@@ -47,6 +47,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import {
   listarBackups,
   excluirBackup,
@@ -56,12 +57,19 @@ import {
 } from "@/lib/admin/backup.functions";
 import { montarInventarioDocumentos } from "@/lib/admin/backup-documentos.functions";
 import { baixarDocumentosZip, type ProgressoBackup } from "@/lib/admin/backup-documentos-zip";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/_authenticated/admin/backup")({
   head: () => ({ meta: [{ title: "Backup — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("admin.backup"),
   component: Pagina,
 });
+
+const STATUS_LABEL: Record<string, string> = {
+  processando: "Processando",
+  concluido: "Concluído",
+  erro: "Erro",
+};
 
 const TONE: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   processando: "outline",
@@ -78,11 +86,13 @@ function formatBytes(n: number | null): string {
     v /= 1024;
     i++;
   }
-  return `${v.toFixed(1)} ${u[i]}`;
+  return `${v.toFixed(1).replace(".", ",")} ${u[i]}`;
 }
 
 function Pagina() {
   const qc = useQueryClient();
+  // Ações que gravam exigem "create" no servidor; sem ela os botões só davam erro.
+  const podeGerar = usePermissao("admin.backup", "create");
   const backups = useQuery({ queryKey: ["admin-backups"], queryFn: () => listarBackups() });
   const config = useQuery({
     queryKey: ["admin-backup-config"],
@@ -110,7 +120,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["admin-backup-config"] });
       qc.invalidateQueries({ queryKey: ["admin-backups"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar configuração."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar configuração.")),
   });
 
   const excluir = useMutation({
@@ -119,8 +129,21 @@ function Pagina() {
       toast.success("Backup excluído.");
       qc.invalidateQueries({ queryKey: ["admin-backups"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir.")),
   });
+
+  // Tabela que não pôde ser lida não some em silêncio do arquivo (QA 20/10).
+  function avisarResultado(dados: { tabelasComFalha?: string[] }, ok: string) {
+    const falhas = dados.tabelasComFalha ?? [];
+    if (falhas.length === 0) {
+      toast.success(ok);
+      return;
+    }
+    toast.warning(
+      `${ok} Não foi possível incluir: ${falhas.join(", ")}. Tente de novo; se continuar, avise o suporte.`,
+      { duration: 12_000 },
+    );
+  }
 
   async function baixarExcel() {
     setBaixando(true);
@@ -132,10 +155,10 @@ function Pagina() {
       ]);
       // Humaniza: esconde códigos/IDs e traduz colunas e valores para leigos.
       exportarBackupXLSX(humanizarBackup(dados));
-      toast.success("Backup completo exportado em Excel.");
+      avisarResultado(dados, "Backup completo exportado em Excel.");
       qc.invalidateQueries({ queryKey: ["admin-backups"] });
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao exportar backup.");
+      toast.error(mensagemDeErro(e, "Falha ao exportar backup."));
     } finally {
       setBaixando(false);
     }
@@ -148,10 +171,10 @@ function Pagina() {
       const { exportarBackupSQL } = await import("@/lib/admin/backup-sql");
       // SQL preserva códigos/IDs reais para restauração do banco de dados.
       exportarBackupSQL(dados);
-      toast.success("Backup completo exportado em SQL.");
+      avisarResultado(dados, "Backup completo exportado em SQL.");
       qc.invalidateQueries({ queryKey: ["admin-backups"] });
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao exportar backup SQL.");
+      toast.error(mensagemDeErro(e, "Falha ao exportar backup SQL."));
     } finally {
       setBaixandoSql(false);
     }
@@ -175,7 +198,7 @@ function Pagina() {
         toast.success("Backup de documentos gerado (ZIP).");
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao gerar backup de documentos.");
+      toast.error(mensagemDeErro(e, "Falha ao gerar backup de documentos."));
     } finally {
       setBaixandoDocs(false);
       setProgresso(null);
@@ -190,15 +213,19 @@ function Pagina() {
         descricao="Baixe todo o sistema em uma planilha Excel simples e legível (sem códigos técnicos) ou em arquivo SQL para restauração do banco de dados. Também é possível baixar todos os documentos em ZIP."
         acoes={
           <>
-            <Button disabled={baixando} onClick={baixarExcel}>
+            <Button disabled={!podeGerar || baixando} onClick={baixarExcel}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               {baixando ? "Gerando Excel…" : "Baixar em Excel (planilha)"}
             </Button>
-            <Button variant="secondary" disabled={baixandoSql} onClick={baixarSQL}>
+            <Button variant="secondary" disabled={!podeGerar || baixandoSql} onClick={baixarSQL}>
               <Database className="mr-2 h-4 w-4" />
               {baixandoSql ? "Gerando SQL…" : "Baixar em SQL (banco de dados)"}
             </Button>
-            <Button variant="secondary" disabled={baixandoDocs} onClick={baixarDocumentos}>
+            <Button
+              variant="secondary"
+              disabled={!podeGerar || baixandoDocs}
+              onClick={baixarDocumentos}
+            >
               <FolderArchive className="mr-2 h-4 w-4" />
               {baixandoDocs ? "Gerando ZIP…" : "Baixar documentos (ZIP)"}
             </Button>
@@ -284,7 +311,9 @@ function Pagina() {
                   return (
                     <TableRow key={b.id}>
                       <TableCell>
-                        <Badge variant={TONE[b.status] ?? "secondary"}>{b.status}</Badge>
+                        <Badge variant={TONE[b.status] ?? "secondary"}>
+                          {STATUS_LABEL[b.status] ?? b.status}
+                        </Badge>
                         {b.status === "erro" && b.erro ? (
                           <p className="mt-1 text-xs text-destructive">{b.erro}</p>
                         ) : null}
@@ -304,6 +333,8 @@ function Pagina() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label="Excluir backup do histórico"
+                              disabled={!podeGerar}
                               className="text-muted-foreground hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />

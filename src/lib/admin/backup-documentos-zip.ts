@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import type { ItemBackupDoc } from "./backup-documentos.functions";
+import { hojeISO } from "@/lib/financeiro/format";
 
 export interface ProgressoBackup {
   total: number;
@@ -44,7 +45,7 @@ export async function baixarDocumentosZip(
   await Promise.all(Array.from({ length: CONCORRENCIA }, () => worker()));
 
   const conteudo = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeISO();
   const url = URL.createObjectURL(conteudo);
   const a = document.createElement("a");
   a.href = url;

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { todasAsLinhas } from "@/lib/paginar";
 import { calcularFeriasCLT } from "@/lib/rh/ferias-clt";
+import { hojeISO } from "@/lib/financeiro/format";
 
 export interface RhKpis {
   ativos: number;
@@ -114,8 +115,13 @@ export const obterKpisRh = createServerFn({ method: "GET" })
       ]);
       gozos = g.data ?? [];
       ocorr = o.data ?? [];
+      // Programadas = ainda por vir. Uma programação antiga que ninguém marcou
+      // como concluída contava aqui para sempre (QA 20/10).
+      const hojeIso = hojeISO();
       feriasProgramadas = gozos.filter(
-        (x) => x.status === "planejada" || x.status === "aprovada",
+        (x) =>
+          (x.status === "planejada" || x.status === "aprovada") &&
+          (!x.data_inicio || String(x.data_inicio).slice(0, 10) >= hojeIso),
       ).length;
     }
 
@@ -152,8 +158,14 @@ export const obterKpisRh = createServerFn({ method: "GET" })
       else if (calc.dias_a_vencer > 0) feriasAVencer90 += 1;
       feriasSaldoDias += calc.saldo_total;
       feriasProvisao += calc.provisao;
-      somaMesesCasa +=
-        (Date.now() - new Date(r.data_admissao).getTime()) / (1000 * 60 * 60 * 24 * 30.4375);
+      // Mesma conta do relatório de férias (meses completos, nunca negativo),
+      // para a média do painel bater com a lista por funcionário.
+      somaMesesCasa += Math.max(
+        0,
+        Math.floor(
+          (Date.now() - new Date(r.data_admissao).getTime()) / (1000 * 60 * 60 * 24 * 30.4375),
+        ),
+      );
     }
     const tempoMedioCasaMeses =
       ativosRows.length > 0 ? Math.round(somaMesesCasa / ativosRows.length) : 0;

@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hojeISO } from "@/lib/financeiro/format";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export type ComissaoTipo = "percentual" | "fixo";
 
@@ -38,7 +40,7 @@ async function correspondenteId(supabase: any, userId: string): Promise<string> 
 
 /** Lista as regras de comissão do correspondente. */
 export const listarRegrasComissaoAdmin = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.comissoes", "view"], ["financeiro.comissoes", "view"])])
   .handler(async ({ context }): Promise<RegraComissao[]> => {
     const { data, error } = await context.supabase
       .from("comissao_regras")
@@ -53,7 +55,7 @@ export const listarRegrasComissaoAdmin = createServerFn({ method: "GET" })
 
 /** Bancos ativos para o seletor de regras. */
 export const listarBancosParaComissao = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.comissoes", "view"], ["financeiro.comissoes", "view"])])
   .handler(async ({ context }): Promise<{ codigo: string; nome: string }[]> => {
     const { data, error } = await context.supabase
       .from("vw_bancos_ativos")
@@ -84,7 +86,7 @@ const regraSchema = z.object({
 
 /** Cria ou atualiza uma regra de comissão. */
 export const salvarRegraComissao = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.comissoes", "edit"], ["financeiro.comissoes", "edit"])])
   .inputValidator((d) => regraSchema.parse(d))
   .handler(async ({ data, context }): Promise<RegraComissao> => {
     const { supabase, userId } = context;
@@ -125,7 +127,7 @@ export const salvarRegraComissao = createServerFn({ method: "POST" })
 
 /** Remove uma regra de comissão. */
 export const excluirRegraComissao = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.comissoes", "edit"], ["financeiro.comissoes", "edit"])])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("comissao_regras").delete().eq("id", data.id);
@@ -143,7 +145,7 @@ export interface SimulacaoComissaoResultado {
 
 /** Simula a comissão de uma operação aplicando a melhor regra vigente. */
 export const simularComissao = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.comissoes", "view"], ["financeiro.comissoes", "view"])])
   .inputValidator((d) =>
     z
       .object({
@@ -154,7 +156,7 @@ export const simularComissao = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<SimulacaoComissaoResultado> => {
-    const hoje = new Date().toISOString().slice(0, 10);
+    const hoje = hojeISO();
     const { data: regras, error } = await context.supabase
       .from("comissao_regras")
       .select("*")

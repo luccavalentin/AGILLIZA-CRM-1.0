@@ -49,14 +49,14 @@ function conteudo(
         // vermelho estourado. Neutro só no instante antes de ler o relógio.
         tone: !t ? "muted" : t.vencido ? "danger" : t.urgente ? "warning" : "success",
         icone: <Clock className="h-3 w-3 shrink-0" />,
-        titulo: "Recebido HomeFin",
+        titulo: "Recebido na integração",
         detalhe: !t
           ? `Em análise · SLA ${sla}`
           : t.vencido
             ? `SLA ${sla} vencido há ${t.texto}`
             : `Em análise · faltam ${t.texto}`,
         explicacao:
-          `${plural(s.emAnalise, "documento", "documentos")} em análise na HomeFin (de ${s.total} enviados). ` +
+          `${plural(s.emAnalise, "documento", "documentos")} em análise na integração bancária (de ${s.total} enviados). ` +
           `Recebido em ${new Date(s.recebidoEm).toLocaleString("pt-BR")}. ` +
           `Prazo ${sla} em expediente (09h-18h, dias úteis): ${prazo.toLocaleString("pt-BR")}. ` +
           `A contagem para fora do expediente e volta no dia útil seguinte.`,
@@ -71,7 +71,7 @@ function conteudo(
         explicacao:
           plural(s.rejeitados, "documento rejeitado", "documentos rejeitados") +
           (s.emAnalise ? ` e ${s.emAnalise} ainda em análise` : "") +
-          " na HomeFin.",
+          " na integração bancária.",
       };
     case "aprovado":
       return {
@@ -80,7 +80,7 @@ function conteudo(
         titulo: s.aprovados > 1 ? `${s.aprovados} docs aprovados` : "Doc. aprovado",
         detalhe: s.noBanco ? `${s.noBanco} já no banco` : undefined,
         explicacao:
-          `${plural(s.aprovados, "documento aprovado", "documentos aprovados")} pela HomeFin` +
+          `${plural(s.aprovados, "documento aprovado", "documentos aprovados")} pela integração bancária` +
           (s.noBanco ? `, ${s.noBanco} já no banco.` : "."),
       };
   }

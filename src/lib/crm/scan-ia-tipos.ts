@@ -44,6 +44,21 @@ export function rotuloTipo(tipo: string | null | undefined): string {
   return TIPO_DOCUMENTO_LABEL[tipo as TipoDocumentoScan] ?? tipo;
 }
 
+/** Rótulo do status da leitura (no banco ficam sem acento: concluida, revisada…). */
+export const STATUS_LEITURA_LABEL: Record<string, string> = {
+  pendente: "Pendente",
+  processando: "Processando",
+  concluida: "Concluída",
+  revisada: "Revisada",
+  aplicada: "Aplicada",
+  erro: "Erro",
+};
+
+export function rotuloStatusLeitura(status: string | null | undefined): string {
+  if (!status) return "—";
+  return STATUS_LEITURA_LABEL[status] ?? status;
+}
+
 export function ehTipoConhecido(tipo: string | null | undefined): tipo is TipoDocumentoScan {
   return !!tipo && (TIPOS_DOCUMENTO as readonly string[]).includes(tipo);
 }

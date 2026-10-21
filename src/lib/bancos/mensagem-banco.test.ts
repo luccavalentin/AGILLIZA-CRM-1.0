@@ -2,10 +2,22 @@ import { describe, expect, it } from "vitest";
 import { mensagemBancoLegivel } from "./mensagem-banco";
 
 describe("mensagemBancoLegivel", () => {
-  it("troca o JSON de contexto do Santander por uma orientação curta", () => {
-    const bruto = `{"error":{"error@context":{"_ns_name":"a6a2","id":470472933,"bankIntegration.auditContext":{"oportunidade":{"idOportunidade":31508,"cep":null}}}}}`;
+  it("contexto do Santander com o endereço vazio vira o motivo (o retorno chega cortado)", () => {
+    const bruto = `{"error":{"error@context":{"_ns_name":"a6a2","id":470472933,"bankIntegration.auditContext":{"oportunidade":{"idOportunidade":38003,"cep":null,"logradouro":null,"numeroLogradouro":null,"bairro":"","municipio":null,"uf":"SP","tipoImovel":"CS"`;
     expect(mensagemBancoLegivel(bruto, "Santander")).toBe(
-      "Santander recusou o envio sem informar o motivo. Tente enviar de novo em alguns minutos; se continuar, acione a HomeFin.",
+      "Santander recusou o envio: o endereço do imóvel foi sem CEP, logradouro, número, bairro, município. Complete o endereço do imóvel no cadastro do cliente e envie de novo.",
+    );
+  });
+
+  it("contexto com espaços também é lido", () => {
+    const bruto = `{"error": {"bankIntegration.auditContext": {"oportunidade": {"cep": null, "logradouro": "Rua A", "numeroLogradouro": " ", "bairro": "Sé", "municipio": "SP"`;
+    expect(mensagemBancoLegivel(bruto, "Santander")).toContain("foi sem CEP, número.");
+  });
+
+  it("contexto técnico sem pista continua como orientação curta", () => {
+    const bruto = `{"error":{"error@context":{"_ns_name":"a6a2","id":470472933,"bankIntegration.auditContext":{"oportunidade":{"idOportunidade":31508,"cep":"01001000","logradouro":"Rua A","numeroLogradouro":"1","bairro":"Sé","municipio":"São Paulo"}}}}}`;
+    expect(mensagemBancoLegivel(bruto, "Santander")).toBe(
+      "Santander recusou o envio sem informar o motivo. Tente enviar de novo em alguns minutos; se continuar, acione o suporte da integração bancária.",
     );
   });
 

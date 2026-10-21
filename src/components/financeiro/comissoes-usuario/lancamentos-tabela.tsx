@@ -43,6 +43,9 @@ import {
 import { RecalcularComissoesButton } from "./recalcular-button";
 import { ExportarFinanceiro } from "@/components/financeiro/exportar-financeiro";
 import { ComissaoEditarDialog, type ComissaoEditavel } from "./comissao-editar-dialog";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -60,6 +63,8 @@ export function LancamentosComissoesUsuario({
   onLimparUsuario?: () => void;
 } = {}) {
   const qc = useQueryClient();
+  // Pagar, cancelar, editar e excluir exigem "Repasses: editar" (o servidor confere).
+  const podeEditar = usePermissao("financeiro.comissoes", "edit");
   const [status, setStatus] = useState<string>("todos");
   const [tipoVinculo, setTipoVinculo] = useState<string>("todos");
   const [de, setDe] = useState<string>("");
@@ -87,7 +92,7 @@ export function LancamentosComissoesUsuario({
       toast.success("Comissão marcada como paga.");
       qc.invalidateQueries({ queryKey: ["fin-com-usr-lanc"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao pagar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao pagar.")),
   });
   const cancelar = useMutation({
     mutationFn: (id: string) => cancelarComissaoUsuario({ data: { id } }),
@@ -95,7 +100,7 @@ export function LancamentosComissoesUsuario({
       toast.success("Comissão cancelada.");
       qc.invalidateQueries({ queryKey: ["fin-com-usr-lanc"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao cancelar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao cancelar.")),
   });
 
   const [selecionados, setSelecionados] = useState<string[]>([]);
@@ -111,7 +116,7 @@ export function LancamentosComissoesUsuario({
       qc.invalidateQueries({ queryKey: ["fin-com-usr-regras"] });
       qc.invalidateQueries({ queryKey: ["fin-contas"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir.")),
   });
 
   const pagarLote = useMutation({
@@ -123,7 +128,7 @@ export function LancamentosComissoesUsuario({
       qc.invalidateQueries({ queryKey: ["fin-com-usr-regras"] });
       qc.invalidateQueries({ queryKey: ["fin-contas"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao pagar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao pagar.")),
   });
 
   const totais = useMemo(() => {
@@ -324,7 +329,7 @@ export function LancamentosComissoesUsuario({
           ))}
         </div>
 
-        {selecionados.length > 0 && (
+        {podeEditar && selecionados.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/[0.04] px-4 py-3">
             <span className="text-sm font-medium">
               {selecionados.length} lançamento(s) selecionado(s)
@@ -346,19 +351,24 @@ export function LancamentosComissoesUsuario({
                 )}
                 Marcar como pagas
               </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                disabled={excluirLote.isPending}
-                onClick={() => excluirLote.mutate(selecionados)}
-              >
-                {excluirLote.isPending ? (
-                  <Loader2 className="mr-1.5 size-4 animate-spin" />
-                ) : (
-                  <Trash2 className="mr-1.5 size-4" />
-                )}
-                Excluir
-              </Button>
+              <ConfirmDelete
+                titulo={`Excluir ${selecionados.length} lançamento(s)`}
+                descricao="Os lançamentos selecionados e as contas a pagar ligadas a eles serão removidos."
+                onConfirm={async () => {
+                  // O erro já aparece no aviso do onError da mutação.
+                  await excluirLote.mutateAsync(selecionados).catch(() => undefined);
+                }}
+                trigger={
+                  <Button size="sm" variant="destructive" disabled={excluirLote.isPending}>
+                    {excluirLote.isPending ? (
+                      <Loader2 className="mr-1.5 size-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-1.5 size-4" />
+                    )}
+                    Excluir
+                  </Button>
+                }
+              />
             </div>
           </div>
         )}
@@ -436,23 +446,31 @@ export function LancamentosComissoesUsuario({
                     </TableCell>
                     <TableCell>{statusBadge(r.status)}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Editar lançamento"
-                        onClick={() => setEditando(r as any)}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Excluir lançamento"
-                        onClick={() => excluirLote.mutate([r.id])}
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
-                      {r.status === "a_pagar" && (
+                      {podeEditar && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Editar lançamento"
+                            onClick={() => setEditando(r as any)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <ConfirmDelete
+                            titulo="Excluir lançamento"
+                            descricao="O lançamento e a conta a pagar ligada a ele serão removidos."
+                            onConfirm={async () => {
+                              await excluirLote.mutateAsync([r.id]).catch(() => undefined);
+                            }}
+                            trigger={
+                              <Button variant="ghost" size="icon" title="Excluir lançamento">
+                                <Trash2 className="size-4 text-destructive" />
+                              </Button>
+                            }
+                          />
+                        </>
+                      )}
+                      {podeEditar && r.status === "a_pagar" && (
                         <>
                           <Button
                             variant="ghost"

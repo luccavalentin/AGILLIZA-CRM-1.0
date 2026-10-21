@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { hojeISO } from "@/lib/financeiro/format";
 
 export interface MatriculaConfig {
   correspondente_id: string;
@@ -58,7 +60,7 @@ async function correspondenteDoUsuario(supabase: any, userId: string): Promise<s
 
 /** Carrega config (Pix), créditos, solicitações e totais consolidados. */
 export const obterControleMatriculas = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.matriculas", "view"])])
   .handler(async ({ context }): Promise<MatriculasResumo> => {
     const supabase = context.supabase as any;
     const { userId } = context;
@@ -119,6 +121,7 @@ export interface UsuarioOpcao {
  * Usado para autocompletar Solicitante e Corretor.
  */
 export const listarUsuariosCorrespondente = createServerFn({ method: "GET" })
+  // Sem módulo: também alimenta os participantes do chat do CRM (só nomes da equipe).
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<UsuarioOpcao[]> => {
     const supabase = context.supabase as any;
@@ -141,7 +144,7 @@ export const listarUsuariosCorrespondente = createServerFn({ method: "GET" })
 
 /** Salva a chave Pix e o titular exibidos na faixa azul. */
 export const salvarPixMatriculas = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -168,12 +171,12 @@ export const salvarPixMatriculas = createServerFn({ method: "POST" })
 
 /** Registra uma compra de crédito feita pela Agilliza. */
 export const criarCreditoMatricula = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
         data: z.string().min(1),
-        valor: z.number().nonnegative(),
+        valor: z.number().positive("Informe um valor maior que zero."),
         descricao: z.string().trim().max(500).optional().nullable(),
       })
       .parse(d),
@@ -195,7 +198,7 @@ export const criarCreditoMatricula = createServerFn({ method: "POST" })
 
 /** Exclui uma compra de crédito. */
 export const excluirCreditoMatricula = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
@@ -216,7 +219,7 @@ const solicitacaoSchema = z.object({
   corretor: z.string().trim().max(200).optional().nullable(),
   cliente: z.string().trim().max(200).optional().nullable(),
   numero_matricula: z.string().trim().max(100).optional().nullable(),
-  valor: z.number().nonnegative(),
+  valor: z.number().positive("Informe um valor maior que zero."),
   reembolsado: z.boolean().optional(),
   data_pagto_reembolso: z.string().optional().nullable(),
   observacao: z.string().trim().max(500).optional().nullable(),
@@ -224,7 +227,7 @@ const solicitacaoSchema = z.object({
 
 /** Registra uma solicitação de matrícula. */
 export const criarSolicitacaoMatricula = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.matriculas", "create"])])
   .inputValidator((d: unknown) => solicitacaoSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
@@ -250,7 +253,7 @@ export const criarSolicitacaoMatricula = createServerFn({ method: "POST" })
 
 /** Edita uma solicitação de matrícula. */
 export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
   .inputValidator((d: unknown) => solicitacaoSchema.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
@@ -289,7 +292,7 @@ export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
 
 /** Alterna rapidamente o status de reembolso. */
 export const alternarReembolsoMatricula = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
   .inputValidator((d: unknown) =>
     z.object({ id: z.string().uuid(), reembolsado: z.boolean() }).parse(d),
   )
@@ -297,11 +300,20 @@ export const alternarReembolsoMatricula = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const { userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
+    // Ao marcar como recebido, a "Data do reembolso" passa a ser hoje (se ainda
+    // não tinha); ao desmarcar, sai — igual ao formulário. Antes ficava vazia.
+    const { data: atual } = await supabase
+      .from("matricula_solicitacoes")
+      .select("data_pagto_reembolso")
+      .eq("id", data.id)
+      .eq("correspondente_id", corr)
+      .maybeSingle();
     const { error } = await supabase
       .from("matricula_solicitacoes")
       .update({
         reembolsado: data.reembolsado,
         reembolsado_em: data.reembolsado ? new Date().toISOString() : null,
+        data_pagto_reembolso: data.reembolsado ? (atual?.data_pagto_reembolso ?? hojeISO()) : null,
       })
       .eq("id", data.id)
       .eq("correspondente_id", corr);
@@ -311,7 +323,7 @@ export const alternarReembolsoMatricula = createServerFn({ method: "POST" })
 
 /** Exclui uma solicitação de matrícula. */
 export const excluirSolicitacaoMatricula = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;

@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { Send, CheckCircle2, XCircle, Loader2, Info, Trophy } from "lucide-react";
 import { useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -53,7 +54,12 @@ export function EnviarPropostaDialog({
    */
   criandoBancoId?: string | null;
   onEnviarBanco: (banco: any) => void;
-  onEnviarTodos: (bancos: any[]) => void;
+  /**
+   * Só para quem consegue mandar vários bancos sem sair da tela. A lista de
+   * simulações leva o operador à proposta criada (o envio acontece lá), então
+   * não passa este callback: o "Enviar a todos" de lá criava só a primeira.
+   */
+  onEnviarTodos?: (bancos: any[]) => void;
 }) {
   const router = useRouter();
 
@@ -327,7 +333,7 @@ export function EnviarPropostaDialog({
                       <div className="mt-2.5">
                         <div className="flex justify-between items-center mb-1.5 px-0.5">
                           <span className="text-[10px] font-bold text-primary uppercase tracking-wide">
-                            {status.mensagem}
+                            {semMarcaIntegracao(status.mensagem)}
                           </span>
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
                             Etapa {status.etapaNumero} de 6
@@ -363,7 +369,7 @@ export function EnviarPropostaDialog({
                       <div className="mt-2 flex items-start gap-2 rounded-md bg-destructive/10 p-2.5">
                         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
                         <p className="text-[11px] font-medium leading-relaxed text-destructive/90">
-                          {status.mensagem}
+                          {semMarcaIntegracao(status.mensagem)}
                         </p>
                       </div>
                     )}
@@ -376,7 +382,7 @@ export function EnviarPropostaDialog({
 
         <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between items-center">
           <div className="flex-1">
-            {!enviandoQualquer && !todosConcluidos && simulados.length > 1 && (
+            {onEnviarTodos && !enviandoQualquer && !todosConcluidos && simulados.length > 1 && (
               <Button
                 variant="outline"
                 size="sm"

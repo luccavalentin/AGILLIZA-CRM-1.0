@@ -35,7 +35,7 @@ export function SecaoHeader({
       <div className="flex items-center gap-2">
         <span className="hidden text-xs text-muted-foreground sm:inline">Ordenar por:</span>
         <Select value={ordem} onValueChange={(v) => setOrdem(v as OrdemChave)}>
-          <SelectTrigger className="h-9 w-[160px]">
+          <SelectTrigger className="h-9 w-[160px]" aria-label="Ordenar por">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -49,7 +49,8 @@ export function SecaoHeader({
           <button
             type="button"
             onClick={() => setModo("grid")}
-            aria-label="Grade"
+            aria-label="Ver em grade"
+            aria-pressed={modo === "grid"}
             className={cn(
               "grid size-9 place-items-center transition-colors",
               modo === "grid"
@@ -62,7 +63,8 @@ export function SecaoHeader({
           <button
             type="button"
             onClick={() => setModo("lista")}
-            aria-label="Lista"
+            aria-label="Ver em lista"
+            aria-pressed={modo === "lista"}
             className={cn(
               "grid size-9 place-items-center border-l border-border/60 transition-colors",
               modo === "lista"

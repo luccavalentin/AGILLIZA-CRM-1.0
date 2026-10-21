@@ -1,7 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import { todasAsLinhas } from "@/lib/paginar";
+import { mascararDocumento } from "@/lib/crm/documento";
+import {
+  CAMPOS_PII_CLIENTE,
+  CAMPOS_PII_VENDEDOR,
+  mascararCamposPii,
+  temPiiCliente,
+} from "@/lib/crm/pii";
+
+/** Tamanho de cada bloco de ids nos `.in()` (a URL do PostgREST tem limite). */
+const BLOCO_IDS = 200;
+
+function emBlocos<T>(lista: T[], tamanho = BLOCO_IDS): T[][] {
+  const blocos: T[][] = [];
+  for (let i = 0; i < lista.length; i += tamanho) blocos.push(lista.slice(i, i + tamanho));
+  return blocos;
+}
 
 /** Rótulo da pasta-mãe para clientes sem imobiliária vinculada. */
 export const AVULSO_LABEL = "Avulso";
@@ -47,10 +63,13 @@ export interface DGResposta {
  * Clientes sem imobiliária vinculada ficam em "Comercial Agilliza".
  */
 export const explorarDocumentosGerais = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "view"])])
   .handler(async ({ context }): Promise<DGResposta> => {
     const { supabase, userId } = context;
-    const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
+    const [{ data: corr }, podePii] = await Promise.all([
+      supabase.rpc("correspondente_do_usuario", { _user_id: userId }),
+      temPiiCliente(supabase, userId),
+    ]);
 
     const ordenarNome = (a: DGOpcaoFiltro, b: DGOpcaoFiltro) =>
       a.nome.localeCompare(b.nome, "pt-BR");
@@ -59,17 +78,22 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
     // Comercial / Imobiliária / Corretor / Analista por tipo_pessoa OU por
     // papel em user_roles. Cada dropdown lista todos os usuários daquele tipo,
     // mesmo sem clientes vinculados.
-    let perfisQuery = supabase.from("profiles").select("id, nome, tipo_pessoa, correspondente_id");
-    if (corr) perfisQuery = perfisQuery.eq("correspondente_id", corr);
     // Paginadas: `.limit(2000)`/`.limit(4000)` paravam nas 1.000 linhas do
-    // PostgREST e sumiam pessoas dos seletores (QA 19/09/2026).
-    const { data: perfis } = await todasAsLinhas(() => perfisQuery.order("id"));
+    // PostgREST e sumiam pessoas dos seletores (QA 19/09/2026). A consulta é montada
+    // de novo a cada página (o builder guarda o range aplicado).
+    const { data: perfis } = await todasAsLinhas(() => {
+      let q = supabase.from("profiles").select("id, nome, tipo_pessoa, correspondente_id");
+      if (corr) q = q.eq("correspondente_id", corr);
+      return q.order("id");
+    });
 
-    let papeisQuery = supabase
-      .from("user_roles")
-      .select("user_id, role, profiles!inner(id, nome, correspondente_id)");
-    if (corr) papeisQuery = papeisQuery.eq("profiles.correspondente_id", corr);
-    const { data: papeis } = await todasAsLinhas(() => papeisQuery.order("user_id"));
+    const { data: papeis } = await todasAsLinhas(() => {
+      let q = supabase
+        .from("user_roles")
+        .select("user_id, role, profiles!inner(id, nome, correspondente_id)");
+      if (corr) q = q.eq("profiles.correspondente_id", corr);
+      return q.order("user_id").order("role");
+    });
 
     const comerciaisMap = new Map<string, string>();
     const imobsBaseMap = new Map<string, string>();
@@ -104,17 +128,19 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       ordenarNome,
     );
 
-    // Clientes acessíveis (RLS aplica o escopo do usuário).
-    let clientesQuery = supabase
-      .from("clientes")
-      .select("id, nome, numero_cliente, documento, responsavel_id, criador_id")
-      .eq("ativo", true)
-      .is("deleted_at", null)
-      .order("nome", { ascending: true });
-    if (corr) clientesQuery = clientesQuery.eq("correspondente_id", corr);
-    const { data: clientes, error: cliErr } = await clientesQuery.limit(1000);
+    // Clientes acessíveis (RLS aplica o escopo do usuário). Paginado: o `.limit(1000)`
+    // parava nas 1.000 primeiras em ordem alfabética e o resto sumia das pastas.
+    const { data: clientes, error: cliErr } = await todasAsLinhas(() => {
+      let q = supabase
+        .from("clientes")
+        .select("id, nome, numero_cliente, documento, responsavel_id, criador_id")
+        .eq("ativo", true)
+        .is("deleted_at", null);
+      if (corr) q = q.eq("correspondente_id", corr);
+      return q.order("nome", { ascending: true }).order("id");
+    });
     if (cliErr) throw cliErr;
-    const listaClientes = clientes ?? [];
+    const listaClientes = (clientes ?? []) as any[];
     if (listaClientes.length === 0) {
       return {
         clientes: [],
@@ -127,18 +153,19 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
 
     const idsClientes = listaClientes.map((c: any) => c.id);
 
-    // Vínculos de atendimento desses clientes (paginado: até 1000 clientes
-    // podem ter vários vínculos cada, estourando o limite padrão).
+    // Vínculos de atendimento desses clientes. Os ids vão em blocos (um `.in()` com
+    // milhares de ids estoura a URL) e cada bloco é paginado.
     const vinculos: { cliente_id: string; parceiro_id: string | null; tipo_vinculo: string }[] = [];
-    for (let inicio = 0; ; inicio += 1000) {
-      const { data: lote } = await supabase
-        .from("cliente_parceiros")
-        .select("cliente_id, parceiro_id, tipo_vinculo")
-        .in("cliente_id", idsClientes)
-        .range(inicio, inicio + 999);
-      const rows = (lote ?? []) as typeof vinculos;
-      vinculos.push(...rows);
-      if (rows.length < 1000) break;
+    for (const bloco of emBlocos(idsClientes)) {
+      const { data: lote, error } = await todasAsLinhas(() =>
+        supabase
+          .from("cliente_parceiros")
+          .select("id, cliente_id, parceiro_id, tipo_vinculo")
+          .in("cliente_id", bloco)
+          .order("id"),
+      );
+      if (error) throw error;
+      vinculos.push(...((lote ?? []) as typeof vinculos));
     }
 
     // Nomes de parceiros (imobiliária/corretor) e comerciais (responsáveis).
@@ -148,29 +175,31 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
       if (c.responsavel_id) idsPerfis.add(c.responsavel_id);
       if (c.criador_id) idsPerfis.add(c.criador_id);
     }
-    let nomesParceiros = new Map<string, string>();
-    if (idsPerfis.size > 0) {
-      const { data: perfis } = await supabase
+    const nomesParceiros = new Map<string, string>();
+    for (const bloco of emBlocos(Array.from(idsPerfis))) {
+      const { data: perfisBloco, error } = await supabase
         .from("profiles")
         .select("id, nome")
-        .in("id", Array.from(idsPerfis));
-      nomesParceiros = new Map((perfis ?? []).map((p: any) => [p.id, p.nome ?? "—"]));
+        .in("id", bloco);
+      if (error) throw error;
+      for (const p of (perfisBloco ?? []) as any[]) nomesParceiros.set(p.id, p.nome ?? "—");
     }
 
     // Contagem de documentos por cliente (paginada para não estourar o
     // limite padrão de 1000 linhas, que subestimaria os totais).
     const totalDocs = new Map<string, number>();
-    for (let inicio = 0; ; inicio += 1000) {
-      const { data: docs } = await supabase
-        .from("cliente_documentos")
-        .select("cliente_id")
-        .in("cliente_id", idsClientes)
-        .range(inicio, inicio + 999);
-      const lote = docs ?? [];
-      for (const d of lote) {
+    for (const bloco of emBlocos(idsClientes)) {
+      const { data: docs, error } = await todasAsLinhas(() =>
+        supabase
+          .from("cliente_documentos")
+          .select("id, cliente_id")
+          .in("cliente_id", bloco)
+          .order("id"),
+      );
+      if (error) throw error;
+      for (const d of (docs ?? []) as { cliente_id: string }[]) {
         totalDocs.set(d.cliente_id, (totalDocs.get(d.cliente_id) ?? 0) + 1);
       }
-      if (lote.length < 1000) break;
     }
 
     // Índice: cliente_id -> { comercial, imobiliaria, corretor } (primeiro vínculo de cada tipo).
@@ -203,7 +232,8 @@ export const explorarDocumentosGerais = createServerFn({ method: "GET" })
         cliente_id: c.id,
         nome: c.nome,
         numero_cliente: c.numero_cliente ?? null,
-        documento: c.documento ?? null,
+        // Mesma regra da lista de clientes: sem "Ver dados sensíveis", CPF/CNPJ mascarado.
+        documento: c.documento ? (podePii ? c.documento : mascararDocumento(c.documento)) : null,
         total_documentos: totalDocs.get(c.id) ?? 0,
         imobiliaria_id: imobId,
         imobiliaria_nome: imobNome,
@@ -249,17 +279,23 @@ export interface FichaConsolidada {
 
 /** Dados consolidados do cliente para o botão "Consultar ficha". */
 export const obterFichaConsolidada = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "view"])])
   .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<FichaConsolidada> => {
-    const { supabase } = context;
-    const { data: cli, error } = await supabase
+    const { supabase, userId } = context;
+    const podePii = await temPiiCliente(supabase, userId);
+    const { data: cliBruto, error } = await supabase
       .from("clientes")
       .select("*")
       .eq("id", data.cliente_id)
+      // Excluído não aparece aqui, como na ficha do cliente.
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw error;
-    if (!cli) throw new Error("Cliente não encontrado.");
+    if (!cliBruto) throw new Error("Cliente não encontrado.");
+    // Mesma máscara de getCliente: sem "Ver dados sensíveis", CPF/CNPJ, RG e os
+    // documentos do cônjuge chegam mascarados (inclusive no PDF impresso daqui).
+    const cli = podePii ? cliBruto : mascararCamposPii({ ...cliBruto }, CAMPOS_PII_CLIENTE);
 
     const { data: enderecos } = await supabase
       .from("cliente_enderecos")
@@ -375,11 +411,14 @@ export const obterFichaConsolidada = createServerFn({ method: "GET" })
       ];
     }
 
+    const listaVendedores = (vendedores ?? []) as any[];
+    if (!podePii) for (const v of listaVendedores) mascararCamposPii(v, CAMPOS_PII_VENDEDOR);
+
     return {
       meta,
       comprador,
       conjuge,
-      vendedores: (vendedores ?? []) as any[],
+      vendedores: listaVendedores,
       imoveis,
     };
   });

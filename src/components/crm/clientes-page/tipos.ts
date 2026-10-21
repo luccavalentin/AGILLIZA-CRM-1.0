@@ -1,12 +1,10 @@
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 export type Portal = "todos" | "ativo" | "inativo";
 export type StatusF = "todos" | "ativo" | "inativo";
 export type Escopo = "minhas" | "geral";
 
 export function iniciais(nome: string) {
-  const partes = nome.trim().split(/\s+/);
-  const a = partes[0]?.[0] ?? "";
-  const b = partes.length > 1 ? partes[partes.length - 1][0] : "";
-  return (a + b).toUpperCase() || "?";
+  return iniciaisDoNome(nome);
 }
 
 export type ClienteItem = {
@@ -20,4 +18,8 @@ export type ClienteItem = {
   etapa_nome?: string | null;
   responsavel_nome?: string | null;
   portal_acesso_ativo?: boolean;
+  /** `false` esconde a lixeira (sem permissão de excluir em Clientes). */
+  pode_excluir?: boolean;
+  /** Base de uma conta assinante: a licença de origem (selo discreto na lista). */
+  _conta?: string | null;
 };

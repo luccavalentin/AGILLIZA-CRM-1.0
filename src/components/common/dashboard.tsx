@@ -119,36 +119,41 @@ export function PanelHeader({
   variant?: "light" | "dark";
 }) {
   const dark = variant === "dark";
+  // Claro = o `PageHeader` único do sistema: sem cartão, título 24/500,
+  // seção em caixa de frase (antes: cartão com título até 36/700 em CAIXA ALTA).
   return (
-    <div className={cn(dark ? "op-hero-dark" : "op-hero", "p-3 sm:p-4 md:p-6")}>
+    <div className={cn(dark ? "op-hero-dark p-3 sm:p-4 md:p-6" : "")}>
       <div className="relative grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <div className={cn("min-w-0 flex flex-col justify-center", !actions && "md:col-span-2")}>
           <p
             className={cn(
-              "flex min-w-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.18em]",
-              dark ? "text-white/70" : "text-primary",
+              "flex min-w-0 items-center gap-2",
+              dark
+                ? "text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 sm:text-[11px] sm:tracking-[0.18em]"
+                : "text-xs font-medium text-muted-foreground",
             )}
           >
-            <span
-              className={cn(
-                "inline-block h-1 w-5 shrink-0 rounded-full sm:w-6",
-                dark ? "bg-white/80" : "bg-primary",
-              )}
-            />
+            {dark && (
+              <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-white/80 sm:w-6" />
+            )}
             <span className="truncate">{eyebrow}</span>
           </p>
           <h1
             className={cn(
-              "mt-2 text-xl font-bold leading-tight tracking-tight sm:mt-3 sm:text-2xl md:text-3xl lg:text-4xl",
-              dark ? "text-white" : "text-foreground",
+              "leading-tight tracking-tight",
+              dark
+                ? "mt-2 text-xl font-bold text-white sm:mt-3 sm:text-2xl md:text-3xl lg:text-4xl"
+                : "mt-0.5 text-xl font-medium text-foreground sm:text-2xl",
             )}
           >
             {titulo}
           </h1>
           <p
             className={cn(
-              "mt-2 max-w-xl text-sm md:text-base leading-relaxed opacity-85",
-              dark ? "text-white/70" : "text-muted-foreground",
+              "max-w-xl",
+              dark
+                ? "mt-2 text-sm leading-relaxed text-white/70 opacity-85 md:text-base"
+                : "mt-0.5 text-sm text-muted-foreground",
             )}
           >
             {descricao}
@@ -386,17 +391,27 @@ export function MiniMetric({
 }) {
   const clicavel = !!onDetails || !!to;
   const conteudo = (
+    // Secundária de verdade: sem borda colorida (a cor só aparece quando há
+    // problema — tom "danger"), rótulo em caixa de frase 12/500 e número menor
+    // que o dos indicadores principais. Antes os 12 minis tinham borda verde,
+    // cinza, azul ou âmbar sem regra e pesavam igual aos 5 principais.
     <Card
       className={cn(
-        "group relative h-full min-w-0 overflow-hidden rounded-xl border-l-4 p-3.5 pl-4 shadow-sm transition-all duration-300",
-        clicavel && "cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5",
+        "group relative h-full min-w-0 overflow-hidden rounded-xl p-3.5 shadow-none transition-all duration-300",
+        tone === "danger" && "border-l-4",
+        clicavel && "cursor-pointer hover:-translate-y-0.5 hover:shadow-sm",
       )}
-      style={{ borderLeftColor: toneVar[tone] }}
+      style={tone === "danger" ? { borderLeftColor: toneVar[tone] } : undefined}
     >
-      <p className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/90 sm:tracking-[0.12em]">
+      <p className="truncate text-xs font-medium text-muted-foreground" title={label}>
         {label}
       </p>
-      <p className="mt-1.5 min-w-0 truncate font-mono text-[clamp(1rem,6vw,1.25rem)] font-semibold tracking-tight tabular-nums text-foreground sm:text-xl">
+      <p
+        className={cn(
+          "mt-1 min-w-0 truncate text-lg font-medium tracking-tight tabular-nums",
+          tone === "danger" ? "text-destructive" : "text-foreground",
+        )}
+      >
         {valor}
       </p>
     </Card>

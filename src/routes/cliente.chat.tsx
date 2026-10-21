@@ -2,22 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Search,
-  SlidersHorizontal,
-  SquarePen,
-  ChevronRight,
-  Paperclip,
-  FileText,
-  UserRound,
-  Clock3,
-  Download,
-  MessageCircle,
-  ChevronDown,
-  Mail,
-  MessageSquare,
-  Trash2,
-} from "lucide-react";
+import { Search, FileText, Clock3, MessageCircle, Trash2 } from "lucide-react";
 import { ChatConfigSheet } from "@/components/shared/chat-config-sheet";
 import { ThreadChat, iniciais, horaCurta } from "@/components/cliente/chat-cliente";
 import {
@@ -32,13 +17,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { pollingPortal, POLL_ATENDENTES_MS } from "@/lib/portal/polling";
 
 export const Route = createFileRoute("/cliente/chat")({
   head: () => ({ meta: [{ title: "Conversar — Meu Financiamento" }] }),
   component: ChatPage,
 });
 
-type Filtro = "todas" | "nao_lidas" | "arquivadas";
+type Filtro = "todas" | "nao_lidas";
 
 function ChatPage() {
   const qc = useQueryClient();
@@ -46,19 +34,25 @@ function ChatPage() {
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [selId, setSelId] = useState<string | null>(null);
 
-  const { data: atendentes, isLoading: loadingAt } = useQuery({
+  const {
+    data: atendentes,
+    isLoading: loadingAt,
+    isError: erroAt,
+    error: erroAtObj,
+    refetch: recarregarAt,
+  } = useQuery({
     queryKey: ["cliente", "atendentes"],
     queryFn: () => clienteListarAtendentes(),
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 12000),
+    ...pollingPortal(POLL_ATENDENTES_MS),
   });
 
   const { data: visao } = useQuery({
     queryKey: ["cliente", "visao-geral"],
     queryFn: () => clienteObterVisaoGeral(),
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 30000),
+    ...pollingPortal(30_000),
   });
 
-  const { data: docs } = useQuery({
+  const { data: docs, isError: erroDocs } = useQuery({
     queryKey: ["cliente", "meus-documentos"],
     queryFn: () => clienteMeusDocumentos(),
   });
@@ -68,7 +62,6 @@ function ChatPage() {
     const q = busca.trim().toLowerCase();
     return src.filter((a) => {
       if (filtro === "nao_lidas" && a.nao_lidas <= 0) return false;
-      if (filtro === "arquivadas") return false;
       if (!q) return true;
       return (
         a.nome.toLowerCase().includes(q) || (a.ultima_mensagem ?? "").toLowerCase().includes(q)
@@ -101,14 +94,6 @@ function ChatPage() {
       >
         <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
           <p className="text-base font-semibold text-foreground">Conversas</p>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-md"
-            aria-label="Nova conversa"
-          >
-            <SquarePen className="h-4 w-4" />
-          </Button>
         </div>
         <div className="flex items-center gap-2 px-3 pt-3">
           <div className="relative flex-1">
@@ -120,14 +105,6 @@ function ChatPage() {
               className="h-9 rounded-full bg-muted/40 pl-9"
             />
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 rounded-full"
-            aria-label="Filtros"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-          </Button>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-2.5">
           <FiltroChip ativo={filtro === "todas"} onClick={() => setFiltro("todas")}>
@@ -136,9 +113,6 @@ function ChatPage() {
           <FiltroChip ativo={filtro === "nao_lidas"} onClick={() => setFiltro("nao_lidas")}>
             Não lidas
           </FiltroChip>
-          <FiltroChip ativo={filtro === "arquivadas"} onClick={() => setFiltro("arquivadas")}>
-            Arquivadas
-          </FiltroChip>
         </div>
         <div className="flex-1 overflow-y-auto">
           {loadingAt ? (
@@ -146,6 +120,15 @@ function ChatPage() {
               {[0, 1, 2, 3].map((i) => (
                 <Skeleton key={i} className="h-14 w-full rounded-lg" />
               ))}
+            </div>
+          ) : erroAt && !atendentes ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-8 text-center">
+              <p className="text-sm text-destructive">
+                {mensagemDeErro(erroAtObj, "Não foi possível carregar as conversas.")}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => recarregarAt()}>
+                Tentar de novo
+              </Button>
             </div>
           ) : lista.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 px-6 py-8 text-center">
@@ -165,41 +148,30 @@ function ChatPage() {
                     selecionado={a.atendente_id === selId}
                     onClick={() => setSelId(a.atendente_id)}
                   />
-                  <button
-                    type="button"
-                    aria-label={`Excluir conversa com ${a.nome}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!window.confirm("Excluir esta conversa da sua lista?")) return;
-                      import("@/lib/portal/cliente.functions")
-                        .then((m) =>
-                          m.clienteExcluirConversa({ data: { atendente_id: a.atendente_id } }),
-                        )
-                        .then(() => {
-                          toast.success("Conversa excluída.");
-                          qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
-                          if (selId === a.atendente_id) setSelId(null);
-                        })
-                        .catch((err) => toast.error(err?.message ?? "Erro ao excluir."));
+                  <ConfirmDelete
+                    titulo="Excluir esta conversa?"
+                    descricao={`A conversa com ${a.nome} sai da sua lista.`}
+                    onConfirm={async () => {
+                      const m = await import("@/lib/portal/cliente.functions");
+                      await m.clienteExcluirConversa({ data: { atendente_id: a.atendente_id } });
+                      toast.success("Conversa excluída.");
+                      qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
+                      if (selId === a.atendente_id) setSelId(null);
                     }}
-                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-100 shadow-sm backdrop-blur transition hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                    trigger={
+                      <button
+                        type="button"
+                        aria-label={`Excluir conversa com ${a.nome}`}
+                        className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-100 shadow-sm backdrop-blur transition hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    }
+                  />
                 </li>
               ))}
             </ul>
           )}
-        </div>
-        <div className="shrink-0 border-t border-border/60 p-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-between rounded-full bg-muted/40 hover:bg-muted"
-          >
-            Ver todas as conversas
-            <ChevronRight className="h-4 w-4" />
-          </Button>
         </div>
       </aside>
 
@@ -213,7 +185,7 @@ function ChatPage() {
             podeVoltar={true}
             onVoltar={() => setSelId(null)}
             headerExtras={<ChatConfigSheet />}
-            quickActions={<AcoesRapidas />}
+            quickActions={<AcoesRapidas atendenteId={selecionado.atendente_id} />}
           />
         ) : (
           <div className="hidden h-[calc(100dvh-10rem)] min-h-[520px] items-center justify-center rounded-2xl border border-dashed border-border/60 bg-card text-center lg:flex">
@@ -234,7 +206,7 @@ function ChatPage() {
       <aside className="hidden min-w-0 flex-col gap-3 lg:flex lg:h-[calc(100dvh-10rem)] lg:overflow-y-auto">
         <CardResumo visao={visao ?? null} selecionado={selecionado} />
         <CardProgresso visao={visao ?? null} />
-        <CardDocumentos docs={docs ?? []} />
+        <CardDocumentos docs={docs ?? []} erro={erroDocs && !docs} />
       </aside>
     </div>
   );
@@ -293,7 +265,6 @@ function ItemConversa({
             {iniciais(a.nome)}
           </AvatarFallback>
         </Avatar>
-        <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-emerald-500" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
@@ -324,31 +295,35 @@ function ItemConversa({
   );
 }
 
-function AcoesRapidas() {
+function AcoesRapidas({ atendenteId }: { atendenteId: string }) {
+  const qc = useQueryClient();
+  // Antes ia com atendente_id "" e falhava sempre, sem aviso.
   const responder = useMutation({
     mutationFn: (p: { mensagem: string }) =>
       import("@/lib/portal/cliente.functions").then((m) =>
-        m.clienteEnviarMensagem({ data: { atendente_id: "", mensagem: p.mensagem } }),
+        m.clienteEnviarMensagem({ data: { atendente_id: atendenteId, mensagem: p.mensagem } }),
       ),
-    onSuccess: () => toast.success("Solicitação enviada."),
+    onSuccess: () => {
+      toast.success("Pedido de retorno enviado.");
+      qc.invalidateQueries({ queryKey: ["cliente", "mensagens", atendenteId] });
+      qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
+    },
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível enviar o pedido.")),
   });
 
+  // "Enviar documento" e "Falar com especialista" levavam para outra tela que
+  // mandava de volta para cá; o envio de documento é o clipe do próprio chat.
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <BotaoAcao
-        icon={Paperclip}
-        label="Enviar documento"
-        to="/cliente/acompanhar-minha-proposta"
-      />
       <BotaoAcao icon={FileText} label="Ver proposta" to="/cliente/acompanhar-minha-proposta" />
-      <BotaoAcao icon={UserRound} label="Falar com especialista" to="/cliente/chat" />
       <Button
         variant="outline"
         size="sm"
         className="h-8 rounded-full border-border/70 bg-background text-xs font-medium"
+        disabled={responder.isPending}
         onClick={() =>
           responder.mutate({
-            mensagem: "Olá, tudo bem? Gostaria de um retorno referente à minha proposta.",
+            mensagem: "Olá. Gostaria de um retorno sobre a minha proposta.",
           })
         }
       >
@@ -396,10 +371,7 @@ function CardResumo({
   const ultima = visao?.processo.ultima_atualizacao ?? null;
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-foreground">Resumo do atendimento</p>
-        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-      </div>
+      <p className="text-sm font-semibold text-foreground">Resumo do atendimento</p>
       <div className="mt-3 space-y-3 text-xs">
         <div>
           <p className="text-muted-foreground">Responsável</p>
@@ -413,16 +385,6 @@ function CardResumo({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-foreground">{responsavelNome}</p>
               <p className="truncate text-[11px] text-muted-foreground">Especialista em crédito</p>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 rounded-full"
-                aria-label="Mensagem"
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-              </Button>
             </div>
           </div>
         </div>
@@ -496,7 +458,9 @@ function CardProgresso({
 
 function CardDocumentos({
   docs,
+  erro = false,
 }: {
+  erro?: boolean;
   docs: Array<{
     id: string;
     tipo_documento: string | null;
@@ -504,14 +468,14 @@ function CardDocumentos({
     status: string;
   }>;
 }) {
-  const compartilhados = docs
-    .filter((d) => (d.status ?? "").toLowerCase() !== "pendente")
-    .slice(0, 4);
+  const compartilhados = docs.filter((d) => (d.status ?? "").toLowerCase() !== "pendente");
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       <p className="text-sm font-semibold text-foreground">Documentos compartilhados</p>
       <ul className="mt-3 space-y-2.5">
-        {compartilhados.length === 0 ? (
+        {erro ? (
+          <li className="text-xs text-destructive">Não foi possível carregar os documentos.</li>
+        ) : compartilhados.length === 0 ? (
           <li className="text-xs text-muted-foreground">Nenhum documento compartilhado ainda.</li>
         ) : (
           compartilhados.map((d) => (
@@ -527,29 +491,10 @@ function CardDocumentos({
                   {d.nome_arquivo ?? "Arquivo enviado"}
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full"
-                aria-label="Baixar"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
             </li>
           ))
         )}
       </ul>
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        className="mt-3 w-full justify-between rounded-full bg-muted/40 hover:bg-muted"
-      >
-        <Link to="/cliente/acompanhar-minha-proposta">
-          Ver todos os documentos
-          <ChevronRight className="h-4 w-4" />
-        </Link>
-      </Button>
     </div>
   );
 }

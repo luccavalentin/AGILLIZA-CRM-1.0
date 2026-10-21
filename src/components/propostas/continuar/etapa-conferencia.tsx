@@ -598,7 +598,7 @@ export function EtapaConferencia({
               ? "Alterações não salvas…"
               : autosalvo
                 ? `Salvo no CRM às ${autosalvo.quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Valores e renda vão ao gravar.`
-                : 'Salva no CRM automaticamente. "Gravar e avançar" envia à HomeFin.'}
+                : 'Salva no CRM automaticamente. "Gravar e avançar" envia à integração bancária.'}
         </p>
         <Button onClick={gravar} disabled={salvando} className="gap-2">
           {salvando && <Loader2 className="h-4 w-4 animate-spin" />}

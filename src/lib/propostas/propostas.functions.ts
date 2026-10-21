@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { ipDoCliente } from "@/lib/http/ip-cliente";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import {
   aplicarPadroesCliente,
@@ -38,6 +39,8 @@ export interface PropostaListaItem {
   id: string;
   numero_proposta: string;
   numero_proposta_banco: string | null;
+  /** ID da operação na integração bancária, mostrado só como "ID". */
+  homefin_id_oportunidade: string | number | null;
   nome_cliente: string | null;
   cpf_cnpj: string | null;
   nome_banco: string | null;
@@ -208,7 +211,7 @@ export const listarPropostas = createServerFn({ method: "GET" })
         supabase
           .from("propostas")
           .select(
-            "id, cliente_id, numero_proposta, numero_proposta_banco, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
+            "id, cliente_id, numero_proposta, numero_proposta_banco, homefin_id_oportunidade, nome_cliente, cpf_cnpj, nome_banco, produto, valor_financiamento, status, detalhe_status_atual, status_atualizado_em, ultima_sincronizacao_em, created_at, usuario_responsavel_id, usuario_criador_id, deleted_at, deleted_by, deleted_motivo",
             { count: "exact" },
           ),
       );
@@ -344,7 +347,12 @@ export const listarPropostas = createServerFn({ method: "GET" })
           corretor_nome: corrId ? (nomesPerfis.get(corrId) ?? null) : null,
           comercial_nome: comId ? (nomesPerfis.get(comId) ?? null) : null,
           nome_excluidor: r.deleted_by ? (nomesPerfis.get(r.deleted_by) ?? null) : null,
-          bancos: bancosPorProp.get(r.id) ?? [],
+          // Proposta trazida de fora (ex.: do Corretor) pode não ter linha em
+          // `proposta_bancos`, só o banco no cabeçalho. Sem este recurso a lista
+          // mostrava "Nenhum banco selecionado" para uma proposta com Nº banco.
+          bancos:
+            bancosPorProp.get(r.id) ??
+            (r.nome_banco ? [{ nome_banco: r.nome_banco, status_banco: null }] : []),
           documentacao: documentacaoPorProp.get(r.id) ?? null,
         };
       });
@@ -748,6 +756,19 @@ export const criarProposta = createServerFn({ method: "POST" })
     // `bancoEscolhido` vive dentro do bloco acima; aqui fora o banco escolhido
     // é o único item de `bancosParaVincular`.
     const bancoDaProposta = bancosParaVincular[0];
+
+    // Simulação de uma conta assinante (espelhada pela Conta): a proposta do lado do
+    // assinante nasce antes, já vinculada a esta simulação, e a situação volta a ele
+    // pelo gatilho de sempre. Para a base própria não faz nada (vinculo-envio.server).
+    if (snapshot.simulacao_id && bancoDaProposta?.codigo_banco) {
+      const { vincularEnvioAoAssinante } = await import("@/lib/plataforma/vinculo-envio.server");
+      await vincularEnvioAoAssinante({
+        userId,
+        simulacaoId: String(snapshot.simulacao_id),
+        codigoBanco: Number(bancoDaProposta.codigo_banco),
+      });
+    }
+
     const reaproveitada =
       snapshot.simulacao_id && bancoDaProposta?.id
         ? await rascunhoJaCriado(supabaseAdmin, {
@@ -1969,10 +1990,7 @@ export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
-    const ip =
-      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ??
-      getRequestHeader("cf-connecting-ip") ??
-      null;
+    const ip = ipDoCliente(getRequestHeader);
 
     // A agência fica gravada na linha do banco da proposta, e não só neste
     // envio: o PUT da simulação na integração SUBSTITUI o registro, então um
@@ -2160,7 +2178,7 @@ export const removerArquivoVagaBanco = createServerFn({ method: "POST" })
     await supabase.from("proposta_historico").insert({
       proposta_id: prop.id,
       tipo_evento: "sincronizacao",
-      descricao: "Arquivo excluído da HomeFin.",
+      descricao: "Arquivo excluído da integração bancária.",
       ator_id: userId,
     } as any);
     return { ok: true };

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -132,34 +132,13 @@ function Pagina() {
       setSalvo({ nome, telefone, fotoUrl });
       qc.invalidateQueries({ queryKey: ["minha-sessao"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
   const alterado = useMemo(
     () => nome !== salvo.nome || telefone !== salvo.telefone || fotoUrl !== salvo.fotoUrl,
     [nome, telefone, fotoUrl, salvo],
   );
-
-  const [novaSenha, setNovaSenha] = useState("");
-  const [confirmaSenha, setConfirmaSenha] = useState("");
-  const [salvandoSenha, setSalvandoSenha] = useState(false);
-  const podeSalvarSenha = novaSenha.length >= 8 && novaSenha === confirmaSenha;
-
-  async function alterarSenha() {
-    if (!podeSalvarSenha) return;
-    setSalvandoSenha(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password: novaSenha });
-      if (error) throw error;
-      toast.success("Senha alterada com sucesso.");
-      setNovaSenha("");
-      setConfirmaSenha("");
-    } catch {
-      toast.error("Não foi possível alterar a senha. Faça login novamente e tente de novo.");
-    } finally {
-      setSalvandoSenha(false);
-    }
-  }
 
   const emailAtual = sessao?.profile?.email ?? "";
   const [novoEmail, setNovoEmail] = useState("");
@@ -178,16 +157,22 @@ function Pagina() {
     setSalvandoEmail(true);
     try {
       const alvo = novoEmail.trim();
-      const { error } = await supabase.auth.updateUser(
+      const { data: alterado, error } = await supabase.auth.updateUser(
         { email: alvo },
         { emailRedirectTo: window.location.origin + "/conta/perfil" },
       );
       if (error) throw error;
+      // O servidor copia para o perfil o e-mail que o login tem DE FATO: com confirmação
+      // pendente continua o antigo (antes o perfil mudava antes de a pessoa confirmar).
       await sincronizarEmailFn({ data: { email: alvo } });
       qc.invalidateQueries({ queryKey: ["minha-sessao"] });
-      toast.success(
-        "Enviamos um link de confirmação para o novo e-mail. Confirme para concluir a alteração.",
-      );
+      if (alterado.user?.email?.toLowerCase() === alvo.toLowerCase()) {
+        toast.success("E-mail alterado.");
+      } else {
+        toast.success(
+          "Enviamos um link de confirmação para o novo e-mail. Confirme para concluir a alteração.",
+        );
+      }
     } catch (e) {
       toast.error(mensagemDeErro(e, "Não foi possível alterar o e-mail."));
     } finally {
@@ -345,50 +330,18 @@ function Pagina() {
           numero="03"
           icon={<Lock className="size-5" />}
           titulo="Segurança"
-          descricao="Defina uma nova senha de acesso."
+          descricao="Senha de acesso e desbloqueio por biometria."
         >
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="nova-senha" className="text-xs font-medium text-muted-foreground">
-                  Nova senha
-                </Label>
-                <Input
-                  id="nova-senha"
-                  type="password"
-                  value={novaSenha}
-                  onChange={(e) => setNovaSenha(e.target.value)}
-                  placeholder="Mínimo de 8 caracteres"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="confirma-senha"
-                  className="text-xs font-medium text-muted-foreground"
-                >
-                  Confirmar nova senha
-                </Label>
-                <Input
-                  id="confirma-senha"
-                  type="password"
-                  value={confirmaSenha}
-                  onChange={(e) => setConfirmaSenha(e.target.value)}
-                />
-                {confirmaSenha.length > 0 && novaSenha !== confirmaSenha && (
-                  <p className="text-xs text-destructive">As senhas não coincidem.</p>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <ShieldCheck className="size-3.5" />
-                Use uma senha forte e exclusiva.
-              </p>
-              <Button onClick={alterarSenha} disabled={!podeSalvarSenha || salvandoSenha}>
-                {salvandoSenha && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Alterar senha
-              </Button>
-            </div>
+          {/* A troca de senha mora só em Segurança, que confere a senha atual e recusa
+              senha fraca ou igual ao e-mail. Aqui havia uma segunda troca sem nada disso. */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <ShieldCheck className="size-3.5" />
+              Use uma senha forte e exclusiva.
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/conta/seguranca">Alterar senha</Link>
+            </Button>
           </div>
         </Secao>
 

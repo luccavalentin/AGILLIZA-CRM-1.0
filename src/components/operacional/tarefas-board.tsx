@@ -104,7 +104,8 @@ export function TarefasBoard({
   onSelecionar: (id: string) => void;
   onToggle: (t: TarefaBoardItem) => void;
   onStatus: (t: TarefaBoardItem, status: string) => void;
-  onExcluir: (id: string) => void | Promise<void>;
+  /** Sem permissão de excluir, a tela não passa e a lixeira some. */
+  onExcluir?: (id: string) => void | Promise<void>;
 }) {
   const [fechados, setFechados] = useState<Record<string, boolean>>({});
 
@@ -301,13 +302,15 @@ export function TarefasBoard({
                         </div>
 
                         <div className="hidden justify-end opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 md:flex">
-                          <ConfirmDelete
-                            titulo="Excluir tarefa"
-                            descricao={`A tarefa ${t.numero ?? "—"} será removida permanentemente.`}
-                            onConfirm={async () => {
-                              await onExcluir(t.id);
-                            }}
-                          />
+                          {onExcluir && (
+                            <ConfirmDelete
+                              titulo="Excluir tarefa"
+                              descricao={`A tarefa ${t.numero ?? "—"} será removida permanentemente.`}
+                              onConfirm={async () => {
+                                await onExcluir?.(t.id);
+                              }}
+                            />
+                          )}
                         </div>
                       </li>
                     );

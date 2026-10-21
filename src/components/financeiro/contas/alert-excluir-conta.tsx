@@ -18,7 +18,7 @@ export function AlertExcluirConta({
   onCancel,
   onConfirm,
 }: {
-  alvo: { id: string; numero: string } | null;
+  alvo: { id: string; numero: string; valorPago?: number } | null;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -29,6 +29,15 @@ export function AlertExcluirConta({
           <AlertDialogTitle>Excluir conta</AlertDialogTitle>
           <AlertDialogDescription>
             A conta {alvo?.numero} será removida permanentemente. Esta ação não pode ser desfeita.
+            {(alvo?.valorPago ?? 0) > 0 && (
+              <>
+                {" "}
+                <strong className="text-destructive">
+                  Ela já tem pagamentos registrados: as baixas também somem do fluxo de caixa.
+                </strong>{" "}
+                Para manter o histórico, use Estornar em vez de excluir.
+              </>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Users, Calculator, FileText, Percent } from "lucide-react";
 import { ParceiroPage, formatBRL } from "@/components/parceiro/parceiro-page";
 import { getResumoParceiro } from "@/lib/parceiro/portal.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/_authenticated/parceiro-inicio")({
   head: () => ({ meta: [{ title: "Início — Portal do Parceiro" }] }),
@@ -23,6 +24,12 @@ function InicioParceiro() {
 
   return (
     <ParceiroPage titulo="Início" descricao="Resumo da sua carteira de parceria.">
+      {resumo.isError && (
+        // Sem isto, uma falha aparecia como carteira zerada.
+        <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+          {mensagemDeErro(resumo.error, "Não foi possível carregar o resumo da sua carteira.")}
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
           <div key={c.label} className="rounded-xl border bg-card p-4">

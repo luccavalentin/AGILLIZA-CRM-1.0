@@ -239,6 +239,7 @@ export function SecaoComposicaoRenda({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                       type="button"
                       variant="ghost"
                       size="icon"
+                      aria-label="Remover participante"
                       className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={() => removeParticipante(p.id)}
                     >

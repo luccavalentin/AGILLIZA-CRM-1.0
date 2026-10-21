@@ -38,7 +38,9 @@ import {
   listarAlteracoesSalariais,
   registrarAlteracaoSalarial,
 } from "@/lib/rh/submodulos.functions";
-import { formatBRL } from "@/lib/financeiro/format";
+import { formatBRL, formatData, hojeISO } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 
 const TIPOS = ["Reajuste anual", "Promoção", "Mérito", "Equiparação", "Correção", "Outro"];
 
@@ -59,7 +61,7 @@ function Pagina() {
     salario_novo: 0,
     tipo: TIPOS[0],
     motivo: "",
-    vigencia: new Date().toISOString().slice(0, 10),
+    vigencia: hojeISO(),
   });
 
   const q = useQuery({ queryKey: ["rh-alt-sal"], queryFn: () => fnList() });
@@ -82,7 +84,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["rh-funcionarios"] });
       setOpen(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
 
   return (
@@ -205,22 +207,15 @@ function Pagina() {
                       <TableCell>{formatBRL(r.salario_novo)}</TableCell>
                       <TableCell className={delta >= 0 ? "text-emerald-600" : "text-destructive"}>
                         {delta >= 0 ? "+" : ""}
-                        {formatBRL(delta)} ({pct.toFixed(1)}%)
+                        {formatBRL(delta)} ({pct.toFixed(1).replace(".", ",")}%)
                       </TableCell>
-                      <TableCell>{new Date(r.vigencia).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell>{formatData(r.vigencia)}</TableCell>
                       <TableCell className="max-w-[280px] truncate">{r.motivo ?? "—"}</TableCell>
                     </TableRow>
                   );
                 })}
                 {(!q.data || q.data.length === 0) && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="py-10 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhuma alteração registrada.
-                    </TableCell>
-                  </TableRow>
+                  <LinhaEstadoLista colSpan={7} q={q} vazio="Nenhuma alteração registrada." />
                 )}
               </TableBody>
             </Table>

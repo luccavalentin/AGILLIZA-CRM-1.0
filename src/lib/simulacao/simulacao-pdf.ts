@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { exportPDF, drawBrandHeader } from "@/lib/relatorios/report-pdf";
-import { formatBRL, formatPercent, formatTaxa } from "@/lib/simulacao/format";
+import { formatBRL, formatPercent, formatTaxa, maskCpfCnpj } from "@/lib/simulacao/format";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
 import {
   divisaoFinanciamento,
@@ -219,7 +219,7 @@ function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number 
   const valores = [
     (s.nome_cliente ?? "—").toString().toUpperCase(),
     dataTxt(s.data_nascimento),
-    s.cpf_cnpj ?? "—",
+    s.cpf_cnpj ? maskCpfCnpj(s.cpf_cnpj) : "—",
   ];
 
   rotulos.forEach((r, i) => {
@@ -246,7 +246,7 @@ function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number 
     const valoresC = [
       (s.nome_conjuge ?? "—").toString().toUpperCase(),
       dataTxt(s.data_nascimento_conjuge),
-      s.cpf_conjuge ?? "—",
+      s.cpf_conjuge ? maskCpfCnpj(s.cpf_conjuge) : "—",
     ];
     rotulosC.forEach((r, i) => {
       doc.setTextColor(P.cinza);
@@ -758,7 +758,7 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
   const docInfo = [
     { label: "Data da simulação", value: dataTxt(s.created_at ?? new Date()) },
     { label: "Cliente", value: (s.nome_cliente ?? "—").toString() },
-    { label: "CPF / CNPJ", value: s.cpf_cnpj ?? "—" },
+    { label: "CPF / CNPJ", value: s.cpf_cnpj ? maskCpfCnpj(s.cpf_cnpj) : "—" },
   ];
 
   const sistemasBancos = Array.from(

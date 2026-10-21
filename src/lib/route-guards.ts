@@ -55,3 +55,9 @@ export async function assertModuloPermitido(
     throw redirect({ to: "/dashboard" });
   }
 }
+
+/** Se o usuário vê o módulo (sem redirecionar) — para rotas que escolhem para onde levar. */
+export async function moduloPermitido(modulo: string): Promise<boolean> {
+  const perms = await carregarPermissoes();
+  return perms.todas || perms.chaves.includes(`${modulo}:view`);
+}

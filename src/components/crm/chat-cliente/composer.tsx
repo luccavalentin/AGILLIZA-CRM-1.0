@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { type ChatMensagem } from "@/lib/crm/chat-cliente.functions";
 import { type ContextoResposta } from "@/lib/crm/respostas-rapidas";
 import { RespostasRapidas } from "./respostas-rapidas";
+import { datetimeLocalParaIso } from "./utils";
 
 type AbaId = "mensagem" | "nota" | "tarefa" | "retorno";
 
@@ -66,7 +67,7 @@ const EMOJIS = [
 export interface ComposerSubmitPayload {
   modo: AbaId;
   texto: string;
-  /** Data/hora ISO para tarefa/retorno. */
+  /** Data/hora ISO (UTC) para tarefa/retorno — o campo é lido como hora de Brasília. */
   prazo?: string;
 }
 
@@ -160,7 +161,7 @@ export function ChatComposer({
     submeter({
       modo,
       texto: texto.trim(),
-      prazo: prazo || undefined,
+      prazo: datetimeLocalParaIso(prazo) ?? undefined,
     });
   }
 
@@ -323,6 +324,7 @@ export function ChatComposer({
               className="size-7 shrink-0 text-muted-foreground"
               onClick={cancelarComposer}
               title="Cancelar"
+              aria-label="Cancelar"
             >
               <X className="size-4" />
             </Button>
@@ -368,6 +370,7 @@ export function ChatComposer({
                   onClick={() => fileRef.current?.click()}
                   disabled={bloqueiaEnvio}
                   size="icon"
+                  aria-label="Anexar imagem ou documento"
                   variant="ghost"
                   className="size-9 shrink-0 rounded-lg text-muted-foreground"
                   title="Anexar imagem ou documento"
@@ -383,6 +386,7 @@ export function ChatComposer({
                   onClick={() => docFileRef.current?.click()}
                   disabled={bloqueiaEnvio}
                   size="icon"
+                  aria-label="Anexar documento"
                   variant="ghost"
                   className="size-9 shrink-0 rounded-lg text-muted-foreground"
                   title="Anexar documento"
@@ -400,6 +404,7 @@ export function ChatComposer({
                   variant="ghost"
                   className="hidden size-9 shrink-0 rounded-lg text-muted-foreground sm:inline-flex"
                   title="Inserir emoji"
+                  aria-label="Inserir emoji"
                 >
                   <Smile className="size-4" />
                 </Button>
@@ -426,6 +431,7 @@ export function ChatComposer({
                 onClick={gravando ? pararGravacao : iniciarGravacao}
                 disabled={enviandoAudio || enviarPending}
                 size="icon"
+                aria-label={gravando ? "Parar gravação" : "Gravar áudio"}
                 variant={gravando ? "destructive" : "ghost"}
                 className={cn(
                   "hidden size-9 shrink-0 rounded-lg sm:inline-flex",
@@ -495,6 +501,7 @@ export function ChatComposer({
                     isNota && "bg-amber-500 text-amber-50 hover:bg-amber-500/90 dark:bg-amber-600",
                   )}
                   title="Outras opções de envio"
+                  aria-label="Outras opções de envio"
                 >
                   <ChevronDown className="size-4" />
                 </Button>

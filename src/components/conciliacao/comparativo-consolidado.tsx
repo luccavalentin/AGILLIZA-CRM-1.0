@@ -19,6 +19,10 @@ import {
 import { abaResumo } from "@/lib/conciliacao/xlsx-tipos";
 import { baixarXlsx, gerarPdfComparativo, type ModoSaida } from "@/lib/conciliacao/exportar-lazy";
 import { listarItensConciliacao } from "@/lib/conciliacao/conciliacao.functions";
+import { registrarExport } from "@/lib/relatorios/reports.functions";
+import { usePermissao } from "@/hooks/use-permissao";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { toast } from "sonner";
 import { SITUACAO_LABEL } from "@/lib/conciliacao/bancos";
 import {
   ETAPAS_COMPARATIVO,
@@ -117,6 +121,10 @@ export function ComparativoConsolidado({
   periodoLabel: string;
 }) {
   const listar = useServerFn(listarItensConciliacao);
+  const registrar = useServerFn(registrarExport);
+  // Mesma regra dos relatórios: planilha, PDF e impressão pedem "Exportar", e o
+  // registro (que confere a permissão no servidor) vem antes do arquivo.
+  const podeExportar = usePermissao("relatorios.geral", "export");
   const [busca, setBusca] = useState("");
   const [etapas, setEtapas] = useState<EtapaComparativo[]>([]);
 
@@ -128,6 +136,7 @@ export function ComparativoConsolidado({
   });
 
   const isLoading = queries.some((q) => q.isLoading);
+  const consultaComErro = queries.find((q) => q.isError);
 
   const todos = useMemo<Linha[]>(() => {
     const out: Linha[] = [];
@@ -173,7 +182,25 @@ export function ComparativoConsolidado({
     return m;
   }, [todos]);
 
+  async function autorizar(formato: "xlsx" | "pdf" | "imprimir"): Promise<boolean> {
+    try {
+      await registrar({
+        data: {
+          codigo: "comparativos",
+          formato,
+          registros: filtrados.length,
+          filtros: { periodo: periodoLabel, resultados, etapas, lotes: lotes.map((l) => l.id) },
+        },
+      });
+      return true;
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível exportar."));
+      return false;
+    }
+  }
+
   async function exportar() {
+    if (!(await autorizar("xlsx"))) return;
     const linhas = filtrados.map(paraExport);
     const bancos = [...new Set(filtrados.map((i) => i._banco))].sort((a, b) =>
       a.localeCompare(b, "pt-BR"),
@@ -226,7 +253,8 @@ export function ComparativoConsolidado({
     );
   }
 
-  function exportarPdf(modo: ModoSaida) {
+  async function exportarPdf(modo: ModoSaida) {
+    if (!(await autorizar(modo === "print" ? "imprimir" : "pdf"))) return;
     void gerarPdfComparativo({
       titulo: "Comparativo de dados — consolidado",
       descricao: `Relatórios dos bancos cruzados com as propostas do sistema · ${periodoLabel}`,
@@ -300,35 +328,37 @@ export function ComparativoConsolidado({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void exportar()}
-            disabled={!filtrados.length}
-          >
-            <Download className="h-3.5 w-3.5" />
-            Planilha unificada
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportarPdf("download")}
-            disabled={!filtrados.length}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            PDF
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportarPdf("print")}
-            disabled={!filtrados.length}
-          >
-            <Printer className="h-3.5 w-3.5" />
-            Imprimir
-          </Button>
-        </div>
+        {podeExportar && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void exportar()}
+              disabled={!filtrados.length}
+            >
+              <Download className="h-3.5 w-3.5" />
+              Planilha unificada
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void exportarPdf("download")}
+              disabled={!filtrados.length}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void exportarPdf("print")}
+              disabled={!filtrados.length}
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Imprimir
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -373,6 +403,22 @@ export function ComparativoConsolidado({
               <TableRow>
                 <TableCell colSpan={11} className="py-10 text-center text-sm text-muted-foreground">
                   Carregando…
+                </TableCell>
+              </TableRow>
+            ) : consultaComErro ? (
+              <TableRow>
+                <TableCell colSpan={11} className="py-10 text-center text-sm">
+                  <span className="text-destructive">
+                    {mensagemDeErro(consultaComErro.error, "Não foi possível carregar os itens.")}
+                  </span>{" "}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => queries.forEach((q) => q.isError && q.refetch())}
+                  >
+                    Tentar de novo
+                  </Button>
                 </TableCell>
               </TableRow>
             ) : filtrados.length === 0 ? (

@@ -62,7 +62,7 @@ export function ContasCardsMobile({
             </div>
           </div>
           <div className="mt-3 flex items-center justify-between gap-2">
-            <ContaStatusBadge status={c.status_efetivo} />
+            <ContaStatusBadge status={c.status_efetivo} tipo={tipo} />
             <span className="text-base font-semibold tabular-nums text-foreground">
               {formatBRL(c.valor)}
             </span>

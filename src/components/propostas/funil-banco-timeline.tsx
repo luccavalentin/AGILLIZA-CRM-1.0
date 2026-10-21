@@ -23,24 +23,32 @@ export type EtapaBanco = {
  * Todas as métricas exibidas usam dados reais do payload (atualizada_em,
  * concluida, ativa, statusProposta). Nada é hardcoded/fake.
  */
+/** Status da proposta que já trazem a decisão de crédito aprovada. */
+const STATUS_APROVADOS = new Set([
+  "credito_aprovado",
+  "credito_condicionado",
+  "formularios",
+  "contrato_emitido",
+  "registrado",
+]);
+
 export function FunilBancoTimeline({
   etapas,
   statusProposta,
   bancoReprovado,
+  criadaEm,
 }: {
   etapas?: EtapaBanco[] | null;
   statusProposta?: string | null;
   bancoReprovado?: string | null;
+  /** Criação da proposta: datas do provedor anteriores a ela não são exibidas. */
+  criadaEm?: string | null;
 }) {
   const lista = Array.isArray(etapas)
     ? [...etapas].filter((e) => e?.nome).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
     : [];
 
   if (lista.length === 0) return null;
-
-  const totalConcluidas = lista.filter((e) => e.concluida).length;
-  const total = lista.length;
-  const pctConcluidas = total > 0 ? Math.round((totalConcluidas / total) * 100) : 0;
 
   const reprovado = statusProposta === "credito_recusado";
 
@@ -62,8 +70,31 @@ export function FunilBancoTimeline({
   const posBifurcacaoAlcancada = temPosBifurcacao
     ? lista.slice(idxBifurcacao + 1).some((e) => e.ativa || e.concluida)
     : false;
-  const aprovado = !reprovado && (posBifurcacaoAlcancada || (etapaBifurcacao?.concluida ?? false));
+  const aprovado =
+    !reprovado &&
+    (posBifurcacaoAlcancada ||
+      (etapaBifurcacao?.concluida ?? false) ||
+      STATUS_APROVADOS.has(String(statusProposta ?? "")));
   const decisaoPendente = !reprovado && !aprovado;
+
+  // Com a decisão de crédito tomada, as etapas até ela estão fechadas — mesmo
+  // que o provedor ainda não tenha marcado "concluída". Antes a Simulação
+  // seguia "Em processamento" numa proposta já recusada.
+  const fechada = (i: number) => !decisaoPendente && idxBifurcacao >= 0 && i <= idxBifurcacao;
+  const concluidaEf = (e: EtapaBanco, i: number) => e.concluida || fechada(i);
+
+  const totalConcluidas = lista.filter((e, i) => concluidaEf(e, i)).length;
+  const total = lista.length;
+  const pctConcluidas = total > 0 ? Math.round((totalConcluidas / total) * 100) : 0;
+
+  // Data crua do provedor anterior à proposta (ex.: 29/07/2024 numa proposta
+  // de 2026) não diz nada ao operador: fica de fora.
+  const criada = criadaEm ? parseDate(criadaEm) : null;
+  const dataValida = (v: string) => {
+    const d = parseDate(v);
+    if (!d) return false;
+    return !criada || d.getTime() >= criada.getTime() - 86400000;
+  };
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -105,7 +136,8 @@ export function FunilBancoTimeline({
         />
 
         <ol className="relative space-y-4">
-          {lista.map((e, i) => {
+          {lista.map((etapaBruta, i) => {
+            const e = { ...etapaBruta, concluida: concluidaEf(etapaBruta, i) };
             const emAndamento = e.ativa && !e.concluida;
             const morta = reprovado && idxBifurcacao >= 0 && i > idxBifurcacao;
             const mostrarBifurcacao = i === idxBifurcacao && temPosBifurcacao;
@@ -189,11 +221,14 @@ export function FunilBancoTimeline({
                   </div>
 
                   {/* Linha de metadados (timestamp) */}
-                  {e.atualizada_em && !morta && (e.concluida || emAndamento) && (
-                    <p className="mt-1 text-[10px] font-mono tabular-nums text-muted-foreground">
-                      · {formatarDataHora(e.atualizada_em)}
-                    </p>
-                  )}
+                  {e.atualizada_em &&
+                    dataValida(e.atualizada_em) &&
+                    !morta &&
+                    (e.concluida || emAndamento) && (
+                      <p className="mt-1 text-[10px] font-mono tabular-nums text-muted-foreground">
+                        · {formatarDataHora(e.atualizada_em)}
+                      </p>
+                    )}
 
                   {/* Painel tonal na etapa em andamento */}
                   {emAndamento && !morta && !mostrarBifurcacao && (

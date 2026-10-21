@@ -3,7 +3,8 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Save, User, Upload } from "lucide-react";
+import { mascararTelefone, validarTelefone } from "@/lib/crm/documento";
+import { Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,10 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarNiveisAcesso } from "@/lib/admin/regras-modulos.functions";
-import { atualizarPessoa, type PessoaLista } from "@/lib/admin/pessoas.functions";
+import {
+  alterarEmailPessoa,
+  atualizarPessoa,
+  type PessoaLista,
+} from "@/lib/admin/pessoas.functions";
 import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
-import { PermissoesResumo } from "@/components/admin/permissoes-resumo";
-import { supabase } from "@/integrations/supabase/client";
 
 export function EditarPessoaDialog({
   pessoa,
@@ -38,6 +41,10 @@ export function EditarPessoaDialog({
   const qc = useQueryClient();
   const listar = useServerFn(listarNiveisAcesso);
   const atualizar = useServerFn(atualizarPessoa);
+  const alterarEmail = useServerFn(alterarEmailPessoa);
+  /** null = e-mail só exibido; texto = campo liberado para troca. */
+  const [novoEmail, setNovoEmail] = useState<string | null>(null);
+  const [trocandoEmail, setTrocandoEmail] = useState(false);
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -48,11 +55,13 @@ export function EditarPessoaDialog({
   useEffect(() => {
     if (pessoa) {
       setNome(pessoa.nome ?? "");
-      setTelefone(pessoa.telefone ?? "");
+      setTelefone(pessoa.telefone ? mascararTelefone(pessoa.telefone) : "");
       setNivelId(pessoa.nivel_acesso_id ?? "");
       setTiposPessoa(pessoa.tipos_pessoa ?? ["usuario"]);
       setAvatarUrl(pessoa.avatar_url ?? null);
     }
+    // Sem isto, o e-mail digitado (e não salvo) aparecia no cadastro da próxima pessoa.
+    setNovoEmail(null);
   }, [pessoa]);
 
   const listarTipos = useServerFn(listarTiposPessoa);
@@ -69,6 +78,7 @@ export function EditarPessoaDialog({
   const mAtualizar = useMutation({
     mutationFn: async () => {
       if (!pessoa) return;
+      if (telefone.trim() && !validarTelefone(telefone)) throw new Error("Telefone inválido.");
       return await atualizar({
         data: {
           id: pessoa.id,
@@ -81,11 +91,11 @@ export function EditarPessoaDialog({
       });
     },
     onSuccess: () => {
-      toast.success("Pessoa atualizada com sucesso!");
+      toast.success("Pessoa atualizada.");
       qc.invalidateQueries({ queryKey: ["pessoas"] });
       onClose();
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Erro ao atualizar.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível atualizar a pessoa.")),
   });
 
   if (!pessoa) return null;
@@ -174,38 +184,45 @@ export function EditarPessoaDialog({
           <div className="space-y-2">
             <Label htmlFor="ep-email">E-mail</Label>
             <div className="flex gap-2">
-              <Input id="ep-email" type="email" value={pessoa?.email ?? ""} readOnly disabled />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  const targetEmail = prompt("Novo e-mail:", pessoa?.email ?? "");
-                  if (targetEmail && targetEmail !== pessoa?.email) {
+              <Input
+                id="ep-email"
+                type="email"
+                value={novoEmail ?? pessoa?.email ?? ""}
+                onChange={(e) => setNovoEmail(e.target.value)}
+                disabled={novoEmail === null || trocandoEmail}
+              />
+              {novoEmail === null ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNovoEmail(pessoa?.email ?? "")}
+                >
+                  Trocar
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={trocandoEmail || !novoEmail.trim()}
+                  onClick={async () => {
+                    setTrocandoEmail(true);
                     try {
-                      // Usar client para atualizar e-mail via auth admin (necessita chave admin no client, ou API)
-                      const { data: adminAuth, error: adminErr } =
-                        await supabase.auth.admin.updateUserById(pessoa!.id, {
-                          email: targetEmail,
-                        });
-                      if (adminErr) throw adminErr;
-
-                      // O e-mail de autenticação mudou, agora precisamos atualizar nosso profile
-                      await supabase
-                        .from("profiles")
-                        .update({ email: targetEmail })
-                        .eq("id", pessoa!.id);
-
-                      toast.success("E-mail atualizado. O usuário deve confirmar o link enviado.");
+                      await alterarEmail({ data: { id: pessoa!.id, email: novoEmail } });
+                      toast.success("E-mail de acesso atualizado.");
+                      setNovoEmail(null);
+                      qc.invalidateQueries({ queryKey: ["pessoas"] });
                       onClose();
-                    } catch (e: any) {
-                      toast.error(e.message);
+                    } catch (e) {
+                      toast.error(mensagemDeErro(e, "Não foi possível trocar o e-mail."));
+                    } finally {
+                      setTrocandoEmail(false);
                     }
-                  }
-                }}
-              >
-                Trocar
-              </Button>
+                  }}
+                >
+                  {trocandoEmail ? <Loader2 className="size-4 animate-spin" /> : "Salvar e-mail"}
+                </Button>
+              )}
             </div>
           </div>
           <div className="space-y-2 pb-2">
@@ -215,7 +232,8 @@ export function EditarPessoaDialog({
             <Input
               id="ep-tel"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+              onChange={(e) => setTelefone(mascararTelefone(e.target.value))}
+              inputMode="tel"
               placeholder="(00) 00000-0000"
               className="rounded-lg"
             />

@@ -1,6 +1,7 @@
 import { corDoBanco } from "@/lib/bancos/cores";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import type { Tone } from "@/components/crm/tone-badge";
+import { statusProposta } from "@/components/propostas/status";
 
 export interface BancoStatusItem {
   nome_banco: string | null;
@@ -58,7 +59,7 @@ export function bancoJaEnviado(b: {
 }
 
 const toneClasses: Record<Tone, string> = {
-  success: "bg-success/10 text-success border-success/20",
+  success: "bg-success/10 text-success-texto border-success/20",
   info: "bg-primary/10 text-primary border-primary/20",
   warning: "bg-warning/15 text-warning-foreground border-warning/30",
   danger: "bg-destructive/10 text-destructive border-destructive/20",
@@ -98,7 +99,13 @@ export function StatusBancosProposta({
   fallbackStatus?: string | null;
 }) {
   if (!bancos || bancos.length === 0) {
-    return <span className="text-[13px] text-muted-foreground">{fallbackStatus ?? "—"}</span>;
+    // Sem linha de banco, mostra o status da proposta traduzido (antes saía o
+    // código cru, ex.: "credito_aprovado").
+    return (
+      <span className="text-[13px] text-muted-foreground">
+        {fallbackStatus ? statusProposta(fallbackStatus).label : "—"}
+      </span>
+    );
   }
   const desfecho = DESFECHO_PROPOSTA[String(fallbackStatus ?? "")];
   return (

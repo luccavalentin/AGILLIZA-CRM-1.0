@@ -44,6 +44,9 @@ import {
 } from "@/lib/crm/chat-gestao.functions";
 import { CORES, iniciais } from "./helpers";
 import { TagChip } from "./tag-chip";
+import { exibirDocumento } from "@/lib/crm/documento";
+import { usePermissao } from "@/hooks/use-permissao";
+import { datetimeLocalParaIso, isoParaDatetimeLocal } from "../chat-cliente/utils";
 
 export function MaisAcoesGestao(props: {
   clienteId: string;
@@ -95,6 +98,10 @@ function BarraGestao({
   const definirTags = useServerFn(definirEtiquetasCliente);
   const criarTag = useServerFn(criarEtiquetaChat);
   const excluirTag = useServerFn(excluirEtiquetaChat);
+  const overview = useServerFn(overviewGestaoChat);
+  // Etiquetas, SLA/lembrete e arquivamento: crm.chat › gerir. Mover etapa: edição do cliente.
+  const podeGerir = usePermissao("crm.chat", "gerir");
+  const podeMoverEtapa = usePermissao("crm.clientes", "edit");
 
   const [destino, setDestino] = useState<string>("");
   const [novaTag, setNovaTag] = useState("");
@@ -115,22 +122,23 @@ function BarraGestao({
     queryKey: ["chat-meta", clienteId],
     queryFn: () => getMeta({ data: { cliente_id: clienteId } }),
   });
-  const { data: overview } = useQuery({
+  const { data: dadosGestao } = useQuery({
     queryKey: ["chat-overview-cliente", clienteId],
-    queryFn: () => overviewGestaoChat({ data: { cliente_ids: [clienteId] } }),
+    queryFn: () => overview({ data: { cliente_ids: [clienteId] } }),
   });
 
   useEffect(() => {
     if (meta) {
       setSlaHoras(String(meta.sla_atualizacao_horas));
-      setLembreteEm(meta.lembrete_em ? new Date(meta.lembrete_em).toISOString().slice(0, 16) : "");
+      // Hora de Brasília nos dois sentidos (antes abria em UTC e adiantava 3 h a cada salvar).
+      setLembreteEm(isoParaDatetimeLocal(meta.lembrete_em));
       setLembreteNota(meta.lembrete_nota ?? "");
     }
   }, [meta]);
 
   const tagsAplicadas = useMemo(
-    () => new Set((overview?.links ?? []).map((l) => l.etiqueta_id)),
-    [overview],
+    () => new Set((dadosGestao?.links ?? []).map((l) => l.etiqueta_id)),
+    [dadosGestao],
   );
 
   const avancar = useMutation({
@@ -188,7 +196,7 @@ function BarraGestao({
         data: {
           cliente_id: clienteId,
           sla_atualizacao_horas: Math.max(1, Number(slaHoras) || 24),
-          lembrete_em: lembreteEm ? new Date(lembreteEm).toISOString() : null,
+          lembrete_em: datetimeLocalParaIso(lembreteEm),
           lembrete_nota: lembreteNota.trim() || null,
         },
       }),
@@ -197,7 +205,7 @@ function BarraGestao({
       qc.invalidateQueries({ queryKey: ["chat-meta", clienteId] });
       qc.invalidateQueries({ queryKey: ["chat-overview"] });
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível salvar.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível salvar o SLA e o lembrete.")),
   });
 
   const estaArquivada = meta?.arquivado ?? false;
@@ -216,7 +224,9 @@ function BarraGestao({
 
   const etapaAtual = stages?.find((s) => s.codigo === atual?.codigo)?.nome ?? "Cadastro básico";
   const temLembrete = Boolean(lembreteEm);
-  const contextoLinha = [documento, contexto].filter(Boolean).join(" · ");
+  const contextoLinha = [documento ? exibirDocumento(documento) : null, contexto]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <Card className="overflow-hidden border-border/60 border-l-2 border-l-primary/40 shadow-sm">
@@ -235,237 +245,245 @@ function BarraGestao({
               <p className="truncate text-xs text-muted-foreground">{contextoLinha}</p>
             )}
           </div>
-          <Button
-            variant={estaArquivada ? "default" : "outline"}
-            size="sm"
-            className="ml-auto h-8 shrink-0 gap-1.5 text-xs"
-            disabled={alternarArquivo.isPending}
-            onClick={() => alternarArquivo.mutate()}
-            title="O histórico é excluído automaticamente 2 meses após a emissão do contrato."
-          >
-            {alternarArquivo.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : estaArquivada ? (
-              <ArchiveRestore className="h-3.5 w-3.5" />
-            ) : (
-              <Archive className="h-3.5 w-3.5" />
-            )}
-            {estaArquivada ? "Desarquivar" : "Arquivar"}
-          </Button>
+          {podeGerir && (
+            <Button
+              variant={estaArquivada ? "default" : "outline"}
+              size="sm"
+              className="ml-auto h-8 shrink-0 gap-1.5 text-xs"
+              disabled={alternarArquivo.isPending}
+              onClick={() => alternarArquivo.mutate()}
+              title="O histórico é excluído automaticamente 2 meses após a emissão do contrato."
+            >
+              {alternarArquivo.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : estaArquivada ? (
+                <ArchiveRestore className="h-3.5 w-3.5" />
+              ) : (
+                <Archive className="h-3.5 w-3.5" />
+              )}
+              {estaArquivada ? "Desarquivar" : "Arquivar"}
+            </Button>
+          )}
         </div>
 
         {/* Etiquetas */}
-        <div className="flex min-w-0 flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:px-4 xl:pt-0">
-          <div className="flex items-center gap-1.5">
-            <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground">Etiquetas</span>
+        {podeGerir && (
+          <div className="flex min-w-0 flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:px-4 xl:pt-0">
+            <div className="flex items-center gap-1.5">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[11px] font-medium text-muted-foreground">Etiquetas</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1">
+              {aplicadas.length === 0 ? (
+                <span className="text-[11px] text-muted-foreground">Nenhuma</span>
+              ) : (
+                aplicadas.map((e) => (
+                  <TagChip key={e.id} etiqueta={e} onRemove={() => toggleTag.mutate(e.id)} />
+                ))
+              )}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 rounded-full px-2.5 text-[11px]"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Gerenciar
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-64 space-y-3 p-3">
+                  <div className="max-h-40 space-y-1 overflow-y-auto">
+                    {etiquetas.length === 0 && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Crie a primeira etiqueta abaixo.
+                      </p>
+                    )}
+                    {etiquetas.map((e) => {
+                      const on = tagsAplicadas.has(e.id);
+                      return (
+                        <div key={e.id} className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={toggleTag.isPending}
+                            onClick={() => toggleTag.mutate(e.id)}
+                            className={cn(
+                              "flex flex-1 items-center gap-2 rounded-md border px-2 py-1 text-left text-xs transition-colors",
+                              on ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
+                            )}
+                          >
+                            <span className={cn("chat-tag-dot", `chat-dot-${e.cor}`)} />
+                            <span className="flex-1 truncate">{e.nome}</span>
+                            {on && <Check className="h-3.5 w-3.5 text-primary" />}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={removerTag.isPending}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Excluir a etiqueta "${e.nome}"? Ela será removida de todos os clientes.`,
+                                )
+                              ) {
+                                removerTag.mutate(e.id);
+                              }
+                            }}
+                            className="rounded-md p-1 text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+                            aria-label={`Excluir ${e.nome}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="space-y-2 border-t pt-2">
+                    <Input
+                      value={novaTag}
+                      onChange={(ev) => setNovaTag(ev.target.value)}
+                      placeholder="Nova etiqueta…"
+                      className="h-8 text-xs"
+                    />
+                    <div className="flex items-center gap-1">
+                      {CORES.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setNovaCor(c.id)}
+                          aria-label={c.nome}
+                          className={cn(
+                            "chat-tag-dot h-5 w-5 rounded-full ring-offset-1 transition",
+                            `chat-dot-${c.id}`,
+                            novaCor === c.id && "ring-2 ring-primary ring-offset-background",
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <Button
+                      size="sm"
+                      className="h-8 w-full text-xs"
+                      disabled={!novaTag.trim() || adicionarTag.isPending}
+                      onClick={() => adicionarTag.mutate()}
+                    >
+                      {adicionarTag.isPending ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Plus className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      Criar etiqueta
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-1">
-            {aplicadas.length === 0 ? (
-              <span className="text-[11px] text-muted-foreground">Nenhuma</span>
-            ) : (
-              aplicadas.map((e) => (
-                <TagChip key={e.id} etiqueta={e} onRemove={() => toggleTag.mutate(e.id)} />
-              ))
-            )}
+        )}
+
+        {/* SLA e lembrete */}
+        {podeGerir && (
+          <div className="flex flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:px-4 xl:pt-0">
+            <div className="flex items-center gap-1.5">
+              <AlarmClock className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[11px] font-medium text-muted-foreground">SLA e lembrete</span>
+            </div>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 gap-1 rounded-full px-2.5 text-[11px]"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Gerenciar
+                <Button variant="outline" size="sm" className="h-8 justify-between gap-2 text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+                    {slaHoras}h
+                    {temLembrete && (
+                      <span className="chat-tag chat-tag-amber">
+                        <BellRing className="h-3 w-3" /> lembrete
+                      </span>
+                    )}
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 opacity-60" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-64 space-y-3 p-3">
-                <div className="max-h-40 space-y-1 overflow-y-auto">
-                  {etiquetas.length === 0 && (
-                    <p className="text-[11px] text-muted-foreground">
-                      Crie a primeira etiqueta abaixo.
-                    </p>
-                  )}
-                  {etiquetas.map((e) => {
-                    const on = tagsAplicadas.has(e.id);
-                    return (
-                      <div key={e.id} className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          disabled={toggleTag.isPending}
-                          onClick={() => toggleTag.mutate(e.id)}
-                          className={cn(
-                            "flex flex-1 items-center gap-2 rounded-md border px-2 py-1 text-left text-xs transition-colors",
-                            on ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
-                          )}
-                        >
-                          <span className={cn("chat-tag-dot", `chat-dot-${e.cor}`)} />
-                          <span className="flex-1 truncate">{e.nome}</span>
-                          {on && <Check className="h-3.5 w-3.5 text-primary" />}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={removerTag.isPending}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Excluir a etiqueta "${e.nome}"? Ela será removida de todos os clientes.`,
-                              )
-                            ) {
-                              removerTag.mutate(e.id);
-                            }
-                          }}
-                          className="rounded-md p-1 text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
-                          aria-label={`Excluir ${e.nome}`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="space-y-2 border-t pt-2">
+              <PopoverContent align="start" className="w-72 space-y-2.5 p-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] text-muted-foreground">
+                    SLA de atualização (horas sem resposta)
+                  </label>
                   <Input
-                    value={novaTag}
-                    onChange={(ev) => setNovaTag(ev.target.value)}
-                    placeholder="Nova etiqueta…"
+                    type="number"
+                    min={1}
+                    value={slaHoras || ""}
+                    onChange={(e) => setSlaHoras(e.target.value)}
                     className="h-8 text-xs"
                   />
-                  <div className="flex items-center gap-1">
-                    {CORES.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => setNovaCor(c.id)}
-                        aria-label={c.nome}
-                        className={cn(
-                          "chat-tag-dot h-5 w-5 rounded-full ring-offset-1 transition",
-                          `chat-dot-${c.id}`,
-                          novaCor === c.id && "ring-2 ring-primary ring-offset-background",
-                        )}
-                      />
-                    ))}
-                  </div>
-                  <Button
-                    size="sm"
-                    className="h-8 w-full text-xs"
-                    disabled={!novaTag.trim() || adicionarTag.isPending}
-                    onClick={() => adicionarTag.mutate()}
-                  >
-                    {adicionarTag.isPending ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Plus className="mr-1.5 h-3.5 w-3.5" />
-                    )}
-                    Criar etiqueta
-                  </Button>
                 </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-muted-foreground">Lembrete de follow-up</label>
+                  <Input
+                    type="datetime-local"
+                    value={lembreteEm}
+                    onChange={(e) => setLembreteEm(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <Textarea
+                  value={lembreteNota}
+                  onChange={(e) => setLembreteNota(e.target.value)}
+                  placeholder="Nota do lembrete (opcional)…"
+                  className="min-h-[3rem] text-xs"
+                />
+                <Button
+                  size="sm"
+                  className="h-8 w-full text-xs"
+                  disabled={gravarMeta.isPending}
+                  onClick={() => gravarMeta.mutate()}
+                >
+                  {gravarMeta.isPending ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <BellRing className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Salvar SLA e lembrete
+                </Button>
               </PopoverContent>
             </Popover>
           </div>
-        </div>
-
-        {/* SLA e lembrete */}
-        <div className="flex flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:px-4 xl:pt-0">
-          <div className="flex items-center gap-1.5">
-            <AlarmClock className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground">SLA e lembrete</span>
-          </div>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 justify-between gap-2 text-xs">
-                <span className="flex items-center gap-1.5">
-                  <Timer className="h-3.5 w-3.5 text-muted-foreground" />
-                  {slaHoras}h
-                  {temLembrete && (
-                    <span className="chat-tag chat-tag-amber">
-                      <BellRing className="h-3 w-3" /> lembrete
-                    </span>
-                  )}
-                </span>
-                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-72 space-y-2.5 p-3">
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">
-                  SLA de atualização (horas sem resposta)
-                </label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={slaHoras || ""}
-                  onChange={(e) => setSlaHoras(e.target.value)}
-                  className="h-8 text-xs"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">Lembrete de follow-up</label>
-                <Input
-                  type="datetime-local"
-                  value={lembreteEm}
-                  onChange={(e) => setLembreteEm(e.target.value)}
-                  className="h-8 text-xs"
-                />
-              </div>
-              <Textarea
-                value={lembreteNota}
-                onChange={(e) => setLembreteNota(e.target.value)}
-                placeholder="Nota do lembrete (opcional)…"
-                className="min-h-[3rem] text-xs"
-              />
-              <Button
-                size="sm"
-                className="h-8 w-full text-xs"
-                disabled={gravarMeta.isPending}
-                onClick={() => gravarMeta.mutate()}
-              >
-                {gravarMeta.isPending ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <BellRing className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Salvar SLA e lembrete
-              </Button>
-            </PopoverContent>
-          </Popover>
-        </div>
+        )}
 
         {/* Esteira */}
-        <div className="flex flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:pl-4 xl:pt-0">
-          <div className="flex items-center gap-1.5">
-            <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-medium text-muted-foreground">
-              Esteira · {etapaAtual}
-            </span>
+        {podeMoverEtapa && (
+          <div className="flex flex-col justify-center gap-1.5 border-t border-primary/15 pt-3 xl:border-l xl:border-l-primary/15 xl:border-t-0 xl:pl-4 xl:pt-0">
+            <div className="flex items-center gap-1.5">
+              <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[11px] font-medium text-muted-foreground">
+                Esteira · {etapaAtual}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Select value={destino} onValueChange={setDestino}>
+                <SelectTrigger className="h-8 w-40 text-xs">
+                  <SelectValue placeholder="Mover para…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(stages ?? []).map((s) => (
+                    <SelectItem key={s.codigo} value={s.codigo}>
+                      {s.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                className="h-8 gap-1 text-xs"
+                disabled={!destino || avancar.isPending || destino === atual?.codigo}
+                onClick={() => avancar.mutate(destino)}
+              >
+                {avancar.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-3.5 w-3.5" />
+                )}
+                Mover
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Select value={destino} onValueChange={setDestino}>
-              <SelectTrigger className="h-8 w-40 text-xs">
-                <SelectValue placeholder="Mover para…" />
-              </SelectTrigger>
-              <SelectContent>
-                {(stages ?? []).map((s) => (
-                  <SelectItem key={s.codigo} value={s.codigo}>
-                    {s.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              className="h-8 gap-1 text-xs"
-              disabled={!destino || avancar.isPending || destino === atual?.codigo}
-              onClick={() => avancar.mutate(destino)}
-            >
-              {avancar.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <ArrowRight className="h-3.5 w-3.5" />
-              )}
-              Mover
-            </Button>
-          </div>
-        </div>
+        )}
       </div>
     </Card>
   );

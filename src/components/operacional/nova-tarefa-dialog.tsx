@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { criarTarefa } from "@/lib/operacional/tarefas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
+import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
 
 export function NovaTarefaDialog({
   onCriada,
@@ -75,12 +76,12 @@ export function NovaTarefaDialog({
       });
       toast.success("Tarefa criada.");
       setAberto(false);
+      // Volta tudo ao padrão: a próxima tarefa não herda prioridade nem item pendente.
       setTitulo("");
       setDescricao("");
       setPrazo("");
-      setTitulo("");
-      setDescricao("");
-      setPrazo("");
+      setPrioridade("p2");
+      setNovoItem("");
       setResponsavel("");
       setCliente(clientePreSelecionado ?? "");
       setChecklist([]);
@@ -126,9 +127,9 @@ export function NovaTarefaDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="p1">P1 — Alta</SelectItem>
-                  <SelectItem value="p2">P2 — Média</SelectItem>
-                  <SelectItem value="p3">P3 — Baixa</SelectItem>
+                  <SelectItem value="p1">{ROTULO_PRIORIDADE.p1}</SelectItem>
+                  <SelectItem value="p2">{ROTULO_PRIORIDADE.p2}</SelectItem>
+                  <SelectItem value="p3">{ROTULO_PRIORIDADE.p3}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

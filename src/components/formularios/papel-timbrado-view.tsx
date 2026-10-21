@@ -96,7 +96,7 @@ export function PapelTimbradoView() {
       <OpHero
         icon={<FileText className="h-5 w-5" />}
         eyebrow="Documentos · Formulários"
-        titulo="PAPEL TIMBRADO PERMITA BAIXAR EM PDF E WORD, COM A MESMA FORMATAÇÃO E CONFIGURAÇÃO E ETC"
+        titulo="Papel timbrado"
         descricao="Escolha entre 10 modelos e baixe em PDF ou WORD com marca d'água e formatação profissional."
         accent={modelo.primaria}
         acoes={

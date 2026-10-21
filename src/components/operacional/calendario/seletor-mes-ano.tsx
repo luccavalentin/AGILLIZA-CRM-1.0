@@ -26,6 +26,7 @@ export function SeletorMesAno({ ref, onChange }: SeletorMesAnoProps) {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Ano anterior"
             className="h-7 w-7"
             onClick={() => onChange(new Date(ref.getFullYear() - 1, ref.getMonth(), 1))}
           >
@@ -35,6 +36,7 @@ export function SeletorMesAno({ ref, onChange }: SeletorMesAnoProps) {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Próximo ano"
             className="h-7 w-7"
             onClick={() => onChange(new Date(ref.getFullYear() + 1, ref.getMonth(), 1))}
           >

@@ -38,6 +38,8 @@ import {
 import { RegraComissaoUsuarioForm } from "./regra-form";
 import { RecalcularComissoesButton } from "./recalcular-button";
 import { ExportarFinanceiro } from "@/components/financeiro/exportar-financeiro";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 const rotulo = (arr: readonly { valor: string; rotulo: string }[], v: string) =>
   arr.find((i) => i.valor === v)?.rotulo ?? v;
@@ -56,6 +58,7 @@ export function RegrasAbas({
   });
   const [excluir, setExcluir] = useState<RegraComissaoUsuario | null>(null);
   const qc = useQueryClient();
+  const podeEditar = usePermissao("financeiro.comissoes", "edit");
 
   const { data: regras, isLoading } = useQuery({
     queryKey: ["fin-com-usr-regras", tipo],
@@ -83,7 +86,7 @@ export function RegrasAbas({
       qc.invalidateQueries({ queryKey: ["fin-com-usr-regras"] });
       setExcluir(null);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir.")),
   });
 
   return (
@@ -144,10 +147,12 @@ export function RegrasAbas({
             })}
           />
           <RecalcularComissoesButton />
-          <Button onClick={() => setDialog({ aberto: true, regra: null })} size="sm">
-            <Plus className="mr-2 size-4" />
-            Nova regra
-          </Button>
+          {podeEditar && (
+            <Button onClick={() => setDialog({ aberto: true, regra: null })} size="sm">
+              <Plus className="mr-2 size-4" />
+              Nova regra
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -240,16 +245,26 @@ export function RegrasAbas({
                                 <Receipt className="size-4" />
                               </Button>
                             ) : null}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDialog({ aberto: true, regra: r })}
-                            >
-                              <Pencil className="size-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => setExcluir(r)}>
-                              <Trash2 className="size-4 text-destructive" />
-                            </Button>
+                            {podeEditar && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Editar regra"
+                                  onClick={() => setDialog({ aberto: true, regra: r })}
+                                >
+                                  <Pencil className="size-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Excluir regra"
+                                  onClick={() => setExcluir(r)}
+                                >
+                                  <Trash2 className="size-4 text-destructive" />
+                                </Button>
+                              </>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}

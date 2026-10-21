@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { createFileRoute } from "@tanstack/react-router";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ import {
   resumoConciliacao,
 } from "@/lib/conciliacao/conciliacao.functions";
 import { BANCOS_CONCILIACAO } from "@/lib/conciliacao/bancos";
+import { getMinhaSessao } from "@/lib/session.functions";
 
 export const Route = createFileRoute("/_authenticated/relatorios/comparativos")({
   // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
@@ -72,10 +74,26 @@ function Pagina() {
 
   const filtros = { periodo: periodo || null, banco: null };
 
-  const { data: todosLotes = [] } = useQuery({
+  const {
+    data: todosLotes = [],
+    isError: erroLotes,
+    error: erroLotesObj,
+    refetch: recarregarLotes,
+  } = useQuery({
     queryKey: ["conciliacao-lotes", filtros],
     queryFn: () => listar({ data: filtros }),
   });
+
+  // A RLS de exclusão de lotes só libera admin/correspondente/gestor; para os
+  // demais a lixeira nem aparece (antes ela "removia" sem remover nada).
+  const { data: sessao } = useQuery({
+    queryKey: ["minha-sessao"],
+    queryFn: () => getMinhaSessao(),
+    staleTime: 5 * 60_000,
+  });
+  const podeExcluirLote = !!sessao?.roles?.some((r) =>
+    ["admin", "correspondente", "gestor"].includes(r),
+  );
 
   /** Lotes visíveis conforme os bancos escolhidos (vazio = todos). */
   const lotes = useMemo(
@@ -364,7 +382,16 @@ function Pagina() {
         <h2 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           Lotes enviados
         </h2>
-        {lotes.length === 0 ? (
+        {erroLotes ? (
+          <Card className="flex flex-col items-center gap-3 p-10 text-center">
+            <p className="text-sm text-destructive">
+              {mensagemDeErro(erroLotesObj, "Não foi possível carregar os lotes.")}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => recarregarLotes()}>
+              Tentar de novo
+            </Button>
+          </Card>
+        ) : lotes.length === 0 ? (
           <Card className="flex flex-col items-center gap-2 p-10 text-center">
             <FileSpreadsheet className="h-6 w-6 opacity-50" />
             <p className="text-sm text-muted-foreground">
@@ -384,37 +411,55 @@ function Pagina() {
                   {lista.map((l) => {
                     const ativo = lotesSelecionados.includes(l.id);
                     return (
-                      <button
+                      // Lixeira era um ícone dentro do botão (sem rótulo, invisível no
+                      // celular) e removia o lote sem confirmar (QA 20/10).
+                      <div
                         key={l.id}
-                        type="button"
-                        onClick={() =>
-                          setLotesSelecionados(
-                            ativo
-                              ? lotesSelecionados.filter((x) => x !== l.id)
-                              : [...lotesSelecionados, l.id],
-                          )
-                        }
-                        className={`group flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition ${
+                        className={`flex items-center gap-1 rounded-lg border pr-1 transition ${
                           ativo ? "border-primary bg-primary/5" : "hover:bg-muted/50"
                         }`}
                       >
-                        <div>
+                        <button
+                          type="button"
+                          aria-pressed={ativo}
+                          onClick={() =>
+                            setLotesSelecionados(
+                              ativo
+                                ? lotesSelecionados.filter((x) => x !== l.id)
+                                : [...lotesSelecionados, l.id],
+                            )
+                          }
+                          className="px-3 py-2 text-left"
+                        >
                           <div className="text-sm font-medium">
                             {fmtPeriodo(l.periodo_referencia)}
                           </div>
                           <div className="text-[11px] text-muted-foreground">
                             {l.total_linhas} linhas · {l.total_divergentes} divergentes ·{" "}
-                            {new Date(l.enviado_em).toLocaleString("pt-BR")}
+                            {new Date(l.enviado_em).toLocaleString("pt-BR", {
+                              timeZone: "America/Sao_Paulo",
+                            })}
                           </div>
-                        </div>
-                        <Trash2
-                          className="h-3.5 w-3.5 opacity-0 transition group-hover:opacity-60 hover:!opacity-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void remover(l.id);
-                          }}
-                        />
-                      </button>
+                        </button>
+                        {podeExcluirLote && (
+                          <ConfirmDelete
+                            titulo={`Remover o lote de ${fmtPeriodo(l.periodo_referencia)}?`}
+                            descricao={`O lote de ${nomeBanco} sai do comparativo, com as ${l.total_linhas} linhas importadas.`}
+                            confirmarLabel="Remover lote"
+                            onConfirm={() => remover(l.id)}
+                            trigger={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                aria-label={`Remover lote de ${fmtPeriodo(l.periodo_referencia)} (${nomeBanco})`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            }
+                          />
+                        )}
+                      </div>
                     );
                   })}
                 </div>

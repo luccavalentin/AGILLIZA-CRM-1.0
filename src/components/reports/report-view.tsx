@@ -11,7 +11,9 @@ import {
 } from "@/lib/relatorios/shared";
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
-const ESCOPOS: Escopo[] = ["minha", "equipe", "geral"];
+// "equipe" saiu do produto: um link antigo com ele cai no escopo automático
+// (geral para quem pode, minha para os demais) em vez de exibir "Equipe".
+const ESCOPOS: Escopo[] = ["minha", "geral"];
 
 /** Valida/normaliza os filtros vindos da query string (link compartilhável). */
 export function parseReportSearch(search: Record<string, unknown>): ReportFiltros {
@@ -106,7 +108,6 @@ export function ReportView({
       filtros={filtrosEfetivos}
       pronto={pronto}
       onFiltros={onFiltros}
-      podeEquipe={escopo?.podeEquipe ?? false}
       podeGeral={escopo?.podeGeral ?? false}
       comFiltroBanco={comFiltroBanco}
       comFiltroStatus={comFiltroStatus}

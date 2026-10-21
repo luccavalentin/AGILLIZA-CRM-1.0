@@ -2,12 +2,12 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Save, UserPlus, X } from "lucide-react";
+import { validarEmail } from "@/lib/crm/documento";
+import { Loader2, ShieldCheck, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -20,7 +20,6 @@ import {
 import {
   CATALOGO_MODULOS,
   listarNiveisAcesso,
-  salvarPermissoes,
   type EscopoDados,
   type NivelAcesso,
 } from "@/lib/admin/regras-modulos.functions";
@@ -30,13 +29,13 @@ import {
   type ResultadoCriarPessoa,
 } from "@/lib/admin/pessoas.functions";
 import { listarTiposPessoa } from "@/lib/admin/tipos-pessoa.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+// Mesmos rótulos da matriz: a lista local só tinha "todos" e "próprios" e
+// mostrava "equipe"/"personalizado" crus.
+import { ESCOPOS } from "./regras-modulos/constants";
 
 type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 
-const ESCOPOS: { value: EscopoDados; label: string }[] = [
-  { value: "todos", label: "Todos os dados" },
-  { value: "proprios", label: "Apenas os próprios" },
-];
 
 const chave = (modulo: string, acao: string) => `${modulo}:${acao}`;
 
@@ -56,16 +55,23 @@ function estadoInicial(nivel: NivelAcesso | undefined): MatrizEstado {
 
 const grupos = Array.from(new Set(CATALOGO_MODULOS.map((m) => m.grupo)));
 
+/**
+ * Cadastro de pessoa. As permissões do nível aparecem só para leitura: elas
+ * valem para TODAS as pessoas do nível, então editar aqui (como era antes)
+ * mudava o acesso de todo mundo para quem só queria cadastrar alguém. A edição
+ * fica em "Papéis & Permissões" (`onAbrirPermissoes`).
+ */
 export function NovaPessoaInline({
   onCreated,
   onCancel,
+  onAbrirPermissoes,
 }: {
   onCreated: (res: ResultadoCriarPessoa) => void;
   onCancel: () => void;
+  onAbrirPermissoes?: () => void;
 }) {
   const qc = useQueryClient();
   const listar = useServerFn(listarNiveisAcesso);
-  const salvar = useServerFn(salvarPermissoes);
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -78,7 +84,6 @@ export function NovaPessoaInline({
 
   const [estado, setEstado] = useState<MatrizEstado>({});
   const [carregadoPara, setCarregadoPara] = useState("");
-  const [permDirty, setPermDirty] = useState(false);
 
   const { data: niveis } = useQuery({
     queryKey: ["niveis-acesso"],
@@ -114,31 +119,7 @@ export function NovaPessoaInline({
   if (nivel && carregadoPara !== nivel.id) {
     setEstado(estadoInicial(nivel));
     setCarregadoPara(nivel.id);
-    setPermDirty(false);
   }
-
-  const salvarPermMut = useMutation({
-    mutationFn: () => {
-      if (!nivelId) throw new Error("Selecione um nível de acesso.");
-      const permissoes = Object.entries(estado).map(([k, v]) => {
-        const idx = k.indexOf(":");
-        const modulo = k.slice(0, idx);
-        const acao = k.slice(idx + 1);
-        return { modulo, acao, permitido: v.permitido, escopo_dados: v.escopo };
-      });
-      return salvar({ data: { nivel_acesso_id: nivelId, permissoes } });
-    },
-    onSuccess: async (r: { nivel_acesso_id?: string }) => {
-      toast.success("Permissões do nível salvas.");
-      setPermDirty(false);
-      await qc.invalidateQueries({ queryKey: ["niveis-acesso"] });
-      if (r?.nivel_acesso_id) {
-        setNivelId(r.nivel_acesso_id);
-        setCarregadoPara("");
-      }
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const criar = useMutation({
     mutationFn: (payload: CriarPessoaInput) => criarPessoaComAcesso({ data: payload }),
@@ -146,58 +127,9 @@ export function NovaPessoaInline({
       await qc.invalidateQueries({ queryKey: ["pessoas"] });
       onCreated(res);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
-  function toggle(modulo: string, acao: string, permitido: boolean) {
-    setEstado((prev) => ({
-      ...prev,
-      [chave(modulo, acao)]: { ...prev[chave(modulo, acao)], permitido },
-    }));
-    setPermDirty(true);
-  }
-
-  function setEscopoModulo(modulo: string, escopo: EscopoDados) {
-    setEstado((prev) => {
-      const next = { ...prev };
-      for (const a of CATALOGO_MODULOS.find((m) => m.modulo === modulo)?.acoes ?? []) {
-        const k = chave(modulo, a.acao);
-        next[k] = { ...next[k], escopo };
-      }
-      return next;
-    });
-    setPermDirty(true);
-  }
-
-  function marcarTodoModulo(modulo: string, permitido: boolean) {
-    setEstado((prev) => {
-      const next = { ...prev };
-      for (const a of CATALOGO_MODULOS.find((m) => m.modulo === modulo)?.acoes ?? []) {
-        const k = chave(modulo, a.acao);
-        next[k] = { ...next[k], permitido };
-      }
-      return next;
-    });
-    setPermDirty(true);
-  }
-
-  function marcarTudoGlobal(permitido: boolean) {
-    setEstado((prev) => {
-      const next = { ...prev };
-      for (const mod of CATALOGO_MODULOS) {
-        for (const a of mod.acoes) {
-          const k = chave(mod.modulo, a.acao);
-          next[k] = { ...next[k], permitido };
-        }
-      }
-      return next;
-    });
-    setPermDirty(true);
-  }
-
-  const todasGlobalMarcadas = CATALOGO_MODULOS.every((mod) =>
-    mod.acoes.every((a) => estado[chave(mod.modulo, a.acao)]?.permitido),
-  );
   // Tipos de acesso "parceiro" podem existir sem login; internos exigem login.
   const permiteSemLogin = tipoSel?.acesso_tipo === "portal_parceiro";
   const efetivoComLogin = permiteSemLogin ? comLogin : true;
@@ -207,6 +139,7 @@ export function NovaPessoaInline({
     if (nome.trim().length < 2) return toast.error("Informe o nome completo.");
     if (efetivoComLogin && !email.trim())
       return toast.error("Informe o e-mail para pessoas com acesso ao sistema.");
+    if (efetivoComLogin && !validarEmail(email)) return toast.error("E-mail inválido.");
     if (!nivelId) return toast.error("Selecione um nível de acesso.");
 
     criar.mutate({
@@ -219,7 +152,8 @@ export function NovaPessoaInline({
       avatar_url: avatarUrl.trim() || undefined,
       dados_parceiro: isParceiro
         ? {
-            comissao_padrao: comissao ? Number(comissao) : undefined,
+            // Aceita "2,5" e "2.5".
+            comissao_padrao: comissao ? Number(comissao.replace(",", ".")) : undefined,
           }
         : undefined,
     });
@@ -233,7 +167,13 @@ export function NovaPessoaInline({
             <UserPlus className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold">Nova pessoa</h2>
           </div>
-          <Button type="button" variant="ghost" size="icon" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onCancel}
+            aria-label="Fechar cadastro"
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -330,7 +270,7 @@ export function NovaPessoaInline({
 
         {/* Foto do Perfil */}
         <div className="space-y-2">
-          <Label htmlFor="np-avatar">URL da Foto de Perfil (Opcional)</Label>
+          <Label htmlFor="np-avatar">Link da foto de perfil (opcional)</Label>
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-muted shadow-inner ring-1 ring-border">
               {avatarUrl ? (
@@ -391,107 +331,68 @@ export function NovaPessoaInline({
           {nivel?.descricao && <p className="text-xs text-muted-foreground">{nivel.descricao}</p>}
         </div>
 
-        {/* Permissões do nível */}
+        {/* Permissões do nível — somente leitura no cadastro */}
         {nivel && (
           <div className="space-y-3 rounded-lg border p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="text-sm font-medium">
-                  Permissões de acesso — o que esta pessoa pode ver e editar
-                </p>
+                <p className="text-sm font-medium">O que esta pessoa vai poder ver e editar</p>
                 <p className="text-xs text-muted-foreground">
-                  As permissões são vinculadas ao nível “{nivel.nome}”. Alterar aqui afeta todas as
-                  pessoas com esse nível.
+                  Vem do nível “{nivel.nome}” e vale para todas as pessoas com esse nível. Para
+                  mudar, use Papéis & Permissões.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => marcarTudoGlobal(!todasGlobalMarcadas)}
-                >
-                  {todasGlobalMarcadas ? "Limpar todos" : "Selecionar todos"}
+              {onAbrirPermissoes && (
+                <Button type="button" size="sm" variant="outline" onClick={onAbrirPermissoes}>
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Papéis & Permissões
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={!permDirty || salvarPermMut.isPending}
-                  onClick={() => salvarPermMut.mutate()}
-                >
-                  {salvarPermMut.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="mr-2 h-4 w-4" />
-                  )}
-                  Salvar permissões
-                </Button>
-              </div>
+              )}
             </div>
 
-            <div className="max-h-80 space-y-4 overflow-y-auto pr-1">
-              {grupos.map((grupo) => (
-                <div key={grupo} className="space-y-2">
-                  <Badge variant="secondary">{grupo}</Badge>
-                  <div className="space-y-2">
-                    {CATALOGO_MODULOS.filter((m) => m.grupo === grupo).map((mod) => {
-                      const escopoAtual =
-                        estado[chave(mod.modulo, mod.acoes[0].acao)]?.escopo ?? "proprios";
-                      const todasMarcadas = mod.acoes.every(
-                        (a) => estado[chave(mod.modulo, a.acao)]?.permitido,
-                      );
-                      return (
-                        <div key={mod.modulo} className="rounded-md border p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-medium">{mod.label}</span>
-                              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Checkbox
-                                  aria-label={`Marcar tudo em ${mod.label}`}
-                                  checked={todasMarcadas}
-                                  onCheckedChange={(c) => marcarTodoModulo(mod.modulo, c === true)}
-                                />
-                                Marcar tudo
-                              </label>
-                            </div>
-                            <Select
-                              value={escopoAtual}
-                              onValueChange={(v) => setEscopoModulo(mod.modulo, v as EscopoDados)}
-                            >
-                              <SelectTrigger className="h-8 w-44">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ESCOPOS.map((e) => (
-                                  <SelectItem key={e.value} value={e.value}>
-                                    {e.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-4">
-                            {mod.acoes.map((a) => {
-                              const k = chave(mod.modulo, a.acao);
-                              return (
-                                <label key={a.acao} className="flex items-center gap-2 text-sm">
-                                  <Checkbox
-                                    aria-label={a.label}
-                                    checked={estado[k]?.permitido ?? false}
-                                    onCheckedChange={(c) => toggle(mod.modulo, a.acao, c === true)}
-                                  />
-                                  {a.label}
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
+            <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
+              {(() => {
+                const porGrupo = grupos
+                  .map((grupo) => ({
+                    grupo,
+                    modulos: CATALOGO_MODULOS.filter((m) => m.grupo === grupo)
+                      .map((mod) => ({
+                        mod,
+                        acoes: mod.acoes.filter(
+                          (a) => estado[chave(mod.modulo, a.acao)]?.permitido,
+                        ),
+                      }))
+                      .filter((x) => x.acoes.length > 0),
+                  }))
+                  .filter((g) => g.modulos.length > 0);
+                if (porGrupo.length === 0) {
+                  return (
+                    <p className="text-sm text-muted-foreground">
+                      Este nível ainda não libera nenhum módulo.
+                    </p>
+                  );
+                }
+                return porGrupo.map(({ grupo, modulos }) => (
+                  <div key={grupo} className="space-y-1.5">
+                    <Badge variant="secondary">{grupo}</Badge>
+                    <ul className="space-y-1 text-sm">
+                      {modulos.map(({ mod, acoes }) => {
+                        const escopo =
+                          estado[chave(mod.modulo, acoes[0].acao)]?.escopo ?? "proprios";
+                        return (
+                          <li key={mod.modulo} className="flex flex-wrap gap-x-1.5">
+                            <span className="font-medium">{mod.label}:</span>
+                            <span className="text-muted-foreground">
+                              {acoes.map((a) => a.label).join(", ")} ·{" "}
+                              {ESCOPOS.find((e) => e.value === escopo)?.label ?? escopo}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
         )}

@@ -32,7 +32,11 @@ export const getMinhaSessao = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<SessaoUsuario> => {
     const { supabase, userId } = context;
 
-    const [{ data: profile }, { data: roleRows }, { data: podeGerenciar }] = await Promise.all([
+    const [
+      { data: profile, error: erroPerfil },
+      { data: roleRows, error: erroPapeis },
+      { data: podeGerenciar },
+    ] = await Promise.all([
       supabase
         .from("profiles")
         .select(
@@ -43,6 +47,10 @@ export const getMinhaSessao = createServerFn({ method: "GET" })
       supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase.rpc("pode_gerenciar_pessoas", { _user_id: userId }),
     ]);
+
+    // Falha de leitura não é "perfil inexistente": o shell trataria como acesso
+    // bloqueado e tiraria a pessoa do sistema. O erro sobe e vira "Tentar novamente".
+    if (erroPerfil || erroPapeis) throw new Error("Não foi possível carregar seu perfil.");
 
     return {
       profile: profile ?? null,
@@ -77,17 +85,25 @@ export const atualizarMeuPerfil = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Sincroniza o e-mail exibido no perfil após a alteração no login. */
+/**
+ * Sincroniza o e-mail exibido no perfil após a alteração no login. Grava o e-mail que o
+ * login tem de fato (Auth), não o que a tela mandou: antes qualquer pessoa trocava o
+ * e-mail do próprio perfil por um qualquer, e o perfil mudava antes da confirmação.
+ */
 export const atualizarMeuEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { email: string }) =>
     z.object({ email: z.string().trim().email().max(255) }).parse(d),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: auth, error: erroAuth } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const emailDoLogin = auth?.user?.email?.trim().toLowerCase();
+    if (erroAuth || !emailDoLogin) throw new Error("Não foi possível salvar o e-mail.");
     const { error } = await supabase
       .from("profiles")
-      .update({ email: data.email })
+      .update({ email: emailDoLogin })
       .eq("id", userId);
     if (error) throw new Error("Não foi possível salvar o e-mail.");
     return { ok: true };

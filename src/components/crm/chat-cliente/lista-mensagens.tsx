@@ -1,5 +1,6 @@
 import { type RefObject } from "react";
-import { Check, CheckCheck, FileText, MessageCircle, Trash2 } from "lucide-react";
+import { AlertCircle, Check, CheckCheck, FileText, MessageCircle, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TypingIndicator } from "@/components/shared/typing-indicator";
@@ -10,6 +11,9 @@ import { formatarDia, formatarHora, type ChatClienteInfo } from "./utils";
 export function ListaMensagens({
   filtradas,
   isLoading,
+  erro = null,
+  onTentarDeNovo,
+  meuId = null,
   buscaAberta,
   buscaMsg,
   info,
@@ -24,6 +28,11 @@ export function ListaMensagens({
 }: {
   filtradas: ChatMensagem[];
   isLoading: boolean;
+  /** Falha ao carregar a conversa (não é "nenhuma mensagem"). */
+  erro?: string | null;
+  onTentarDeNovo?: () => void;
+  /** Id do usuário logado: editar/excluir só nas mensagens dele. Sem ele, vale o tipo. */
+  meuId?: string | null;
   buscaAberta: boolean;
   buscaMsg: string;
   info?: ChatClienteInfo;
@@ -53,6 +62,16 @@ export function ListaMensagens({
         <div className="space-y-3">
           <Skeleton className="h-12 w-2/3" />
           <Skeleton className="ml-auto h-12 w-2/3" />
+        </div>
+      ) : erro ? (
+        <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+          <AlertCircle className="size-7 text-destructive" />
+          <p className="max-w-xs text-sm text-muted-foreground">{erro}</p>
+          {onTentarDeNovo && (
+            <Button type="button" variant="outline" size="sm" onClick={onTentarDeNovo}>
+              Tentar de novo
+            </Button>
+          )}
         </div>
       ) : (filtradas.length ?? 0) === 0 ? (
         <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
@@ -86,6 +105,8 @@ export function ListaMensagens({
           const excluida = !!m.excluida_em;
           const otimista = m.id.startsWith("otimista-");
           const podeGerenciar = doTime && !excluida && !otimista;
+          // Mensagem de colega: só responder, copiar e reagir (o servidor recusa editar/excluir).
+          const minha = !meuId || m.remetente_id === meuId;
           const visto = doTime && !!m.lida_em;
           return (
             <div key={m.id}>
@@ -108,9 +129,9 @@ export function ListaMensagens({
                   <MsgAcoes
                     lado="time"
                     onReply={podeResponder ? () => iniciarResposta(m) : undefined}
-                    onEdit={podeEditar ? () => iniciarEdicao(m) : undefined}
+                    onEdit={podeEditar && minha ? () => iniciarEdicao(m) : undefined}
                     onCopy={() => copiar(m)}
-                    onDelete={podeExcluir ? () => onExcluir(m) : undefined}
+                    onDelete={podeExcluir && minha ? () => onExcluir(m) : undefined}
                     onReagir={podeReagir ? (e) => onReagir!(m.id, e) : undefined}
                   />
                 )}

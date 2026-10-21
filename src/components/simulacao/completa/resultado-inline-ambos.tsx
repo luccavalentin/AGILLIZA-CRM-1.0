@@ -229,7 +229,7 @@ export function ResultadoInlineAmbos({
         },
       });
     } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível criar a proposta.", { duration: 10_000 });
+      toast.error(mensagemDeErro(e, "Não foi possível criar a proposta."), { duration: 10_000 });
     } finally {
       setCriandoBanco(null);
     }

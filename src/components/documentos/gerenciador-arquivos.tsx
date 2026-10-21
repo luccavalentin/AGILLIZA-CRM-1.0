@@ -48,6 +48,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 export interface GerenciadorArquivosProps {
   /** Pasta inicial (id) ao montar. */
@@ -72,6 +74,7 @@ export function GerenciadorArquivos({
   className,
 }: GerenciadorArquivosProps) {
   const qc = useQueryClient();
+  const podeEnviar = usePermissao("documentos.arquivos", "create");
   const [pastaInterna, setPastaInterna] = useState<string | null>(pastaInicial ?? null);
   const pasta = pastaControlada !== undefined ? pastaControlada : pastaInterna;
   const setPasta = useCallback(
@@ -227,7 +230,7 @@ export function GerenciadorArquivos({
         const { url, nome } = await fnUrl({ data: { id: no.id } });
         setVisualizando({ url, nome, id: no.id });
       } catch (e: any) {
-        toast.error(e?.message ?? "Não foi possível abrir o arquivo.");
+        toast.error(mensagemDeErro(e, "Não foi possível abrir o arquivo."));
       }
     },
     [setPasta, fnUrl],
@@ -241,7 +244,7 @@ export function GerenciadorArquivos({
         invalidar();
         toast.success("Pasta criada.");
       } catch (e: any) {
-        toast.error(e?.message ?? "Falha ao criar pasta.");
+        toast.error(mensagemDeErro(e, "Falha ao criar pasta."));
       }
     },
     [pasta, fnCriarPasta, invalidar],
@@ -256,7 +259,7 @@ export function GerenciadorArquivos({
         invalidar();
         toast.success("Renomeado.");
       } catch (e: any) {
-        toast.error(e?.message ?? "Falha ao renomear.");
+        toast.error(mensagemDeErro(e, "Falha ao renomear."));
       }
     },
     [renomeando, fnRenomear, invalidar],
@@ -270,7 +273,7 @@ export function GerenciadorArquivos({
       invalidar();
       toast.success("Excluído.");
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao excluir.");
+      toast.error(mensagemDeErro(e, "Falha ao excluir."));
     }
   }, [excluindo, fnExcluir, invalidar]);
 
@@ -283,7 +286,7 @@ export function GerenciadorArquivos({
         invalidar();
         toast.success("Movido.");
       } catch (e: any) {
-        toast.error(e?.message ?? "Falha ao mover.");
+        toast.error(mensagemDeErro(e, "Falha ao mover."));
       }
     },
     [movendo, fnMover, invalidar],
@@ -297,7 +300,7 @@ export function GerenciadorArquivos({
         invalidar();
         toast.success(novo ? "Pasta fixada no menu lateral." : "Pasta removida do menu lateral.");
       } catch (e: any) {
-        toast.error(e?.message ?? "Falha ao alternar visibilidade.");
+        toast.error(mensagemDeErro(e, "Falha ao alternar visibilidade."));
       }
     },
     [fnDefinirMostrar, invalidar],
@@ -315,7 +318,7 @@ export function GerenciadorArquivos({
         const { url, nome } = await fnUrl({ data: { id: r.id } });
         setVisualizando({ url, nome, id: r.id });
       } catch (e: any) {
-        toast.error(e?.message ?? "Não foi possível abrir o arquivo.");
+        toast.error(mensagemDeErro(e, "Não foi possível abrir o arquivo."));
       }
     },
     [setPasta, fnUrl],
@@ -324,11 +327,13 @@ export function GerenciadorArquivos({
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragging(false);
+    // Sem "Arquivos: enviar" o upload subia ao storage e o registro falhava (arquivo órfão).
+    if (!podeEnviar) return;
     const files = Array.from(e.dataTransfer.files ?? []);
     if (files.length > 0) enviarArquivos(files, false);
   }
 
-  const acoes = (
+  const acoes = !podeEnviar ? null : (
     <div className="flex flex-wrap items-center gap-2">
       <Button
         size="sm"

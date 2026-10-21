@@ -10,46 +10,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { AuditoriaLinha } from "@/lib/admin/auditoria.functions";
+import { hojeISO } from "@/lib/financeiro/format";
 
 export const TODOS = "__todos__";
 
-/**
- * Mapeia o nome interno da entidade (tabela / recurso) para o nome da tela
- * correspondente no sistema, para exibição amigável na Auditoria.
- */
-export const ENTIDADE_LABEL: Record<string, string> = {
-  clientes: "CRM · Clientes",
-  cliente: "CRM · Clientes",
-  cliente_documentos: "CRM · Documentos do cliente",
-  cliente_documento_pastas: "CRM · Pastas de documentos",
-  cliente_interacoes: "CRM · Interações",
-  cliente_pipeline: "CRM · Esteira",
-  propostas: "Operacional · Propostas",
-  proposta_bancos: "Operacional · Propostas (Banco)",
-  proposta_documentos: "Operacional · Documentos da proposta",
-  simulacoes: "Operacional · Simulações",
-  simulacao_bancos: "Operacional · Simulações (Banco)",
-  tasks: "Operacional · Tarefas",
-  demandas: "Operacional · Demandas",
-  profiles: "Administração · Pessoas",
-  access_levels: "Administração · Papéis de acesso",
-  permissions: "Administração · Permissões",
-  tipos_pessoa: "Administração · Tipos de pessoa",
-  banco_credenciais: "Administração · Bancos",
-  admin_api_integrations: "Administração · APIs de IA",
-  parametros_globais: "Administração · Parâmetros",
-  financial_payables: "Financeiro · Contas a pagar",
-  financial_receivables: "Financeiro · Contas a receber",
-  comissao_regras: "Financeiro · Regras de repasse",
-  comissao_regras_usuario: "Financeiro · Regras de comissão",
-  comissoes: "Financeiro · Repasses",
-  comissoes_usuario: "Financeiro · Comissões",
-};
-
-export function rotuloEntidade(entidade: string | null | undefined): string {
-  if (!entidade) return "—";
-  return ENTIDADE_LABEL[entidade] ?? entidade.replace(/[._]/g, " ");
-}
+export { ENTIDADE_LABEL, rotuloEntidade } from "@/lib/admin/auditoria-rotulos";
+import { rotuloEntidade } from "@/lib/admin/auditoria-rotulos";
 
 export interface Filtros {
   dataInicio: string;
@@ -217,7 +183,7 @@ export function exportarCsv(registros: AuditoriaLinha[]): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `auditoria-${hojeISO()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

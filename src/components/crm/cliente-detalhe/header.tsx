@@ -1,8 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/crm/tone-badge";
+import { PortalBadge } from "@/components/crm/tone-badge";
 import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "@/lib/propostas/dominios";
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 
 export function ClienteHeader({
   cliente: c,
@@ -14,12 +15,7 @@ export function ClienteHeader({
   celularExib: string | null;
 }) {
   const navigate = useNavigate();
-  const iniciais = (c.nome ?? "?")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p: string) => p[0]?.toUpperCase() ?? "")
-    .join("");
+  const iniciais = iniciaisDoNome(c.nome);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 sm:p-6">
@@ -37,7 +33,7 @@ export function ClienteHeader({
               <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">
                 {c.nome}
               </h1>
-              <StatusBadge status={c.portal_acesso_ativo ? "ativo" : "inativo"} />
+              <PortalBadge ativo={Boolean(c.portal_acesso_ativo)} />
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
               <span className="font-mono text-xs">{c.numero_cliente}</span>

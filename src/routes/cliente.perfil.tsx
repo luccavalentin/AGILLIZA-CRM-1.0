@@ -2,9 +2,14 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Sun, Moon, Monitor, Download, Trash2, UserRound } from "lucide-react";
+import { Sun, Moon, Monitor, Download, Trash2, UserRound, Send } from "lucide-react";
 import { setTheme } from "@/lib/theme";
-import { clienteBaixarMeusDados, clienteExcluirDadosApp } from "@/lib/portal/cliente.functions";
+import {
+  clienteBaixarMeusDados,
+  clienteExcluirDadosApp,
+  clienteSolicitarLGPD,
+} from "@/lib/portal/cliente.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -136,7 +141,16 @@ function Perfil() {
       doc.save("meus-dados.pdf");
       toast.success("Seus dados foram baixados em PDF.");
     },
-    onError: () => toast.error("Falha de conexão. Tente novamente."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível baixar seus dados.")),
+  });
+
+  // Portabilidade e demais pedidos de titular: abre uma solicitação para o
+  // encarregado de dados da empresa (demanda LGPD no CRM).
+  const solicitarPortabilidade = useMutation({
+    mutationFn: () => clienteSolicitarLGPD({ data: { acao: "portabilidade" } }),
+    onSuccess: () =>
+      toast.success("Solicitação registrada. A empresa vai entrar em contato pelo chat."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível registrar a solicitação.")),
   });
 
   const excluir = useMutation({
@@ -145,7 +159,7 @@ function Perfil() {
       toast.success("Seus dados do aplicativo foram excluídos.");
       navigate({ to: "/cliente/logout" });
     },
-    onError: () => toast.error("Falha de conexão. Tente novamente."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível excluir seus dados.")),
   });
 
   const opcoes: { valor: Modo; label: string; icone: typeof Sun }[] = [
@@ -173,6 +187,8 @@ function Perfil() {
               return (
                 <button
                   key={o.valor}
+                  type="button"
+                  aria-pressed={ativo}
                   onClick={() => {
                     setModo(o.valor);
                     aplicarModo(o.valor);
@@ -201,9 +217,9 @@ function Perfil() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Baixe uma cópia dos seus dados em PDF ou exclua seus dados do aplicativo. A exclusão
-            remove suas mensagens, notificações e histórico de acesso e desativa o acesso a este
-            aplicativo — seu cadastro na empresa não é afetado.
+            Baixe uma cópia dos seus dados em PDF, peça a portabilidade ou exclua seus dados do
+            aplicativo. A exclusão remove suas mensagens, notificações e histórico de acesso e
+            desativa o acesso a este aplicativo; seu cadastro na empresa não é afetado.
           </p>
           <Button
             variant="outline"
@@ -213,6 +229,15 @@ function Perfil() {
             onClick={() => baixar.mutate()}
           >
             <Download className="mr-2 h-5 w-5" /> Baixar meus dados (PDF)
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full"
+            disabled={solicitarPortabilidade.isPending}
+            onClick={() => solicitarPortabilidade.mutate()}
+          >
+            <Send className="mr-2 h-5 w-5" /> Solicitar portabilidade dos dados
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>

@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils";
 export type Tone = "success" | "info" | "warning" | "danger" | "muted";
 
 const toneClasses: Record<Tone, string> = {
-  success: "bg-success/10 text-success border border-success/20",
+  // Texto em --success-texto: o verde da marca como texto não passa no AA.
+  success: "bg-success/10 text-success-texto border border-success/20",
   info: "bg-primary/10 text-primary border border-primary/20",
   warning: "bg-warning/15 text-warning-foreground border border-warning/30",
   danger: "bg-destructive/10 text-destructive border border-destructive/20",

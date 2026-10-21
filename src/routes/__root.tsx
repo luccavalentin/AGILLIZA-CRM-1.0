@@ -21,22 +21,23 @@ import { AgenciaBradescoDialogHost } from "@/components/proposta/dialogs/agencia
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
 import { iniciarLimpezaBadge } from "../lib/host-badge-cleaner";
+import { mensagemDeErro } from "../lib/erros/mensagem";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          O endereço não existe ou a página foi movida.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            Ir para o início
           </Link>
         </div>
       </div>
@@ -63,7 +64,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             : "Não foi possível carregar esta página"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Ocorreu um erro ao processar os dados. Tente atualizar a página.
+          {mensagemDeErro(error, "Ocorreu um erro ao processar os dados. Tente atualizar a página.")}
         </p>
         <details className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-left text-xs">
           <summary className="cursor-pointer font-medium text-foreground">
@@ -212,7 +213,7 @@ function RootComponent() {
     };
     const onRejection = (e: PromiseRejectionEvent) => {
       const msg = (e.reason && (e.reason.message || String(e.reason))) || "";
-      if (isChunkError(msg)) tryReload();
+      if (isChunkError(msg) || /server function info not found/i.test(msg)) tryReload();
     };
 
     // O Vite avisa por este evento sempre que um import() dinâmico falha —
@@ -223,15 +224,65 @@ function RootComponent() {
     // carta (e qualquer tela carregada sob demanda) quebrada até o F5.
     const onPreloadError = () => tryReload();
 
+    // Função do servidor respondendo HTML: a aba é de uma versão anterior
+    // (`mensagemDeErro` dispara este evento). Recarrega para pegar a nova.
+    const onVersaoAntiga = () => tryReload();
+
+    // Versão nova publicada com a aba aberta: compara a lista de arquivos com
+    // hash que o servidor serve agora com a do momento em que a aba abriu. Se
+    // mudou, recarrega na próxima vez que a pessoa voltar à aba ou trocar de
+    // tela — nunca no meio de um formulário sendo digitado.
+    let assinatura = "";
+    let versaoNova = false;
+    const lerAssinatura = async () => {
+      try {
+        const r = await fetch("/auth", { cache: "no-store", credentials: "omit" });
+        if (!r.ok) return "";
+        const html = await r.text();
+        return Array.from(new Set(html.match(/\/assets\/[A-Za-z0-9_.-]+\.js/g) ?? []))
+          .sort()
+          .join("|");
+      } catch {
+        return "";
+      }
+    };
+    const conferir = async () => {
+      if (versaoNova) return;
+      const agora = await lerAssinatura();
+      if (!agora) return;
+      if (!assinatura) assinatura = agora;
+      else if (agora !== assinatura) versaoNova = true;
+    };
+    const digitando = () => {
+      const el = document.activeElement as HTMLElement | null;
+      return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+    };
+    const aoVoltar = () => {
+      if (document.visibilityState !== "visible") return;
+      if (versaoNova && !digitando()) tryReload();
+      else void conferir();
+    };
+    void conferir();
+    const intervalo = window.setInterval(() => void conferir(), 5 * 60_000);
+    const pararNavegacao = router.subscribe("onBeforeNavigate", () => {
+      if (versaoNova) tryReload();
+    });
+
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onRejection);
     window.addEventListener("vite:preloadError", onPreloadError);
+    window.addEventListener("agilliza:versao-antiga", onVersaoAntiga);
+    document.addEventListener("visibilitychange", aoVoltar);
     return () => {
       window.removeEventListener("error", onError);
       window.removeEventListener("unhandledrejection", onRejection);
       window.removeEventListener("vite:preloadError", onPreloadError);
+      window.removeEventListener("agilliza:versao-antiga", onVersaoAntiga);
+      document.removeEventListener("visibilitychange", aoVoltar);
+      window.clearInterval(intervalo);
+      pararNavegacao();
     };
-  }, []);
+  }, [router]);
 
   return (
     <QueryClientProvider client={queryClient}>

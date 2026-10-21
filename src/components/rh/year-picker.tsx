@@ -2,7 +2,7 @@
  * YearPicker — input numérico de ano com popover de calendário para seleção rápida.
  * Permite digitar o ano livremente ou escolher visualmente em uma grade.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,9 @@ export function YearPicker({
   const [pageStart, setPageStart] = useState<number>(() => Math.floor(value / 12) * 12);
 
   // Mantém o texto sincronizado quando o valor externo muda.
-  useMemo(() => setText(String(value)), [value]);
+  useEffect(() => {
+    setText(String(value));
+  }, [value]);
 
   function commit(raw: string) {
     const n = Number(raw);

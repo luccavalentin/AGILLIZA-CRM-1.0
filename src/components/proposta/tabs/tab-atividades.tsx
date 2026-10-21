@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import {
   Table,
   TableBody,
@@ -31,7 +32,7 @@ export function TabAtividades({ historico }: { historico: any[] }) {
             <TableRow key={h.id}>
               <TableCell className="font-medium">{h.tipo_evento}</TableCell>
               <TableCell className="text-muted-foreground">
-                {h.descricao ?? (h.status_novo ? statusProposta(h.status_novo).label : "—")}
+                {semMarcaIntegracao(h.descricao) ?? (h.status_novo ? statusProposta(h.status_novo).label : "—")}
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {new Date(h.created_at).toLocaleString("pt-BR")}

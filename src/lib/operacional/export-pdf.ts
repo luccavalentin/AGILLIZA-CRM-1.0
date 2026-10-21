@@ -4,6 +4,7 @@
  */
 import { exportPDF } from "@/lib/relatorios/report-pdf";
 import type { ReportColumn, ReportKpi, ReportRow } from "@/lib/relatorios/shared";
+import { hojeISO } from "@/lib/financeiro/format";
 
 function fmtDataHora(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -125,7 +126,7 @@ export function baixarTarefasPDF(params: {
     kpis,
     columns,
     rows,
-    `agilliza-tarefas-${new Date().toISOString().slice(0, 10)}`,
+    `agilliza-tarefas-${hojeISO()}`,
     undefined,
     undefined,
     undefined,
@@ -211,7 +212,7 @@ export function baixarDemandasPDF(params: {
     kpis,
     columns,
     rows,
-    `agilliza-demandas-${new Date().toISOString().slice(0, 10)}`,
+    `agilliza-demandas-${hojeISO()}`,
     undefined,
     undefined,
     undefined,

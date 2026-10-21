@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { X, SlidersHorizontal } from "lucide-react";
 import {
   Select,
@@ -28,16 +29,14 @@ const rotularProduto = (p: string) =>
 
 const PERIODOS: Periodo[] = ["hoje", "7d", "15d", "30d", "mes", "mes_anterior", "ano", "custom"];
 
-/** Seletor de escopo Minha · Equipe · Geral. */
+/** Seletor de escopo Minha · Geral. */
 export function VisionSelector({
   escopo,
   onChange,
-  podeEquipe,
   podeGeral,
 }: {
   escopo: Escopo;
   onChange: (e: Escopo) => void;
-  podeEquipe: boolean;
   podeGeral: boolean;
 }) {
   // Escopo "Equipe" foi removido do produto — mantém apenas Minha e Geral.
@@ -48,8 +47,11 @@ export function VisionSelector({
         <button
           key={o}
           type="button"
+          aria-pressed={escopo === o}
           onClick={() => onChange(o)}
-          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${escopo === o ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          // flex-1 no celular: com o seletor esticado, "Minha · Geral" ficava
+          // espremido à esquerda com um vão branco ao lado (QA 20/10).
+          className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors sm:flex-none ${escopo === o ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
           {ESCOPO_LABEL[o]}
         </button>
@@ -58,11 +60,15 @@ export function VisionSelector({
   );
 }
 
+/** Espera depois da última tecla antes de consultar o relatório de novo. */
+const ESPERA_DIGITACAO_MS = 400;
+
+type Rascunho = { busca?: string; valorMin?: number; valorMax?: number };
+
 /** Barra de filtros de relatório: período + intervalo + multi-seleções combináveis + chips ativos. */
 export function ReportFiltersBar({
   filtros,
   onChange,
-  onApply,
   bancos,
   produtos,
   statuses,
@@ -73,7 +79,6 @@ export function ReportFiltersBar({
 }: {
   filtros: ReportFiltros;
   onChange: (f: ReportFiltros) => void;
-  onApply?: (f: ReportFiltros) => void;
   bancos?: string[];
   produtos?: string[];
   statuses?: { value: string; label: string }[];
@@ -83,6 +88,37 @@ export function ReportFiltersBar({
   imobiliarias?: MultiOption[];
 }) {
   const set = (patch: Partial<ReportFiltros>) => onChange({ ...filtros, ...patch });
+
+  // Busca e valores: cada tecla disparava o relatório inteiro no servidor. O
+  // texto fica num rascunho e só vale depois de uma pausa na digitação (ou Enter).
+  const [rascunho, setRascunho] = useState<Rascunho>({
+    busca: filtros.busca,
+    valorMin: filtros.valorMin,
+    valorMax: filtros.valorMax,
+  });
+  const atual = useRef({ filtros, onChange });
+  atual.current = { filtros, onChange };
+  // Limpar, remover chip ou trocar de relatório: o rascunho acompanha.
+  useEffect(() => {
+    setRascunho({ busca: filtros.busca, valorMin: filtros.valorMin, valorMax: filtros.valorMax });
+  }, [filtros.busca, filtros.valorMin, filtros.valorMax]);
+  const pendente =
+    (rascunho.busca ?? "") !== (filtros.busca ?? "") ||
+    rascunho.valorMin !== filtros.valorMin ||
+    rascunho.valorMax !== filtros.valorMax;
+  function aplicarRascunho() {
+    const { filtros: f, onChange: mudar } = atual.current;
+    mudar({ ...f, busca: rascunho.busca, valorMin: rascunho.valorMin, valorMax: rascunho.valorMax });
+  }
+  useEffect(() => {
+    if (!pendente) return;
+    const t = setTimeout(aplicarRascunho, ESPERA_DIGITACAO_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rascunho, pendente]);
+  const aoTeclar = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && pendente) aplicarRascunho();
+  };
   const bancoOpts: MultiOption[] = (bancos ?? []).map((b) => ({
     value: b,
     label: b,
@@ -106,6 +142,10 @@ export function ReportFiltersBar({
   if (filtros.valorMax != null)
     chips.push({ key: "valorMax", label: `Máx: ${filtros.valorMax.toLocaleString("pt-BR")}` });
   if (filtros.busca) chips.push({ key: "busca", label: `Busca: ${filtros.busca}` });
+
+  // Fim antes do início: avisa e não aplica (antes rodava e devolvia vazio sem explicar).
+  const periodoInvertido =
+    filtros.periodo === "custom" && !!filtros.de && !!filtros.ate && filtros.de > filtros.ate;
 
   const temAlgum =
     chips.length > 0 ||
@@ -251,29 +291,32 @@ export function ReportFiltersBar({
         )}
 
         <Input
-          value={filtros.busca ?? ""}
-          onChange={(e) => set({ busca: e.target.value || undefined })}
+          value={rascunho.busca ?? ""}
+          onChange={(e) => setRascunho((r) => ({ ...r, busca: e.target.value || undefined }))}
+          onKeyDown={aoTeclar}
           placeholder="Buscar…"
           className="h-9 w-full"
         />
 
         <div className="flex items-center gap-1.5 sm:col-span-2 md:col-span-1 xl:col-span-2">
           <Input
-            value={filtros.valorMin ?? ""}
+            value={rascunho.valorMin ?? ""}
             onChange={(e) => {
               const valor = e.target.value.replace(/\D/g, "");
-              set({ valorMin: valor ? Number(valor) : undefined });
+              setRascunho((r) => ({ ...r, valorMin: valor ? Number(valor) : undefined }));
             }}
+            onKeyDown={aoTeclar}
             inputMode="numeric"
             placeholder="Valor mín."
             className="h-9 min-w-0 flex-1"
           />
           <Input
-            value={filtros.valorMax ?? ""}
+            value={rascunho.valorMax ?? ""}
             onChange={(e) => {
               const valor = e.target.value.replace(/\D/g, "");
-              set({ valorMax: valor ? Number(valor) : undefined });
+              setRascunho((r) => ({ ...r, valorMax: valor ? Number(valor) : undefined }));
             }}
+            onKeyDown={aoTeclar}
             inputMode="numeric"
             placeholder="Valor máx."
             className="h-9 min-w-0 flex-1"
@@ -281,16 +324,13 @@ export function ReportFiltersBar({
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => (onApply ?? onChange)(filtros)}
-          className="h-9 bg-primary px-5 text-primary-foreground hover:bg-primary/90"
-        >
-          Aplicar filtros
-        </Button>
-      </div>
+      {/* "Aplicar filtros" reenviava os mesmos filtros e não fazia nada: os
+          filtros já valem ao escolher, e o texto após a pausa na digitação. */}
+      {periodoInvertido && (
+        <p role="alert" className="text-xs text-destructive">
+          A data final é anterior à inicial. Corrija o período para aplicar.
+        </p>
+      )}
 
       {temAlgum && (
         <div className="flex flex-wrap gap-1.5">

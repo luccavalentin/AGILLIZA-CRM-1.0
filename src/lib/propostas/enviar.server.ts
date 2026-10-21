@@ -35,6 +35,7 @@ import {
   statusGlobalPorBancos,
   statusSemRetrocederCredito,
   homefinPodeRegravarRegua,
+  motivoDoBanco,
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
 import {
@@ -1658,7 +1659,7 @@ async function enviarPropostaImplInner({
       // o envio segue liberado para quando o banco der baixa na anterior.
       if (falhaEnvioReal && ehPropostaJaNoBanco(resp?.retornoIntegracao)) {
         const banco = b.nome_banco ?? "banco";
-        const aviso = `O ${banco} recusou o envio porque ainda considera outra proposta deste CPF em análise. Se a anterior já foi cancelada no banco, envie de novo; se ainda não, cancele-a no banco primeiro. Abrimos um follow-up na HomeFin pedindo a posição.`;
+        const aviso = `O ${banco} recusou o envio porque ainda considera outra proposta deste CPF em análise. Se a anterior já foi cancelada no banco, envie de novo; se ainda não, cancele-a no banco primeiro. Abrimos um follow-up na integração bancária pedindo a posição.`;
         await supabase.from("proposta_historico").insert({
           proposta_id: propostaId,
           tipo_evento: "sincronizacao",
@@ -1732,7 +1733,7 @@ async function enviarPropostaImplInner({
           ? sanitizarMensagemErro(erroBanco)
           : semDesfecho
             ? `Aguardando retorno do ${b.nome_banco ?? "banco"}...`
-            : null,
+            : motivoDoBanco(resp),
         raw_response: resp,
       };
       // situacao_banco é um enum interno (nao_enviado/em_analise/condicionado/
@@ -1878,10 +1879,16 @@ async function enviarPropostaImplInner({
     (await recalcularStatusGlobalProposta(supabase, propostaId)) ??
     (sucesso > 0 ? "enviada_banco" : statusAtual);
 
-  // Verificação de integridade (Log de divergência)
-  if (sucesso > 0 && novoStatusGlobal === "credito_recusado") {
+  // Verificação de integridade: só é divergência se algum banco AINDA está sem desfecho
+  // (aguardando/enviada) e mesmo assim a proposta ficou recusada. Banco que já RECUSOU
+  // conta como enviado (`sucesso`), mas não está "em processamento" — contar `sucesso`
+  // aqui disparava o aviso em toda recusa imediata (Santander 56320715, 20/10/2026).
+  const emProcessamento = enviados.filter(
+    (r) => r.status === "aguardando" || r.status === "enviada",
+  ).length;
+  if (emProcessamento > 0 && novoStatusGlobal === "credito_recusado") {
     console.warn(
-      `[proposta] Divergência detectada no envio: PRO-${propostaId} marcada como recusada mesmo com ${sucesso} bancos em processamento.`,
+      `[proposta] Divergência detectada no envio: PRO-${propostaId} marcada como recusada com ${emProcessamento} banco(s) ainda sem desfecho.`,
     );
   }
 
@@ -2266,7 +2273,8 @@ export async function sincronizarPropostaImpl({
         Boolean(erroMsg),
         sim,
       ),
-      mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : null,
+      // Sem erro, o motivo do desfecho dado pelo banco (recusa, condição, pendência).
+      mensagem_banco: erroMsg ? sanitizarMensagemErro(erroMsg) : motivoDoBanco(sim),
       raw_response: sim,
     };
     // Salva apenas o número REAL da proposta no banco. Códigos de oportunidade

@@ -1,6 +1,5 @@
 import { AdminHero } from "@/components/admin/admin-hero";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { assertModuloPermitido } from "@/lib/route-guards";
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -32,10 +31,12 @@ import {
   limparNotificacoes,
   type Notificacao,
 } from "@/lib/notificacoes.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 export const Route = createFileRoute("/_authenticated/admin/notificacoes")({
-  // Mesma permissão do item no menu (QA 19/09/2026).
-  beforeLoad: () => assertModuloPermitido("admin.notificacoes"),
+  // Sem exigência de módulo: a central é pessoal (lista, marca e exclui só as
+  // notificações do próprio usuário; preferências ficam no navegador). O sino e
+  // /conta/notificacoes mandam todo mundo para cá.
   head: () => ({ meta: [{ title: "Notificações — Agilliza" }] }),
   component: Pagina,
 });
@@ -106,7 +107,7 @@ function Pagina() {
       queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
       queryClient.invalidateQueries({ queryKey: ["notificacoes", "todas"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao limpar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao limpar.")),
   });
 
   const naoLidas = itens.filter((n) => !n.lida);

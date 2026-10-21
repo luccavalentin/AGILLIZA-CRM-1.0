@@ -16,7 +16,7 @@ import {
 import { listarUsuariosCorrespondente } from "@/lib/matriculas/matriculas.functions";
 
 /**
- * Gerencia quem, além do dono da conversa, tem acesso a esta thread privada.
+ * Gerencia quem, além do dono da conversa, participa desta thread.
  * Convidados passam a ver o histórico e podem responder na mesma conversa.
  */
 export function ChatParticipantes({
@@ -35,7 +35,11 @@ export function ChatParticipantes({
   const [selecionado, setSelecionado] = useState("todos");
 
   const partKey = ["chat-participantes", clienteId, atendenteId];
-  const { data: participantes } = useQuery({
+  const {
+    data: participantes,
+    isError: erroParticipantes,
+    refetch: recarregarParticipantes,
+  } = useQuery({
     queryKey: partKey,
     queryFn: () => listarPart({ data: { cliente_id: clienteId, atendente_id: atendenteId } }),
   });
@@ -64,7 +68,7 @@ export function ChatParticipantes({
       qc.invalidateQueries({ queryKey: partKey });
       toast.success("Pessoa adicionada à conversa.");
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao adicionar.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível adicionar a pessoa.")),
   });
 
   const rmMut = useMutation({
@@ -74,7 +78,7 @@ export function ChatParticipantes({
       qc.invalidateQueries({ queryKey: partKey });
       toast.success("Pessoa removida da conversa.");
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao remover.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível remover a pessoa.")),
   });
 
   const total = participantes?.length ?? 0;
@@ -104,7 +108,20 @@ export function ChatParticipantes({
           </p>
         </div>
 
-        {total > 0 ? (
+        {erroParticipantes ? (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-dashed border-destructive/40 px-2.5 py-2 text-xs text-muted-foreground">
+            <span>Não foi possível carregar os participantes.</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => void recarregarParticipantes()}
+            >
+              Tentar de novo
+            </Button>
+          </div>
+        ) : total > 0 ? (
           <ul className="space-y-1.5">
             {(participantes ?? []).map((p) => (
               <li
@@ -126,7 +143,8 @@ export function ChatParticipantes({
           </ul>
         ) : (
           <p className="rounded-md border border-dashed border-border/60 px-2.5 py-2 text-xs text-muted-foreground">
-            Somente você tem acesso a esta conversa.
+            Nenhum convidado. Gestores e quem tem acesso a este cliente também podem ler esta
+            conversa.
           </p>
         )}
 

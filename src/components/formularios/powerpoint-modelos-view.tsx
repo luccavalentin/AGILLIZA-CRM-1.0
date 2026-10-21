@@ -59,6 +59,28 @@ const MODELOS_PPT = [
   },
 ];
 
+/**
+ * Miniatura de slide com reserva: as imagens apontam para o armazenamento antigo
+ * (`/__l5e/assets-v1/...`) e podem dar 404. Em vez do ícone de imagem quebrada,
+ * mostra um quadro neutro com o nome do modelo.
+ */
+function ImagemSlide({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [erro, setErro] = useState(false);
+  if (erro) {
+    return (
+      <div
+        role="img"
+        aria-label={alt}
+        className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted/60 p-2 text-center text-muted-foreground"
+      >
+        <Presentation className="h-5 w-5" aria-hidden />
+        <span className="line-clamp-2 text-[11px] font-medium">{alt}</span>
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setErro(true)} />;
+}
+
 export function PowerPointModelosView() {
   const [selecionado, setSelecionado] = useState(MODELOS_PPT[0].id);
   const modeloAtual = MODELOS_PPT.find((m) => m.id === selecionado)!;
@@ -108,6 +130,9 @@ export function PowerPointModelosView() {
           {MODELOS_PPT.map((modelo) => (
             <button
               key={modelo.id}
+              type="button"
+              aria-label={`Selecionar modelo ${modelo.titulo}`}
+              aria-pressed={selecionado === modelo.id}
               onClick={() => setSelecionado(modelo.id)}
               className={cn(
                 "group relative aspect-video overflow-hidden rounded-xl border bg-card transition-all",
@@ -117,7 +142,7 @@ export function PowerPointModelosView() {
                   : "border-border/60 hover:border-primary/40",
               )}
             >
-              <img
+              <ImagemSlide
                 src={modelo.slides[0]}
                 alt={modelo.titulo}
                 className={cn(
@@ -147,7 +172,7 @@ export function PowerPointModelosView() {
           {/* Main Slide Preview */}
           <div className="absolute inset-0 p-8 flex flex-col items-center justify-center">
             <div className="relative w-full max-w-3xl aspect-video rounded-lg overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.02] transition-transform duration-500">
-              <img
+              <ImagemSlide
                 src={modeloAtual.slides[0]}
                 alt={modeloAtual.titulo}
                 className="w-full h-full object-cover"
@@ -190,7 +215,7 @@ export function PowerPointModelosView() {
                 key={i}
                 className="flex-1 aspect-video rounded border border-white/20 overflow-hidden shadow-lg bg-slate-800"
               >
-                <img
+                <ImagemSlide
                   src={slide}
                   alt={`Slide ${i + 2}`}
                   className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all"

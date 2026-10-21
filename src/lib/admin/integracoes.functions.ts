@@ -3,6 +3,7 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export interface BancoCredencialLista {
   id: string;
@@ -49,7 +50,7 @@ async function correspondenteDoUsuario(
 
 /** Credenciais bancárias (apenas nomes de secrets, nunca valores). */
 export const listarBancosCredenciais = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "view"])])
   .handler(async ({ context }): Promise<BancoCredencialLista[]> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -81,7 +82,7 @@ export const listarBancosCredenciais = createServerFn({ method: "GET" })
 
 /** Integrações de API administradas (apenas metadados e nomes de secrets). */
 export const listarApiIntegracoes = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "view"])])
   .handler(async ({ context }): Promise<ApiIntegracaoLista[]> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -101,7 +102,7 @@ export const listarApiIntegracoes = createServerFn({ method: "GET" })
 
 /** Histórico de verificações de conectividade. */
 export const listarHealthChecks = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "view"])])
   .handler(async ({ context }): Promise<HealthCheckLista[]> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -119,7 +120,7 @@ export const listarHealthChecks = createServerFn({ method: "GET" })
 
 /** Testa conectividade de uma integração (HEAD/GET na base_url) e registra o resultado. */
 export const testarConectividade = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "edit"])])
   .inputValidator((data: unknown) =>
     z.object({ integracao: z.string().min(1), base_url: z.string().url() }).parse(data),
   )
@@ -165,15 +166,13 @@ export const testarConectividade = createServerFn({ method: "POST" })
  * integração (domínios oficiais). Restrito a administradores/gestores.
  */
 export const sincronizarDominios = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ bancos: number; operacoes: number }> => {
-    const { supabase, userId } = context;
-    const { data: pode } = await supabase.rpc("usuario_pode_admin", { _user_id: userId });
-    if (!pode) throw new Error("Você não tem permissão para sincronizar domínios.");
+  // Mesma regra das demais ações da tela de Integrações (antes: só o papel).
+  .middleware([exigirPermissao(["admin.integracoes", "edit"])])
+  .handler(async (): Promise<{ bancos: number; operacoes: number }> => {
 
     const { integracaoConfigurada, sincronizarDominiosIntegracao, sanitizarMensagemErro } =
       await import("@/lib/simulacao/homefin.server");
-    if (!integracaoConfigurada()) {
+    if (!(await integracaoConfigurada())) {
       throw new Error("Integração bancária não configurada. Cadastre as credenciais primeiro.");
     }
     try {

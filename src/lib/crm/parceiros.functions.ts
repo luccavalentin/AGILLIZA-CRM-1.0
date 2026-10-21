@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import { todasAsLinhas } from "@/lib/paginar";
 import { toTitleCase } from "@/lib/utils";
 
@@ -15,9 +16,18 @@ export interface ParceiroItem {
   percentual_comissao: number | null;
 }
 
+/**
+ * `parceiro_detalhes.tipo_pessoa` grava "pj" para imobiliária e "pf" para corretor
+ * (ver `pessoas.functions.ts`). "juridica"/"imobiliaria" ficam aceitos por segurança.
+ */
+export function ehImobiliariaParceiro(tipo: string | null | undefined): boolean {
+  const t = String(tipo ?? "").toLowerCase();
+  return t === "pj" || t === "juridica" || t === "imobiliaria";
+}
+
 /** Lista os parceiros (imobiliárias e corretores) do correspondente. Somente leitura. */
 export const listarParceiros = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.parceiros", "view"])])
   .handler(async ({ context }): Promise<ParceiroItem[]> => {
     const { supabase } = context;
     const { data, error } = await todasAsLinhas(() =>

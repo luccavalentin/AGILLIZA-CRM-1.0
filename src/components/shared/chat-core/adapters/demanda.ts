@@ -98,6 +98,8 @@ export function useAdaptadorDemanda({
             corpo: p.mensagem ?? "",
             visivel_cliente: false,
             anexo_path: p.anexo_path ?? null,
+            anexo_nome: p.anexo_nome ?? null,
+            anexo_tamanho: p.anexo_tamanho ?? null,
             responde_a: p.responde_a ?? null,
           },
         }),
@@ -114,8 +116,8 @@ export function useAdaptadorDemanda({
         bindings: [
           { table: "demanda_mensagens", filter: `demanda_id=eq.${demandaId}` },
           { table: "demandas", filter: `id=eq.${demandaId}` },
-          { table: "chat_reacoes", filter: `origem=eq.demanda` },
         ],
+        reacoes: { table: "chat_reacoes" },
       },
 
       // Papel único por usuário — permite múltiplos participantes digitando.

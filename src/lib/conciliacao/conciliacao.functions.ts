@@ -1,12 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import { todasAsLinhas } from "@/lib/paginar";
 import type { ConciliacaoItem, ConciliacaoLote, ResumoBanco } from "@/lib/conciliacao/tipos";
 
 /** Processa um arquivo já lido no navegador e grava o lote conciliado. */
 export const processarConciliacao = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["relatorios.geral", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -39,7 +40,7 @@ export const processarConciliacao = createServerFn({ method: "POST" })
 
 /** Lista os lotes de conciliação do ecossistema, com filtros opcionais. */
 export const listarLotesConciliacao = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["relatorios.geral", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -68,7 +69,7 @@ export const listarLotesConciliacao = createServerFn({ method: "GET" })
 
 /** Resumo agregado por banco (KPIs da tela). */
 export const resumoConciliacao = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["relatorios.geral", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -114,7 +115,7 @@ export const resumoConciliacao = createServerFn({ method: "GET" })
 
 /** Itens de um lote, com filtro por resultado e busca textual. */
 export const listarItensConciliacao = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["relatorios.geral", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -152,16 +153,25 @@ export const listarItensConciliacao = createServerFn({ method: "GET" })
     return (rows ?? []) as unknown as ConciliacaoItem[];
   });
 
-/** Remove um lote e seus itens. */
+/**
+ * Remove um lote e seus itens. O comparativo fica em Relatórios
+ * (`relatorios.geral`, que não tem "excluir" no catálogo): exige ver relatórios,
+ * como a rota, e a RLS de DELETE limita a admin/correspondente/gestor. Quando a
+ * RLS filtra, o delete não dá erro — por isso a contagem de linhas removidas.
+ */
 export const excluirLoteConciliacao = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["relatorios.geral", "view"])])
   .inputValidator((data: unknown) => z.object({ loteId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase
+    const { data: removidos, error } = await context.supabase
       .from("conciliacao_lotes")
       .delete()
-      .eq("id", data.loteId);
+      .eq("id", data.loteId)
+      .select("id");
     if (error) throw new Error(error.message);
+    if (!removidos || removidos.length === 0) {
+      throw new Error("Apenas administradores e gestores podem excluir lotes de conciliação.");
+    }
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
       supabase: context.supabase,
@@ -177,7 +187,7 @@ export const excluirLoteConciliacao = createServerFn({ method: "POST" })
 
 /** Cruza as chaves das planilhas comparadas contra as propostas do sistema. */
 export const cruzarComSistema = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["relatorios.geral", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({

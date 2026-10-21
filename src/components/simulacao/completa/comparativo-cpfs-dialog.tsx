@@ -111,7 +111,13 @@ export function ComparativoCpfsDialog({
                 </p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onClose}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              onClick={onClose}
+              aria-label="Fechar"
+            >
               <X className="h-5 w-5 text-muted-foreground" />
             </Button>
           </div>

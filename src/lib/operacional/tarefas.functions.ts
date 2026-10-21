@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { todasAsLinhas } from "@/lib/paginar";
 import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
+import { exigirAcao, exigirMesmoCorrespondente } from "./permissao-acao";
 
 export type TarefaStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
@@ -220,11 +221,35 @@ export const criarTarefa = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     // Escopo do usuário autenticado (mesma origem usada pela política de RLS).
     const corr = await correspondenteId(supabase, userId);
+    await exigirAcao(supabase, userId, "operacional.tarefas", "create");
+    if (data.responsavel_id && data.responsavel_id !== userId) {
+      await exigirAcao(
+        supabase,
+        userId,
+        "operacional.tarefas",
+        "atribuir",
+        "Você não tem permissão para atribuir tarefas a outra pessoa.",
+      );
+    }
 
     // A gravação é feita com o cliente administrativo para evitar o conflito
     // com a política de INSERT de `tasks` (que reavalia o correspondente no
-    // contexto da sessão). O escopo já foi validado acima a partir do usuário.
+    // contexto da sessão). Sem RLS aqui, os ids vindos da tela (responsável,
+    // participantes, cliente) são conferidos contra o correspondente do usuário.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await exigirMesmoCorrespondente(supabaseAdmin, corr, [
+      data.responsavel_id,
+      ...(data.participantes ?? []),
+    ]);
+    if (data.cliente_id) {
+      const { data: cliente } = await supabaseAdmin
+        .from("clientes")
+        .select("id")
+        .eq("id", data.cliente_id)
+        .eq("correspondente_id", corr)
+        .maybeSingle();
+      if (!cliente) throw new Error("Cliente fora do seu ecossistema.");
+    }
 
     const { data: nova, error } = await supabaseAdmin
       .from("tasks")
@@ -376,6 +401,32 @@ export const atualizarTarefa = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { id, ...patch } = data;
     if (Object.keys(patch).length === 0) return { ok: true };
+    await exigirAcao(supabase, userId, "operacional.tarefas", "edit");
+    if (patch.responsavel_id !== undefined) {
+      const { data: atual } = await supabase
+        .from("tasks")
+        .select("responsavel_id, correspondente_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (!atual) throw new Error("Tarefa não encontrada.");
+      if (patch.responsavel_id !== atual.responsavel_id) {
+        await exigirAcao(
+          supabase,
+          userId,
+          "operacional.tarefas",
+          "atribuir",
+          "Você não tem permissão para atribuir tarefas a outra pessoa.",
+        );
+        if (patch.responsavel_id && atual.correspondente_id) {
+          await exigirMesmoCorrespondente(
+            supabase,
+            atual.correspondente_id as string,
+            [patch.responsavel_id],
+            "Responsável fora do seu ecossistema.",
+          );
+        }
+      }
+    }
     const { error } = await supabase
       .from("tasks")
       .update(patch as any)
@@ -389,12 +440,23 @@ export const toggleChecklistItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid(), concluido: z.boolean() }).parse(data))
   .handler(async ({ context, data }) => {
-    const { supabase } = context;
-    const { error } = await supabase
+    const { supabase, userId } = context;
+    const { data: item, error } = await supabase
       .from("task_checklist_items")
       .update({ concluido: data.concluido })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("task_id, descricao")
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    // Histórico da tarefa registra também o checklist (antes ficava de fora).
+    if (item?.task_id) {
+      await supabase.from("task_history").insert({
+        task_id: item.task_id,
+        ator_id: userId,
+        acao: data.concluido ? "checklist_concluido" : "checklist_reaberto",
+        detalhe: item.descricao ?? null,
+      });
+    }
     return { ok: true };
   });
 
@@ -409,6 +471,11 @@ export const comentarTarefa = createServerFn({ method: "POST" })
       .from("task_comments")
       .insert({ task_id: data.task_id, autor_id: userId, corpo: data.corpo });
     if (error) throw new Error(error.message);
+    await supabase.from("task_history").insert({
+      task_id: data.task_id,
+      ator_id: userId,
+      acao: "comentario",
+    });
     return { ok: true };
   });
 
@@ -432,13 +499,35 @@ export const excluirComentarioTarefa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Exclui uma tarefa. Registra snapshot em `task_audit_logs` antes de remover. */
+/**
+ * Exclui uma tarefa. Registra snapshot em `task_audit_logs` antes de remover.
+ * O catálogo não tem "excluir" em Tarefas. Regra, igual à RLS de DELETE
+ * ("tasks delete"): quem criou a tarefa exclui com "create" ou "edit" de
+ * Tarefas; os demais precisam de "edit" e ser admin/correspondente/gestor.
+ * Sem essa checagem a RLS removia zero linhas e a tela dizia que tinha excluído.
+ */
 export const excluirTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { data: snap } = await supabase.from("tasks").select("*").eq("id", data.id).maybeSingle();
+    if (!snap) throw new Error("Tarefa não encontrada.");
+    if ((snap as any).criador_id === userId) {
+      const { data: podeCriar } = await supabase.rpc("usuario_tem_permissao", {
+        _user_id: userId,
+        _modulo: "operacional.tarefas",
+        _acao: "create",
+      });
+      if (!podeCriar) await exigirAcao(supabase, userId, "operacional.tarefas", "edit");
+    } else {
+      await exigirAcao(supabase, userId, "operacional.tarefas", "edit");
+      const { data: podeAdmin, error: errAdmin } = await supabase.rpc("usuario_pode_admin", {
+        _user_id: userId,
+      });
+      if (errAdmin) throw new Error(errAdmin.message);
+      if (!podeAdmin) throw new Error("Apenas quem criou a tarefa ou a gestão pode excluí-la.");
+    }
     if (snap) {
       await supabase.from("task_audit_logs").insert({
         correspondente_id: (snap as any).correspondente_id ?? null,
@@ -556,10 +645,10 @@ export const removerAnexoTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const { data: anexo } = await supabase
       .from("task_attachments")
-      .select("storage_path")
+      .select("storage_path, task_id, nome")
       .eq("id", data.id)
       .maybeSingle();
     if (anexo?.storage_path) {
@@ -567,6 +656,14 @@ export const removerAnexoTarefa = createServerFn({ method: "POST" })
     }
     const { error } = await supabase.from("task_attachments").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (anexo?.task_id) {
+      await supabase.from("task_history").insert({
+        task_id: anexo.task_id,
+        ator_id: userId,
+        acao: "anexo_removido",
+        detalhe: anexo.nome ?? null,
+      });
+    }
     return { ok: true };
   });
 

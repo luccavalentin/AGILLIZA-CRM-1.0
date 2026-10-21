@@ -8,14 +8,10 @@ import {
   FileText,
   Loader2,
   ChevronLeft,
-  MessageCircle,
-  Search,
-  Phone,
   MoreVertical,
   Trash2,
 } from "lucide-react";
 import {
-  clienteListarAtendentes,
   clienteListarMensagens,
   clienteEnviarMensagem,
   clienteReagirMensagem,
@@ -41,6 +37,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { cn } from "@/lib/utils";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { pollingPortal, POLL_MENSAGENS_MS } from "@/lib/portal/polling";
 
 const EMOJIS_RAPIDOS = ["👍", "❤️", "😊", "🙏"];
 
@@ -111,172 +110,6 @@ function chaveDia(iso: string) {
   return new Date(iso).toDateString();
 }
 
-/**
- * Altura padrão preenche a viewport disponível dentro do portal do cliente
- * (cabeçalho + paddings + rodapé), garantindo que somente a lista de mensagens
- * role — a "janela solta" e o compositor fica sempre visível.
- */
-const ALTURA_PADRAO =
-  "h-[calc(100dvh-10.5rem)] min-h-[24rem] sm:h-[calc(100dvh-13rem)] sm:min-h-[420px]";
-
-export function ChatCliente({ altura = ALTURA_PADRAO }: { altura?: string }) {
-  const [atendenteSel, setAtendenteSel] = useState<AtendenteCliente | null>(null);
-  const qcLista = useQueryClient();
-
-  const { data: atendentes } = useQuery({
-    queryKey: ["cliente", "atendentes"],
-    queryFn: () => clienteListarAtendentes(),
-    // Pausa o polling quando a aba está em segundo plano — o watcher global
-    // já cuida de sinalizar novas mensagens, e refetch em background gasta
-    // bateria e cota do Supabase à toa.
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 4000),
-  });
-
-  // Seleção automática quando há apenas um atendente.
-  useEffect(() => {
-    if (!atendenteSel && atendentes && atendentes.length === 1) {
-      setAtendenteSel(atendentes[0]);
-    }
-  }, [atendentes, atendenteSel]);
-
-  // Mantém a seleção sincronizada (nome/foto/não lidas) com a lista atualizada.
-  useEffect(() => {
-    if (atendenteSel && atendentes) {
-      const atualizado = atendentes.find((a) => a.atendente_id === atendenteSel.atendente_id);
-      if (atualizado && atualizado !== atendenteSel) setAtendenteSel(atualizado);
-    }
-  }, [atendentes, atendenteSel]);
-
-  const multiplos = (atendentes?.length ?? 0) > 1;
-
-  const excluirConversaLista = useMutation({
-    mutationFn: (atendente_id: string) => clienteExcluirConversa({ data: { atendente_id } }),
-    onSuccess: () => {
-      toast.success("Conversa excluída da sua lista.");
-      qcLista.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Não foi possível excluir a conversa."),
-  });
-
-  if (!atendenteSel) {
-    return (
-      <ListaAtendentes
-        atendentes={atendentes ?? []}
-        altura={altura}
-        onSelecionar={setAtendenteSel}
-        onExcluir={(a) => excluirConversaLista.mutate(a.atendente_id)}
-      />
-    );
-  }
-
-  return (
-    <ThreadChat
-      key={atendenteSel.atendente_id}
-      atendente={atendenteSel}
-      altura={altura}
-      podeVoltar={multiplos}
-      onVoltar={() => setAtendenteSel(null)}
-    />
-  );
-}
-
-function ListaAtendentes({
-  atendentes,
-  altura,
-  onSelecionar,
-  onExcluir,
-}: {
-  atendentes: AtendenteCliente[];
-  altura: string;
-  onSelecionar: (a: AtendenteCliente) => void;
-  onExcluir: (a: AtendenteCliente) => void;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_50px_-30px_color-mix(in_oklab,var(--brand-azul-profundo)_45%,transparent)] sm:rounded-3xl",
-        altura,
-      )}
-    >
-      <div className="shrink-0 border-b border-border/60 bg-gradient-to-r from-primary to-[var(--brand-azul-escuro)] px-5 py-4 text-primary-foreground">
-        <p className="text-base font-semibold">Suas conversas</p>
-        <p className="text-xs text-primary-foreground/80">Escolha com quem deseja falar</p>
-      </div>
-      <div className="flex-1 divide-y divide-border/50 overflow-y-auto">
-        {atendentes.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <MessageCircle className="h-6 w-6" />
-            </span>
-            <p className="max-w-xs text-sm text-muted-foreground">
-              Assim que seu atendente iniciar a conversa, as mensagens aparecerão aqui.
-            </p>
-          </div>
-        ) : (
-          atendentes.map((a) => (
-            <div
-              key={a.atendente_id}
-              className="group relative flex w-full items-center transition-colors hover:bg-muted/60"
-            >
-              <button
-                type="button"
-                onClick={() => onSelecionar(a)}
-                className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 pr-12 text-left"
-              >
-                <div className="relative shrink-0">
-                  <Avatar className="h-12 w-12">
-                    {a.foto_url ? <AvatarImage src={a.foto_url} alt={a.nome} /> : null}
-                    <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
-                      {iniciais(a.nome)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card bg-emerald-500" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-sm font-semibold text-foreground">{a.nome}</p>
-                    {a.ultima_em ? (
-                      <span className="shrink-0 text-[11px] text-muted-foreground">
-                        {horaCurta(a.ultima_em)}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="mt-0.5 flex items-center justify-between gap-2">
-                    <p
-                      className={cn(
-                        "truncate text-xs",
-                        a.nao_lidas > 0 ? "font-medium text-foreground" : "text-muted-foreground",
-                      )}
-                    >
-                      {a.ultima_mensagem || "Iniciar conversa"}
-                    </p>
-                    {a.nao_lidas > 0 ? (
-                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
-                        {a.nao_lidas}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              </button>
-              <button
-                type="button"
-                aria-label={`Excluir conversa com ${a.nome}`}
-                onClick={() => {
-                  if (!window.confirm("Excluir esta conversa da sua lista?")) return;
-                  onExcluir(a);
-                }}
-                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-100 shadow-sm backdrop-blur transition hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
 export function ThreadChat({
   atendente,
   altura,
@@ -307,7 +140,7 @@ export function ThreadChat({
     queryFn: () => clienteListarMensagens({ data: { atendente_id: atendenteId } }),
     // Sem polling em background — quando a aba volta ao foco o refetch
     // automático de `refetchOnWindowFocus` sincroniza as mensagens.
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 2500),
+    ...pollingPortal(POLL_MENSAGENS_MS),
   });
 
   const { peerTyping, notifyTyping, notifyStop } = useChatTyping(atendenteId, "cliente");
@@ -329,7 +162,7 @@ export function ThreadChat({
       qc.invalidateQueries({ queryKey: ["cliente", "mensagens", atendenteId] });
       qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Não foi possível editar a mensagem."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível editar a mensagem.")),
   });
 
   const excluirMsg = useMutation({
@@ -339,7 +172,7 @@ export function ThreadChat({
       qc.invalidateQueries({ queryKey: ["cliente", "mensagens", atendenteId] });
       qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Não foi possível excluir a mensagem."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível excluir a mensagem.")),
   });
 
   const excluirConversa = useMutation({
@@ -349,7 +182,7 @@ export function ThreadChat({
       qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
       onVoltar();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Não foi possível excluir a conversa."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível excluir a conversa.")),
   });
 
   const reagir = useMutation({
@@ -369,7 +202,7 @@ export function ThreadChat({
       qc.invalidateQueries({ queryKey: ["cliente", "mensagens", atendenteId] });
       qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
     },
-    onError: () => toast.error("Falha de conexão. Tente novamente."),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível enviar a mensagem.")),
   });
 
   const enviarAnexo = useMutation({
@@ -387,7 +220,7 @@ export function ThreadChat({
     },
     onSuccess: () => {
       setTexto("");
-      toast.success("Anexo enviado!");
+      toast.success("Anexo enviado.");
       qc.invalidateQueries({ queryKey: ["cliente", "mensagens", atendenteId] });
       qc.invalidateQueries({ queryKey: ["cliente", "atendentes"] });
     },
@@ -519,22 +352,6 @@ export function ThreadChat({
           </div>
           {headerExtras ?? (
             <div className="hidden items-center gap-1.5 sm:flex">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full"
-                aria-label="Buscar mensagem"
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full"
-                aria-label="Ligar"
-              >
-                <Phone className="h-4 w-4" />
-              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -547,18 +364,23 @@ export function ThreadChat({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    disabled={excluirConversa.isPending}
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      if (!window.confirm("Excluir esta conversa da sua lista?")) return;
-                      excluirConversa.mutate();
+                  <ConfirmDelete
+                    titulo="Excluir esta conversa?"
+                    descricao="A conversa sai da sua lista."
+                    onConfirm={async () => {
+                      await excluirConversa.mutateAsync().catch(() => undefined);
                     }}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Excluir conversa
-                  </DropdownMenuItem>
+                    trigger={
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        disabled={excluirConversa.isPending}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir conversa
+                      </DropdownMenuItem>
+                    }
+                  />
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -748,21 +570,27 @@ export function ThreadChat({
                           </button>
                         ) : null}
                         {doCliente ? (
-                          <button
-                            type="button"
-                            disabled={excluirMsg.isPending}
-                            onClick={() => {
-                              if (!window.confirm("Excluir esta mensagem para todos?")) return;
+                          <ConfirmDelete
+                            titulo="Excluir esta mensagem?"
+                            descricao="Ela some para você e para o atendente."
+                            onConfirm={async () => {
                               if (editando?.id === m.id) {
                                 setEditando(null);
                                 setTexto("");
                               }
-                              excluirMsg.mutate(m.id);
+                              // O erro já vira aviso no onError da mutação.
+                              await excluirMsg.mutateAsync(m.id).catch(() => undefined);
                             }}
-                            className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition hover:text-destructive"
-                          >
-                            Excluir
-                          </button>
+                            trigger={
+                              <button
+                                type="button"
+                                disabled={excluirMsg.isPending}
+                                className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition hover:text-destructive"
+                              >
+                                Excluir
+                              </button>
+                            }
+                          />
                         ) : null}
                       </div>
                     ) : null}

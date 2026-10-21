@@ -1,11 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 /**
  * Função administrativa para destravar simulações e limpar locks.
  */
-export const destravarSimulacoes = createServerFn({ method: "POST" })
+export const destravarSimulacoes = createServerFn({ method: "POST" }).middleware([exigirPermissao(["admin.parametros", "edit"])])
   .inputValidator((d) => z.object({ confirm: z.boolean() }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -141,7 +142,7 @@ export const destravarSimulacoes = createServerFn({ method: "POST" })
 /**
  * Retorna contagem de registros que seriam afetados pelo destravamento.
  */
-export const obterSumarioDestravamento = createServerFn({ method: "GET" }).handler(async () => {
+export const obterSumarioDestravamento = createServerFn({ method: "GET" }).middleware([exigirPermissao(["admin.parametros", "view"])]).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const limite2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
   const limite30min = new Date(Date.now() - 30 * 60 * 1000).toISOString();
@@ -206,7 +207,7 @@ export interface SaudeSistema {
  * administrador é feita dentro da função do banco.
  */
 export const obterSaudeSistema = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.parametros", "view"])])
   .handler(async ({ context }): Promise<SaudeSistema> => {
     const { supabase } = context;
     const { data, error } = await (supabase as any).rpc("sistema_saude");

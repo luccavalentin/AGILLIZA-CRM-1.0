@@ -55,6 +55,7 @@ import {
   type ItemBase,
 } from "@/lib/consultor-ia/consultor-ia.functions";
 import { gerarCompendioPDF, gerarVerbetePDF } from "@/lib/consultor-ia/pdf-lazy";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 
 export const Route = createFileRoute("/_authenticated/admin/consultor-ia-base")({
   head: () => ({
@@ -94,7 +95,9 @@ const VAZIO: Rascunho = {
   conteudo: "",
   tags: "",
   ativo: true,
-  global: true,
+  // Verbete novo vale só para a própria conta; "global" (todas as contas) é
+  // escolha consciente, não padrão (QA 20/10).
+  global: false,
 };
 
 type Ordem = "relevancia" | "recentes" | "antigos" | "az";
@@ -612,14 +615,16 @@ function BibliotecaPage() {
                         ) : null}
                       </div>
                       <div
-                        className="flex shrink-0 flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+                        // No celular não existe "passar o mouse": as ações ficavam
+                        // invisíveis (opacity-0). Só escondem no computador.
+                        className="flex shrink-0 flex-col gap-1 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button
                           size="icon"
                           variant="ghost"
                           className="size-7"
-                          aria-label="Baixar em PDF"
+                          aria-label="Baixar verbete em PDF"
                           onClick={() => void gerarVerbetePDF(it)}
                         >
                           <Download className="size-3.5" />
@@ -628,20 +633,29 @@ function BibliotecaPage() {
                           size="icon"
                           variant="ghost"
                           className="size-7"
-                          aria-label="Editar"
+                          aria-label="Editar verbete"
                           onClick={() => abrirEdicao(it)}
                         >
                           <Pencil className="size-3.5" />
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-7"
-                          aria-label="Excluir"
-                          onClick={() => excluir.mutate(it.id)}
-                        >
-                          <Trash2 className="size-3.5 text-destructive" />
-                        </Button>
+                        <ConfirmDelete
+                          titulo={`Excluir "${it.titulo}"?`}
+                          descricao="O verbete sai da biblioteca e deixa de ser usado pela inteligência."
+                          onConfirm={async () => {
+                            // O erro já vira aviso no onError da mutação.
+                            await excluir.mutateAsync(it.id).catch(() => undefined);
+                          }}
+                          trigger={
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-7"
+                              aria-label="Excluir verbete"
+                            >
+                              <Trash2 className="size-3.5 text-destructive" />
+                            </Button>
+                          }
+                        />
                       </div>
                     </div>
                   </article>

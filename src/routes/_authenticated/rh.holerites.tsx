@@ -5,7 +5,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Receipt, Upload, Download, Eye, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +37,6 @@ import { YearPicker } from "@/components/rh/year-picker";
 import {
   anexarHolerite,
   excluirHolerite,
-  gerarUrlAssinada,
   listarHolerites,
   type RhHolerite,
 } from "@/lib/rh/submodulos.functions";
@@ -46,6 +44,15 @@ import { listarItensFolha, listarAjustes } from "@/lib/rh/folha.functions";
 import { gerarHoleritePdf } from "@/lib/rh/pdf-lazy";
 import { HoleriteBuilderDialog } from "@/components/rh/holerite-builder-dialog";
 import { formatBRL } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
+import {
+  abrirArquivoRh,
+  baixarArquivoRh,
+  caminhoHolerite,
+  enviarArquivoRh,
+} from "@/lib/rh/arquivos";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -59,7 +66,6 @@ function Pagina() {
   const qc = useQueryClient();
   const fnList = useServerFn(listarHolerites);
   const fnAnexar = useServerFn(anexarHolerite);
-  const fnUrl = useServerFn(gerarUrlAssinada);
   const fnListarItens = useServerFn(listarItensFolha);
   const fnListarAjustes = useServerFn(listarAjustes);
   const fnExcluir = useServerFn(excluirHolerite);
@@ -87,21 +93,11 @@ function Pagina() {
   const salvar = useMutation({
     mutationFn: async () => {
       if (!form.funcionario_id || !form.file) throw new Error("Selecione funcionário e arquivo.");
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error("Sessão expirada.");
-      const prof = await supabase
-        .from("profiles")
-        .select("correspondente_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      const cid = prof.data?.correspondente_id as string | undefined;
-      if (!cid) throw new Error("Correspondente não encontrado.");
-      const path = `${cid}/holerites/${form.funcionario_id}/${form.ano}-${String(form.mes).padStart(2, "0")}.pdf`;
-      const { error } = await supabase.storage.from("rh-documentos").upload(path, form.file, {
-        contentType: form.file.type || "application/pdf",
-        upsert: true,
-      });
-      if (error) throw new Error(error.message);
+      const path = await enviarArquivoRh(
+        caminhoHolerite(form.funcionario_id, form.ano, form.mes),
+        form.file,
+        { contentType: form.file.type || "application/pdf", upsert: true },
+      );
       await fnAnexar({
         data: {
           funcionario_id: form.funcionario_id,
@@ -119,26 +115,11 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["rh-kpis"] });
       setOpen(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao anexar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao anexar.")),
   });
 
-  async function abrir(path: string) {
-    const { url } = await fnUrl({ data: { path, expira_em: 300 } });
-    window.open(url, "_blank", "noopener");
-  }
-
-  async function baixar(path: string, nome: string) {
-    const { url } = await fnUrl({ data: { path, expira_em: 300 } });
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = nome;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
-
   const regerar = useMutation({
-    mutationFn: async (row: { funcionario_id: string; mes: number; ano: number }) => {
+    mutationFn: async (row: { id: string; funcionario_id: string; mes: number; ano: number }) => {
       const { competencia_id, itens } = await fnListarItens({
         data: { mes: row.mes, ano: row.ano },
       });
@@ -149,15 +130,6 @@ function Pagina() {
       const meus = ajustes
         .filter((a) => a.funcionario_id === row.funcionario_id)
         .map((a) => ({ tipo: a.tipo, descricao: a.descricao, valor: a.valor }));
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error("Sessão expirada.");
-      const prof = await supabase
-        .from("profiles")
-        .select("correspondente_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      const cid = prof.data?.correspondente_id as string | undefined;
-      if (!cid) throw new Error("Correspondente não encontrado.");
       const { blob, filename } = await gerarHoleritePdf({
         competencia: { mes: row.mes, ano: row.ano },
         funcionario: {
@@ -172,13 +144,14 @@ function Pagina() {
         ajustes: meus,
         liquido: it.liquido,
       });
-      const path = `${cid}/holerites/${row.funcionario_id}/${row.ano}-${String(row.mes).padStart(2, "0")}.pdf`;
-      const { error } = await supabase.storage
-        .from("rh-documentos")
-        .upload(path, blob, { contentType: "application/pdf", upsert: true });
-      if (error) throw new Error(error.message);
+      const path = await enviarArquivoRh(
+        caminhoHolerite(row.funcionario_id, row.ano, row.mes),
+        blob,
+        { contentType: "application/pdf", upsert: true },
+      );
       await fnAnexar({
         data: {
+          id: row.id,
           funcionario_id: row.funcionario_id,
           mes: row.mes,
           ano: row.ano,
@@ -193,28 +166,18 @@ function Pagina() {
       toast.success("Holerite recalculado (CLT).");
       qc.invalidateQueries({ queryKey: ["rh-holerites"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao recalcular."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao recalcular.")),
   });
 
-  const excluir = useMutation({
-    mutationFn: async (row: RhHolerite) => {
-      await supabase.storage.from("rh-documentos").remove([row.arquivo_path]);
-      await fnExcluir({ data: { id: row.id } });
-    },
-    onSuccess: () => {
-      toast.success("Holerite excluído.");
-      qc.invalidateQueries({ queryKey: ["rh-holerites"] });
-      qc.invalidateQueries({ queryKey: ["rh-ficha-hol"] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir."),
-  });
-
-  const anos = [
-    hoje.getFullYear() - 2,
-    hoje.getFullYear() - 1,
-    hoje.getFullYear(),
-    hoje.getFullYear() + 1,
-  ];
+  // O servidor apaga o registro e depois o PDF. Sem try/catch: o ConfirmDelete
+  // mostra o erro e continua aberto.
+  async function excluir(row: RhHolerite) {
+    const r = await fnExcluir({ data: { id: row.id } });
+    if (r.arquivoApagado) toast.success("Holerite excluído.");
+    else toast.warning("Holerite excluído, mas o PDF não pôde ser apagado do armazenamento.");
+    qc.invalidateQueries({ queryKey: ["rh-holerites"] });
+    qc.invalidateQueries({ queryKey: ["rh-ficha-hol"] });
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 sm:p-4 md:p-6">
@@ -376,7 +339,7 @@ function Pagina() {
                           size="icon"
                           variant="ghost"
                           title="Visualizar"
-                          onClick={() => abrir(h.arquivo_path)}
+                          onClick={() => abrirArquivoRh(h.arquivo_path)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -384,7 +347,7 @@ function Pagina() {
                           size="icon"
                           variant="ghost"
                           title="Baixar"
-                          onClick={() => baixar(h.arquivo_path, h.arquivo_nome)}
+                          onClick={() => baixarArquivoRh(h.arquivo_path, h.arquivo_nome)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -394,6 +357,7 @@ function Pagina() {
                           title="Recalcular (CLT) e substituir"
                           onClick={() =>
                             regerar.mutate({
+                              id: h.id,
                               funcionario_id: h.funcionario_id,
                               mes: h.mes,
                               ano: h.ano,
@@ -403,34 +367,34 @@ function Pagina() {
                         >
                           <RefreshCw className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          title="Excluir holerite"
-                          className="text-destructive"
-                          onClick={() => {
-                            if (confirm("Excluir este holerite? O PDF também será removido.")) {
-                              excluir.mutate(h);
-                            }
-                          }}
-                          disabled={excluir.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <ConfirmDelete
+                          titulo={`Excluir o holerite de ${h.funcionario_nome}?`}
+                          descricao={`Competência ${MESES[h.mes - 1]}/${h.ano}. O registro e o PDF são apagados.`}
+                          onConfirm={() => excluir(h)}
+                          trigger={
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Excluir holerite"
+                              aria-label={`Excluir holerite de ${h.funcionario_nome}`}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          }
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
 
                 {(!q.data || q.data.length === 0) && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="py-10 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhum holerite na competência.
-                    </TableCell>
-                  </TableRow>
+                  <LinhaEstadoLista
+                    colSpan={5}
+                    q={q}
+                    vazio="Nenhum holerite na competência."
+                    erro="Não foi possível carregar os holerites."
+                  />
                 )}
               </TableBody>
             </Table>

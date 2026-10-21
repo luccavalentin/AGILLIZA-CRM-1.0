@@ -30,8 +30,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 
 export const Route = createFileRoute("/_authenticated/rh/relatorios")({
   head: () => ({ meta: [{ title: "Relatórios · RH — Agilliza" }] }),
@@ -113,7 +114,7 @@ function RelatoriosRhPage() {
       );
       toast.success("Planilha gerada.");
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao exportar.");
+      toast.error(mensagemDeErro(e, "Falha ao exportar."));
     } finally {
       setExportando(false);
     }
@@ -143,7 +144,7 @@ function RelatoriosRhPage() {
       );
       toast.success("PDF gerado.");
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao exportar.");
+      toast.error(mensagemDeErro(e, "Falha ao exportar."));
     } finally {
       setExportando(false);
     }
@@ -173,9 +174,10 @@ function RelatoriosRhPage() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <KpiCard
           icon={<Users className="h-4 w-4" />}
-          titulo="Quadro ativo"
-          valor={String((data?.ativos ?? 0) + (data?.experiencia ?? 0))}
-          detalhe={`${data?.experiencia ?? 0} em experiência`}
+          // Mesmo número do painel do RH ("Ativos"); experiência aparece à parte.
+          titulo="Ativos"
+          valor={String(data?.ativos ?? 0)}
+          detalhe={`+ ${data?.experiencia ?? 0} em experiência`}
           loading={isLoading}
         />
         <KpiCard
@@ -189,7 +191,7 @@ function RelatoriosRhPage() {
           icon={<Clock3 className="h-4 w-4" />}
           titulo="Tempo médio de casa"
           valor={`${Math.floor((data?.tempoMedioCasaMeses ?? 0) / 12)}a ${(data?.tempoMedioCasaMeses ?? 0) % 12}m`}
-          detalhe="Quadro ativo"
+          detalhe="Todos, exceto desligados"
           loading={isLoading}
         />
         <KpiCard
@@ -263,14 +265,12 @@ function RelatoriosRhPage() {
                   </TableRow>
                 )}
                 {!ferias.isLoading && criticos.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="py-8 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhuma pendência de férias no momento.
-                    </TableCell>
-                  </TableRow>
+                  <LinhaEstadoLista
+                    colSpan={6}
+                    q={ferias}
+                    vazio="Nenhuma pendência de férias no momento."
+                    className="py-8"
+                  />
                 )}
                 {criticos.map((i) => (
                   <TableRow key={i.funcionario_id}>

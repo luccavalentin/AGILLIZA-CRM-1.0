@@ -1,4 +1,5 @@
-import { Search, Tag, BellRing, Timer, Users } from "lucide-react";
+import { AlertCircle, Search, Tag, BellRing, Timer, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,8 @@ import { TagChip } from "./tag-chip";
 import { iniciais, rotuloDia, type FiltroChat } from "./helpers";
 import { ItemAcoesMenu } from "./item-acoes-menu";
 import type { UseChatConversas } from "./use-chat-conversas";
+import { exibirDocumento } from "@/lib/crm/documento";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 type Props = {
   hook: UseChatConversas;
@@ -40,8 +43,14 @@ export function ListaConversas({ hook }: Props) {
     atendenteSel,
     verTodos,
     setVerTodos,
+    podeGerir,
     abrirConversa,
     isLoading,
+    erroConversas,
+    recarregarConversas,
+    buscandoConversas,
+    temMaisConversas,
+    carregarMaisConversas,
     etiquetas,
     etiquetasCliente,
     filtradas,
@@ -71,23 +80,31 @@ export function ListaConversas({ hook }: Props) {
       <div className="flex items-center justify-between gap-2 border-b bg-card px-3 py-3">
         <h2 className="text-sm font-semibold text-foreground">Conversas</h2>
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => {
-              setVerTodos(!verTodos);
-              setSelecionado(null);
-              setAtendenteSel(null);
-            }}
-            title="Alterna entre as suas conversas e a visão de todos os atendentes (apenas gestores)."
-            className={cn(
-              "flex size-8 items-center justify-center rounded-lg border transition-colors",
-              verTodos
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-background text-muted-foreground hover:bg-muted",
-            )}
-          >
-            <Users className="h-4 w-4" />
-          </button>
+          {podeGerir && (
+            <button
+              type="button"
+              onClick={() => {
+                setVerTodos(!verTodos);
+                setSelecionado(null);
+                setAtendenteSel(null);
+              }}
+              title={
+                verTodos ? "Ver só as minhas conversas" : "Ver as conversas de todos os atendentes"
+              }
+              aria-label={
+                verTodos ? "Ver só as minhas conversas" : "Ver as conversas de todos os atendentes"
+              }
+              aria-pressed={verTodos}
+              className={cn(
+                "flex size-8 items-center justify-center rounded-lg border transition-colors",
+                verTodos
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background text-muted-foreground hover:bg-muted",
+              )}
+            >
+              <Users className="h-4 w-4" />
+            </button>
+          )}
           <ChatConfigSheet />
         </div>
       </div>
@@ -154,6 +171,21 @@ export function ListaConversas({ hook }: Props) {
               <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>
+        ) : erroConversas && !hook.conversas ? (
+          <div className="flex flex-col items-center gap-3 p-6 text-center">
+            <AlertCircle className="h-6 w-6 text-destructive" />
+            <p className="text-sm text-muted-foreground">
+              {mensagemDeErro(erroConversas, "Não foi possível carregar as conversas.")}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void recarregarConversas()}
+            >
+              Tentar de novo
+            </Button>
+          </div>
         ) : filtradas.length === 0 && novosClientes.length === 0 ? (
           <p className="p-6 text-center text-sm text-muted-foreground">
             {termoBusca.length >= 2
@@ -183,6 +215,12 @@ export function ListaConversas({ hook }: Props) {
                   );
                 }
                 const tags = etiquetasCliente.get(c.cliente_id) ?? [];
+                const nomeExibido = hook.apelido(c.cliente_id) || c.nome;
+                const autorUltima = c.ultima_minha
+                  ? "Você: "
+                  : c.ultimo_remetente === "time"
+                    ? `${c.ultimo_remetente_nome?.trim().split(/\s+/)[0] || "Equipe"}: `
+                    : "";
                 const sla = slaEstourado(c.cliente_id, c.ultimo_remetente, c.ultima_em);
                 const lembrete = lembreteDevido(c.cliente_id);
                 const ativo =
@@ -214,8 +252,9 @@ export function ListaConversas({ hook }: Props) {
                                 ? "font-semibold text-foreground"
                                 : "font-medium text-foreground",
                             )}
+                            title={nomeExibido !== c.nome ? c.nome : undefined}
                           >
-                            {c.nome}
+                            {nomeExibido}
                           </span>
                           <span className="shrink-0 text-[10px] text-muted-foreground">
                             {new Date(c.ultima_em).toLocaleTimeString("pt-BR", {
@@ -232,7 +271,7 @@ export function ListaConversas({ hook }: Props) {
                         )}
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-xs text-muted-foreground">
-                            {c.ultimo_remetente === "time" ? "Você: " : ""}
+                            {autorUltima}
                             {c.ultima_mensagem}
                           </span>
                           {c.nao_lidas > 0 && (
@@ -262,6 +301,7 @@ export function ListaConversas({ hook }: Props) {
                       <ItemAcoesMenu
                         clienteId={c.cliente_id}
                         nome={c.nome}
+                        podeArquivar={podeGerir}
                         arquivado={hook.arquivada(c.cliente_id)}
                         fixado={hook.fixado(c.cliente_id)}
                         apelidoAtual={hook.apelido(c.cliente_id)}
@@ -272,6 +312,21 @@ export function ListaConversas({ hook }: Props) {
               }
               return nodes;
             })()}
+
+            {temMaisConversas && !termoBusca && (
+              <div className="p-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                  disabled={buscandoConversas}
+                  onClick={carregarMaisConversas}
+                >
+                  {buscandoConversas ? "Carregando…" : "Carregar mais conversas"}
+                </Button>
+              </div>
+            )}
 
             {novosClientes.length > 0 && (
               <>
@@ -304,7 +359,7 @@ export function ListaConversas({ hook }: Props) {
                         </Badge>
                       </div>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {c.documento ?? "Iniciar conversa"}
+                        {c.documento ? exibirDocumento(c.documento) : "Iniciar conversa"}
                       </span>
                       {c.etapa_nome && (
                         <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">

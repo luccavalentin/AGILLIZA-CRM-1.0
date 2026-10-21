@@ -7,10 +7,13 @@ export function CardVendedor({
   v,
   onEditar,
   onExcluir,
+  podeEditar = true,
 }: {
   v: any;
   onEditar: (v: any) => void;
   onExcluir: (id: string) => Promise<void>;
+  /** Sem `crm.clientes` › Editar o card é só consulta. */
+  podeEditar?: boolean;
 }) {
   return (
     <Card>
@@ -27,19 +30,34 @@ export function CardVendedor({
             </p>
           </div>
         </div>
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="size-8" onClick={() => onEditar(v)}>
-            <Pencil className="size-4" />
-          </Button>
-          <ConfirmDelete
-            onConfirm={() => onExcluir(v.id)}
-            trigger={
-              <Button variant="ghost" size="icon" className="size-8 text-destructive">
-                <Trash2 className="size-4" />
-              </Button>
-            }
-          />
-        </div>
+        {podeEditar && (
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={() => onEditar(v)}
+              aria-label="Editar vendedor"
+              title="Editar vendedor"
+            >
+              <Pencil className="size-4" />
+            </Button>
+            <ConfirmDelete
+              onConfirm={() => onExcluir(v.id)}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-destructive"
+                  aria-label="Excluir vendedor"
+                  title="Excluir vendedor"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              }
+            />
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-1 text-xs text-muted-foreground">
         {v.email && <p>{v.email}</p>}

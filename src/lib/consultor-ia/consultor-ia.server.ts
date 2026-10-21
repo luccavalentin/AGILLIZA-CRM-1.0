@@ -6,6 +6,7 @@
  * dá a sensação de resposta imediata, como no ChatGPT/Gemini.
  */
 import { createClient } from "@supabase/supabase-js";
+import { paraRedeInterna } from "@/integrations/supabase/rede-interna";
 import type { Database } from "@/integrations/supabase/types";
 
 export const MARCADOR_SEM_INFO = "SEM_INFORMACAO_NA_BASE";
@@ -114,21 +115,94 @@ export function clienteDoToken(token: string) {
         }
         headers.set("apikey", key);
         headers.set("Authorization", `Bearer ${token}`);
-        return fetch(input, { ...init, headers });
+        return fetch(paraRedeInterna(input), { ...init, headers });
       },
     },
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 
-export interface Preparo {
-  conversaId: string;
-  trechos: TrechoBase[];
-  prompt: string;
+export interface ConfigIa {
   provedor: "gemini" | "openai";
   modelo: string;
   apiKey: string;
   baseUrl: string;
+}
+
+/**
+ * Provedor, modelo e chave da IA da conta (Admin › APIs de IA), com a chave da
+ * plataforma como reserva. A tabela só é legível por administradores; quem
+ * consulta o Consultor é qualquer usuário da conta, então a linha é lida com o
+ * client de serviço, filtrada pela conta, e a chave não sai do servidor.
+ */
+export async function configIaDaConta(
+  corr: string | null,
+  modeloGeminiPadrao: string,
+): Promise<ConfigIa> {
+  let cfgRow: { api_key: string | null; base_url: string | null; config: unknown; ativo: boolean } | null =
+    null;
+  if (corr) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await (supabaseAdmin as any)
+      .from("admin_api_integrations")
+      .select("api_key, base_url, config, ativo")
+      .eq("correspondente_id", corr)
+      .eq("chave", "ia")
+      .maybeSingle();
+    if (error) throw new Error("Não foi possível ler a integração de IA da conta.");
+    cfgRow = data ?? null;
+  }
+
+  if (cfgRow && cfgRow.ativo === false) {
+    throw new Error("Integração de IA desativada. Ative-a em Admin › APIs de IA.");
+  }
+  const cfg = (cfgRow?.config ?? {}) as Record<string, unknown>;
+  const provedor: "gemini" | "openai" = cfg.provedor === "openai" ? "openai" : "gemini";
+  const modelo =
+    typeof cfg.modelo === "string" && cfg.modelo.trim()
+      ? cfg.modelo.trim()
+      : provedor === "openai"
+        ? "gpt-4o"
+        : modeloGeminiPadrao;
+  const apiKeySalva = typeof cfgRow?.api_key === "string" ? cfgRow.api_key.trim() : "";
+  const apiKey =
+    apiKeySalva ||
+    (provedor === "openai" ? process.env.OPENAI_API_KEY : process.env.GEMINI_API_KEY) ||
+    "";
+  if (!apiKey) {
+    throw new Error("Chave da API não cadastrada. Configure-a em Admin › APIs de IA.");
+  }
+  const baseUrl = (
+    (typeof cfgRow?.base_url === "string" && cfgRow.base_url) ||
+    (provedor === "openai"
+      ? "https://api.openai.com/v1"
+      : "https://generativelanguage.googleapis.com")
+  ).replace(/\/+$/, "");
+  return { provedor, modelo, apiKey, baseUrl };
+}
+
+/**
+ * Os verbetes mais relevantes para a pergunta. O banco faz a busca textual
+ * (`consultor_ia_trechos`, índice GIN, mesma regra de leitura da base) e devolve
+ * poucos candidatos; aqui só se refina a ordem com título e etiquetas.
+ */
+export async function buscarTrechosBase(
+  supabase: any,
+  pergunta: string,
+  limite: number,
+): Promise<TrechoBase[]> {
+  const { data, error } = await supabase.rpc("consultor_ia_trechos", {
+    _pergunta: pergunta,
+    _limite: 20,
+  });
+  if (error) throw new Error("Não foi possível consultar a base de conhecimento.");
+  return selecionarTrechos((data ?? []) as TrechoBase[], pergunta, limite);
+}
+
+export interface Preparo extends ConfigIa {
+  conversaId: string;
+  trechos: TrechoBase[];
+  prompt: string;
 }
 
 /** Limite de contexto por trecho — prompts menores = resposta mais rápida. */
@@ -139,26 +213,18 @@ export async function prepararConsulta(
   userId: string,
   entrada: { conversa_id?: string | null; pergunta: string },
 ): Promise<Preparo> {
-  // Perfil (correspondente) + base de conhecimento em paralelo.
-  const [perfilRes, baseRes] = await Promise.all([
-    supabase.from("profiles").select("correspondente_id, full_name").eq("id", userId).maybeSingle(),
-    supabase
-      .from("consultor_ia_base")
-      .select("id, categoria, titulo, conteudo, tags")
-      .eq("ativo", true)
-      .limit(500),
+  // Perfil (conta e nome) + trechos da base em paralelo.
+  const [perfilRes, trechos] = await Promise.all([
+    supabase.from("profiles").select("correspondente_id, nome").eq("id", userId).maybeSingle(),
+    buscarTrechosBase(supabase, entrada.pergunta, 4),
   ]);
+  if (perfilRes.error) throw new Error("Não foi possível carregar seu perfil.");
   const corr = (perfilRes.data?.correspondente_id as string | null) ?? null;
-  const nomeUsuario = (perfilRes.data?.full_name as string | null) ?? "Especialista";
+  const nomeUsuario = (perfilRes.data?.nome as string | null)?.trim() || "Especialista";
 
   let conversaId = entrada.conversa_id ?? null;
-  const [cfgRes] = await Promise.all([
-    supabase
-      .from("admin_api_integrations")
-      .select("api_key, base_url, config, ativo")
-      .eq("correspondente_id", corr)
-      .eq("chave", "ia")
-      .maybeSingle(),
+  const [ia] = await Promise.all([
+    configIaDaConta(corr, "gemini-1.5-flash"),
     (async () => {
       if (conversaId) return;
       const bruto = entrada.pergunta.trim();
@@ -179,42 +245,15 @@ export async function prepararConsulta(
     .eq("conversa_id", conversaId)
     .order("created_at", { ascending: false })
     .limit(6);
+  if (historicoRes.error) throw new Error("Não foi possível carregar a conversa.");
 
-  // Grava a pergunta sem bloquear a chamada ao modelo.
+  // Grava a pergunta sem bloquear a montagem do prompt.
   const gravaPergunta = supabase.from("consultor_ia_mensagens").insert({
     conversa_id: conversaId,
     papel: "usuario",
     conteudo: entrada.pergunta,
   });
-
-  const cfgRow = cfgRes.data;
-  const cfg = (cfgRow?.config ?? {}) as Record<string, unknown>;
-  const provedor: "gemini" | "openai" = cfg.provedor === "openai" ? "openai" : "gemini";
-  const modelo =
-    typeof cfg.modelo === "string" && cfg.modelo.trim()
-      ? cfg.modelo.trim()
-      : provedor === "openai"
-        ? "gpt-4o"
-        : "gemini-1.5-flash";
-  const apiKeySalva = typeof cfgRow?.api_key === "string" ? cfgRow.api_key.trim() : "";
-  const apiKey =
-    apiKeySalva ||
-    (provedor === "openai" ? process.env.OPENAI_API_KEY : process.env.GEMINI_API_KEY) ||
-    "";
-  if (cfgRow && cfgRow.ativo === false) {
-    throw new Error("Integração de IA desativada. Ative-a em Admin › APIs de IA.");
-  }
-  if (!apiKey) {
-    throw new Error("Chave da API não cadastrada. Configure-a em Admin › APIs de IA.");
-  }
-  const baseUrl = (
-    (typeof cfgRow?.base_url === "string" && cfgRow.base_url) ||
-    (provedor === "openai"
-      ? "https://api.openai.com/v1"
-      : "https://generativelanguage.googleapis.com")
-  ).replace(/\/+$/, "");
-
-  const trechos = selecionarTrechos((baseRes.data ?? []) as TrechoBase[], entrada.pergunta, 4);
+  const { provedor, modelo, apiKey, baseUrl } = ia;
 
   const referencias = trechos.length
     ? trechos
@@ -250,7 +289,8 @@ export async function prepararConsulta(
     `HISTÓRICO DA CONSULTORIA:\n${historicoTexto}\n\n` +
     `DEMANDA DO ESPECIALISTA ${nomeUsuario.toUpperCase()}: ${entrada.pergunta}`;
 
-  await gravaPergunta;
+  const { error: erroPergunta } = await gravaPergunta;
+  if (erroPergunta) throw new Error("Não foi possível gravar a pergunta na conversa.");
 
   return { conversaId: conversaId!, trechos, prompt, provedor, modelo, apiKey, baseUrl };
 }

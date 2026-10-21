@@ -1,0 +1,15 @@
+node_modules
+.output
+.tanstack
+.wrangler
+.git
+.claude
+.env
+.env.*
+!.env.example
+*.pdf
+MDs
+Logos Bancos
+Logos e a API
+deploy/vps/app.env
+deploy/vps/.env

@@ -1,6 +1,7 @@
 import { MessageCircle, MessagesSquare, UserCircle2, Users } from "lucide-react";
 import type { ChatTipo } from "@/lib/chats/gestao.functions";
 import type { ThreadCentral, ThreadKind } from "@/lib/chats/central.functions";
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 
 export type SelecionadoState =
   | { kind: "dm"; conversaId: string; nome: string | null; foto: string | null }
@@ -20,13 +21,7 @@ export function chaveConversa(kind: ChatTipo | ThreadKind, id: string) {
 }
 
 export function iniciais(nome?: string | null): string {
-  if (!nome) return "?";
-  return nome
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("");
+  return iniciaisDoNome(nome);
 }
 
 export function tempoRelativo(iso: string | null): string {

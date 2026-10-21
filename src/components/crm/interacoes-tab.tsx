@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarInteracoes, registrarInteracao } from "@/lib/crm/clientes.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 const CANAIS = [
   { v: "ligacao", l: "Ligação", icon: Phone },
@@ -43,8 +45,15 @@ export function InteracoesTab({ clienteId }: { clienteId: string }) {
   const [resultado, setResultado] = useState("");
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
+  // Registrar contato grava no cliente: exige "Editar" em Clientes (o servidor recusa).
+  const podeEditar = usePermissao("crm.clientes", "edit");
 
-  const { data: itens, isLoading } = useQuery({
+  const {
+    data: itens,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["cliente-interacoes", clienteId],
     queryFn: () => listar({ data: { cliente_id: clienteId } }),
   });
@@ -61,7 +70,7 @@ export function InteracoesTab({ clienteId }: { clienteId: string }) {
       setObservacao("");
       qc.invalidateQueries({ queryKey: ["cliente-interacoes", clienteId] });
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao registrar.");
+      toast.error(mensagemDeErro(e, "Falha ao registrar."));
     } finally {
       setSalvando(false);
     }
@@ -69,64 +78,73 @@ export function InteracoesTab({ clienteId }: { clienteId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Dialog open={aberto} onOpenChange={setAberto}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="size-4" /> Registrar contato
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Registrar contato</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-sm">Canal</label>
-                <Select value={canal} onValueChange={setCanal}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CANAIS.map((c) => (
-                      <SelectItem key={c.v} value={c.v}>
-                        {c.l}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm">Resultado</label>
-                <Input
-                  value={resultado}
-                  onChange={(e) => setResultado(e.target.value)}
-                  placeholder="Ex.: cliente retornará amanhã"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm">Observação</label>
-                <Textarea
-                  value={observacao}
-                  onChange={(e) => setObservacao(e.target.value)}
-                  rows={4}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAberto(false)}>
-                Cancelar
+      {podeEditar && (
+        <div className="flex justify-end">
+          <Dialog open={aberto} onOpenChange={setAberto}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="size-4" /> Registrar contato
               </Button>
-              <Button onClick={salvar} disabled={salvando}>
-                {salvando ? "Salvando…" : "Salvar"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Registrar contato</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm">Canal</label>
+                  <Select value={canal} onValueChange={setCanal}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CANAIS.map((c) => (
+                        <SelectItem key={c.v} value={c.v}>
+                          {c.l}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm">Resultado</label>
+                  <Input
+                    value={resultado}
+                    onChange={(e) => setResultado(e.target.value)}
+                    placeholder="Ex.: cliente retornará amanhã"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm">Observação</label>
+                  <Textarea
+                    value={observacao}
+                    onChange={(e) => setObservacao(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setAberto(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={salvar} disabled={salvando}>
+                  {salvando ? "Salvando…" : "Salvar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Carregando…</p>
+      ) : isError ? (
+        <div className="flex flex-col items-center gap-3 py-8 text-center text-sm">
+          <p className="text-destructive">Não foi possível carregar os contatos.</p>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>
+            Tentar de novo
+          </Button>
+        </div>
       ) : (itens?.length ?? 0) === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Nenhum contato registrado.</p>
       ) : (

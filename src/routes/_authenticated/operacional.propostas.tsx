@@ -1,9 +1,11 @@
+import { usePermissao } from "@/hooks/use-permissao";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { FileText, KanbanSquare, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   listarPropostas,
@@ -12,7 +14,6 @@ import {
   excluirPropostaDefinitivamente,
   sincronizarPropostasAtivas,
 } from "@/lib/propostas/propostas.functions";
-import { propostaQueryOptions } from "@/lib/propostas/queries";
 
 import { Button } from "@/components/ui/button";
 import { listarColegas } from "@/lib/operacional/shared.functions";
@@ -24,10 +25,24 @@ import { ListaDesktop } from "@/components/propostas/lista-page/lista-desktop";
 import { BarraSelecao } from "@/components/shared/barra-selecao";
 
 import { listarOpcoesVinculoPropostas } from "@/lib/crm/parceiros.functions";
-import { intervaloMesAtual, type Escopo } from "@/components/propostas/lista-page/helpers";
+import type { Escopo } from "@/components/propostas/lista-page/helpers";
+
+import { SeletorDeConta } from "@/components/crm/clientes-page/seletor-de-conta";
+import { OperacoesDaConta } from "@/components/plataforma/operacoes-da-conta";
+import type { ContaAssinante } from "@/lib/plataforma/contas.functions";
+import {
+  AbasPropostas,
+  type AbaPropostas,
+} from "@/components/plataforma/fila-assinantes/abas-propostas";
+import { FilaDosAssinantes } from "@/components/plataforma/fila-assinantes/fila";
+import { usePendentesDaFila } from "@/components/plataforma/fila-assinantes/hooks";
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas")({
   head: () => ({ meta: [{ title: "Propostas — Agilliza" }] }),
+  // `?aba=assinantes` abre direto a fila das propostas dos assinantes (menu Plataforma).
+  validateSearch: (search: Record<string, unknown>): { aba?: "assinantes" } => ({
+    aba: search.aba === "assinantes" ? "assinantes" : undefined,
+  }),
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
   component: Pagina,
   errorComponent: () => (
@@ -36,12 +51,22 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas")({
 });
 
 function Pagina() {
+  // Base exibida: a do Agilliza (null) ou a de uma conta assinante do Corretor 2.0.
+  const [conta, setConta] = useState<ContaAssinante | null>(null);
+  const abaPedida = Route.useSearch().aba;
+  const navigate = Route.useNavigate();
+  const aba: AbaPropostas = abaPedida === "assinantes" ? "assinantes" : "agilliza";
+  const pendentesAssinantes = usePendentesDaFila();
+  // A fila dos assinantes só existe para quem atende (saas.fila). Para parceiro externo e
+  // para quem não atende, a aba confundia: mostrava só o aviso de permissão.
+  const podeFilaAssinantes = usePermissao("saas.fila", "view");
+  const trocarAba = (a: AbaPropostas) =>
+    navigate({ search: a === "assinantes" ? { aba: "assinantes" } : {}, replace: true });
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirProposta);
   const restaurar = useServerFn(restaurarProposta);
   const excluirDefinitivo = useServerFn(excluirPropostaDefinitivamente);
   const sincronizarLoteFn = useServerFn(sincronizarPropostasAtivas);
-  const padrao = useMemo(() => intervaloMesAtual(), []);
   const [escopo, setEscopo] = useState<Escopo>("minhas");
   const [grupo, setGrupo] = useState<GrupoProposta | null>(null);
   const [verExcluidas, setVerExcluidas] = useState(false);
@@ -54,6 +79,23 @@ function Pagina() {
   const [corretorFiltro, setCorretorFiltro] = useState("todos");
   const [imobFiltro, setImobFiltro] = useState("todos");
   const [comercialFiltro, setComercialFiltro] = useState("todos");
+  // Paginação no servidor: antes vinham as 500 primeiras e o resto sumia calado.
+  const [pagina, setPagina] = useState(1);
+  const POR_PAGINA = 100;
+  useEffect(() => {
+    setPagina(1);
+  }, [
+    escopo,
+    busca,
+    dataInicio,
+    dataFim,
+    responsavel,
+    verExcluidas,
+    corretorFiltro,
+    imobFiltro,
+    comercialFiltro,
+    grupo,
+  ]);
 
   const listarColegasFn = useServerFn(listarColegas);
   const { data: colegas } = useQuery({
@@ -138,7 +180,7 @@ function Pagina() {
     };
   }, [sincronizarLoteFn]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: [
       "propostas",
       escopo,
@@ -151,6 +193,7 @@ function Pagina() {
       imobFiltro,
       comercialFiltro,
       grupo,
+      pagina,
     ],
     queryFn: () =>
       listarPropostas({
@@ -161,8 +204,8 @@ function Pagina() {
           data_inicio: dataInicio ? `${dataInicio}T00:00:00` : undefined,
           data_fim: dataFim ? `${dataFim}T23:59:59` : undefined,
           grupo: grupo ?? undefined,
-          pagina: 1,
-          porPagina: 500,
+          pagina,
+          porPagina: POR_PAGINA,
           apenas_excluidas: verExcluidas,
           corretor_nome: corretorFiltro !== "todos" ? corretorFiltro : undefined,
           imobiliaria_nome: imobFiltro !== "todos" ? imobFiltro : undefined,
@@ -211,8 +254,8 @@ function Pagina() {
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
       queryClient.invalidateQueries({ queryKey: ["crm-painel"] });
       queryClient.invalidateQueries({ queryKey: ["clientes"] });
-    } catch {
-      toast.error("Não foi possível excluir a proposta.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível excluir a proposta."));
     }
   }
 
@@ -221,8 +264,8 @@ function Pagina() {
       await restaurar({ data: { id } });
       toast.success("Proposta restaurada.");
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
-    } catch {
-      toast.error("Não foi possível restaurar a proposta.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível restaurar a proposta."));
     }
   }
 
@@ -231,8 +274,8 @@ function Pagina() {
       await excluirDefinitivo({ data: { id } });
       toast.success("Proposta excluída definitivamente.");
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
-    } catch {
-      toast.error("Não foi possível excluir definitivamente.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível excluir definitivamente."));
     }
   }
 
@@ -250,12 +293,13 @@ function Pagina() {
   async function excluirSelecionados() {
     setExcluindoLote(true);
     let ok = 0;
+    let ultimoErro: unknown = null;
     for (const id of selecionados) {
       try {
         await excluir({ data: { id } });
         ok++;
-      } catch {
-        /* segue para os demais */
+      } catch (e) {
+        ultimoErro = e; // segue para as demais
       }
     }
     setExcluindoLote(false);
@@ -267,8 +311,18 @@ function Pagina() {
     queryClient.invalidateQueries({ queryKey: ["crm-painel"] });
     queryClient.invalidateQueries({ queryKey: ["clientes"] });
     if (ok) toast.success(`${ok} proposta(s) excluída(s).`);
-    else toast.error("Não foi possível excluir as propostas selecionadas.");
+    if (ultimoErro)
+      toast.error(
+        mensagemDeErro(
+          ultimoErro,
+          ok
+            ? "Algumas propostas não puderam ser excluídas."
+            : "Não foi possível excluir as propostas selecionadas.",
+        ),
+      );
   }
+
+  if (conta) return <OperacoesDaConta tipo="propostas" conta={conta} onConta={setConta} />;
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-3 sm:space-y-6 sm:p-6">
@@ -287,7 +341,9 @@ function Pagina() {
             </p>
           </div>
         </div>
-        <div className="col-span-2 flex gap-2 sm:col-auto">
+        {/* flex-wrap: no celular (390 px) "Nova proposta" saía da tela. */}
+        <div className="col-span-2 flex flex-wrap gap-2 sm:col-auto sm:flex-nowrap">
+          <SeletorDeConta conta={conta} onConta={setConta} />
           <Button
             asChild
             variant="outline"
@@ -310,90 +366,130 @@ function Pagina() {
         </div>
       </div>
 
-      {/* Cards por status (clicáveis) + volume financiado */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-        <StatusCard
-          ativo={grupo === null}
-          label="Todas"
-          count={resumo?.total.count ?? 0}
-          volume={resumo?.total.volume ?? 0}
-          tone="info"
-          loading={isLoading}
-          onClick={() => setGrupo(null)}
-        />
-        {GRUPOS_PROPOSTA.map((g) => (
-          <StatusCard
-            key={g.id}
-            ativo={grupo === g.id}
-            label={g.label}
-            count={estatisticasGrupo[g.id].count}
-            volume={estatisticasGrupo[g.id].volume}
-            tone={g.tone}
-            loading={isLoading}
-            onClick={() => setGrupo((cur) => (cur === g.id ? null : g.id))}
+      {podeFilaAssinantes && (
+        <AbasPropostas aba={aba} onAba={trocarAba} pendentes={pendentesAssinantes} />
+      )}
+
+      {aba === "assinantes" && podeFilaAssinantes ? (
+        <FilaDosAssinantes />
+      ) : (
+        <>
+          {/* Cards por status (clicáveis) + volume financiado */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+            <StatusCard
+              ativo={grupo === null}
+              label="Todas"
+              count={resumo?.total.count ?? 0}
+              volume={resumo?.total.volume ?? 0}
+              tone="info"
+              loading={isLoading}
+              onClick={() => setGrupo(null)}
+            />
+            {GRUPOS_PROPOSTA.map((g) => (
+              <StatusCard
+                key={g.id}
+                ativo={grupo === g.id}
+                label={g.label}
+                count={estatisticasGrupo[g.id].count}
+                volume={estatisticasGrupo[g.id].volume}
+                tone={g.tone}
+                loading={isLoading}
+                onClick={() => setGrupo((cur) => (cur === g.id ? null : g.id))}
+              />
+            ))}
+            <VolumeCard volume={volumeTotal} loading={isLoading} />
+          </div>
+
+          <FiltrosPropostas
+            escopo={escopo}
+            setEscopo={setEscopo}
+            q={q}
+            setQ={setQ}
+            responsavel={responsavel}
+            setResponsavel={setResponsavel}
+            colegas={colegas}
+            dataInicio={dataInicio}
+            setDataInicio={setDataInicio}
+            dataFim={dataFim}
+            setDataFim={setDataFim}
+            onLimpar={limparFiltros}
+            verExcluidas={verExcluidas}
+            setVerExcluidas={setVerExcluidas}
+            corretorFiltro={corretorFiltro}
+            setCorretorFiltro={setCorretorFiltro}
+            corretores={corretores}
+            imobFiltro={imobFiltro}
+            setImobFiltro={setImobFiltro}
+            imobiliarias={imobiliarias}
+            comercialFiltro={comercialFiltro}
+            setComercialFiltro={setComercialFiltro}
+            comerciais={comerciais}
           />
-        ))}
-        <VolumeCard volume={volumeTotal} loading={isLoading} />
-      </div>
 
-      <FiltrosPropostas
-        escopo={escopo}
-        setEscopo={setEscopo}
-        q={q}
-        setQ={setQ}
-        responsavel={responsavel}
-        setResponsavel={setResponsavel}
-        colegas={colegas}
-        dataInicio={dataInicio}
-        setDataInicio={setDataInicio}
-        dataFim={dataFim}
-        setDataFim={setDataFim}
-        onLimpar={limparFiltros}
-        verExcluidas={verExcluidas}
-        setVerExcluidas={setVerExcluidas}
-        corretorFiltro={corretorFiltro}
-        setCorretorFiltro={setCorretorFiltro}
-        corretores={corretores}
-        imobFiltro={imobFiltro}
-        setImobFiltro={setImobFiltro}
-        imobiliarias={imobiliarias}
-        comercialFiltro={comercialFiltro}
-        setComercialFiltro={setComercialFiltro}
-        comerciais={comerciais}
-      />
+          {isError && (
+            <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              {mensagemDeErro(error, "Não foi possível carregar as propostas.")}
+            </p>
+          )}
 
-      <ListaMobile
-        isLoading={isLoading}
-        itens={itens}
-        totalItens={totalItens}
-        escopo={escopo}
-        verExcluidas={verExcluidas}
-        handleExcluir={handleExcluir}
-        handleRestaurar={handleRestaurar}
-        handleExcluirDefinitivo={handleExcluirDefinitivo}
-      />
+          <ListaMobile
+            isLoading={isLoading}
+            itens={itens}
+            totalItens={totalItens}
+            escopo={escopo}
+            verExcluidas={verExcluidas}
+            handleExcluir={handleExcluir}
+            handleRestaurar={handleRestaurar}
+            handleExcluirDefinitivo={handleExcluirDefinitivo}
+          />
 
-      <ListaDesktop
-        isLoading={isLoading}
-        itens={itens}
-        totalItens={totalItens}
-        escopo={escopo}
-        verExcluidas={verExcluidas}
-        handleExcluir={handleExcluir}
-        handleRestaurar={handleRestaurar}
-        handleExcluirDefinitivo={handleExcluirDefinitivo}
-        selecionados={selecionados}
-        onToggleSelecionado={toggleSelecionado}
-        onToggleTodos={toggleTodos}
-      />
+          <ListaDesktop
+            isLoading={isLoading}
+            itens={itens}
+            totalItens={totalItens}
+            escopo={escopo}
+            verExcluidas={verExcluidas}
+            handleExcluir={handleExcluir}
+            handleRestaurar={handleRestaurar}
+            handleExcluirDefinitivo={handleExcluirDefinitivo}
+            selecionados={selecionados}
+            onToggleSelecionado={toggleSelecionado}
+            onToggleTodos={toggleTodos}
+          />
 
-      <BarraSelecao
-        quantidade={selecionados.length}
-        onLimpar={() => setSelecionados([])}
-        onExcluir={excluirSelecionados}
-        excluindo={excluindoLote}
-        rotulo="proposta(s) selecionada(s)"
-      />
+          {(data?.total ?? 0) > POR_PAGINA && (
+            <div className="flex items-center justify-center gap-2 py-2 text-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagina === 1}
+                onClick={() => setPagina((p) => Math.max(1, p - 1))}
+              >
+                Anterior
+              </Button>
+              <span className="px-2 text-muted-foreground">
+                Página {pagina} de {Math.ceil((data?.total ?? 0) / POR_PAGINA)}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagina * POR_PAGINA >= (data?.total ?? 0)}
+                onClick={() => setPagina((p) => p + 1)}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
+
+          <BarraSelecao
+            quantidade={selecionados.length}
+            onLimpar={() => setSelecionados([])}
+            onExcluir={excluirSelecionados}
+            excluindo={excluindoLote}
+            rotulo="proposta(s) selecionada(s)"
+          />
+        </>
+      )}
     </div>
   );
 }

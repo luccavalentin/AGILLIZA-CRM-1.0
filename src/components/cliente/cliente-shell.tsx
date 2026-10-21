@@ -34,6 +34,7 @@ import {
   clienteMarcarNotificacaoLida,
   type NotificacaoCliente,
 } from "@/lib/portal/cliente.functions";
+import { pollingPortal, POLL_ATENDENTES_MS } from "@/lib/portal/polling";
 import { ClienteChatWatcher } from "@/components/cliente/cliente-chat-watcher";
 import { ClienteChatFlutuante } from "@/components/cliente/cliente-chat-flutuante";
 import { cn } from "@/lib/utils";
@@ -76,7 +77,7 @@ function useChatNaoLidas() {
   const { data } = useQuery({
     queryKey: ["cliente", "atendentes"],
     queryFn: () => clienteListarAtendentes(),
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 8000),
+    ...pollingPortal(POLL_ATENDENTES_MS),
   });
   return (data ?? []).reduce((acc, a) => acc + (a.nao_lidas ?? 0), 0);
 }
@@ -205,7 +206,7 @@ function NotificacoesBell() {
   const { data: notificacoes } = useQuery({
     queryKey: ["cliente", "notificacoes"],
     queryFn: () => clienteListarNotificacoes(),
-    refetchInterval: (q: any) => (q.state.status === "error" ? false : 20000),
+    ...pollingPortal(20_000),
   });
   const naoLidas = (notificacoes ?? []).filter((n) => !n.lida).length;
 

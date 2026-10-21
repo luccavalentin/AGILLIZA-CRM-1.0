@@ -23,94 +23,26 @@ import {
 } from "@/components/ui/select";
 import { YearPicker } from "@/components/rh/year-picker";
 import { HoleriteBuilderDialog } from "@/components/rh/holerite-builder-dialog";
-import { obterFuncionario } from "@/lib/rh/funcionarios.functions";
-import {
-  listarAdiantamentos,
-  listarBeneficiosDoFuncionario,
-  listarDescontos,
-  listarOcorrencias,
-} from "@/lib/rh/submodulos.functions";
 import { calcularHolerite, ENTRADA_PADRAO } from "@/lib/rh/holerite-calc";
+import { entradaHoleriteDaCompetencia } from "@/lib/rh/folha.functions";
 import { formatBRL } from "@/lib/financeiro/format";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
-function ultimoDia(ano: number, mes: number) {
-  return new Date(ano, mes, 0).getDate();
-}
 
 export function FichaPreviaFolha({ funcionarioId }: { funcionarioId: string }) {
   const hoje = new Date();
   const [mes, setMes] = useState(hoje.getMonth() + 1);
   const [ano, setAno] = useState(hoje.getFullYear());
 
-  const fnFunc = useServerFn(obterFuncionario);
-  const fnBen = useServerFn(listarBeneficiosDoFuncionario);
-  const fnAdi = useServerFn(listarAdiantamentos);
-  const fnDes = useServerFn(listarDescontos);
-  const fnOco = useServerFn(listarOcorrencias);
-
-  const inicio = `${ano}-${String(mes).padStart(2, "0")}-01`;
-  const fim = `${ano}-${String(mes).padStart(2, "0")}-${String(ultimoDia(ano, mes)).padStart(2, "0")}`;
-
-  const qFunc = useQuery({
-    queryKey: ["rh-funcionario", funcionarioId],
-    queryFn: () => fnFunc({ data: { id: funcionarioId } }),
+  const fnEntrada = useServerFn(entradaHoleriteDaCompetencia);
+  // A mesma montagem da prévia da folha e do "Gerar holerite" (lib/rh/entrada-competencia).
+  const qEntrada = useQuery({
+    queryKey: ["rh-ficha-entrada", funcionarioId, mes, ano],
+    queryFn: () => fnEntrada({ data: { funcionario_id: funcionarioId, mes, ano } }),
   });
-  const qBen = useQuery({
-    queryKey: ["rh-ficha-benef", funcionarioId],
-    queryFn: () => fnBen({ data: { funcionario_id: funcionarioId } }),
-  });
-  const qAdi = useQuery({
-    queryKey: ["rh-ficha-adi", funcionarioId, mes, ano],
-    queryFn: () =>
-      fnAdi({
-        data: { funcionario_id: funcionarioId, competencia_mes: mes, competencia_ano: ano },
-      }),
-  });
-  const qDes = useQuery({
-    queryKey: ["rh-ficha-desc", funcionarioId, mes, ano],
-    queryFn: () =>
-      fnDes({
-        data: { funcionario_id: funcionarioId, competencia_mes: mes, competencia_ano: ano },
-      }),
-  });
-  const qOco = useQuery({
-    queryKey: ["rh-ficha-oco-mes", funcionarioId, mes, ano],
-    queryFn: () =>
-      fnOco({ data: { funcionario_id: funcionarioId, tipo: "falta", desde: inicio, ate: fim } }),
-  });
-
-  const entrada = useMemo(() => {
-    const salario = Number(qFunc.data?.salario_atual ?? 0);
-    const beneficios = (qBen.data ?? []).filter(
-      (b) => b.ativo && (!b.vigencia_fim || b.vigencia_fim >= inicio),
-    );
-    const descontoBeneficios = beneficios.reduce((s, b) => s + Number(b.desconto ?? 0), 0);
-    const adiantamento = (qAdi.data ?? [])
-      .filter((a: any) => a.status !== "cancelado")
-      .reduce((s: number, a: any) => s + Number(a.valor ?? 0), 0);
-    const outrosDescontos = (qDes.data ?? [])
-      .filter((d: any) => d.status !== "cancelado")
-      .reduce((s: number, d: any) => s + Number(d.valor ?? 0), 0);
-    const faltas = (qOco.data ?? [])
-      .filter((o) => !o.abonada)
-      .reduce((s, o) => s + Number(o.dias ?? 1), 0);
-
-    return {
-      ...ENTRADA_PADRAO,
-      salario_base: salario,
-      faltas_dias: faltas,
-      outros_descontos: outrosDescontos + descontoBeneficios,
-      outros_descontos_desc: "Benefícios e descontos da competência",
-      adiantamento,
-      dependentes_ir: 0,
-    };
-  }, [qFunc.data, qBen.data, qAdi.data, qDes.data, qOco.data, inicio]);
-
-  const calc = useMemo(() => calcularHolerite(entrada), [entrada]);
-  const carregando =
-    qFunc.isLoading || qBen.isLoading || qAdi.isLoading || qDes.isLoading || qOco.isLoading;
+  const entrada = qEntrada.data ?? ENTRADA_PADRAO;
+  const calc = useMemo(() => calcularHolerite(entrada, { ano, mes }), [entrada, ano, mes]);
+  const carregando = qEntrada.isLoading;
 
   return (
     <Card>

@@ -134,7 +134,7 @@ export function ListaMobile({
                   return nb ? (
                     <>
                       <div
-                        className="text-lg font-bold tabular-nums leading-tight tracking-tight"
+                        className="text-[14px] font-semibold tabular-nums leading-tight"
                         style={{ color: corBanco }}
                       >
                         Nº banco {nb}
@@ -143,6 +143,9 @@ export function ListaMobile({
                         <span>
                           Interno <span className="tabular-nums">{p.numero_proposta}</span>
                         </span>
+                        {p.homefin_id_oportunidade && (
+                          <span className="tabular-nums">ID {p.homefin_id_oportunidade}</span>
+                        )}
                         <span className="text-[9px] lowercase tracking-tight">
                           {formatDataHora(p.created_at)}
                         </span>
@@ -150,10 +153,15 @@ export function ListaMobile({
                     </>
                   ) : (
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-base font-semibold tabular-nums tracking-tight text-foreground">
+                      <div className="flex items-center gap-2 text-[14px] font-semibold tabular-nums text-foreground">
                         {p.deleted_at && <Trash2 className="h-4 w-4 text-destructive" />}
                         {p.numero_proposta}
                       </div>
+                      {p.homefin_id_oportunidade && (
+                        <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                          ID {p.homefin_id_oportunidade}
+                        </span>
+                      )}
                       <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-tight">
                         {formatDataHora(p.created_at)}
                       </span>

@@ -1,0 +1,49 @@
+# =============================================================================
+# Agilliza 2.0 na VPS — app + borda, na rede do Supabase do banco único.
+# Só 127.0.0.1: a exposição pública é do túnel/proxy do domínio, na frente da borda.
+#
+#   docker compose -p agilliza2-app -f deploy/vps/docker-compose.yml up -d
+# =============================================================================
+name: agilliza2-app
+
+services:
+  app:
+    image: agilliza/app:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: deploy/vps/Dockerfile
+      args:
+        SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?defina no .env}
+    container_name: agilliza-app
+    restart: unless-stopped
+    env_file: [./app.env]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+    networks: [banco]
+    deploy:
+      resources:
+        limits: { memory: 2g }
+
+  borda:
+    image: caddy:2.10.2-alpine
+    container_name: agilliza-borda
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    ports:
+      - "127.0.0.1:3030:80"
+    depends_on: [app]
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+    networks: [banco]
+
+networks:
+  banco:
+    name: agilliza2_default
+    external: true

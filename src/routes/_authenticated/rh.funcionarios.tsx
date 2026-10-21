@@ -28,7 +28,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusFuncionarioBadge } from "@/components/rh/status-badge";
-import { formatBRL } from "@/lib/financeiro/format";
+import { formatBRL, formatData } from "@/lib/financeiro/format";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { EstadoLista } from "@/components/rh/estado-lista";
 
 export const Route = createFileRoute("/_authenticated/rh/funcionarios")({
   head: () => ({ meta: [{ title: "Funcionários — Agilliza" }] }),
@@ -43,7 +45,7 @@ function Pagina() {
   const [status, setStatus] = useState<string>("");
   const [incluirDesligados, setIncluirDesligados] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const lista = useQuery({
     queryKey: ["rh-funcionarios", q, status, incluirDesligados],
     queryFn: () =>
       fn({
@@ -54,6 +56,7 @@ function Pagina() {
         },
       }),
   });
+  const { data, isLoading } = lista;
 
   const qc = useQueryClient();
   const fnExcluir = useServerFn(excluirFuncionario);
@@ -67,7 +70,7 @@ function Pagina() {
       qc.invalidateQueries({ queryKey: ["rh-funcionarios"] });
       qc.invalidateQueries({ queryKey: ["rh-kpis"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir funcionário."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir funcionário.")),
   });
 
   const total = data?.length ?? 0;
@@ -135,6 +138,17 @@ function Pagina() {
             <Skeleton key={i} className="h-16 w-full" />
           ))}
         </div>
+      ) : lista.isError ? (
+        <Card>
+          <CardContent className="p-0">
+            <EstadoLista
+              q={lista}
+              vazio=""
+              erro="Não foi possível carregar os funcionários."
+              className="py-16"
+            />
+          </CardContent>
+        </Card>
       ) : total === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
@@ -171,7 +185,7 @@ function Pagina() {
                   </p>
                   <p className="text-xs tabular-nums text-muted-foreground">
                     {formatBRL(f.salario_atual)} · Admissão{" "}
-                    {new Date(f.data_admissao).toLocaleDateString("pt-BR")}
+                    {formatData(f.data_admissao)}
                   </p>
                   <div className="flex justify-end gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
                     <Button
@@ -230,7 +244,7 @@ function Pagina() {
                       <StatusFuncionarioBadge status={f.status} />
                     </td>
                     <td className="px-4 py-2 tabular-nums text-muted-foreground">
-                      {new Date(f.data_admissao).toLocaleDateString("pt-BR")}
+                      {formatData(f.data_admissao)}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
                       {formatBRL(f.salario_atual)}

@@ -59,7 +59,9 @@ export function exportarBackupSQL(dados: BackupCompleto) {
   const blob = new Blob([conteudo], { type: "application/sql;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const stamp = new Date(dados.geradoEm).toISOString().slice(0, 10);
+  const stamp = new Date(dados.geradoEm).toLocaleDateString("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  });
   a.href = url;
   a.download = `backup-agilliza-${stamp}.sql`;
   document.body.appendChild(a);

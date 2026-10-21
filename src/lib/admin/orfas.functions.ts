@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export interface OrfaHomefin {
   tipo: "proposta" | "simulacao";
@@ -15,7 +16,7 @@ export interface OrfaHomefin {
 }
 
 export const listarOportunidadesOrfas = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "view"])])
   .handler(async ({ context }): Promise<OrfaHomefin[]> => {
     const { supabase } = context;
 
@@ -85,7 +86,7 @@ export const listarOportunidadesOrfas = createServerFn({ method: "GET" })
   });
 
 export const cancelarOrfaEmLote = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.integracoes", "edit"])])
   .inputValidator((d) =>
     z
       .object({

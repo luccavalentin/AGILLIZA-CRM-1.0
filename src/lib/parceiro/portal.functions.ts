@@ -88,23 +88,30 @@ export const getResumoParceiro = createServerFn({ method: "GET" })
         ? "corretor"
         : null;
 
+    // Contagem em blocos de ids: com centenas de clientes vinculados, um único
+    // `.in(...)` passava do tamanho de URL aceito e a contagem voltava vazia
+    // (aparecia 0 no painel, sem erro).
     let totalSimulacoes = 0;
     let totalPropostas = 0;
-    if (ctx.clienteIds.length > 0) {
-      const [{ count: cSim }, { count: cProp }] = await Promise.all([
+    const BLOCO = 150;
+    for (let i = 0; i < ctx.clienteIds.length; i += BLOCO) {
+      const ids = ctx.clienteIds.slice(i, i + BLOCO);
+      const [sim, prop] = await Promise.all([
         supabaseAdmin
           .from("simulacoes")
           .select("id", { count: "exact", head: true })
-          .in("cliente_id", ctx.clienteIds)
+          .in("cliente_id", ids)
           .is("deleted_at", null),
         supabaseAdmin
           .from("propostas")
           .select("id", { count: "exact", head: true })
-          .in("cliente_id", ctx.clienteIds)
+          .in("cliente_id", ids)
           .is("deleted_at", null),
       ]);
-      totalSimulacoes = cSim ?? 0;
-      totalPropostas = cProp ?? 0;
+      if (sim.error) throw new Error(sim.error.message);
+      if (prop.error) throw new Error(prop.error.message);
+      totalSimulacoes += sim.count ?? 0;
+      totalPropostas += prop.count ?? 0;
     }
 
     const { data: comissoes } = await supabaseAdmin

@@ -44,8 +44,8 @@ import { excluirDemanda } from "@/lib/operacional/demandas.functions";
 import { excluirTarefa } from "@/lib/operacional/tarefas.functions";
 import { excluirSimulacao } from "@/lib/simulacao/simulacoes.functions";
 import { EditarDemandaDialog } from "@/components/operacional/editar-demanda-dialog";
-// Nota: Se houver um EditarTarefaDialog, ele deve ser importado aqui.
-// Por enquanto, usaremos a navegação para edição se for complexo.
+import { usePermissao } from "@/hooks/use-permissao";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import type { ReportFiltros } from "@/lib/relatorios/shared";
 import agillizaSymbol from "@/assets/brand/agilliza-symbol-oficial.png";
 
@@ -69,6 +69,18 @@ export function PainelDrilldownDialog({
   const deleteDemandaFn = useServerFn(excluirDemanda);
   const deleteTarefaFn = useServerFn(excluirTarefa);
   const deleteSimulacaoFn = useServerFn(excluirSimulacao);
+  // Mesmas regras do servidor: tarefa e simulação com "edit" (ou "create" para
+  // quem criou); demanda só por quem criou (pode_excluir vem do servidor).
+  const tarefaEdit = usePermissao("operacional.tarefas", "edit");
+  const tarefaCreate = usePermissao("operacional.tarefas", "create");
+  const simEdit = usePermissao("operacional.simulacoes", "edit");
+  const simCreate = usePermissao("operacional.simulacoes", "create");
+  function podeExcluirItem(it: { tipo?: string; raw?: Record<string, any> }): boolean {
+    if (it.tipo === "demanda") return !!it.raw?.pode_excluir;
+    if (it.tipo === "tarefa") return tarefaEdit || tarefaCreate;
+    if (it.tipo === "simulacao") return simEdit || simCreate;
+    return false;
+  }
 
   const [itemParaExcluir, setItemParaExcluir] = React.useState<{
     id: string;
@@ -76,7 +88,7 @@ export function PainelDrilldownDialog({
   } | null>(null);
   const [demandaParaEditar, setDemandaParaEditar] = React.useState<any | null>(null);
 
-  const { data, isLoading, error } = useQuery<PanelDrilldown>({
+  const { data, isLoading, error, refetch } = useQuery<PanelDrilldown>({
     queryKey: ["panel-drilldown", contexto?.metrica, contexto?.filtros],
     queryFn: () =>
       drillFn({
@@ -168,9 +180,14 @@ export function PainelDrilldownDialog({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando detalhamento…
                 </div>
               ) : error ? (
-                <p className="py-10 text-center text-sm text-destructive">
-                  Não foi possível carregar o detalhamento.
-                </p>
+                <div className="flex flex-col items-center gap-3 py-10 text-center">
+                  <p className="text-sm text-destructive">
+                    {mensagemDeErro(error, "Não foi possível carregar o detalhamento.")}
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => refetch()}>
+                    Tentar de novo
+                  </Button>
+                </div>
               ) : !data || data.itens.length === 0 ? (
                 <p className="py-10 text-center text-sm text-muted-foreground">
                   {data?.descricao ??
@@ -223,6 +240,7 @@ export function PainelDrilldownDialog({
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    aria-label="Mais ações"
                                     className="h-8 w-8 text-muted-foreground/40 hover:text-foreground"
                                     onClick={(e) => e.stopPropagation()}
                                   >
@@ -242,18 +260,20 @@ export function PainelDrilldownDialog({
                                   >
                                     <Pencil className="mr-2 h-4 w-4" /> Editar
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setItemParaExcluir({
-                                        id: (it as any).id,
-                                        tipo: (it as any).tipo,
-                                      });
-                                    }}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                                  </DropdownMenuItem>
+                                  {podeExcluirItem(it) && (
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setItemParaExcluir({
+                                          id: (it as any).id,
+                                          tipo: (it as any).tipo,
+                                        });
+                                      }}
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             )}
@@ -326,8 +346,7 @@ export function PainelDrilldownDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este registro? Os alertas vinculados também serão
-              removidos.
+              O registro e os alertas vinculados a ele serão removidos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -344,14 +363,14 @@ export function PainelDrilldownDialog({
                   } else {
                     await deleteSimulacaoFn({ data: { id: itemParaExcluir.id } });
                   }
-                  toast.success("Registro e alertas vinculados excluídos com sucesso!");
+                  toast.success("Registro excluído.");
                   queryClient.invalidateQueries({ queryKey: ["panel-drilldown"] });
                   queryClient.invalidateQueries({ queryKey: ["panel"] });
                   queryClient.invalidateQueries({ queryKey: ["demandas"] });
                   queryClient.invalidateQueries({ queryKey: ["tarefas"] });
                   queryClient.invalidateQueries({ queryKey: ["simulacoes"] });
                 } catch (err) {
-                  toast.error("Erro ao excluir registro.");
+                  toast.error(mensagemDeErro(err, "Não foi possível excluir o registro."));
                 } finally {
                   setItemParaExcluir(null);
                 }

@@ -179,6 +179,7 @@ function Pagina() {
           valor={String(data?.ativos ?? 0)}
           icon={UserCheck}
           tone="success"
+          sub={`+ ${data?.experiencia ?? 0} em experiência`}
           onClick={() => setDrill("ativos")}
         />
         <ReportKpiCard

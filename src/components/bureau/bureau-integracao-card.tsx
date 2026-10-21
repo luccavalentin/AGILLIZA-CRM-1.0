@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { obterConfigBureau, salvarConfigBureau } from "@/lib/bureau/bureau.functions";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { usePermissao } from "@/hooks/use-permissao";
 
 /**
  * Cadastro do bureau de crédito em Administração · Integrações.
@@ -19,10 +20,11 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
  */
 export function BureauIntegracaoCard() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["bureau-config"],
     queryFn: () => obterConfigBureau(),
   });
+  const podeEditar = usePermissao("admin.integracoes", "edit");
 
   const [provedor, setProvedor] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
@@ -62,7 +64,11 @@ export function BureauIntegracaoCard() {
     onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível salvar o bureau.")),
   });
 
-  const preenchidos = new Set(data?.camposPreenchidos ?? []);
+  // Os campos guardados são do fornecedor salvo. Escolhido outro, nada vale:
+  // o servidor não aproveita chave de um contrato no outro.
+  const preenchidos = new Set(
+    data?.provedor && data.provedor === provedor ? data.camposPreenchidos : [],
+  );
 
   return (
     <Card>
@@ -82,6 +88,15 @@ export function BureauIntegracaoCard() {
         {isLoading ? (
           <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
+          </div>
+        ) : isError ? (
+          <div className="flex flex-wrap items-center gap-3 py-2">
+            <p className="text-sm text-destructive">
+              {mensagemDeErro(error, "Não foi possível carregar o bureau.")}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Tentar de novo
+            </Button>
           </div>
         ) : (
           <>
@@ -185,14 +200,16 @@ export function BureauIntegracaoCard() {
                 </Label>
               </div>
 
-              <Button
-                onClick={() => salvar.mutate()}
-                disabled={!provedor || salvar.isPending}
-                size="sm"
-              >
-                {salvar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar bureau
-              </Button>
+              {podeEditar && (
+                <Button
+                  onClick={() => salvar.mutate()}
+                  disabled={!provedor || salvar.isPending}
+                  size="sm"
+                >
+                  {salvar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar bureau
+                </Button>
+              )}
             </div>
 
             <p className="flex items-start gap-2 text-[11px] text-muted-foreground">

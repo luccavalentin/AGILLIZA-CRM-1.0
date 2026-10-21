@@ -1,24 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import {
-  CalendarClock,
-  Calculator,
-  ExternalLink,
-  FileText,
-  ListChecks,
-  Mail,
-  MessageCircle,
-  Phone,
-  Tag,
-} from "lucide-react";
+import { Calculator, ExternalLink, FileText, Mail, MessageCircle, Phone, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { BancoChip } from "@/components/bancos/banco-chip";
 import { type ChatEtiqueta } from "@/lib/crm/chat-gestao.functions";
 import { iniciais } from "../utils";
+import { exibirDocumento, formatarCelular } from "@/lib/crm/documento";
 import { BotaoAcao, LinhaResumo } from "./painel-primitivos";
 import { Stepper } from "./painel-stepper";
 import { formatarBRL } from "./painel-utils";
 import { PRODUTOS } from "@/lib/simulacao/schemas";
+import { statusProposta } from "@/components/propostas/status";
 
 interface PropostaResumo {
   id: string;
@@ -83,7 +75,9 @@ export function AbaCliente({
             </Badge>
           </div>
           {data.documento && (
-            <p className="truncate text-xs text-muted-foreground">{data.documento}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {exibirDocumento(data.documento)}
+            </p>
           )}
         </div>
       </div>
@@ -93,7 +87,7 @@ export function AbaCliente({
         {data.celular && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Phone className="size-4 shrink-0" />
-            <span className="truncate text-foreground">{data.celular}</span>
+            <span className="truncate text-foreground">{formatarCelular(data.celular)}</span>
             {zap && (
               <a
                 href={zap}
@@ -133,7 +127,7 @@ export function AbaCliente({
               variant="secondary"
               className="rounded-full border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
             >
-              {data.proposta.status}
+              {statusProposta(data.proposta.status, data.proposta.banco).label}
             </Badge>
           )}
         </div>
@@ -181,15 +175,10 @@ export function AbaCliente({
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Ações rápidas
         </p>
+        {/* Tarefa e retorno ficam nas abas do campo de mensagem; aqui só o que abre outra tela. */}
         <div className="grid grid-cols-2 gap-2">
           <BotaoAcao to="/crm/clientes/$id" params={{ id: clienteId }} icon={FileText}>
-            Enviar documento
-          </BotaoAcao>
-          <BotaoAcao to="/crm/clientes/$id" params={{ id: clienteId }} icon={CalendarClock}>
-            Agendar retorno
-          </BotaoAcao>
-          <BotaoAcao to="/crm/clientes/$id" params={{ id: clienteId }} icon={ListChecks}>
-            Criar tarefa
+            Documentos na ficha
           </BotaoAcao>
           <BotaoAcao to="/operacional/simulacoes/nova" icon={Calculator}>
             Nova simulação
@@ -212,8 +201,8 @@ export function AbaCliente({
           </div>
         ) : (
           <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Tag className="size-3.5" /> Nenhuma etiqueta. Use a barra de gestão acima para
-            adicionar.
+            <Tag className="size-3.5" /> Nenhuma etiqueta. Aplique em "Mais ações", no topo da
+            conversa.
           </p>
         )}
       </div>

@@ -41,6 +41,17 @@ const toDate = (iso: string) => {
   return new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
 };
 const toIso = (d: Date) => d.toISOString().slice(0, 10);
+
+/**
+ * Avos de férias até a referência (CLT art. 146, parágrafo único): cada mês
+ * completo conta 1 e a fração final de 15 dias ou mais conta como mês inteiro.
+ */
+export function avosAte(inicio: Date, referencia: Date): number {
+  let meses = 0;
+  while (addMonths(inicio, meses + 1) <= addDays(referencia, 1)) meses += 1;
+  const restante = diffDias(addDays(referencia, 1), addMonths(inicio, meses));
+  return meses + (restante >= 15 ? 1 : 0);
+}
 const addMonths = (d: Date, n: number) => {
   const r = new Date(d.getTime());
   const dia = r.getUTCDate();
@@ -122,8 +133,7 @@ export function calcularFeriasCLT(entrada: CalculoFeriasEntrada): CalculoFeriasR
     const limite = addDays(addMonths(fim, 12), 0);
     const completo = fim <= referencia;
 
-    const mesesBrutos = Math.floor(diffDias(referencia, inicio) / 30.4375);
-    const meses_computados = completo ? 12 : Math.max(0, Math.min(12, mesesBrutos));
+    const meses_computados = completo ? 12 : Math.max(0, Math.min(12, avosAte(inicio, referencia)));
 
     const faltasPeriodo = faltas
       .filter((f) => {

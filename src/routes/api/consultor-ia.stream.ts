@@ -26,6 +26,15 @@ export const Route = createFileRoute("/api/consultor-ia/stream")({
         const userId = claims?.claims?.sub as string | undefined;
         if (claimsErr || !userId) return new Response("Unauthorized", { status: 401 });
 
+        // A tela do Consultor IA exige o módulo de clientes; o endereço do
+        // streaming é chamado direto, então confere a mesma permissão aqui.
+        const { data: permitido } = await supabase.rpc("usuario_tem_permissao", {
+          _user_id: userId,
+          _modulo: "crm.clientes",
+          _acao: "view",
+        });
+        if (!permitido) return new Response("Forbidden", { status: 403 });
+
         let body: { conversa_id?: string | null; pergunta?: string };
         try {
           body = await request.json();
@@ -33,7 +42,11 @@ export const Route = createFileRoute("/api/consultor-ia/stream")({
           return new Response("Bad request", { status: 400 });
         }
         const pergunta = (body.pergunta ?? "").trim();
-        if (pergunta.length < 2) return new Response("Pergunta inválida", { status: 400 });
+        // Teto para não mandar textos enormes ao provedor de IA (a tela não limita
+        // o campo; a versão sem streaming aceita até 2.000 caracteres).
+        if (pergunta.length < 2 || pergunta.length > 4000) {
+          return new Response("Pergunta inválida", { status: 400 });
+        }
 
         const encoder = new TextEncoder();
         const stream = new ReadableStream({

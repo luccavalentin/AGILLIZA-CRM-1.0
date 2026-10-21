@@ -19,6 +19,7 @@ import { PRODUTOS, TIPOS_IMOVEL, USOS_IMOVEL, SITUACOES_IMOVEL } from "@/lib/sim
 import { UFS, maskCpfCnpj } from "@/lib/simulacao/format";
 import { formatBRL } from "@/lib/simulacao/format";
 import { formatarMeses } from "@/lib/simulacao/prazo";
+import { hojeISO } from "@/lib/financeiro/format";
 import { Ast } from "@/components/simulacao/completa/campo";
 import type { WizardState } from "./use-wizard-simulacao";
 import { PRAZO_MIN, PRAZO_MAX } from "./use-wizard-simulacao";
@@ -39,6 +40,8 @@ interface Props {
   definirPrazo: (valor: number, campo?: "prazo_meses" | "prazo_meses_2") => void;
   maxPrazoIdade: number | null | undefined;
   melhorTaxaAno: number;
+  erroNascimento?: string | null;
+  erroCpf?: string | null;
 }
 
 export function FormularioSimulacao({
@@ -56,6 +59,8 @@ export function FormularioSimulacao({
   definirPrazo,
   maxPrazoIdade,
   melhorTaxaAno,
+  erroNascimento,
+  erroCpf,
 }: Props) {
   const pctEntrada = Math.round((1 - ltvMax) * 100);
   const pctFin = Math.round(ltvMax * 100);
@@ -353,6 +358,15 @@ export function FormularioSimulacao({
               </>
             )}
           </p>
+          {/* Mesmo aviso da simulação completa: acima do teto o banco tende a recusar. */}
+          {(w.valor_imovel || 0) > 0 &&
+            (Number(w.valor_financiamento) || 0) > (w.valor_imovel || 0) * ltvMax + 0.5 && (
+              <p role="alert" className="text-xs font-medium text-warning">
+                O financiamento passa do teto de {pctFin}% do imóvel (máximo{" "}
+                {formatBRL((w.valor_imovel || 0) * ltvMax)}). Aumente a entrada para não ser
+                recusado.
+              </p>
+            )}
         </div>
 
         <div className="space-y-1.5">
@@ -370,7 +384,11 @@ export function FormularioSimulacao({
             value={w.cpf_cnpj}
             onChange={(e) => set("cpf_cnpj", maskCpfCnpj(e.target.value))}
             placeholder="000.000.000-00"
+            inputMode="numeric"
+            aria-invalid={Boolean(erroCpf)}
+            className={cn(erroCpf && "border-destructive")}
           />
+          {erroCpf && <p className="text-xs text-destructive">{erroCpf}</p>}
         </div>
 
         <div className="space-y-1.5">
@@ -380,8 +398,12 @@ export function FormularioSimulacao({
           <Input
             type="date"
             value={w.data_nascimento}
+            max={hojeISO()}
             onChange={(e) => set("data_nascimento", e.target.value)}
+            aria-invalid={Boolean(erroNascimento)}
+            className={cn(erroNascimento && "border-destructive")}
           />
+          {erroNascimento && <p className="text-xs text-destructive">{erroNascimento}</p>}
         </div>
         <div className="space-y-1.5">
           <Label>
@@ -473,7 +495,7 @@ export function FormularioSimulacao({
           </div>
           <p className="text-xs text-muted-foreground">
             {w.prazo_meses > 0
-              ? `Principal: ${(w.prazo_meses / 12).toFixed(1).replace(".0", "")} anos · mín. ${PRAZO_MIN} / máx. ${maxPrazoIdade ?? PRAZO_MAX} meses`
+              ? `Principal: ${formatarMeses(w.prazo_meses)} · mín. ${PRAZO_MIN} / máx. ${maxPrazoIdade ?? PRAZO_MAX} meses`
               : `Mín. ${PRAZO_MIN} / máx. ${maxPrazoIdade ?? PRAZO_MAX} meses`}
             {maxPrazoIdade != null && ` · limite para a idade: ${formatarMeses(maxPrazoIdade)}`}
           </p>

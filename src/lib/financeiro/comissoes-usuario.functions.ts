@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import { GATILHOS_COMISSAO as LISTA_GATILHOS } from "@/lib/financeiro/comissoes-gatilhos";
+import { hojeISO } from "@/lib/financeiro/format";
 
 export const TIPOS_VINCULO_COMISSAO = [
   { valor: "corretor", rotulo: "Corretor" },
@@ -83,7 +84,7 @@ async function corrDoUsuario(supabase: any, userId: string): Promise<string> {
 // ---------- REGRAS ----------
 
 export const listarRegrasComissaoUsuario = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "view"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -136,7 +137,7 @@ export const listarRegrasComissaoUsuario = createServerFn({ method: "GET" })
   });
 
 export const salvarRegraComissaoUsuario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -223,7 +224,7 @@ export interface ResumoRegraComissao {
 }
 
 export const resumoRegrasComissaoUsuario = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "view"])])
   .handler(async ({ context }): Promise<ResumoRegraComissao[]> => {
     const { supabase, userId } = context;
     const corr = await corrDoUsuario(supabase, userId);
@@ -256,7 +257,7 @@ export const resumoRegrasComissaoUsuario = createServerFn({ method: "GET" })
   });
 
 export const excluirRegraComissaoUsuario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "edit"])])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
@@ -272,7 +273,7 @@ export const excluirRegraComissaoUsuario = createServerFn({ method: "POST" })
 // ---------- LANÇAMENTOS ----------
 
 export const recalcularComissoesUsuario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "edit"])])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const corr = await corrDoUsuario(supabase, userId);
@@ -285,7 +286,7 @@ export const recalcularComissoesUsuario = createServerFn({ method: "POST" })
   });
 
 export const listarComissoesUsuario = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "view"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -383,7 +384,7 @@ export const listarComissoesUsuario = createServerFn({ method: "GET" })
   });
 
 export const marcarComissaoUsuarioPaga = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "edit"])])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
@@ -396,7 +397,7 @@ export const marcarComissaoUsuarioPaga = createServerFn({ method: "POST" })
     if (!c) throw new Error("Comissão não encontrada.");
 
     if (c.payable_id) {
-      const hoje = new Date().toISOString().slice(0, 10);
+      const hoje = hojeISO();
       await supabase
         .from("financial_payables")
         .update({
@@ -415,7 +416,7 @@ export const marcarComissaoUsuarioPaga = createServerFn({ method: "POST" })
   });
 
 export const cancelarComissaoUsuario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "edit"])])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
@@ -439,7 +440,7 @@ export const cancelarComissaoUsuario = createServerFn({ method: "POST" })
   });
 
 export const recalcularComissoesProposta = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "edit"])])
   .inputValidator((d: unknown) => z.object({ proposta_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
@@ -461,7 +462,7 @@ export interface UsuarioComissionavel {
 }
 
 export const listarUsuariosComissionaveis = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "view"])])
   .handler(async ({ context }): Promise<UsuarioComissionavel[]> => {
     const { supabase, userId } = context;
     const corr = await corrDoUsuario(supabase, userId);
@@ -497,7 +498,7 @@ export const listarUsuariosComissionaveis = createServerFn({ method: "GET" })
 
 // Bancos disponíveis (para o filtro do formulário)
 export const listarBancosComissao = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "view"])])
   .handler(async ({ context }): Promise<string[]> => {
     const { supabase } = context;
     const { data } = await supabase
@@ -511,7 +512,7 @@ export const listarBancosComissao = createServerFn({ method: "GET" })
 // ---------- EDIÇÃO / EXCLUSÃO DE LANÇAMENTOS ----------
 
 export const atualizarComissaoUsuario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -555,7 +556,7 @@ export const atualizarComissaoUsuario = createServerFn({ method: "POST" })
       if (data.status === "paga") {
         payPatch.status = "paga";
         payPatch.valor_pago = valor;
-        payPatch.data_pagamento = new Date().toISOString().slice(0, 10);
+        payPatch.data_pagamento = hojeISO();
       }
       await supabase.from("financial_payables").update(payPatch).eq("id", atual.payable_id);
     }
@@ -563,7 +564,7 @@ export const atualizarComissaoUsuario = createServerFn({ method: "POST" })
   });
 
 export const excluirComissoesUsuario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "edit"])])
   .inputValidator((d: unknown) => z.object({ ids: z.array(z.string().uuid()).min(1) }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
@@ -583,11 +584,11 @@ export const excluirComissoesUsuario = createServerFn({ method: "POST" })
   });
 
 export const marcarComissoesUsuarioPagas = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.comissoes", "edit"])])
   .inputValidator((d: unknown) => z.object({ ids: z.array(z.string().uuid()).min(1) }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const hoje = new Date().toISOString().slice(0, 10);
+    const hoje = hojeISO();
     const { data: rows } = await supabase
       .from("comissoes_usuario")
       .select("id, payable_id, valor_comissao")

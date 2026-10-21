@@ -15,6 +15,7 @@ import { useAdaptadorDemanda } from "@/components/shared/chat-core/adapters/dema
 import { obterDemanda } from "@/lib/operacional/demandas.functions";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { cn } from "@/lib/utils";
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 
 type DemandaChatInfo = {
   numero?: string | null;
@@ -25,13 +26,7 @@ type DemandaChatInfo = {
 };
 
 function iniciais(nome?: string | null): string {
-  if (!nome) return "?";
-  return nome
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("");
+  return iniciaisDoNome(nome);
 }
 
 export function DemandaChatTab({ demandaId, info }: { demandaId: string; info?: DemandaChatInfo }) {
@@ -183,6 +178,8 @@ export function DemandaChatConversa({
             )}
             onClick={toggleBusca}
             title="Buscar na conversa"
+            aria-label="Buscar na conversa"
+            aria-pressed={buscaAberta}
           >
             <Search className="size-4" />
           </Button>

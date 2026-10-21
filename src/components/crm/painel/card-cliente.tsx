@@ -1,11 +1,11 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { iniciaisDoNome } from "@/components/shared/iniciais";
 import { Link } from "@tanstack/react-router";
 import {
   Building2,
   CalendarCheck,
   CalendarClock,
   Calculator,
-  ChevronRight,
   Clock,
   ExternalLink,
   KanbanSquare,
@@ -17,7 +17,6 @@ import {
   Archive,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +41,8 @@ interface Props {
   stageCodigo: string;
   /** Card apenas leitura: sem arrasto (etapas sincronizadas pela proposta). */
   readOnly?: boolean;
+  /** `crm.clientes` › Editar: sem ela, sem arrasto, datas só para leitura e sem ações de edição. */
+  podeEditar?: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
   clicavel: () => boolean;
@@ -59,7 +60,8 @@ interface Props {
 export function CardCliente({
   cliente: c,
   stageCodigo,
-  readOnly = false,
+  readOnly: readOnlyEtapa = false,
+  podeEditar = false,
   onDragStart,
   onDragEnd,
   clicavel,
@@ -71,7 +73,11 @@ export function CardCliente({
 }: Props) {
   const ehVistoria = stageCodigo === "engenharia_vistoria";
   const ehContrato = stageCodigo === "contrato_emitido";
+  const readOnly = readOnlyEtapa || !podeEditar;
   const dependente = ["simulacao", "credito_enviado", "credito_aprovado"].includes(stageCodigo);
+  // "Excluir vínculo" só faz sentido quando nada mais segura o cliente na etapa: nenhuma
+  // simulação nem proposta ativa (o que o levou até aqui foi excluído).
+  const vinculoOrfao = dependente && c.total_propostas === 0 && c.total_simulacoes === 0;
   const temProposta = Boolean(c.numero_proposta);
   const st = (c.proposta_status ?? "").toLowerCase();
   const aprovado = st.includes("aprovad");
@@ -109,11 +115,11 @@ export function CardCliente({
     >
       <div className="flex items-center gap-2.5">
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold uppercase text-primary">
-          {c.nome.trim().charAt(0).toUpperCase() || "?"}
+          {iniciaisDoNome(c.nome)}
         </div>
         <div className="min-w-0 flex-1">
           <p
-            className="truncate text-sm font-semibold leading-tight text-foreground"
+            className="line-clamp-2 break-words text-sm font-semibold leading-tight text-foreground"
             title={c.nome}
           >
             {c.nome}
@@ -129,6 +135,7 @@ export function CardCliente({
               onClick={(e) => e.stopPropagation()}
               className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground opacity-70 transition-all hover:bg-muted hover:text-foreground hover:opacity-100 group-hover:opacity-100"
               title="Ações do cliente"
+              aria-label="Ações do cliente"
             >
               <MoreHorizontal className="size-4" />
             </button>
@@ -149,7 +156,7 @@ export function CardCliente({
                 <MessageSquareText className="mr-2 size-4" /> Ver comentários
               </DropdownMenuItem>
             )}
-            {ehContrato && c.contrato_emitido_em && (
+            {podeEditar && ehContrato && c.contrato_emitido_em && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onArquivarContrato}>
@@ -157,7 +164,7 @@ export function CardCliente({
                 </DropdownMenuItem>
               </>
             )}
-            {dependente && (
+            {podeEditar && vinculoOrfao && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -268,11 +275,11 @@ export function CardCliente({
             <label className="w-14 shrink-0 text-[10px] font-medium text-muted-foreground">
               Agendada
             </label>
-            <Input
-              type="date"
-              value={c.vistoria_agendada_em ?? ""}
-              onChange={(e) => onSalvarDataVistoria("vistoria_agendada_em", e.target.value)}
-              className="h-6 min-w-0 flex-1 px-1.5 text-[11px]"
+            <CampoDataCard
+              valor={c.vistoria_agendada_em}
+              desabilitado={!podeEditar}
+              onSalvar={(v) => onSalvarDataVistoria("vistoria_agendada_em", v)}
+              titulo="Data do agendamento da vistoria"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -280,11 +287,11 @@ export function CardCliente({
             <label className="w-14 shrink-0 text-[10px] font-medium text-muted-foreground">
               Concluída
             </label>
-            <Input
-              type="date"
-              value={c.vistoria_concluida_em ?? ""}
-              onChange={(e) => onSalvarDataVistoria("vistoria_concluida_em", e.target.value)}
-              className="h-6 min-w-0 flex-1 px-1.5 text-[11px]"
+            <CampoDataCard
+              valor={c.vistoria_concluida_em}
+              desabilitado={!podeEditar}
+              onSalvar={(v) => onSalvarDataVistoria("vistoria_concluida_em", v)}
+              titulo="Data da conclusão da vistoria"
             />
           </div>
         </div>
@@ -299,12 +306,11 @@ export function CardCliente({
             <label className="shrink-0 text-[10px] font-medium text-muted-foreground">
               Emitido
             </label>
-            <Input
-              type="date"
-              value={c.contrato_emitido_em ?? ""}
-              onChange={(e) => onSalvarDataContrato(e.target.value)}
-              className="h-6 min-w-0 flex-1 px-1.5 text-[11px]"
-              title="Data de emissão do contrato"
+            <CampoDataCard
+              valor={c.contrato_emitido_em}
+              desabilitado={!podeEditar}
+              onSalvar={onSalvarDataContrato}
+              titulo="Data de emissão do contrato"
             />
           </div>
         </div>
@@ -322,5 +328,63 @@ export function CardCliente({
         </span>
       )}
     </div>
+  );
+}
+
+/** Data civil válida (aaaa-mm-dd, ano de 4 dígitos entre 1900 e 2200) ou vazio (limpa). */
+function dataValida(v: string): boolean {
+  if (v === "") return true;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  if (!m) return false;
+  const [ano, mes, dia] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (ano < 1900 || ano > 2200 || mes < 1 || mes > 12 || dia < 1) return false;
+  return dia <= new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+}
+
+/**
+ * Campo de data dos cards. O `input type="date"` dispara a cada tecla (o ano "2026"
+ * passava por 0002, 0020, 0202): grava só ao sair do campo ou com Enter, e só data válida.
+ */
+function CampoDataCard({
+  valor,
+  desabilitado,
+  onSalvar,
+  titulo,
+}: {
+  valor: string | null;
+  desabilitado: boolean;
+  onSalvar: (v: string) => void;
+  titulo: string;
+}) {
+  const gravado = valor ? String(valor).slice(0, 10) : "";
+  const [rascunho, setRascunho] = useState(gravado);
+  useEffect(() => setRascunho(gravado), [gravado]);
+
+  function confirmar() {
+    if (rascunho === gravado) return;
+    if (!dataValida(rascunho)) {
+      setRascunho(gravado);
+      return;
+    }
+    onSalvar(rascunho);
+  }
+
+  return (
+    <Input
+      type="date"
+      value={rascunho}
+      disabled={desabilitado}
+      onChange={(e) => setRascunho(e.target.value)}
+      onBlur={confirmar}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          confirmar();
+        }
+        if (e.key === "Escape") setRascunho(gravado);
+      }}
+      className="h-6 min-w-0 flex-1 px-1.5 text-[11px]"
+      title={titulo}
+    />
   );
 }

@@ -1,7 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  CAMPOS_PII_CLIENTE,
+  CAMPOS_PII_VENDEDOR,
+  mascararCamposPii,
+  temPiiCliente,
+} from "@/lib/crm/pii";
+import { termoSemAcento } from "@/lib/crm/busca";
 import { mascararDocumento } from "@/lib/crm/documento";
 import type { SituacaoDocumentacao } from "@/lib/propostas/documentacao-status";
 import { toTitleCase } from "@/lib/utils";
@@ -10,25 +18,41 @@ import {
   aplicarPadroesIdentificacao,
   ENDERECO_PADRAO,
 } from "@/lib/crm/padroes-cadastro";
+import { etapaEhComercial, MSG_ETAPA_SINCRONIZADA } from "@/lib/crm/etapas";
+import { hojeISO } from "@/lib/financeiro/format";
 
 type TipoPessoa = Database["public"]["Enums"]["tipo_pessoa"];
 type EstadoCivil = Database["public"]["Enums"]["cliente_estado_civil"];
 
-async function temPii(supabase: any, userId: string): Promise<boolean> {
-  const { data: tudo } = await supabase.rpc("has_any_role", {
-    _user_id: userId,
-    _roles: ["admin", "correspondente"],
-  });
-  if (tudo) return true;
-  return Boolean(
-    await supabase
-      .rpc("usuario_tem_permissao", {
-        _user_id: userId,
-        _modulo: "crm.clientes",
-        _acao: "pii:view",
-      })
-      .then((r: any) => r.data),
-  );
+/** Mesma regra de `temPiiCliente` (lib/crm/pii.ts), usada também por Documentos Gerais. */
+const temPii = temPiiCliente;
+
+/** Recusa a gravação de quem não tem `crm.clientes` › Editar (admin/correspondente passam). */
+async function exigirEdicaoCliente(supabase: any, userId: string): Promise<void> {
+  if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
+    throw new Error("Você não tem permissão para editar este cliente.");
+  }
+}
+
+/**
+ * Como `exigirEdicaoCliente`, mas aceita também quem tem `crm.clientes` › Criar e cadastrou
+ * o cliente: o formulário de cadastro novo grava endereço e vínculos logo depois de criar.
+ */
+async function exigirEdicaoOuCriador(
+  supabase: any,
+  userId: string,
+  clienteId: string,
+): Promise<void> {
+  if (await podeAcao(supabase, userId, "crm.clientes", "edit")) return;
+  if (await podeAcao(supabase, userId, "crm.clientes", "create")) {
+    const { data: cli } = await supabase
+      .from("clientes")
+      .select("criador_id")
+      .eq("id", clienteId)
+      .maybeSingle();
+    if (cli && (cli as { criador_id?: string | null }).criador_id === userId) return;
+  }
+  throw new Error("Você não tem permissão para editar este cliente.");
 }
 
 /** Verifica papel amplo (admin/correspondente) ou permissão específica do módulo. */
@@ -64,6 +88,8 @@ export interface ClienteListaItem {
   responsavel_nome: string | null;
   ativo: boolean;
   portal_acesso_ativo: boolean;
+  /** Mesma regra de `excluirCliente`: permissão de excluir em Clientes. */
+  pode_excluir: boolean;
 }
 
 const listarSchema = z.object({
@@ -87,7 +113,10 @@ export const listarClientes = createServerFn({ method: "GET" })
       context,
     }): Promise<{ itens: ClienteListaItem[]; total: number; podePii: boolean }> => {
       const { supabase, userId } = context;
-      const podePii = await temPii(supabase, userId);
+      const [podePii, podeExcluirTodos] = await Promise.all([
+        temPii(supabase, userId),
+        podeAcao(supabase, userId, "crm.clientes", "delete"),
+      ]);
       const from = (data.pagina - 1) * data.porPagina;
       const to = from + data.porPagina - 1;
 
@@ -95,8 +124,8 @@ export const listarClientes = createServerFn({ method: "GET" })
         .from("clientes")
         .select(
           data.etapa
-            ? "id, numero_cliente, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline!inner(ultima_atualizacao_em, pipeline_stages!inner(codigo, nome))"
-            : "id, numero_cliente, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo, nome))",
+            ? "id, numero_cliente, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, criador_id, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline!inner(ultima_atualizacao_em, pipeline_stages!inner(codigo, nome, ordem))"
+            : "id, numero_cliente, nome, documento, telefone_celular, email, ativo, portal_acesso_ativo, criador_id, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(ultima_atualizacao_em, pipeline_stages(codigo, nome))",
           { count: "exact" },
         )
         .is("deleted_at", null)
@@ -104,7 +133,17 @@ export const listarClientes = createServerFn({ method: "GET" })
 
       // Filtro de etapa aplicado na própria query (antes da paginação),
       // para que a contagem e a paginação fiquem corretas.
-      if (data.etapa) {
+      // "__andamento" e "__completo" são os grupos dos cards (mesmo critério do RPC
+      // crm_estatisticas_clientes): o número do card e a lista filtrada batem.
+      if (data.etapa === "__andamento") {
+        query = query.not(
+          "cliente_pipeline.pipeline_stages.codigo",
+          "in",
+          "(cadastro_basico,contrato_emitido)",
+        );
+      } else if (data.etapa === "__completo") {
+        query = query.gte("cliente_pipeline.pipeline_stages.ordem", 4);
+      } else if (data.etapa) {
         query = query.eq("cliente_pipeline.pipeline_stages.codigo", data.etapa);
       }
 
@@ -137,31 +176,40 @@ export const listarClientes = createServerFn({ method: "GET" })
         const safe = term.replace(/[,()%*]/g, " ").trim();
         const dig = term.replace(/\D/g, "");
         const ors: string[] = [];
-        if (safe) ors.push(`nome.ilike.%${safe}%`, `email.ilike.%${safe}%`);
-        if (dig) ors.push(`documento.ilike.%${dig}%`);
+        // Código do cliente (CLI-000003) também é buscável. O nome é buscado
+        // sem acento ("joao" acha "João") pela coluna gerada nome_busca.
+        if (safe)
+          ors.push(
+            `nome_busca.ilike.%${termoSemAcento(safe)}%`,
+            `email.ilike.%${safe}%`,
+            `numero_cliente.ilike.%${safe}%`,
+          );
+        // Sem "Ver dados sensíveis", só o documento inteiro encontra o cliente: a busca
+        // por pedaço deixava descobrir o CPF que a lista mostra mascarado.
+        if (dig && podePii) ors.push(`documento.ilike.%${dig}%`);
+        else if (dig.length === 11 || dig.length === 14) ors.push(`documento.eq.${dig}`);
         if (ors.length) query = query.or(ors.join(","));
       }
 
       const { data: rows, count, error } = await query;
       if (error) throw error;
 
-      let itens = (rows ?? []).map(
-        (r: any): ClienteListaItem => ({
-          id: r.id,
-          numero_cliente: r.numero_cliente,
-          nome: toTitleCase(r.nome),
-          documento: podePii ? r.documento : mascararDocumento(r.documento ?? ""),
-          documento_masc: !podePii,
-          telefone_celular: r.telefone_celular,
-          email: r.email,
-          etapa_codigo: r.cliente_pipeline?.pipeline_stages?.codigo ?? null,
-          etapa_nome: r.cliente_pipeline?.pipeline_stages?.nome ?? null,
-          ultima_atualizacao: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
-          responsavel_nome: r.responsavel?.nome ?? null,
-          ativo: r.ativo,
-          portal_acesso_ativo: r.portal_acesso_ativo,
-        }),
-      );
+      let itens = (rows ?? []).map((r: any): ClienteListaItem => ({
+        id: r.id,
+        numero_cliente: r.numero_cliente,
+        nome: toTitleCase(r.nome),
+        documento: podePii ? r.documento : mascararDocumento(r.documento ?? ""),
+        documento_masc: !podePii,
+        telefone_celular: r.telefone_celular,
+        email: r.email,
+        etapa_codigo: r.cliente_pipeline?.pipeline_stages?.codigo ?? null,
+        etapa_nome: r.cliente_pipeline?.pipeline_stages?.nome ?? null,
+        ultima_atualizacao: r.cliente_pipeline?.ultima_atualizacao_em ?? null,
+        responsavel_nome: r.responsavel?.nome ?? null,
+        ativo: r.ativo,
+        portal_acesso_ativo: r.portal_acesso_ativo,
+        pode_excluir: podeExcluirTodos,
+      }));
 
       return { itens, total: count ?? itens.length, podePii };
     },
@@ -219,7 +267,10 @@ const clienteInputSchema = z.object({
   nome: z.string().min(2, "Informe o nome completo."),
   documento: z.string().min(11, "Documento inválido."),
   documento_secundario: z.string().optional().nullable(),
-  data_nascimento: z.string().min(1, "Informe a data."),
+  data_nascimento: z
+    .string()
+    .min(1, "Informe a data.")
+    .refine((d) => d.slice(0, 10) <= hojeISO(), "A data não pode estar no futuro."),
   estado_civil: z.enum(["solteiro", "casado", "uniao_estavel", "divorciado", "viuvo"]),
   regime_casamento: z
     .enum([
@@ -262,7 +313,14 @@ const clienteInputSchema = z.object({
   // Dados do cônjuge (exigidos pela API quando o estado civil é casado/união estável).
   conjuge_nome: z.string().optional().nullable(),
   conjuge_cpf: z.string().optional().nullable(),
-  conjuge_data_nascimento: z.string().optional().nullable(),
+  conjuge_data_nascimento: z
+    .string()
+    .optional()
+    .nullable()
+    .refine(
+      (d) => !d || d.slice(0, 10) <= hojeISO(),
+      "A data de nascimento do cônjuge não pode estar no futuro.",
+    ),
   conjuge_nome_mae: z.string().optional().nullable(),
   conjuge_sexo: z.string().optional().nullable(),
   conjuge_nacionalidade: z.string().optional().nullable(),
@@ -286,9 +344,65 @@ const clienteInputSchema = z.object({
 export type ClienteInput = z.infer<typeof clienteInputSchema>;
 
 /** Cria cliente no ecossistema do usuário; entra automaticamente em cadastro_basico via trigger. */
+/**
+ * Cliente já cadastrado com o documento, para o formulário avisar ANTES de salvar.
+ *
+ * `criarCliente` reaproveita o cadastro existente com o mesmo documento (é assim que
+ * o cadastro aberto pela proposta vincula quem já é cliente) — mas fazia isso em
+ * silêncio, e o operador sobrescrevia outro cliente achando que criava um novo.
+ * Nome e código só aparecem se o usuário já enxerga esse cliente (RLS); senão, só
+ * o fato de que existe.
+ */
+export type ClienteDoDocumento = {
+  id: string | null;
+  numero_cliente: string | null;
+  nome: string | null;
+  excluido: boolean;
+};
+
+export const clientePorDocumento = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ documento: z.string().min(11).max(14) }).parse(d))
+  .handler(async ({ data, context }): Promise<ClienteDoDocumento | null> => {
+    const { supabase, userId } = context;
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("correspondente_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!me?.correspondente_id) return null;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existente } = await supabaseAdmin
+      .from("clientes")
+      .select("id, deleted_at")
+      .eq("correspondente_id", me.correspondente_id)
+      .eq("documento", data.documento)
+      .maybeSingle();
+    if (!existente) return null;
+    const { data: visivel } = await supabase
+      .from("clientes")
+      .select("id, numero_cliente, nome")
+      .eq("id", existente.id)
+      .maybeSingle();
+    return {
+      id: visivel?.id ?? null,
+      numero_cliente: visivel?.numero_cliente ?? null,
+      nome: visivel?.nome ?? null,
+      excluido: Boolean(existente.deleted_at),
+    };
+  });
+
 export const criarCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => clienteInputSchema.parse(d))
+  .inputValidator((d: unknown) =>
+    clienteInputSchema
+      .extend({
+        // Só regrava um cadastro existente com o mesmo documento quando o operador
+        // confirmou na tela ("Atualizar o existente"). Sem isso, avisa e não grava.
+        atualizar_existente: z.boolean().optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }): Promise<{ id: string }> => {
     const { supabase, userId } = context;
     const { data: me } = await supabase
@@ -378,6 +492,13 @@ export const criarCliente = createServerFn({ method: "POST" })
       .eq("documento", data.documento)
       .maybeSingle();
     if (existente?.id) {
+      if (!data.atualizar_existente) {
+        throw new Error(
+          existente.deleted_at
+            ? "Este documento pertence a um cliente excluído. Nada foi gravado — confirme a restauração no cadastro."
+            : "Já existe um cliente com este documento. Nada foi gravado — abra o cadastro existente ou confirme a atualização.",
+        );
+      }
       // Só reaproveita se o solicitante tiver permissão de edição
       // (evita que um criador sobrescreva silenciosamente o cadastro de outro).
       const podeEditar = await podeAcao(supabase, userId, "crm.clientes", "edit");
@@ -461,12 +582,17 @@ export const atualizarCliente = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { id, endereco_em_seguida, ...campos } = data;
+    // A RLS de UPDATE em clientes só olha o escopo; a ação "Editar" é conferida aqui.
+    await exigirEdicaoCliente(supabase, userId);
+    // Sem "Ver dados sensíveis" a ficha chega com os documentos mascarados: o que voltar
+    // nesses campos não é dado de verdade e não pode sobrescrever o cadastro.
+    const podePii = await temPii(supabase, userId);
 
     // Bloqueia troca de documento para um valor já usado por outro cliente do
     // mesmo correspondente (mensagem amigável em vez de erro 23505 do Postgres).
     const { data: me } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     const correspondenteId = (me as string | null) ?? null;
-    if (correspondenteId && campos.documento) {
+    if (podePii && correspondenteId && campos.documento) {
       const { data: colisao } = await supabase
         .from("clientes")
         .select("id")
@@ -482,68 +608,75 @@ export const atualizarCliente = createServerFn({ method: "POST" })
     // Na edição vale o que o operador salvou — inclusive apagar um campo que
     // veio por padrão. Exceção: nacionalidade, naturalidade e RG nunca ficam
     // vazios (ver `aplicarPadroesIdentificacao`).
+    const alteracoes: Record<string, unknown> = aplicarPadroesIdentificacao({
+      tipo_pessoa: campos.tipo_pessoa,
+      nome: toTitleCase(campos.nome),
+      documento: campos.documento,
+      documento_secundario: campos.documento_secundario ?? null,
+      data_nascimento: campos.data_nascimento,
+      estado_civil: campos.estado_civil,
+      regime_casamento: campos.regime_casamento ?? null,
+      mae: toTitleCase(campos.mae) || null,
+      pai: toTitleCase(campos.pai) || null,
+      sexo: campos.sexo ?? null,
+      nacionalidade: toTitleCase(campos.nacionalidade) || null,
+      naturalidade: campos.naturalidade ?? null,
+      tipo_documento_identidade: campos.tipo_documento_identidade ?? null,
+      numero_documento: campos.numero_documento ?? null,
+      orgao_expedidor: campos.orgao_expedidor ?? null,
+      uf_expedicao: campos.uf_expedicao ?? null,
+      data_expedicao: campos.data_expedicao || null,
+      profissao: toTitleCase(campos.profissao) || null,
+      empresa: toTitleCase(campos.empresa) || null,
+      tipo_empresa: campos.tipo_empresa ?? null,
+      faturamento_empresa: campos.faturamento_empresa ?? null,
+      patrimonio_liquido_empresa: campos.patrimonio_liquido_empresa ?? null,
+      capital_social_empresa: campos.capital_social_empresa ?? null,
+      banco_conta: campos.banco_conta ?? null,
+      agencia: campos.agencia ?? null,
+      conta_corrente: campos.conta_corrente ?? null,
+      digito_conta: campos.digito_conta ?? null,
+      email: campos.email.toLowerCase(),
+      telefone_celular: campos.telefone_celular,
+      renda_total_declarada: campos.renda_total_declarada,
+      uf_interesse: campos.uf_interesse ?? null,
+      utiliza_fgts: campos.utiliza_fgts ?? false,
+      fg_autorizacao_dados: campos.fg_autorizacao_dados ?? false,
+      origem: campos.origem,
+      conjuge_nome: toTitleCase(campos.conjuge_nome) || null,
+      conjuge_cpf: campos.conjuge_cpf ?? null,
+      conjuge_data_nascimento: campos.conjuge_data_nascimento || null,
+      conjuge_nome_mae: toTitleCase(campos.conjuge_nome_mae) || null,
+      conjuge_sexo: campos.conjuge_sexo ?? null,
+      conjuge_nacionalidade: toTitleCase(campos.conjuge_nacionalidade) || null,
+      conjuge_tipo_documento_identidade: campos.conjuge_tipo_documento_identidade ?? null,
+      conjuge_numero_documento: campos.conjuge_numero_documento ?? null,
+      conjuge_orgao_expedidor: campos.conjuge_orgao_expedidor ?? null,
+      conjuge_uf_expedicao: campos.conjuge_uf_expedicao ?? null,
+      conjuge_data_expedicao: campos.conjuge_data_expedicao || null,
+      conjuge_profissao: toTitleCase(campos.conjuge_profissao) || null,
+      conjuge_empresa: toTitleCase(campos.conjuge_empresa) || null,
+      conjuge_renda: campos.conjuge_renda ?? null,
+      conjuge_email: campos.conjuge_email ?? null,
+      conjuge_celular: campos.conjuge_celular ?? null,
+      conjuge_banco_conta: campos.conjuge_banco_conta ?? null,
+      conjuge_agencia: campos.conjuge_agencia ?? null,
+      conjuge_conta_corrente: campos.conjuge_conta_corrente ?? null,
+      conjuge_digito_conta: campos.conjuge_digito_conta ?? null,
+    });
+    if (!podePii) for (const campo of CAMPOS_PII_CLIENTE) delete alteracoes[campo];
     const { error } = await supabase
       .from("clientes")
-      .update(
-        aplicarPadroesIdentificacao({
-          tipo_pessoa: campos.tipo_pessoa,
-          nome: toTitleCase(campos.nome),
-          documento: campos.documento,
-          documento_secundario: campos.documento_secundario ?? null,
-          data_nascimento: campos.data_nascimento,
-          estado_civil: campos.estado_civil,
-          regime_casamento: campos.regime_casamento ?? null,
-          mae: toTitleCase(campos.mae) || null,
-          pai: toTitleCase(campos.pai) || null,
-          sexo: campos.sexo ?? null,
-          nacionalidade: toTitleCase(campos.nacionalidade) || null,
-          naturalidade: campos.naturalidade ?? null,
-          tipo_documento_identidade: campos.tipo_documento_identidade ?? null,
-          numero_documento: campos.numero_documento ?? null,
-          orgao_expedidor: campos.orgao_expedidor ?? null,
-          uf_expedicao: campos.uf_expedicao ?? null,
-          data_expedicao: campos.data_expedicao || null,
-          profissao: toTitleCase(campos.profissao) || null,
-          empresa: toTitleCase(campos.empresa) || null,
-          tipo_empresa: campos.tipo_empresa ?? null,
-          faturamento_empresa: campos.faturamento_empresa ?? null,
-          patrimonio_liquido_empresa: campos.patrimonio_liquido_empresa ?? null,
-          capital_social_empresa: campos.capital_social_empresa ?? null,
-          banco_conta: campos.banco_conta ?? null,
-          agencia: campos.agencia ?? null,
-          conta_corrente: campos.conta_corrente ?? null,
-          digito_conta: campos.digito_conta ?? null,
-          email: campos.email.toLowerCase(),
-          telefone_celular: campos.telefone_celular,
-          renda_total_declarada: campos.renda_total_declarada,
-          uf_interesse: campos.uf_interesse ?? null,
-          utiliza_fgts: campos.utiliza_fgts ?? false,
-          fg_autorizacao_dados: campos.fg_autorizacao_dados ?? false,
-          origem: campos.origem,
-          conjuge_nome: toTitleCase(campos.conjuge_nome) || null,
-          conjuge_cpf: campos.conjuge_cpf ?? null,
-          conjuge_data_nascimento: campos.conjuge_data_nascimento || null,
-          conjuge_nome_mae: toTitleCase(campos.conjuge_nome_mae) || null,
-          conjuge_sexo: campos.conjuge_sexo ?? null,
-          conjuge_nacionalidade: toTitleCase(campos.conjuge_nacionalidade) || null,
-          conjuge_tipo_documento_identidade: campos.conjuge_tipo_documento_identidade ?? null,
-          conjuge_numero_documento: campos.conjuge_numero_documento ?? null,
-          conjuge_orgao_expedidor: campos.conjuge_orgao_expedidor ?? null,
-          conjuge_uf_expedicao: campos.conjuge_uf_expedicao ?? null,
-          conjuge_data_expedicao: campos.conjuge_data_expedicao || null,
-          conjuge_profissao: toTitleCase(campos.conjuge_profissao) || null,
-          conjuge_empresa: toTitleCase(campos.conjuge_empresa) || null,
-          conjuge_renda: campos.conjuge_renda ?? null,
-          conjuge_email: campos.conjuge_email ?? null,
-          conjuge_celular: campos.conjuge_celular ?? null,
-          conjuge_banco_conta: campos.conjuge_banco_conta ?? null,
-          conjuge_agencia: campos.conjuge_agencia ?? null,
-          conjuge_conta_corrente: campos.conjuge_conta_corrente ?? null,
-          conjuge_digito_conta: campos.conjuge_digito_conta ?? null,
-        }),
-      )
+      .update(alteracoes as any)
       .eq("id", id);
     if (error) throw error;
+    // A edição aparece no histórico da ficha (antes só ficava na auditoria).
+    await supabase.from("cliente_historico").insert({
+      cliente_id: id,
+      tipo: "sistema",
+      descricao: "Dados cadastrais atualizados.",
+      ator_id: userId,
+    });
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     const { registrarAuditoria } = await import("@/lib/admin/audit.server");
     await registrarAuditoria({
@@ -561,6 +694,8 @@ export const atualizarCliente = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+// CAMPOS_PII_CLIENTE (documentos mascarados sem `pii:view`) mora em lib/crm/pii.ts.
 
 export interface ClienteDetalhe {
   cliente: Database["public"]["Tables"]["clientes"]["Row"];
@@ -582,14 +717,18 @@ export const getCliente = createServerFn({ method: "GET" })
         "*, responsavel:profiles!clientes_responsavel_id_fkey(nome), cliente_pipeline(pipeline_stages(codigo))",
       )
       .eq("id", data.id)
+      // Excluído sai de todas as telas — inclusive aberto pela URL, que deixava editar.
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw error;
-    if (!cliente) throw new Error("Cliente não encontrado.");
+    if (!cliente) throw new Error("Cliente não encontrado ou excluído.");
     if (!podePii) {
+      // Além do CPF/CNPJ: o RG nasce igual ao CPF quando fica vazio (padrões do cadastro)
+      // e o CPF do cônjuge é dado sensível — antes os dois chegavam inteiros na ficha.
       const c = cliente as any;
-      if (c.documento) c.documento = mascararDocumento(c.documento);
-      if (c.documento_secundario)
-        c.documento_secundario = mascararDocumento(c.documento_secundario);
+      for (const campo of CAMPOS_PII_CLIENTE) {
+        if (c[campo]) c[campo] = mascararDocumento(String(c[campo]));
+      }
     }
     // Cadastros antigos (gravados em CAIXA ALTA) são exibidos já no padrão do sistema.
     const c2 = cliente as any;
@@ -782,7 +921,8 @@ export const salvarEndereco = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    await exigirEdicaoOuCriador(supabase, userId, data.cliente_id);
     const { data: existente } = await supabase
       .from("cliente_enderecos")
       .select("id")
@@ -891,12 +1031,15 @@ export const listarVendedores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    const podePii = await temPii(context.supabase, context.userId);
     const { data: rows, error } = await context.supabase
       .from("cliente_vendedores")
       .select("*")
       .eq("cliente_id", data.cliente_id)
       .order("created_at", { ascending: true });
     if (error) throw error;
+    // Sem "Ver dados sensíveis", CPF/CNPJ e RG do vendedor chegam mascarados (como na ficha).
+    if (!podePii) for (const r of rows ?? []) mascararCamposPii(r as any, CAMPOS_PII_VENDEDOR);
     return rows ?? [];
   });
 
@@ -904,7 +1047,9 @@ export const salvarVendedor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => vendedorSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true; id: string; pendentes: string[] }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    await exigirEdicaoCliente(supabase, userId);
+    const podePii = await temPii(supabase, userId);
     const norm = (v: string | null | undefined) =>
       v != null && String(v).trim() !== "" ? String(v).trim() : null;
     const { id, cliente_id, renda_total_declarada, ...rest } = data;
@@ -923,6 +1068,24 @@ export const salvarVendedor = createServerFn({ method: "POST" })
       if (["tipo_pessoa", "nome", "utiliza_fgts", "fg_autorizacao_dados"].includes(k)) continue;
       payload[k] = norm(v as string | null | undefined);
     }
+    // Quem não vê os documentos recebeu a máscara ("***.***.123-**"): na edição ela
+    // não pode sobrescrever o cadastro. Valor com asterisco também nunca é gravado.
+    // As pendências olham o formulário inteiro (com o documento que já está gravado).
+    const conferido = { ...payload };
+    for (const campo of CAMPOS_PII_VENDEDOR) {
+      const valor = payload[campo];
+      if ((id && !podePii) || (typeof valor === "string" && valor.includes("*"))) {
+        delete payload[campo];
+      }
+    }
+    if (id && !podePii) {
+      const { data: gravado } = await supabase
+        .from("cliente_vendedores")
+        .select("documento, documento_secundario, numero_documento")
+        .eq("id", id)
+        .maybeSingle();
+      Object.assign(conferido, gravado ?? {});
+    }
     if (id) {
       const { error } = await supabase
         .from("cliente_vendedores")
@@ -933,7 +1096,7 @@ export const salvarVendedor = createServerFn({ method: "POST" })
         const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
         await propagarClienteParaPropostas({ supabase, clienteId: cliente_id });
       }
-      return { ok: true, id, pendentes: await pendenciasVendedorSalvo(payload) };
+      return { ok: true, id, pendentes: await pendenciasVendedorSalvo(conferido) };
     }
     const { data: inserted, error } = await supabase
       .from("cliente_vendedores")
@@ -945,7 +1108,7 @@ export const salvarVendedor = createServerFn({ method: "POST" })
       const { propagarClienteParaPropostas } = await import("@/lib/propostas/espelho-crm.server");
       await propagarClienteParaPropostas({ supabase, clienteId: cliente_id });
     }
-    return { ok: true, id: inserted.id, pendentes: await pendenciasVendedorSalvo(payload) };
+    return { ok: true, id: inserted.id, pendentes: await pendenciasVendedorSalvo(conferido) };
   });
 
 /**
@@ -963,7 +1126,8 @@ export const removerVendedor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    await exigirEdicaoCliente(supabase, userId);
     const { data: vendedor } = await supabase
       .from("cliente_vendedores")
       .select("cliente_id, documento")
@@ -1029,6 +1193,7 @@ export const registrarInteracao = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    await exigirEdicaoCliente(supabase, userId);
     const { error } = await supabase.from("cliente_interacoes").insert({
       cliente_id: data.cliente_id,
       canal: data.canal,
@@ -1176,14 +1341,17 @@ export const listarDocumentos = createServerFn({ method: "GET" })
     }));
   });
 
-/** Aprova / reprova / solicita correção de um documento. */
+/**
+ * Aprova / reprova / solicita correção de um documento — ou só o guarda no CRM
+ * ("recebido", o ✓ da aba Documentos: quem aprova é o banco, na análise dele).
+ */
 export const revisarDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
-        status: z.enum(["aprovado", "reprovado", "pendente"]),
+        status: z.enum(["aprovado", "reprovado", "pendente", "recebido"]),
         observacao: z.string().trim().max(500).optional().nullable(),
       })
       .parse(d),
@@ -1309,11 +1477,7 @@ export const editarDocumento = createServerFn({ method: "POST" })
     if (data.expira_em !== undefined) {
       patch.expira_em = data.expira_em;
       // Se a validade passou e o doc não estava reprovado, marca como expirado.
-      if (
-        data.expira_em &&
-        data.expira_em < new Date().toISOString().slice(0, 10) &&
-        (antes as any)?.status !== "reprovado"
-      ) {
+      if (data.expira_em && data.expira_em < hojeISO() && (antes as any)?.status !== "reprovado") {
         patch.status = "expirado";
       }
     }
@@ -1403,6 +1567,7 @@ export const moverEtapa = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    await exigirEdicaoCliente(context.supabase, context.userId);
     const { error } = await context.supabase.rpc("cliente_pipeline_avancar_para", {
       _cliente_id: data.cliente_id,
       _codigo_destino: data.codigo_destino,
@@ -1415,7 +1580,7 @@ export const moverEtapa = createServerFn({ method: "POST" })
 
 /** Define a etapa da esteira para qualquer posição (avança ou volta). */
 export const definirEtapa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -1426,6 +1591,17 @@ export const definirEtapa = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    // Etapas da proposta (4 a 9) só se movem pela proposta — em qualquer tela.
+    const { data: atual } = await context.supabase
+      .from("cliente_pipeline")
+      .select("pipeline_stages(codigo)")
+      .eq("cliente_id", data.cliente_id)
+      .maybeSingle();
+    const origem = (atual as { pipeline_stages?: { codigo?: string } | null } | null)
+      ?.pipeline_stages?.codigo;
+    if (!etapaEhComercial(data.codigo_destino) || (origem && !etapaEhComercial(origem))) {
+      throw new Error(MSG_ETAPA_SINCRONIZADA);
+    }
     const { error } = await context.supabase.rpc("cliente_pipeline_definir", {
       _cliente_id: data.cliente_id,
       _codigo_destino: data.codigo_destino,
@@ -1508,60 +1684,75 @@ export async function recuarEsteiraSeOrfao(
 }
 
 /**
- * Remove, direto do painel, o vínculo de simulação/aprovação de um cliente que
- * aparece numa etapa avançada apontando para registros já excluídos. Apaga as
- * simulações e propostas restantes do cliente e recua a esteira para o cadastro.
+ * Tira da etapa de simulação/crédito, direto do painel, o cliente que ficou lá
+ * sem nenhuma simulação nem proposta ativa (vínculo órfão: o registro que o levou
+ * até a etapa foi excluído). Só recua a esteira para "Cadastro completo".
+ *
+ * Antes apagava, com o cliente administrativo, todas as propostas e simulações
+ * ativas do cliente, sem conferir permissão nem registrar auditoria. Excluir
+ * proposta ou simulação é feito na tela de cada uma (com a permissão de lá); aqui
+ * basta `crm.clientes` › Editar, porque só a etapa do cliente muda.
  */
 export const limparVinculoEsteira = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "edit"])])
   .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    // Usa o cliente administrativo para garantir a exclusão completa mesmo quando
-    // as simulações/propostas foram originadas por outro analista/escopo — o
-    // objetivo é limpar de vez o vínculo da esteira.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { userId } = context;
-    const agora = new Date().toISOString();
-    const motivo = "Vínculo removido pelo painel do CRM.";
-
-    // Defesa em profundidade: resolve o tenant (correspondente_id) do cliente
-    // pelo cliente autenticado (respeita RLS) e usa como filtro adicional no
-    // soft delete em cascata para impedir qualquer vazamento entre tenants.
-    const { data: cliTenant, error: eTenant } = await context.supabase
+    const { supabase, userId } = context;
+    const { data: cli, error: eCli } = await supabase
       .from("clientes")
-      .select("correspondente_id")
+      .select("correspondente_id, nome, cliente_pipeline(pipeline_stages(codigo, nome))")
       .eq("id", data.cliente_id)
+      .is("deleted_at", null)
       .maybeSingle();
-    if (eTenant) throw eTenant;
-    if (!cliTenant) throw new Error("Cliente não encontrado.");
-    const correspondenteId = (cliTenant as any).correspondente_id as string;
+    if (eCli) throw eCli;
+    if (!cli) throw new Error("Cliente não encontrado.");
+    const correspondenteId = (cli as any).correspondente_id as string;
+    const etapa = (cli as any).cliente_pipeline?.pipeline_stages ?? null;
 
-    // Soft delete das propostas ativas do cliente (preserva histórico e permite
-    // restauração na aba "Excluídas"). Não apagamos comissões/recebíveis: eles
-    // permanecem vinculados e voltam a valer caso a proposta seja restaurada.
-    const { error: eProp } = await supabaseAdmin
-      .from("propostas")
-      .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo })
-      .eq("cliente_id", data.cliente_id)
-      .eq("correspondente_id", correspondenteId)
-      .is("deleted_at", null);
-    if (eProp) throw eProp;
+    // Contagem pelo cliente administrativo (só leitura, filtrada pelo correspondente):
+    // uma proposta fora do escopo de quem clica também mantém o vínculo.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [props, sims] = await Promise.all([
+      supabaseAdmin
+        .from("propostas")
+        .select("id", { count: "exact", head: true })
+        .eq("cliente_id", data.cliente_id)
+        .eq("correspondente_id", correspondenteId)
+        .is("deleted_at", null),
+      supabaseAdmin
+        .from("simulacoes")
+        .select("id", { count: "exact", head: true })
+        .eq("cliente_id", data.cliente_id)
+        .eq("correspondente_id", correspondenteId)
+        .is("deleted_at", null),
+    ]);
+    if (props.error) throw props.error;
+    if (sims.error) throw sims.error;
+    if ((props.count ?? 0) > 0 || (sims.count ?? 0) > 0) {
+      throw new Error(
+        "Este cliente ainda tem proposta ou simulação ativa. Exclua-a na tela de propostas ou de simulações.",
+      );
+    }
 
-    // Soft delete das simulações ativas do cliente pelo mesmo motivo.
-    const { error: eSim } = await supabaseAdmin
-      .from("simulacoes")
-      .update({ deleted_at: agora, deleted_by: userId, deleted_motivo: motivo } as any)
-      .eq("cliente_id", data.cliente_id)
-      .eq("correspondente_id", correspondenteId)
-      .is("deleted_at", null);
-    if (eSim) throw eSim;
-
-    const { error } = await context.supabase.rpc("cliente_pipeline_definir", {
+    const { error } = await supabase.rpc("cliente_pipeline_definir", {
       _cliente_id: data.cliente_id,
       _codigo_destino: "cadastro_completo",
-      _obs: "Vínculo de simulação/aprovação removido manualmente pelo painel.",
+      _obs: "Vínculo de simulação/proposta removido pelo painel (nenhuma ativa).",
     });
     if (error) throw error;
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
+      acao: "cliente.limpar_vinculo_esteira",
+      entidade: "clientes",
+      entidadeId: data.cliente_id,
+      descricao: `retirou ${(cli as any).nome ?? "o cliente"} da etapa ${etapa?.nome ?? "atual"} (sem simulação nem proposta ativa)`,
+      payloadAnterior: { etapa: etapa?.codigo ?? null },
+      payloadNovo: { etapa: "cadastro_completo" },
+    });
     return { ok: true };
   });
 
@@ -1571,7 +1762,7 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
  * envolvidos ligados a essa operação e são exibidas também no portal do cliente.
  */
 export const definirDatasVistoria = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -1589,11 +1780,13 @@ export const definirDatasVistoria = createServerFn({ method: "POST" })
     if (data.vistoria_concluida_em !== undefined)
       patch.vistoria_concluida_em = data.vistoria_concluida_em;
     if (Object.keys(patch).length === 0) return { ok: true };
-    const { error } = await context.supabase
+    const { data: linhas, error } = await context.supabase
       .from("clientes")
       .update(patch)
-      .eq("id", data.cliente_id);
+      .eq("id", data.cliente_id)
+      .select("id");
     if (error) throw error;
+    if (!linhas?.length) throw new Error("Cliente não encontrado ou fora do seu acesso.");
     return { ok: true };
   });
 
@@ -1610,7 +1803,11 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     const safe = term.replace(/[,()%*]/g, " ").trim();
     if (!safe) return [];
     const dig = term.replace(/\D/g, "");
-    const ors = [`nome.ilike.%${safe}%`, `email.ilike.%${safe}%`];
+    const ors = [
+      `nome_busca.ilike.%${termoSemAcento(safe)}%`,
+      `email.ilike.%${safe}%`,
+      `numero_cliente.ilike.%${safe}%`,
+    ];
     if (dig) ors.push(`documento.ilike.%${dig}%`);
     const { data: rows, error } = await context.supabase
       .from("clientes")
@@ -1619,6 +1816,8 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
       )
       .or(ors.join(","))
       .eq("ativo", true)
+      // Cliente excluído não aparece nos seletores.
+      .is("deleted_at", null)
       .order("nome")
       .limit(10);
     if (error) throw error;
@@ -1644,18 +1843,10 @@ export const excluirCliente = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const cid = data.id;
 
-    // Permite excluir se: (a) tem permissão explícita no módulo, OU
-    // (b) é o próprio criador do cliente.
-    const permitido = await podeAcao(supabase, userId, "crm.clientes", "delete");
-    if (!permitido) {
-      const { data: dono } = await supabase
-        .from("clientes")
-        .select("criador_id")
-        .eq("id", cid)
-        .maybeSingle();
-      if (!dono || (dono as any).criador_id !== userId) {
-        throw new Error("Você só pode excluir clientes que você cadastrou.");
-      }
+    // Só quem tem "Excluir" em Clientes. Antes quem cadastrou também excluía, sem a
+    // permissão — a lista usa a mesma regra (`pode_excluir`).
+    if (!(await podeAcao(supabase, userId, "crm.clientes", "delete"))) {
+      throw new Error("Você não tem permissão para excluir clientes.");
     }
 
     // Defesa em profundidade: resolve o tenant do cliente pela sessão do
@@ -1727,12 +1918,18 @@ export const definirAcessoPortal = createServerFn({ method: "POST" })
     z.object({ cliente_id: z.string().uuid(), ativo: z.boolean() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true; ativo: boolean }> => {
-    // 1) Flag no cadastro
-    const { error } = await context.supabase
+    await exigirEdicaoCliente(context.supabase, context.userId);
+    // 1) Flag no cadastro. A RLS devolve 0 linhas para cliente fora do acesso (ou de
+    //    outra conta): sem esta conferência o acesso ao portal era criado/revogado
+    //    abaixo, pelo cliente administrativo, mesmo assim.
+    const { data: linhas, error } = await context.supabase
       .from("clientes")
       .update({ portal_acesso_ativo: data.ativo })
-      .eq("id", data.cliente_id);
+      .eq("id", data.cliente_id)
+      .is("deleted_at", null)
+      .select("id");
     if (error) throw error;
+    if (!linhas?.length) throw new Error("Cliente não encontrado ou fora do seu acesso.");
 
     // 2) Sincroniza cliente_portal_acessos (o login lê daqui).
     //    Sem esta linha o toggle "habilitado" fica só cosmético e o cliente
@@ -1906,6 +2103,8 @@ export const vincularParceiro = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    // O cadastro novo grava os vínculos logo depois de criar o cliente.
+    await exigirEdicaoOuCriador(supabase, userId, data.cliente_id);
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     if (!corr) throw new Error("Sem correspondente.");
     const { error } = await supabase.from("cliente_parceiros").insert({
@@ -1928,6 +2127,7 @@ export const desvincularParceiro = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
+    await exigirEdicaoCliente(supabase, userId);
     const { data: corr } = await supabase.rpc("correspondente_do_usuario", { _user_id: userId });
     if (!corr) throw new Error("Sem correspondente.");
     const { error } = await supabase
@@ -2151,7 +2351,7 @@ export interface ContratoEmitido {
  * o contrato passa a aparecer na pasta de contratos emitidos.
  */
 export const definirDataContratoEmitido = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -2161,11 +2361,13 @@ export const definirDataContratoEmitido = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase
+    const { data: linhas, error } = await context.supabase
       .from("clientes")
       .update({ contrato_emitido_em: data.contrato_emitido_em })
-      .eq("id", data.cliente_id);
+      .eq("id", data.cliente_id)
+      .select("id");
     if (error) throw error;
+    if (!linhas?.length) throw new Error("Cliente não encontrado ou fora do seu acesso.");
     return { ok: true };
   });
 
@@ -2174,7 +2376,7 @@ export const definirDataContratoEmitido = createServerFn({ method: "POST" })
  * do quadro da esteira e passa a viver apenas na pasta de contratos emitidos.
  */
 export const arquivarContrato = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["crm.clientes", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -2184,51 +2386,87 @@ export const arquivarContrato = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase
+    const { data: linhas, error } = await context.supabase
       .from("clientes")
       .update({ contrato_arquivado_em: data.arquivar ? new Date().toISOString() : null })
-      .eq("id", data.cliente_id);
+      .eq("id", data.cliente_id)
+      .select("id");
     if (error) throw error;
+    if (!linhas?.length) throw new Error("Cliente não encontrado ou fora do seu acesso.");
     return { ok: true };
   });
 
 /**
- * Arquivo dos contratos emitidos: clientes cuja data de emissão definida pelo
- * usuário já chegou (hoje ou anterior), mais recentes primeiro. Enriquecido
- * com dados da proposta mais recente do cliente (RLS aplica o escopo).
+ * Arquivo dos contratos emitidos: clientes com contrato arquivado, mais recentes
+ * primeiro, paginado no servidor (antes vinha a pasta inteira e a busca era feita
+ * na tela). Enriquecido com a proposta mais recente de cada cliente da página.
+ * RLS aplica o escopo.
  */
 export const listarContratosEmitidos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<ContratoEmitido[]> => {
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        q: z.string().max(120).optional(),
+        desde: z.string().date().optional(),
+        ate: z.string().date().optional(),
+        pagina: z.number().int().min(1).default(1),
+        porPagina: z.number().int().min(1).max(100).default(30),
+      })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<{ itens: ContratoEmitido[]; total: number }> => {
     const { supabase } = context;
-    const { data: clientes, error } = await supabase
+    const from = (data.pagina - 1) * data.porPagina;
+    let query = supabase
       .from("clientes")
-      .select("id, nome, numero_cliente, contrato_emitido_em, contrato_arquivado_em")
+      .select("id, nome, numero_cliente, contrato_emitido_em, contrato_arquivado_em", {
+        count: "exact",
+      })
       .is("deleted_at", null)
-      .not("contrato_arquivado_em", "is", null)
-      .order("contrato_arquivado_em", { ascending: false });
+      .not("contrato_arquivado_em", "is", null);
+    const termo = (data.q ?? "")
+      .trim()
+      .replace(/[,()%*]/g, " ")
+      .trim();
+    if (termo) {
+      query = query.or(
+        `nome_busca.ilike.%${termoSemAcento(termo)}%,numero_cliente.ilike.%${termo}%`,
+      );
+    }
+    if (data.desde) query = query.gte("contrato_emitido_em", data.desde);
+    if (data.ate) query = query.lte("contrato_emitido_em", data.ate);
+    const {
+      data: clientes,
+      count,
+      error,
+    } = await query
+      .order("contrato_arquivado_em", { ascending: false })
+      .order("id")
+      .range(from, from + data.porPagina - 1);
     if (error) throw error;
     const lista = clientes ?? [];
-    if (lista.length === 0) return [];
+    if (lista.length === 0) return { itens: [], total: count ?? 0 };
     const ids = lista.map((c) => c.id);
-    const { data: propostas } = await supabase
+    const { data: propostas, error: eProp } = await supabase
       .from("propostas")
       .select("id, cliente_id, numero_proposta, nome_banco, valor_financiamento, created_at")
       .is("deleted_at", null)
       .in("cliente_id", ids)
       .order("created_at", { ascending: false });
+    if (eProp) throw eProp;
     const propostasLista = propostas ?? [];
     type PropostaResumo = (typeof propostasLista)[number];
     const porCliente = new Map<string, PropostaResumo>();
     for (const p of propostasLista) {
       if (p.cliente_id && !porCliente.has(p.cliente_id)) porCliente.set(p.cliente_id, p);
     }
-    return lista.map((c) => {
+    const itens = lista.map((c) => {
       const p = porCliente.get(c.id);
       return {
         cliente_id: c.id,
         numero_cliente: c.numero_cliente ?? null,
-        nome_cliente: c.nome ?? null,
+        nome_cliente: toTitleCase(c.nome) || null,
         proposta_id: p?.id ?? null,
         numero_proposta: p?.numero_proposta ?? null,
         nome_banco: p?.nome_banco ?? null,
@@ -2237,6 +2475,7 @@ export const listarContratosEmitidos = createServerFn({ method: "GET" })
         contrato_arquivado_em: c.contrato_arquivado_em ?? null,
       };
     });
+    return { itens, total: count ?? itens.length };
   });
 
 // ============================================================================

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -27,6 +27,13 @@ import { ContasHeader } from "./contas/contas-header";
 import { ContasKpis } from "./contas/contas-kpis";
 import { ContasKpiDialog, type KpiDetalheFiltro } from "./contas/contas-kpi-dialog";
 import { ContasTabela, type ContaItem } from "./contas/contas-tabela";
+import { ROTULO_STATUS_CONTA } from "./contas/contas-filtros";
+import { atualizarFinanceiro } from "./atualizar-cache";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { usePermissoesConta } from "./contas/use-permissoes-conta";
+
+const POR_PAGINA = 50;
 
 /**
  * Página de contas a pagar/receber. Responsável apenas pela composição
@@ -34,21 +41,39 @@ import { ContasTabela, type ContaItem } from "./contas/contas-tabela";
  * de UI que orquestra tudo. Cada seção vive em seu próprio módulo em
  * `./contas/*`, mantendo o mesmo layout e comportamento anterior.
  */
-export function ContasPage({ tipo }: { tipo: ContaTipo }) {
+export function ContasPage({
+  tipo,
+  contaInicialId,
+}: {
+  tipo: ContaTipo;
+  /** Abre o detalhe desta conta ao entrar (link "Abrir" do fluxo de caixa). */
+  contaInicialId?: string;
+}) {
+  const pode = usePermissoesConta(tipo);
+  const [pagina, setPagina] = useState(1);
   const [status, setStatus] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [contraparte, setContraparte] = useState("");
   const [busca, setBusca] = useState("");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
+  // Período com o fim antes do início não filtra (zerava a lista sem explicar);
+  // a barra de filtros mostra o aviso.
+  const periodoInvertido = !!de && !!ate && de > ate;
+  const deQ = periodoInvertido ? "" : de;
+  const ateQ = periodoInvertido ? "" : ate;
 
   const [baixarConta, setBaixarConta] = useState<ContaItem | null>(null);
   const [estorno, setEstorno] = useState<{ id: string; acao: "estornar" | "cancelar" } | null>(
     null,
   );
-  const [detalheId, setDetalheId] = useState<string | null>(null);
+  const [detalheId, setDetalheId] = useState<string | null>(contaInicialId ?? null);
   const [editarId, setEditarId] = useState<string | null>(null);
-  const [excluirAlvo, setExcluirAlvo] = useState<{ id: string; numero: string } | null>(null);
+  const [excluirAlvo, setExcluirAlvo] = useState<{
+    id: string;
+    numero: string;
+    valorPago: number;
+  } | null>(null);
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [kpiDetalhe, setKpiDetalhe] = useState<KpiDetalheFiltro | null>(null);
   const [excluindoLote, setExcluindoLote] = useState(false);
@@ -58,9 +83,7 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
   const excluirLote = useServerFn(excluirContasEmLote);
 
   function recarregar() {
-    queryClient.invalidateQueries({ queryKey: ["fin-contas"] });
-    queryClient.invalidateQueries({ queryKey: ["fin-contas-resumo"] });
-    queryClient.invalidateQueries({ queryKey: ["fin-contas-kpi-detalhe"] });
+    void atualizarFinanceiro(queryClient);
   }
 
   async function handleExcluir() {
@@ -70,7 +93,7 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
       toast.success("Conta excluída.");
       recarregar();
     } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível excluir a conta.");
+      toast.error(mensagemDeErro(e, "Não foi possível excluir a conta."));
     } finally {
       setExcluirAlvo(null);
     }
@@ -88,15 +111,21 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
       setSelecionados([]);
       recarregar();
     } catch (e: any) {
-      toast.error(e?.message ?? "Não foi possível excluir as contas selecionadas.");
+      toast.error(mensagemDeErro(e, "Não foi possível excluir as contas selecionadas."));
     } finally {
       setExcluindoLote(false);
     }
   }
 
   const { data: cfg } = useQuery({ queryKey: ["fin-configs"], queryFn: () => listarConfigs() });
+  // Filtro novo volta para a primeira página (e solta a seleção da página anterior).
+  useEffect(() => {
+    setPagina(1);
+    setSelecionados([]);
+  }, [tipo, status, categoriaId, busca, deQ, ateQ]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["fin-contas", tipo, status, categoriaId, busca, de, ate],
+    queryKey: ["fin-contas", tipo, status, categoriaId, busca, deQ, ateQ, pagina],
     queryFn: () =>
       listarContas({
         data: {
@@ -104,16 +133,19 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
           status: status || undefined,
           categoria_id: categoriaId || undefined,
           contraparte: busca || undefined,
-          de: de || undefined,
-          ate: ate || undefined,
-          pagina: 1,
-          porPagina: 50,
+          de: deQ || undefined,
+          ate: ateQ || undefined,
+          pagina,
+          porPagina: POR_PAGINA,
         },
       }),
   });
+  // Antes a lista parava nas 50 primeiras contas, sem aviso nem como avançar.
+  const totalContas = data?.total ?? 0;
+  const totalPaginas = Math.max(1, Math.ceil(totalContas / POR_PAGINA));
 
   const { data: resumo } = useQuery({
-    queryKey: ["fin-contas-resumo", tipo, status, categoriaId, busca, de, ate],
+    queryKey: ["fin-contas-resumo", tipo, status, categoriaId, busca, deQ, ateQ],
     queryFn: () =>
       resumoContas({
         data: {
@@ -121,8 +153,8 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
           status: status || undefined,
           categoria_id: categoriaId || undefined,
           contraparte: busca || undefined,
-          de: de || undefined,
-          ate: ate || undefined,
+          de: deQ || undefined,
+          ate: ateQ || undefined,
         },
       }),
   });
@@ -136,7 +168,8 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
     onBaixar: (c: ContaItem) => setBaixarConta(c),
     onEstornar: (id: string) => setEstorno({ id, acao: "estornar" }),
     onCancelar: (id: string) => setEstorno({ id, acao: "cancelar" }),
-    onExcluir: (c: ContaItem) => setExcluirAlvo({ id: c.id, numero: c.numero ?? "" }),
+    onExcluir: (c: ContaItem) =>
+      setExcluirAlvo({ id: c.id, numero: c.numero ?? "", valorPago: Number(c.valor_pago ?? 0) }),
   };
 
   return (
@@ -149,9 +182,11 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
             itens={itens}
             resumo={resumo ?? null}
             meta={[
-              `Período: ${de ? formatData(de) : "início"} a ${ate ? formatData(ate) : "hoje"}`,
-              `Status: ${status || "todos"}`,
-              `Registros: ${itens.length}`,
+              `Período: ${deQ ? formatData(deQ) : "início"} a ${ateQ ? formatData(ateQ) : "hoje"}`,
+              `Status: ${status ? (ROTULO_STATUS_CONTA[status] ?? status) : "todos"}`,
+              totalPaginas > 1
+                ? `Registros: ${itens.length} (página ${pagina} de ${totalPaginas}, ${totalContas} no total)`
+                : `Registros: ${itens.length}`,
               `Emitido em ${new Date().toLocaleString("pt-BR")}`,
             ]}
           />
@@ -167,8 +202,8 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
             status: k.status,
             categoria_id: categoriaId || undefined,
             contraparte: busca || undefined,
-            de: de || undefined,
-            ate: ate || undefined,
+            de: deQ || undefined,
+            ate: ateQ || undefined,
           })
         }
       />
@@ -179,7 +214,11 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
         onStatus={setStatus}
         categoriaId={categoriaId}
         onCategoriaId={setCategoriaId}
-        categorias={(cfg?.categorias ?? []) as Array<{ id: string; nome: string }>}
+        // Só as categorias do lado da tela: despesa em "a pagar", receita em "a receber".
+        categorias={(
+          (cfg?.categorias ?? []) as Array<{ id: string; nome: string; tipo?: string }>
+        ).filter((c) => !c.tipo || c.tipo === (tipo === "pagar" ? "despesa" : "receita"))}
+        periodoInvertido={periodoInvertido}
         de={de}
         onDe={setDe}
         ate={ate}
@@ -198,26 +237,29 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
         }}
       />
 
-      {selecionados.length > 0 && (
+      {pode.editar && selecionados.length > 0 && (
         <div className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-card/95 px-4 py-3 shadow-lg backdrop-blur">
           <span className="text-sm font-medium">{selecionados.length} conta(s) selecionada(s)</span>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => setSelecionados([])}>
               <X className="mr-1.5 size-4" /> Limpar
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={excluindoLote}
-              onClick={() => void handleExcluirSelecionadas()}
-            >
-              {excluindoLote ? (
-                <Loader2 className="mr-1.5 size-4 animate-spin" />
-              ) : (
-                <Trash2 className="mr-1.5 size-4" />
-              )}
-              Excluir selecionadas
-            </Button>
+            <ConfirmDelete
+              titulo={`Excluir ${selecionados.length} conta(s)`}
+              descricao="As contas selecionadas e as baixas delas saem do financeiro e do fluxo de caixa."
+              confirmarLabel="Excluir selecionadas"
+              onConfirm={() => handleExcluirSelecionadas()}
+              trigger={
+                <Button variant="destructive" size="sm" disabled={excluindoLote}>
+                  {excluindoLote ? (
+                    <Loader2 className="mr-1.5 size-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-1.5 size-4" />
+                  )}
+                  Excluir selecionadas
+                </Button>
+              }
+            />
           </div>
         </div>
       )}
@@ -228,12 +270,48 @@ export function ContasPage({ tipo }: { tipo: ContaTipo }) {
         isLoading={isLoading}
         acoes={acoes}
         selecionados={selecionados}
-        onToggle={(id) =>
-          setSelecionados((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
+        // Seleção serve só para excluir em lote, que exige "editar".
+        onToggle={
+          pode.editar
+            ? (id) =>
+                setSelecionados((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
+            : undefined
         }
         onToggleTodos={(marcar) => setSelecionados(marcar ? itens.map((i) => i.id) : [])}
       />
       <ContasCardsMobile tipo={tipo} itens={itens} isLoading={isLoading} acoes={acoes} />
+
+      {totalPaginas > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+          <span>
+            Página {pagina} de {totalPaginas} · {totalContas} conta(s)
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagina <= 1 || isLoading}
+              onClick={() => {
+                setSelecionados([]);
+                setPagina((p) => Math.max(1, p - 1));
+              }}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagina >= totalPaginas || isLoading}
+              onClick={() => {
+                setSelecionados([]);
+                setPagina((p) => Math.min(totalPaginas, p + 1));
+              }}
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
+      )}
 
       <ContasKpiDialog
         tipo={tipo}

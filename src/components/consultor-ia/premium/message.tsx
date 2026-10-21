@@ -90,6 +90,7 @@ export function ConsultorMessage({
               className="size-7 rounded-md text-muted-foreground hover:text-primary"
               onClick={handleCopy}
               title="Copiar resposta"
+              aria-label="Copiar resposta"
             >
               <Copy className="size-3.5" />
             </Button>
@@ -103,6 +104,7 @@ export function ConsultorMessage({
               )}
               onClick={() => onAvaliar({ mensagem_id: message.id, avaliacao: "util" })}
               title="Útil"
+              aria-label="Marcar resposta como útil"
             >
               <ThumbsUp className="size-3.5" />
             </Button>
@@ -115,6 +117,7 @@ export function ConsultorMessage({
               )}
               onClick={() => onAvaliar({ mensagem_id: message.id, avaliacao: "nao_util" })}
               title="Não útil"
+              aria-label="Marcar resposta como não útil"
             >
               <ThumbsDown className="size-3.5" />
             </Button>

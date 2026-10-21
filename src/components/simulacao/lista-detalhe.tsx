@@ -196,6 +196,8 @@ export function AcoesSimulacao({
   numero,
   onEncaminhar,
   onDestravar,
+  semCotacao = false,
+  podeExcluir = true,
 }: {
   onVisualizar: () => void;
   onEditar: () => void;
@@ -207,24 +209,30 @@ export function AcoesSimulacao({
   onEncaminhar?: (id: string, canal: "email" | "whatsapp" | "pdf") => void;
   onDestravar?: () => void;
   numero: string;
+  /** Nenhum banco cotou (todos em erro/sem resposta): PDF e encaminhar ficam desligados. */
+  semCotacao?: boolean;
+  /** false esconde as opções de excluir (sem permissão). */
+  podeExcluir?: boolean;
 }) {
   return (
     <div className="flex items-center justify-end gap-1">
-      <ConfirmDelete
-        titulo="Excluir simulação"
-        descricao={`A simulação ${numero} será removida permanentemente.`}
-        onConfirm={onExcluir}
-        trigger={
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Excluir simulação"
-            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        }
-      />
+      {podeExcluir && (
+        <ConfirmDelete
+          titulo="Excluir simulação"
+          descricao={`A simulação ${numero} vai para "Excluídas", de onde pode ser restaurada.`}
+          onConfirm={onExcluir}
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Excluir simulação"
+              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          }
+        />
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" aria-label="Mais ações">
@@ -241,10 +249,10 @@ export function AcoesSimulacao({
           <DropdownMenuItem onSelect={onEditar}>
             <Pencil className="mr-2 h-4 w-4" /> Editar
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={onBaixarComparativo}>
+          <DropdownMenuItem onSelect={onBaixarComparativo} disabled={semCotacao}>
             <Download className="mr-2 h-4 w-4" /> Baixar PDF comparativo
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => onEncaminhar?.(numero, "pdf")}>
+          <DropdownMenuItem onSelect={() => onEncaminhar?.(numero, "pdf")} disabled={semCotacao}>
             <Download className="mr-2 h-4 w-4" /> Baixar PDF detalhado
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={onDuplicar}>
@@ -259,7 +267,7 @@ export function AcoesSimulacao({
           <DropdownMenuSeparator />
 
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
+            <DropdownMenuSubTrigger disabled={semCotacao}>
               <Send className="mr-2 h-4 w-4" /> Encaminhar para...
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
@@ -274,20 +282,24 @@ export function AcoesSimulacao({
             </DropdownMenuPortal>
           </DropdownMenuSub>
 
-          <DropdownMenuSeparator />
-          <ConfirmDelete
-            titulo="Excluir simulação"
-            descricao={`A simulação ${numero} será removida permanentemente.`}
-            onConfirm={onExcluir}
-            trigger={
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onSelect={(e) => e.preventDefault()}
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Excluir
-              </DropdownMenuItem>
-            }
-          />
+          {podeExcluir && (
+            <>
+              <DropdownMenuSeparator />
+              <ConfirmDelete
+                titulo="Excluir simulação"
+                descricao={`A simulação ${numero} vai para "Excluídas", de onde pode ser restaurada.`}
+                onConfirm={onExcluir}
+                trigger={
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                  </DropdownMenuItem>
+                }
+              />
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { previaAplicacao, aplicarAoCadastro } from "@/lib/crm/scan-ia.functions";
 import { CONFIANCA_LABEL } from "@/lib/crm/scan-ia-tipos";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 type Escolha = "manter" | "substituir";
 
@@ -96,7 +97,7 @@ export function AplicarCadastroDialog({
         navigate({ to: "/crm/clientes/$id", params: { id: clienteId } });
       }
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao aplicar."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao aplicar.")),
   });
 
   const nenhumMarcado =

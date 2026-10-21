@@ -46,6 +46,9 @@ export function DadosBasicosSection({
 }) {
   const cls = (k: string) => (erros?.has(k) ? CLASSE_ERRO : undefined);
   const clsBox = (k: string) => (erros?.has(k) ? "rounded-md ring-1 ring-destructive" : undefined);
+  // Mãe, pai, naturalidade, gênero e nacionalidade são de pessoa física: em PJ
+  // não aparecem (o banco não pede e o cadastro grava os padrões).
+  const ehPF = v.tipo_pessoa === "PF";
 
   // Naturalidade é armazenada como "Cidade/UF"; aqui separamos em dois campos.
   const [natCidade, natUf] = useMemo(() => {
@@ -83,7 +86,7 @@ export function DadosBasicosSection({
       <CardContent className="grid gap-4 sm:grid-cols-2">
         {/* 1. Tipo de pessoa */}
         <div className="space-y-1.5">
-          <Label>Tipo de pessoa</Label>
+          <Label htmlFor="cf-dados-basicos-tipo-de-pessoa">Tipo de pessoa</Label>
           <Select
             value={v.tipo_pessoa}
             onValueChange={(x) => {
@@ -95,7 +98,7 @@ export function DadosBasicosSection({
               }));
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger id="cf-dados-basicos-tipo-de-pessoa">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -107,8 +110,11 @@ export function DadosBasicosSection({
 
         {/* 2. Nome */}
         <div className="space-y-1.5">
-          <Label>{v.tipo_pessoa === "PF" ? "Nome completo *" : "Razão social *"}</Label>
+          <Label htmlFor="cf-dados-basicos-nome">
+            {v.tipo_pessoa === "PF" ? "Nome completo *" : "Razão social *"}
+          </Label>
           <Input
+            id="cf-dados-basicos-nome"
             value={v.nome}
             onChange={(e) => set("nome", e.target.value)}
             className={cls("nome")}
@@ -117,10 +123,15 @@ export function DadosBasicosSection({
 
         {/* 3. CPF */}
         <div className="space-y-1.5">
-          <Label>{v.tipo_pessoa === "PF" ? "CPF *" : "CNPJ *"}</Label>
+          <Label htmlFor="cf-dados-basicos-documento">
+            {v.tipo_pessoa === "PF" ? "CPF *" : "CNPJ *"}
+          </Label>
           <Input
+            id="cf-dados-basicos-documento"
             value={v.documento}
             onChange={(e) => set("documento", mascararDocumentoTipo(e.target.value, v.tipo_pessoa))}
+            // Mascarado = sem "Ver dados sensíveis": não dá para editar o que não se vê.
+            readOnly={v.documento.includes("*")}
             inputMode="numeric"
             placeholder={v.tipo_pessoa === "PF" ? "000.000.000-00" : "00.000.000/0000-00"}
             className={cls("documento")}
@@ -129,14 +140,15 @@ export function DadosBasicosSection({
 
         {/* 4. RG (nº do documento — não obrigatório) */}
         <div className="space-y-1.5">
-          <Label>RG</Label>
+          <Label htmlFor="cf-dados-basicos-rg">{ehPF ? "RG" : "Nº do documento de registro"}</Label>
           <Input
+            id="cf-dados-basicos-rg"
             value={v.documento_secundario}
             onChange={(e) => {
               set("documento_secundario", e.target.value);
               set("numero_documento", e.target.value);
             }}
-            placeholder="Se ficar vazio, usa o CPF"
+            placeholder={ehPF ? "Se ficar vazio, usa o CPF" : "Se ficar vazio, usa o CNPJ"}
           />
         </div>
 
@@ -187,87 +199,97 @@ export function DadosBasicosSection({
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Data de expedição</Label>
+          <Label htmlFor="cf-dados-basicos-data-de-expedicao">Data de expedição</Label>
           <Input
+            id="cf-dados-basicos-data-de-expedicao"
             type="date"
             value={v.data_expedicao}
             onChange={(e) => set("data_expedicao", e.target.value)}
           />
         </div>
 
-        {/* 7. Nome da mãe */}
-        <div className="space-y-1.5">
-          <Label>Nome da mãe {v.tipo_pessoa === "PF" && "*"}</Label>
-          <Input
-            value={v.mae}
-            onChange={(e) => set("mae", e.target.value)}
-            className={cls("mae")}
-          />
-        </div>
+        {ehPF && (
+          <>
+            {/* 7. Nome da mãe */}
+            <div className="space-y-1.5">
+              <Label htmlFor="cf-dados-basicos-nome-da-mae">Nome da mãe *</Label>
+              <Input
+                id="cf-dados-basicos-nome-da-mae"
+                value={v.mae}
+                onChange={(e) => set("mae", e.target.value)}
+                className={cls("mae")}
+              />
+            </div>
 
-        {/* 8. Nome do pai */}
-        <div className="space-y-1.5">
-          <Label>Nome do pai</Label>
-          <Input value={v.pai} onChange={(e) => set("pai", e.target.value)} />
-        </div>
+            {/* 8. Nome do pai */}
+            <div className="space-y-1.5">
+              <Label htmlFor="cf-dados-basicos-nome-do-pai">Nome do pai</Label>
+              <Input
+                id="cf-dados-basicos-nome-do-pai"
+                value={v.pai}
+                onChange={(e) => set("pai", e.target.value)}
+              />
+            </div>
 
-        {/* 9. Naturalidade — cidade e estado */}
-        <div className="space-y-1.5">
-          <Label>Naturalidade — estado</Label>
-          <Combobox
-            value={natUf}
-            onValueChange={setNatUf}
-            options={OPCOES_UF}
-            placeholder="UF"
-            searchPlaceholder="Buscar UF…"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Naturalidade — cidade</Label>
-          <Combobox
-            value={natCidade}
-            onValueChange={setNatCidade}
-            options={cidadesDoEstado}
-            placeholder={natUf ? "Selecione a cidade" : "Selecione o estado primeiro"}
-            searchPlaceholder="Buscar cidade…"
-          />
-        </div>
+            {/* 9. Naturalidade — cidade e estado */}
+            <div className="space-y-1.5">
+              <Label>Naturalidade — estado</Label>
+              <Combobox
+                value={natUf}
+                onValueChange={setNatUf}
+                options={OPCOES_UF}
+                placeholder="UF"
+                searchPlaceholder="Buscar UF…"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Naturalidade — cidade</Label>
+              <Combobox
+                value={natCidade}
+                onValueChange={setNatCidade}
+                options={cidadesDoEstado}
+                placeholder={natUf ? "Selecione a cidade" : "Selecione o estado primeiro"}
+                searchPlaceholder="Buscar cidade…"
+              />
+            </div>
 
-        {/* 10. Sexo */}
-        <div className="space-y-1.5">
-          <Label>Gênero</Label>
-          <Select value={v.sexo || undefined} onValueChange={(x) => set("sexo", x)}>
-            <SelectTrigger className={cls("sexo")}>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {OPCOES_SEXO.map((o) => (
-                <SelectItem key={o.v} value={o.v}>
-                  {o.l}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            {/* 10. Sexo */}
+            <div className="space-y-1.5">
+              <Label htmlFor="cf-dados-basicos-genero">Gênero</Label>
+              <Select value={v.sexo || undefined} onValueChange={(x) => set("sexo", x)}>
+                <SelectTrigger id="cf-dados-basicos-genero" className={cls("sexo")}>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPCOES_SEXO.map((o) => (
+                    <SelectItem key={o.v} value={o.v}>
+                      {o.l}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* 11. Nacionalidade */}
-        <div className="space-y-1.5">
-          <Label>Nacionalidade</Label>
-          <Combobox
-            value={v.nacionalidade}
-            onValueChange={(x) => set("nacionalidade", x)}
-            options={OPCOES_NACIONALIDADE}
-            placeholder="Selecione"
-            searchPlaceholder="Buscar nacionalidade…"
-          />
-        </div>
+            {/* 11. Nacionalidade */}
+            <div className="space-y-1.5">
+              <Label>Nacionalidade</Label>
+              <Combobox
+                value={v.nacionalidade}
+                onValueChange={(x) => set("nacionalidade", x)}
+                options={OPCOES_NACIONALIDADE}
+                placeholder="Selecione"
+                searchPlaceholder="Buscar nacionalidade…"
+              />
+            </div>
+          </>
+        )}
 
         {/* 12. Estado civil */}
         {v.tipo_pessoa === "PF" && (
           <div className="space-y-1.5">
-            <Label>Estado civil *</Label>
+            <Label htmlFor="cf-dados-basicos-estado-civil">Estado civil *</Label>
             <Select value={v.estado_civil} onValueChange={(x) => set("estado_civil", x)}>
-              <SelectTrigger className={cls("estado_civil")}>
+              <SelectTrigger id="cf-dados-basicos-estado-civil" className={cls("estado_civil")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -283,7 +305,7 @@ export function DadosBasicosSection({
         {v.tipo_pessoa === "PF" &&
           (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") && (
             <div className="space-y-1.5">
-              <Label>
+              <Label htmlFor="cf-dados-basicos-regime-de-casamento">
                 Regime de casamento{" "}
                 {v.tipo_pessoa === "PF" &&
                   (v.estado_civil === "casado" || v.estado_civil === "uniao_estavel") &&
@@ -291,7 +313,10 @@ export function DadosBasicosSection({
                   "*"}
               </Label>
               <Select value={v.regime_casamento} onValueChange={(x) => set("regime_casamento", x)}>
-                <SelectTrigger className={cls("regime_casamento")}>
+                <SelectTrigger
+                  id="cf-dados-basicos-regime-de-casamento"
+                  className={cls("regime_casamento")}
+                >
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
@@ -307,8 +332,9 @@ export function DadosBasicosSection({
 
         {/* 13. Contato */}
         <div className="space-y-1.5">
-          <Label>E-mail *</Label>
+          <Label htmlFor="cf-dados-basicos-e-mail">E-mail *</Label>
           <Input
+            id="cf-dados-basicos-e-mail"
             type="email"
             value={v.email}
             onChange={(e) => set("email", e.target.value)}
@@ -316,8 +342,9 @@ export function DadosBasicosSection({
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Celular *</Label>
+          <Label htmlFor="cf-dados-basicos-celular">Celular *</Label>
           <Input
+            id="cf-dados-basicos-celular"
             value={v.telefone_celular}
             onChange={(e) => set("telefone_celular", mascararTelefone(e.target.value))}
             inputMode="numeric"
@@ -328,12 +355,15 @@ export function DadosBasicosSection({
 
         {/* 14. Renda + UF de interesse */}
         <div className="space-y-1.5">
-          <Label>Renda total declarada (R$) *</Label>
+          <Label htmlFor="cf-dados-basicos-renda-total-declarada-r">
+            {ehPF ? "Renda total declarada (R$) *" : "Renda mensal declarada da empresa (R$) *"}
+          </Label>
           <div className="relative">
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
               R$
             </span>
             <Input
+              id="cf-dados-basicos-renda-total-declarada-r"
               inputMode="numeric"
               className={cn("pl-9", cls("renda_total_declarada"))}
               value={v.renda_total_declarada}

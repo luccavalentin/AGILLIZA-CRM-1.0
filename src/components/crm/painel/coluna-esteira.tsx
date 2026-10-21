@@ -12,6 +12,8 @@ interface Props {
   arrastando: boolean;
   /** Coluna sincronizada pela proposta — sem arrasto/drop. */
   readOnly?: boolean;
+  /** Sem `crm.clientes` › Editar não há "Adicionar cliente". */
+  podeEditar?: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
@@ -32,6 +34,7 @@ export function ColunaEsteira({
   ordem,
   ehAlvoArrasto,
   readOnly = false,
+  podeEditar = false,
   onDragOver,
   onDragLeave,
   onDrop,
@@ -135,7 +138,7 @@ export function ColunaEsteira({
         </div>
       </div>
 
-      {!readOnly && (
+      {!readOnly && podeEditar && (
         <button
           type="button"
           onClick={onAdicionarCliente}

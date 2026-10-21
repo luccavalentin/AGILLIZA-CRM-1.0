@@ -24,6 +24,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listarEquipeAtendimento, transferirAtendimento } from "@/lib/crm/clientes.functions";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+
+/** Papel do usuário em português (vinha o código cru: "gestor", "correspondente"…). */
+const ROTULO_PAPEL: Record<string, string> = {
+  admin: "Administrador",
+  correspondente: "Correspondente",
+  gestor: "Gestor",
+  comercial: "Comercial",
+  analista: "Analista",
+  financeiro: "Financeiro",
+  parceiro: "Parceiro",
+};
 
 export function TransferirAtendimentoDialog({
   clienteId,
@@ -72,7 +84,7 @@ export function TransferirAtendimentoDialog({
       setNovoId("");
       setObs("");
     } catch (err: any) {
-      toast.error(err?.message ?? "Não foi possível transferir.");
+      toast.error(mensagemDeErro(err, "Não foi possível transferir."));
     } finally {
       setEnviando(false);
     }
@@ -90,8 +102,8 @@ export function TransferirAtendimentoDialog({
         <DialogHeader>
           <DialogTitle>Transferir atendimento</DialogTitle>
           <DialogDescription>
-            Escolha para qual pessoa da equipe (correspondente, gestor, analista, comercial ou
-            parceiro) este cliente será atribuído.
+            Escolha a pessoa da equipe que passa a responder por este cliente. Só aparecem usuários
+            ativos com acesso ao CRM.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -105,7 +117,9 @@ export function TransferirAtendimentoDialog({
                 {opcoes.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.nome ?? p.email ?? "Sem nome"}
-                    {p.papel_principal ? ` · ${p.papel_principal}` : ""}
+                    {p.papel_principal
+                      ? ` · ${ROTULO_PAPEL[p.papel_principal] ?? p.papel_principal}`
+                      : ""}
                   </SelectItem>
                 ))}
                 {opcoes.length === 0 && !isLoading ? (

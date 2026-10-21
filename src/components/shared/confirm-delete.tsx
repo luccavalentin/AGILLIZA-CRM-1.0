@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +18,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface ConfirmDeleteProps {
-  /** Executa a exclusão. Deve lançar erro em caso de falha. */
+  /**
+   * Executa a exclusão. Deve lançar erro em caso de falha: o diálogo continua
+   * aberto e a mensagem do erro aparece (não trate o erro aqui dentro, senão o
+   * diálogo fecha como se tivesse dado certo).
+   */
   onConfirm: () => Promise<void>;
   /** Título do diálogo. */
   titulo?: string;
@@ -47,6 +53,8 @@ export function ConfirmDelete({
     try {
       await onConfirm();
       setOpen(false);
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível concluir. Tente de novo."));
     } finally {
       setLoading(false);
     }

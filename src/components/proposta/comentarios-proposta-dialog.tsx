@@ -1,3 +1,4 @@
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -145,7 +146,7 @@ export function ComentariosPropostaDialog({
                       <span className="font-medium text-foreground">
                         {r.nome_vaga ?? "Documento"}
                       </span>
-                      {r.mensagem && <span className="text-muted-foreground"> — {r.mensagem}</span>}
+                      {r.mensagem && <span className="text-muted-foreground"> — {semMarcaIntegracao(r.mensagem)}</span>}
                     </li>
                   ))}
                 </ul>
@@ -184,7 +185,7 @@ export function ComentariosPropostaDialog({
                 >
                   {[
                     { valor: false, rotulo: "Interno" },
-                    { valor: true, rotulo: "Enviar à HomeFin" },
+                    { valor: true, rotulo: "Enviar à integração" },
                   ].map((o) => (
                     <button
                       key={o.rotulo}

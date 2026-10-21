@@ -38,6 +38,7 @@ import {
   classeCategoria,
 } from "@/lib/links/categorias-icones";
 import { cn } from "@/lib/utils";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 
 interface Rascunho {
   nome: string;
@@ -76,7 +77,7 @@ export function CategoriasLinksDialog({ onClose }: { onClose: () => void }) {
       setNovo(null);
       invalidar();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao criar categoria."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao criar categoria.")),
   });
 
   const atualizar = useMutation({
@@ -86,7 +87,7 @@ export function CategoriasLinksDialog({ onClose }: { onClose: () => void }) {
       setEditandoId(null);
       invalidar();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao atualizar categoria."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao atualizar categoria.")),
   });
 
   const excluir = useMutation({
@@ -96,7 +97,7 @@ export function CategoriasLinksDialog({ onClose }: { onClose: () => void }) {
       setExcluindo(null);
       invalidar();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir categoria."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir categoria.")),
   });
 
   function Editor({ valor, onChange }: { valor: Rascunho; onChange: (r: Rascunho) => void }) {
@@ -119,6 +120,8 @@ export function CategoriasLinksDialog({ onClose }: { onClose: () => void }) {
                 key={v}
                 type="button"
                 title={label}
+                aria-label={`Ícone ${label}`}
+                aria-pressed={valor.icone === v}
                 onClick={() => onChange({ ...valor, icone: v })}
                 className={cn(
                   "grid size-9 place-items-center rounded-lg ring-1 transition-colors",
@@ -140,6 +143,8 @@ export function CategoriasLinksDialog({ onClose }: { onClose: () => void }) {
                 key={c.valor}
                 type="button"
                 title={c.label}
+                aria-label={`Cor ${c.label}`}
+                aria-pressed={valor.cor === c.valor}
                 onClick={() => onChange({ ...valor, cor: c.valor })}
                 className={cn(
                   "size-7 rounded-full ring-2 ring-offset-2 ring-offset-background transition-transform",

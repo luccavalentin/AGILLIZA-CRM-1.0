@@ -6,7 +6,15 @@
  * executivo, seções com tabelas, exemplos práticos, dados para gráfico, FAQ,
  * glossário, checklist e fontes de pesquisa.
  */
-import { selecionarTrechos, mensagemErroIa, type TrechoBase } from "./consultor-ia.server";
+import {
+  buscarTrechosBase,
+  configIaDaConta,
+  mensagemErroIa,
+  type ConfigIa,
+  type TrechoBase,
+} from "./consultor-ia.server";
+
+export type { ConfigIa } from "./consultor-ia.server";
 
 export interface EbookTabela {
   titulo: string;
@@ -53,54 +61,15 @@ export interface EbookFaq {
   fontes_base: { id: string; titulo: string; categoria: string }[];
 }
 
-export interface ConfigIa {
-  provedor: "gemini" | "openai";
-  modelo: string;
-  apiKey: string;
-  baseUrl: string;
-}
-
-/** Resolve provedor/modelo/chave da IA para o correspondente do usuário. */
+/** Resolve provedor/modelo/chave da IA para a conta do usuário. */
 export async function resolverConfigIa(supabase: any, userId: string): Promise<ConfigIa> {
-  const { data: perfil } = await supabase
+  const { data: perfil, error } = await supabase
     .from("profiles")
     .select("correspondente_id")
     .eq("id", userId)
     .maybeSingle();
-  const corr = (perfil?.correspondente_id as string | null) ?? null;
-
-  const { data: cfgRow } = await supabase
-    .from("admin_api_integrations")
-    .select("api_key, base_url, config, ativo")
-    .eq("correspondente_id", corr)
-    .eq("chave", "ia")
-    .maybeSingle();
-
-  if (cfgRow && cfgRow.ativo === false) {
-    throw new Error("Integração de IA desativada. Ative-a em Admin › APIs de IA.");
-  }
-  const cfg = (cfgRow?.config ?? {}) as Record<string, unknown>;
-  const provedor: "gemini" | "openai" = cfg.provedor === "openai" ? "openai" : "gemini";
-  const modelo =
-    typeof cfg.modelo === "string" && cfg.modelo.trim()
-      ? cfg.modelo.trim()
-      : provedor === "openai"
-        ? "gpt-4o"
-        : "gemini-2.0-flash-exp";
-  const apiKeySalva = typeof cfgRow?.api_key === "string" ? cfgRow.api_key.trim() : "";
-  const apiKey =
-    apiKeySalva ||
-    (provedor === "openai" ? process.env.OPENAI_API_KEY : process.env.GEMINI_API_KEY) ||
-    "";
-  if (!apiKey) throw new Error("Chave da API não cadastrada. Configure-a em Admin › APIs de IA.");
-  const baseUrl = (
-    (typeof cfgRow?.base_url === "string" && cfgRow.base_url) ||
-    (provedor === "openai"
-      ? "https://api.openai.com/v1"
-      : "https://generativelanguage.googleapis.com")
-  ).replace(/\/+$/, "");
-
-  return { provedor, modelo, apiKey, baseUrl };
+  if (error) throw new Error("Não foi possível carregar seu perfil.");
+  return configIaDaConta((perfil?.correspondente_id as string | null) ?? null, "gemini-2.0-flash-exp");
 }
 
 const ESQUEMA = `{
@@ -375,15 +344,10 @@ export async function gerarEbookFaq(
   pergunta: string,
   respostaChat: string | null,
 ): Promise<EbookFaq> {
-  const [cfg, baseRes] = await Promise.all([
+  const [cfg, trechos] = await Promise.all([
     resolverConfigIa(supabase, userId),
-    supabase
-      .from("consultor_ia_base")
-      .select("id, categoria, titulo, conteudo, tags")
-      .eq("ativo", true)
-      .limit(500),
+    buscarTrechosBase(supabase, pergunta, 5),
   ]);
-  const trechos = selecionarTrechos((baseRes.data ?? []) as TrechoBase[], pergunta, 5);
   const bruto = await gerarJson(cfg, montarPromptEbook(pergunta, respostaChat, trechos));
   return normalizarEbook(bruto, pergunta, trechos);
 }

@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import {
   resolverIntervalo,
+  limitarEscopoAoPermitido,
   inicioDiaBR,
   fimDiaBR,
   dataBR,
@@ -278,11 +280,13 @@ function topN(map: Map<string, number>, n: number): ChartSerie[] {
 }
 
 export const runReport = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  // A rota exige "relatorios.geral"; a função também, senão bastava chamá-la direto.
+  .middleware([exigirPermissao(["relatorios.geral", "view"])])
   .inputValidator((d: z.infer<typeof filtrosSchema>) => filtrosSchema.parse(d))
   .handler(async ({ data, context }): Promise<ReportResult> => {
     const { supabase, userId } = context;
-    const { codigo, filtros } = data;
+    const { codigo } = data;
+    const filtros = await limitarEscopoAoPermitido(supabase, userId, data.filtros);
     const { de, ate } = resolverIntervalo(filtros);
     const deIni = inicioDiaBR(de);
     const ateFim = fimDiaBR(ate);
@@ -385,7 +389,7 @@ export const runReport = createServerFn({ method: "POST" })
     }
 
     async function comparativoMensalPropostas(): Promise<ComparativoMensal | undefined> {
-      const hojeStr = new Date().toLocaleDateString("en-CA");
+      const hojeStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
       const [hy, hm] = hojeStr.split("-").map(Number);
       const inicio = new Date(hy, hm - 1 - 5, 1); // 1º dia, 5 meses atrás
       const isoDia = (d: Date) =>
@@ -699,6 +703,7 @@ export const runReport = createServerFn({ method: "POST" })
           {
             label: "Volume simulado",
             valor: brl(volumeSimulado),
+            hint: "Só simulações com retorno do banco",
             tone: "success",
             filters: [
               { key: "status", values: ["Simulada", "Parcialmente simulada", "Promovida"] },
@@ -895,12 +900,9 @@ export const runReport = createServerFn({ method: "POST" })
         // A tabela "contas" não existe no banco (conferido em 19/09/2026): a
         // consulta falhava e derrubava o relatório comercial inteiro dentro do
         // Promise.all. Sem a tabela, repasse é zero — o resto do relatório abre.
-        fetchAll("contas", "valor_previsto,usuario_id", "data_vencimento", "usuario_id").catch(
-          (e: unknown) => {
-            console.error("[relComerciais] repasses indisponíveis:", e);
-            return [] as any[];
-          },
-        ),
+        // A consulta saiu de vez (21/10/2026): ela falhava a cada execução e só
+        // enchia o log do servidor. Pendente definir a fonte real do repasse.
+        Promise.resolve([] as Array<{ valor_previsto: number | null; usuario_id: string | null }>),
         listarOpcoesOperacionais(),
       ]);
       const somenteSimulacoes = statusEhFiltroSimulacao(filtros.status);
@@ -1717,7 +1719,12 @@ export const runReport = createServerFn({ method: "POST" })
         ];
       };
 
-      const totalSim = simulacoesFiltradas.reduce((s, x) => s + valorSim(x), 0);
+      // Mesma régua do painel e do relatório de simulações: volume simulado é o que
+      // teve retorno do banco. Simulação com erro não vira volume (era R$ 400 mil
+      // aqui e R$ 0 no painel para a mesma simulação).
+      const totalSim = simulacoesFiltradas
+        .filter((x) => ["simulada", "parcialmente_simulada", "promovida"].includes(x.status))
+        .reduce((s, x) => s + valorSim(x), 0);
       const totalContr = contratos.reduce((s, p) => s + valorProc(p), 0);
       const bancoGeralMap = new Map<string, number>();
       simulacoesFiltradas.forEach((s) =>
@@ -1918,6 +1925,7 @@ export const runReport = createServerFn({ method: "POST" })
           {
             label: "Volume simulado",
             valor: brl(totalSim),
+            hint: "Só simulações com retorno do banco",
             tone: "brand",
             filters: [{ key: "grupo", values: ["simulacao"] }],
           },
@@ -2727,28 +2735,47 @@ export const runReport = createServerFn({ method: "POST" })
 
     async function relFinanceiro(): Promise<ReportResult> {
       const filtrarStatus = (q: any) => (filtros.status ? q.eq("status", filtros.status) : q);
+      // Mesmas regras do Painel financeiro e das telas de contas:
+      //  - o período é o do VENCIMENTO (antes era `created_at`, e entravam contas
+      //    que vencem meses depois, ao contrário do painel);
+      //  - recebível também usa `valor_pago` — a coluna `valor_recebido` não
+      //    existe, a consulta falhava e "A receber" saía sempre R$ 0,00;
+      //  - cancelada e estornada não são dívida nem crédito: ficam fora dos
+      //    totais (a não ser que o filtro de status peça por elas).
       // Paginadas (o `.limit(5000)` parava em 1.000 linhas); ordem estável por id.
-      const [pag, rec, repasses, comUsr] = await Promise.all([
+      const foraDosTotais = (r: any) =>
+        !filtros.status && (r.status === "cancelada" || r.status === "estornada" || r.estornada);
+      const [pagTodas, recTodas, repasses, comUsr] = await Promise.all([
         todasPaginas(() =>
           filtrarStatus(
             supabase
               .from("financial_payables")
-              .select("valor,valor_pago,status,vencimento,descricao,created_at,data_pagamento")
-              .gte("created_at", deIni)
-              .lte("created_at", ateFim)
+              .select(
+                "valor,valor_pago,status,estornada,vencimento,descricao,created_at,data_pagamento",
+              )
+              .gte("vencimento", de)
+              .lte("vencimento", ate)
               .order("id"),
           ),
-        ).then((r) => r.data ?? []),
+        ).then((r) => {
+          if (r.error) throw new Error(`Falha ao carregar contas a pagar: ${r.error.message}`);
+          return r.data ?? [];
+        }),
         todasPaginas(() =>
           filtrarStatus(
             supabase
               .from("financial_receivables")
-              .select("valor,valor_recebido,status,vencimento,descricao,created_at,data_pagamento")
-              .gte("created_at", deIni)
-              .lte("created_at", ateFim)
+              .select(
+                "valor,valor_pago,status,estornada,vencimento,descricao,created_at,data_pagamento",
+              )
+              .gte("vencimento", de)
+              .lte("vencimento", ate)
               .order("id"),
           ),
-        ).then((r) => r.data ?? []),
+        ).then((r) => {
+          if (r.error) throw new Error(`Falha ao carregar contas a receber: ${r.error.message}`);
+          return r.data ?? [];
+        }),
         todasPaginas(() =>
           (supabase as any)
             .from("comissoes")
@@ -2770,17 +2797,27 @@ export const runReport = createServerFn({ method: "POST" })
             .order("id"),
         ).then((r) => r.data ?? []),
       ]);
-      const hoje = new Date();
-      const hojeStr = hoje.toISOString().slice(0, 10);
+      // Data de Brasília: em UTC, depois das 21h já era amanhã.
+      const hojeStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      const pag = pagTodas.filter((r: any) => !foraDosTotais(r));
+      const rec = recTodas.filter((r: any) => !foraDosTotais(r));
       const abertas = (r: any) => ["aberta", "parcial"].includes(r.status);
-      const somaValor = (arr: any[]) => arr.reduce((s: number, r: any) => s + (r.valor ?? 0), 0);
+      // Em aberto conta só o que falta: a baixa parcial já é dinheiro realizado.
+      const restante = (r: any) =>
+        Math.max((Number(r.valor) || 0) - (Number(r.valor_pago) || 0), 0);
+      const somaValor = (arr: any[]) => arr.reduce((s: number, r: any) => s + restante(r), 0);
+      // Realizado: quitada sem valor_pago gravado vale o valor cheio (igual ao resumo de contas).
+      const realizado = (r: any) =>
+        r.status === "paga"
+          ? Number(r.valor_pago) || Number(r.valor) || 0
+          : Number(r.valor_pago) || 0;
 
       const recAbertas = rec.filter(abertas);
       const pagAbertas = pag.filter(abertas);
       const aReceber = somaValor(recAbertas);
       const aPagar = somaValor(pagAbertas);
-      const pago = pag.reduce((s: number, r: any) => s + (r.valor_pago ?? 0), 0);
-      const recebido = rec.reduce((s: number, r: any) => s + (r.valor_recebido ?? 0), 0);
+      const pago = pag.reduce((s: number, r: any) => s + realizado(r), 0);
+      const recebido = rec.reduce((s: number, r: any) => s + realizado(r), 0);
       const vencidas = [...pag, ...rec].filter(
         (r: any) => abertas(r) && r.vencimento && r.vencimento < hojeStr,
       );
@@ -2811,8 +2848,10 @@ export const runReport = createServerFn({ method: "POST" })
         { label: "31–60 dias", min: 31, max: 60 },
         { label: "60+ dias", min: 61, max: Infinity },
       ];
+      // Dias corridos entre duas datas de calendário (as duas em UTC, sem fuso no meio).
+      const hojeUTC = Date.parse(`${hojeStr}T00:00:00Z`);
       const diasAtraso = (v: string) =>
-        Math.floor((hoje.getTime() - new Date(v + "T00:00:00").getTime()) / 86400000);
+        Math.floor((hojeUTC - Date.parse(`${String(v).slice(0, 10)}T00:00:00Z`)) / 86400000);
       const aging = faixas.map((f) => ({
         label: f.label,
         valor: vencidas
@@ -3248,7 +3287,8 @@ export const runReport = createServerFn({ method: "POST" })
         // não pela data de criação do lançamento.
         const m = (x.data_pagamento ?? x.created_at ?? "").slice(0, 7);
         const c = map.get(m) ?? { r: 0, p: 0 };
-        c.r += x.valor_recebido ?? 0;
+        // Recebível guarda o realizado em `valor_pago` (não há `valor_recebido`).
+        c.r += Number(x.valor_pago) || 0;
         map.set(m, c);
       });
       pag.forEach((x) => {
@@ -3296,10 +3336,17 @@ export const runReport = createServerFn({ method: "POST" })
 
 /** Registra uma exportação (PDF/XLSX) no histórico e auditoria. */
 export const registrarExport = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["relatorios.geral", "export"])])
   .inputValidator(
     (d: { codigo: string; formato: string; registros: number; filtros: Record<string, unknown> }) =>
-      d,
+      z
+        .object({
+          codigo: z.string().min(1).max(80),
+          formato: z.enum(["pdf", "xlsx", "csv", "imprimir"]),
+          registros: z.number().int().min(0),
+          filtros: z.record(z.string(), z.any()).default({}),
+        })
+        .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -3330,12 +3377,13 @@ export const listarExportacoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("report_exports")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(200);
+    if (error) throw new Error(error.message);
     return (data ?? []) as any[];
   });
 
@@ -3367,20 +3415,24 @@ const REPORTS_DISPONIVEIS = [
 ] as const;
 
 /** Lista relatórios base disponíveis para o construtor de personalizados. */
-export const listarReportsBase = createServerFn({ method: "GET" }).handler(async () => {
-  return REPORTS_DISPONIVEIS as unknown as string[];
-});
+export const listarReportsBase = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    return REPORTS_DISPONIVEIS as unknown as string[];
+  });
 
 /** Lista filtros salvos (próprios + compartilhados da equipe). */
 export const listarFiltrosSalvos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("report_saved_filters")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100);
+    // Erro não pode virar "Nenhum relatório salvo".
+    if (error) throw new Error(error.message);
     return (data ?? []) as any[];
   });
 
@@ -3393,7 +3445,7 @@ const salvarSchema = z.object({
 
 /** Salva um relatório personalizado (filtro salvo). */
 export const salvarFiltro = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["relatorios.geral", "view"])])
   .inputValidator((d: z.infer<typeof salvarSchema>) => salvarSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;

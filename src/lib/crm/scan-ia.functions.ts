@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { aplicarPadroesCliente } from "@/lib/crm/padroes-cadastro";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { exigirAcao } from "@/lib/operacional/permissao-acao";
+import { mascararDocumento } from "@/lib/crm/documento";
+import { temPiiCliente } from "@/lib/crm/pii";
 import {
   valoresEquivalentes,
   CAMPOS_ESPERADOS,
@@ -113,6 +116,23 @@ const MIMES_SUPORTADOS = new Set([
   "image/heif",
 ]);
 
+/**
+ * Permissões do Scan IA (módulo `crm.scan_ia`). Até aqui nada era conferido e a tela
+ * valia para quem via Clientes: `crm.clientes` segue aceito como equivalente para não
+ * tirar o acesso de quem já usa. "Processar" (create) cobre enviar, ler com a IA,
+ * revisar, vincular e excluir leituras.
+ */
+const verScanIa = exigirPermissao(["crm.scan_ia", "view"], ["crm.clientes", "view"]);
+const processarScanIa = exigirPermissao(
+  ["crm.scan_ia", "create"],
+  ["crm.clientes", "create"],
+  ["crm.clientes", "edit"],
+);
+
+/** Mensagem para a tela quando a IA falha; o detalhe técnico vai só para o log do servidor. */
+const MSG_FALHA_IA =
+  "Não foi possível ler este documento agora. Tente reprocessar em alguns minutos; se continuar, envie outra digitalização.";
+
 async function correspondenteDoUsuario(
   supabase: { from: (t: string) => any },
   userId: string,
@@ -127,7 +147,7 @@ async function correspondenteDoUsuario(
 
 /** Retorna o correspondente_id do usuário para montar o caminho do upload. */
 export const contextoScanIa = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .handler(async ({ context }): Promise<{ correspondenteId: string | null }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -135,7 +155,7 @@ export const contextoScanIa = createServerFn({ method: "GET" })
   });
 
 export const listarLeituras = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([verScanIa])
   .handler(async ({ context }): Promise<LeituraLista[]> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -187,7 +207,7 @@ export const listarLeituras = createServerFn({ method: "GET" })
   });
 
 export const obterLeitura = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([verScanIa])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<LeituraDetalhe> => {
     const { supabase, userId } = context;
@@ -234,6 +254,10 @@ export const obterLeitura = createServerFn({ method: "GET" })
         .maybeSingle();
       clienteNome = cli?.nome ?? null;
       clienteDocumento = cli?.documento ?? null;
+      // Mesma regra da ficha do cliente: sem "Ver dados sensíveis", documento mascarado.
+      if (clienteDocumento && !(await temPiiCliente(supabase, userId))) {
+        clienteDocumento = mascararDocumento(clienteDocumento);
+      }
     }
 
     return {
@@ -257,7 +281,7 @@ export const obterLeitura = createServerFn({ method: "GET" })
 
 /** Registra a leitura após o upload do arquivo no bucket. O tipo é OPCIONAL — em branco, a IA identifica. */
 export const criarLeitura = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .inputValidator((d: { arquivo_url: string; tipo_documento?: string | null }) =>
     z
       .object({
@@ -291,7 +315,7 @@ export const criarLeitura = createServerFn({ method: "POST" })
 
 /** Processa a leitura com IA (OCR + extração estruturada de campos). */
 export const processarLeitura = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: boolean; erro?: string }> => {
     const { supabase, userId } = context;
@@ -477,11 +501,12 @@ export const processarLeitura = createServerFn({ method: "POST" })
         }
         if (/has no pages|Unsupported MIME|invalid image|unsupported image/i.test(body)) {
           throw new Error(
-            "O provedor de IA não conseguiu abrir este arquivo. Verifique se o PDF não está " +
-              "corrompido/protegido por senha e tente enviar como JPG ou PNG.",
+            "Não foi possível abrir este arquivo. Confira se o PDF não está corrompido ou " +
+              "protegido por senha, ou envie como JPG ou PNG.",
           );
         }
-        throw new Error(`Provedor de IA retornou ${resp.status}: ${body.slice(0, 300)}`);
+        console.error("[processarLeitura] provedor de IA", resp.status, body.slice(0, 500));
+        throw new Error(MSG_FALHA_IA);
       }
 
       const json = await resp.json();
@@ -500,18 +525,16 @@ export const processarLeitura = createServerFn({ method: "POST" })
       } catch (parseError: any) {
         // Tenta recuperar se for apenas um problema de markdown ou caracteres extras
         const m = texto.match(/\{[\s\S]*\}/);
-        if (m) {
-          try {
-            parsed = JSON.parse(m[0]);
-          } catch {
-            throw new Error(
-              `JSON malformado devolvido pela IA: ${parseError.message}. Resposta: ${texto.slice(0, 500)}`,
-            );
-          }
-        } else {
-          throw new Error(
-            `Resposta da IA não contém um JSON válido: ${parseError.message}. Resposta: ${texto.slice(0, 500)}`,
+        try {
+          if (!m) throw parseError;
+          parsed = JSON.parse(m[0]);
+        } catch {
+          console.error(
+            "[processarLeitura] resposta da IA fora do formato:",
+            parseError?.message,
+            texto.slice(0, 500),
           );
+          throw new Error(MSG_FALHA_IA);
         }
       }
 
@@ -601,7 +624,11 @@ export const processarLeitura = createServerFn({ method: "POST" })
       return { ok: true };
     } catch (e: any) {
       console.error("[processarLeitura] Erro:", e);
-      const msg = e?.message ? String(e.message).slice(0, 1000) : "Erro ao processar leitura.";
+      // Erro do banco/Storage (sem frase pronta para o usuário) vira a mensagem padrão.
+      const msg =
+        e instanceof Error && !(e instanceof TypeError) && e.message
+          ? String(e.message).slice(0, 1000)
+          : MSG_FALHA_IA;
 
       // Garante que o erro seja persistido para diagnóstico
       await supabase
@@ -618,7 +645,7 @@ export const processarLeitura = createServerFn({ method: "POST" })
 
 /** Salva as correções feitas pelo revisor. */
 export const salvarCampos = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .inputValidator((d: { leitura_id: string; campos: Array<{ id: string; valor: string }> }) =>
     z
       .object({
@@ -634,7 +661,7 @@ export const salvarCampos = createServerFn({ method: "POST" })
 
     const { data: leitura } = await supabase
       .from("scan_ia_leituras")
-      .select("id, correspondente_id")
+      .select("id, correspondente_id, status")
       .eq("id", data.leitura_id)
       .maybeSingle();
     if (!leitura || leitura.correspondente_id !== corr) throw new Error("Leitura não encontrada.");
@@ -647,10 +674,13 @@ export const salvarCampos = createServerFn({ method: "POST" })
         .eq("leitura_id", data.leitura_id);
     }
 
-    await supabase
-      .from("scan_ia_leituras")
-      .update({ status: "revisada" })
-      .eq("id", data.leitura_id);
+    // Leitura já aplicada ao cadastro não volta para "revisada".
+    if (leitura.status !== "aplicada") {
+      await supabase
+        .from("scan_ia_leituras")
+        .update({ status: "revisada" })
+        .eq("id", data.leitura_id);
+    }
     await supabase.from("scan_ia_auditoria").insert({
       correspondente_id: corr,
       leitura_id: data.leitura_id,
@@ -664,7 +694,7 @@ export const salvarCampos = createServerFn({ method: "POST" })
 
 /** Exclui uma leitura do Scan IA, registrando a ação em auditoria antes de remover. */
 export const excluirLeitura = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
@@ -705,6 +735,12 @@ export const excluirLeitura = createServerFn({ method: "POST" })
     await supabase.from("scan_ia_campos_extraidos").delete().eq("leitura_id", data.id);
     const { error } = await supabase.from("scan_ia_leituras").delete().eq("id", data.id);
     if (error) throw error;
+    // LGPD: o arquivo original sai do armazenamento junto com a leitura. A cópia já
+    // arquivada na Documentação do cliente (outro bucket) continua lá.
+    if (leitura.arquivo_url) {
+      const { error: eArq } = await supabase.storage.from("scan-ia").remove([leitura.arquivo_url]);
+      if (eArq) console.error("[excluirLeitura] arquivo não removido do armazenamento", eArq);
+    }
     return { ok: true };
   });
 
@@ -715,7 +751,7 @@ export const excluirLeitura = createServerFn({ method: "POST" })
 
 /** Confirma (humano) o tipo efetivo do documento. */
 export const confirmarTipoDocumento = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .inputValidator((d: { leitura_id: string; tipo: string }) =>
     z.object({ leitura_id: z.string().uuid(), tipo: z.enum(TIPOS_DOCUMENTO) }).parse(d),
   )
@@ -753,7 +789,7 @@ export const confirmarTipoDocumento = createServerFn({ method: "POST" })
 
 /** Vincula (ou desvincula) a leitura a um cliente já cadastrado. */
 export const vincularClienteLeitura = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .inputValidator((d: { leitura_id: string; cliente_id: string | null }) =>
     z.object({ leitura_id: z.string().uuid(), cliente_id: z.string().uuid().nullable() }).parse(d),
   )
@@ -800,7 +836,7 @@ export const vincularClienteLeitura = createServerFn({ method: "POST" })
  * pelo modal de "Aplicar ao cadastro".
  */
 export const criarClienteParaLeitura = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .inputValidator((d: { leitura_id: string; nome: string; documento: string }) =>
     z
       .object({
@@ -812,6 +848,14 @@ export const criarClienteParaLeitura = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ cliente_id: string; reaproveitado: boolean }> => {
     const { supabase, userId } = context;
+    // Cria (ou restaura) cliente: mesma permissão do cadastro de clientes.
+    await exigirAcao(
+      supabase,
+      userId,
+      "crm.clientes",
+      "create",
+      "Você não tem permissão para cadastrar clientes.",
+    );
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Sem correspondente.");
 
@@ -841,6 +885,14 @@ export const criarClienteParaLeitura = createServerFn({ method: "POST" })
     // restaurado — caso contrário o "cliente criado" pela IA ficaria invisível
     // no CRM, que filtra registros excluídos.
     if (existente?.id && existente.deleted_at) {
+      // Restaurar regrava um cadastro existente: como em criarCliente, exige também "Editar".
+      await exigirAcao(
+        supabase,
+        userId,
+        "crm.clientes",
+        "edit",
+        "Este documento é de um cliente excluído. Peça a quem pode editar clientes para restaurá-lo.",
+      );
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin
         .from("clientes")
@@ -871,7 +923,15 @@ export const criarClienteParaLeitura = createServerFn({ method: "POST" })
         )
         .select("id")
         .single();
-      if (error) throw error;
+      if (error) {
+        // Cliente com o mesmo documento fora do seu escopo de visão (a busca acima não o vê).
+        if ((error as { code?: string }).code === "23505") {
+          throw new Error(
+            "Já existe um cliente com este documento fora da sua carteira. Peça ao responsável para vinculá-lo.",
+          );
+        }
+        throw error;
+      }
       clienteId = novo.id;
       reaproveitado = false;
     }
@@ -951,7 +1011,7 @@ function normalizarCampoExtraido(
 
 /** Monta a prévia do modal de aplicação: valor da IA x valor atual do cadastro. */
 export const previaAplicacao = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([verScanIa])
   .inputValidator((d: { leitura_id: string }) =>
     z.object({ leitura_id: z.string().uuid() }).parse(d),
   )
@@ -1047,7 +1107,7 @@ export const previaAplicacao = createServerFn({ method: "GET" })
  * escolha explícita feita em cada conflito. Registra a trilha completa.
  */
 export const aplicarAoCadastro = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .inputValidator(
     (d: {
       leitura_id: string;
@@ -1078,6 +1138,14 @@ export const aplicarAoCadastro = createServerFn({ method: "POST" })
       erro_arquivo: string | null;
     }> => {
       const { supabase, userId } = context;
+      // Grava no cadastro do cliente: exige "Editar" em Clientes.
+      await exigirAcao(
+        supabase,
+        userId,
+        "crm.clientes",
+        "edit",
+        "Você não tem permissão para editar o cadastro do cliente.",
+      );
       const corr = await correspondenteDoUsuario(supabase, userId);
       if (!corr) throw new Error("Sem correspondente.");
 
@@ -1249,7 +1317,7 @@ export const aplicarAoCadastro = createServerFn({ method: "POST" })
  * Útil quando o operador só quer guardar o documento no cadastro.
  */
 export const arquivarDocumentoDaLeitura = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([processarScanIa])
   .inputValidator((d: { leitura_id: string }) =>
     z.object({ leitura_id: z.string().uuid() }).parse(d),
   )
@@ -1259,6 +1327,14 @@ export const arquivarDocumentoDaLeitura = createServerFn({ method: "POST" })
       context,
     }): Promise<{ ok: boolean; ja_existia: boolean; erro: string | null }> => {
       const { supabase, userId } = context;
+      // Anexa o arquivo na Documentação do cliente: mesma regra de anexarDocumento.
+      await exigirAcao(
+        supabase,
+        userId,
+        "crm.clientes",
+        "edit",
+        "Você não tem permissão para anexar documentos deste cliente.",
+      );
       const corr = await correspondenteDoUsuario(supabase, userId);
       if (!corr) throw new Error("Sem correspondente.");
 

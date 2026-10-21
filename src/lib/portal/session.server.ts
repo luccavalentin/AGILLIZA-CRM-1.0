@@ -1,6 +1,7 @@
 // Sessao selada do App do Cliente (cookie HttpOnly assinado com HMAC).
 // NAO usa Supabase Auth — isolamento total do sistema interno.
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { ipDoCliente } from "@/lib/http/ip-cliente";
 import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 
 const COOKIE_NAME = "agz_cliente_app";
@@ -113,7 +114,7 @@ export function dadosRequisicao(): { ip: string | null; userAgent: string | null
   const req = getRequest();
   const h = req?.headers;
   return {
-    ip: h?.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h?.get("cf-connecting-ip") ?? null,
+    ip: h ? ipDoCliente((n) => h.get(n)) : null,
     userAgent: h?.get("user-agent") ?? null,
   };
 }

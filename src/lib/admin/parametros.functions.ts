@@ -1,6 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { soDigitos, validarCNPJ, validarTelefone } from "@/lib/crm/documento";
+import { UFS } from "@/lib/simulacao/format";
+
+// Campo opcional: vazio passa; preenchido tem de ser válido.
+const vazio = (v: string | null | undefined) => !v || v.trim() === "";
+const telefoneOpcional = z
+  .string()
+  .max(40)
+  .optional()
+  .nullable()
+  .refine((v) => vazio(v) || validarTelefone(v!), "Telefone inválido: use DDD + número.");
 
 export interface ParametrosGlobais {
   id: string | null;
@@ -37,21 +49,39 @@ const salvarSchema = z.object({
   nome_empresa: z.string().max(160).optional().nullable(),
   razao_social: z.string().max(200).optional().nullable(),
   nome_fantasia: z.string().max(200).optional().nullable(),
-  cnpj: z.string().max(20).optional().nullable(),
+  cnpj: z
+    .string()
+    .max(20)
+    .optional()
+    .nullable()
+    .refine((v) => vazio(v) || validarCNPJ(v!), "CNPJ inválido."),
   inscricao_estadual: z.string().max(40).optional().nullable(),
   inscricao_municipal: z.string().max(40).optional().nullable(),
   cor_primaria: z.string().max(30).optional().nullable(),
-  cep: z.string().max(12).optional().nullable(),
+  cep: z
+    .string()
+    .max(12)
+    .optional()
+    .nullable()
+    .refine((v) => vazio(v) || soDigitos(v!).length === 8, "CEP inválido: são 8 números."),
   logradouro: z.string().max(200).optional().nullable(),
   numero: z.string().max(20).optional().nullable(),
   complemento: z.string().max(120).optional().nullable(),
   bairro: z.string().max(120).optional().nullable(),
   cidade: z.string().max(120).optional().nullable(),
-  uf: z.string().max(2).optional().nullable(),
+  uf: z
+    .string()
+    .max(2)
+    .optional()
+    .nullable()
+    .refine(
+      (v) => vazio(v) || (UFS as readonly string[]).includes(v!.toUpperCase()),
+      "UF inválida.",
+    ),
   endereco: z.string().max(300).optional().nullable(),
   email_empresa: z.string().email().optional().nullable().or(z.literal("")),
-  telefone_empresa: z.string().max(40).optional().nullable(),
-  telefone_sac: z.string().max(40).optional().nullable(),
+  telefone_empresa: telefoneOpcional,
+  telefone_sac: telefoneOpcional,
   site: z.string().max(200).optional().nullable(),
   responsavel_nome: z.string().max(160).optional().nullable(),
   email_dpo: z.string().email().optional().nullable().or(z.literal("")),
@@ -69,7 +99,7 @@ async function corr(supabase: any, userId: string): Promise<string | null> {
 }
 
 export const obterParametros = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["admin.parametros", "view"])])
   .handler(async ({ context }): Promise<ParametrosGlobais> => {
     const { supabase, userId } = context;
     const c = await corr(supabase, userId);
@@ -111,17 +141,13 @@ export const obterParametros = createServerFn({ method: "GET" })
   });
 
 export const salvarParametros = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  // Matriz (Parâmetros: editar), como a leitura; antes só o papel admin/correspondente/gestor.
+  .middleware([exigirPermissao(["admin.parametros", "edit"])])
   .inputValidator((data: unknown) => salvarSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const c = await corr(supabase, userId);
     if (!c) throw new Error("Ecossistema não identificado.");
-
-    const { data: pode } = await supabase.rpc("usuario_pode_admin", {
-      _user_id: userId,
-    });
-    if (!pode) throw new Error("Sem permissão para alterar parâmetros.");
 
     const payload = {
       ...data,

@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { usePermissao } from "@/hooks/use-permissao";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import {
   explorarDocumentosGerais,
   SEM_COMERCIAL_LABEL,
@@ -48,7 +50,6 @@ import { IconePasta } from "@/components/crm/documentos-gerais/icone-pasta";
 import { FichaClienteView } from "@/components/crm/documentos-gerais/ficha-cliente-view";
 import { FiltrosBar } from "@/components/crm/documentos-gerais/filtros-bar";
 import { SecaoHeader } from "@/components/crm/documentos-gerais/secao-header";
-import { FaixaSeguranca } from "@/components/crm/documentos-gerais/faixa-seguranca";
 import { SheetFiltrosAvancados } from "@/components/crm/documentos-gerais/sheet-filtros-avancados";
 
 export function DocumentosGerais() {
@@ -69,8 +70,11 @@ export function DocumentosGerais() {
   const [filtrosSheet, setFiltrosSheet] = useState(false);
   const [arquivosAberto, setArquivosAberto] = useState(false);
   const POR_PAGINA = 8;
+  // "Arquivos personalizados" é o módulo Documentos › Arquivos: sem "Ver" nele, o botão some
+  // (o servidor já recusa as chamadas).
+  const podeVerArquivos = usePermissao("documentos.arquivos", "view");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["crm-documentos-gerais"],
     queryFn: () => explorar(),
   });
@@ -148,11 +152,16 @@ export function DocumentosGerais() {
       return com;
     }
 
-    for (const cm of comerciaisBase) {
-      garantirComercial(`com:${cm.id}`, titulo(cm.nome));
+    // Pastas vazias só sem filtro: filtrando, aparecem apenas as que têm clientes.
+    if (!filtrando) {
+      for (const cm of comerciaisBase) {
+        garantirComercial(`com:${cm.id}`, titulo(cm.nome));
+      }
     }
 
-    for (const c of clientes) {
+    // Os filtros (busca, comercial, imobiliária, corretor, analista) valem também nas
+    // pastas; antes só a aba "Por cliente" era filtrada.
+    for (const c of clientesFiltrados) {
       const comKey = c.comercial_id ? `com:${c.comercial_id}` : SEM_COMERCIAL_KEY;
       const comNome = c.comercial_id ? titulo(c.comercial_nome) : SEM_COMERCIAL_LABEL;
       const com = garantirComercial(comKey, comNome);
@@ -180,7 +189,7 @@ export function DocumentosGerais() {
     });
 
     return lista;
-  }, [clientes, comerciaisBase]);
+  }, [clientesFiltrados, comerciaisBase, filtrando]);
 
   const arvore = useMemo<PastaNode[]>(() => {
     if (visao === "hierarquia") return raizes;
@@ -221,11 +230,11 @@ export function DocumentosGerais() {
       return node;
     }
     const prefix = dim === "imob" ? "imob:" : dim === "corr" ? "corr:" : "ana:";
-    for (const b of base) garantir(`${prefix}${b.id}`, titulo(b.nome));
+    if (!filtrando) for (const b of base) garantir(`${prefix}${b.id}`, titulo(b.nome));
 
     const idsBase = new Set(base.map((b) => b.id));
     const clientesSoltos: DGCliente[] = [];
-    for (const c of clientes) {
+    for (const c of clientesFiltrados) {
       const id = dim === "imob" ? c.imobiliaria_id : dim === "corr" ? c.corretor_id : c.analista_id;
       const nome =
         dim === "imob" ? c.imobiliaria_nome : dim === "corr" ? c.corretor_nome : c.analista_nome;
@@ -261,7 +270,15 @@ export function DocumentosGerais() {
       }
     }
     return lista;
-  }, [visao, raizes, clientes, imobiliariasFiltro, corretoresFiltro, analistasFiltro]);
+  }, [
+    visao,
+    raizes,
+    clientesFiltrados,
+    filtrando,
+    imobiliariasFiltro,
+    corretoresFiltro,
+    analistasFiltro,
+  ]);
 
   const trilha = useMemo<PastaNode[]>(() => {
     const nodes: PastaNode[] = [];
@@ -414,16 +431,18 @@ export function DocumentosGerais() {
               </button>
             );
           })}
-          <div className="ml-auto hidden pr-2 md:block">
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => setArquivosAberto(true)}
-            >
-              <FolderKanban className="h-4 w-4" /> Arquivos personalizados
-            </Button>
-          </div>
+          {podeVerArquivos && (
+            <div className="ml-auto hidden pr-2 md:block">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => setArquivosAberto(true)}
+              >
+                <FolderKanban className="h-4 w-4" /> Arquivos personalizados
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -434,9 +453,10 @@ export function DocumentosGerais() {
               <Trash2 className="h-7 w-7" />
             </span>
             <p className="text-sm font-medium text-foreground">Lixeira vazia</p>
+            {/* Antes prometia 30 dias de lixeira, mas excluir um documento apaga o arquivo na hora. */}
             <p className="max-w-md text-xs text-muted-foreground">
-              Documentos e pastas removidos aparecerão aqui por 30 dias antes da exclusão
-              definitiva.
+              Documentos excluídos são apagados na hora e não ficam guardados aqui. Confira antes de
+              excluir.
             </p>
           </CardContent>
         </Card>
@@ -511,10 +531,21 @@ export function DocumentosGerais() {
                 <Skeleton key={i} className="h-24 w-full" />
               ))}
             </div>
+          ) : isError ? (
+            <Card>
+              <CardContent className="flex flex-col items-center gap-3 py-14 text-center text-sm">
+                <p className="text-destructive">
+                  {mensagemDeErro(error, "Não foi possível carregar os documentos.")}
+                </p>
+                <Button size="sm" variant="outline" onClick={() => refetch()}>
+                  Tentar de novo
+                </Button>
+              </CardContent>
+            </Card>
           ) : totalItens === 0 ? (
             <Card>
               <CardContent className="py-14 text-center text-sm text-muted-foreground">
-                Nenhum item encontrado com os filtros atuais.
+                {filtrando ? "Nenhum item encontrado com os filtros atuais." : "Nenhum item."}
               </CardContent>
             </Card>
           ) : (
@@ -563,8 +594,6 @@ export function DocumentosGerais() {
         </>
       )}
 
-      <FaixaSeguranca />
-
       <SheetFiltrosAvancados
         open={filtrosSheet}
         onOpenChange={setFiltrosSheet}
@@ -581,7 +610,7 @@ export function DocumentosGerais() {
       />
 
       {/* Sheet: Arquivos personalizados */}
-      <Sheet open={arquivosAberto} onOpenChange={setArquivosAberto}>
+      <Sheet open={podeVerArquivos && arquivosAberto} onOpenChange={setArquivosAberto}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-4xl">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">

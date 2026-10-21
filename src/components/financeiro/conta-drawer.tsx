@@ -4,7 +4,31 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ContaStatusBadge } from "@/components/financeiro/status-badge";
 import { formatBRL, formatData } from "@/lib/financeiro/format";
-import { Paperclip } from "lucide-react";
+import { ExternalLink, Paperclip } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+/** "corr/uuid-nota-fiscal.pdf" → "nota-fiscal.pdf" (o nome aparecia com o UUID). */
+function nomeDoComprovante(path: string): string {
+  const arquivo = path.split("/").pop() ?? path;
+  return arquivo.replace(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i, "");
+}
+
+/** O anexo só aparecia como texto; agora abre por link temporário (5 min). */
+async function abrirComprovante(path: string) {
+  // Abre a aba antes do await: navegador de celular bloqueia pop-up depois dele.
+  const aba = window.open("", "_blank");
+  const { data, error } = await supabase.storage
+    .from("financeiro-comprovantes")
+    .createSignedUrl(path, 300);
+  if (error || !data?.signedUrl) {
+    aba?.close();
+    toast.error("Não foi possível abrir o comprovante.");
+    return;
+  }
+  if (aba) aba.location.href = data.signedUrl;
+  else window.location.assign(data.signedUrl);
+}
 
 const eventoLabel: Record<string, string> = {
   criada: "Conta criada",
@@ -61,7 +85,12 @@ export function ContaDrawer({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             {conta?.numero ?? "Conta"}
-            {conta && <ContaStatusBadge status={statusEfetivoUI(conta.status, conta.vencimento)} />}
+            {conta && (
+              <ContaStatusBadge
+                status={statusEfetivoUI(conta.status, conta.vencimento)}
+                tipo={tipo}
+              />
+            )}
           </SheetTitle>
         </SheetHeader>
 
@@ -94,7 +123,10 @@ export function ContaDrawer({
               <Linha label="Centro de custo" valor={conta.centro?.nome ?? "—"} />
               <Linha label="Vencimento" valor={formatData(conta.vencimento)} />
               <Linha label="Valor" valor={formatBRL(Number(conta.valor))} />
-              <Linha label="Pago" valor={formatBRL(Number(conta.valor_pago))} />
+              <Linha
+                label={tipo === "pagar" ? "Pago" : "Recebido"}
+                valor={formatBRL(Number(conta.valor_pago))}
+              />
 
               <div className="border-t border-border pt-3">
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -127,10 +159,18 @@ export function ContaDrawer({
 
             <TabsContent value="anexos" className="pt-4">
               {conta.comprovante_path ? (
-                <div className="flex items-center gap-2 rounded-md border border-dashed border-border p-3 text-sm">
-                  <Paperclip className="h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{conta.comprovante_path.split("/").pop()}</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => void abrirComprovante(conta.comprovante_path)}
+                  className="flex w-full items-center gap-2 rounded-md border border-dashed border-border p-3 text-left text-sm transition-colors hover:bg-muted/50"
+                >
+                  <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">
+                    {nomeDoComprovante(conta.comprovante_path)}
+                  </span>
+                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="sr-only">Abrir comprovante</span>
+                </button>
               ) : (
                 <p className="text-sm text-muted-foreground">Nenhum comprovante anexado.</p>
               )}

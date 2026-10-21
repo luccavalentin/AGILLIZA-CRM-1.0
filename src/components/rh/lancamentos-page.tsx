@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Ban, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -35,15 +34,19 @@ import {
 } from "@/components/ui/select";
 import { FuncionarioPicker } from "@/components/rh/funcionario-picker";
 import { YearPicker } from "@/components/rh/year-picker";
-import { formatBRL } from "@/lib/financeiro/format";
+import { formatBRL, formatData, hojeISO } from "@/lib/financeiro/format";
 import type { LancamentoStatus, RhLancamento } from "@/lib/rh/submodulos.functions";
+import { LANCAMENTO_STATUS_LABEL as ROT } from "@/lib/rh/rotulos";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { LinhaEstadoLista } from "@/components/rh/estado-lista";
 
 const STATUS: Record<LancamentoStatus, { label: string; tone: string }> = {
-  previsto: { label: "Previsto", tone: "bg-muted text-muted-foreground" },
-  recebido: { label: "Recebido", tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
-  descontado: { label: "Descontado", tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
-  pago: { label: "Pago", tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
-  cancelado: { label: "Cancelado", tone: "bg-destructive/15 text-destructive" },
+  previsto: { label: ROT.previsto, tone: "bg-muted text-muted-foreground" },
+  recebido: { label: ROT.recebido, tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+  descontado: { label: ROT.descontado, tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+  pago: { label: ROT.pago, tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  cancelado: { label: ROT.cancelado, tone: "bg-destructive/15 text-destructive" },
 };
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -76,15 +79,36 @@ export function LancamentosPage({
   const [filtroAno, setFiltroAno] = useState<number>(hoje.getFullYear());
 
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
+  const formVazio = () => ({
+    id: undefined as string | undefined,
     funcionario_id: "",
-    data: hoje.toISOString().slice(0, 10),
+    data: hojeISO(),
     valor: 0,
-    competencia_mes: hoje.getMonth() + 1,
-    competencia_ano: hoje.getFullYear(),
+    competencia_mes: filtroMes,
+    competencia_ano: filtroAno,
     descricao: "",
     status: "previsto" as LancamentoStatus,
   });
+  const [form, setForm] = useState(formVazio);
+
+  // "Novo" sempre abre limpo; o lápis abre o lançamento para editar.
+  function abrirNovo() {
+    setForm(formVazio());
+    setOpen(true);
+  }
+  function abrirEdicao(l: RhLancamento) {
+    setForm({
+      id: l.id,
+      funcionario_id: l.funcionario_id,
+      data: l.data,
+      valor: l.valor,
+      competencia_mes: l.competencia_mes,
+      competencia_ano: l.competencia_ano,
+      descricao: l.descricao ?? "",
+      status: l.status,
+    });
+    setOpen(true);
+  }
 
   const q = useQuery({
     queryKey: [queryKey, filtroMes, filtroAno],
@@ -101,10 +125,28 @@ export function LancamentosPage({
       qc.invalidateQueries({ queryKey: [queryKey] });
       setOpen(false);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha."),
+    onError: (e: any) => toast.error(mensagemDeErro(e, "Não foi possível salvar o lançamento.")),
   });
 
-  const anos = [hoje.getFullYear() - 1, hoje.getFullYear(), hoje.getFullYear() + 1];
+  // Cancelar mantém o registro (histórico da folha); só muda a situação. No
+  // adiantamento, a conta a pagar ainda em aberto sai do Financeiro.
+  // Sem try/catch: o ConfirmDelete mostra o erro e continua aberto.
+  async function cancelar(l: RhLancamento) {
+    await fnSalvar({
+      data: {
+        id: l.id,
+        funcionario_id: l.funcionario_id,
+        data: l.data,
+        valor: l.valor,
+        competencia_mes: l.competencia_mes,
+        competencia_ano: l.competencia_ano,
+        descricao: l.descricao ?? "",
+        status: "cancelado",
+      },
+    });
+    toast.success("Lançamento cancelado.");
+    qc.invalidateQueries({ queryKey: [queryKey] });
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 sm:p-4 md:p-6">
@@ -115,15 +157,13 @@ export function LancamentosPage({
           </h1>
           <p className="text-sm text-muted-foreground">{descricao}</p>
         </div>
+        <Button onClick={abrirNovo}>
+          <Plus className="mr-2 h-4 w-4" /> {labelBotao}
+        </Button>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> {labelBotao}
-            </Button>
-          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Novo lançamento</DialogTitle>
+              <DialogTitle>{form.id ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-3">
               <div className="space-y-1.5">
@@ -218,7 +258,7 @@ export function LancamentosPage({
               </Button>
               <Button
                 onClick={() => salvar.mutate()}
-                disabled={salvar.isPending || !form.funcionario_id || form.valor <= 0}
+                disabled={salvar.isPending || !form.funcionario_id || !form.data || form.valor <= 0}
               >
                 Salvar
               </Button>
@@ -263,13 +303,14 @@ export function LancamentosPage({
                   <TableHead>Competência</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Descrição</TableHead>
+                  <TableHead className="w-24 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(q.data ?? []).map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="font-medium">{l.funcionario_nome}</TableCell>
-                    <TableCell>{new Date(l.data).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell>{formatData(l.data)}</TableCell>
                     <TableCell>{formatBRL(l.valor)}</TableCell>
                     <TableCell>
                       {MESES[l.competencia_mes - 1]}/{l.competencia_ano}
@@ -278,17 +319,40 @@ export function LancamentosPage({
                       <Badge className={STATUS[l.status].tone}>{STATUS[l.status].label}</Badge>
                     </TableCell>
                     <TableCell className="max-w-[280px] truncate">{l.descricao ?? "—"}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right">
+                      {l.status !== "cancelado" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Editar lançamento de ${l.funcionario_nome}`}
+                            onClick={() => abrirEdicao(l)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <ConfirmDelete
+                            titulo="Cancelar este lançamento?"
+                            descricao={`O lançamento de ${l.funcionario_nome} fica registrado como cancelado e sai da folha.`}
+                            confirmarLabel="Cancelar lançamento"
+                            onConfirm={() => cancelar(l)}
+                            trigger={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`Cancelar lançamento de ${l.funcionario_nome}`}
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Ban className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                        </>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {(!q.data || q.data.length === 0) && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="py-10 text-center text-sm text-muted-foreground"
-                    >
-                      Nenhum lançamento na competência.
-                    </TableCell>
-                  </TableRow>
+                  <LinhaEstadoLista colSpan={7} q={q} vazio="Nenhum lançamento na competência." />
                 )}
               </TableBody>
             </Table>

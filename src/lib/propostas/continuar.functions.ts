@@ -322,7 +322,7 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
       };
       const msg = (e: unknown) =>
         sanitizarMensagemErro(e instanceof Error ? e.message : String(e)) ||
-        "A HomeFin recusou a atualização.";
+        "A integração bancária recusou a atualização.";
 
       if (valoresMudados.some((k) => CAMPOS_VALORES_HOMEFIN.includes(k))) {
         const v = (k: string) => Number(data.proposta[k] ?? prop[k]);
@@ -415,9 +415,9 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
     if (descricao.length > 0) {
       const sufixo =
         errosHomefin.length > 0
-          ? ` Falha na HomeFin: ${errosHomefin.map((e) => e.mensagem).join(" · ")}`
+          ? ` Falha na integração bancária: ${errosHomefin.map((e) => e.mensagem).join(" · ")}`
           : idOportunidade
-            ? " Atualizado na HomeFin."
+            ? " Atualizado na integração bancária."
             : "";
       await supabase.from("proposta_historico").insert({
         proposta_id: prop.id,

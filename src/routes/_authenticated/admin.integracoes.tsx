@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import {
   listarBancosCredenciais,
   listarApiIntegracoes,
@@ -38,6 +39,7 @@ import { listarOportunidadesOrfas, cancelarOrfaEmLote } from "@/lib/admin/orfas.
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BureauIntegracaoCard } from "@/components/bureau/bureau-integracao-card";
+import { ConfirmDelete } from "@/components/shared/confirm-delete";
 
 export const Route = createFileRoute("/_authenticated/admin/integracoes")({
   head: () => ({ meta: [{ title: "Integrações — Agilliza" }] }),
@@ -51,6 +53,8 @@ function StatusBadge({ ativo }: { ativo: boolean }) {
 
 function Pagina() {
   const qc = useQueryClient();
+  // Ações que gravam exigem "edit" no servidor; sem ela os botões só davam erro.
+  const podeEditar = usePermissao("admin.integracoes", "edit");
   const bancos = useQuery({
     queryKey: ["admin-banco-cred"],
     queryFn: () => listarBancosCredenciais(),
@@ -94,7 +98,7 @@ function Pagina() {
           <Button
             variant="outline"
             size="sm"
-            disabled={sincronizar.isPending}
+            disabled={!podeEditar || sincronizar.isPending}
             onClick={() => sincronizar.mutate()}
           >
             <RefreshCw className={`mr-2 size-4 ${sincronizar.isPending ? "animate-spin" : ""}`} />
@@ -104,7 +108,8 @@ function Pagina() {
       />
 
       <Tabs defaultValue="bancos">
-        <TabsList>
+        {/* As 5 abas lado a lado davam 636 px e a tela rolava para o lado no celular. */}
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
           <TabsTrigger value="bancos">
             <Landmark className="mr-2 size-4" /> Bancos
           </TabsTrigger>
@@ -173,7 +178,7 @@ function Pagina() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            disabled={testar.isPending}
+                            disabled={!podeEditar || testar.isPending}
                             onClick={() =>
                               testar.mutate({
                                 integracao: b.banco_nome ?? "Banco",
@@ -240,7 +245,7 @@ function Pagina() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            disabled={testar.isPending}
+                            disabled={!podeEditar || testar.isPending}
                             onClick={() =>
                               testar.mutate({ integracao: a.nome, base_url: a.base_url! })
                             }
@@ -319,6 +324,8 @@ function Pagina() {
 
 function OrfasTabContent() {
   const qc = useQueryClient();
+  // Ações que gravam exigem "edit" no servidor; sem ela os botões só davam erro.
+  const podeEditar = usePermissao("admin.integracoes", "edit");
   const orfas = useQuery({
     queryKey: ["admin-orfas"],
     queryFn: () => listarOportunidadesOrfas(),
@@ -349,7 +356,7 @@ function OrfasTabContent() {
             <CardTitle>Atenção à Regularização do Passivo</CardTitle>
           </div>
           <CardDescription>
-            Existem {data.length} oportunidades ativas na HomeFin que foram canceladas ou excluídas
+            Existem {data.length} oportunidades ativas na integração bancária que foram canceladas ou excluídas
             no Agilliza. Isso causa divergência no funil do parceiro.
           </CardDescription>
         </CardHeader>
@@ -364,7 +371,7 @@ function OrfasTabContent() {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={cancelar.isPending}
+                  disabled={!podeEditar || cancelar.isPending}
                   onClick={() =>
                     cancelar.mutate({ ids: propostas.map((x) => x.id), tipo: "proposta" })
                   }
@@ -405,15 +412,27 @@ function OrfasTabContent() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-8"
-                          disabled={cancelar.isPending}
-                          onClick={() => cancelar.mutate({ ids: [p.id], tipo: "proposta" })}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
+                        <ConfirmDelete
+                          titulo={`Cancelar a proposta ${p.codigo} na integração bancária?`}
+                          descricao="A oportunidade é cancelada no banco parceiro para acertar o funil."
+                          confirmarLabel="Cancelar na integração"
+                          onConfirm={async () => {
+                            await cancelar
+                              .mutateAsync({ ids: [p.id], tipo: "proposta" })
+                              .catch(() => undefined);
+                          }}
+                          trigger={
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-8"
+                              disabled={!podeEditar || cancelar.isPending}
+                              aria-label={`Cancelar proposta ${p.codigo} na integração bancária`}
+                            >
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          }
+                        />
                       </TableCell>
                     </TableRow>
                   ))
@@ -431,7 +450,7 @@ function OrfasTabContent() {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={cancelar.isPending}
+                  disabled={!podeEditar || cancelar.isPending}
                   onClick={() =>
                     cancelar.mutate({ ids: simulacoes.map((x) => x.id), tipo: "simulacao" })
                   }
@@ -469,15 +488,27 @@ function OrfasTabContent() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-8"
-                          disabled={cancelar.isPending}
-                          onClick={() => cancelar.mutate({ ids: [s.id], tipo: "simulacao" })}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
+                        <ConfirmDelete
+                          titulo={`Cancelar a simulação ${s.codigo} na integração bancária?`}
+                          descricao="A oportunidade é cancelada no banco parceiro para acertar o funil."
+                          confirmarLabel="Cancelar na integração"
+                          onConfirm={async () => {
+                            await cancelar
+                              .mutateAsync({ ids: [s.id], tipo: "simulacao" })
+                              .catch(() => undefined);
+                          }}
+                          trigger={
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-8"
+                              disabled={!podeEditar || cancelar.isPending}
+                              aria-label={`Cancelar simulação ${s.codigo} na integração bancária`}
+                            >
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          }
+                        />
                       </TableCell>
                     </TableRow>
                   ))
