@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { BadgeCheck, Building2, Coins, KeyRound, Search, ShieldAlert, Users } from "lucide-react";
+import { BadgeCheck, Building2, Coins, KeyRound, Plus, Search, ShieldAlert, Users } from "lucide-react";
 import { AdminHero } from "@/components/admin/admin-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,8 @@ import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL, formatData } from "@/lib/financeiro/format";
 import { RodapePaginas, useValorAssentado } from "@/components/plataforma/paginacao";
+import { CarteiraLicenca } from "@/components/plataforma/licencas/carteira-licenca";
+import { NovaLicenca } from "@/components/plataforma/licencas/nova-licenca";
 import {
   POR_PAGINA_LICENCAS,
   alterarSituacaoLicenca,
@@ -132,6 +134,8 @@ function Pagina() {
   const [situacao, setSituacao] = useState<"todas" | SituacaoLicenca>("todas");
   const [pagina, setPagina] = useState(1);
   const [aberta, setAberta] = useState<Licenca | null>(null);
+  const [nova, setNova] = useState(false);
+  const podeCriar = usePermissao("saas.licencas", "edit");
   const termo = useValorAssentado(busca.trim());
 
   const q = useQuery({
@@ -162,6 +166,13 @@ function Pagina() {
         titulo="Licenças e assinantes"
         descricao="Contas de corretores, imobiliárias e parceiros: situação, plano, teste, créditos e uso."
       />
+      {podeCriar && (
+        <div className="flex justify-end">
+          <Button className="w-full sm:w-auto" onClick={() => setNova(true)}>
+            <Plus className="mr-1.5 size-4" /> Nova licença
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Indicador rotulo="Licenças" valor={kpi.total} icone={<Building2 className="size-4" />} />
@@ -286,6 +297,9 @@ function Pagina() {
                   <p className="text-xs text-muted-foreground">
                     {TIPO[l.tipo]} · {l.email_contato ?? l.slug}
                   </p>
+                  {l.carteira_nome && (
+                    <p className="text-xs text-muted-foreground">Carteira: {l.carteira_nome}</p>
+                  )}
                 </TableCell>
                 <TableCell>{l.plano ?? "—"}</TableCell>
                 <TableCell>
@@ -327,6 +341,9 @@ function Pagina() {
         planos={q.data?.planos ?? []}
         onFechar={() => setAberta(null)}
       />
+      {podeCriar && (
+        <NovaLicenca aberta={nova} aoFechar={() => setNova(false)} planos={q.data?.planos ?? []} />
+      )}
     </div>
   );
 }
@@ -612,6 +629,10 @@ function AcoesLicenca({ licenca, planos }: { licenca: Licenca; planos: PlanoLice
 
   return (
     <div className="space-y-4">
+      <Bloco titulo="Carteira e acesso">
+        <CarteiraLicenca licenca={licenca} />
+      </Bloco>
+
       <Bloco titulo="Situação da conta">
         <div className="space-y-2">
           <Select value={novaSituacao} onValueChange={(v) => setNovaSituacao(v as SituacaoLicenca)}>

@@ -34,6 +34,9 @@ export interface Licenca {
   usuarios: number;
   score: number | null;
   faixa: string | null;
+  /** Pessoa do Agilliza que cuida da conta (carteira, 0228). */
+  carteira_uid: string | null;
+  carteira_nome: string | null;
 }
 
 export interface PlanoLicenca {
@@ -192,6 +195,20 @@ export const listarLicencas = createServerFn({ method: "GET" })
            ${origem}`,
         filtros,
       );
+      // Carteira de cada conta da página (quem não gere a carteira simplesmente não vê).
+      const carteiras = licencas.length
+        ? await tx
+            .consultar<{ tenant_id: string; auth_uid: string | null; nome: string }>(
+              "select tenant_id, auth_uid, nome from plataforma.carteiras_das_contas($1::uuid[])",
+              [licencas.map((l) => l.id)],
+            )
+            .catch(() => [])
+        : [];
+      const porConta = new Map(carteiras.map((c) => [c.tenant_id, c]));
+      for (const l of licencas) {
+        l.carteira_uid = porConta.get(l.id)?.auth_uid ?? null;
+        l.carteira_nome = porConta.get(l.id)?.nome ?? null;
+      }
       const planos = await tx.consultar<PlanoLicenca>(
         `select id, codigo, nome, publico::text as publico, preco_mensal::float8 as preco_mensal
            from nucleo.planos where ativo order by ordem, nome`,
@@ -314,4 +331,109 @@ export const concederCreditosLicenca = createServerFn({ method: "POST" })
       ),
     );
     return { saldo: r?.saldo ?? null };
+  });
+
+/* ------------------------------------------------ licença manual e carteira (0228) --- */
+
+export interface PessoaCarteira {
+  auth_uid: string;
+  nome: string;
+  email: string | null;
+  papeis: string[];
+  contas: number;
+}
+
+/** Pessoas do Agilliza que podem cuidar de contas (a lista de "Carteira de"). */
+export const pessoasParaCarteira = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .handler(async ({ context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ j: PessoaCarteira[] }>("select plataforma.pessoas_agilliza_para_carteira() as j"),
+    );
+    return r?.j ?? [];
+  });
+
+const DOCUMENTO = z
+  .string()
+  .trim()
+  .max(20)
+  .refine((v) => !v || [11, 14].includes(v.replace(/\D/g, "").length), "CPF ou CNPJ inválido.");
+
+/**
+ * Cria a licença à mão (cortesia, teste ou pagamento) e, se escolhida, já põe a conta na
+ * carteira de alguém do Agilliza. A pessoa recebe o e-mail para criar a própria senha.
+ */
+export const criarLicenca = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        tipo: z.enum(["corretor", "imobiliaria", "parceiro"]),
+        nome: z.string().trim().min(2, "Informe o nome.").max(200),
+        email: z.string().trim().toLowerCase().email("E-mail inválido."),
+        documento: DOCUMENTO.optional().default(""),
+        celular: z.string().trim().max(20).optional().default(""),
+        creci: z.string().trim().max(20).optional().default(""),
+        creciUf: z.string().trim().max(2).optional().default(""),
+        planoId: UUID,
+        modalidade: z.enum(["cortesia", "teste", "pagamento"]),
+        dias: z.number().int().min(1, "De 1 a 365 dias.").max(365, "De 1 a 365 dias.").nullable(),
+        carteira: z.string().uuid().nullable(),
+        motivo: MOTIVO,
+      })
+      .refine((v) => v.modalidade === "pagamento" || v.dias !== null, {
+        message: "Informe os dias de acesso.",
+        path: ["dias"],
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ r: { tenant_id: string } }>(
+        "select plataforma.criar_licenca_manual($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) as r",
+        [
+          data.tipo,
+          data.nome,
+          data.email,
+          data.documento || null,
+          data.celular || null,
+          data.creci || null,
+          data.creciUf || null,
+          data.planoId,
+          data.modalidade,
+          data.modalidade === "pagamento" ? null : data.dias,
+          data.carteira,
+          data.motivo,
+        ],
+      ),
+    );
+    return { id: r?.r.tenant_id ?? null };
+  });
+
+/** Põe a conta na carteira de uma pessoa do Agilliza (ou tira, com null). */
+export const definirCarteira = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z.object({ id: UUID, carteira: z.string().uuid().nullable() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    await comPlataforma(context.userId, (tx) =>
+      tx.consultar("select plataforma.definir_carteira($1, $2)", [data.id, data.carteira]),
+    );
+    return { ok: true as const };
+  });
+
+/** Novo link de criar senha para o dono da conta (vale 72 horas). */
+export const reenviarAcessoLicenca = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    await comPlataforma(context.userId, (tx) =>
+      tx.consultar("select plataforma.reenviar_acesso_licenca($1)", [data.id]),
+    );
+    return { ok: true as const };
   });
