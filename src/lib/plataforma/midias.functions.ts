@@ -33,21 +33,23 @@ export interface MidiaEnviada {
   url: string | null;
 }
 
-type Pedido = { arquivo: File; destino: "capa_news" | "anexo_suporte" };
+type Pedido = { arquivo: File; destino: "capa_news" | "anexo_suporte" | "social_post" };
 
 function lerFormulario(d: unknown): Pedido {
   if (!(d instanceof FormData)) throw new Error("Envie o arquivo.");
   const arquivo = d.get("arquivo");
   const destino = String(d.get("destino") ?? "");
   if (!(arquivo instanceof File) || arquivo.size === 0) throw new Error("Escolha um arquivo.");
-  if (destino !== "capa_news" && destino !== "anexo_suporte") throw new Error("Destino inválido.");
+  if (destino !== "capa_news" && destino !== "anexo_suporte" && destino !== "social_post")
+    throw new Error("Destino inválido.");
   return { arquivo, destino };
 }
 
 async function enviar(userId: string, p: Pedido): Promise<MidiaEnviada> {
   const { arquivo, destino } = p;
   const mime = (arquivo.type || "").split(";")[0].trim().toLowerCase();
-  const capa = destino === "capa_news";
+  // Foto de post das Automações: mesma régua da capa (imagem conferida pelos primeiros bytes).
+  const capa = destino === "capa_news" || destino === "social_post";
   if (capa) {
     if (!MIMES_CAPA.has(mime)) throw new Error("Envie a capa em JPG, PNG ou WebP.");
     if (arquivo.size > TETO_CAPA) throw new Error("Imagem acima de 5 MB.");
@@ -63,7 +65,7 @@ async function enviar(userId: string, p: Pedido): Promise<MidiaEnviada> {
   }
   // Mesma entidade que o Corretor usa: capa da News = `radar_post`; anexo de conversa =
   // `proposta` sem id (é assim que o fio do suporte guarda, e a RLS do chamado o enxerga).
-  const entidade = capa ? "radar_post" : "proposta";
+  const entidade = destino === "social_post" ? "social" : capa ? "radar_post" : "proposta";
   const tipo = capa
     ? "foto"
     : mime.startsWith("image/")
@@ -118,5 +120,14 @@ export const enviarAnexoSuporte = createServerFn({ method: "POST" })
   .inputValidator(lerFormulario)
   .handler(async ({ data, context }) => {
     if (data.destino !== "anexo_suporte") throw new Error("Destino inválido.");
+    return enviar(context.userId, data);
+  });
+
+/** Foto de um post das Automações (0227): vai para o armazenamento da plataforma. */
+export const enviarFotoSocial = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["marketing.automacoes", "edit"])])
+  .inputValidator(lerFormulario)
+  .handler(async ({ data, context }) => {
+    if (data.destino !== "social_post") throw new Error("Destino inválido.");
     return enviar(context.userId, data);
   });

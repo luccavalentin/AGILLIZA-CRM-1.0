@@ -74,6 +74,15 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
+    grupo: "Marketing",
+    modulo: "marketing.automacoes",
+    label: "Automações (posts nas redes da AgillizaTech)",
+    acoes: [
+      { acao: "view", label: "Ver calendário e resultados" },
+      { acao: "edit", label: "Criar e agendar posts, conectar redes" },
+    ],
+  },
+  {
     grupo: "Operacional",
     modulo: "operacional.codigos",
     label: "Códigos de acesso (bancos)",
@@ -268,7 +277,10 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     label: "Chaves dos provedores",
     acoes: [
       { acao: "view", label: "Ver (só as dicas)" },
-      { acao: "edit", label: "Guardar, ligar e apagar chaves (o banco só aceita de administradores)" },
+      {
+        acao: "edit",
+        label: "Guardar, ligar e apagar chaves (o banco só aceita de administradores)",
+      },
     ],
   },
   {
@@ -293,19 +305,28 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     grupo: "Plataforma (SaaS)",
     modulo: "saas.consultas",
     label: "Consultas pagas",
-    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Alterar preços e configurações" }],
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Alterar preços e configurações" },
+    ],
   },
   {
     grupo: "Plataforma (SaaS)",
     modulo: "saas.integracoes",
     label: "Integrações e filas",
-    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Reprocessar mensagens com erro" }],
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Reprocessar mensagens com erro" },
+    ],
   },
   {
     grupo: "Plataforma (SaaS)",
     modulo: "saas.suporte",
     label: "Suporte aos assinantes",
-    acoes: [{ acao: "view", label: "Ver chamados" }, { acao: "edit", label: "Responder e atender" }],
+    acoes: [
+      { acao: "view", label: "Ver chamados" },
+      { acao: "edit", label: "Responder e atender" },
+    ],
   },
   {
     grupo: "Plataforma (SaaS)",
@@ -317,19 +338,28 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     grupo: "Plataforma (SaaS)",
     modulo: "saas.lgpd",
     label: "LGPD da plataforma",
-    acoes: [{ acao: "view", label: "Ver solicitações" }, { acao: "edit", label: "Atender (exclusão definitiva só administradores)" }],
+    acoes: [
+      { acao: "view", label: "Ver solicitações" },
+      { acao: "edit", label: "Atender (exclusão definitiva só administradores)" },
+    ],
   },
   {
     grupo: "Plataforma (SaaS)",
     modulo: "saas.configuracoes",
     label: "Configurações globais",
-    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Alterar" }],
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Alterar" },
+    ],
   },
   {
     grupo: "Plataforma (SaaS)",
     modulo: "saas.marketplace",
     label: "Marketplace e rede de corretores",
-    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Moderar e verificar" }],
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Moderar e verificar" },
+    ],
   },
   {
     grupo: "Plataforma (SaaS)",
@@ -344,7 +374,10 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     grupo: "Plataforma (SaaS)",
     modulo: "saas.news",
     label: "Agilliza News (curadoria)",
-    acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Curar e publicar" }],
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Curar e publicar" },
+    ],
   },
   {
     grupo: "Plataforma (SaaS)",

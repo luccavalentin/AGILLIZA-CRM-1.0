@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   SiFacebook,
@@ -9,23 +10,31 @@ import {
 } from "@icons-pack/react-simple-icons";
 import { Workflow } from "lucide-react";
 import type { ComponentType } from "react";
+import { PainelAutomacoes } from "@/components/automacoes/painel";
+import { SiLinkedIn } from "@/components/automacoes/marca-rede";
+import { usePermissao } from "@/hooks/use-permissao";
+import { moduloPermitido } from "@/lib/route-guards";
+import { estadoAutomacoes } from "@/lib/social/automacoes.functions";
+
+type Busca = { aba?: string; conectadas?: string; erro?: string };
 
 export const Route = createFileRoute("/_authenticated/automacoes")({
   head: () => ({ meta: [{ title: "Automações — Agilliza" }] }),
+  validateSearch: (s: Record<string, unknown>): Busca => ({
+    aba: typeof s.aba === "string" ? s.aba : undefined,
+    conectadas: typeof s.conectadas === "string" ? s.conectadas.slice(0, 4) : undefined,
+    erro: typeof s.erro === "string" ? s.erro.slice(0, 20) : undefined,
+  }),
+  // Ligada (SOCIAL_ATIVO=1) e com o módulo liberado: o painel. Senão, a prévia "Em breve".
+  loader: async () => {
+    const [estado, permitido] = await Promise.all([
+      estadoAutomacoes(),
+      moduloPermitido("marketing.automacoes"),
+    ]);
+    return { ...estado, ativo: estado.ativo && permitido };
+  },
   component: Pagina,
 });
-
-/** LinkedIn saiu do pacote de marcas a pedido da própria marca: glifo oficial embutido. */
-function SiLinkedIn({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" role="img" aria-label="LinkedIn" className={className}>
-      <path
-        fill="#0A66C2"
-        d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.125 2.062 2.062 0 0 1 0 4.125zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
-      />
-    </svg>
-  );
-}
 
 type Marca = ComponentType<{ className?: string; color?: string; title?: string }>;
 
@@ -40,11 +49,43 @@ const REDES: { nome: string; Icone: Marca }[] = [
   { nome: "Google", Icone: SiGoogle as Marca },
 ];
 
+function Pagina() {
+  const estado = Route.useLoaderData();
+  const busca = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const podeEditar = usePermissao("marketing.automacoes", "edit");
+  const limparRetorno = useCallback(
+    () => void navigate({ search: { aba: "redes" }, replace: true }),
+    [navigate],
+  );
+  if (!estado.ativo) return <Previa />;
+  return (
+    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
+      <div className="flex items-center gap-2">
+        <Workflow className="h-5 w-5 text-muted-foreground" />
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Automações</h1>
+          <p className="text-sm text-muted-foreground">
+            Agende e publique nas redes da AgillizaTech e acompanhe os resultados.
+          </p>
+        </div>
+      </div>
+      <PainelAutomacoes
+        conectores={estado.conectores}
+        corretorUrl={estado.corretorUrl}
+        podeEditar={podeEditar}
+        retorno={{ conectadas: busca.conectadas, erro: busca.erro }}
+        aoLimparRetorno={limparRetorno}
+      />
+    </div>
+  );
+}
+
 /**
  * Automações de marketing nas redes sociais, anunciada no menu com "Em breve"
  * (pedido do dono, 21/10/2026). Só a prévia: nada conecta conta nem publica.
  */
-function Pagina() {
+function Previa() {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5 p-4 md:p-6">
       <div className="flex items-center gap-2">
