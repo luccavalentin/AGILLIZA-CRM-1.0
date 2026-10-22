@@ -45,7 +45,7 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 flex flex-col w-[calc(100%-2rem)] max-w-lg max-h-[85vh] sm:max-h-[85vh] translate-x-[-50%] translate-y-[-50%] rounded-2xl border border-border/60 bg-background shadow-2xl ring-1 ring-black/5 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-top-[2%] data-[state=open]:slide-in-from-top-[2%]",
+          "fixed left-[50%] top-[calc(var(--topo-visivel,0px)+var(--altura-visivel,100dvh)/2)] z-50 flex flex-col w-[calc(100%-1.5rem)] max-w-lg max-h-[calc(var(--altura-visivel,100dvh)-1.5rem)] sm:max-h-[min(85dvh,calc(var(--altura-visivel,100dvh)-2rem))] translate-x-[-50%] translate-y-[-50%] rounded-2xl border border-border/60 bg-background shadow-2xl ring-1 ring-black/5 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-top-[2%] data-[state=open]:slide-in-from-top-[2%]",
           className,
         )}
         {...props}
@@ -76,7 +76,7 @@ const DialogContent = React.forwardRef<
           {children}
         </div>
 
-        <DialogPrimitive.Close className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground ring-offset-background cursor-pointer transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent">
+        <DialogPrimitive.Close className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 max-sm:right-1.5 max-sm:top-2 max-sm:h-11 max-sm:w-11 items-center justify-center rounded-md text-muted-foreground ring-offset-background cursor-pointer transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent">
           <X className="h-4 w-4" />
           <span className="sr-only">Fechar</span>
         </DialogPrimitive.Close>
@@ -91,7 +91,8 @@ const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
     className={cn(
       // O espaço lateral vem do corpo do modal; aqui só o de cima e de baixo.
       // `pr-8` guarda o lugar do botão de fechar, que fica sobre o cabeçalho.
-      "flex shrink-0 flex-col space-y-1.5 pb-4 pr-8 pt-6 text-center sm:text-left",
+      // `dialogo-cabecalho`: fica preso no alto enquanto o corpo rola (styles.css).
+      "dialogo-cabecalho flex shrink-0 flex-col space-y-1.5 pb-4 pr-10 pt-6 text-left sm:pr-8",
       className,
     )}
     {...props}
@@ -102,7 +103,9 @@ DialogHeader.displayName = "DialogHeader";
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex shrink-0 flex-col-reverse gap-2 border-t border-border/40 pb-6 pt-4 sm:flex-row sm:justify-end sm:gap-0 sm:space-x-2",
+      // `dialogo-rodape`: preso embaixo enquanto o corpo rola; no telefone os botões
+      // empilham com a largura toda e a ação principal fica em cima (styles.css).
+      "dialogo-rodape flex shrink-0 flex-col-reverse gap-2 border-t border-border/40 pb-6 pt-4 sm:flex-row sm:justify-end sm:gap-0 sm:space-x-2",
       className,
     )}
     {...props}

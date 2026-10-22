@@ -22,6 +22,7 @@ import appCss from "../styles.css?url";
 import { reportError } from "../lib/error-reporting";
 import { iniciarLimpezaBadge } from "../lib/host-badge-cleaner";
 import { mensagemDeErro } from "../lib/erros/mensagem";
+import { acompanharTelaVisivel } from "@/lib/tela-visivel";
 
 function NotFoundComponent() {
   return (
@@ -111,7 +112,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         httpEquiv: "Content-Security-Policy",
         content: "upgrade-insecure-requests",
       },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      {
+        name: "viewport",
+        // `interactive-widget`: no Android o teclado encolhe a janela e o modal cabe acima dele.
+        content:
+          "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
+      },
       { title: "Agilliza — Crédito Imobiliário e Home Equity" },
       {
         name: "description",
@@ -213,6 +219,8 @@ function RootComponent() {
   useEffect(() => {
     return iniciarLimpezaBadge();
   }, []);
+
+  useEffect(() => acompanharTelaVisivel(), []);
 
   // Service worker do app: habilita as notificações do sistema (o popup que
   // app nativo mostra) e deixa o Web Push pronto para quando houver servidor.

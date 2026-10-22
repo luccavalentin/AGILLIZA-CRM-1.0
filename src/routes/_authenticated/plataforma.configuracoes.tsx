@@ -624,7 +624,7 @@ function EditorBanco({
       )}
 
       <Bloco titulo="Taxas anuais" descricao="Em porcentagem ao ano, como o banco divulga.">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {campo("taxa_sac", "SAC (%)")}
           {campo("taxa_price", "Price (%)")}
           {campo("taxa_he_sac", "Home equity — SAC (%)")}

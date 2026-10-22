@@ -388,7 +388,7 @@ export function CartaAnaliseDialog({
                         (já preenchidos — abra para corrigir)
                       </span>
                     </summary>
-                    <div className="grid grid-cols-2 gap-3 border-t border-border px-4 py-4">
+                    <div className="grid gap-3 sm:grid-cols-2 border-t border-border px-4 py-4">
                       {CAMPOS_SISTEMA.map((f) => (
                         <div key={f.chave} className="space-y-1">
                           <Label htmlFor={`carta-${f.chave}`} className="text-xs">

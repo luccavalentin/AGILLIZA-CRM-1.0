@@ -1971,3 +1971,77 @@ html[data-crm-motion="off"] .crm-page-transition {
     animation: none;
   }
 }
+
+/* ===========================================================================
+ * Modais e formulários no celular (22/10/2026)
+ *
+ * Pedido do dono: "os modais e os formulários são todos estourados… vai ser
+ * aplicativo na Play Store e na Apple Store, precisa de responsividade tela a
+ * tela". O corpo do modal já rolava, mas cabeçalho e rodapé rolavam junto: o
+ * botão de salvar sumia no fim de um formulário longo. Agora os dois ficam
+ * presos, e o modal cabe na área acima do teclado (`--altura-visivel`, ver
+ * src/lib/tela-visivel.ts).
+ * ======================================================================== */
+/* Em `components`: o que a tela passa por classe (pb-0, bg-muted…) continua valendo. */
+@layer components {
+  .dialogo-cabecalho,
+  .dialogo-rodape {
+    position: sticky;
+    z-index: 5;
+    background: var(--background);
+    /* Pinta também a margem lateral do corpo, para o texto que rola por baixo
+       não aparecer dos lados. O corpo corta o que passa da borda. */
+    box-shadow:
+      -1.5rem 0 0 var(--background),
+      1.5rem 0 0 var(--background);
+  }
+  .dialogo-cabecalho {
+    top: 0;
+  }
+  .dialogo-rodape {
+    bottom: 0;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Alvo de toque de 44 px dentro de modais, gavetas e formulários. No computador
+   (mouse) nada muda. */
+@media (pointer: coarse) {
+  :is([role="dialog"], form)
+    :is(
+      button:not([role="checkbox"]):not([role="switch"]):not([role="radio"]):not([role="tab"]):not(
+          .sem-toque
+        ),
+      input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not(
+          [type="file"]
+        ),
+      select,
+      [role="combobox"]
+    ) {
+    min-height: 44px;
+  }
+  :is([role="dialog"], form) button:not([role="checkbox"]):not([role="switch"]):not(.sem-toque):has(> svg:only-child) {
+    min-width: 44px;
+  }
+  /* Abaixo de 16 px o iPhone dá zoom na página ao tocar no campo. */
+  :is([role="dialog"], form) :is(input, select, textarea, [role="combobox"]) {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Telefone: nada do modal passa da largura da tela, e o par de botões do
+   rodapé empilha com a largura toda. */
+@media (max-width: 639px) {
+  [role="dialog"] :is(img, video, canvas, table, pre) {
+    max-width: 100%;
+  }
+  .dialogo-rodape > *,
+  .dialogo-rodape > :is(div, span) > :is(button, a) {
+    width: 100%;
+  }
+  .dialogo-rodape > :is(div, span):has(> button, > a) {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+}

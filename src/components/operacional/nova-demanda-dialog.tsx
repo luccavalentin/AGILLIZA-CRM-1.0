@@ -268,7 +268,7 @@ export function NovaDemandaDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 min-[420px]:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Prioridade</Label>
               <Select
@@ -311,7 +311,7 @@ export function NovaDemandaDialog({
                 emptyText="Nenhum cliente."
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 min-[420px]:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-xs">Proposta</Label>
                 <ComboSelect
