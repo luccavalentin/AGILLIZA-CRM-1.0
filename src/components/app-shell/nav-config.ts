@@ -50,6 +50,7 @@ import {
   BookOpen,
   Presentation,
   Workflow,
+  HandCoins,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -688,6 +689,13 @@ export const navInterno: NavGroup[] = [
         icon: CircleDollarSign,
         to: "/plataforma/receita",
         perm: { modulo: "saas.receita" },
+      },
+      {
+        // Comissão de quem envia proposta (0229): só existe depois do registro em cartório.
+        label: "Comissões dos assinantes",
+        icon: HandCoins,
+        to: "/plataforma/comissoes",
+        perm: { modulo: "saas.comissoes" },
       },
       {
         label: "Planos, preços e créditos",

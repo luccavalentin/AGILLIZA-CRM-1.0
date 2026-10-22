@@ -333,6 +333,15 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   },
   {
     grupo: "Plataforma (SaaS)",
+    modulo: "saas.comissoes",
+    label: "Comissões dos assinantes",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Definir percentual e dar baixa" },
+    ],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
     modulo: "saas.news",
     label: "Agilliza News (curadoria)",
     acoes: [{ acao: "view", label: "Ver" }, { acao: "edit", label: "Curar e publicar" }],
