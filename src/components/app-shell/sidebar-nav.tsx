@@ -163,6 +163,7 @@ function SidebarLink({
           {item.badge}
         </span>
       )}
+      {item.emBreve && <span className="selo-em-breve">Em breve</span>}
     </Link>
   );
 }
@@ -253,6 +254,9 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
                 <Icon className="h-[18px] w-[18px]" />
                 {piscar && (
                   <span className="absolute right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-sidebar-primary" />
+                )}
+                {item.emBreve && (
+                  <span className="selo-em-breve-ponto absolute right-1 top-1" aria-hidden />
                 )}
               </Link>
             </TooltipTrigger>

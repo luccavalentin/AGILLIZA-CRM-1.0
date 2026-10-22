@@ -49,6 +49,7 @@ import {
   Bot,
   BookOpen,
   Presentation,
+  Workflow,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -68,6 +69,8 @@ export interface NavItem {
   params?: Record<string, string>;
   children?: NavItem[];
   badge?: string;
+  /** Novidade anunciada: selo "Em breve" piscando ao lado do rótulo. */
+  emBreve?: boolean;
   /** Ausente = item sempre visível (ex.: Visão Geral). */
   perm?: NavPerm;
 }
@@ -151,6 +154,12 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "crm.parceiros" },
       },
     ],
+  },
+  // Automações de marketing nas redes (pedido do dono, 21/10/2026): anunciada com "Em breve".
+  {
+    id: "marketing",
+    label: "Marketing",
+    items: [{ label: "Automações", icon: Workflow, to: "/automacoes", emBreve: true }],
   },
   {
     id: "operacional",

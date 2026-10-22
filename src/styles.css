@@ -1915,3 +1915,59 @@ html[data-crm-motion="off"] .crm-page-transition {
     transform: none !important;
   }
 }
+
+/* "Em breve" no menu (Automações, 21/10/2026): selo âmbar com um brilho que respira. */
+.selo-em-breve {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  height: 20px;
+  padding: 0 7px 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #fde7b0;
+  background: rgb(242 182 87 / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(242 182 87 / 0.35);
+  animation: selo-em-breve-pisca 1.8s ease-in-out infinite;
+}
+.selo-em-breve::before,
+.selo-em-breve-ponto {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #f2b657;
+  animation: selo-em-breve-ponto 1.8s ease-out infinite;
+}
+@keyframes selo-em-breve-pisca {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes selo-em-breve-ponto {
+  0% {
+    box-shadow: 0 0 0 0 rgb(242 182 87 / 0.6);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px rgb(242 182 87 / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .selo-em-breve,
+  .selo-em-breve::before,
+  .selo-em-breve-ponto {
+    animation: none;
+  }
+}
