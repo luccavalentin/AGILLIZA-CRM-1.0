@@ -276,6 +276,13 @@ export const navInterno: NavGroup[] = [
         to: "/operacional/chats",
         perm: { modulo: "operacional.chats" },
       },
+      {
+        // Códigos que os bancos mandam para a caixa da equipe (substitui o reencaminhamento).
+        label: "Códigos de acesso",
+        icon: KeyRound,
+        to: "/operacional/codigos",
+        perm: { modulo: "operacional.codigos" },
+      },
     ],
   },
   {

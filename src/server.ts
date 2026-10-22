@@ -60,3 +60,12 @@ export default {
     }
   },
 };
+
+// Códigos de acesso: o leitor da caixa vigiada roda só onde LEITOR_CODIGOS=1 (o servidor
+// de produção). Em desenvolvimento não liga — um segundo login na mesma caixa faz o
+// provedor bloquear (ver src/lib/codigos/leitor.server.ts).
+if (process.env.LEITOR_CODIGOS === "1") {
+  void import("./lib/codigos/leitor.server")
+    .then((m) => m.iniciarLeitorDeCodigos())
+    .catch((e) => console.error("[codigos] não consegui iniciar o leitor", e));
+}

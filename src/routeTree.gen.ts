@@ -17,11 +17,11 @@ import { Route as ClienteConsentimentoRouteImport } from './routes/cliente-conse
 import { Route as ParceiroRouteImport } from './routes/parceiro'
 import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
 import { Route as PortalRouteImport } from './routes/portal'
+import { Route as AuthenticatedAutomacoesRouteImport } from './routes/_authenticated/automacoes'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
-import { Route as AuthenticatedAutomacoesRouteImport } from './routes/_authenticated/automacoes'
 import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/links'
 import { Route as AuthenticatedMatriculasRouteImport } from './routes/_authenticated/matriculas'
 import { Route as AuthenticatedParceiroInicioRouteImport } from './routes/_authenticated/parceiro-inicio'
@@ -68,6 +68,7 @@ import { Route as AuthenticatedFinanceiroPainelRouteImport } from './routes/_aut
 import { Route as AuthenticatedFormulariosIndexRouteImport } from './routes/_authenticated/formularios.index'
 import { Route as AuthenticatedFormulariosBancoRouteImport } from './routes/_authenticated/formularios.$banco'
 import { Route as AuthenticatedOperacionalChatsRouteImport } from './routes/_authenticated/operacional.chats'
+import { Route as AuthenticatedOperacionalCodigosRouteImport } from './routes/_authenticated/operacional.codigos'
 import { Route as AuthenticatedOperacionalDemandasRouteImport } from './routes/_authenticated/operacional.demandas'
 import { Route as AuthenticatedOperacionalPainelRouteImport } from './routes/_authenticated/operacional.painel'
 import { Route as AuthenticatedOperacionalPropostasRouteImport } from './routes/_authenticated/operacional.propostas'
@@ -188,6 +189,11 @@ const PortalRoute = PortalRouteImport.update({
   path: '/portal',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAutomacoesRoute = AuthenticatedAutomacoesRouteImport.update({
+  id: '/automacoes',
+  path: '/automacoes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
   id: '/crm',
   path: '/crm',
@@ -209,11 +215,6 @@ const AuthenticatedFormulariosRoute =
     path: '/formularios',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAutomacoesRoute = AuthenticatedAutomacoesRouteImport.update({
-  id: '/automacoes',
-  path: '/automacoes',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedLinksRoute = AuthenticatedLinksRouteImport.update({
   id: '/links',
   path: '/links',
@@ -473,6 +474,12 @@ const AuthenticatedOperacionalChatsRoute =
   AuthenticatedOperacionalChatsRouteImport.update({
     id: '/operacional/chats',
     path: '/operacional/chats',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOperacionalCodigosRoute =
+  AuthenticatedOperacionalCodigosRouteImport.update({
+    id: '/operacional/codigos',
+    path: '/operacional/codigos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOperacionalDemandasRoute =
@@ -959,11 +966,11 @@ export interface FileRoutesByFullPath {
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
+  '/automacoes': typeof AuthenticatedAutomacoesRoute
   '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/formularios': typeof AuthenticatedFormulariosRouteWithChildren
-  '/automacoes': typeof AuthenticatedAutomacoesRoute
   '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
@@ -1008,6 +1015,7 @@ export interface FileRoutesByFullPath {
   '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
   '/operacional/chats': typeof AuthenticatedOperacionalChatsRoute
+  '/operacional/codigos': typeof AuthenticatedOperacionalCodigosRoute
   '/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
   '/operacional/painel': typeof AuthenticatedOperacionalPainelRoute
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
@@ -1099,10 +1107,10 @@ export interface FileRoutesByTo {
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
+  '/automacoes': typeof AuthenticatedAutomacoesRoute
   '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
-  '/automacoes': typeof AuthenticatedAutomacoesRoute
   '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
@@ -1146,6 +1154,7 @@ export interface FileRoutesByTo {
   '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
   '/operacional/chats': typeof AuthenticatedOperacionalChatsRoute
+  '/operacional/codigos': typeof AuthenticatedOperacionalCodigosRoute
   '/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
   '/operacional/painel': typeof AuthenticatedOperacionalPainelRoute
   '/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
@@ -1239,11 +1248,11 @@ export interface FileRoutesById {
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
+  '/_authenticated/automacoes': typeof AuthenticatedAutomacoesRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/formularios': typeof AuthenticatedFormulariosRouteWithChildren
-  '/_authenticated/automacoes': typeof AuthenticatedAutomacoesRoute
   '/_authenticated/links': typeof AuthenticatedLinksRoute
   '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
   '/_authenticated/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
@@ -1288,6 +1297,7 @@ export interface FileRoutesById {
   '/_authenticated/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/_authenticated/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
   '/_authenticated/operacional/chats': typeof AuthenticatedOperacionalChatsRoute
+  '/_authenticated/operacional/codigos': typeof AuthenticatedOperacionalCodigosRoute
   '/_authenticated/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
   '/_authenticated/operacional/painel': typeof AuthenticatedOperacionalPainelRoute
   '/_authenticated/operacional/propostas': typeof AuthenticatedOperacionalPropostasRoute
@@ -1381,11 +1391,11 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
+    | '/automacoes'
     | '/crm'
     | '/dashboard'
     | '/documentos'
     | '/formularios'
-    | '/automacoes'
     | '/links'
     | '/matriculas'
     | '/parceiro-inicio'
@@ -1430,6 +1440,7 @@ export interface FileRouteTypes {
     | '/financeiro/painel'
     | '/formularios/$banco'
     | '/operacional/chats'
+    | '/operacional/codigos'
     | '/operacional/demandas'
     | '/operacional/painel'
     | '/operacional/propostas'
@@ -1521,10 +1532,10 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
+    | '/automacoes'
     | '/crm'
     | '/dashboard'
     | '/documentos'
-    | '/automacoes'
     | '/links'
     | '/matriculas'
     | '/parceiro-inicio'
@@ -1568,6 +1579,7 @@ export interface FileRouteTypes {
     | '/financeiro/painel'
     | '/formularios/$banco'
     | '/operacional/chats'
+    | '/operacional/codigos'
     | '/operacional/demandas'
     | '/operacional/painel'
     | '/operacional/propostas'
@@ -1660,11 +1672,11 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
+    | '/_authenticated/automacoes'
     | '/_authenticated/crm'
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
     | '/_authenticated/formularios'
-    | '/_authenticated/automacoes'
     | '/_authenticated/links'
     | '/_authenticated/matriculas'
     | '/_authenticated/parceiro-inicio'
@@ -1709,6 +1721,7 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro/painel'
     | '/_authenticated/formularios/$banco'
     | '/_authenticated/operacional/chats'
+    | '/_authenticated/operacional/codigos'
     | '/_authenticated/operacional/demandas'
     | '/_authenticated/operacional/painel'
     | '/_authenticated/operacional/propostas'
@@ -1867,6 +1880,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/automacoes': {
+      id: '/_authenticated/automacoes'
+      path: '/automacoes'
+      fullPath: '/automacoes'
+      preLoaderRoute: typeof AuthenticatedAutomacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crm': {
       id: '/_authenticated/crm'
       path: '/crm'
@@ -1893,13 +1913,6 @@ declare module '@tanstack/react-router' {
       path: '/formularios'
       fullPath: '/formularios'
       preLoaderRoute: typeof AuthenticatedFormulariosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/automacoes': {
-      id: '/_authenticated/automacoes'
-      path: '/automacoes'
-      fullPath: '/automacoes'
-      preLoaderRoute: typeof AuthenticatedAutomacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/links': {
@@ -2222,6 +2235,13 @@ declare module '@tanstack/react-router' {
       path: '/operacional/chats'
       fullPath: '/operacional/chats'
       preLoaderRoute: typeof AuthenticatedOperacionalChatsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/operacional/codigos': {
+      id: '/_authenticated/operacional/codigos'
+      path: '/operacional/codigos'
+      fullPath: '/operacional/codigos'
+      preLoaderRoute: typeof AuthenticatedOperacionalCodigosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/operacional/demandas': {
@@ -2896,11 +2916,11 @@ const AuthenticatedRelatoriosRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAutomacoesRoute: typeof AuthenticatedAutomacoesRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRouteWithChildren
-  AuthenticatedAutomacoesRoute: typeof AuthenticatedAutomacoesRoute
   AuthenticatedLinksRoute: typeof AuthenticatedLinksRoute
   AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
   AuthenticatedParceiroInicioRoute: typeof AuthenticatedParceiroInicioRoute
@@ -2926,6 +2946,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinanceiroFluxoDeCaixaRoute: typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
   AuthenticatedFinanceiroPainelRoute: typeof AuthenticatedFinanceiroPainelRoute
   AuthenticatedOperacionalChatsRoute: typeof AuthenticatedOperacionalChatsRoute
+  AuthenticatedOperacionalCodigosRoute: typeof AuthenticatedOperacionalCodigosRoute
   AuthenticatedOperacionalDemandasRoute: typeof AuthenticatedOperacionalDemandasRoute
   AuthenticatedOperacionalPainelRoute: typeof AuthenticatedOperacionalPainelRoute
   AuthenticatedOperacionalPropostasRoute: typeof AuthenticatedOperacionalPropostasRoute
@@ -2984,11 +3005,11 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAutomacoesRoute: AuthenticatedAutomacoesRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedFormulariosRoute: AuthenticatedFormulariosRouteWithChildren,
-  AuthenticatedAutomacoesRoute: AuthenticatedAutomacoesRoute,
   AuthenticatedLinksRoute: AuthenticatedLinksRoute,
   AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
   AuthenticatedParceiroInicioRoute: AuthenticatedParceiroInicioRoute,
@@ -3020,6 +3041,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedFinanceiroFluxoDeCaixaRoute,
   AuthenticatedFinanceiroPainelRoute: AuthenticatedFinanceiroPainelRoute,
   AuthenticatedOperacionalChatsRoute: AuthenticatedOperacionalChatsRoute,
+  AuthenticatedOperacionalCodigosRoute: AuthenticatedOperacionalCodigosRoute,
   AuthenticatedOperacionalDemandasRoute: AuthenticatedOperacionalDemandasRoute,
   AuthenticatedOperacionalPainelRoute: AuthenticatedOperacionalPainelRoute,
   AuthenticatedOperacionalPropostasRoute:

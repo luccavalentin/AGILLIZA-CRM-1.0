@@ -75,6 +75,15 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   },
   {
     grupo: "Operacional",
+    modulo: "operacional.codigos",
+    label: "Códigos de acesso (bancos)",
+    acoes: [
+      { acao: "view", label: "Ver os códigos recebidos" },
+      { acao: "edit", label: "Cadastrar a caixa vigiada" },
+    ],
+  },
+  {
+    grupo: "Operacional",
     modulo: "operacional.chats",
     label: "Central de Conversas (chat interno)",
     acoes: [
