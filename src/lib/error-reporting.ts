@@ -1,3 +1,5 @@
+import { registrarErroNaTela } from "./tecnologia/erros-cliente";
+
 type ErrorReportOptions = {
   mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
   handled?: boolean;
@@ -20,6 +22,8 @@ declare global {
 
 export function reportError(error: unknown, context: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
+  // Gestão de Tecnologia: cópia resumida, sem dado pessoal, com freio (não muda o que segue).
+  registrarErroNaTela(error);
   window.__hostErrorEvents?.captureException?.(
     error,
     {

@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { comContextoDaRequisicao } from "./lib/segundo-plano.server";
+import { registrarErroDoServidor } from "./lib/tecnologia/registrar-erro.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -21,7 +22,10 @@ async function getServerEntry(): Promise<ServerEntry> {
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
-async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
+async function normalizeCatastrophicSsrResponse(
+  response: Response,
+  url: string,
+): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return response;
@@ -29,7 +33,10 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   const body = await response.clone().text();
   if (!isH3SwallowedErrorBody(body)) return response;
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  const erro = consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`);
+  console.error(erro);
+  // Cópia resumida, sem dado pessoal, para a Gestão de Tecnologia (não muda a resposta).
+  registrarErroDoServidor(erro, url);
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
@@ -49,10 +56,13 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
-      const response = await comContextoDaRequisicao(request, ctx, () => handler.fetch(request, env, ctx));
-      return await normalizeCatastrophicSsrResponse(response);
+      const response = await comContextoDaRequisicao(request, ctx, () =>
+        handler.fetch(request, env, ctx),
+      );
+      return await normalizeCatastrophicSsrResponse(response, request.url);
     } catch (error) {
       console.error(error);
+      registrarErroDoServidor(error, request.url);
       return new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },

@@ -218,3 +218,60 @@ export async function credencialDoSistema(
     c.release();
   }
 }
+
+/**
+ * Erro do Agilliza (navegador ou servidor) → Gestão de Tecnologia (migração 0233).
+ * Grava pelo papel da ponte, SEM contexto de pessoa: o banco só aceita a função
+ * `plataforma.registrar_erro_agilliza`, que limpa o texto e agrupa. Nunca lança — e
+ * sem ponte configurada (desenvolvimento) simplesmente não grava.
+ */
+export async function registrarErroNaPlataforma(e: {
+  mensagem: string;
+  pilha?: string | null;
+  tipo?: string | null;
+  rota?: string | null;
+  versao?: string | null;
+  navegador?: string | null;
+  sistemaOp?: string | null;
+  origem: "navegador" | "servidor";
+  perfil?: string | null;
+}): Promise<void> {
+  if (!process.env.PONTE_DATABASE_URL) return;
+  try {
+    await obterPool().query(
+      "select plataforma.registrar_erro_agilliza($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+      [
+        e.mensagem,
+        e.pilha ?? null,
+        e.tipo ?? null,
+        e.rota ?? null,
+        e.versao ?? null,
+        e.navegador ?? null,
+        e.sistemaOp ?? null,
+        e.origem,
+        e.perfil ?? null,
+      ],
+    );
+  } catch {
+    // Banco fora ou função ainda não migrada: o erro original já foi para o console.
+  }
+}
+
+/** Sonda de saúde da ponte (`/api/saude`): `select 1` com tempo-limite de 2 s. */
+export async function sondarPonte(): Promise<{
+  configurada: boolean;
+  ok: boolean;
+  ms: number | null;
+}> {
+  if (!process.env.PONTE_DATABASE_URL) return { configurada: false, ok: false, ms: null };
+  const t0 = performance.now();
+  try {
+    await Promise.race([
+      obterPool().query("select 1"),
+      new Promise((_, rejeitar) => setTimeout(() => rejeitar(new Error("tempo esgotado")), 2000)),
+    ]);
+    return { configurada: true, ok: true, ms: Math.round(performance.now() - t0) };
+  } catch {
+    return { configurada: true, ok: false, ms: null };
+  }
+}

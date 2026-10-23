@@ -51,6 +51,13 @@ import {
   Presentation,
   Workflow,
   HandCoins,
+  Radar,
+  Server,
+  Bug,
+  TerminalSquare,
+  MapPinned,
+  BellRing,
+  Waves,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -774,6 +781,55 @@ export const navInterno: NavGroup[] = [
         icon: SlidersHorizontal,
         to: "/plataforma/configuracoes",
         perm: { modulo: "saas.configuracoes" },
+      },
+    ],
+  },
+  {
+    // Centro de controle técnico do ecossistema (Agilliza + Corretor 2.0) — migração 0233.
+    id: "tecnologia",
+    label: "Gestão de Tecnologia",
+    items: [
+      {
+        label: "Visão geral ao vivo",
+        icon: Radar,
+        to: "/tecnologia",
+        perm: { modulo: "saas.tecnologia" },
+      },
+      {
+        label: "Operação",
+        icon: Waves,
+        to: "/tecnologia/operacao",
+        perm: { modulo: "saas.tecnologia" },
+      },
+      {
+        label: "Servidor",
+        icon: Server,
+        to: "/tecnologia/servidor",
+        perm: { modulo: "saas.tecnologia" },
+      },
+      {
+        label: "Erros dos usuários",
+        icon: Bug,
+        to: "/tecnologia/erros",
+        perm: { modulo: "saas.tecnologia" },
+      },
+      {
+        label: "Logs",
+        icon: TerminalSquare,
+        to: "/tecnologia/logs",
+        perm: { modulo: "saas.tecnologia" },
+      },
+      {
+        label: "Usuários ativos",
+        icon: MapPinned,
+        to: "/tecnologia/usuarios",
+        perm: { modulo: "saas.tecnologia" },
+      },
+      {
+        label: "Alertas",
+        icon: BellRing,
+        to: "/tecnologia/alertas",
+        perm: { modulo: "saas.tecnologia" },
       },
     ],
   },

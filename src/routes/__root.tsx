@@ -23,6 +23,7 @@ import { reportError } from "../lib/error-reporting";
 import { iniciarLimpezaBadge } from "../lib/host-badge-cleaner";
 import { mensagemDeErro } from "../lib/erros/mensagem";
 import { acompanharTelaVisivel } from "@/lib/tela-visivel";
+import { instalarCapturaDeErros } from "@/lib/tecnologia/erros-cliente";
 
 function NotFoundComponent() {
   return (
@@ -65,7 +66,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             : "Não foi possível carregar esta página"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {mensagemDeErro(error, "Ocorreu um erro ao processar os dados. Tente atualizar a página.")}
+          {mensagemDeErro(
+            error,
+            "Ocorreu um erro ao processar os dados. Tente atualizar a página.",
+          )}
         </p>
         <details className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-left text-xs">
           <summary className="cursor-pointer font-medium text-foreground">
@@ -221,6 +225,9 @@ function RootComponent() {
   }, []);
 
   useEffect(() => acompanharTelaVisivel(), []);
+
+  // Erros que escapam da tela vão, resumidos e sem dado pessoal, à Gestão de Tecnologia.
+  useEffect(() => instalarCapturaDeErros(), []);
 
   // Service worker do app: habilita as notificações do sistema (o popup que
   // app nativo mostra) e deixa o Web Push pronto para quando houver servidor.

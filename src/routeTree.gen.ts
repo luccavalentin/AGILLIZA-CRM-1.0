@@ -26,6 +26,9 @@ import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedMatriculasRouteImport } from './routes/_authenticated/matriculas'
 import { Route as AuthenticatedParceiroInicioRouteImport } from './routes/_authenticated/parceiro-inicio'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedTecnologiaRouteImport } from './routes/_authenticated/tecnologia'
+import { Route as ApiErrosRouteImport } from './routes/api/erros'
+import { Route as ApiSaudeRouteImport } from './routes/api/saude'
 import { Route as ClienteAcompanharMinhaPropostaRouteImport } from './routes/cliente.acompanhar-minha-proposta'
 import { Route as ClienteChatRouteImport } from './routes/cliente.chat'
 import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
@@ -122,6 +125,13 @@ import { Route as AuthenticatedRhFuncionariosRouteImport } from './routes/_authe
 import { Route as AuthenticatedRhHoleritesRouteImport } from './routes/_authenticated/rh.holerites'
 import { Route as AuthenticatedRhPreviaFolhaRouteImport } from './routes/_authenticated/rh.previa-folha'
 import { Route as AuthenticatedRhRelatoriosRouteImport } from './routes/_authenticated/rh.relatorios'
+import { Route as AuthenticatedTecnologiaIndexRouteImport } from './routes/_authenticated/tecnologia.index'
+import { Route as AuthenticatedTecnologiaAlertasRouteImport } from './routes/_authenticated/tecnologia.alertas'
+import { Route as AuthenticatedTecnologiaErrosRouteImport } from './routes/_authenticated/tecnologia.erros'
+import { Route as AuthenticatedTecnologiaLogsRouteImport } from './routes/_authenticated/tecnologia.logs'
+import { Route as AuthenticatedTecnologiaOperacaoRouteImport } from './routes/_authenticated/tecnologia.operacao'
+import { Route as AuthenticatedTecnologiaServidorRouteImport } from './routes/_authenticated/tecnologia.servidor'
+import { Route as AuthenticatedTecnologiaUsuariosRouteImport } from './routes/_authenticated/tecnologia.usuarios'
 import { Route as AuthenticatedVisaoGeralPainelRouteImport } from './routes/_authenticated/visao-geral.painel'
 import { Route as ApiConsultorIaStreamRouteImport } from './routes/api/consultor-ia.stream'
 import { Route as ApiPlataformaMidiaRouteImport } from './routes/api/plataforma.midia'
@@ -236,6 +246,21 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTecnologiaRoute = AuthenticatedTecnologiaRouteImport.update({
+  id: '/tecnologia',
+  path: '/tecnologia',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiErrosRoute = ApiErrosRouteImport.update({
+  id: '/api/erros',
+  path: '/api/erros',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSaudeRoute = ApiSaudeRouteImport.update({
+  id: '/api/saude',
+  path: '/api/saude',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ClienteAcompanharMinhaPropostaRoute =
   ClienteAcompanharMinhaPropostaRouteImport.update({
@@ -799,6 +824,48 @@ const AuthenticatedRhRelatoriosRoute =
     path: '/rh/relatorios',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTecnologiaIndexRoute =
+  AuthenticatedTecnologiaIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedTecnologiaRoute,
+  } as any)
+const AuthenticatedTecnologiaAlertasRoute =
+  AuthenticatedTecnologiaAlertasRouteImport.update({
+    id: '/alertas',
+    path: '/alertas',
+    getParentRoute: () => AuthenticatedTecnologiaRoute,
+  } as any)
+const AuthenticatedTecnologiaErrosRoute =
+  AuthenticatedTecnologiaErrosRouteImport.update({
+    id: '/erros',
+    path: '/erros',
+    getParentRoute: () => AuthenticatedTecnologiaRoute,
+  } as any)
+const AuthenticatedTecnologiaLogsRoute =
+  AuthenticatedTecnologiaLogsRouteImport.update({
+    id: '/logs',
+    path: '/logs',
+    getParentRoute: () => AuthenticatedTecnologiaRoute,
+  } as any)
+const AuthenticatedTecnologiaOperacaoRoute =
+  AuthenticatedTecnologiaOperacaoRouteImport.update({
+    id: '/operacao',
+    path: '/operacao',
+    getParentRoute: () => AuthenticatedTecnologiaRoute,
+  } as any)
+const AuthenticatedTecnologiaServidorRoute =
+  AuthenticatedTecnologiaServidorRouteImport.update({
+    id: '/servidor',
+    path: '/servidor',
+    getParentRoute: () => AuthenticatedTecnologiaRoute,
+  } as any)
+const AuthenticatedTecnologiaUsuariosRoute =
+  AuthenticatedTecnologiaUsuariosRouteImport.update({
+    id: '/usuarios',
+    path: '/usuarios',
+    getParentRoute: () => AuthenticatedTecnologiaRoute,
+  } as any)
 const AuthenticatedVisaoGeralPainelRoute =
   AuthenticatedVisaoGeralPainelRouteImport.update({
     id: '/visao-geral/painel',
@@ -982,6 +1049,9 @@ export interface FileRoutesByFullPath {
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
+  '/tecnologia': typeof AuthenticatedTecnologiaRouteWithChildren
+  '/api/erros': typeof ApiErrosRoute
+  '/api/saude': typeof ApiSaudeRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -1074,6 +1144,12 @@ export interface FileRoutesByFullPath {
   '/rh/holerites': typeof AuthenticatedRhHoleritesRoute
   '/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
   '/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
+  '/tecnologia/alertas': typeof AuthenticatedTecnologiaAlertasRoute
+  '/tecnologia/erros': typeof AuthenticatedTecnologiaErrosRoute
+  '/tecnologia/logs': typeof AuthenticatedTecnologiaLogsRoute
+  '/tecnologia/operacao': typeof AuthenticatedTecnologiaOperacaoRoute
+  '/tecnologia/servidor': typeof AuthenticatedTecnologiaServidorRoute
+  '/tecnologia/usuarios': typeof AuthenticatedTecnologiaUsuariosRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/api/consultor-ia/stream': typeof ApiConsultorIaStreamRoute
   '/api/plataforma/midia': typeof ApiPlataformaMidiaRoute
@@ -1084,6 +1160,7 @@ export interface FileRoutesByFullPath {
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/rh/': typeof AuthenticatedRhIndexRoute
+  '/tecnologia/': typeof AuthenticatedTecnologiaIndexRoute
   '/admin/auditoria/manutencao': typeof AuthenticatedAdminAuditoriaManutencaoRoute
   '/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
   '/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
@@ -1122,6 +1199,8 @@ export interface FileRoutesByTo {
   '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
+  '/api/erros': typeof ApiErrosRoute
+  '/api/saude': typeof ApiSaudeRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -1214,6 +1293,12 @@ export interface FileRoutesByTo {
   '/rh/holerites': typeof AuthenticatedRhHoleritesRoute
   '/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
   '/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
+  '/tecnologia/alertas': typeof AuthenticatedTecnologiaAlertasRoute
+  '/tecnologia/erros': typeof AuthenticatedTecnologiaErrosRoute
+  '/tecnologia/logs': typeof AuthenticatedTecnologiaLogsRoute
+  '/tecnologia/operacao': typeof AuthenticatedTecnologiaOperacaoRoute
+  '/tecnologia/servidor': typeof AuthenticatedTecnologiaServidorRoute
+  '/tecnologia/usuarios': typeof AuthenticatedTecnologiaUsuariosRoute
   '/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/api/consultor-ia/stream': typeof ApiConsultorIaStreamRoute
   '/api/plataforma/midia': typeof ApiPlataformaMidiaRoute
@@ -1224,6 +1309,7 @@ export interface FileRoutesByTo {
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
   '/rh': typeof AuthenticatedRhIndexRoute
+  '/tecnologia': typeof AuthenticatedTecnologiaIndexRoute
   '/admin/auditoria/manutencao': typeof AuthenticatedAdminAuditoriaManutencaoRoute
   '/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
   '/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
@@ -1266,6 +1352,9 @@ export interface FileRoutesById {
   '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
   '/_authenticated/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
+  '/_authenticated/tecnologia': typeof AuthenticatedTecnologiaRouteWithChildren
+  '/api/erros': typeof ApiErrosRoute
+  '/api/saude': typeof ApiSaudeRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
   '/cliente/logout': typeof ClienteLogoutRoute
@@ -1358,6 +1447,12 @@ export interface FileRoutesById {
   '/_authenticated/rh/holerites': typeof AuthenticatedRhHoleritesRoute
   '/_authenticated/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
   '/_authenticated/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
+  '/_authenticated/tecnologia/alertas': typeof AuthenticatedTecnologiaAlertasRoute
+  '/_authenticated/tecnologia/erros': typeof AuthenticatedTecnologiaErrosRoute
+  '/_authenticated/tecnologia/logs': typeof AuthenticatedTecnologiaLogsRoute
+  '/_authenticated/tecnologia/operacao': typeof AuthenticatedTecnologiaOperacaoRoute
+  '/_authenticated/tecnologia/servidor': typeof AuthenticatedTecnologiaServidorRoute
+  '/_authenticated/tecnologia/usuarios': typeof AuthenticatedTecnologiaUsuariosRoute
   '/_authenticated/visao-geral/painel': typeof AuthenticatedVisaoGeralPainelRoute
   '/api/consultor-ia/stream': typeof ApiConsultorIaStreamRoute
   '/api/plataforma/midia': typeof ApiPlataformaMidiaRoute
@@ -1368,6 +1463,7 @@ export interface FileRoutesById {
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/_authenticated/rh/': typeof AuthenticatedRhIndexRoute
+  '/_authenticated/tecnologia/': typeof AuthenticatedTecnologiaIndexRoute
   '/_authenticated/admin/auditoria/manutencao': typeof AuthenticatedAdminAuditoriaManutencaoRoute
   '/_authenticated/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
   '/_authenticated/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
@@ -1410,6 +1506,9 @@ export interface FileRouteTypes {
     | '/matriculas'
     | '/parceiro-inicio'
     | '/relatorios'
+    | '/tecnologia'
+    | '/api/erros'
+    | '/api/saude'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
     | '/cliente/logout'
@@ -1502,6 +1601,12 @@ export interface FileRouteTypes {
     | '/rh/holerites'
     | '/rh/previa-folha'
     | '/rh/relatorios'
+    | '/tecnologia/alertas'
+    | '/tecnologia/erros'
+    | '/tecnologia/logs'
+    | '/tecnologia/operacao'
+    | '/tecnologia/servidor'
+    | '/tecnologia/usuarios'
     | '/visao-geral/painel'
     | '/api/consultor-ia/stream'
     | '/api/plataforma/midia'
@@ -1512,6 +1617,7 @@ export interface FileRouteTypes {
     | '/formularios/'
     | '/relatorios/'
     | '/rh/'
+    | '/tecnologia/'
     | '/admin/auditoria/manutencao'
     | '/admin/compras/aprovacoes'
     | '/admin/compras/pedidos'
@@ -1550,6 +1656,8 @@ export interface FileRouteTypes {
     | '/links'
     | '/matriculas'
     | '/parceiro-inicio'
+    | '/api/erros'
+    | '/api/saude'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
     | '/cliente/logout'
@@ -1642,6 +1750,12 @@ export interface FileRouteTypes {
     | '/rh/holerites'
     | '/rh/previa-folha'
     | '/rh/relatorios'
+    | '/tecnologia/alertas'
+    | '/tecnologia/erros'
+    | '/tecnologia/logs'
+    | '/tecnologia/operacao'
+    | '/tecnologia/servidor'
+    | '/tecnologia/usuarios'
     | '/visao-geral/painel'
     | '/api/consultor-ia/stream'
     | '/api/plataforma/midia'
@@ -1652,6 +1766,7 @@ export interface FileRouteTypes {
     | '/formularios'
     | '/relatorios'
     | '/rh'
+    | '/tecnologia'
     | '/admin/auditoria/manutencao'
     | '/admin/compras/aprovacoes'
     | '/admin/compras/pedidos'
@@ -1693,6 +1808,9 @@ export interface FileRouteTypes {
     | '/_authenticated/matriculas'
     | '/_authenticated/parceiro-inicio'
     | '/_authenticated/relatorios'
+    | '/_authenticated/tecnologia'
+    | '/api/erros'
+    | '/api/saude'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
     | '/cliente/logout'
@@ -1785,6 +1903,12 @@ export interface FileRouteTypes {
     | '/_authenticated/rh/holerites'
     | '/_authenticated/rh/previa-folha'
     | '/_authenticated/rh/relatorios'
+    | '/_authenticated/tecnologia/alertas'
+    | '/_authenticated/tecnologia/erros'
+    | '/_authenticated/tecnologia/logs'
+    | '/_authenticated/tecnologia/operacao'
+    | '/_authenticated/tecnologia/servidor'
+    | '/_authenticated/tecnologia/usuarios'
     | '/_authenticated/visao-geral/painel'
     | '/api/consultor-ia/stream'
     | '/api/plataforma/midia'
@@ -1795,6 +1919,7 @@ export interface FileRouteTypes {
     | '/_authenticated/formularios/'
     | '/_authenticated/relatorios/'
     | '/_authenticated/rh/'
+    | '/_authenticated/tecnologia/'
     | '/_authenticated/admin/auditoria/manutencao'
     | '/_authenticated/admin/compras/aprovacoes'
     | '/_authenticated/admin/compras/pedidos'
@@ -1828,6 +1953,8 @@ export interface RootRouteChildren {
   ParceiroRoute: typeof ParceiroRouteWithChildren
   PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
   PortalRoute: typeof PortalRoute
+  ApiErrosRoute: typeof ApiErrosRoute
+  ApiSaudeRoute: typeof ApiSaudeRoute
   ApiConsultorIaStreamRoute: typeof ApiConsultorIaStreamRoute
   ApiPlataformaMidiaRoute: typeof ApiPlataformaMidiaRoute
   ApiPublicReconciliarSimulacoesRoute: typeof ApiPublicReconciliarSimulacoesRoute
@@ -1955,6 +2082,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/relatorios'
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tecnologia': {
+      id: '/_authenticated/tecnologia'
+      path: '/tecnologia'
+      fullPath: '/tecnologia'
+      preLoaderRoute: typeof AuthenticatedTecnologiaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/erros': {
+      id: '/api/erros'
+      path: '/api/erros'
+      fullPath: '/api/erros'
+      preLoaderRoute: typeof ApiErrosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/saude': {
+      id: '/api/saude'
+      path: '/api/saude'
+      fullPath: '/api/saude'
+      preLoaderRoute: typeof ApiSaudeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/cliente/acompanhar-minha-proposta': {
       id: '/cliente/acompanhar-minha-proposta'
@@ -2628,6 +2776,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRhRelatoriosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tecnologia/': {
+      id: '/_authenticated/tecnologia/'
+      path: '/'
+      fullPath: '/tecnologia/'
+      preLoaderRoute: typeof AuthenticatedTecnologiaIndexRouteImport
+      parentRoute: typeof AuthenticatedTecnologiaRoute
+    }
+    '/_authenticated/tecnologia/alertas': {
+      id: '/_authenticated/tecnologia/alertas'
+      path: '/alertas'
+      fullPath: '/tecnologia/alertas'
+      preLoaderRoute: typeof AuthenticatedTecnologiaAlertasRouteImport
+      parentRoute: typeof AuthenticatedTecnologiaRoute
+    }
+    '/_authenticated/tecnologia/erros': {
+      id: '/_authenticated/tecnologia/erros'
+      path: '/erros'
+      fullPath: '/tecnologia/erros'
+      preLoaderRoute: typeof AuthenticatedTecnologiaErrosRouteImport
+      parentRoute: typeof AuthenticatedTecnologiaRoute
+    }
+    '/_authenticated/tecnologia/logs': {
+      id: '/_authenticated/tecnologia/logs'
+      path: '/logs'
+      fullPath: '/tecnologia/logs'
+      preLoaderRoute: typeof AuthenticatedTecnologiaLogsRouteImport
+      parentRoute: typeof AuthenticatedTecnologiaRoute
+    }
+    '/_authenticated/tecnologia/operacao': {
+      id: '/_authenticated/tecnologia/operacao'
+      path: '/operacao'
+      fullPath: '/tecnologia/operacao'
+      preLoaderRoute: typeof AuthenticatedTecnologiaOperacaoRouteImport
+      parentRoute: typeof AuthenticatedTecnologiaRoute
+    }
+    '/_authenticated/tecnologia/servidor': {
+      id: '/_authenticated/tecnologia/servidor'
+      path: '/servidor'
+      fullPath: '/tecnologia/servidor'
+      preLoaderRoute: typeof AuthenticatedTecnologiaServidorRouteImport
+      parentRoute: typeof AuthenticatedTecnologiaRoute
+    }
+    '/_authenticated/tecnologia/usuarios': {
+      id: '/_authenticated/tecnologia/usuarios'
+      path: '/usuarios'
+      fullPath: '/tecnologia/usuarios'
+      preLoaderRoute: typeof AuthenticatedTecnologiaUsuariosRouteImport
+      parentRoute: typeof AuthenticatedTecnologiaRoute
+    }
     '/_authenticated/visao-geral/painel': {
       id: '/_authenticated/visao-geral/painel'
       path: '/visao-geral/painel'
@@ -2935,6 +3132,32 @@ const AuthenticatedRelatoriosRouteWithChildren =
     AuthenticatedRelatoriosRouteChildren,
   )
 
+interface AuthenticatedTecnologiaRouteChildren {
+  AuthenticatedTecnologiaAlertasRoute: typeof AuthenticatedTecnologiaAlertasRoute
+  AuthenticatedTecnologiaErrosRoute: typeof AuthenticatedTecnologiaErrosRoute
+  AuthenticatedTecnologiaLogsRoute: typeof AuthenticatedTecnologiaLogsRoute
+  AuthenticatedTecnologiaOperacaoRoute: typeof AuthenticatedTecnologiaOperacaoRoute
+  AuthenticatedTecnologiaServidorRoute: typeof AuthenticatedTecnologiaServidorRoute
+  AuthenticatedTecnologiaUsuariosRoute: typeof AuthenticatedTecnologiaUsuariosRoute
+  AuthenticatedTecnologiaIndexRoute: typeof AuthenticatedTecnologiaIndexRoute
+}
+
+const AuthenticatedTecnologiaRouteChildren: AuthenticatedTecnologiaRouteChildren =
+  {
+    AuthenticatedTecnologiaAlertasRoute: AuthenticatedTecnologiaAlertasRoute,
+    AuthenticatedTecnologiaErrosRoute: AuthenticatedTecnologiaErrosRoute,
+    AuthenticatedTecnologiaLogsRoute: AuthenticatedTecnologiaLogsRoute,
+    AuthenticatedTecnologiaOperacaoRoute: AuthenticatedTecnologiaOperacaoRoute,
+    AuthenticatedTecnologiaServidorRoute: AuthenticatedTecnologiaServidorRoute,
+    AuthenticatedTecnologiaUsuariosRoute: AuthenticatedTecnologiaUsuariosRoute,
+    AuthenticatedTecnologiaIndexRoute: AuthenticatedTecnologiaIndexRoute,
+  }
+
+const AuthenticatedTecnologiaRouteWithChildren =
+  AuthenticatedTecnologiaRoute._addFileChildren(
+    AuthenticatedTecnologiaRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAutomacoesRoute: typeof AuthenticatedAutomacoesRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRouteWithChildren
@@ -2945,6 +3168,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
   AuthenticatedParceiroInicioRoute: typeof AuthenticatedParceiroInicioRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
+  AuthenticatedTecnologiaRoute: typeof AuthenticatedTecnologiaRouteWithChildren
   AuthenticatedAdminApisIaRoute: typeof AuthenticatedAdminApisIaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
   AuthenticatedAdminBancosRoute: typeof AuthenticatedAdminBancosRoute
@@ -3035,6 +3259,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
   AuthenticatedParceiroInicioRoute: AuthenticatedParceiroInicioRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
+  AuthenticatedTecnologiaRoute: AuthenticatedTecnologiaRouteWithChildren,
   AuthenticatedAdminApisIaRoute: AuthenticatedAdminApisIaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
   AuthenticatedAdminBancosRoute: AuthenticatedAdminBancosRoute,
@@ -3194,6 +3419,8 @@ const rootRouteChildren: RootRouteChildren = {
   ParceiroRoute: ParceiroRouteWithChildren,
   PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
   PortalRoute: PortalRoute,
+  ApiErrosRoute: ApiErrosRoute,
+  ApiSaudeRoute: ApiSaudeRoute,
   ApiConsultorIaStreamRoute: ApiConsultorIaStreamRoute,
   ApiPlataformaMidiaRoute: ApiPlataformaMidiaRoute,
   ApiPublicReconciliarSimulacoesRoute: ApiPublicReconciliarSimulacoesRoute,

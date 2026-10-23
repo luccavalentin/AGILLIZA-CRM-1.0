@@ -381,6 +381,15 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   },
   {
     grupo: "Plataforma (SaaS)",
+    modulo: "saas.tecnologia",
+    label: "Gestão de Tecnologia (servidor, erros, logs, usuários ativos)",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Resolver erros e alterar limites de alerta" },
+    ],
+  },
+  {
+    grupo: "Plataforma (SaaS)",
     modulo: "saas.fila",
     label: "Fila de propostas dos assinantes",
     acoes: [
