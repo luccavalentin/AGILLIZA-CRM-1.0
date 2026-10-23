@@ -19,6 +19,11 @@ export interface PlanoCatalogo {
   publico: string;
   preco_mensal: number;
   preco_anual: number | null;
+  /** Pacotes (Corretor 0253): preço TOTAL de 90 e 180 dias. Nulo = não vende. */
+  preco_trimestral: number | null;
+  preco_semestral: number | null;
+  /** Falso = o plano por dias de acesso só vende pacotes; o preço mensal fica de referência. */
+  vende_mensal: boolean;
   preco_por_usuario: number | null;
   preco_por_contato: number | null;
   trial_dias: number;
@@ -76,6 +81,8 @@ export const lerCatalogoPlanos = createServerFn({ method: "GET" })
       const planos = await tx.consultar<PlanoCatalogo>(
         `select p.id, p.codigo, p.nome, p.descricao, p.publico::text as publico,
                 p.preco_mensal::float8 as preco_mensal, p.preco_anual::float8 as preco_anual,
+                p.preco_trimestral::float8 as preco_trimestral, p.preco_semestral::float8 as preco_semestral,
+                p.vende_mensal,
                 p.preco_por_usuario::float8 as preco_por_usuario, p.preco_por_contato::float8 as preco_por_contato,
                 p.trial_dias, p.dias_acesso, p.ativo,
                 (select count(*) from nucleo.assinaturas a where a.plano_id = p.id and a.status = 'ativa')::int as assinaturas,
@@ -107,6 +114,9 @@ export const salvarPlanoCatalogo = createServerFn({ method: "POST" })
         descricao: z.string().trim().max(500).nullable(),
         preco_mensal: dinheiro,
         preco_anual: dinheiro,
+        preco_trimestral: dinheiro,
+        preco_semestral: dinheiro,
+        vende_mensal: z.boolean(),
         preco_por_usuario: dinheiro,
         preco_por_contato: dinheiro,
         trial_dias: z
@@ -117,6 +127,19 @@ export const salvarPlanoCatalogo = createServerFn({ method: "POST" })
         ativo: z.boolean(),
         dias_acesso: DIAS_ACESSO,
       })
+      // O banco também recusa (0253: planos_vende_algum_periodo); aqui a frase é a da tela.
+      .refine(
+        (v) =>
+          v.vende_mensal ||
+          v.preco_trimestral != null ||
+          v.preco_semestral != null ||
+          v.preco_anual != null,
+        {
+          message:
+            "O plano precisa vender algum período: ligue o mensal ou informe o preço de um pacote.",
+          path: ["vende_mensal"],
+        },
+      )
       .parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -126,7 +149,8 @@ export const salvarPlanoCatalogo = createServerFn({ method: "POST" })
         `update nucleo.planos
             set nome = $2, descricao = $3, preco_mensal = coalesce($4::numeric, 0), preco_anual = $5::numeric,
                 preco_por_usuario = $6::numeric, preco_por_contato = $7::numeric, trial_dias = $8::int, ativo = $9,
-                dias_acesso = $10::int, atualizado_em = now()
+                dias_acesso = $10::int, preco_trimestral = $11::numeric, preco_semestral = $12::numeric,
+                vende_mensal = $13::boolean, atualizado_em = now()
           where id = $1 returning id`,
         [
           data.id,
@@ -139,6 +163,9 @@ export const salvarPlanoCatalogo = createServerFn({ method: "POST" })
           data.trial_dias,
           data.ativo,
           data.dias_acesso,
+          data.preco_trimestral,
+          data.preco_semestral,
+          data.vende_mensal,
         ],
       ),
     );

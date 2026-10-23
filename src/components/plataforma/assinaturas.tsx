@@ -44,13 +44,31 @@ import {
   type AssinaturaPlataforma,
 } from "@/lib/plataforma/receita.functions";
 
-const CICLO: Record<string, string> = { mensal: "mês", trimestral: "trimestre", anual: "ano" };
+const CICLO: Record<string, string> = {
+  mensal: "mês",
+  trimestral: "trimestre",
+  semestral: "semestre",
+  anual: "ano",
+};
+const NOME_PERIODO: Record<string, string> = {
+  mensal: "Mensal",
+  trimestral: "Trimestral",
+  semestral: "Semestral",
+  anual: "Anual",
+};
+const MESES: Record<string, number> = { mensal: 1, trimestral: 3, semestral: 6, anual: 12 };
 
 /** Situação da assinatura (o banco tem também "em teste" e "encerrada", que antes viravam "Ativa"). */
 function situacao(a: AssinaturaPlataforma): {
   rotulo: string;
   tom: "default" | "secondary" | "destructive" | "outline";
 } {
+  // Licença por pacote (0253): em dia, vencida (carência) ou bloqueada.
+  if (a.licenca) {
+    if (a.status === "ativa") return { rotulo: "Em dia", tom: "default" };
+    if (a.status === "vencida") return { rotulo: "Vencida", tom: "secondary" };
+    return { rotulo: "Bloqueada", tom: "destructive" };
+  }
   if (a.cancelada_em || a.status === "cancelada") return { rotulo: "Cancelada", tom: "outline" };
   if (a.status === "encerrada") return { rotulo: "Encerrada", tom: "outline" };
   if (a.status === "inadimplente") return { rotulo: "Inadimplente", tom: "destructive" };
@@ -156,18 +174,33 @@ export function AssinaturasPlataforma() {
                       : ""}
                   </p>
                 </TableCell>
-                <TableCell>{a.plano ?? "—"}</TableCell>
+                <TableCell>
+                  {a.plano ?? "—"}
+                  {a.licenca && (
+                    <p className="text-xs text-muted-foreground">
+                      Licença {NOME_PERIODO[a.ciclo]?.toLowerCase() ?? a.ciclo}
+                    </p>
+                  )}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatBRL(a.valor)}/{CICLO[a.ciclo] ?? a.ciclo}
+                  {(MESES[a.ciclo] ?? 1) > 1 && (
+                    <span className="block text-xs text-muted-foreground">
+                      {formatBRL(a.mrr)}/mês
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {a.proxima_cobranca_em ? formatData(a.proxima_cobranca_em) : "—"}
+                  {a.licenca && a.proxima_cobranca_em && (
+                    <span className="block text-xs text-muted-foreground">fim do acesso</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant={situacao(a).tom}>{situacao(a).rotulo}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  {pode && !a.cancelada_em && (
+                  {pode && !a.cancelada_em && !a.licenca && (
                     <Button size="sm" variant="ghost" onClick={() => setCancelando(a)}>
                       Cancelar
                     </Button>

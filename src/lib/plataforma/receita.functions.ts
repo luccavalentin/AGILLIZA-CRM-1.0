@@ -9,8 +9,38 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
+/**
+ * Licenças por dias de acesso (pré-pagas, Corretor 0193/0204/0253): a última compra de acesso
+ * paga de cada conta, com o período (mensal, trimestral, semestral, anual). Conta com
+ * assinatura recorrente vigente fica de fora (ela já entra pela assinatura).
+ */
+const ULTIMA_LICENCA_PAGA = `
+  select t.id as tenant_id, t.nome as conta, t.tipo::text as conta_tipo, t.status::text as conta_status,
+         t.acesso_ate, f.valor, coalesce(f.periodo_acesso, 'mensal') as periodo, f.pago_em,
+         coalesce(f.plano_acesso_id, t.plano_id) as plano_id,
+         case coalesce(f.periodo_acesso, 'mensal') when 'anual' then 12 when 'semestral' then 6
+              when 'trimestral' then 3 else 1 end as meses
+    from nucleo.tenants t
+    join lateral (select x.valor, x.periodo_acesso, x.pago_em, x.plano_acesso_id
+                    from nucleo.faturas_plataforma x
+                   where x.tenant_id = t.id and x.status = 'paga' and x.dias_acesso is not null and x.valor > 0
+                   order by coalesce(x.pago_em, x.atualizado_em) desc, x.criado_em desc
+                   limit 1) f on true
+   where t.deleted_at is null and t.tipo <> 'plataforma'
+     and not exists (select 1 from nucleo.assinaturas a
+                      where a.tenant_id = t.id and a.cancelada_em is null
+                        and a.status::text in ('ativa', 'inadimplente'))`;
+
+/** Meses de cada ciclo/período: o valor dividido por isto é a receita mensal. */
+const MESES_SQL = (col: string) =>
+  `case ${col} when 'anual' then 12 when 'semestral' then 6 when 'trimestral' then 3 else 1 end`;
+
 export interface ResumoReceita {
   mrr: number;
+  /** Receita mensal das licenças por pacote vigentes (valor ÷ meses do período, 0253). */
+  mrr_licencas: number;
+  /** Contas com licença por dias de acesso paga e vigente. */
+  contas_licenca: number;
   contas_pagantes: number;
   contas_teste: number;
   pendente_valor: number;
@@ -41,6 +71,8 @@ export interface FaturaPlataforma {
   forma: string | null;
   pago_em: string | null;
   vencida: boolean;
+  /** Fatura de licença: o período comprado (mensal, trimestral, semestral, anual — 0253). */
+  periodo: string | null;
 }
 
 export const lerReceita = createServerFn({ method: "GET" })
@@ -50,9 +82,13 @@ export const lerReceita = createServerFn({ method: "GET" })
     return comPlataforma(context.userId, async (tx) => {
       const resumo = await tx.uma<ResumoReceita>(
         `select
-           coalesce((select sum(a.valor / case a.ciclo when 'anual' then 12 when 'trimestral' then 3 else 1 end)
+           coalesce((select sum(a.valor / ${MESES_SQL("a.ciclo::text")})
                        from nucleo.assinaturas a
                       where a.cancelada_em is null and a.status::text in ('ativa', 'inadimplente')), 0)::float8 as mrr,
+           coalesce((select sum(l.valor / l.meses) from (${ULTIMA_LICENCA_PAGA}) l
+                      where l.conta_status = 'ativo' and l.acesso_ate >= current_date), 0)::float8 as mrr_licencas,
+           (select count(*) from (${ULTIMA_LICENCA_PAGA}) l
+             where l.conta_status = 'ativo' and l.acesso_ate >= current_date)::int as contas_licenca,
            (select count(distinct a.tenant_id) from nucleo.assinaturas a
              where a.cancelada_em is null and a.status::text = 'ativa')::int as contas_pagantes,
            (select count(*) from nucleo.tenants t
@@ -102,6 +138,7 @@ export const listarFaturasPlataforma = createServerFn({ method: "GET" })
         `select f.id, t.nome as conta, t.status::text as conta_status, f.descricao, f.valor::float8 as valor,
                 f.vencimento::text as vencimento, f.status::text as status, f.forma::text as forma,
                 f.pago_em::text as pago_em,
+                case when f.dias_acesso is not null then coalesce(f.periodo_acesso, 'mensal') end as periodo,
                 (f.status = 'vencida' or (f.status = 'pendente' and f.vencimento < current_date)) as vencida,
                 (count(*) over ())::int as total
            from nucleo.faturas_plataforma f
@@ -176,6 +213,12 @@ export interface AssinaturaPlataforma {
   proxima_cobranca_em: string | null;
   cancelada_em: string | null;
   motivo_cancelamento: string | null;
+  /**
+   * Licença por dias de acesso (pré-paga), não assinatura recorrente: `ciclo` é o período da
+   * última compra paga (mensal, trimestral, semestral, anual) e `proxima_cobranca_em` é o
+   * fim do acesso. Não tem cancelar.
+   */
+  licenca: boolean;
 }
 
 export const POR_PAGINA_ASSINATURAS = 50;
@@ -195,23 +238,40 @@ export const listarAssinaturas = createServerFn({ method: "GET" })
     const { comPlataforma } = await import("./ponte.server");
     const busca = data.busca ? data.busca.replace(/[\\%_]/g, (c) => "\\" + c) : null;
     return comPlataforma(context.userId, async (tx) => {
-      const linhas = await tx.consultar<AssinaturaPlataforma & { total: number }>(
-        `select a.id, a.tenant_id, t.nome as conta, t.tipo::text as conta_tipo, p.nome as plano,
-                a.status::text as status, a.ciclo::text as ciclo, a.valor::float8 as valor,
-                (a.valor / case a.ciclo when 'anual' then 12 when 'trimestral' then 3 else 1 end)::float8 as mrr,
-                a.quantidade_usuarios, a.inicio_em::text as inicio_em,
-                a.proxima_cobranca_em::text as proxima_cobranca_em,
-                a.cancelada_em::text as cancelada_em, a.motivo_cancelamento,
-                (count(*) over ())::int as total
-           from nucleo.assinaturas a
-           join nucleo.tenants t on t.id = a.tenant_id
-           left join nucleo.planos p on p.id = a.plano_id
-          where ($1::text is null or t.nome ilike '%' || $1 || '%')
-          order by (a.cancelada_em is null) desc, a.criado_em desc, a.id
+      const linhas = await tx.consultar<AssinaturaPlataforma & { total: number; ordem: unknown }>(
+        // Assinaturas recorrentes + licenças por dias de acesso (a última compra paga de cada
+        // conta, no período dela: "R$ 863,10/trimestre" — 0253). A licença não se cancela
+        // aqui: ela só não é renovada (e não tem id de assinatura).
+        `select x.*, (count(*) over ())::int as total
+           from (
+             select a.id::text as id, a.tenant_id, t.nome as conta, t.tipo::text as conta_tipo, p.nome as plano,
+                    a.status::text as status, a.ciclo::text as ciclo, a.valor::float8 as valor,
+                    (a.valor / ${MESES_SQL("a.ciclo::text")})::float8 as mrr,
+                    a.quantidade_usuarios::int as quantidade_usuarios, a.inicio_em::text as inicio_em,
+                    a.proxima_cobranca_em::text as proxima_cobranca_em,
+                    a.cancelada_em::text as cancelada_em, a.motivo_cancelamento,
+                    false as licenca, a.criado_em as ordem
+               from nucleo.assinaturas a
+               join nucleo.tenants t on t.id = a.tenant_id
+               left join nucleo.planos p on p.id = a.plano_id
+             union all
+             select 'licenca:' || l.tenant_id, l.tenant_id, l.conta, l.conta_tipo, p.nome,
+                    case when l.conta_status = 'ativo' and l.acesso_ate >= current_date then 'ativa'
+                         when l.conta_status = 'ativo' then 'vencida' else 'inadimplente' end,
+                    l.periodo, l.valor::float8, (l.valor / l.meses)::float8,
+                    null::int, l.pago_em::date::text, l.acesso_ate::text, null::text, null::text,
+                    true, l.pago_em
+               from (${ULTIMA_LICENCA_PAGA}) l
+               left join nucleo.planos p on p.id = l.plano_id
+           ) x
+          where ($1::text is null or x.conta ilike '%' || $1 || '%')
+          order by (x.cancelada_em is null) desc, x.ordem desc nulls last, x.id
           limit ${POR_PAGINA_ASSINATURAS} offset $2`,
         [busca, (data.pagina - 1) * POR_PAGINA_ASSINATURAS],
       );
-      const assinaturas = linhas.map(({ total: _t, ...a }) => a as AssinaturaPlataforma);
+      const assinaturas = linhas.map(
+        ({ total: _t, ordem: _o, ...a }) => a as AssinaturaPlataforma,
+      );
       const contas = await tx.consultar<{ id: string; nome: string; tipo: string }>(
         `select id, nome, tipo::text as tipo from nucleo.tenants
           where deleted_at is null and tipo <> 'plataforma' order by nome`,

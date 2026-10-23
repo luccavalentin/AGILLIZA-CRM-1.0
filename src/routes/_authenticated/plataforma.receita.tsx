@@ -116,14 +116,19 @@ function Pagina() {
       )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        {/* Assinaturas + licenças por pacote vigentes (valor ÷ meses do período, 0253). */}
         <Indicador
           rotulo="Receita recorrente mensal"
-          valor={r ? formatBRL(r.mrr) : null}
-          detalhe={r ? `${formatBRL(r.mrr * 12)} por ano` : undefined}
+          valor={r ? formatBRL(r.mrr + (r.mrr_licencas ?? 0)) : null}
+          detalhe={
+            r
+              ? `${formatBRL((r.mrr + (r.mrr_licencas ?? 0)) * 12)} por ano · licenças ${formatBRL(r.mrr_licencas ?? 0)}/mês`
+              : undefined
+          }
         />
         <Indicador
           rotulo="Contas pagantes"
-          valor={r ? String(r.contas_pagantes) : null}
+          valor={r ? String(r.contas_pagantes + (r.contas_licenca ?? 0)) : null}
           detalhe={r ? `${r.contas_teste} em teste` : undefined}
         />
         <Indicador rotulo="Recebido no mês" valor={r ? formatBRL(r.recebido_mes) : null} />
@@ -317,7 +322,15 @@ function LinhaFatura({ fatura: f }: { fatura: FaturaPlataforma }) {
   return (
     <TableRow>
       <TableCell className="font-medium">{f.conta}</TableCell>
-      <TableCell className="max-w-[18rem] truncate">{f.descricao}</TableCell>
+      <TableCell className="max-w-[18rem]">
+        <span className="block truncate">{f.descricao}</span>
+        {/* Fatura de licença: o período comprado (0253), mesmo com a descrição cortada. */}
+        {f.periodo && (
+          <span className="block text-xs text-muted-foreground">
+            Licença {f.periodo}
+          </span>
+        )}
+      </TableCell>
       <TableCell className="text-right tabular-nums">{formatBRL(f.valor)}</TableCell>
       <TableCell>
         {formatData(f.vencimento)}

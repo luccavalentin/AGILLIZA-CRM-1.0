@@ -88,6 +88,14 @@ const normalizarMoeda = (v: string) => {
   return n == null || Number.isNaN(n) ? v : texto(n);
 };
 
+/** Ajuda do campo de pacote: "= R$ 287,70 por mês" (o número grande do site) ou "Vazio = não vende." */
+const porMes = (v: string, meses: number) => {
+  const n = numero(v);
+  return n == null || Number.isNaN(n)
+    ? "Vazio = não vende."
+    : `= ${formatBRL(Math.round((n / meses) * 100) / 100)} por mês no site.`;
+};
+
 /** Plural de verdade: "1 assinatura ativa" / "2 assinaturas ativas". */
 const assinaturasAtivas = (n: number) =>
   `${n.toLocaleString("pt-BR")} ${n === 1 ? "assinatura ativa" : "assinaturas ativas"}`;
@@ -210,28 +218,53 @@ function CartaoPlano({ plano: p, pode }: { plano: PlanoCatalogo; pode: boolean }
     nome: p.nome,
     descricao: p.descricao ?? "",
     preco_mensal: texto(p.preco_mensal),
+    preco_trimestral: texto(p.preco_trimestral),
+    preco_semestral: texto(p.preco_semestral),
     preco_anual: texto(p.preco_anual),
     preco_por_usuario: texto(p.preco_por_usuario),
     preco_por_contato: texto(p.preco_por_contato),
     trial_dias: String(p.trial_dias),
     dias_acesso: p.dias_acesso == null ? "" : String(p.dias_acesso),
     ativo: p.ativo,
+    vende_mensal: p.vende_mensal !== false,
   });
   const [f, setF] = useState(inicial);
-  useEffect(() => setF(inicial()), [p.id, p.nome, p.preco_mensal, p.ativo]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(
+    () => setF(inicial()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      p.id,
+      p.nome,
+      p.preco_mensal,
+      p.preco_trimestral,
+      p.preco_semestral,
+      p.preco_anual,
+      p.vende_mensal,
+      p.ativo,
+    ],
+  );
   const [chave, setChave] = useState("");
   const [valor, setValor] = useState("");
   /** Limite aguardando confirmação de remoção (vale para todos os assinantes). */
   const [removendo, setRemovendo] = useState<string | null>(null);
 
   const salvar = useSalvar(() => {
-    const valores = [f.preco_mensal, f.preco_anual, f.preco_por_usuario, f.preco_por_contato].map(
-      numero,
-    );
+    const valores = [
+      f.preco_mensal,
+      f.preco_anual,
+      f.preco_por_usuario,
+      f.preco_por_contato,
+      f.preco_trimestral,
+      f.preco_semestral,
+    ].map(numero);
     if (valores.some((v) => Number.isNaN(v))) throw new Error("Algum preço não é um valor válido.");
     const dias = f.dias_acesso.trim() ? Number(f.dias_acesso) : null;
     if (dias != null && (!Number.isInteger(dias) || dias < 1 || dias > 3650))
       throw new Error("Dias de acesso: de 1 a 3650, ou vazio para plano recorrente.");
+    if (!f.vende_mensal && valores[1] == null && valores[4] == null && valores[5] == null)
+      throw new Error(
+        "O plano precisa vender algum período: ligue o mensal ou informe o preço de um pacote.",
+      );
     return salvarFn({
       data: {
         id: p.id,
@@ -241,12 +274,22 @@ function CartaoPlano({ plano: p, pode }: { plano: PlanoCatalogo; pode: boolean }
         preco_anual: valores[1],
         preco_por_usuario: valores[2],
         preco_por_contato: valores[3],
+        preco_trimestral: valores[4],
+        preco_semestral: valores[5],
+        vende_mensal: f.vende_mensal,
         trial_dias: Number(f.trial_dias) || 0,
         ativo: f.ativo,
         dias_acesso: dias,
       },
     });
   }, `${f.nome} salvo.`);
+  /** O que o site mostra, do que está gravado: "Trimestral R$ 287,70/mês" etc. (0253). */
+  const vitrine = [
+    p.vende_mensal !== false && { nome: "Mensal", total: p.preco_mensal, meses: 1 },
+    p.preco_trimestral != null && { nome: "Trimestral", total: p.preco_trimestral, meses: 3 },
+    p.preco_semestral != null && { nome: "Semestral", total: p.preco_semestral, meses: 6 },
+    p.preco_anual != null && { nome: "Anual", total: p.preco_anual, meses: 12 },
+  ].filter((x): x is { nome: string; total: number; meses: number } => Boolean(x));
   const addLimite = useSalvar(
     () => limiteFn({ data: { planoId: p.id, chave, valor } }),
     "Limite salvo.",
@@ -291,9 +334,14 @@ function CartaoPlano({ plano: p, pode }: { plano: PlanoCatalogo; pode: boolean }
             {PUBLICO[p.publico] ?? p.publico} · {assinaturasAtivas(p.assinaturas)}
           </p>
           {p.ativo && p.dias_acesso != null && (
-            <Badge variant="secondary" className="mt-1">
-              No site: {formatBRL(p.preco_mensal)} por {p.dias_acesso} dias
-            </Badge>
+            <div className="mt-1 flex flex-wrap gap-1.5" aria-label="Como aparece no site">
+              {vitrine.map((v) => (
+                <Badge key={v.nome} variant="secondary" className="tabular-nums">
+                  {v.nome}: {formatBRL(v.total / v.meses)}/mês
+                  {v.meses > 1 ? ` · ${formatBRL(v.total)}` : ""}
+                </Badge>
+              ))}
+            </div>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -318,11 +366,54 @@ function CartaoPlano({ plano: p, pode }: { plano: PlanoCatalogo; pode: boolean }
         )}
         {campo(
           "preco_mensal",
-          f.dias_acesso.trim() ? "Preço do período" : "Preço mensal",
-          undefined,
+          f.dias_acesso.trim() ? "Preço do período (mensal)" : "Preço mensal",
+          f.dias_acesso.trim() && !f.vende_mensal
+            ? "Mensal desligado: fica só como referência."
+            : undefined,
           true,
         )}
-        {campo("preco_anual", "Preço anual", "Vazio = sem plano anual.", true)}
+        {f.dias_acesso.trim() ? (
+          <>
+            {/* Pacotes (0253): o administrador liga e desliga sem código novo. */}
+            <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 sm:col-span-2">
+              <div>
+                <Label htmlFor={`pl-${p.id}-vende_mensal`} className="text-sm">
+                  Vende mensal
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Desligado: o plano só é vendido nos pacotes, e quem pagava o mensal renova no
+                  menor pacote.
+                </p>
+              </div>
+              <Switch
+                id={`pl-${p.id}-vende_mensal`}
+                checked={f.vende_mensal}
+                onCheckedChange={(v) => setF((x) => ({ ...x, vende_mensal: v }))}
+                disabled={!pode}
+              />
+            </div>
+            {campo(
+              "preco_trimestral",
+              "Pacote trimestral (total, 90 dias)",
+              porMes(f.preco_trimestral, 3),
+              true,
+            )}
+            {campo(
+              "preco_semestral",
+              "Pacote semestral (total, 180 dias)",
+              porMes(f.preco_semestral, 6),
+              true,
+            )}
+            {campo(
+              "preco_anual",
+              "Pacote anual (total, 365 dias)",
+              porMes(f.preco_anual, 12),
+              true,
+            )}
+          </>
+        ) : (
+          campo("preco_anual", "Preço anual", "Vazio = sem plano anual.", true)
+        )}
         {campo("preco_por_usuario", "Por usuário extra", undefined, true)}
         {campo("preco_por_contato", "Por contato", undefined, true)}
         <div className="space-y-1 sm:col-span-2">
