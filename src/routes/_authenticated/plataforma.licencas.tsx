@@ -3,7 +3,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { BadgeCheck, Building2, Coins, KeyRound, Plus, Search, ShieldAlert, Users } from "lucide-react";
+import {
+  BadgeCheck,
+  Building2,
+  Coins,
+  KeyRound,
+  Plus,
+  Search,
+  ShieldAlert,
+  Users,
+} from "lucide-react";
 import { AdminHero } from "@/components/admin/admin-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -174,7 +183,7 @@ function Pagina() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Indicador rotulo="Licenças" valor={kpi.total} icone={<Building2 className="size-4" />} />
         <Indicador rotulo="Ativas" valor={kpi.ativas} icone={<BadgeCheck className="size-4" />} />
         <Indicador rotulo="Em teste" valor={kpi.teste} icone={<KeyRound className="size-4" />} />
@@ -294,7 +303,7 @@ function Pagina() {
               >
                 <TableCell>
                   <p className="font-medium text-foreground">{l.nome}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="max-w-[16rem] truncate text-xs text-muted-foreground sm:max-w-none">
                     {TIPO[l.tipo]} · {l.email_contato ?? l.slug}
                   </p>
                   {l.carteira_nome && (
@@ -365,7 +374,9 @@ function Indicador({
         <p className="truncate text-xs uppercase tracking-wide">{rotulo}</p>
         {icone}
       </div>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{valor}</p>
+      <p className="mt-1 break-words text-xl font-semibold tabular-nums text-foreground 2xl:text-2xl">
+        {valor}
+      </p>
       {detalhe && <p className="mt-0.5 text-xs text-muted-foreground">{detalhe}</p>}
     </div>
   );
@@ -404,15 +415,15 @@ function GavetaLicenca({
             </SheetHeader>
 
             <Tabs defaultValue="resumo" className="mt-4">
-              <TabsList className="w-full">
-                <TabsTrigger value="resumo" className="flex-1">
+              <TabsList className="h-auto w-full">
+                <TabsTrigger value="resumo" className="min-h-11 flex-1">
                   Resumo
                 </TabsTrigger>
-                <TabsTrigger value="pessoas" className="flex-1">
+                <TabsTrigger value="pessoas" className="min-h-11 flex-1">
                   Pessoas
                 </TabsTrigger>
                 {podeAlterar && (
-                  <TabsTrigger value="acoes" className="flex-1">
+                  <TabsTrigger value="acoes" className="min-h-11 flex-1">
                     Ações
                   </TabsTrigger>
                 )}
@@ -478,9 +489,12 @@ function GavetaLicenca({
                       ) : (
                         <ul className="divide-y divide-border text-sm">
                           {d.faturas.slice(0, 8).map((f) => (
-                            <li key={f.id} className="flex justify-between gap-3 py-1.5">
+                            <li
+                              key={f.id}
+                              className="flex flex-col gap-0.5 py-1.5 sm:flex-row sm:justify-between sm:gap-3"
+                            >
                               <span className="truncate">{f.descricao}</span>
-                              <span className="shrink-0 tabular-nums">
+                              <span className="tabular-nums text-muted-foreground sm:shrink-0 sm:text-foreground">
                                 {formatBRL(Number(f.valor))} · {formatData(f.vencimento)} ·{" "}
                                 {rotulo(FATURA, f.status)}
                               </span>

@@ -215,7 +215,7 @@ export function PainelAutomacoes({
               aria-selected={aba === id}
               onClick={() => setAba(id)}
               className={cn(
-                "flex h-9 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 text-sm sm:px-3 font-medium text-muted-foreground transition-colors sm:flex-none",
+                "flex h-11 flex-1 items-center sm:h-9 justify-center gap-1.5 whitespace-nowrap rounded-md px-2 text-sm sm:px-3 font-medium text-muted-foreground transition-colors sm:flex-none",
                 aba === id && "bg-background text-foreground shadow-xs",
               )}
             >
@@ -243,6 +243,7 @@ export function PainelAutomacoes({
               variant="ghost"
               size="icon"
               aria-label="Mês anterior"
+              className="size-11 sm:size-9"
               onClick={() => setMes((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -254,6 +255,7 @@ export function PainelAutomacoes({
               variant="ghost"
               size="icon"
               aria-label="Próximo mês"
+              className="size-11 sm:size-9"
               onClick={() => setMes((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
             >
               <ChevronRight className="h-4 w-4" />
@@ -325,7 +327,7 @@ export function PainelAutomacoes({
                         <span className="tabular-nums text-muted-foreground">
                           {hora(p.agendado_para!)}
                         </span>
-                        <span className="flex shrink-0 gap-0.5">
+                        <span className="hidden shrink-0 gap-0.5 lg:flex">
                           {p.destinos.slice(0, 3).map((x) => (
                             <MarcaRede key={x.id} rede={x.rede} className="h-3 w-3" />
                           ))}
@@ -556,6 +558,7 @@ function Redes({
                     variant="ghost"
                     size="icon"
                     aria-label={`Desconectar ${r.nome}`}
+                    className="size-11 shrink-0 sm:size-9"
                     disabled={ocupado === r.id}
                     onClick={() => void remover(r)}
                   >
@@ -663,7 +666,7 @@ function Resultados() {
               aria-selected={dias === p}
               onClick={() => setDias(p)}
               className={cn(
-                "h-8 rounded-md px-3 text-sm text-muted-foreground",
+                "h-11 rounded-md px-3 text-sm text-muted-foreground sm:h-8",
                 dias === p && "bg-background font-medium text-foreground shadow-xs",
               )}
             >
@@ -857,7 +860,7 @@ function DetalhePost({
                   <MarcaRede rede={d.rede} />
                   <span className="min-w-0 flex-1">
                     <b className="block truncate text-sm font-medium">{d.conta}</b>
-                    <small className="block text-xs text-muted-foreground">
+                    <small className="block break-words text-xs text-muted-foreground">
                       {REDES[d.rede]?.formatos.find((f) => f.id === d.formato)?.rotulo ?? d.formato}
                       {d.erro ? ` · ${d.erro}` : ""}
                       {d.metricas?.alcance != null ? ` · ${num(d.metricas.alcance)} alcance` : ""}
@@ -875,7 +878,7 @@ function DetalhePost({
                       target="_blank"
                       rel="noreferrer"
                       aria-label="Ver na rede"
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-md hover:bg-muted"
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-md hover:bg-muted sm:h-8 sm:w-8"
                     >
                       <Link2 className="h-4 w-4" />
                     </a>

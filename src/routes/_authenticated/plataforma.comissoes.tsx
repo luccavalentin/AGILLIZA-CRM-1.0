@@ -44,7 +44,11 @@ const STATUS: Record<StatusComissaoAssinante, { rotulo: string; classe: string }
   cancelada: { rotulo: "Cancelada", classe: "" },
 };
 
-const TIPO: Record<string, string> = { corretor: "Corretor", imobiliaria: "Imobiliária", parceiro: "Parceiro" };
+const TIPO: Record<string, string> = {
+  corretor: "Corretor",
+  imobiliaria: "Imobiliária",
+  parceiro: "Parceiro",
+};
 
 const pct = (n: number) => `${Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 4 })}%`;
 
@@ -65,7 +69,12 @@ function Pagina() {
     queryKey: ["plataforma-comissoes", status, de, ate, busca],
     queryFn: () =>
       listarFn({
-        data: { status: status === "todas" ? null : status, de: de || null, ate: ate || null, busca: busca || null },
+        data: {
+          status: status === "todas" ? null : status,
+          de: de || null,
+          ate: ate || null,
+          busca: busca || null,
+        },
       }),
     placeholderData: (a) => a,
   });
@@ -79,9 +88,17 @@ function Pagina() {
         descricao="O corretor ou a imobiliária que envia a proposta recebe um percentual do valor financiado, liberado quando o contrato é registrado em cartório."
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <Indicador rotulo="A pagar" valor={formatBRL(Number(q.data?.totais.a_pagar ?? 0))} icone={<CircleDollarSign className="size-4" />} />
-        <Indicador rotulo="Pagas" valor={formatBRL(Number(q.data?.totais.pagas ?? 0))} icone={<BadgeCheck className="size-4" />} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Indicador
+          rotulo="A pagar"
+          valor={formatBRL(Number(q.data?.totais.a_pagar ?? 0))}
+          icone={<CircleDollarSign className="size-4" />}
+        />
+        <Indicador
+          rotulo="Pagas"
+          valor={formatBRL(Number(q.data?.totais.pagas ?? 0))}
+          icone={<BadgeCheck className="size-4" />}
+        />
         <Indicador
           rotulo="Percentual padrão"
           valor={q.data ? pct(q.data.config.padrao) : "—"}
@@ -90,10 +107,16 @@ function Pagina() {
         />
       </div>
 
-      {podeEditar && q.data && <Configuracao padrao={q.data.config.padrao} porConta={q.data.config.por_conta} />}
+      {podeEditar && q.data && (
+        <Configuracao padrao={q.data.config.padrao} porConta={q.data.config.por_conta} />
+      )}
 
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 lg:flex-row lg:items-end">
-        <div className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1 lg:w-auto" role="tablist" aria-label="Situação">
+        <div
+          className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1 lg:w-auto"
+          role="tablist"
+          aria-label="Situação"
+        >
           {(["a_pagar", "paga", "cancelada", "todas"] as const).map((s) => (
             <button
               key={s}
@@ -148,17 +171,25 @@ function Pagina() {
         </p>
       ) : (q.data?.itens.length ?? 0) === 0 ? (
         <div className="rounded-lg border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-          Nenhuma comissão com estes filtros. A comissão nasce no dia em que o contrato é registrado em cartório.
+          Nenhuma comissão com estes filtros. A comissão nasce no dia em que o contrato é registrado
+          em cartório.
         </div>
       ) : (
         <ul className="space-y-2">
           {q.data!.itens.map((c) => (
-            <LinhaComissao key={c.id} c={c} podeEditar={podeEditar} onCancelar={() => setCancelando(c)} />
+            <LinhaComissao
+              key={c.id}
+              c={c}
+              podeEditar={podeEditar}
+              onCancelar={() => setCancelando(c)}
+            />
           ))}
         </ul>
       )}
 
-      {cancelando && <CancelarComissao comissao={cancelando} aoFechar={() => setCancelando(null)} />}
+      {cancelando && (
+        <CancelarComissao comissao={cancelando} aoFechar={() => setCancelando(null)} />
+      )}
     </div>
   );
 }
@@ -180,7 +211,9 @@ function Indicador({
         <p className="truncate text-xs uppercase tracking-wide">{rotulo}</p>
         {icone}
       </div>
-      <p className="mt-1 text-xl font-semibold tabular-nums text-foreground sm:text-2xl">{valor}</p>
+      <p className="mt-1 break-words text-xl font-semibold tabular-nums text-foreground 2xl:text-2xl">
+        {valor}
+      </p>
     </div>
   );
 }
@@ -216,7 +249,8 @@ function LinhaComissao({
             {c.cliente ? ` · ${c.cliente}` : ""}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Registrada em {formatData(c.registrado_em)} · {pct(c.percentual)} de {formatBRL(Number(c.base))}
+            Registrada em {formatData(c.registrado_em)} · {pct(c.percentual)} de{" "}
+            {formatBRL(Number(c.base))}
             {c.paga_em ? ` · paga em ${formatData(c.paga_em)}` : ""}
             {c.observacao ? ` · ${c.observacao}` : ""}
           </p>
@@ -231,7 +265,12 @@ function LinhaComissao({
       {podeEditar && c.status !== "cancelada" && (
         <div className="mt-3 flex flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-end">
           {c.status === "a_pagar" ? (
-            <Button size="sm" className="w-full sm:w-auto" disabled={mudar.isPending} onClick={() => mudar.mutate("paga")}>
+            <Button
+              size="sm"
+              className="w-full sm:w-auto"
+              disabled={mudar.isPending}
+              onClick={() => mudar.mutate("paga")}
+            >
               <BadgeCheck className="mr-1.5 size-4" /> Dar baixa (paga)
             </Button>
           ) : (
@@ -245,7 +284,12 @@ function LinhaComissao({
               Voltar para a pagar
             </Button>
           )}
-          <Button size="sm" variant="ghost" className="w-full text-destructive sm:w-auto" onClick={onCancelar}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="w-full text-destructive sm:w-auto"
+            onClick={onCancelar}
+          >
             <X className="mr-1.5 size-4" /> Cancelar
           </Button>
         </div>
@@ -254,12 +298,19 @@ function LinhaComissao({
   );
 }
 
-function CancelarComissao({ comissao, aoFechar }: { comissao: ComissaoAssinante; aoFechar: () => void }) {
+function CancelarComissao({
+  comissao,
+  aoFechar,
+}: {
+  comissao: ComissaoAssinante;
+  aoFechar: () => void;
+}) {
   const qc = useQueryClient();
   const atualizarFn = useServerFn(atualizarComissaoAssinante);
   const [motivo, setMotivo] = useState("");
   const cancelar = useMutation({
-    mutationFn: () => atualizarFn({ data: { id: comissao.id, status: "cancelada", observacao: motivo } }),
+    mutationFn: () =>
+      atualizarFn({ data: { id: comissao.id, status: "cancelada", observacao: motivo } }),
     onSuccess: () => {
       toast.success("Comissão cancelada.");
       qc.invalidateQueries({ queryKey: ["plataforma-comissoes"] });
@@ -269,15 +320,20 @@ function CancelarComissao({ comissao, aoFechar }: { comissao: ComissaoAssinante;
   });
   return (
     <Dialog open onOpenChange={(v) => !v && aoFechar()}>
-      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md p-4 sm:p-6">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Cancelar comissão</DialogTitle>
           <DialogDescription>
             {comissao.conta} · {formatBRL(Number(comissao.valor))}. O motivo fica registrado.
           </DialogDescription>
         </DialogHeader>
-        <Textarea rows={3} placeholder="Motivo do cancelamento" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+        <Textarea
+          rows={3}
+          placeholder="Motivo do cancelamento"
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+        />
+        <DialogFooter>
           <Button variant="outline" className="w-full sm:w-auto" onClick={aoFechar}>
             Voltar
           </Button>
@@ -317,9 +373,12 @@ function Configuracao({
 
   const numero = (v: string) => Number(v.replace(",", "."));
   const salvar = useMutation({
-    mutationFn: (p: { tenantId: string | null; percentual: number | null }) => definirFn({ data: p }),
+    mutationFn: (p: { tenantId: string | null; percentual: number | null }) =>
+      definirFn({ data: p }),
     onSuccess: () => {
-      toast.success("Percentual salvo. Vale para os próximos registros; as comissões já criadas não mudam.");
+      toast.success(
+        "Percentual salvo. Vale para os próximos registros; as comissões já criadas não mudam.",
+      );
       qc.invalidateQueries({ queryKey: ["plataforma-comissoes"] });
       setConta(null);
       setBusca("");
@@ -333,7 +392,8 @@ function Configuracao({
       <div>
         <h2 className="text-sm font-semibold">Percentual da comissão</h2>
         <p className="text-xs text-muted-foreground">
-          Mudar o percentual vale para os próximos registros. As comissões já criadas guardam o percentual do dia.
+          Mudar o percentual vale para os próximos registros. As comissões já criadas guardam o
+          percentual do dia.
         </p>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -361,9 +421,13 @@ function Configuracao({
         {porConta.length > 0 && (
           <ul className="divide-y rounded-lg border">
             {porConta.map((c) => (
-              <li key={c.tenant_id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+              <li
+                key={c.tenant_id}
+                className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+              >
                 <span className="min-w-0 truncate">
-                  {c.conta} <span className="text-muted-foreground">· {TIPO[c.tipo] ?? c.tipo}</span>
+                  {c.conta}{" "}
+                  <span className="text-muted-foreground">· {TIPO[c.tipo] ?? c.tipo}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <b className="tabular-nums">{pct(c.percentual)}</b>
@@ -406,7 +470,8 @@ function Configuracao({
                           className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
                           onClick={() => setConta({ id: c.id, nome: c.nome })}
                         >
-                          {c.nome} <span className="text-muted-foreground">· {TIPO[c.tipo] ?? c.tipo}</span>
+                          {c.nome}{" "}
+                          <span className="text-muted-foreground">· {TIPO[c.tipo] ?? c.tipo}</span>
                         </button>
                       </li>
                     ))}
@@ -425,8 +490,15 @@ function Configuracao({
           />
           <Button
             className="w-full sm:w-auto"
-            disabled={!conta || salvar.isPending || !(numero(valorConta) >= 0 && numero(valorConta) <= 10) || valorConta === ""}
-            onClick={() => conta && salvar.mutate({ tenantId: conta.id, percentual: numero(valorConta) })}
+            disabled={
+              !conta ||
+              salvar.isPending ||
+              !(numero(valorConta) >= 0 && numero(valorConta) <= 10) ||
+              valorConta === ""
+            }
+            onClick={() =>
+              conta && salvar.mutate({ tenantId: conta.id, percentual: numero(valorConta) })
+            }
           >
             Definir
           </Button>

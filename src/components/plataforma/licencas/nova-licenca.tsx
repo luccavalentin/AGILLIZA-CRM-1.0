@@ -121,20 +121,30 @@ export function NovaLicenca({
   });
 
   const diasOk = modalidade === "pagamento" || (Number(dias) >= 1 && Number(dias) <= 365);
-  const pronto = nome.trim().length >= 2 && /\S+@\S+\.\S+/.test(email) && planoId && diasOk && motivo.trim().length >= 5;
+  const pronto =
+    nome.trim().length >= 2 &&
+    /\S+@\S+\.\S+/.test(email) &&
+    planoId &&
+    diasOk &&
+    motivo.trim().length >= 5;
 
   return (
     <Dialog open={aberta} onOpenChange={(v) => !v && aoFechar()}>
-      <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-xl overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Nova licença</DialogTitle>
           <DialogDescription>
-            Cria a conta sem o cadastro do site. A pessoa recebe um e-mail para criar a própria senha.
+            Cria a conta sem o cadastro do site. A pessoa recebe um e-mail para criar a própria
+            senha.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-1.5 rounded-lg bg-muted p-1" role="radiogroup" aria-label="Tipo de conta">
+          <div
+            className="grid grid-cols-3 gap-1.5 rounded-lg bg-muted p-1"
+            role="radiogroup"
+            aria-label="Tipo de conta"
+          >
             {(["corretor", "imobiliaria", "parceiro"] as TipoLicenca[]).map((t) => (
               <button
                 key={t}
@@ -157,8 +167,15 @@ export function NovaLicenca({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="nl-nome">{tipo === "corretor" ? "Nome do corretor" : "Nome da empresa"}</Label>
-              <Input id="nl-nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={200} />
+              <Label htmlFor="nl-nome">
+                {tipo === "corretor" ? "Nome do corretor" : "Nome da empresa"}
+              </Label>
+              <Input
+                id="nl-nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                maxLength={200}
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="nl-email">E-mail de acesso</Label>
@@ -173,11 +190,21 @@ export function NovaLicenca({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="nl-doc">CPF ou CNPJ (opcional)</Label>
-              <Input id="nl-doc" inputMode="numeric" value={documento} onChange={(e) => setDocumento(e.target.value)} />
+              <Input
+                id="nl-doc"
+                inputMode="numeric"
+                value={documento}
+                onChange={(e) => setDocumento(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="nl-cel">Celular (opcional)</Label>
-              <Input id="nl-cel" inputMode="tel" value={celular} onChange={(e) => setCelular(e.target.value)} />
+              <Input
+                id="nl-cel"
+                inputMode="tel"
+                value={celular}
+                onChange={(e) => setCelular(e.target.value)}
+              />
             </div>
             {tipo !== "parceiro" && (
               <div className="grid grid-cols-[1fr_80px] gap-2 sm:col-span-2">
@@ -225,7 +252,9 @@ export function NovaLicenca({
                   onClick={() => setModalidade(m.id)}
                   className={
                     "rounded-lg border p-3 text-left transition-colors " +
-                    (modalidade === m.id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:bg-muted/50")
+                    (modalidade === m.id
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "border-border hover:bg-muted/50")
                   }
                 >
                   <span className="block text-sm font-semibold">{m.titulo}</span>
@@ -285,11 +314,20 @@ export function NovaLicenca({
           </div>
         </div>
 
-        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
-          <Button variant="outline" className="w-full sm:w-auto" onClick={aoFechar} disabled={criar.isPending}>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={aoFechar}
+            disabled={criar.isPending}
+          >
             Cancelar
           </Button>
-          <Button className="w-full sm:w-auto" onClick={() => criar.mutate()} disabled={!pronto || criar.isPending}>
+          <Button
+            className="w-full sm:w-auto"
+            onClick={() => criar.mutate()}
+            disabled={!pronto || criar.isPending}
+          >
             {criar.isPending ? "Criando…" : "Criar licença"}
           </Button>
         </DialogFooter>

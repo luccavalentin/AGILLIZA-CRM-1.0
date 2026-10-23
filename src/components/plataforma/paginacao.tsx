@@ -75,6 +75,7 @@ export function RodapePaginas({
         <Button
           size="sm"
           variant="outline"
+          className="min-h-11 sm:min-h-8"
           disabled={pagina <= 1 || carregando}
           onClick={() => onPagina(pagina - 1)}
         >
@@ -83,6 +84,7 @@ export function RodapePaginas({
         <Button
           size="sm"
           variant="outline"
+          className="min-h-11 sm:min-h-8"
           disabled={!haProxima || carregando}
           onClick={() => onPagina(pagina + 1)}
         >
