@@ -240,7 +240,7 @@ function Logs() {
             <ul className="overflow-hidden rounded-xl border border-border bg-card">
               <li
                 aria-hidden
-                className="hidden border-b border-border bg-muted/40 px-4 py-2 text-[11px] font-medium text-muted-foreground xl:grid xl:grid-cols-[132px_104px_minmax(0,1fr)_64px_72px_minmax(0,180px)] xl:gap-3"
+                className="hidden border-b border-border bg-muted/40 px-4 py-2 text-[11px] font-medium text-muted-foreground xl:grid xl:grid-cols-[112px_96px_minmax(0,2fr)_56px_64px_minmax(0,1fr)] xl:gap-3"
               >
                 <span>Quando</span>
                 <span>Fonte</span>
@@ -266,7 +266,7 @@ function LinhaLog({ l }: { l: LinhaLogUnificado }) {
   const codigo =
     l.status != null ? `${l.status}${l.codigo ? ` · ${l.codigo}` : ""}` : (l.codigo ?? "—");
   return (
-    <li className="border-b border-border px-4 py-2.5 last:border-b-0 xl:grid xl:grid-cols-[132px_104px_minmax(0,1fr)_64px_72px_minmax(0,180px)] xl:items-center xl:gap-3">
+    <li className="border-b border-border px-4 py-2.5 last:border-b-0 xl:grid xl:grid-cols-[112px_96px_minmax(0,2fr)_56px_64px_minmax(0,1fr)] xl:items-center xl:gap-3">
       <div className="flex items-center justify-between gap-2 xl:contents">
         <span className="flex items-center gap-2 text-[11px] tabular-nums text-muted-foreground xl:text-xs">
           <Pulso tom={n.tom} vivo={false} />

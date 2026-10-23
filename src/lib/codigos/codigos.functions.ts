@@ -38,10 +38,31 @@ async function admin(): Promise<SupabaseClient> {
   return supabaseAdmin as unknown as SupabaseClient;
 }
 
+/**
+ * Os códigos são de acesso aos BANCOS do correspondente: só a equipe interna os vê.
+ * Teste adversarial 23/10/2026: nível de acesso novo nasce com "ver" em todo módulo
+ * operacional — inclusive nível de portal do parceiro —, então um parceiro externo
+ * passava a ler os códigos. A matriz sozinha não basta: aqui o portal do parceiro
+ * (e quem está desativado/bloqueado) é recusado mesmo com a permissão marcada.
+ */
+async function exigirEquipeInterna(userId: string): Promise<void> {
+  const db = await admin();
+  const { data } = await db
+    .from("profiles")
+    .select("acesso_tipo, ativo, bloqueado_em")
+    .eq("id", userId)
+    .maybeSingle();
+  const p = data as { acesso_tipo?: string | null; ativo?: boolean | null; bloqueado_em?: string | null } | null;
+  if (!p || p.acesso_tipo !== "sistema" || p.ativo === false || p.bloqueado_em) {
+    throw new Error("Você não tem permissão para esta ação.");
+  }
+}
+
 /** Códigos das últimas 24 horas, do mais novo para o mais antigo. */
 export const listarCodigos = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["operacional.codigos", "view"])])
-  .handler(async (): Promise<CodigoRecebido[]> => {
+  .handler(async ({ context }): Promise<CodigoRecebido[]> => {
+    await exigirEquipeInterna(context.userId);
     const db = await admin();
     const desde = new Date(Date.now() - 24 * 3_600_000).toISOString();
     const { data, error } = await db
@@ -62,7 +83,8 @@ export const listarCodigos = createServerFn({ method: "GET" })
 /** Caixas vigiadas e o estado da leitura (sem a senha). */
 export const listarCaixas = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["operacional.codigos", "view"])])
-  .handler(async (): Promise<CaixaVigiada[]> => {
+  .handler(async ({ context }): Promise<CaixaVigiada[]> => {
+    await exigirEquipeInterna(context.userId);
     const db = await admin();
     const { data, error } = await db
       .from("codigos_caixas")
@@ -96,8 +118,28 @@ export const salvarCaixa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["operacional.codigos", "edit"])])
   .inputValidator((d: unknown) => caixaSchema.parse(d))
   .handler(async ({ data, context }) => {
+    await exigirEquipeInterna(context.userId);
     const db = await admin();
     const { cifrarSenha } = await import("./cripto.server");
+    // Trocar o endereço, o servidor ou a porta de uma caixa que já tem senha EXIGE a
+    // senha de novo. Teste adversarial 23/10/2026: sem isso, quem pode editar apontava
+    // a caixa para um servidor dele e o leitor entregava a senha guardada no login.
+    if (data.id && !data.senha) {
+      const { data: atual } = await db
+        .from("codigos_caixas")
+        .select("email, imap_host, imap_port")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (!atual) throw new Error("Caixa não encontrada.");
+      const a = atual as { email: string; imap_host: string; imap_port: number };
+      if (
+        a.email.toLowerCase() !== data.email ||
+        a.imap_host.toLowerCase() !== data.imap_host ||
+        a.imap_port !== data.imap_port
+      ) {
+        throw new Error("Para trocar o e-mail, o servidor ou a porta, informe a senha da caixa de novo.");
+      }
+    }
     const campos: Record<string, unknown> = {
       email: data.email,
       imap_host: data.imap_host,
@@ -133,7 +175,8 @@ export const salvarCaixa = createServerFn({ method: "POST" })
 export const removerCaixa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["operacional.codigos", "edit"])])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await exigirEquipeInterna(context.userId);
     const db = await admin();
     const { error } = await db.from("codigos_caixas").delete().eq("id", data.id);
     if (error) throw new Error("Não foi possível remover a caixa.");

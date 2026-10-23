@@ -187,21 +187,23 @@ export function Kpi({
     </p>
   );
   return (
-    <div className="tec-cartao relative min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4">
+    <div className="tec-cartao @container relative min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4">
       <span
         aria-hidden
         className="absolute inset-x-0 top-0 h-0.5"
         style={{ background: tom === "neutro" ? "transparent" : COR_TOM[tom] }}
       />
       {cor ? (
-        <div className="flex items-start gap-3">
+        // Cartão estreito (2 colunas a 360 px, 6 a 1280 px) não tem espaço para ícone e número
+        // lado a lado: "12.345" era cortado em "12.3". Abaixo de 170 px o ícone vai para cima.
+        <div className="flex flex-col items-start gap-2 @min-[170px]:flex-row @min-[170px]:gap-3">
           <BlocoIcone cor={cor}>{icone}</BlocoIcone>
           <div className="min-w-0 flex-1">
             <p className="line-clamp-2 text-xs font-medium leading-snug text-muted-foreground">
               {rotulo}
             </p>
             {numero}
-            {rodape && <div className="mt-1.5 text-xs text-muted-foreground">{rodape}</div>}
+            {rodape && <div className="mt-1.5 min-w-0 break-words text-xs text-muted-foreground">{rodape}</div>}
           </div>
         </div>
       ) : (

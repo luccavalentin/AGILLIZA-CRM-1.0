@@ -2281,6 +2281,21 @@ export const propostasParaEnvioDocumentos = createServerFn({ method: "POST" })
 
 /** Exclui uma proposta (e registros dependentes via cascata). Registra um
  * snapshot completo na auditoria antes de apagar — nada se perde nos Logs. */
+/**
+ * Excluir (lixeira) e restaurar proposta: quem criou (com permissão de criar) ou quem
+ * pode editar propostas. Teste adversarial 23/10/2026: sem isto, quem só ENXERGAVA a
+ * proposta (parceiro vinculado ao cliente) a mandava para a lixeira — e a exclusão
+ * ainda cancela a oportunidade no banco.
+ */
+async function exigirGestaoDaProposta(supabase: any, userId: string, criadorId: string | null | undefined) {
+  const { exigirAcao } = await import("@/lib/operacional/permissao-acao");
+  if (criadorId && criadorId === userId) {
+    await exigirAcao(supabase, userId, "operacional.propostas", "create", "Você não tem permissão para esta proposta.");
+    return;
+  }
+  await exigirAcao(supabase, userId, "operacional.propostas", "edit", "Você não tem permissão para excluir ou restaurar propostas.");
+}
+
 export const excluirProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -2311,6 +2326,7 @@ export const excluirProposta = createServerFn({ method: "POST" })
       supabase.from("proposta_historico").select("*").eq("proposta_id", data.id),
     ]);
     if (!prop) throw new Error("Proposta não encontrada.");
+    await exigirGestaoDaProposta(supabase, userId, (prop as { usuario_criador_id?: string | null }).usuario_criador_id);
 
     let correspondente: string | null = null;
     try {
@@ -2428,12 +2444,25 @@ export const excluirPropostaDefinitivamente = createServerFn({ method: "POST" })
     // Verifica se já está excluída (soft delete) e se o usuário tem permissão
     const { data: prop, error: fetchErr } = await supabase
       .from("propostas")
-      .select("id, numero_proposta, correspondente_id")
+      .select("id, numero_proposta, correspondente_id, deleted_at, usuario_criador_id")
       .eq("id", data.id)
       .maybeSingle();
 
     if (fetchErr) throw fetchErr;
     if (!prop) throw new Error("Proposta não encontrada.");
+    // Teste adversarial 23/10/2026: o apagamento é feito sem RLS, então a regra da
+    // política de DELETE do banco vem para cá — só sai da lixeira (já excluída) e só
+    // por administrador, correspondente, gestor ou quem criou. Antes, quem apenas
+    // ENXERGAVA a proposta (parceiro vinculado, por exemplo) a apagava de vez.
+    const p = prop as { deleted_at?: string | null; usuario_criador_id?: string | null };
+    if (!p.deleted_at) throw new Error("Só é possível excluir de vez uma proposta que está na lixeira.");
+    if (p.usuario_criador_id !== userId) {
+      const { data: podeTudo } = await supabase.rpc("has_any_role", {
+        _user_id: userId,
+        _roles: ["admin", "correspondente", "gestor"],
+      });
+      if (podeTudo !== true) throw new Error("Você não tem permissão para excluir esta proposta de vez.");
+    }
 
     // Auditoria antes de sumir com tudo
     try {
@@ -2468,11 +2497,12 @@ export const restaurarProposta = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: prop } = await supabase
       .from("propostas")
-      .select("id, correspondente_id, deleted_at")
+      .select("id, correspondente_id, deleted_at, usuario_criador_id")
       .eq("id", data.id)
       .maybeSingle();
     if (!prop) throw new Error("Proposta não encontrada.");
     if (!(prop as any).deleted_at) return { ok: true };
+    await exigirGestaoDaProposta(supabase, userId, (prop as { usuario_criador_id?: string | null }).usuario_criador_id);
 
     const { data: rows, error } = await supabase
       .from("propostas")

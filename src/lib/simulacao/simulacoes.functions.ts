@@ -312,6 +312,17 @@ export const criarSimulacao = createServerFn({ method: "POST" })
 
         const correspondente_id = prof?.correspondente_id;
         if (!correspondente_id) throw new Error("Correspondente não vinculado.");
+        // O cliente vindo da tela é usado em gravações sem RLS (vínculos de parceiro,
+        // cliente da simulação): precisa ser deste correspondente.
+        if (dd.cliente_id) {
+          const { data: cliDaConta } = await supabaseAdmin
+            .from("clientes")
+            .select("id")
+            .eq("id", dd.cliente_id)
+            .eq("correspondente_id", correspondente_id)
+            .maybeSingle();
+          if (!cliDaConta) throw new Error("Cliente não encontrado.");
+        }
 
         // ===== Pessoa jurídica: só o Bradesco opera =====
         // A tela já esconde e desmarca os demais, mas a decisão de qual banco
@@ -359,6 +370,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
         const { data: existente } = await supabaseAdmin
           .from("simulacoes")
           .select("id, numero_simulacao, agrupador_id")
+          // Teste adversarial 23/10/2026: sem a conta, a busca (feita sem RLS) devolvia
+          // o id e o número de simulação de OUTRO correspondente com o mesmo CPF e valores.
+          .eq("correspondente_id", correspondente_id)
           .eq("cpf_cnpj", cpfTitularSim)
           // Sem cliente vinculado: compara com "is null" — eq("") é UUID inválido
           // e a consulta inteira falhava (400), desligando esta proteção.
@@ -2084,6 +2098,35 @@ export const destravarSimulacao = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Teste adversarial 23/10/2026: sem estas conferências, qualquer pessoa logada
+    // punha em erro os bancos de uma simulação de QUALQUER conta só com o id.
+    // A simulação precisa estar visível pela RLS e a pessoa precisa poder editá-la
+    // (ou ser quem a criou, com permissão de criar) — a mesma regra de excluirSimulacao.
+    const { data: sim } = await supabase
+      .from("simulacoes")
+      .select("id, usuario_criador_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!sim) throw new Error("Simulação não encontrada.");
+    let podeComoCriador = false;
+    if ((sim as { usuario_criador_id?: string | null }).usuario_criador_id === userId) {
+      const { data: podeCriar } = await supabase.rpc("usuario_tem_permissao", {
+        _user_id: userId,
+        _modulo: "operacional.simulacoes",
+        _acao: "create",
+      });
+      podeComoCriador = !!podeCriar;
+    }
+    if (!podeComoCriador) {
+      const { exigirAcao } = await import("@/lib/operacional/permissao-acao");
+      await exigirAcao(
+        supabase,
+        userId,
+        "operacional.simulacoes",
+        "edit",
+        "Você não tem permissão para destravar simulações.",
+      );
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error } = await supabaseAdmin

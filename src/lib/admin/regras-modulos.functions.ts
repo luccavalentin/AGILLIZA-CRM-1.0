@@ -900,8 +900,10 @@ export const criarNivelAcesso = createServerFn({ method: "POST" })
     } else {
       // Baseline: visualização (próprios) dos módulos do dia a dia. Administração,
       // RH (salários) e Financeiro ficam de fora: nível novo nasce sem ver backup,
-      // folha ou caixa — quem precisar recebe na matriz, de propósito.
-      const SENSIVEL = /^(admin|rh|financeiro|saas)\./;
+      // folha ou caixa — quem precisar recebe na matriz, de propósito. Os códigos de
+      // acesso aos bancos também (teste adversarial 23/10/2026: nível de parceiro
+      // nascia vendo os códigos que os bancos mandam para a equipe).
+      const SENSIVEL = /^(admin|rh|financeiro|saas)\.|^operacional\.codigos$/;
       rows = CATALOGO_MODULOS.filter(
         (m) => !SENSIVEL.test(m.modulo) && m.acoes.some((a) => a.acao === "view"),
       ).map((m) => ({

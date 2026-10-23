@@ -578,6 +578,22 @@ export const criarDemanda = createServerFn({ method: "POST" })
       if (!cliente) throw new Error("Cliente fora do seu ecossistema.");
     }
 
+    // Teste adversarial 23/10/2026: proposta e simulação também vêm da tela e a
+    // gravação é sem RLS — sem conferir, a demanda apontava para registro de outra conta.
+    for (const [tabela, id] of [
+      ["propostas", data.proposta_id],
+      ["simulacoes", data.simulacao_id],
+    ] as const) {
+      if (!id) continue;
+      const { data: achado } = await supabaseAdmin
+        .from(tabela)
+        .select("id")
+        .eq("id", id)
+        .eq("correspondente_id", corr)
+        .maybeSingle();
+      if (!achado) throw new Error("Proposta ou simulação fora do seu ecossistema.");
+    }
+
     const participantes = [...new Set(data.participantes ?? [])];
     if (participantes.length) {
       const { data: usuarios } = await supabaseAdmin

@@ -66,17 +66,29 @@ export interface PessoaLista {
   nivel_acesso_nome: string | null;
 }
 
-/** Chaves "modulo:acao" liberadas num nível de acesso. */
-async function chavesDoNivel(admin: any, nivelId: string): Promise<Set<string>> {
+/** Chaves "modulo:acao" liberadas num nível de acesso, com o escopo de dados de cada uma. */
+async function chavesDoNivel(admin: any, nivelId: string): Promise<Map<string, string | null>> {
   const { data, error } = await admin
     .from("permissions")
-    .select("modulo, acao")
+    .select("modulo, acao, escopo_dados")
     .eq("nivel_acesso_id", nivelId)
     .eq("permitido", true);
   if (error) throw new Error("Não foi possível conferir as permissões do nível.");
-  return new Set(
-    ((data ?? []) as { modulo: string; acao: string }[]).map((p) => `${p.modulo}:${p.acao}`),
+  return new Map(
+    ((data ?? []) as { modulo: string; acao: string; escopo_dados: string | null }[]).map((p) => [
+      `${p.modulo}:${p.acao}`,
+      p.escopo_dados,
+    ]),
   );
+}
+
+/**
+ * Alcance do escopo de dados. Sem escopo gravado vale "todos" (o mais amplo), para a
+ * comparação nunca favorecer quem está dando o nível.
+ */
+const ALCANCE_ESCOPO: Record<string, number> = { proprios: 1, equipe: 2, personalizado: 3, todos: 4 };
+function alcance(escopo: string | null | undefined): number {
+  return ALCANCE_ESCOPO[escopo ?? "todos"] ?? 4;
 }
 
 /**
@@ -106,10 +118,14 @@ async function garantirNivelAoAlcance(
     .maybeSingle();
   const minhas = eu?.nivel_acesso_id
     ? await chavesDoNivel(supabaseAdmin, eu.nivel_acesso_id)
-    : new Set<string>();
+    : new Map<string, string | null>();
   const alvo = await chavesDoNivel(supabaseAdmin, nivelId);
-  for (const chave of alvo) {
+  // Teste adversarial 23/10/2026: comparar só "modulo:acao" deixava quem vê os PRÓPRIOS
+  // clientes criar alguém (cuja senha provisória ele digitou) que vê TODOS. O escopo
+  // de dados do alvo também não pode passar o de quem dá o nível.
+  for (const [chave, escopo] of alvo) {
     if (!minhas.has(chave)) throw new Error(mensagem);
+    if (alcance(escopo) > alcance(minhas.get(chave))) throw new Error(mensagem);
   }
 }
 
