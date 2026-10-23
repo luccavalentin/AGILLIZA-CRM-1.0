@@ -361,6 +361,32 @@ const DOCUMENTO = z
   .refine((v) => !v || [11, 14].includes(v.replace(/\D/g, "").length), "CPF ou CNPJ inválido.");
 
 /**
+ * Desconto na licença (0254): em porcentagem (até 100) ou em reais, por um número de
+ * faturas (1 a 120) ou para sempre (`faturas: null`). Sem teto: quem cria licença concede.
+ */
+const DESCONTO = z
+  .object({
+    tipo: z.enum(["percentual", "valor"]),
+    valor: z
+      .number()
+      .positive("Informe o desconto (maior que zero).")
+      .max(1_000_000, "Desconto acima do permitido.")
+      .refine((v) => Math.round(v * 100) === v * 100, "Use no máximo duas casas decimais."),
+    faturas: z
+      .number()
+      .int()
+      .min(1, "De 1 a 120 faturas.")
+      .max(120, "De 1 a 120 faturas.")
+      .nullable(),
+  })
+  .refine((d) => d.tipo !== "percentual" || d.valor <= 100, {
+    message: "O desconto em porcentagem vai até 100%.",
+    path: ["valor"],
+  });
+
+export type DescontoNovo = z.infer<typeof DESCONTO>;
+
+/**
  * Cria a licença à mão (cortesia, teste ou pagamento) e, se escolhida, já põe a conta na
  * carteira de alguém do Agilliza. A pessoa recebe o e-mail para criar a própria senha.
  */
@@ -381,6 +407,7 @@ export const criarLicenca = createServerFn({ method: "POST" })
         dias: z.number().int().min(1, "De 1 a 365 dias.").max(365, "De 1 a 365 dias.").nullable(),
         carteira: z.string().uuid().nullable(),
         motivo: MOTIVO,
+        desconto: DESCONTO.nullable().optional(),
       })
       .refine((v) => v.modalidade === "pagamento" || v.dias !== null, {
         message: "Informe os dias de acesso.",
@@ -390,8 +417,11 @@ export const criarLicenca = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
-    const r = await comPlataforma(context.userId, (tx) =>
-      tx.uma<{ r: { tenant_id: string } }>(
+    // Licença e desconto na MESMA transação: a fatura de ativação aberta pela licença ainda
+    // não saiu do banco, então já recebe o desconto (0254). Se o desconto falhar, a licença
+    // também não é criada — nada fica pela metade.
+    const r = await comPlataforma(context.userId, async (tx) => {
+      const criada = await tx.uma<{ r: { tenant_id: string } }>(
         "select plataforma.criar_licenca_manual($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) as r",
         [
           data.tipo,
@@ -407,9 +437,20 @@ export const criarLicenca = createServerFn({ method: "POST" })
           data.carteira,
           data.motivo,
         ],
-      ),
-    );
-    return { id: r?.r.tenant_id ?? null };
+      );
+      const id = criada?.r.tenant_id ?? null;
+      if (id && data.desconto) {
+        await tx.consultar("select plataforma.conceder_desconto_licenca($1, $2, $3, $4, $5)", [
+          id,
+          data.desconto.tipo,
+          data.desconto.valor,
+          data.desconto.faturas,
+          data.motivo,
+        ]);
+      }
+      return id;
+    });
+    return { id: r };
   });
 
 /** Põe a conta na carteira de uma pessoa do Agilliza (ou tira, com null). */
@@ -436,4 +477,75 @@ export const reenviarAcessoLicenca = createServerFn({ method: "POST" })
       tx.consultar("select plataforma.reenviar_acesso_licenca($1)", [data.id]),
     );
     return { ok: true as const };
+  });
+
+/* ------------------------------------------------------- desconto na licença (0254) --- */
+
+export interface DescontoVigente {
+  id: string;
+  tipo: "percentual" | "valor";
+  valor: number;
+  rotulo: string;
+  faturas_total: number | null;
+  faturas_usadas: number;
+  motivo: string;
+  criado_em: string;
+}
+
+export interface DescontoAnterior {
+  id: string;
+  rotulo: string;
+  faturas_total: number | null;
+  faturas_usadas: number;
+  motivo: string;
+  criado_em: string;
+  encerrado_em: string;
+  encerrado_motivo: string | null;
+}
+
+/** Desconto vigente e os anteriores da licença. */
+export const descontoLicenca = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.licencas", "view"])])
+  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ j: { vigente: DescontoVigente | null; anteriores: DescontoAnterior[] } }>(
+        "select plataforma.desconto_da_conta($1) as j",
+        [data.id],
+      ),
+    );
+    return r?.j ?? { vigente: null, anteriores: [] };
+  });
+
+/** Concede (ou troca) o desconto da licença; vale a partir da próxima fatura. */
+export const concederDescontoLicenca = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z.object({ id: UUID, desconto: DESCONTO, motivo: MOTIVO }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ j: { id: string; rotulo: string } }>(
+        "select plataforma.conceder_desconto_licenca($1, $2, $3, $4, $5) as j",
+        [data.id, data.desconto.tipo, data.desconto.valor, data.desconto.faturas, data.motivo],
+      ),
+    );
+    return { rotulo: r?.j.rotulo ?? null };
+  });
+
+/** Encerra o desconto vigente (as faturas já abertas com ele continuam como estão). */
+export const encerrarDescontoLicenca = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) => z.object({ id: UUID, motivo: MOTIVO }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ ok: boolean }>("select plataforma.encerrar_desconto_licenca($1, $2) as ok", [
+        data.id,
+        data.motivo,
+      ]),
+    );
+    return { encerrado: r?.ok ?? false };
   });

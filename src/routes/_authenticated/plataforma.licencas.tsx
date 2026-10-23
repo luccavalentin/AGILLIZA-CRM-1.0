@@ -50,6 +50,7 @@ import { formatBRL, formatData } from "@/lib/financeiro/format";
 import { RodapePaginas, useValorAssentado } from "@/components/plataforma/paginacao";
 import { CarteiraLicenca } from "@/components/plataforma/licencas/carteira-licenca";
 import { NovaLicenca } from "@/components/plataforma/licencas/nova-licenca";
+import { DescontoDaLicenca } from "@/components/plataforma/licencas/desconto-licenca";
 import {
   POR_PAGINA_LICENCAS,
   alterarSituacaoLicenca,
@@ -749,6 +750,10 @@ function AcoesLicenca({ licenca, planos }: { licenca: Licenca; planos: PlanoLice
         <p className="mt-2 text-xs text-muted-foreground">
           Troca os recursos liberados. Preço e cobrança seguem na assinatura.
         </p>
+      </Bloco>
+
+      <Bloco titulo="Desconto">
+        <DescontoDaLicenca licenca={licenca} />
       </Bloco>
 
       <Bloco titulo="Créditos">

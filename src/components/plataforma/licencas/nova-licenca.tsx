@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL } from "@/lib/financeiro/format";
@@ -29,6 +30,12 @@ import {
   type PlanoLicenca,
   type TipoLicenca,
 } from "@/lib/plataforma/licencas.functions";
+import {
+  CamposDesconto,
+  DESCONTO_INICIAL,
+  paraDesconto,
+  type EstadoDesconto,
+} from "./desconto-licenca";
 
 type Modalidade = "cortesia" | "teste" | "pagamento";
 
@@ -76,6 +83,9 @@ export function NovaLicenca({
   const [dias, setDias] = useState("30");
   const [carteira, setCarteira] = useState(SEM_CARTEIRA);
   const [motivo, setMotivo] = useState("");
+  const [comDesconto, setComDesconto] = useState(false);
+  const [desconto, setDesconto] = useState<EstadoDesconto>(DESCONTO_INICIAL);
+  const descontoPronto = comDesconto ? paraDesconto(desconto) : null;
 
   const planosDoTipo = planos.filter((p) => p.publico === tipo || p.publico === "todos");
 
@@ -91,6 +101,8 @@ export function NovaLicenca({
     setDias("30");
     setCarteira(SEM_CARTEIRA);
     setMotivo("");
+    setComDesconto(false);
+    setDesconto(DESCONTO_INICIAL);
   }
 
   const criar = useMutation({
@@ -109,10 +121,13 @@ export function NovaLicenca({
           dias: modalidade === "pagamento" ? null : Number(dias),
           carteira: carteira === SEM_CARTEIRA ? null : carteira,
           motivo,
+          desconto: descontoPronto,
         },
       }),
     onSuccess: () => {
-      toast.success(`Licença criada. ${email} recebeu o e-mail para criar a senha.`);
+      toast.success(
+        `Licença criada${descontoPronto ? " com desconto" : ""}. ${email} recebeu o e-mail para criar a senha.`,
+      );
       qc.invalidateQueries({ queryKey: ["plataforma-licencas"] });
       limpar();
       aoFechar();
@@ -126,6 +141,7 @@ export function NovaLicenca({
     /\S+@\S+\.\S+/.test(email) &&
     planoId &&
     diasOk &&
+    (!comDesconto || descontoPronto !== null) &&
     motivo.trim().length >= 5;
 
   return (
@@ -280,6 +296,27 @@ export function NovaLicenca({
               </div>
             )}
           </fieldset>
+
+          <section className="rounded-lg border border-border p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <Label htmlFor="nl-com-desconto" className="text-sm font-medium">
+                  Conceder desconto
+                </Label>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {modalidade === "pagamento"
+                    ? "A fatura de ativação já sai com o desconto."
+                    : `Vale nas faturas depois ${modalidade === "cortesia" ? "da cortesia" : "do teste"}.`}
+                </p>
+              </div>
+              <Switch id="nl-com-desconto" checked={comDesconto} onCheckedChange={setComDesconto} />
+            </div>
+            {comDesconto && (
+              <div className="mt-3 border-t border-border pt-3">
+                <CamposDesconto estado={desconto} aoMudar={setDesconto} prefixo="nl-desc" />
+              </div>
+            )}
+          </section>
 
           <div className="space-y-1.5">
             <Label>Carteira de</Label>
