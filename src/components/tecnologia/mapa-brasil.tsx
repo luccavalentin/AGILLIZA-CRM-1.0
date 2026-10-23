@@ -1,184 +1,242 @@
 /**
- * Mapa do Brasil por UF em grade de quadrados (cartograma).
+ * Mapa do Brasil por UF — contorno dos estados (`lib/tecnologia/brasil-geo.ts`), em SVG puro.
  *
- * Cada estado é um quadrado do mesmo tamanho, na posição aproximada dele no mapa: o
- * número de usuários fica legível em todos — no mapa geográfico, o DF e Sergipe sumiriam.
- * SVG puro, sem biblioteca; cabe em 360 px (6 colunas). Intensidade em 5 degraus de azul
- * sólido da marca (sem degradê); texto inverte para branco nos degraus escuros.
+ * Cor por intensidade (5 degraus do azul da marca, misturados ao fundo do cartão — funciona
+ * no tema escuro e no claro), ponto pulsando onde há gente online agora, toque/passar o
+ * mouse para ver o estado, e zoom simples (+, −, voltar) centrado no estado escolhido.
+ * Estados pequenos do litoral (RN, PB, PE, AL, SE, ES, RJ) e o DF levam o rótulo para fora,
+ * com um fio, para continuarem legíveis no celular. Cabe em 360 px.
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Minus, Plus, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  ALTURA,
+  CAMINHO_UF,
+  LARGURA,
+  NOME_UF,
+  ROTULO_UF,
+  projetar,
+} from "@/lib/tecnologia/brasil-geo";
 
-/** [coluna, linha] de cada UF na grade 6 × 9. */
-const GRADE: Record<string, [number, number]> = {
-  RR: [1, 0],
-  AP: [3, 0],
-  AM: [1, 1],
-  PA: [2, 1],
-  MA: [3, 1],
-  CE: [4, 1],
-  RN: [5, 1],
-  AC: [0, 2],
-  RO: [1, 2],
-  TO: [2, 2],
-  PI: [3, 2],
-  PE: [4, 2],
-  PB: [5, 2],
-  MT: [1, 3],
-  GO: [2, 3],
-  BA: [3, 3],
-  AL: [4, 3],
-  MS: [1, 4],
-  DF: [2, 4],
-  MG: [3, 4],
-  SE: [4, 4],
-  SP: [2, 5],
-  RJ: [3, 5],
-  ES: [4, 5],
-  PR: [2, 6],
-  SC: [2, 7],
-  RS: [2, 8],
-};
+export { NOME_UF };
 
-export const NOME_UF: Record<string, string> = {
-  AC: "Acre",
-  AL: "Alagoas",
-  AP: "Amapá",
-  AM: "Amazonas",
-  BA: "Bahia",
-  CE: "Ceará",
-  DF: "Distrito Federal",
-  ES: "Espírito Santo",
-  GO: "Goiás",
-  MA: "Maranhão",
-  MT: "Mato Grosso",
-  MS: "Mato Grosso do Sul",
-  MG: "Minas Gerais",
-  PA: "Pará",
-  PB: "Paraíba",
-  PR: "Paraná",
-  PE: "Pernambuco",
-  PI: "Piauí",
-  RJ: "Rio de Janeiro",
-  RN: "Rio Grande do Norte",
-  RS: "Rio Grande do Sul",
-  RO: "Rondônia",
-  RR: "Roraima",
-  SC: "Santa Catarina",
-  SP: "São Paulo",
-  SE: "Sergipe",
-  TO: "Tocantins",
-};
+const DEGRAUS = [22, 38, 55, 75, 100];
 
-/** 5 degraus da cor da marca (opacidade sobre o fundo do cartão — cor sólida, sem degradê). */
-const DEGRAUS = [0.1, 0.25, 0.45, 0.7, 1];
-
+/** Escala pela raiz: com SP muito à frente, a escala linear apagaria o resto do país. */
 function degrau(n: number, max: number): number {
   if (n <= 0 || max <= 0) return -1;
-  return Math.min(4, Math.floor((n / max) * 4.999));
+  return Math.min(4, Math.floor(Math.sqrt(n / max) * 4.999));
 }
 
-const LADO = 46;
-const VAO = 4;
+const ZOOM = [1, 1.7, 2.6];
 
 export function MapaBrasil({
   porUf,
-  rotuloValor = "usuários",
+  online,
+  rotuloValor = "pessoas",
 }: {
+  /** Intensidade (cor) por UF. */
   porUf: Record<string, number>;
+  /** Quem está online agora por UF: ponto pulsando. */
+  online?: Record<string, number>;
   rotuloValor?: string;
 }) {
   const [foco, setFoco] = useState<string | null>(null);
-  const max = Math.max(0, ...Object.keys(GRADE).map((uf) => porUf[uf] ?? 0));
-  const largura = 6 * LADO + 5 * VAO;
-  const altura = 9 * LADO + 8 * VAO;
-  const ufFoco = foco && GRADE[foco] ? foco : null;
+  const [nivel, setNivel] = useState(0);
+  const max = Math.max(0, ...Object.keys(CAMINHO_UF).map((uf) => porUf[uf] ?? 0));
+
+  const viewBox = useMemo(() => {
+    const z = ZOOM[nivel];
+    if (z === 1) return `0 0 ${LARGURA} ${ALTURA}`;
+    const centro =
+      foco && ROTULO_UF[foco] ? projetar(ROTULO_UF[foco].em) : [LARGURA * 0.62, ALTURA * 0.52];
+    const w = LARGURA / z;
+    const h = ALTURA / z;
+    const x = Math.min(Math.max(centro[0] - w / 2, 0), LARGURA - w);
+    const y = Math.min(Math.max(centro[1] - h / 2, 0), ALTURA - h);
+    return `${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
+  }, [nivel, foco]);
+
+  const escalaTexto = 1 / ZOOM[nivel];
+  const ufs = Object.keys(CAMINHO_UF);
 
   return (
-    <figure className="mx-auto w-full max-w-[340px]">
+    <figure className="mx-auto w-full max-w-[560px]">
+      <div className="mb-1 flex justify-end gap-1.5">
+        <BotaoMapa
+          rotulo="Aproximar"
+          onClick={() => setNivel((n) => Math.min(ZOOM.length - 1, n + 1))}
+          desativado={nivel === ZOOM.length - 1}
+        >
+          <Plus className="size-4" />
+        </BotaoMapa>
+        <BotaoMapa
+          rotulo="Afastar"
+          onClick={() => setNivel((n) => Math.max(0, n - 1))}
+          desativado={nivel === 0}
+        >
+          <Minus className="size-4" />
+        </BotaoMapa>
+        <BotaoMapa
+          rotulo="Ver o Brasil inteiro"
+          onClick={() => {
+            setNivel(0);
+            setFoco(null);
+          }}
+          desativado={nivel === 0 && !foco}
+        >
+          <RotateCcw className="size-3.5" />
+        </BotaoMapa>
+      </div>
       <svg
-        viewBox={`0 0 ${largura} ${altura}`}
-        className="h-auto w-full"
+        viewBox={viewBox}
+        className="h-auto w-full touch-manipulation"
         role="img"
         aria-label={`Mapa do Brasil com ${rotuloValor} por estado`}
       >
-        {Object.entries(GRADE).map(([uf, [c, l]]) => {
+        {ufs.map((uf) => {
           const n = porUf[uf] ?? 0;
           const d = degrau(n, max);
-          const x = c * (LADO + VAO);
-          const y = l * (LADO + VAO);
-          const escuro = d >= 3;
-          const ativo = ufFoco === uf;
+          const ativo = foco === uf;
           return (
-            <g
+            <path
               key={uf}
+              d={CAMINHO_UF[uf]}
               tabIndex={0}
               role="button"
-              aria-label={`${NOME_UF[uf]}: ${n} ${rotuloValor}`}
+              aria-label={`${NOME_UF[uf]}: ${n} ${rotuloValor}${online?.[uf] ? `, ${online[uf]} online agora` : ""}`}
               onMouseEnter={() => setFoco(uf)}
-              onMouseLeave={() => setFoco(null)}
               onFocus={() => setFoco(uf)}
-              onBlur={() => setFoco(null)}
-              onClick={() => setFoco((f) => (f === uf ? null : uf))}
-              className="cursor-pointer outline-none"
+              onClick={() => setFoco(uf)}
+              className="cursor-pointer outline-none transition-[fill] duration-300"
+              style={{
+                fill:
+                  d < 0
+                    ? "var(--muted)"
+                    : `color-mix(in oklab, var(--realce) ${DEGRAUS[d]}%, var(--card))`,
+              }}
+              stroke={ativo ? "var(--foreground)" : "var(--card)"}
+              strokeWidth={(ativo ? 1.6 : 0.9) * escalaTexto}
+              strokeLinejoin="round"
+            />
+          );
+        })}
+        {/* Fios dos rótulos de fora */}
+        {ufs.map((uf) => {
+          const r = ROTULO_UF[uf];
+          if (!r?.fora) return null;
+          const [x1, y1] = projetar(r.em);
+          const [x2, y2] = projetar(r.fora);
+          return (
+            <line
+              key={`f-${uf}`}
+              x1={x1}
+              y1={y1}
+              x2={x2 - 6 * escalaTexto}
+              y2={y2 - 2 * escalaTexto}
+              stroke="var(--muted-foreground)"
+              strokeOpacity={0.45}
+              strokeWidth={0.6 * escalaTexto}
+            />
+          );
+        })}
+        {/* Pontos ao vivo */}
+        {online &&
+          ufs.map((uf) => {
+            if (!online[uf]) return null;
+            const [x, y] = projetar(ROTULO_UF[uf].em);
+            const rr = 3.2 * escalaTexto;
+            return (
+              <g key={`p-${uf}`} pointerEvents="none">
+                <circle cx={x} cy={y} r={rr} fill="var(--success)" className="tec-pulso" />
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={rr}
+                  fill="var(--success)"
+                  stroke="var(--card)"
+                  strokeWidth={0.8 * escalaTexto}
+                />
+              </g>
+            );
+          })}
+        {/* Siglas */}
+        {ufs.map((uf) => {
+          const r = ROTULO_UF[uf];
+          const [x, y] = projetar(r.fora ?? r.em);
+          const d = degrau(porUf[uf] ?? 0, max);
+          const temPonto = Boolean(online?.[uf]) && !r.fora;
+          return (
+            <text
+              key={`t-${uf}`}
+              x={x}
+              y={y + (temPonto ? 11 : 3.5) * escalaTexto}
+              textAnchor={r.fora ? "start" : "middle"}
+              fontSize={10.5 * escalaTexto}
+              fontWeight={600}
+              pointerEvents="none"
+              className="select-none"
+              fill={!r.fora && d >= 3 ? "#ffffff" : "var(--foreground)"}
+              fillOpacity={d < 0 ? 0.55 : 0.92}
             >
-              <rect
-                x={x + 0.5}
-                y={y + 0.5}
-                width={LADO - 1}
-                height={LADO - 1}
-                rx={7}
-                fill={d < 0 ? "var(--card)" : "var(--primary)"}
-                fillOpacity={d < 0 ? 1 : DEGRAUS[d]}
-                stroke={ativo ? "var(--foreground)" : d < 0 ? "var(--border)" : "var(--primary)"}
-                strokeOpacity={ativo ? 0.9 : d < 0 ? 1 : 0.35}
-                strokeWidth={ativo ? 1.5 : 1}
-              />
-              <text
-                x={x + LADO / 2}
-                y={y + 19}
-                textAnchor="middle"
-                className="select-none"
-                fontSize={11}
-                fontWeight={600}
-                fill={escuro ? "var(--primary-foreground)" : "var(--foreground)"}
-                fillOpacity={d < 0 ? 0.45 : 1}
-              >
-                {uf}
-              </text>
-              <text
-                x={x + LADO / 2}
-                y={y + 34}
-                textAnchor="middle"
-                className="select-none tabular-nums"
-                fontSize={10.5}
-                fill={escuro ? "var(--primary-foreground)" : "var(--muted-foreground)"}
-                fillOpacity={d < 0 ? 0.6 : 0.95}
-              >
-                {n > 0 ? n.toLocaleString("pt-BR") : "·"}
-              </text>
-            </g>
+              {uf}
+            </text>
           );
         })}
       </svg>
-      <figcaption className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-        <span className={cn("min-h-4 font-medium", ufFoco ? "text-foreground" : "")}>
-          {ufFoco
-            ? `${NOME_UF[ufFoco]}: ${(porUf[ufFoco] ?? 0).toLocaleString("pt-BR")} ${rotuloValor}`
-            : "Toque num estado para ver o nome"}
+      <figcaption className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-[11px] text-muted-foreground">
+        <span className={cn("min-h-4 font-medium", foco ? "text-foreground" : "")}>
+          {foco
+            ? `${NOME_UF[foco]}: ${(porUf[foco] ?? 0).toLocaleString("pt-BR")} ${rotuloValor}${
+                online?.[foco] ? ` · ${online[foco]} online agora` : ""
+              }`
+            : "Toque num estado para ver os números"}
         </span>
-        <span className="flex items-center gap-1" aria-hidden>
-          <span>menos</span>
-          {DEGRAUS.map((o) => (
-            <span
-              key={o}
-              className="size-3 rounded-[3px] border border-primary/30"
-              style={{ background: "var(--primary)", opacity: o }}
-            />
-          ))}
-          <span>mais</span>
+        <span className="flex items-center gap-2">
+          {online && (
+            <span className="inline-flex items-center gap-1">
+              <span className="size-2 rounded-full bg-success" /> online agora
+            </span>
+          )}
+          <span className="flex items-center gap-1" aria-hidden>
+            <span>menos</span>
+            {DEGRAUS.map((p) => (
+              <span
+                key={p}
+                className="size-3 rounded-[3px]"
+                style={{ background: `color-mix(in oklab, var(--realce) ${p}%, var(--card))` }}
+              />
+            ))}
+            <span>mais</span>
+          </span>
         </span>
       </figcaption>
     </figure>
+  );
+}
+
+function BotaoMapa({
+  rotulo,
+  onClick,
+  desativado,
+  children,
+}: {
+  rotulo: string;
+  onClick: () => void;
+  desativado?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={rotulo}
+      title={rotulo}
+      onClick={onClick}
+      disabled={desativado}
+      className="grid size-11 place-items-center rounded-lg border border-border bg-card text-foreground shadow-sm transition-colors hover:border-[color:var(--realce)] disabled:opacity-40 lg:size-8"
+    >
+      {children}
+    </button>
   );
 }

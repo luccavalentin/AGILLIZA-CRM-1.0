@@ -115,11 +115,13 @@ export function GraficoSerie<T extends object>({
             tick={{ fill: COR.eixo, fontSize: 11 }}
             tickLine={false}
             axisLine={false}
-            width={44}
+            width={50}
             allowDecimals={false}
             domain={dominioY ?? [0, "auto"]}
             tickFormatter={(v: number) =>
-              v >= 10_000 ? `${Math.round(v / 1000)} mil` : v.toLocaleString("pt-BR")
+              v >= 1000
+                ? `${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`
+                : v.toLocaleString("pt-BR")
             }
           />
           {temDir && (

@@ -1,0 +1,80 @@
+/*
+ * Tema da Gestão de Tecnologia (central de operações) — SÓ nesta seção.
+ *
+ * Os componentes usam os tokens de sempre (bg-card, text-muted-foreground…); aqui eles
+ * são redefinidos no contêiner da seção (e nas camadas que abrem fora dele: gaveta,
+ * menus, listas), então o resto do Agilliza não muda. Escuro é o padrão; o claro usa a
+ * paleta normal da marca.
+ *
+ * `--realce` é o azul da marca usado em texto, linha e borda: #000F9F no claro; no escuro,
+ * o mesmo azul clareado para ter contraste sobre o azul-noite.
+ */
+.tec-tema {
+  --realce: #000f9f;
+  --realce-suave: color-mix(in oklab, #000f9f 10%, transparent);
+  --tec-fundo: #f4f6fb;
+  --tec-grade: color-mix(in oklab, var(--border) 70%, transparent);
+  --tec-sombra: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.tec-tema.tec-escuro {
+  color-scheme: dark;
+  --background: #0a0f1d;
+  --foreground: #e6eaf4;
+  --card: #111a2c;
+  --card-foreground: #e6eaf4;
+  --popover: #131d31;
+  --popover-foreground: #e6eaf4;
+  --secondary: #18233a;
+  --secondary-foreground: #e6eaf4;
+  --muted: #162037;
+  --muted-foreground: #95a2bd;
+  --accent: #1a2850;
+  --accent-foreground: #cdd5ff;
+  --border: #222f4a;
+  --input: #2a3956;
+  --ring: #7d8dff;
+  --primary: #1c33d6;
+  --primary-foreground: #ffffff;
+  --destructive: #f15b5b;
+  --success: #27c48a;
+  --success-texto: #4ade9f;
+  --warning: #f5b80b;
+  --chart-1: #7d8dff;
+  --chart-2: #b48cff;
+  --chart-3: #2fd39a;
+  --chart-4: #f5b80b;
+  --chart-5: #f46a6a;
+  --realce: #8c9bff;
+  --realce-suave: color-mix(in oklab, #8c9bff 14%, transparent);
+  --tec-fundo: #0a0f1d;
+  --tec-grade: #1c2740;
+  --tec-sombra: 0 1px 0 rgb(255 255 255 / 0.02) inset, 0 8px 24px -16px rgb(0 0 0 / 0.6);
+}
+
+.tec-tema .tec-cartao {
+  box-shadow: var(--tec-sombra);
+}
+
+/* Ponto "ao vivo" do mapa: anel que cresce e some. Parado para quem pede menos movimento. */
+@keyframes tec-pulso {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.tec-pulso {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tec-pulso 2.2s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tec-pulso {
+    animation: none;
+    opacity: 0;
+  }
+}

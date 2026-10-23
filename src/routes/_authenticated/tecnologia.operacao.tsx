@@ -2,7 +2,16 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Building2, Gauge, Plug, Route as IconeRota, Timer, Waves, Workflow } from "lucide-react";
+import {
+  AlertTriangle,
+  Building2,
+  Gauge,
+  Plug,
+  Route as IconeRota,
+  Timer,
+  Waves,
+  Workflow,
+} from "lucide-react";
 import {
   BarraFina,
   COR,
@@ -92,6 +101,7 @@ function Operacao() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi
           rotulo="Requisições"
+          cor="azul"
           icone={<Waves className="size-4" />}
           carregando={carregando}
           valor={fmtNum(r?.requisicoes)}
@@ -99,6 +109,8 @@ function Operacao() {
         />
         <Kpi
           rotulo="Taxa de falha"
+          cor="vermelho"
+          icone={<AlertTriangle />}
           carregando={carregando}
           tom={(r?.taxa_falha ?? 0) >= 5 ? "critico" : (r?.taxa_falha ?? 0) >= 1 ? "atencao" : "ok"}
           valor={fmtNum1(r?.taxa_falha)}
@@ -107,6 +119,7 @@ function Operacao() {
         />
         <Kpi
           rotulo="p95"
+          cor="amarelo"
           icone={<Gauge className="size-4" />}
           carregando={carregando}
           tom={
@@ -117,6 +130,7 @@ function Operacao() {
         />
         <Kpi
           rotulo="Licenças ativas"
+          cor="verde"
           icone={<Building2 className="size-4" />}
           carregando={carregando}
           valor={fmtNum(r?.licencas)}
@@ -124,6 +138,7 @@ function Operacao() {
         />
         <Kpi
           rotulo="Chamadas a provedores"
+          cor="roxo"
           icone={<Plug className="size-4" />}
           carregando={carregando}
           tom={(r?.provedor_falhas ?? 0) > 0 ? "atencao" : "neutro"}
@@ -132,6 +147,7 @@ function Operacao() {
         />
         <Kpi
           rotulo="Fila"
+          cor="marca"
           icone={<Workflow className="size-4" />}
           carregando={carregando}
           tom={(r?.fila_mortas ?? 0) > 0 ? "atencao" : "neutro"}

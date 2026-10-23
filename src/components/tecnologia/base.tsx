@@ -98,13 +98,15 @@ export function Painel({
   corpoClassName?: string;
 }) {
   return (
-    <section className={cn("min-w-0 rounded-xl border border-border bg-card", className)}>
+    <section
+      className={cn("tec-cartao min-w-0 rounded-xl border border-border bg-card", className)}
+    >
       {(titulo || acoes) && (
         <header className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-5">
           <div className="min-w-0 flex-1">
             {titulo && (
               <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                {icone && <span className="text-primary">{icone}</span>}
+                {icone && <span className="text-[color:var(--realce)]">{icone}</span>}
                 {titulo}
               </h2>
             )}
@@ -118,7 +120,43 @@ export function Painel({
   );
 }
 
-/** Indicador grande: o número que se lê de longe. */
+/** Cores dos blocos de ícone (degradê leve permitido nesta seção, a pedido do dono). */
+export type CorBloco = "vermelho" | "azul" | "amarelo" | "roxo" | "verde" | "marca";
+export const COR_BLOCO: Record<CorBloco, [string, string]> = {
+  vermelho: ["#f87171", "#e5484d"],
+  azul: ["#60a5fa", "#2f6fea"],
+  amarelo: ["#fcd34d", "#f0a30a"],
+  roxo: ["#a78bfa", "#7c4dee"],
+  verde: ["#4ade80", "#1fa456"],
+  marca: ["#3047f0", "#000f9f"],
+};
+
+/** Quadrado colorido com o ícone (cartões de indicador da central). */
+export function BlocoIcone({
+  cor,
+  children,
+  className,
+}: {
+  cor: CorBloco;
+  children: ReactNode;
+  className?: string;
+}) {
+  const [a, b] = COR_BLOCO[cor];
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "grid size-11 shrink-0 place-items-center rounded-xl text-white [&_svg]:size-5",
+        className,
+      )}
+      style={{ background: `linear-gradient(135deg, ${a}, ${b})` }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Indicador grande: o número que se lê de longe. Com `cor`, o ícone vai num bloco colorido. */
 export function Kpi({
   rotulo,
   valor,
@@ -126,6 +164,7 @@ export function Kpi({
   rodape,
   tom = "neutro",
   icone,
+  cor,
   carregando,
   children,
 }: {
@@ -135,31 +174,48 @@ export function Kpi({
   rodape?: ReactNode;
   tom?: Tom;
   icone?: ReactNode;
+  cor?: CorBloco;
   carregando?: boolean;
   children?: ReactNode;
 }) {
+  const numero = carregando ? (
+    <div className="mt-2 h-8 w-20 animate-pulse rounded-md bg-muted" />
+  ) : (
+    <p className="mt-1 flex items-baseline gap-1 text-[1.65rem] font-semibold leading-none tracking-tight text-foreground tabular-nums sm:text-[1.75rem]">
+      {valor}
+      {unidade && <span className="text-sm font-medium text-muted-foreground">{unidade}</span>}
+    </p>
+  );
   return (
-    <div className="relative min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4">
+    <div className="tec-cartao relative min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4">
       <span
         aria-hidden
         className="absolute inset-x-0 top-0 h-0.5"
         style={{ background: tom === "neutro" ? "transparent" : COR_TOM[tom] }}
       />
-      <div className="flex items-center justify-between gap-2">
-        <p className="line-clamp-2 text-xs font-medium leading-snug text-muted-foreground">
-          {rotulo}
-        </p>
-        {icone && <span className="shrink-0 text-muted-foreground">{icone}</span>}
-      </div>
-      {carregando ? (
-        <div className="mt-2 h-9 w-24 animate-pulse rounded-md bg-muted" />
+      {cor ? (
+        <div className="flex items-start gap-3">
+          <BlocoIcone cor={cor}>{icone}</BlocoIcone>
+          <div className="min-w-0 flex-1">
+            <p className="line-clamp-2 text-xs font-medium leading-snug text-muted-foreground">
+              {rotulo}
+            </p>
+            {numero}
+            {rodape && <div className="mt-1.5 text-xs text-muted-foreground">{rodape}</div>}
+          </div>
+        </div>
       ) : (
-        <p className="mt-1.5 flex items-baseline gap-1 text-[1.75rem] font-semibold leading-none tracking-tight text-foreground tabular-nums sm:text-3xl">
-          {valor}
-          {unidade && <span className="text-sm font-medium text-muted-foreground">{unidade}</span>}
-        </p>
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <p className="line-clamp-2 text-xs font-medium leading-snug text-muted-foreground">
+              {rotulo}
+            </p>
+            {icone && <span className="shrink-0 text-muted-foreground">{icone}</span>}
+          </div>
+          {numero}
+          {rodape && <div className="mt-2 text-xs text-muted-foreground">{rodape}</div>}
+        </>
       )}
-      {rodape && <div className="mt-2 text-xs text-muted-foreground">{rodape}</div>}
       {children}
     </div>
   );

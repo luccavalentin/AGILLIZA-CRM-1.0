@@ -62,7 +62,14 @@ export function MarcaServico({
   className?: string;
 }) {
   if (servico === "agilliza" || servico === "corretor") {
-    return <SimboloAgilliza className={cn(className, "object-contain")} />;
+    // Fundo branco: o símbolo azul some sobre o tema escuro da central.
+    return (
+      <span
+        className={cn("grid shrink-0 place-items-center rounded-[5px] bg-white p-[2px]", className)}
+      >
+        <SimboloAgilliza className="size-full object-contain" />
+      </span>
+    );
   }
   if (servico === "apifull")
     return <Wallet className={cn(className, "text-muted-foreground")} aria-label="APIFull" />;

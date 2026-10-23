@@ -232,6 +232,48 @@ export interface UsuariosAtivos {
   retrato_desde: string | null;
 }
 
+export interface EventoAtividade {
+  em: string;
+  tipo:
+    | "incidente_aberto"
+    | "incidente_resolvido"
+    | "alerta"
+    | "licenca_criada"
+    | "erro_novo"
+    | "rotina_erro";
+  titulo: string;
+  nivel: string;
+  detalhe: string | null;
+}
+
+export interface LicencaRecente {
+  tenant_id: string;
+  conta: string;
+  tipo: string;
+  plano: string | null;
+  status: string;
+  criado_em: string;
+  uf: string | null;
+  inadimplente: boolean | null;
+  responsavel: string | null;
+  email: string | null;
+}
+
+export interface PainelTecnologia {
+  gerado_em: string;
+  lista_permitida: boolean;
+  licencas: {
+    total: number;
+    ativas: number;
+    teste: number;
+    novas_7d: number;
+    travadas: number;
+    inadimplentes: number;
+  };
+  atividade: EventoAtividade[];
+  recentes: LicencaRecente[] | null;
+}
+
 export interface LimitesAlertas {
   valores: Record<string, number>;
   atualizado_em: string | null;
@@ -333,11 +375,37 @@ export const lerVisaoGeral = createServerFn({ method: "GET" })
               "select (to_jsonb(inicio) #>> '{}') as inicio, requisicoes, falhas, recusas, p50_ms, p95_ms, licencas, sessoes, provedor_chamadas, provedor_falhas, fila, jobs_falhas from plataforma.operacao_serie('1h')",
             )
           : [];
-        return { resumo: resumo?.r ?? null, serie };
+        const painel = await tx.uma<{ r: PainelTecnologia }>(
+          "select plataforma.tecnologia_painel() as r",
+        );
+        const online = await tx.uma<{ r: UsuariosAtivos }>(
+          "select plataforma.usuarios_ativos('agora') as r",
+        );
+        return {
+          resumo: resumo?.r ?? null,
+          serie,
+          painel: painel?.r ?? null,
+          online: online?.r ?? null,
+        };
       }),
     ]);
     return { sondas: [agilliza, corretor], ...dados };
   });
+
+/** Série do gráfico "Acessos e latência" (janela escolhida no próprio cartão). */
+export const lerAcessos = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.tecnologia", "view"])])
+  .inputValidator((d: unknown) => z.object({ janela }).parse(d ?? {}))
+  .handler(async ({ data, context }) =>
+    ponte(context.userId, async (tx) =>
+      (await pode(tx, "integracoes.ver"))
+        ? tx.consultar<PontoOperacao>(
+            "select (to_jsonb(inicio) #>> '{}') as inicio, requisicoes, falhas, recusas, p50_ms, p95_ms, licencas, sessoes, provedor_chamadas, provedor_falhas, fila, jobs_falhas from plataforma.operacao_serie($1)",
+            [data.janela],
+          )
+        : [],
+    ),
+  );
 
 // ---------------------------------------------------------------------------
 // Operação

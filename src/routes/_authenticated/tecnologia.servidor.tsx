@@ -124,6 +124,7 @@ function Servidor() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi
           rotulo="Disco (mais cheio)"
+          cor="azul"
           icone={<HardDrive className="size-4" />}
           carregando={carregando}
           tom={tomPct(disco, 85, 95)}
@@ -133,6 +134,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Memória"
+          cor="roxo"
           icone={<MemoryStick className="size-4" />}
           carregando={carregando}
           tom={tomPct(memoria, 80, 90)}
@@ -144,6 +146,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Carga (1 min)"
+          cor="amarelo"
           icone={<Cpu className="size-4" />}
           carregando={carregando}
           tom={carga != null && nucleos ? tomPct((carga / nucleos) * 100, 80, 100) : "neutro"}
@@ -154,6 +157,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Containers"
+          cor="verde"
           icone={<Boxes className="size-4" />}
           carregando={carregando}
           tom={!host ? "neutro" : parados.length > 0 ? "critico" : "ok"}
@@ -164,6 +168,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Último backup"
+          cor="marca"
           icone={<DatabaseBackup className="size-4" />}
           carregando={carregando}
           tom={!host ? "neutro" : backupH == null ? "critico" : backupH > 26 ? "critico" : "ok"}
@@ -179,6 +184,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Certificado HTTPS"
+          cor="vermelho"
           icone={<Lock className="size-4" />}
           carregando={carregando}
           tom={

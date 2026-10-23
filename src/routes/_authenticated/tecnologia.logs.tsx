@@ -26,6 +26,7 @@ import {
   type Tom,
 } from "@/components/tecnologia/base";
 import { cn } from "@/lib/utils";
+import { useClasseTema } from "@/components/tecnologia/tema";
 import { FONTES_LOG, lerLogs, type LinhaLogUnificado } from "@/lib/tecnologia/tecnologia.functions";
 
 export const Route = createFileRoute("/_authenticated/tecnologia/logs")({
@@ -77,6 +78,7 @@ function Logs() {
   });
   const [busca, setBusca] = useState("");
   const [gaveta, setGaveta] = useState(false);
+  const classeTema = useClasseTema();
   const buscaAdiada = useDeferredValue(busca.trim());
   const rotaAdiada = useDeferredValue(f.rota.trim());
   const codigoAdiado = useDeferredValue(f.codigo.trim());
@@ -176,7 +178,10 @@ function Logs() {
         </aside>
 
         <Sheet open={gaveta} onOpenChange={setGaveta}>
-          <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl">
+          <SheetContent
+            side="bottom"
+            className={`${classeTema} max-h-[85dvh] overflow-y-auto rounded-t-2xl bg-card text-foreground`}
+          >
             <SheetHeader>
               <SheetTitle>Filtros dos logs</SheetTitle>
             </SheetHeader>
@@ -304,6 +309,7 @@ function PainelFiltros({
   setF: (fn: (f: Filtros) => Filtros) => void;
   contas: { id: string; nome: string }[];
 }) {
+  const classeTema = useClasseTema();
   const alternarFonte = (fonte: Fonte) =>
     setF((x) => {
       const tem = x.fontes.includes(fonte);
@@ -366,7 +372,7 @@ function PainelFiltros({
           <SelectTrigger className="h-11">
             <SelectValue placeholder="Todas" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className={classeTema}>
             <SelectItem value={TODAS}>Todas as contas</SelectItem>
             {contas.map((c) => (
               <SelectItem key={c.id} value={c.id}>

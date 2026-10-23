@@ -3,7 +3,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Bug, CheckCircle2, ChevronDown, Monitor, RotateCcw, Search, Server } from "lucide-react";
+import {
+  Activity,
+  Bug,
+  Layers,
+  Sparkles,
+  CheckCircle2,
+  ChevronDown,
+  Monitor,
+  RotateCcw,
+  Search,
+  Server,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   COR,
@@ -97,6 +108,7 @@ function Erros() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi
           rotulo="Grupos em aberto"
+          cor="vermelho"
           icone={<Bug className="size-4" />}
           carregando={q.isLoading}
           tom={(r?.abertos ?? 0) > 0 ? "atencao" : "ok"}
@@ -104,17 +116,23 @@ function Erros() {
         />
         <Kpi
           rotulo="Novos em 24 h"
+          cor="amarelo"
+          icone={<Sparkles />}
           carregando={q.isLoading}
           tom={(r?.novos_24h ?? 0) > 0 ? "atencao" : "ok"}
           valor={fmtNum(r?.novos_24h)}
         />
         <Kpi
           rotulo="Ocorrências em 24 h"
+          cor="roxo"
+          icone={<Activity />}
           carregando={q.isLoading}
           valor={fmtNum(r?.ocorrencias_24h)}
         />
         <Kpi
           rotulo="Por sistema (abertos)"
+          cor="azul"
+          icone={<Layers />}
           carregando={q.isLoading}
           valor={
             <span className="text-2xl">
@@ -289,7 +307,7 @@ function CartaoErro({ erro: e, podeEditar }: { erro: ErroAgrupado; podeEditar: b
               </span>
             )}
             {novo && e.status === "aberto" && (
-              <span className="rounded-full border border-primary/40 px-2 py-0.5 font-medium text-primary">
+              <span className="rounded-full border border-[color:var(--realce)]/40 px-2 py-0.5 font-medium text-[color:var(--realce)]">
                 novo
               </span>
             )}
