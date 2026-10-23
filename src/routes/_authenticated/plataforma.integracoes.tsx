@@ -70,7 +70,10 @@ const STATUS_ROTULO: Record<string, string> = {
 /* Provedores: nome e para que serve (mesmos textos da Gestão). */
 const PROVEDOR: Record<string, { nome: string; desc: string }> = {
   homefin: { nome: "Integração bancária", desc: "Simulação e proposta nos bancos" },
-  "biro-credito": { nome: "Birôs de crédito", desc: "Consulta Ficha na Serasa e na Boa Vista" },
+  "biro-credito": {
+    nome: "Birôs de crédito",
+    desc: "Consulta Ficha na Serasa, no SPC e na Boa Vista",
+  },
   apifull: { nome: "APIFull", desc: "Consulta Serasa Premium vendida às licenças" },
   asaas: { nome: "Asaas", desc: "Pix, boleto e cartão da plataforma e do aluguel" },
   portais: { nome: "Portais imobiliários", desc: "Carga de anúncios e retorno de leads" },
@@ -889,7 +892,8 @@ function Credito({
   const chamadasDe = (p: string) =>
     provedores.find(
       (x) =>
-        x.provedor === p || (x.provedor === "biro-credito" && (p === "serasa" || p === "boavista")),
+        x.provedor === p ||
+        (x.provedor === "biro-credito" && (p === "serasa" || p === "spc" || p === "boavista")),
     );
   return (
     <section aria-label="Integrações de crédito" className="space-y-4">

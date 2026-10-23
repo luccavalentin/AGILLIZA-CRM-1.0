@@ -82,7 +82,7 @@ export interface CredencialSituacao {
 }
 
 /** Os provedores de que o crédito depende (a "Integrações de crédito" da Gestão + APIFull). */
-export const PROVEDORES_DO_CREDITO = ["homefin", "serasa", "boavista", "apifull"] as const;
+export const PROVEDORES_DO_CREDITO = ["homefin", "serasa", "spc", "boavista", "apifull"] as const;
 
 export const STATUS_FILA = ["pendente", "processando", "erro", "morto", "concluido"] as const;
 export type StatusFila = (typeof STATUS_FILA)[number];
