@@ -50,6 +50,16 @@ function selar(dados: { k: string; m: string; n: string }): string {
   return Buffer.concat([iv, c.getAuthTag(), corpo]).toString("base64url");
 }
 
+/**
+ * Endereço selado de um arquivo cuja chave veio de uma função da plataforma que já conferiu
+ * a permissão (ex.: as fotos dos anúncios em `plataforma.imobmatch_*`, 0283). Sem a ponte de
+ * arquivos configurada, `null` (a tela mostra o lugar da foto vazio).
+ */
+export function selarArquivo(chave: string, mime: string, nome: string): string | null {
+  if ((process.env.PONTE_MIDIAS_SEGREDO ?? "").length < 32) return null;
+  return `/api/plataforma/midia?t=${selar({ k: chave, m: mime, n: nome })}`;
+}
+
 /** Abre o selo; `null` se adulterado, de outro segredo ou vencido. */
 export function abrirSelo(token: string): { k: string; m: string; n: string } | null {
   try {

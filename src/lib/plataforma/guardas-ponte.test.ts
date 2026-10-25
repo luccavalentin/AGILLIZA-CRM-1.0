@@ -92,6 +92,22 @@ describe("guardas das server functions da ponte", () => {
     for (const f of cod) expect(f.guardas.join()).toContain('"operacional.codigos"');
   });
 
+  it("Gestão de Parceiros e Anúncios: ler pede saas.imobmatch; decidir pede saas.imobmatch edit", () => {
+    const im = todas.filter((f) => f.arquivo === "plataforma/imobmatch.functions.ts");
+    expect(im.length).toBeGreaterThanOrEqual(14);
+    for (const f of im) expect(f.guardas.join()).toContain('"saas.imobmatch"');
+    // Toda escrita (POST) exige a ação "edit" — ver não basta para moderar.
+    const fonte = readFileSync(join(RAIZ, "plataforma/imobmatch.functions.ts"), "utf8");
+    const posts = [...fonte.matchAll(/export const (\w+) = createServerFn\(\{ method: "POST" \}\)/g)].map(
+      (m) => m[1],
+    );
+    expect(posts.length).toBeGreaterThanOrEqual(5);
+    for (const nome of posts) {
+      const f = im.find((x) => x.nome === nome)!;
+      expect(f.guardas.join(), nome).toContain('"edit"');
+    }
+  });
+
   it("comissões dos assinantes pedem saas.comissoes", () => {
     const com = todas.filter((f) => f.arquivo === "plataforma/comissoes-assinantes.functions.ts");
     expect(com.length).toBeGreaterThan(0);

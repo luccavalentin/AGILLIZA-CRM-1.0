@@ -361,6 +361,27 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
       { acao: "edit", label: "Moderar e verificar" },
     ],
   },
+  // Gestão de Parceiros e Anúncios do ImobMatch (migração 0283 do Corretor): revisão de
+  // duplicados, moderação, denúncias, CRECI, anunciantes, compradores e números.
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.imobmatch",
+    label: "Gestão de Parceiros e Anúncios (ImobMatch)",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Moderar anúncios, julgar denúncias e verificar CRECI" },
+    ],
+  },
+  // Banners patrocinados do ImobMatch (frente F3 do Corretor): criativos, campanhas e pacotes.
+  {
+    grupo: "Plataforma (SaaS)",
+    modulo: "saas.patrocinados",
+    label: "Banners patrocinados (ImobMatch)",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Aprovar criativos, pausar campanhas e pôr pacotes à venda" },
+    ],
+  },
   {
     grupo: "Plataforma (SaaS)",
     modulo: "saas.comissoes",

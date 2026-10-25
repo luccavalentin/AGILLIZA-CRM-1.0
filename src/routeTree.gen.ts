@@ -88,6 +88,7 @@ import { Route as AuthenticatedPlataformaLicencasRouteImport } from './routes/_a
 import { Route as AuthenticatedPlataformaMarketplaceRouteImport } from './routes/_authenticated/plataforma.marketplace'
 import { Route as AuthenticatedPlataformaMonitoramentoRouteImport } from './routes/_authenticated/plataforma.monitoramento'
 import { Route as AuthenticatedPlataformaNewsRouteImport } from './routes/_authenticated/plataforma.news'
+import { Route as AuthenticatedPlataformaParceirosAnunciosRouteImport } from './routes/_authenticated/plataforma.parceiros-anuncios'
 import { Route as AuthenticatedPlataformaPlanosRouteImport } from './routes/_authenticated/plataforma.planos'
 import { Route as AuthenticatedPlataformaProvedoresRouteImport } from './routes/_authenticated/plataforma.provedores'
 import { Route as AuthenticatedPlataformaReceitaRouteImport } from './routes/_authenticated/plataforma.receita'
@@ -604,6 +605,12 @@ const AuthenticatedPlataformaNewsRoute =
     path: '/plataforma/news',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPlataformaParceirosAnunciosRoute =
+  AuthenticatedPlataformaParceirosAnunciosRouteImport.update({
+    id: '/plataforma/parceiros-anuncios',
+    path: '/plataforma/parceiros-anuncios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPlataformaPlanosRoute =
   AuthenticatedPlataformaPlanosRouteImport.update({
     id: '/plataforma/planos',
@@ -1109,6 +1116,7 @@ export interface FileRoutesByFullPath {
   '/plataforma/marketplace': typeof AuthenticatedPlataformaMarketplaceRoute
   '/plataforma/monitoramento': typeof AuthenticatedPlataformaMonitoramentoRoute
   '/plataforma/news': typeof AuthenticatedPlataformaNewsRoute
+  '/plataforma/parceiros-anuncios': typeof AuthenticatedPlataformaParceirosAnunciosRoute
   '/plataforma/planos': typeof AuthenticatedPlataformaPlanosRoute
   '/plataforma/provedores': typeof AuthenticatedPlataformaProvedoresRoute
   '/plataforma/receita': typeof AuthenticatedPlataformaReceitaRoute
@@ -1258,6 +1266,7 @@ export interface FileRoutesByTo {
   '/plataforma/marketplace': typeof AuthenticatedPlataformaMarketplaceRoute
   '/plataforma/monitoramento': typeof AuthenticatedPlataformaMonitoramentoRoute
   '/plataforma/news': typeof AuthenticatedPlataformaNewsRoute
+  '/plataforma/parceiros-anuncios': typeof AuthenticatedPlataformaParceirosAnunciosRoute
   '/plataforma/planos': typeof AuthenticatedPlataformaPlanosRoute
   '/plataforma/provedores': typeof AuthenticatedPlataformaProvedoresRoute
   '/plataforma/receita': typeof AuthenticatedPlataformaReceitaRoute
@@ -1412,6 +1421,7 @@ export interface FileRoutesById {
   '/_authenticated/plataforma/marketplace': typeof AuthenticatedPlataformaMarketplaceRoute
   '/_authenticated/plataforma/monitoramento': typeof AuthenticatedPlataformaMonitoramentoRoute
   '/_authenticated/plataforma/news': typeof AuthenticatedPlataformaNewsRoute
+  '/_authenticated/plataforma/parceiros-anuncios': typeof AuthenticatedPlataformaParceirosAnunciosRoute
   '/_authenticated/plataforma/planos': typeof AuthenticatedPlataformaPlanosRoute
   '/_authenticated/plataforma/provedores': typeof AuthenticatedPlataformaProvedoresRoute
   '/_authenticated/plataforma/receita': typeof AuthenticatedPlataformaReceitaRoute
@@ -1566,6 +1576,7 @@ export interface FileRouteTypes {
     | '/plataforma/marketplace'
     | '/plataforma/monitoramento'
     | '/plataforma/news'
+    | '/plataforma/parceiros-anuncios'
     | '/plataforma/planos'
     | '/plataforma/provedores'
     | '/plataforma/receita'
@@ -1715,6 +1726,7 @@ export interface FileRouteTypes {
     | '/plataforma/marketplace'
     | '/plataforma/monitoramento'
     | '/plataforma/news'
+    | '/plataforma/parceiros-anuncios'
     | '/plataforma/planos'
     | '/plataforma/provedores'
     | '/plataforma/receita'
@@ -1868,6 +1880,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plataforma/marketplace'
     | '/_authenticated/plataforma/monitoramento'
     | '/_authenticated/plataforma/news'
+    | '/_authenticated/plataforma/parceiros-anuncios'
     | '/_authenticated/plataforma/planos'
     | '/_authenticated/plataforma/provedores'
     | '/_authenticated/plataforma/receita'
@@ -2515,6 +2528,13 @@ declare module '@tanstack/react-router' {
       path: '/plataforma/news'
       fullPath: '/plataforma/news'
       preLoaderRoute: typeof AuthenticatedPlataformaNewsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/plataforma/parceiros-anuncios': {
+      id: '/_authenticated/plataforma/parceiros-anuncios'
+      path: '/plataforma/parceiros-anuncios'
+      fullPath: '/plataforma/parceiros-anuncios'
+      preLoaderRoute: typeof AuthenticatedPlataformaParceirosAnunciosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/plataforma/planos': {
@@ -3207,6 +3227,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlataformaMarketplaceRoute: typeof AuthenticatedPlataformaMarketplaceRoute
   AuthenticatedPlataformaMonitoramentoRoute: typeof AuthenticatedPlataformaMonitoramentoRoute
   AuthenticatedPlataformaNewsRoute: typeof AuthenticatedPlataformaNewsRoute
+  AuthenticatedPlataformaParceirosAnunciosRoute: typeof AuthenticatedPlataformaParceirosAnunciosRoute
   AuthenticatedPlataformaPlanosRoute: typeof AuthenticatedPlataformaPlanosRoute
   AuthenticatedPlataformaProvedoresRoute: typeof AuthenticatedPlataformaProvedoresRoute
   AuthenticatedPlataformaReceitaRoute: typeof AuthenticatedPlataformaReceitaRoute
@@ -3310,6 +3331,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlataformaMonitoramentoRoute:
     AuthenticatedPlataformaMonitoramentoRoute,
   AuthenticatedPlataformaNewsRoute: AuthenticatedPlataformaNewsRoute,
+  AuthenticatedPlataformaParceirosAnunciosRoute:
+    AuthenticatedPlataformaParceirosAnunciosRoute,
   AuthenticatedPlataformaPlanosRoute: AuthenticatedPlataformaPlanosRoute,
   AuthenticatedPlataformaProvedoresRoute:
     AuthenticatedPlataformaProvedoresRoute,

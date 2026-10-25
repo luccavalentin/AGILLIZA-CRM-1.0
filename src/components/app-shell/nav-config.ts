@@ -6,6 +6,7 @@ import {
   Newspaper,
   Store,
   Network,
+  Handshake,
   ScrollText,
   KeySquare,
   Tags,
@@ -763,6 +764,13 @@ export const navInterno: NavGroup[] = [
         icon: Network,
         to: "/plataforma/rede",
         perm: { modulo: "saas.marketplace" },
+      },
+      {
+        // ImobMatch (0283): revisão, denúncias, moderação, CRECI, anunciantes, números e banners.
+        label: "Gestão de Parceiros e Anúncios",
+        icon: Handshake,
+        to: "/plataforma/parceiros-anuncios",
+        perm: { modulo: "saas.imobmatch", equivalentes: ["saas.patrocinados"] },
       },
       {
         label: "Auditoria da plataforma",
