@@ -112,7 +112,7 @@ function Criativo({ c }: { c: CriativoBanner }) {
   const atualizar = () => qc.invalidateQueries({ queryKey: CHAVE_BANNERS });
 
   const aprovar = useMutation({
-    mutationFn: () => aprovarFn({ data: { id: c.id } }),
+    mutationFn: () => aprovarFn({ data: { id: c.id, versao: c.versao } }),
     onSuccess: (r) => {
       toast.success(
         r.situacao === "no_ar"
@@ -121,15 +121,22 @@ function Criativo({ c }: { c: CriativoBanner }) {
       );
       atualizar();
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível aprovar o criativo.")),
+    onError: (e) => {
+      toast.error(mensagemDeErro(e, "Não foi possível aprovar o criativo."));
+      // O criativo pode ter mudado enquanto a análise estava aberta: traz a versão nova.
+      atualizar();
+    },
   });
   const reprovar = useMutation({
-    mutationFn: () => reprovarFn({ data: { id: c.id, motivo } }),
+    mutationFn: () => reprovarFn({ data: { id: c.id, motivo, versao: c.versao } }),
     onSuccess: () => {
       toast.success("Reprovado. O patrocinador recebe o motivo para corrigir.");
       atualizar();
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível reprovar o criativo.")),
+    onError: (e) => {
+      toast.error(mensagemDeErro(e, "Não foi possível reprovar o criativo."));
+      atualizar();
+    },
   });
   const camp = c.campanha;
 

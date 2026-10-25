@@ -2,12 +2,24 @@
  * Aba "Anúncios em revisão": o mesmo endereço anunciado por duas contas (0259). A equipe
  * compara as fichas lado a lado — fotos, conta, autorização do proprietário — e decide
  * qual fica. A decisão vale para o endereço: republicar depois não volta para cá.
+ *
+ * Também chega aqui o anúncio de um endereço que já teve anúncio MODERADO (0293, motivo
+ * "moderado_antes": quem foi moderado recadastra o imóvel para voltar ao ar). A ficha do
+ * moderado aparece ao lado, com o histórico; a equipe libera ou mantém fora do ar.
  */
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeftRight, CheckCheck, Copy, Loader2, ScanSearch } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Ban,
+  CheckCheck,
+  Copy,
+  Loader2,
+  ScanSearch,
+  ShieldAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
@@ -15,6 +27,7 @@ import { RodapePaginas } from "@/components/plataforma/paginacao";
 import { cn } from "@/lib/utils";
 import {
   lerRevisao,
+  moderarAnuncio,
   resolverRevisao,
   type ItemRevisao,
 } from "@/lib/plataforma/imobmatch.functions";
@@ -22,7 +35,7 @@ import { CampoMotivo, Carregando, FichaDoAnuncio, Vazio } from "./comum";
 
 export const CHAVE_IMOBMATCH = ["plataforma-imobmatch"];
 
-type Decisao = "publicar" | "manter_outro" | "trocar";
+type Decisao = "publicar" | "manter_outro" | "trocar" | "moderar";
 
 const DECISOES: { id: Decisao; titulo: string; texto: string; icone: typeof CheckCheck }[] = [
   {
@@ -42,6 +55,22 @@ const DECISOES: { id: Decisao; titulo: string; texto: string; icone: typeof Chec
     titulo: "Os dois podem ficar",
     texto: "Ex.: duas imobiliárias com autorização do proprietário. Os dois ficam no ar.",
     icone: CheckCheck,
+  },
+];
+
+/** Endereço que já teve anúncio moderado: liberar este ou mantê-lo fora do ar (0293). */
+const DECISOES_MODERADO_ANTES: typeof DECISOES = [
+  {
+    id: "publicar",
+    titulo: "Liberar este",
+    texto: "Conferido: o anúncio é legítimo e vai ao ar. Republicar depois não volta para cá.",
+    icone: CheckCheck,
+  },
+  {
+    id: "moderar",
+    titulo: "Manter fora do ar",
+    texto: "Este também é moderado. O anunciante lê o motivo.",
+    icone: Ban,
   },
 ];
 
@@ -68,7 +97,7 @@ export function AbaRevisao() {
       <Vazio
         icone={<ScanSearch className="size-5" aria-hidden />}
         titulo="Nenhum anúncio em revisão"
-        texto="Quando duas contas anunciarem o mesmo endereço sem autorização exclusiva, o segundo anúncio espera aqui a decisão da equipe."
+        texto="Quando duas contas anunciarem o mesmo endereço sem autorização exclusiva, ou um endereço que já teve anúncio moderado voltar ao ImobMatch, o anúncio espera aqui a decisão da equipe."
       />
     );
 
@@ -95,27 +124,44 @@ function Revisao({ item }: { item: ItemRevisao }) {
   const podeDecidir = usePermissao("saas.imobmatch", "edit");
   const qc = useQueryClient();
   const resolverFn = useServerFn(resolverRevisao);
+  const moderarFn = useServerFn(moderarAnuncio);
   const [decisao, setDecisao] = useState<Decisao | null>(null);
   const [motivo, setMotivo] = useState("");
   const outroNoAr = item.outros.some((o) => o.status === "publicado");
+  const moderadoAntes = item.anuncio.motivo === "moderado_antes";
+  const decisoes = moderadoAntes
+    ? [
+        ...DECISOES_MODERADO_ANTES,
+        ...(outroNoAr ? DECISOES.filter((d) => d.id !== "publicar") : []),
+      ]
+    : DECISOES;
 
   const aplicar = useMutation({
     mutationFn: () =>
-      resolverFn({ data: { anuncioId: item.anuncio.id, decisao: decisao!, motivo } }),
+      decisao === "moderar"
+        ? moderarFn({ data: { anuncioId: item.anuncio.id, motivo } })
+        : resolverFn({ data: { anuncioId: item.anuncio.id, decisao: decisao!, motivo } }),
     onSuccess: () => {
       toast.success(
-        decisao === "manter_outro"
-          ? "Decidido: ficou o anúncio que já estava no ar."
-          : decisao === "trocar"
-            ? "Decidido: este anúncio foi ao ar e o outro saiu."
-            : "Decidido: os dois anúncios ficam no ar.",
+        decisao === "moderar"
+          ? "Decidido: o anúncio fica fora do ar. O anunciante foi avisado com o motivo."
+          : decisao === "manter_outro"
+            ? "Decidido: ficou o anúncio que já estava no ar."
+            : decisao === "trocar"
+              ? "Decidido: este anúncio foi ao ar e o outro saiu."
+              : moderadoAntes
+                ? "Decidido: o anúncio foi liberado e está no ar."
+                : "Decidido: os dois anúncios ficam no ar.",
       );
       qc.invalidateQueries({ queryKey: CHAVE_IMOBMATCH });
     },
     onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível decidir a revisão.")),
   });
 
-  const motivoOk = motivo.trim().length === 0 || motivo.trim().length >= 10;
+  const motivoOk =
+    decisao === "moderar"
+      ? motivo.trim().length >= 10
+      : motivo.trim().length === 0 || motivo.trim().length >= 10;
 
   return (
     <section className="min-w-0 rounded-xl border border-border bg-card/60 p-3 sm:p-4">
@@ -127,6 +173,21 @@ function Revisao({ item }: { item: ItemRevisao }) {
           {item.outros.length + 1} anúncios para comparar
         </p>
       </header>
+      {moderadoAntes && (
+        <div
+          role="note"
+          className="mb-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm"
+        >
+          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+          <p className="min-w-0 break-words">
+            <span className="font-medium">Este endereço já teve anúncio moderado.</span>{" "}
+            <span className="text-muted-foreground">
+              Pode ser quem foi moderado recadastrando o imóvel. Confira a ficha e o motivo da
+              moderação ao lado antes de liberar.
+            </span>
+          </p>
+        </div>
+      )}
       <div
         className={cn(
           "grid gap-3",
@@ -139,7 +200,13 @@ function Revisao({ item }: { item: ItemRevisao }) {
           <FichaDoAnuncio
             key={o.id}
             f={o}
-            rotulo={o.status === "publicado" ? "Já está no ar" : "Mesmo endereço"}
+            rotulo={
+              o.status === "publicado"
+                ? "Já está no ar"
+                : o.status === "moderado"
+                  ? "Moderado antes"
+                  : "Mesmo endereço"
+            }
           />
         ))}
       </div>
@@ -149,9 +216,9 @@ function Revisao({ item }: { item: ItemRevisao }) {
           <div
             role="radiogroup"
             aria-label="Decisão da revisão"
-            className="grid gap-2 sm:grid-cols-3"
+            className={cn("grid gap-2", decisoes.length > 3 ? "sm:grid-cols-2" : "sm:grid-cols-3")}
           >
-            {DECISOES.map((d) => {
+            {decisoes.map((d) => {
               const desabilitada = d.id === "manter_outro" && !outroNoAr;
               const Icone = d.icone;
               return (
@@ -186,11 +253,15 @@ function Revisao({ item }: { item: ItemRevisao }) {
               id={`motivo-rev-${item.anuncio.id}`}
               valor={motivo}
               onValor={setMotivo}
-              obrigatorio={false}
+              obrigatorio={decisao === "moderar"}
               dica={
-                decisao === "publicar"
-                  ? "Ex.: as duas imobiliárias mostraram autorização do proprietário."
-                  : "Sem texto, o anunciante que sai lê: “Duplicado: este endereço já está anunciado por outra conta”."
+                decisao === "moderar"
+                  ? "Ex.: mesmo imóvel do anúncio moderado por golpe, recadastrado por outra conta."
+                  : decisao === "publicar"
+                    ? moderadoAntes
+                      ? "Ex.: conferimos com o proprietário; o anúncio é legítimo."
+                      : "Ex.: as duas imobiliárias mostraram autorização do proprietário."
+                    : "Sem texto, o anunciante que sai lê: “Duplicado: este endereço já está anunciado por outra conta”."
               }
             />
           )}

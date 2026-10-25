@@ -96,6 +96,7 @@ const ACAO: Record<string, string> = {
 /** Motivos que o banco grava como código (0259/0268/0283), na língua da equipe. */
 const MOTIVO_CODIGO: Record<string, string> = {
   possivel_duplicado: "Mesmo endereço de outra conta",
+  moderado_antes: "Endereço com anúncio moderado antes",
   retirado_pelo_anunciante: "Retirado pelo anunciante",
   limite_do_plano: "Passou do limite do plano",
   moderacao_revertida: "Moderação desfeita: o anunciante pode publicar de novo",

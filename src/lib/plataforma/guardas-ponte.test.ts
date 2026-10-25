@@ -127,6 +127,18 @@ describe("guardas das server functions da ponte", () => {
     for (const f of precos) expect(f.guardas.join()).toContain('"saas.planos"');
   });
 
+  it("aprovar e reprovar criativo levam a versão que o moderador viu (0294 do Corretor)", () => {
+    const fonte = readFileSync(join(RAIZ, "plataforma/patrocinados.functions.ts"), "utf8");
+    expect(fonte).toContain("plataforma.patrocinio_aprovar($1, $2)");
+    expect(fonte).toContain("plataforma.patrocinio_reprovar($1, $2, $3)");
+    expect(fonte).not.toMatch(/patrocinio_aprovar\(\$1\)|patrocinio_reprovar\(\$1, \$2\)/);
+    const fila = readFileSync(
+      join(RAIZ, "../components/plataforma/imobmatch/banners-fila.tsx"),
+      "utf8",
+    );
+    expect(fila).toContain("versao: c.versao");
+  });
+
   it("comissões dos assinantes pedem saas.comissoes", () => {
     const com = todas.filter((f) => f.arquivo === "plataforma/comissoes-assinantes.functions.ts");
     expect(com.length).toBeGreaterThan(0);

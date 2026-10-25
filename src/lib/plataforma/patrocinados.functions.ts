@@ -352,19 +352,28 @@ export const lerMetricasBanners = createServerFn({ method: "GET" })
 
 /* ───────────────────────────── decisões ───────────────────────────── */
 
-/** Aprova o criativo em análise (vai ao ar se a campanha estiver paga e no período). */
+/** Versão do criativo que o moderador está vendo: o banco recusa se ele mudou depois (0294). */
+const versaoVista = z.number().int().positive("Versão do criativo inválida.");
+
+/**
+ * Aprova o criativo em análise (vai ao ar se a campanha estiver paga e no período). Leva a
+ * versão que está na tela: se o patrocinador trocou o criativo enquanto a análise estava
+ * aberta, o banco recusa ("O criativo mudou desde que você abriu. Analise de novo.").
+ */
 export const aprovarCriativo = createServerFn({ method: "POST" })
   .middleware([MODERAR])
   .inputValidator((d: unknown) =>
-    z.object({ id: z.string().regex(UUID, "Criativo inválido.") }).parse(d),
+    z.object({ id: z.string().regex(UUID, "Criativo inválido."), versao: versaoVista }).parse(d),
   )
   .handler(({ data, context }) =>
-    chamar<{ situacao: string }>(context.userId, "select plataforma.patrocinio_aprovar($1) as r", [
-      data.id,
-    ]),
+    chamar<{ situacao: string }>(
+      context.userId,
+      "select plataforma.patrocinio_aprovar($1, $2) as r",
+      [data.id, data.versao],
+    ),
   );
 
-/** Reprova o criativo com o motivo que o patrocinador lê para corrigir. */
+/** Reprova o criativo com o motivo que o patrocinador lê para corrigir (na versão que está na tela). */
 export const reprovarCriativo = createServerFn({ method: "POST" })
   .middleware([MODERAR])
   .inputValidator((d: unknown) =>
@@ -372,13 +381,15 @@ export const reprovarCriativo = createServerFn({ method: "POST" })
       .object({
         id: z.string().regex(UUID, "Criativo inválido."),
         motivo: motivo(5, "Escreva o motivo (mínimo 5 caracteres). O patrocinador lê este texto."),
+        versao: versaoVista,
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await chamar(context.userId, "select plataforma.patrocinio_reprovar($1, $2) as r", [
+    await chamar(context.userId, "select plataforma.patrocinio_reprovar($1, $2, $3) as r", [
       data.id,
       data.motivo,
+      data.versao,
     ]);
     return { ok: true as const };
   });
