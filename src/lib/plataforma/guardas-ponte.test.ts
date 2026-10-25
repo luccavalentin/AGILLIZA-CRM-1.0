@@ -108,6 +108,25 @@ describe("guardas das server functions da ponte", () => {
     }
   });
 
+  it("banners patrocinados: saas.patrocinados (preços: saas.planos edit); escrita exige edit", () => {
+    const pt = todas.filter((f) => f.arquivo === "plataforma/patrocinados.functions.ts");
+    expect(pt.length).toBeGreaterThanOrEqual(12);
+    for (const f of pt) expect(f.guardas.join()).toMatch(/"saas\.(patrocinados|planos)"/);
+    const fonte = readFileSync(join(RAIZ, "plataforma/patrocinados.functions.ts"), "utf8");
+    const posts = [...fonte.matchAll(/export const (\w+) = createServerFn\(\{ method: "POST" \}\)/g)].map(
+      (m) => m[1],
+    );
+    expect(posts.length).toBeGreaterThanOrEqual(6);
+    for (const nome of posts) {
+      const f = pt.find((x) => x.nome === nome)!;
+      expect(f.guardas.join(), nome).toContain('"edit"');
+      expect(f.guardas.join(), nome).not.toContain('"view"');
+    }
+    const precos = pt.filter((f) => f.nome === "salvarPacote" || f.nome === "salvarEspaco");
+    expect(precos.length).toBe(2);
+    for (const f of precos) expect(f.guardas.join()).toContain('"saas.planos"');
+  });
+
   it("comissões dos assinantes pedem saas.comissoes", () => {
     const com = todas.filter((f) => f.arquivo === "plataforma/comissoes-assinantes.functions.ts");
     expect(com.length).toBeGreaterThan(0);

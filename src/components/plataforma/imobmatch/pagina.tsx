@@ -13,10 +13,11 @@ import { AbaModerados } from "./aba-moderados";
 import { AbaNumeros } from "./aba-numeros";
 import { AbaProfissionais } from "./aba-profissionais";
 import { AbaRevisao, CHAVE_IMOBMATCH } from "./aba-revisao";
+import { CHAVE_BANNERS } from "./banners-comum";
 import { Resumo } from "./comum";
 import {
   ABAS_PATROCINADOS,
-  AbaPatrocinadosPronta,
+  AbaBanners,
   ROTULO_PATROCINADOS,
   type AbaPatrocinados,
 } from "./patrocinados";
@@ -26,7 +27,7 @@ import {
  * equipe Agilliza. Duas áreas, cada uma com a sua permissão:
  *   · Anúncios e parceiros (`saas.imobmatch`): revisão, denúncias, moderados, CRECI,
  *     anunciantes e números — funções `plataforma.imobmatch_*` (0283 do Corretor);
- *   · Banners patrocinados (`saas.patrocinados`): frente F3, abas prontas para ligar.
+ *   · Banners patrocinados (`saas.patrocinados`): funções `plataforma.patrocinio_*` (F3).
  */
 
 export const ABAS_IMOBMATCH = [
@@ -103,7 +104,10 @@ export function GestaoParceirosAnuncios({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => qc.invalidateQueries({ queryKey: CHAVE_IMOBMATCH })}
+            onClick={() => {
+              qc.invalidateQueries({ queryKey: CHAVE_IMOBMATCH });
+              qc.invalidateQueries({ queryKey: CHAVE_BANNERS });
+            }}
           >
             <RefreshCw className={cn("mr-2 size-4", resumo.isFetching && "animate-spin")} />{" "}
             Atualizar
@@ -249,7 +253,7 @@ export function GestaoParceirosAnuncios({
           </div>
           {ABAS_PATROCINADOS.map((a) => (
             <TabsContent key={a} value={a} className="mt-4">
-              <AbaPatrocinadosPronta aba={a} />
+              <AbaBanners aba={a} />
             </TabsContent>
           ))}
         </Tabs>

@@ -37,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { AssinaturasPlataforma } from "@/components/plataforma/assinaturas";
+import { CancelamentosRenovacao } from "@/components/plataforma/cancelamentos";
 import { RodapePaginas, useValorAssentado } from "@/components/plataforma/paginacao";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
@@ -269,6 +270,9 @@ function Pagina() {
           onPagina={setPagina}
         />
       </section>
+
+      {/* F2 (0273): quem cancelou a renovação e por quê. */}
+      <CancelamentosRenovacao />
     </div>
   );
 }
