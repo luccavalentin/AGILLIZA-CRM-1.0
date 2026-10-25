@@ -5,9 +5,11 @@
  * `plataforma.indicadores_consultas_pagas`, `plataforma.pedidos_consulta`, a oferta em
  * `plataforma.configuracoes` ('consulta_paga.serasa_premium') e a tabela de custos
  * `plataforma.custos_fornecedor`. O banco decide quem pode o quê:
- *   · ver indicadores e pedidos → `cobranca.plataforma` (ou `receita.ler`/`integracoes.ver`);
+ *   · ver indicadores e pedidos → `cobranca.ler` (só leitura, 0303 do Corretor) ou
+ *     `cobranca.plataforma` (ou `receita.ler`/`integracoes.ver`);
  *   · trocar o preço → `config.editar` (RLS de `plataforma.configuracoes`);
- *   · ver e registrar o custo do fornecedor → `planos.editar` (RLS de `custos_fornecedor`).
+ *   · ver o custo do fornecedor → `cobranca.ler` ou `planos.editar`; registrar → `planos.editar`
+ *     (RLS de `custos_fornecedor`). Pela ponte, planos.editar só vem com o "editar" de Consultas.
  *
  * Margem de contribuição = receita − custo do fornecedor − taxa do pagamento. Não é lucro líquido.
  */
@@ -105,7 +107,8 @@ export const lerConsultasPagas = createServerFn({ method: "GET" })
       // O mesmo `pode(s, ...)` da Gestão, mas perguntado ao banco: é ele que aplica.
       const pode = await tx.uma<{ preco: boolean; custos: boolean }>(
         `select seguranca.auth_e_plataforma('config.editar') as preco,
-                seguranca.auth_e_plataforma('planos.editar') as custos`,
+                (seguranca.auth_e_plataforma('planos.editar')
+                 or seguranca.auth_e_plataforma('cobranca.ler')) as custos`,
       );
       const ind = await tx.uma<{ r: IndicadoresConsultas }>(
         "select plataforma.indicadores_consultas_pagas($1::date, $2::date) as r",

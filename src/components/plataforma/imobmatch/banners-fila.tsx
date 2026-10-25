@@ -8,7 +8,16 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowUpRight, Check, GalleryHorizontalEnd, ImageOff, Loader2, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  Eye,
+  GalleryHorizontalEnd,
+  ImageOff,
+  Loader2,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -109,10 +118,15 @@ function Criativo({ c }: { c: CriativoBanner }) {
   const reprovarFn = useServerFn(reprovarCriativo);
   const [reprovando, setReprovando] = useState(false);
   const [motivo, setMotivo] = useState("");
+  // A versão que o moderador analisou. Se o patrocinador mandar outra enquanto a tela está
+  // aberta (o banco recusa com 55000 e a fila recarrega), a decisão fica travada até ele
+  // conferir a prévia nova e confirmar — o mesmo clique nunca aprova o que não foi visto.
+  const [versaoVista, setVersaoVista] = useState(c.versao);
+  const mudou = c.versao !== versaoVista;
   const atualizar = () => qc.invalidateQueries({ queryKey: CHAVE_BANNERS });
 
   const aprovar = useMutation({
-    mutationFn: () => aprovarFn({ data: { id: c.id, versao: c.versao } }),
+    mutationFn: () => aprovarFn({ data: { id: c.id, versao: versaoVista } }),
     onSuccess: (r) => {
       toast.success(
         r.situacao === "no_ar"
@@ -128,7 +142,7 @@ function Criativo({ c }: { c: CriativoBanner }) {
     },
   });
   const reprovar = useMutation({
-    mutationFn: () => reprovarFn({ data: { id: c.id, motivo, versao: c.versao } }),
+    mutationFn: () => reprovarFn({ data: { id: c.id, motivo, versao: versaoVista } }),
     onSuccess: () => {
       toast.success("Reprovado. O patrocinador recebe o motivo para corrigir.");
       atualizar();
@@ -142,7 +156,9 @@ function Criativo({ c }: { c: CriativoBanner }) {
 
   return (
     <section className="grid min-w-0 gap-4 rounded-xl border border-border bg-card/60 p-3 sm:p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-      <div className="min-w-0 space-y-2">
+      <div
+        className={cn("min-w-0 space-y-2", mudou && "rounded-xl p-1.5 ring-2 ring-amber-500/70")}
+      >
         <PreviaBanner c={c} />
         <p className="break-all text-xs text-muted-foreground">
           Leva para: <span className="font-mono">{c.destino}</span>
@@ -202,6 +218,30 @@ function Criativo({ c }: { c: CriativoBanner }) {
           Enviado em {dataHora(c.enviado_em)} · versão {c.versao}
         </p>
 
+        {podeModerar && mudou && (
+          <div
+            role="alert"
+            className="space-y-2 rounded-lg border border-amber-400/70 bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+          >
+            <p className="flex items-start gap-2">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                <strong className="font-semibold">O criativo mudou enquanto você analisava</strong>{" "}
+                (versão {versaoVista} → {c.versao}). A prévia já mostra a versão nova: confira
+                imagem, texto e link antes de decidir.
+              </span>
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full border-amber-500/60 bg-background sm:w-auto"
+              onClick={() => setVersaoVista(c.versao)}
+            >
+              <Eye className="mr-2 size-4" aria-hidden /> Analisei a versão nova
+            </Button>
+          </div>
+        )}
+
         {podeModerar ? (
           reprovando ? (
             <div className="space-y-2 rounded-lg border border-destructive/30 p-3">
@@ -223,7 +263,7 @@ function Criativo({ c }: { c: CriativoBanner }) {
                 </Button>
                 <Button
                   variant="destructive"
-                  disabled={motivo.trim().length < 5 || reprovar.isPending}
+                  disabled={motivo.trim().length < 5 || reprovar.isPending || mudou}
                   onClick={() => reprovar.mutate()}
                 >
                   {reprovar.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
@@ -233,10 +273,10 @@ function Criativo({ c }: { c: CriativoBanner }) {
             </div>
           ) : (
             <div className={cn("grid gap-2 sm:grid-cols-2")}>
-              <Button variant="outline" onClick={() => setReprovando(true)}>
+              <Button variant="outline" disabled={mudou} onClick={() => setReprovando(true)}>
                 <X className="mr-2 size-4" /> Reprovar
               </Button>
-              <Button disabled={aprovar.isPending} onClick={() => aprovar.mutate()}>
+              <Button disabled={aprovar.isPending || mudou} onClick={() => aprovar.mutate()}>
                 {aprovar.isPending ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (

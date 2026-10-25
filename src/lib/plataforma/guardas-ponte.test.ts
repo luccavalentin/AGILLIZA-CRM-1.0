@@ -136,7 +136,20 @@ describe("guardas das server functions da ponte", () => {
       join(RAIZ, "../components/plataforma/imobmatch/banners-fila.tsx"),
       "utf8",
     );
-    expect(fila).toContain("versao: c.versao");
+    // D3 (0302 do Corretor): manda a versão que o moderador ANALISOU, e se o criativo mudar
+    // com a tela aberta a decisão trava até ele conferir a prévia nova (novo clique consciente).
+    expect(fila).toContain("versao: versaoVista");
+    expect(fila).not.toContain("versao: c.versao");
+    expect(fila).toContain("Analisei a versão nova");
+    expect(fila).toMatch(/disabled=\{aprovar\.isPending \|\| mudou\}/);
+  });
+
+  it("Consultas: só ver lê o custo com cobranca.ler; registrar custo segue no edit (0303 do Corretor)", () => {
+    const fonte = readFileSync(join(RAIZ, "plataforma/consultas.functions.ts"), "utf8");
+    expect(fonte).toContain("seguranca.auth_e_plataforma('cobranca.ler')");
+    const cs = todas.filter((f) => f.arquivo === "plataforma/consultas.functions.ts");
+    const registrar = cs.find((f) => f.nome === "registrarCustoConsulta")!;
+    expect(registrar.guardas.join()).toContain('"edit"');
   });
 
   it("comissões dos assinantes pedem saas.comissoes", () => {

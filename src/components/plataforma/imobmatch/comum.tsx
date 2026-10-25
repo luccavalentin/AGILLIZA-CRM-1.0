@@ -97,6 +97,7 @@ const ACAO: Record<string, string> = {
 const MOTIVO_CODIGO: Record<string, string> = {
   possivel_duplicado: "Mesmo endereço de outra conta",
   moderado_antes: "Endereço com anúncio moderado antes",
+  endereco_incompleto: "Endereço sem número: conferir antes de publicar",
   retirado_pelo_anunciante: "Retirado pelo anunciante",
   limite_do_plano: "Passou do limite do plano",
   moderacao_revertida: "Moderação desfeita: o anunciante pode publicar de novo",

@@ -1,7 +1,7 @@
 /**
  * Renovações canceladas pelas contas, com o motivo (frente F2 do Corretor, migração 0273:
  * `plataforma.cancelamentos_de_renovacao`). Duas portas: `saas.receita` aqui e
- * `cobranca.plataforma` no banco, pela ponte.
+ * `cobranca.ler` (só leitura, 0303 do Corretor) no banco, pela ponte.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
