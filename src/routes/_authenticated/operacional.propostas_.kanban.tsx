@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
-import { textoIdH } from "@/lib/propostas/id-h";
+import { numerosDoCartaoAssinante, textoIdH } from "@/lib/propostas/id-h";
 import { MarcarRegistroDialog } from "@/components/propostas/marcar-registro-dialog";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -303,8 +303,8 @@ function Pagina() {
           status: p.status,
           cliente: p.cliente,
           documento: null,
-          numero: p.numero_proposta_banco ? `Nº banco ${p.numero_proposta_banco}` : p.codigo,
-          numeroSecundario: p.numero_agilliza ? `No Agilliza #${p.numero_agilliza}` : null,
+          // "ID H." no lugar do PRO-… quando a proposta já tem o id da oportunidade (c1).
+          ...numerosDoCartaoAssinante(p),
           selo: {
             rotulo: ROTULO_PROPOSTA_ASSINANTE[p.status] ?? p.status,
             tom: encerrada ? (p.status === "registrado" ? "success" : "danger") : p.pendente ? "warning" : "info",

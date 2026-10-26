@@ -129,7 +129,11 @@ export const navInterno: NavGroup[] = [
   {
     id: "visao-geral",
     label: "Visão Geral",
-    items: [{ label: "Painel geral", icon: Gauge, to: "/visao-geral/painel" }],
+    items: [
+      { label: "Painel geral", icon: Gauge, to: "/visao-geral/painel" },
+      // Agilliza News da equipe (C60, a7): aberta a toda pessoa ativa da equipe (o banco confere).
+      { label: "Agilliza News", icon: Newspaper, to: "/news" },
+    ],
   },
   {
     id: "crm",
