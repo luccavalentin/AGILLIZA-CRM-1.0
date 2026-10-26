@@ -39,6 +39,7 @@ import { Route as ParceiroComissoesRouteImport } from './routes/parceiro.comisso
 import { Route as ParceiroDocumentosRouteImport } from './routes/parceiro.documentos'
 import { Route as ParceiroPropostasRouteImport } from './routes/parceiro.propostas'
 import { Route as ParceiroSimulacoesRouteImport } from './routes/parceiro.simulacoes'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminApisIaRouteImport } from './routes/_authenticated/admin.apis-ia'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenticated/admin.bancos'
@@ -312,6 +313,11 @@ const ParceiroSimulacoesRoute = ParceiroSimulacoesRouteImport.update({
   id: '/simulacoes',
   path: '/simulacoes',
   getParentRoute: () => ParceiroRoute,
+} as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminApisIaRoute =
   AuthenticatedAdminApisIaRouteImport.update({
@@ -1156,6 +1162,7 @@ export interface FileRoutesByFullPath {
   '/api/public/reconciliar-simulacoes': typeof ApiPublicReconciliarSimulacoesRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
@@ -1305,6 +1312,7 @@ export interface FileRoutesByTo {
   '/api/public/reconciliar-simulacoes': typeof ApiPublicReconciliarSimulacoesRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/checklists': typeof AuthenticatedChecklistsIndexRoute
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
@@ -1459,6 +1467,7 @@ export interface FileRoutesById {
   '/api/public/reconciliar-simulacoes': typeof ApiPublicReconciliarSimulacoesRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
@@ -1613,6 +1622,7 @@ export interface FileRouteTypes {
     | '/api/public/reconciliar-simulacoes'
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
+    | '/admin/'
     | '/checklists/'
     | '/formularios/'
     | '/relatorios/'
@@ -1762,6 +1772,7 @@ export interface FileRouteTypes {
     | '/api/public/reconciliar-simulacoes'
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
+    | '/admin'
     | '/checklists'
     | '/formularios'
     | '/relatorios'
@@ -1915,6 +1926,7 @@ export interface FileRouteTypes {
     | '/api/public/reconciliar-simulacoes'
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
+    | '/_authenticated/admin/'
     | '/_authenticated/checklists/'
     | '/_authenticated/formularios/'
     | '/_authenticated/relatorios/'
@@ -2173,6 +2185,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/parceiro/simulacoes'
       preLoaderRoute: typeof ParceiroSimulacoesRouteImport
       parentRoute: typeof ParceiroRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/apis-ia': {
       id: '/_authenticated/admin/apis-ia'
@@ -3226,6 +3245,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRhPreviaFolhaRoute: typeof AuthenticatedRhPreviaFolhaRoute
   AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
   AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedChecklistsIndexRoute: typeof AuthenticatedChecklistsIndexRoute
   AuthenticatedRhIndexRoute: typeof AuthenticatedRhIndexRoute
   AuthenticatedAdminAuditoriaManutencaoRoute: typeof AuthenticatedAdminAuditoriaManutencaoRoute
@@ -3332,6 +3352,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRhPreviaFolhaRoute: AuthenticatedRhPreviaFolhaRoute,
   AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
   AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedChecklistsIndexRoute: AuthenticatedChecklistsIndexRoute,
   AuthenticatedRhIndexRoute: AuthenticatedRhIndexRoute,
   AuthenticatedAdminAuditoriaManutencaoRoute:

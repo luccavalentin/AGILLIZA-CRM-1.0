@@ -1,82 +1,50 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
-import { CircleDollarSign } from "lucide-react";
-import { AdminHero } from "@/components/admin/admin-hero";
-import { Badge } from "@/components/ui/badge";
+import {
+  AlertTriangle,
+  BadgeCheck,
+  CalendarX2,
+  CircleDollarSign,
+  Clock3,
+  Repeat,
+  ReceiptText,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ConfirmDelete } from "@/components/shared/confirm-delete";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { AssinaturasPlataforma } from "@/components/plataforma/assinaturas";
+  CabecalhoGestao,
+  EstadoErro,
+  FaixaIndicadores,
+  Indicador,
+  PaginaGestao,
+} from "@/components/plataforma/kit";
+import { AcoesReceita, AssinaturasPlataforma } from "@/components/plataforma/assinaturas";
 import { CancelamentosRenovacao } from "@/components/plataforma/cancelamentos";
-import { RodapePaginas, useValorAssentado } from "@/components/plataforma/paginacao";
+import { AbaComContagem, Dinheiro, TrilhoAbas } from "@/components/plataforma/receita/comum";
+import { FaturasReceita } from "@/components/plataforma/receita/faturas";
+import { GraficoMrr, MovimentoMes } from "@/components/plataforma/receita/grafico-mrr";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
-import { formatBRL, formatData } from "@/lib/financeiro/format";
-import {
-  POR_PAGINA_FATURAS,
-  baixarFaturaPlataforma,
-  cancelarFaturaPlataforma,
-  lerReceita,
-  listarFaturasPlataforma,
-  type FaturaPlataforma,
-  type FiltroFatura,
-} from "@/lib/plataforma/receita.functions";
+import { formatBRL } from "@/lib/financeiro/format";
+import { lerReceita, type FiltroFatura } from "@/lib/plataforma/receita.functions";
 
 export const Route = createFileRoute("/_authenticated/plataforma/receita")({
-  head: () => ({ meta: [{ title: "Receita e cobrança — Plataforma — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Receita e cobrança — Gestão de sistemas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("saas.receita"),
   component: Pagina,
 });
 
-const FILTROS: Record<FiltroFatura, string> = {
-  abertas: "Em aberto",
-  vencidas: "Vencidas",
-  pagas: "Pagas",
-  todas: "Todas",
-};
+type Aba = "faturas" | "assinaturas" | "cancelamentos";
 
-function situacaoFatura(f: FaturaPlataforma): {
-  rotulo: string;
-  tom: "default" | "secondary" | "destructive" | "outline";
-} {
-  if (f.status === "paga") return { rotulo: "Paga", tom: "default" };
-  if (f.status === "cancelada") return { rotulo: "Cancelada", tom: "outline" };
-  if (f.status === "estornada") return { rotulo: "Estornada", tom: "outline" };
-  if (f.vencida) return { rotulo: "Vencida", tom: "destructive" };
-  return { rotulo: "Em aberto", tom: "secondary" };
-}
-
+/**
+ * Receita e cobrança dos assinantes do Agilliza Tech (C51, 26/10/2026): os números do
+ * mês no topo, a curva da receita recorrente com o movimento do mês e, em abas, as
+ * faturas (cobrar, dar baixa, cancelar), as assinaturas e os cancelamentos de renovação.
+ */
 function Pagina() {
   const lerFn = useServerFn(lerReceita);
   const q = useQuery({
@@ -84,315 +52,135 @@ function Pagina() {
     queryFn: () => lerFn(),
     staleTime: 30_000,
   });
+  const [aba, setAba] = useState<Aba>("faturas");
   const [filtro, setFiltro] = useState<FiltroFatura>("abertas");
-  const [busca, setBusca] = useState("");
-  const [pagina, setPagina] = useState(1);
-  const termo = useValorAssentado(busca.trim());
-  const listarFn = useServerFn(listarFaturasPlataforma);
-  // Filtro, busca e página rodam no banco: a lista não para nas 300 primeiras.
-  const qf = useQuery({
-    queryKey: ["plataforma-receita", "faturas", filtro, termo, pagina],
-    queryFn: () => listarFn({ data: { filtro, busca: termo || null, pagina } }),
-    staleTime: 30_000,
-    placeholderData: (anterior) => anterior,
-  });
   const r = q.data?.resumo;
-  const faturas = qf.data?.faturas ?? [];
   const meses = q.data?.meses ?? [];
-  const maxMrr = Math.max(1, ...meses.map((m) => m.mrr_fim));
+  const carregando = q.isLoading;
+  const mrrTotal = r ? r.mrr + (r.mrr_licencas ?? 0) : 0;
+  const vencidas = r?.vencidas ?? 0;
+
+  const verVencidas = () => {
+    setAba("faturas");
+    setFiltro("vencidas");
+  };
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <AdminHero
-        secao="Gestão de sistemas"
-        icon={<CircleDollarSign className="h-5 w-5" />}
+    <PaginaGestao>
+      <CabecalhoGestao
+        icone={<CircleDollarSign />}
         titulo="Receita e cobrança"
-        descricao="Assinaturas e faturas dos assinantes. Com a chave do Asaas salva em Chaves dos provedores, cada fatura é cobrada e baixada automaticamente. Sem a chave, a baixa é feita aqui."
+        descricao="Assinaturas e faturas dos assinantes. Com a chave do Asaas em Chaves dos provedores, cada fatura é cobrada e baixada sozinha; sem ela, a baixa é feita aqui."
+        acoes={<AcoesReceita />}
       />
 
       {q.isError && (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-          {mensagemDeErro(q.error, "Não foi possível carregar a receita.")}
-        </p>
+        <div className="rounded-[14px] border border-border/80 bg-card">
+          <EstadoErro
+            mensagem={mensagemDeErro(q.error, "Não foi possível carregar a receita.")}
+            onTentar={() => q.refetch()}
+          />
+        </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      {vencidas > 0 && (
+        <div
+          role="status"
+          className="flex flex-col gap-2 rounded-[10px] border border-destructive/25 bg-destructive/[0.05] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="flex items-start gap-2 text-sm text-foreground">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+            <span>
+              <b className="font-semibold">
+                {vencidas} {vencidas === 1 ? "fatura vencida" : "faturas vencidas"}
+              </b>{" "}
+              somando {formatBRL(r?.vencida_valor ?? 0)}. Contas inadimplentes perdem o acesso pela
+              régua de cobrança.
+            </span>
+          </p>
+          <Button size="sm" variant="outline" className="min-h-11 shrink-0 sm:min-h-8" onClick={verVencidas}>
+            Ver vencidas
+          </Button>
+        </div>
+      )}
+
+      <FaixaIndicadores colunas={5}>
         {/* Assinaturas + licenças por pacote vigentes (valor ÷ meses do período, 0253). */}
         <Indicador
-          rotulo="Receita recorrente mensal"
-          valor={r ? formatBRL(r.mrr + (r.mrr_licencas ?? 0)) : null}
-          detalhe={
-            r
-              ? `${formatBRL((r.mrr + (r.mrr_licencas ?? 0)) * 12)} por ano · licenças ${formatBRL(r.mrr_licencas ?? 0)}/mês`
-              : undefined
-          }
+          rotulo="Receita recorrente"
+          icone={<Repeat />}
+          carregando={carregando}
+          valor={<Dinheiro valor={mrrTotal} />}
+          detalhe={r ? `${formatBRL(mrrTotal * 12)} por ano` : undefined}
         />
         <Indicador
           rotulo="Contas pagantes"
-          valor={r ? String(r.contas_pagantes + (r.contas_licenca ?? 0)) : null}
+          icone={<Users />}
+          carregando={carregando}
+          valor={r ? (r.contas_pagantes + (r.contas_licenca ?? 0)).toLocaleString("pt-BR") : "—"}
           detalhe={r ? `${r.contas_teste} em teste` : undefined}
         />
-        <Indicador rotulo="Recebido no mês" valor={r ? formatBRL(r.recebido_mes) : null} />
-        <Indicador rotulo="Em aberto" valor={r ? formatBRL(r.pendente_valor) : null} />
+        <Indicador
+          rotulo="Recebido no mês"
+          icone={<BadgeCheck />}
+          tom="sucesso"
+          carregando={carregando}
+          valor={<Dinheiro valor={r?.recebido_mes} />}
+        />
+        <Indicador
+          rotulo="A receber"
+          icone={<Clock3 />}
+          tom="alerta"
+          carregando={carregando}
+          valor={<Dinheiro valor={r?.pendente_valor} />}
+          detalhe={r ? `${r.qtd_abertas} em aberto` : undefined}
+          onClick={() => {
+            setAba("faturas");
+            setFiltro("abertas");
+          }}
+          ativo={aba === "faturas" && filtro === "abertas"}
+        />
         <Indicador
           rotulo="Vencido"
-          valor={r ? formatBRL(r.vencida_valor) : null}
-          detalhe={r ? `${r.vencidas} ${r.vencidas === 1 ? "fatura" : "faturas"}` : undefined}
-          alerta={(r?.vencidas ?? 0) > 0}
+          icone={<Wallet />}
+          tom={vencidas > 0 ? "perigo" : "neutro"}
+          carregando={carregando}
+          valor={<Dinheiro valor={r?.vencida_valor} />}
+          detalhe={r ? `${vencidas} ${vencidas === 1 ? "fatura" : "faturas"}` : undefined}
+          onClick={verVencidas}
+          ativo={aba === "faturas" && filtro === "vencidas"}
         />
+      </FaixaIndicadores>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <div className="min-w-0 lg:col-span-2">
+          <GraficoMrr meses={meses} carregando={carregando} />
+        </div>
+        <MovimentoMes mes={meses[meses.length - 1]} carregando={carregando} />
       </div>
 
-      <section className="rounded-lg border border-border bg-card p-4">
-        <h2 className="mb-3 text-sm font-semibold">Receita recorrente — últimos 12 meses</h2>
-        {q.isLoading ? (
-          <Skeleton className="h-32" />
-        ) : meses.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Ainda não há assinaturas pagas para formar a série.
-          </p>
-        ) : (
-          <div
-            className="flex h-36 items-end gap-1.5"
-            role="img"
-            aria-label="Evolução da receita recorrente mensal"
-          >
-            {meses.map((m, i) => (
-              <div
-                key={m.mes}
-                className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
-              >
-                {/* Trilho com altura própria: a % da barra precisa de um pai com
-                    altura definida — sem ele, toda barra resolvia para 0 px. */}
-                <div className="flex w-full flex-1 items-end">
-                  <div
-                    className="w-full rounded-t bg-primary/80"
-                    style={{ height: `${Math.max(2, (m.mrr_fim / maxMrr) * 100)}%` }}
-                    title={`${m.mes.slice(0, 7)}: ${formatBRL(m.mrr_fim)} (novo ${formatBRL(m.novo)}, saída ${formatBRL(m.churn)})`}
-                  />
-                </div>
-                {/* No celular cabe um rótulo a cada três meses. */}
-                <span
-                  className={`text-[10px] text-muted-foreground ${i % 3 === (meses.length - 1) % 3 ? "" : "hidden sm:inline"}`}
-                >
-                  {m.mes.slice(5, 7)}/{m.mes.slice(2, 4)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <AssinaturasPlataforma />
-
-      <section className="rounded-lg border border-border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
-          <h2 className="text-sm font-semibold">Faturas dos assinantes</h2>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Input
-              aria-label="Buscar fatura por conta ou descrição"
-              placeholder="Conta ou descrição"
-              className="sm:w-56"
-              value={busca}
-              onChange={(e) => {
-                setBusca(e.target.value);
-                setPagina(1);
-              }}
-            />
-            <Select
-              value={filtro}
-              onValueChange={(v) => {
-                setFiltro(v as FiltroFatura);
-                setPagina(1);
-              }}
-            >
-              <SelectTrigger className="sm:w-40" aria-label="Filtrar faturas">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(FILTROS) as FiltroFatura[]).map((k) => (
-                  <SelectItem key={k} value={k}>
-                    {FILTROS[k]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Conta</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead>Vencimento</TableHead>
-                <TableHead>Situação</TableHead>
-                <TableHead className="w-[1%] text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {qf.isLoading && (
-                <TableRow>
-                  <TableCell colSpan={6}>
-                    <Skeleton className="h-10" />
-                  </TableCell>
-                </TableRow>
-              )}
-              {qf.isError && (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-6 text-center text-sm text-destructive">
-                    {mensagemDeErro(qf.error, "Não foi possível carregar as faturas.")}
-                  </TableCell>
-                </TableRow>
-              )}
-              {!qf.isLoading && !qf.isError && faturas.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="py-10 text-center text-sm text-muted-foreground"
-                  >
-                    Nenhuma fatura neste filtro.
-                  </TableCell>
-                </TableRow>
-              )}
-              {faturas.map((f) => (
-                <LinhaFatura key={f.id} fatura={f} />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <RodapePaginas
-          pagina={pagina}
-          porPagina={POR_PAGINA_FATURAS}
-          quantidade={faturas.length}
-          total={qf.data?.total}
-          carregando={qf.isFetching}
-          onPagina={setPagina}
-        />
-      </section>
-
-      {/* F2 (0273): quem cancelou a renovação e por quê. */}
-      <CancelamentosRenovacao />
-    </div>
-  );
-}
-
-function Indicador({
-  rotulo,
-  valor,
-  detalhe,
-  alerta,
-}: {
-  rotulo: string;
-  valor: string | null;
-  detalhe?: string;
-  alerta?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-lg border bg-card p-4 ${alerta ? "border-destructive/50" : "border-border"}`}
-    >
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{rotulo}</p>
-      {valor === null ? (
-        <Skeleton className="mt-2 h-7 w-24" />
-      ) : (
-        <p className="mt-1 text-2xl font-semibold tabular-nums">{valor}</p>
-      )}
-      {detalhe && <p className="mt-0.5 text-xs text-muted-foreground">{detalhe}</p>}
-    </div>
-  );
-}
-
-function LinhaFatura({ fatura: f }: { fatura: FaturaPlataforma }) {
-  const qc = useQueryClient();
-  const pode = usePermissao("saas.receita", "edit");
-  const baixarFn = useServerFn(baixarFaturaPlataforma);
-  const cancelarFn = useServerFn(cancelarFaturaPlataforma);
-  const [forma, setForma] = useState<"pix" | "boleto" | "cartao">("pix");
-  const emAberto = f.status === "pendente" || f.status === "vencida";
-  const s = situacaoFatura(f);
-  const baixar = useMutation({
-    mutationFn: () => baixarFn({ data: { id: f.id, forma } }),
-    onSuccess: () => {
-      toast.success(
-        "Pagamento confirmado. Créditos e acesso da conta são liberados automaticamente.",
-      );
-      qc.invalidateQueries({ queryKey: ["plataforma-receita"] });
-      qc.invalidateQueries({ queryKey: ["plataforma-licencas"] });
-    },
-    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível dar baixa.")),
-  });
-
-  return (
-    <TableRow>
-      <TableCell className="font-medium">{f.conta}</TableCell>
-      <TableCell className="max-w-[18rem]">
-        <span className="block truncate">{f.descricao}</span>
-        {/* Fatura de licença: o período comprado (0253), mesmo com a descrição cortada. */}
-        {f.periodo && (
-          <span className="block text-xs text-muted-foreground">
-            Licença {f.periodo}
-          </span>
-        )}
-      </TableCell>
-      <TableCell className="text-right tabular-nums">{formatBRL(f.valor)}</TableCell>
-      <TableCell>
-        {formatData(f.vencimento)}
-        {f.pago_em ? (
-          <span className="block text-xs text-muted-foreground">pago {formatData(f.pago_em)}</span>
-        ) : null}
-      </TableCell>
-      <TableCell>
-        <Badge variant={s.tom}>{s.rotulo}</Badge>
-      </TableCell>
-      <TableCell className="whitespace-nowrap text-right">
-        {pode && emAberto && (
-          <div className="flex items-center justify-end gap-1.5">
-            <Select value={forma} onValueChange={(v) => setForma(v as typeof forma)}>
-              <SelectTrigger className="h-8 w-24" aria-label="Forma do pagamento recebido">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pix">Pix</SelectItem>
-                <SelectItem value="boleto">Boleto</SelectItem>
-                <SelectItem value="cartao">Cartão</SelectItem>
-              </SelectContent>
-            </Select>
-            {/* A baixa libera créditos e acesso da conta: pede confirmação. */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" disabled={baixar.isPending}>
-                  Dar baixa
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmar o recebimento?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {f.conta} — {f.descricao}, {formatBRL(f.valor)}, recebido por{" "}
-                    {forma === "pix" ? "Pix" : forma === "boleto" ? "boleto" : "cartão"}. A fatura
-                    fica paga e os créditos e o acesso da conta são liberados.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Voltar</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => baixar.mutate()}>Dar baixa</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <ConfirmDelete
-              titulo="Cancelar esta fatura?"
-              descricao={`${f.descricao} — ${formatBRL(f.valor)}. A fatura deixa de ser cobrada.`}
-              confirmarLabel="Cancelar fatura"
-              onConfirm={async () => {
-                await cancelarFn({ data: { id: f.id } });
-                toast.success("Fatura cancelada.");
-                qc.invalidateQueries({ queryKey: ["plataforma-receita"] });
-              }}
-            />
-          </div>
-        )}
-      </TableCell>
-    </TableRow>
+      <Tabs value={aba} onValueChange={(v) => setAba(v as Aba)} className="space-y-3">
+        <TrilhoAbas>
+          <AbaComContagem
+            value="faturas"
+            rotulo="Faturas"
+            icone={<ReceiptText />}
+            contagem={r?.qtd_abertas}
+          />
+          <AbaComContagem value="assinaturas" rotulo="Assinaturas" icone={<Repeat />} />
+          <AbaComContagem value="cancelamentos" rotulo="Cancelamentos" icone={<CalendarX2 />} />
+        </TrilhoAbas>
+        <TabsContent value="faturas" className="mt-0">
+          <FaturasReceita filtro={filtro} onFiltro={setFiltro} resumo={r} />
+        </TabsContent>
+        <TabsContent value="assinaturas" className="mt-0">
+          <AssinaturasPlataforma />
+        </TabsContent>
+        <TabsContent value="cancelamentos" className="mt-0">
+          {/* F2 (0273): quem cancelou a renovação e por quê. */}
+          <CancelamentosRenovacao />
+        </TabsContent>
+      </Tabs>
+    </PaginaGestao>
   );
 }
