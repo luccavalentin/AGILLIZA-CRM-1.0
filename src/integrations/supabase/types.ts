@@ -663,6 +663,7 @@ export type Database = {
           mime_type: string | null
           nome_arquivo: string
           pasta_id: string | null
+          pasta_padrao: string | null
           situacao_integracao: string | null
           status: Database["public"]["Enums"]["doc_status"]
           storage_path: string
@@ -685,6 +686,7 @@ export type Database = {
           mime_type?: string | null
           nome_arquivo: string
           pasta_id?: string | null
+          pasta_padrao?: string | null
           situacao_integracao?: string | null
           status?: Database["public"]["Enums"]["doc_status"]
           storage_path: string
@@ -707,6 +709,7 @@ export type Database = {
           mime_type?: string | null
           nome_arquivo?: string
           pasta_id?: string | null
+          pasta_padrao?: string | null
           situacao_integracao?: string | null
           status?: Database["public"]["Enums"]["doc_status"]
           storage_path?: string

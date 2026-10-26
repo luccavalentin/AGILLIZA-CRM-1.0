@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { DocumentosGerais } from "@/components/crm/documentos-gerais";
+import { DocumentosDeClientes } from "@/components/crm/documentos-clientes/documentos-clientes";
 
 export const Route = createFileRoute("/_authenticated/crm/documentos")({
-  head: () => ({ meta: [{ title: "Documentos Gerais — CRM — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Documentos de clientes — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
   component: Pagina,
   errorComponent: ({ error }) => (
@@ -15,8 +15,8 @@ export const Route = createFileRoute("/_authenticated/crm/documentos")({
 
 function Pagina() {
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-6 p-4 md:p-6">
-      <DocumentosGerais />
+    <div className="mx-auto w-full max-w-[1400px] p-3 sm:p-4 md:p-6">
+      <DocumentosDeClientes />
     </div>
   );
 }
