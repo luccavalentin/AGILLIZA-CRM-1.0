@@ -9,7 +9,7 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
 import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import { Button } from "@/components/ui/button";
-import { OpHero } from "@/components/operacional/ui";
+import { PageHeader } from "@/components/shared/page-header";
 import {
   assumirDemanda,
   centralDemandas,
@@ -129,9 +129,9 @@ function Pagina() {
 
   return (
     <div className="space-y-4 p-3 sm:space-y-5 sm:p-4 md:p-6">
-      <OpHero
-        icon={<Layers className="h-6 w-6" />}
-        eyebrow="Operacional"
+      <PageHeader
+        icone={<Layers className="h-5 w-5" />}
+        secao="Operacional"
         titulo="Central de demandas"
         descricao="Consultas, simulações, propostas e documentação delegadas com fila justa: cada demanda com dono, prazo e conversa."
         acoes={
@@ -157,7 +157,7 @@ function Pagina() {
         </div>
       )}
 
-      <IndicadoresDemandas c={data} onSla={aba === "config" ? undefined : setSla} slaAtual={sla} />
+      <IndicadoresDemandas c={data} carregando={isLoading} onSla={aba === "config" ? undefined : setSla} slaAtual={sla} />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <AbasEscopo atual={aba} onTrocar={trocarAba} contadores={data?.contadores} config />
@@ -207,6 +207,7 @@ function Pagina() {
             </div>
           ) : isError ? (
             <VazioDemandas
+              erro
               titulo="Não foi possível carregar as demandas"
               texto={mensagemDeErro(error, "Tente de novo em instantes.")}
               acao={<Button onClick={() => refetch()}>Tentar de novo</Button>}

@@ -10,7 +10,7 @@ import { usePermissao } from "@/hooks/use-permissao";
 import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { OpHero } from "@/components/operacional/ui";
+import { PageHeader } from "@/components/shared/page-header";
 import {
   assumirDemanda,
   centralDemandas,
@@ -143,9 +143,9 @@ function Pagina() {
 
   return (
     <div className="space-y-4 p-3 sm:space-y-5 sm:p-4 md:p-6">
-      <OpHero
-        icon={<Kanban className="h-6 w-6" />}
-        eyebrow="Operacional · Demandas"
+      <PageHeader
+        icone={<Kanban className="h-5 w-5" />}
+        secao="Operacional · Demandas"
         titulo="Kanban de demandas"
         descricao="Arraste entre as situações. A regra é a mesma do banco: a coluna que não aceita a demanda fica apagada."
         acoes={
@@ -166,6 +166,7 @@ function Pagina() {
         </div>
       ) : isError ? (
         <VazioDemandas
+          erro
           titulo="Não foi possível carregar o kanban"
           texto={mensagemDeErro(error, "Tente de novo em instantes.")}
           acao={<Button onClick={() => refetch()}>Tentar de novo</Button>}

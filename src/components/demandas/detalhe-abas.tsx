@@ -42,7 +42,7 @@ export function ArquivosDemanda({ anexos }: { anexos: Anexo[] }) {
         <VazioDemandas
           titulo="Nenhum arquivo ainda"
           texto="Arquivos enviados pela conversa da demanda aparecem aqui, com quem enviou e quando."
-          icone={<Paperclip className="size-5" />}
+          icone={Paperclip}
         />
       </div>
     );

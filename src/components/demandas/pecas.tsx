@@ -16,6 +16,9 @@ import {
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
+import { Icone3D, type TamanhoIcone3D } from "@/components/ui/icone-3d";
+import { Estado3D } from "@/components/ui/estado-3d";
 import {
   consumoPrazo,
   estadoPrazo,
@@ -150,33 +153,26 @@ export function OrigemChip({
   );
 }
 
-const ICONE_TIPO: Record<string, ReactNode> = {
-  consulta_ficha: <FileSearch className="size-4" />,
-  simulacao: <Calculator className="size-4" />,
-  proposta: <FileCheck2 className="size-4" />,
-  documentacao: <FileText className="size-4" />,
-  matricula: <Layers className="size-4" />,
-  duvida: <CircleHelp className="size-4" />,
+const ICONE_TIPO: Record<string, LucideIcon> = {
+  consulta_ficha: FileSearch,
+  simulacao: Calculator,
+  proposta: FileCheck2,
+  documentacao: FileText,
+  matricula: Layers,
+  duvida: CircleHelp,
 };
 
-/** Ícone do tipo num selo com volume sutil (mesmo traço dos indicadores do Operacional). */
-export function TipoIcone({ tipo, className }: { tipo: string; className?: string }) {
-  return (
-    <span
-      className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-xl border border-border/70 text-primary",
-        className,
-      )}
-      style={{
-        background: "linear-gradient(180deg, color-mix(in oklab, var(--primary) 9%, var(--card)), var(--card))",
-        boxShadow:
-          "inset 0 1px 0 color-mix(in oklab, #fff 60%, transparent), 0 6px 14px -10px color-mix(in oklab, var(--primary) 60%, transparent)",
-      }}
-      aria-hidden
-    >
-      {ICONE_TIPO[tipo] ?? <UserRound className="size-4" />}
-    </span>
-  );
+/** Ícone do tipo na peça 3D do sistema (um por cartão). */
+export function TipoIcone({
+  tipo,
+  tamanho = "sm",
+  className,
+}: {
+  tipo: string;
+  tamanho?: TamanhoIcone3D;
+  className?: string;
+}) {
+  return <Icone3D icone={ICONE_TIPO[tipo] ?? UserRound} tamanho={tamanho} className={cn("shrink-0", className)} />;
 }
 
 export function PrioridadeMarca({ prioridade }: { prioridade: DemandaPrioridade }) {
@@ -195,32 +191,28 @@ export function PrioridadeMarca({ prioridade }: { prioridade: DemandaPrioridade 
   );
 }
 
-/** Estado vazio desenhado. */
+/** Estado vazio/erro desenhado (Estado3D do sistema). */
 export function VazioDemandas({
   titulo,
   texto,
   acao,
   icone,
+  erro,
 }: {
   titulo: string;
   texto: string;
   acao?: ReactNode;
-  icone?: ReactNode;
+  icone?: LucideIcon;
+  erro?: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 bg-card/40 px-6 py-12 text-center">
-      <span
-        className="mb-3 grid size-12 place-items-center rounded-2xl border border-border/70 text-primary"
-        style={{
-          background: "linear-gradient(180deg, color-mix(in oklab, var(--primary) 10%, var(--card)), var(--card))",
-          boxShadow: "inset 0 1px 0 color-mix(in oklab, #fff 60%, transparent)",
-        }}
-      >
-        {icone ?? <Layers className="size-5" />}
-      </span>
-      <p className="text-sm font-semibold text-foreground">{titulo}</p>
-      <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">{texto}</p>
-      {acao && <div className="mt-4">{acao}</div>}
-    </div>
+    <Estado3D
+      tipo={erro ? "erro" : "vazio"}
+      icone={icone ?? (erro ? undefined : Layers)}
+      tom={erro ? undefined : "marca"}
+      titulo={titulo}
+      descricao={texto}
+      acao={acao}
+    />
   );
 }

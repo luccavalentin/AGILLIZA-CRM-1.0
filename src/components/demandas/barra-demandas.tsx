@@ -35,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { OpStat } from "@/components/operacional/ui";
+import { Indicador3D } from "@/components/ui/indicador-3d";
 import type { DemandaCentral, TipoDemanda } from "@/lib/operacional/demandas-central.functions";
 import { ROTULO_ORIGEM, type DemandaEscopo, type DemandaOrigem } from "@/lib/operacional/demandas-regras";
 
@@ -128,45 +128,76 @@ export function IndicadoresDemandas({
   c,
   onSla,
   slaAtual,
+  carregando,
 }: {
   c?: DemandaCentral;
   onSla?: (s: "atrasadas" | "vencendo" | null) => void;
   slaAtual?: string | null;
+  carregando?: boolean;
 }) {
   const k = c?.contadores;
-  const clicavel = (s: "atrasadas" | "vencendo") =>
+  const filtro = (s: "atrasadas" | "vencendo") =>
     onSla
       ? {
-          role: "button" as const,
-          tabIndex: 0,
           onClick: () => onSla(slaAtual === s ? null : s),
-          onKeyDown: (e: React.KeyboardEvent) => e.key === "Enter" && onSla(slaAtual === s ? null : s),
-          className: cn("cursor-pointer rounded-2xl transition", slaAtual === s && "ring-2 ring-primary/40"),
+          className: slaAtual === s ? "ring-2 ring-primary/40" : undefined,
         }
       : {};
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 xl:grid-cols-6">
-      <OpStat
-        label="Minhas abertas"
-        value={k?.minhas ?? 0}
-        icon={<Inbox className="size-4" />}
-        hint={c ? (c.meu_limite ? `limite ${c.meu_limite}` : c.estou_ausente ? "você está ausente" : "sem limite") : undefined}
+      <Indicador3D
+        icone={Inbox}
+        rotulo="Minhas abertas"
+        natureza="quantidade"
+        valor={k?.minhas ?? 0}
+        carregando={carregando}
+        detalhe={c ? (c.estou_ausente ? "você está ausente" : c.meu_limite ? `limite ${c.meu_limite}` : "sem limite") : undefined}
       />
-      <OpStat label="Sem responsável" value={k?.sem_responsavel ?? 0} icon={<UserRoundX className="size-4" />} accent="var(--warning)" />
-      <div {...clicavel("atrasadas")}>
-        <OpStat
-          label="Atrasadas"
-          value={k?.atrasadas ?? 0}
-          icon={<TriangleAlert className="size-4" />}
-          accent="var(--destructive)"
-          alerta={(k?.atrasadas ?? 0) > 0}
+      <Indicador3D
+        icone={UserRoundX}
+        tom="alerta"
+        rotulo="Sem responsável"
+        natureza="quantidade"
+        valor={k?.sem_responsavel ?? 0}
+        carregando={carregando}
+        detalhe="esperando na fila"
+      />
+      <Indicador3D
+          {...filtro("atrasadas")}
+          icone={TriangleAlert}
+          tom={(k?.atrasadas ?? 0) > 0 ? "perigo" : "neutro"}
+          rotulo="Atrasadas"
+          natureza="quantidade"
+          valor={k?.atrasadas ?? 0}
+          carregando={carregando}
+          detalhe={onSla ? "toque para filtrar" : undefined}
         />
-      </div>
-      <div {...clicavel("vencendo")}>
-        <OpStat label="Vencem em 4h" value={k?.vencendo ?? 0} icon={<AlarmClock className="size-4" />} accent="var(--warning)" />
-      </div>
-      <OpStat label="Aguardando solicitante" value={k?.aguardando ?? 0} icon={<Hourglass className="size-4" />} />
-      <OpStat label="Concluídas hoje" value={k?.concluidas_hoje ?? 0} icon={<CheckCheck className="size-4" />} accent="var(--success)" />
+      <Indicador3D
+          {...filtro("vencendo")}
+          icone={AlarmClock}
+          tom="alerta"
+          rotulo="Vencem em 4h"
+          natureza="quantidade"
+          valor={k?.vencendo ?? 0}
+          carregando={carregando}
+          detalhe={onSla ? "toque para filtrar" : undefined}
+        />
+      <Indicador3D
+        icone={Hourglass}
+        tom="info"
+        rotulo="Aguardando solicitante"
+        natureza="quantidade"
+        valor={k?.aguardando ?? 0}
+        carregando={carregando}
+      />
+      <Indicador3D
+        icone={CheckCheck}
+        tom="sucesso"
+        rotulo="Concluídas hoje"
+        natureza="quantidade"
+        valor={k?.concluidas_hoje ?? 0}
+        carregando={carregando}
+      />
     </div>
   );
 }

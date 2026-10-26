@@ -203,7 +203,7 @@ export function NovaDemandaDialog({
                       : "border-border/70 bg-card text-foreground/80 hover:border-primary/40",
                   )}
                 >
-                  <TipoIcone tipo={t.codigo} className="size-7" />
+                  <TipoIcone tipo={t.codigo} tamanho="sm" />
                   <span className="min-w-0 leading-tight">
                     <span className="block truncate">{t.nome}</span>
                     <span className="block text-[10.5px] font-normal text-muted-foreground">

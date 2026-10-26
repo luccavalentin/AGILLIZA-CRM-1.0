@@ -42,7 +42,7 @@ export function CartaoDemanda({
       draggable={arrastavel}
       onDragStart={arrastavel ? (e) => onDragStart?.(e, d) : undefined}
       className={cn(
-        "group relative rounded-2xl border border-border/70 bg-card p-3 shadow-[0_1px_0_color-mix(in_oklab,#fff_70%,transparent)_inset,0_10px_24px_-20px_rgba(0,15,159,0.45)] transition",
+        "i3d-grupo group relative rounded-2xl border border-border/70 bg-card p-3 shadow-[0_1px_0_color-mix(in_oklab,#fff_70%,transparent)_inset,0_10px_24px_-20px_rgba(0,15,159,0.45)] transition",
         "hover:-translate-y-[1px] hover:border-primary/35 hover:shadow-[0_14px_30px_-20px_rgba(0,15,159,0.55)]",
         arrastavel && "cursor-grab active:cursor-grabbing",
         className,

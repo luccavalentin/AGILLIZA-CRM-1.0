@@ -16,6 +16,8 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import type { LucideIcon } from "lucide-react";
+import { Icone3D } from "@/components/ui/icone-3d";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { usePermissao } from "@/hooks/use-permissao";
 import { cn } from "@/lib/utils";
@@ -64,7 +66,7 @@ function Secao({
   acoes,
   children,
 }: {
-  icone: React.ReactNode;
+  icone: LucideIcon;
   titulo: string;
   descricao: string;
   acoes?: React.ReactNode;
@@ -74,9 +76,7 @@ function Secao({
     <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-[0_1px_0_color-mix(in_oklab,#fff_70%,transparent)_inset] md:p-5">
       <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-border/70 bg-primary/5 text-primary">
-            {icone}
-          </span>
+          <Icone3D icone={icone} tamanho="md" className="shrink-0" />
           <div className="min-w-0">
             <h2 className="text-[15px] font-semibold text-foreground">{titulo}</h2>
             <p className="text-[12.5px] leading-relaxed text-muted-foreground">{descricao}</p>
@@ -130,6 +130,7 @@ export function ConfigDemandasView() {
   if (isError || !data) {
     return (
       <VazioDemandas
+        erro
         titulo="Não foi possível carregar a configuração"
         texto={mensagemDeErro(error, "Tente de novo em instantes.")}
         acao={<Button onClick={() => refetch()}>Tentar de novo</Button>}
@@ -168,7 +169,7 @@ function FilasSecao({ cfg, onMudou }: { cfg: ConfigDemandas; onMudou: () => void
 
   return (
     <Secao
-      icone={<Shuffle className="size-4" />}
+      icone={Shuffle}
       titulo="Filas de distribuição justa"
       descricao="A primeira fila ativa que atende o tipo e a origem recebe a demanda. Menor carga recebe; no empate, quem recebeu há mais tempo."
       acoes={
@@ -201,7 +202,7 @@ function FilasSecao({ cfg, onMudou }: { cfg: ConfigDemandas; onMudou: () => void
         <VazioDemandas
           titulo="Nenhuma fila ainda"
           texto="Sem fila, demanda sem analista da conta fica sem responsável. Crie uma fila com os analistas (ou corretores e parceiros) que atendem."
-          icone={<Shuffle className="size-5" />}
+          icone={Shuffle}
         />
       ) : (
         <ul className="space-y-3">
@@ -446,7 +447,7 @@ function TiposSecao({ cfg, onMudou }: { cfg: ConfigDemandas; onMudou: () => void
   const [novo, setNovo] = useState(false);
   return (
     <Secao
-      icone={<Clock3 className="size-4" />}
+      icone={Clock3}
       titulo="Tipos e prazos"
       descricao="Prazo em horas úteis para prioridade normal. Urgente vale a metade; baixa, o dobro. Regra específica em Configurações › SLA continua valendo."
       acoes={
@@ -518,7 +519,7 @@ function LinhaTipo({
 
   return (
     <li className="flex flex-wrap items-center gap-2 py-2">
-      <TipoIcone tipo={t.codigo} className="size-7" />
+      <TipoIcone tipo={t.codigo} tamanho="xs" />
       {novo ? (
         <Input
           value={codigo}
@@ -591,7 +592,7 @@ function DisponibilidadeSecao({ cfg, onMudou }: { cfg: ConfigDemandas; onMudou: 
   }, [cfg, busca]);
   return (
     <Secao
-      icone={<Gauge className="size-4" />}
+      icone={Gauge}
       titulo="Disponibilidade da equipe"
       descricao="Limite de carga aberta por pessoa e ausências (férias, indisponível). Quem está ausente ou no limite não recebe da fila."
       acoes={
@@ -704,7 +705,7 @@ function RecebimentoSecao({ cfg, onMudou }: { cfg: ConfigDemandas; onMudou: () =
   const salvar = useServerFn(salvarRecebeAssinantes);
   return (
     <Secao
-      icone={<Landmark className="size-4" />}
+      icone={Landmark}
       titulo="Demandas dos assinantes"
       descricao="Cada proposta nova de assinante (ou de corretor/parceiro vinculado) vira uma demanda “Proposta” — uma só por proposta — e acompanha a fila de propostas."
     >
@@ -760,7 +761,7 @@ function AnalistaDaContaSecao() {
 
   return (
     <Secao
-      icone={<Users className="size-4" />}
+      icone={Users}
       titulo="Analista de cada conta"
       descricao="A carteira do Agilliza Tech: toda demanda e proposta da conta cai direto no analista (se ele estiver ausente, vai para a fila)."
       acoes={

@@ -159,6 +159,7 @@ function Pagina() {
     return (
       <div className="p-3 sm:p-4 md:p-6">
         <VazioDemandas
+          erro={isError}
           titulo="Demanda não encontrada"
           texto={isError ? mensagemDeErro(error, "Tente de novo.") : "Ela pode ter sido excluída ou você não tem acesso a ela."}
           acao={
@@ -190,7 +191,7 @@ function Pagina() {
         <section className="min-w-0 space-y-4">
           <header className="rounded-2xl border border-border/70 bg-card p-4 shadow-[0_1px_0_color-mix(in_oklab,#fff_70%,transparent)_inset,0_18px_40px_-30px_rgba(0,15,159,0.45)] md:p-5">
             <div className="flex items-start gap-3">
-              <TipoIcone tipo={d.tipo} className="size-11 rounded-2xl" />
+              <TipoIcone tipo={d.tipo} tamanho="lg" />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5 text-[11.5px] text-muted-foreground">
                   <span className="font-semibold tabular-nums text-foreground/80">{d.numero}</span>
