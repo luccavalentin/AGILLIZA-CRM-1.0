@@ -1397,6 +1397,10 @@ export function ChatUniversal({
               <div className="ec-rodape ec-rodape-aviso">
                 Conta em modo somente leitura: dá para ler, não para enviar.
               </div>
+            ) : extra?.suspenso ? (
+              <div className="ec-rodape ec-rodape-aviso cu-bloqueado">
+                Seu acesso ao chat foi suspenso pela moderação. Fale com o suporte.
+              </div>
             ) : extra?.bloqueado ? (
               <div className="ec-rodape ec-rodape-aviso cu-bloqueado">
                 {extra.eu_bloqueei ? (

@@ -11,8 +11,8 @@
  * conversas viram "3 novas mensagens de 2 conversas". Pedido de mensagem de quem é de fora
  * aparece à parte. Som opcional; conversa silenciada, "não perturbe" e a preferência de
  * aviso são respeitados pelo banco. O cartão recolhe sozinho para o ícone depois de 12 s.
+ * Sem dependência além de react e lucide-react: também roda no portal público do ImobMatch.
  */
-import clsx from "clsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, EyeOff, Inbox, MessageCircle, X } from "lucide-react";
 import type { ApiChat, AvisoNovo, Avisos, EventoChat } from "./tipos";
@@ -253,7 +253,7 @@ export function AvisoChat({
       )}
       <button
         type="button"
-        className={clsx("cu-aviso-icone", aberto && "cu-aviso-icone-aberto")}
+        className={aberto ? "cu-aviso-icone cu-aviso-icone-aberto" : "cu-aviso-icone"}
         onClick={() => setAberto((x) => !x)}
         aria-label={`${contador} ${contador === 1 ? "mensagem nova" : "mensagens novas"}. ${aberto ? "Recolher" : "Mostrar"}`}
         aria-expanded={aberto}

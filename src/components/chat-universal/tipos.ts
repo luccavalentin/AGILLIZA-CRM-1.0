@@ -115,6 +115,8 @@ export type ExtraConversa = {
   outro_id: string | null;
   arroba: string | null;
   bloqueado: boolean;
+  /** A moderação suspendeu a pessoa do chat (0352): lê, mas não escreve. */
+  suspenso?: boolean;
   eu_bloqueei: boolean;
   pedido: "recebido" | "enviado" | null;
   pode_escrever: boolean;
