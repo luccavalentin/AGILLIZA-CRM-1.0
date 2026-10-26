@@ -1,9 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// Consolidado: a tela do parceiro agora é a mesma do correspondente,
-// com escopo restrito pela matriz de permissões.
+// O parceiro vê o próprio demonstrativo de comissões (só as dele; o banco confere).
 export const Route = createFileRoute("/parceiro/comissoes")({
   beforeLoad: () => {
-    throw redirect({ to: "/financeiro/comissoes" });
+    throw redirect({ to: "/financeiro/minhas-comissoes" });
   },
 });

@@ -6,16 +6,19 @@
  */
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { AlertTriangle, Inbox, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Icone3D } from "@/components/ui/icone-3d";
+import { Indicador3D } from "@/components/ui/indicador-3d";
+import { Estado3D } from "@/components/ui/estado-3d";
 import { formatBRL, formatData } from "@/lib/financeiro/format";
 import { isoLocal } from "@/lib/financeiro/cliente";
 import "./financeiro.css";
 
-export type Tom = "marca" | "sucesso" | "alerta" | "perigo" | "neutro" | "info";
+export type Tom = "marca" | "sucesso" | "alerta" | "perigo" | "neutro" | "info" | "violeta";
 
 const COR: Record<Tom, string> = {
   marca: "var(--primary)",
@@ -24,6 +27,7 @@ const COR: Record<Tom, string> = {
   perigo: "var(--destructive)",
   neutro: "var(--muted-foreground)",
   info: "color-mix(in oklab, var(--primary) 70%, #3ba4ff)",
+  violeta: "#6d4bd8",
 };
 
 export function corDoTom(t: Tom) {
@@ -47,12 +51,7 @@ export function PaginaFin({
     <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-5 sm:px-6 sm:py-6">
       <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div className="flex min-w-0 items-start gap-3">
-          <span
-            className="fin-insignia inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
-            aria-hidden
-          >
-            <Icone className="h-5 w-5" strokeWidth={2} />
-          </span>
+          <Icone3D icone={Icone} tamanho="lg" tom="marca" />
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">Financeiro da matriz</p>
             <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{titulo}</h1>
@@ -81,14 +80,16 @@ export function Metricas({ children, colunas = 4 }: { children: ReactNode; colun
   );
 }
 
+/** Indicador do financeiro: o `Indicador3D` da base, com a cor de significado de cada número. */
 export function Metrica({
   rotulo,
   valor,
   ajuda,
   tom = "neutro",
-  icone: Icone,
+  icone,
   onClick,
   ativo,
+  natureza,
 }: {
   rotulo: string;
   valor: string;
@@ -97,31 +98,19 @@ export function Metrica({
   icone?: LucideIcon;
   onClick?: () => void;
   ativo?: boolean;
+  natureza?: string;
 }) {
-  const Comp = onClick ? "button" : "div";
   return (
-    <Comp
-      type={onClick ? "button" : undefined}
+    <Indicador3D
+      icone={icone}
+      tom={tom}
+      rotulo={rotulo}
+      valor={<span className="font-mono tabular-nums">{valor}</span>}
+      detalhe={ajuda}
+      natureza={natureza}
       onClick={onClick}
-      className={cn(
-        "fin-metrica group relative min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-card p-3.5 text-left shadow-sm transition-all sm:p-4",
-        onClick && "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
-        ativo && "border-primary/60 ring-2 ring-primary/15",
-      )}
-      style={{ ["--fin-tom" as string]: COR[tom] }}
-    >
-      <span aria-hidden className="fin-metrica-brilho" />
-      <div className="relative flex items-center justify-between gap-2">
-        <p className="truncate text-xs font-medium text-muted-foreground">{rotulo}</p>
-        {Icone && (
-          <span className="fin-metrica-icone inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
-            <Icone className="h-3.5 w-3.5" strokeWidth={2.2} />
-          </span>
-        )}
-      </div>
-      <p className="relative mt-1.5 truncate font-mono text-lg font-semibold tabular-nums text-foreground sm:text-xl">{valor}</p>
-      {ajuda && <p className="relative mt-0.5 truncate text-[11px] text-muted-foreground">{ajuda}</p>}
-    </Comp>
+      className={cn("min-w-0", ativo && "ring-2 ring-primary/25")}
+    />
   );
 }
 
@@ -201,31 +190,25 @@ export function Carregando({ linhas = 5 }: { linhas?: number }) {
   );
 }
 
-export function Vazio({ titulo, descricao, acao }: { titulo: string; descricao?: string; acao?: ReactNode }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
-      <span className="fin-vazio-icone mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl">
-        <Inbox className="h-5 w-5" />
-      </span>
-      <p className="text-sm font-semibold text-foreground">{titulo}</p>
-      {descricao && <p className="mt-1 max-w-md text-xs text-muted-foreground">{descricao}</p>}
-      {acao && <div className="mt-4">{acao}</div>}
-    </div>
-  );
+export function Vazio({ titulo, descricao, acao, icone }: { titulo: string; descricao?: string; acao?: ReactNode; icone?: LucideIcon }) {
+  return <Estado3D tipo="vazio" icone={icone} titulo={titulo} descricao={descricao} acao={acao} />;
 }
 
 export function Erro({ erro, onTentar }: { erro: unknown; onTentar?: () => void }) {
   const msg = erro instanceof Error ? erro.message : "Não foi possível carregar.";
   return (
-    <div role="alert" className="flex flex-col items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center">
-      <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
-      <p className="flex-1 text-sm text-foreground">{msg}</p>
-      {onTentar && (
-        <Button size="sm" variant="outline" onClick={onTentar} className="gap-1.5">
-          <RefreshCw className="h-3.5 w-3.5" /> Tentar de novo
-        </Button>
-      )}
-    </div>
+    <Estado3D
+      tipo="erro"
+      compacto
+      descricao={msg}
+      acao={
+        onTentar && (
+          <Button size="sm" variant="outline" onClick={onTentar} className="gap-1.5">
+            <RefreshCw className="h-3.5 w-3.5" /> Tentar de novo
+          </Button>
+        )
+      }
+    />
   );
 }
 

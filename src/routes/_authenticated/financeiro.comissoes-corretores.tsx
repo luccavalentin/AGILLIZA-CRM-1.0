@@ -57,6 +57,10 @@ import { DemonstrativoDialogo, PAPEIS } from "@/components/financeiro/matriz/dem
 export const Route = createFileRoute("/_authenticated/financeiro/comissoes-corretores")({
   head: () => ({ meta: [{ title: "Comissões de corretores e parceiros — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("financeiro.comissoes"),
+  // ?id= abre o detalhe (links do painel, relatórios e conciliação).
+  validateSearch: (search: Record<string, unknown>): { id?: string } => ({
+    id: typeof search.id === "string" && search.id ? search.id : undefined,
+  }),
   component: Pagina,
 });
 
@@ -107,6 +111,12 @@ function Pagina() {
 
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [detalhe, setDetalhe] = useState<ComissaoParticipante | null>(null);
+  const { id: abrirId } = Route.useSearch();
+  const [abertoDoLink, setAbertoDoLink] = useState<string | null>(null);
+  if (abrirId && abrirId !== abertoDoLink) {
+    setAbertoDoLink(abrirId);
+    setDetalhe({ id: abrirId } as ComissaoParticipante);
+  }
   const [pagar, setPagar] = useState<ComissaoParticipante | null>(null);
   const [acao, setAcao] = useState<{ tipo: Acao; item: ComissaoParticipante } | null>(null);
   const [novo, setNovo] = useState(false);
@@ -389,7 +399,7 @@ function Pagina() {
         onFechar={() => setDetalhe(null)}
         podeEstornar={podePagar}
         resumo={
-          detalhe && (
+          detalhe?.situacao && (
             <div className="space-y-2 rounded-xl bg-muted/40 p-3 text-xs">
               <p>
                 <b>{moeda(detalhe.valor)}</b> ·{" "}

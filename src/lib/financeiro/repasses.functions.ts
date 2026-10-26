@@ -7,8 +7,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AcaoPermissao } from "@/integrations/supabase/exigir-permissao";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 const uuid = z.string().uuid();
 const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida.");
@@ -109,18 +108,8 @@ async function ponte() {
   return import("@/lib/plataforma/ponte.server");
 }
 
-async function exigir(supabase: any, userId: string, acao: AcaoPermissao) {
-  const { data: pode, error } = await supabase.rpc("usuario_tem_permissao", {
-    _user_id: userId,
-    _modulo: "financeiro.repasses",
-    _acao: acao,
-  });
-  if (error) throw new Error("Não foi possível conferir sua permissão.");
-  if (!pode) throw new Error("Você não tem permissão para esta ação nos repasses.");
-}
-
 export const listarRepasses = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "view"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -133,7 +122,6 @@ export const listarRepasses = createServerFn({ method: "GET" })
       .parse(d ?? {}),
   )
   .handler(async ({ data: f, context }) => {
-    await exigir(context.supabase, context.userId, "view");
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
       const r = await tx.uma<{ j: ListaRepasses }>("select plataforma.repasses_listar($1::jsonb) as j", [JSON.stringify(f)]);
@@ -142,10 +130,9 @@ export const listarRepasses = createServerFn({ method: "GET" })
   });
 
 export const detalheRepasse = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "view"])])
   .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "view");
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
       const r = await tx.uma<{ j: Json }>("select plataforma.repasse_detalhe($1) as j", [d.id]);
@@ -154,9 +141,8 @@ export const detalheRepasse = createServerFn({ method: "GET" })
   });
 
 export const regrasRepasse = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "view"])])
   .handler(async ({ context }) => {
-    await exigir(context.supabase, context.userId, "view");
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
       const r = await tx.uma<{ j: { vigente_padrao: RegraRepasse; regras: RegraRepasse[] } }>(
@@ -167,7 +153,7 @@ export const regrasRepasse = createServerFn({ method: "GET" })
   });
 
 export const definirRegraRepasse = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "regras"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -180,7 +166,6 @@ export const definirRegraRepasse = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "regras");
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
       tx.consultar("select plataforma.repasse_regra_definir($1, $2, $3, $4::date, $5)", [
@@ -195,10 +180,9 @@ export const definirRegraRepasse = createServerFn({ method: "POST" })
   });
 
 export const aprovarRepasses = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "aprovar"])])
   .inputValidator((d: unknown) => z.object({ ids: z.array(uuid).min(1).max(500) }).parse(d))
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "aprovar");
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
       const r = await tx.uma<{ j: { aprovados: number; recusados: number } }>("select plataforma.repasse_aprovar($1::uuid[]) as j", [
@@ -209,10 +193,9 @@ export const aprovarRepasses = createServerFn({ method: "POST" })
   });
 
 export const confirmarBaseRepasse = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "aprovar"])])
   .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "aprovar");
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
       const r = await tx.uma<{ ok: boolean }>("select plataforma.repasse_confirmar_base($1) as ok", [d.id]);
@@ -221,10 +204,9 @@ export const confirmarBaseRepasse = createServerFn({ method: "POST" })
   });
 
 export const ajustarRepasse = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "edit"])])
   .inputValidator((d: unknown) => z.object({ id: uuid, valor: z.number().min(0).max(999_999_999), motivo }).parse(d))
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "edit");
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
       tx.consultar("select plataforma.repasse_ajustar($1, $2, $3)", [d.id, d.valor, d.motivo]),
@@ -233,17 +215,16 @@ export const ajustarRepasse = createServerFn({ method: "POST" })
   });
 
 export const cancelarRepasse = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "edit"])])
   .inputValidator((d: unknown) => z.object({ id: uuid, motivo }).parse(d))
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "edit");
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) => tx.consultar("select plataforma.repasse_cancelar($1, $2)", [d.id, d.motivo]));
     return { ok: true as const };
   });
 
 export const pagarRepasse = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "pagar"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -259,7 +240,6 @@ export const pagarRepasse = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "pagar");
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
       const r = await tx.uma<{ id: string }>(
@@ -271,10 +251,9 @@ export const pagarRepasse = createServerFn({ method: "POST" })
   });
 
 export const estornarPagamentoRepasse = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "pagar"])])
   .inputValidator((d: unknown) => z.object({ baixaId: uuid, motivo }).parse(d))
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "pagar");
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
       tx.consultar("select plataforma.repasse_estornar_pagamento($1, $2)", [d.baixaId, d.motivo]),
@@ -284,10 +263,9 @@ export const estornarPagamentoRepasse = createServerFn({ method: "POST" })
 
 /** Licenças, inadimplência, receita avulsa e repasse por assinante (C45k). */
 export const financeiroAssinantes = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "view"])])
   .inputValidator((d: unknown) => z.object({ de: data, ate: data, busca: z.string().trim().max(120).nullable().optional() }).parse(d))
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "view");
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
       const r = await tx.uma<{ j: FinanceiroAssinantes }>(
@@ -300,10 +278,9 @@ export const financeiroAssinantes = createServerFn({ method: "GET" })
 
 /** Contas assinantes para escolher numa regra própria. */
 export const contasParaRegraRepasse = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["financeiro.repasses", "regras"])])
   .inputValidator((d: unknown) => z.object({ busca: z.string().trim().max(80) }).parse(d))
   .handler(async ({ data: d, context }) => {
-    await exigir(context.supabase, context.userId, "regras");
     const { comPlataforma } = await ponte();
     const termo = d.busca.replace(/[\\%_]/g, (c) => "\\" + c);
     return comPlataforma(context.userId, (tx) =>

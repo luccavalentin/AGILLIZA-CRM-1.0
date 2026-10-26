@@ -114,13 +114,15 @@ export const getResumoParceiro = createServerFn({ method: "GET" })
       totalPropostas += prop.count ?? 0;
     }
 
-    const { data: comissoes } = await supabaseAdmin
-      .from("comissoes")
-      .select("split_parceiro, status")
-      .eq("parceiro_id", userId);
-    const comissaoPendente = (comissoes ?? [])
-      .filter((c) => c.status !== "paga_parceiro" && c.status !== "encerrada")
-      .reduce((acc, c) => acc + Number(c.split_parceiro ?? 0), 0);
+    // Comissões do parceiro no fluxo de corretores e parceiros (financeiro da matriz):
+    // o que ainda falta pagar das que não foram canceladas.
+    const { data: comissoes } = await (supabaseAdmin as any)
+      .from("comissoes_usuario")
+      .select("valor_comissao, valor_pago, situacao")
+      .eq("usuario_id", userId);
+    const comissaoPendente = ((comissoes ?? []) as { valor_comissao: number; valor_pago: number; situacao: string }[])
+      .filter((c) => c.situacao !== "paga" && c.situacao !== "cancelada")
+      .reduce((acc, c) => acc + Number(c.valor_comissao ?? 0) - Number(c.valor_pago ?? 0), 0);
 
     return {
       nome: profile?.nome ?? null,

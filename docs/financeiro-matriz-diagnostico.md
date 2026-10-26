@@ -127,3 +127,23 @@ pagamento não se apaga.
 - Financeiro de imobiliária/corretor (`financeiro.*` do Agilliza Tech, T54/T55): isolado, outra frente.
 - OCR de imagem: não há biblioteca instalada; imagem de boleto usa o leitor de código de barras do navegador
   (`BarcodeDetector`) quando existir e, senão, pede a linha digitada/colada, com aviso.
+
+## 3. Junções com outras frentes (registradas na implementação)
+
+- **a2 (Gestão de sistemas › Comissões dos assinantes)**: as funções da 0229 continuam com a mesma assinatura
+  (`comissoes_assinantes`, `config_comissao_assinante`, `definir_comissao_assinante`, `atualizar_comissao_assinante`),
+  agora por cima do fluxo novo. Para a tela redesenhada, use as da 0327: `repasses_listar(jsonb)`,
+  `repasse_detalhe(uuid)`, `repasse_regras_listar()`, `repasse_regra_definir(tenant, percentual, base, inicio, motivo)`,
+  `repasse_aprovar(uuid[])`, `repasse_confirmar_base(uuid)`, `repasse_ajustar(uuid, valor, motivo)`,
+  `repasse_cancelar(uuid, motivo)`, `repasse_registrar_pagamento(...)`, `repasse_estornar_pagamento(baixa, motivo)` e
+  `financeiro_matriz_assinantes(de, ate, busca)`. Abrir uma licença direto: `/plataforma/licencas?conta=<tenant_id>`
+  (o financeiro já manda esse parâmetro).
+- **a4 (matrículas pedidas por terceiros)**: leitura da visão `public.matriculas_a_receber` e de
+  `public.matricula_solicitacoes` por `fin_matriculas_a_receber()` / `fin_matriculas_do_solicitante(chave)` (só leitura;
+  o pagamento continua na tela de Matrículas, sem conta a receber paralela). Sem a migração da a4, devolve
+  `disponivel = false`. Outra origem de receita que precise de conta a receber própria usa
+  `fin_receita_de_origem(origem_tipo, origem_ref, ...)` (idempotente por origem).
+- **a3 (contrato registrado)**: a data `public.propostas.contrato_registrado_em` (lida por `to_jsonb`, sem depender da
+  coluna) é a data do gatilho da previsão do banco (vigência da regra e previsão de recebimento) quando o gatilho é
+  "registrado"; no Agilliza Tech, `operacional.propostas.registrado_em` (gravada pela 0316 antes do gatilho) é a data do
+  repasse e escolhe a regra vigente naquele dia.

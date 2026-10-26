@@ -50,7 +50,7 @@ const CONSULTAS = {
   painel: {
     fn: "fin_painel",
     args: z.object({ _de: data, _ate: data, _f: jsonLivre.default({}) }),
-    perm: [["financeiro.painel", "view"]],
+    perm: [["financeiro.painel", "view"], ["financeiro.fluxo_caixa", "view"]],
   },
   relatorio: {
     fn: "fin_relatorio",
@@ -86,6 +86,13 @@ const CONSULTAS = {
     perm: [],
   },
   extratos: { fn: "fin_extratos_listar", args: z.object({}), perm: [["financeiro.conciliacao", "view"]] },
+  // Junção com as matrículas pedidas por terceiros (frente a4): só leitura.
+  matriculasAReceber: { fn: "fin_matriculas_a_receber", args: z.object({}), perm: [["financeiro.contas_receber", "view"]] },
+  matriculasDoSolicitante: {
+    fn: "fin_matriculas_do_solicitante",
+    args: z.object({ _chave: texto(200).min(1) }),
+    perm: [["financeiro.contas_receber", "view"]],
+  },
   extrato: { fn: "fin_extrato_detalhe", args: z.object({ _extrato: uuid }), perm: [["financeiro.conciliacao", "view"]] },
 } satisfies Record<string, Acao>;
 

@@ -54,6 +54,10 @@ import { GavetaLancamento } from "@/components/financeiro/matriz/detalhe";
 export const Route = createFileRoute("/_authenticated/financeiro/comissoes-bancos")({
   head: () => ({ meta: [{ title: "Comissões dos bancos — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("financeiro.comissoes_bancos"),
+  // ?id= abre o detalhe (links do painel, relatórios e conciliação).
+  validateSearch: (search: Record<string, unknown>): { id?: string } => ({
+    id: typeof search.id === "string" && search.id ? search.id : undefined,
+  }),
   component: Pagina,
 });
 
@@ -85,6 +89,12 @@ function Pagina() {
 
   const [novo, setNovo] = useState(false);
   const [detalhe, setDetalhe] = useState<ComissaoBanco | null>(null);
+  const { id: abrirId } = Route.useSearch();
+  const [abertoDoLink, setAbertoDoLink] = useState<string | null>(null);
+  if (abrirId && abrirId !== abertoDoLink) {
+    setAbertoDoLink(abrirId);
+    setDetalhe({ id: abrirId } as ComissaoBanco);
+  }
   const [acao, setAcao] = useState<{ tipo: Acao; item: ComissaoBanco } | null>(null);
   const [receber, setReceber] = useState<ComissaoBanco | null>(null);
 
@@ -325,7 +335,7 @@ function Pagina() {
         onFechar={() => setDetalhe(null)}
         podeEstornar={podeReceber}
         resumo={
-          detalhe && (
+          detalhe?.situacao && (
             <div className="grid grid-cols-2 gap-2 text-sm">
               <Resumo rotulo="Previsto" valor={moeda(detalhe.previsto)} />
               <Resumo rotulo="Informado" valor={detalhe.informado != null ? moeda(detalhe.informado) : "—"} />

@@ -70,10 +70,10 @@ describe("guardas das server functions da ponte", () => {
     expect(todas.filter((f) => f.usaPonte).length).toBeGreaterThan(80);
   });
 
-  it("toda server function da ponte tem exigirPermissao com módulo saas.* ou marketing.automacoes", () => {
+  it("toda server function da ponte tem exigirPermissao com módulo saas.*, marketing.automacoes ou financeiro.repasses", () => {
     const sem = todas
       .filter((f) => f.usaPonte)
-      .filter((f) => !f.guardas.some((g) => /"(saas\.[a-z_]+|marketing\.automacoes)"/.test(g)))
+      .filter((f) => !f.guardas.some((g) => /"(saas\.[a-z_]+|marketing\.automacoes|financeiro\.repasses)"/.test(g)))
       .map((f) => `${f.arquivo} › ${f.nome}`);
     expect(sem).toEqual([]);
   });
@@ -84,6 +84,18 @@ describe("guardas das server functions da ponte", () => {
     for (const f of tec) expect(f.guardas.join()).toContain('"saas.tecnologia"');
     const aut = todas.filter((f) => f.arquivo === "social/automacoes.functions.ts" && f.usaPonte);
     for (const f of aut) expect(f.guardas.join()).toContain('"marketing.automacoes"');
+  });
+
+  it("repasses aos assinantes (financeiro da matriz): só com financeiro.repasses e a ação certa", () => {
+    const rp = todas.filter((f) => f.arquivo === "financeiro/repasses.functions.ts");
+    expect(rp.length).toBeGreaterThanOrEqual(10);
+    for (const f of rp) expect(f.guardas.join(), f.nome).toContain('"financeiro.repasses"');
+    const acao = (nome: string) => rp.find((f) => f.nome === nome)!.guardas.join();
+    expect(acao("pagarRepasse")).toContain('"pagar"');
+    expect(acao("estornarPagamentoRepasse")).toContain('"pagar"');
+    expect(acao("aprovarRepasses")).toContain('"aprovar"');
+    expect(acao("definirRegraRepasse")).toContain('"regras"');
+    expect(acao("cancelarRepasse")).toContain('"edit"');
   });
 
   it("códigos de acesso: só com operacional.codigos", () => {

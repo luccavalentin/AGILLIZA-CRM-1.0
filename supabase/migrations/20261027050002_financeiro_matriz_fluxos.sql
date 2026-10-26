@@ -86,10 +86,16 @@ declare
   v_pct numeric := 0;
   v_id uuid;
   v_par public.fin_parametros;
+  v_data date;
 begin
   select * into p from public.propostas where id = _prop_id;
   if not found or p.deleted_at is not null then return null; end if;
   perform pg_advisory_xact_lock(hashtextextended('fin_cb:' || _prop_id::text, 0));
+  -- Data do gatilho: a do registro em cartório escolhida pelo analista (contrato_registrado_em,
+  -- frente a3) quando a proposta já está registrada; senão, hoje. Lida por to_jsonb para não
+  -- depender da coluna existir no banco.
+  v_data := coalesce(case when p.status::text = 'registrado'
+                          then (to_jsonb(p) ->> 'contrato_registrado_em')::timestamptz::date end, current_date);
   select id into v_id from public.comissoes where proposta_id = _prop_id and situacao <> 'cancelado'
    order by created_at limit 1;
   if v_id is not null then return v_id; end if;
@@ -106,8 +112,8 @@ begin
      and (cr.produto is null or cr.produto = p.produto)
      and (cr.banco_nome is null or cr.banco_nome = p.nome_banco)
      and cr.faixa_min <= v_base and (cr.faixa_max is null or cr.faixa_max >= v_base)
-     and (cr.vigencia_inicio is null or cr.vigencia_inicio <= current_date)
-     and (cr.vigencia_fim is null or cr.vigencia_fim >= current_date)
+     and (cr.vigencia_inicio is null or cr.vigencia_inicio <= v_data)
+     and (cr.vigencia_fim is null or cr.vigencia_fim >= v_data)
    order by (cr.produto is not null) desc, (cr.banco_nome is not null) desc, cr.faixa_min desc, cr.created_at desc
    limit 1;
   if r.id is not null then
@@ -127,9 +133,9 @@ begin
     cliente_nome, numero_contrato, origem_calculo, origem)
   values (
     p.correspondente_id, _prop_id, p.parceiro_id, p.usuario_responsavel_id, p.nome_banco, p.produto, v_base,
-    v_pct, v_bruto, 0, v_bruto, 'a_receber', r.id, 'previsto', current_date + v_par.dias_previsao_recebimento,
+    v_pct, v_bruto, 0, v_bruto, 'a_receber', r.id, 'previsto', v_data + v_par.dias_previsao_recebimento,
     p.nome_cliente, p.numero_proposta_banco,
-    jsonb_build_object('fonte', 'regra_do_banco', 'gatilho', p.status::text, 'data_calculo', current_date,
+    jsonb_build_object('fonte', 'regra_do_banco', 'gatilho', p.status::text, 'data_calculo', current_date, 'data_gatilho', v_data,
                        'base', v_base, 'base_fonte', v_fonte, 'sem_regra', r.id is null,
                        'regra', case when r.id is null then null
                                      else to_jsonb(r) - 'created_at' - 'updated_at' end),

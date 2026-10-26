@@ -1,63 +1,7 @@
 /*
- * Financeiro da matriz (frente a5): material das insígnias no mesmo espírito dos
- * elementos 3D sutis dos portais (.b3d do Agilliza Tech) — face azul Agilliza com brilho
- * superior, borda interna clara e sombra curta. Quando o componente 3D da frente a1
- * chegar (src/components/ui/icone-3d.tsx), estas classes podem passar a usá-lo.
+ * Financeiro da matriz (frente a5). As peças 3D vêm do sistema da base (Icone3D,
+ * Indicador3D, Estado3D — docs/visual-3d.md); aqui só o que é próprio do módulo.
  */
-.fin-insignia {
-  --c1: #3a4bff;
-  --c2: #000f9f;
-  --c3: #00085c;
-  position: relative;
-  background:
-    radial-gradient(110% 80% at 28% 10%, rgb(255 255 255 / 0.28), transparent 46%),
-    linear-gradient(160deg, var(--c1), var(--c2) 60%, var(--c3));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.4),
-    inset 0 -3px 6px rgb(0 0 0 / 0.18),
-    0 0 0 0.5px rgb(0 0 0 / 0.06),
-    0 6px 14px -6px rgb(0 15 159 / 0.55);
-}
-.fin-insignia > svg {
-  filter: drop-shadow(0 0.5px 0.5px rgb(0 0 0 / 0.3));
-}
-
-.fin-metrica-brilho {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 3.5rem;
-  pointer-events: none;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--fin-tom) 9%, transparent), transparent);
-}
-.fin-metrica::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.9rem;
-  bottom: 0.9rem;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--fin-tom);
-  opacity: 0.85;
-}
-.fin-metrica-icone {
-  color: var(--fin-tom);
-  background:
-    radial-gradient(110% 80% at 30% 10%, rgb(255 255 255 / 0.5), transparent 50%),
-    color-mix(in oklab, var(--fin-tom) 14%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.45),
-    0 1px 2px rgb(15 23 42 / 0.08);
-}
-
-.fin-vazio-icone {
-  color: var(--primary);
-  background:
-    radial-gradient(110% 80% at 30% 10%, rgb(255 255 255 / 0.6), transparent 50%),
-    color-mix(in oklab, var(--primary) 12%, transparent);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), 0 4px 10px -6px rgb(0 15 159 / 0.4);
-}
-
 /* Barra empilhada previsto x realizado (fluxo e painel) */
 .fin-barra {
   height: 0.5rem;
@@ -71,8 +15,3 @@
   border-radius: 999px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .fin-metrica {
-    transition: none !important;
-  }
-}

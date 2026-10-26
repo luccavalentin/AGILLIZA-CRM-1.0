@@ -715,7 +715,9 @@ end $$;
 create or replace function public.fin_painel(_de date, _ate date, _f jsonb default '{}'::jsonb)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
 declare
-  v_corr uuid := public.fin_exigir('financeiro.painel', 'view');
+  -- painel ou fluxo de caixa (a tela de fluxo usa o mesmo cálculo)
+  v_corr uuid := case when public.fin_pode('financeiro.fluxo_caixa', 'view') then public.fin_exigir('financeiro.fluxo_caixa', 'view')
+                      else public.fin_exigir('financeiro.painel', 'view') end;
   v_banco text := nullif(_f ->> 'banco', '');
   v_prod text := nullif(_f ->> 'produto', '');
   v_prop uuid := nullif(_f ->> 'proposta_id', '')::uuid;
@@ -961,6 +963,53 @@ begin
 end $$;
 
 -- -----------------------------------------------------------------------------
+-- 4. Ponto de junção com as matrículas pedidas por terceiros (frente a4, C45f)
+--    A a4 expõe public.matriculas_a_receber (por solicitante) e o detalhe em
+--    public.matricula_solicitacoes (status 'concluida'; reembolsado = pago). O financeiro
+--    só LÊ: o pagamento continua sendo registrado na tela de Matrículas (não há conta a
+--    receber paralela, para não contar a mesma receita duas vezes). Sem a migração da a4
+--    no banco, devolve disponivel = false.
+-- -----------------------------------------------------------------------------
+create or replace function public.fin_matriculas_a_receber()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  v_corr uuid := public.fin_exigir('financeiro.contas_receber', 'view');
+  v_res jsonb;
+begin
+  if to_regclass('public.matriculas_a_receber') is null then
+    return jsonb_build_object('disponivel', false, 'solicitantes', '[]'::jsonb,
+                              'totais', jsonb_build_object('em_aberto', 0, 'pago', 0, 'matriculas_em_aberto', 0));
+  end if;
+  execute $q$
+    select jsonb_build_object(
+      'disponivel', true,
+      'solicitantes', coalesce((select jsonb_agg(to_jsonb(m) order by m.valor_em_aberto desc, m.solicitante_nome)
+                                  from public.matriculas_a_receber m where m.correspondente_id = $1), '[]'::jsonb),
+      'totais', (select jsonb_build_object('em_aberto', coalesce(sum(valor_em_aberto), 0), 'pago', coalesce(sum(valor_pago), 0),
+                                           'matriculas_em_aberto', coalesce(sum(matriculas_em_aberto), 0))
+                   from public.matriculas_a_receber m where m.correspondente_id = $1))
+  $q$ into v_res using v_corr;
+  return v_res;
+end $$;
+
+create or replace function public.fin_matriculas_do_solicitante(_chave text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  v_corr uuid := public.fin_exigir('financeiro.contas_receber', 'view');
+  v_res jsonb;
+begin
+  if to_regclass('public.matriculas_a_receber') is null then return '[]'::jsonb; end if;
+  execute $q$
+    select coalesce(jsonb_agg(to_jsonb(s) - 'arquivo_path' order by s.reembolsado, s.concluida_em desc nulls last), '[]'::jsonb)
+      from public.matricula_solicitacoes s
+     where s.correspondente_id = $1 and s.status = 'concluida'
+       and coalesce(s.solicitante_conta_id::text, s.solicitante_user_id::text,
+                    'nome:' || lower(btrim(coalesce(nullif(btrim(s.corretor), ''), s.solicitante)))) = $2
+  $q$ into v_res using v_corr, _chave;
+  return v_res;
+end $$;
+
+-- -----------------------------------------------------------------------------
 -- Execução
 -- -----------------------------------------------------------------------------
 do $$
@@ -972,7 +1021,8 @@ begin
     'public.fin_rejeitar_sugestao(uuid, text, uuid)', 'public.fin_ignorar_linha(uuid, text, boolean)', 'public.fin_extratos_listar()',
     'public.fin_extrato_detalhe(uuid)', 'public.fin_cb_listar(jsonb)', 'public.fin_cu_listar(jsonb)', 'public.fin_contas_listar(text, jsonb)',
     'public.fin_lancamento_detalhe(text, uuid)', 'public.fin_auditoria_listar(jsonb)', 'public.fin_cadastros()',
-    'public.fin_demonstrativo(uuid, date, date)', 'public.fin_painel(date, date, jsonb)', 'public.fin_relatorio(text, date, date, jsonb)']
+    'public.fin_demonstrativo(uuid, date, date)', 'public.fin_painel(date, date, jsonb)', 'public.fin_relatorio(text, date, date, jsonb)',
+    'public.fin_matriculas_a_receber()', 'public.fin_matriculas_do_solicitante(text)']
   loop
     execute format('revoke all on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated', f);
