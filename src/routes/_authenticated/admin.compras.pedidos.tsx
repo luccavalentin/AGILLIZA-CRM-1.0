@@ -5,32 +5,35 @@ import { useState, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ShoppingCart, Plus, Search, Pencil } from "lucide-react";
+import {
+  CheckCircle2,
+  Hourglass,
+  PackageSearch,
+  Pencil,
+  Plus,
+  Search,
+  ShoppingCart,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { Indicador3D } from "@/components/ui/indicador-3d";
+import { Estado3D } from "@/components/ui/estado-3d";
+import { AbasSituacao, CartaoPedido, SubNavCompras, brl } from "@/components/compras/compras-ui";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { getMinhaSessao } from "@/lib/session.functions";
+import { lerValor, resumoCompras } from "@/lib/admin/compras-regras";
 import {
   listarCompras,
   criarCompra,
@@ -40,389 +43,319 @@ import {
 } from "@/lib/admin/compras.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/compras/pedidos")({
-  head: () => ({ meta: [{ title: "Pedidos de Compras — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Pedidos de compras — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("admin.compras.pedidos", ["admin.compras"]),
   component: Pagina,
 });
 
-const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-const STATUS_LABEL: Record<string, string> = {
-  pendente: "Pendente",
-  aprovada: "Aprovada",
-  recusada: "Recusada",
-};
-
-function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
-  if (s === "aprovada") return "default";
-  if (s === "recusada") return "destructive";
-  return "secondary";
-}
+type Filtro = "todos" | "pendente" | "aprovada" | "recusada";
 
 /**
- * Valor digitado → número. "1.500,50" (pt-BR) e "1500.5" (o valor vindo do banco,
- * na edição) dão o mesmo; texto que não é número dá NaN — e o botão não envia.
+ * Diversos > Pedidos de compras (C67, 26/10/2026): quem pede vê os SEUS pedidos em
+ * cartões (valor, situação, histórico com quem decidiu e o motivo), envia um pedido novo
+ * e edita/exclui só enquanto está aguardando.
  */
-function lerValor(v: string): number {
-  const t = v.trim();
-  if (!t) return NaN;
-  const normal = t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t;
-  return /^\d+(\.\d+)?$/.test(normal) ? Number(normal) : NaN;
-}
-
 function Pagina() {
   const qc = useQueryClient();
-  const [aberto, setAberto] = useState(false);
-  const [descricao, setDescricao] = useState("");
-  const [valor, setValor] = useState("");
-  const [categoria, setCategoria] = useState("");
-  const [justificativa, setJustificativa] = useState("");
+  const [formulario, setFormulario] = useState<CompraLinha | "novo" | null>(null);
   const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState<"todos" | "pendente" | "aprovada" | "recusada">(
-    "todos",
-  );
+  const [filtro, setFiltro] = useState<Filtro>("todos");
 
   const sessao = useQuery({ queryKey: ["minha-sessao"], queryFn: () => getMinhaSessao() });
   const meuId = sessao.data?.profile?.id ?? null;
-  // Editar/excluir exigem "Pedidos de compra: editar" no servidor.
+  // Mesmas alternativas do servidor (criarCompra): o módulo novo ou o legado.
+  const podeCriarPedidos = usePermissao("admin.compras.pedidos", "create");
+  const podeCriarLegado = usePermissao("admin.compras", "create");
+  const podeCriar = podeCriarPedidos || podeCriarLegado;
   const podeEditar = usePermissao("admin.compras.pedidos", "edit");
 
   const q = useQuery({ queryKey: ["admin-compras"], queryFn: () => listarCompras() });
-
-  const meusPedidos = useMemo(() => {
-    const lista = q.data ?? [];
-    return lista
-      .filter((c) => (meuId ? c.solicitante_id === meuId : true))
-      .filter((c) => filtroStatus === "todos" || c.status === filtroStatus)
+  const meus = useMemo(
+    () => (q.data ?? []).filter((c) => (meuId ? c.solicitante_id === meuId : false)),
+    [q.data, meuId],
+  );
+  const resumo = useMemo(() => resumoCompras(meus), [meus]);
+  const lista = useMemo(() => {
+    const t = busca.trim().toLowerCase();
+    return meus
+      .filter((c) => filtro === "todos" || c.status === filtro)
       .filter((c) =>
-        busca.trim() === ""
-          ? true
-          : `${c.descricao} ${c.categoria ?? ""} ${c.numero ?? ""}`
-              .toLowerCase()
-              .includes(busca.toLowerCase()),
+        t
+          ? `${c.descricao} ${c.categoria ?? ""} ${c.numero ?? ""}`.toLowerCase().includes(t)
+          : true,
       );
-  }, [q.data, meuId, filtroStatus, busca]);
+  }, [meus, filtro, busca]);
 
-  const kpis = useMemo(() => {
-    const meus = (q.data ?? []).filter((c) => (meuId ? c.solicitante_id === meuId : false));
-    return {
-      total: meus.length,
-      pendentes: meus.filter((c) => c.status === "pendente").length,
-      aprovadas: meus.filter((c) => c.status === "aprovada").length,
-      recusadas: meus.filter((c) => c.status === "recusada").length,
-    };
-  }, [q.data, meuId]);
-
-  const criar = useMutation({
-    mutationFn: () =>
-      criarCompra({
-        data: {
-          descricao: justificativa.trim() ? `${descricao} — ${justificativa.trim()}` : descricao,
-          valor: lerValor(valor),
-          categoria: categoria || null,
-        },
-      }),
-    onSuccess: () => {
-      toast.success("Pedido enviado para aprovação.");
-      setAberto(false);
-      setDescricao("");
-      setValor("");
-      setCategoria("");
-      setJustificativa("");
-      qc.invalidateQueries({ queryKey: ["admin-compras"] });
-    },
-    onError: (e) => toast.error(mensagemDeErro(e, "Falha ao registrar.")),
-  });
+  const recarregar = () => qc.invalidateQueries({ queryKey: ["admin-compras"] });
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[1400px] space-y-5 p-3 sm:p-4 md:space-y-6 md:p-6">
       <AdminHero
+        secao="Diversos"
         icon={<ShoppingCart className="h-5 w-5" />}
-        titulo="Pedidos de Compras"
-        descricao="Envie solicitações de compra e acompanhe o status da aprovação pela gestão."
+        titulo="Pedidos de compras"
+        descricao="Peça o que a operação precisa e acompanhe a decisão da gestão, com o motivo e quem decidiu."
         acoes={
-          <Dialog open={aberto} onOpenChange={setAberto}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 size-4" /> Novo pedido
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Novo pedido de compra</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="c-desc">O que precisa ser comprado?</Label>
-                  <Input
-                    id="c-desc"
-                    value={descricao}
-                    onChange={(e) => setDescricao(e.target.value)}
-                    placeholder="Ex.: Cadeiras ergonômicas para o escritório"
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="c-valor">Valor estimado (R$)</Label>
-                    <Input
-                      id="c-valor"
-                      inputMode="decimal"
-                      value={valor}
-                      onChange={(e) => setValor(e.target.value)}
-                      placeholder="0,00"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="c-cat">Categoria</Label>
-                    <Input
-                      id="c-cat"
-                      value={categoria}
-                      onChange={(e) => setCategoria(e.target.value)}
-                      placeholder="Ex.: Mobiliário, TI, Marketing"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="c-just">Justificativa (opcional)</Label>
-                  <Textarea
-                    id="c-just"
-                    rows={3}
-                    value={justificativa}
-                    onChange={(e) => setJustificativa(e.target.value)}
-                    placeholder="Explique por que essa compra é necessária."
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  onClick={() => criar.mutate()}
-                  disabled={
-                    criar.isPending || descricao.trim().length < 3 || !(lerValor(valor) > 0)
-                  }
-                >
-                  {criar.isPending ? "Enviando…" : "Enviar para aprovação"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          podeCriar && (
+            <Button onClick={() => setFormulario("novo")}>
+              <Plus className="mr-1.5 size-4" /> Novo pedido
+            </Button>
+          )
         }
       />
+      <SubNavCompras />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label="Meus pedidos" value={kpis.total} />
-        <KpiCard label="Pendentes" value={kpis.pendentes} tone="secondary" />
-        <KpiCard label="Aprovadas" value={kpis.aprovadas} tone="default" />
-        <KpiCard label="Recusadas" value={kpis.recusadas} tone="destructive" />
+        <Indicador3D
+          icone={ShoppingCart}
+          rotulo="Meus pedidos"
+          valor={resumo.total}
+          detalhe="no total"
+          carregando={q.isLoading}
+          onClick={() => setFiltro("todos")}
+        />
+        <Indicador3D
+          icone={Hourglass}
+          tom="alerta"
+          rotulo="Aguardando"
+          valor={resumo.pendentes}
+          detalhe={brl(resumo.valorPendente)}
+          carregando={q.isLoading}
+          onClick={() => setFiltro("pendente")}
+        />
+        <Indicador3D
+          icone={CheckCircle2}
+          tom="sucesso"
+          rotulo="Aprovados"
+          valor={resumo.aprovadas}
+          detalhe={brl(resumo.valorAprovado)}
+          carregando={q.isLoading}
+          onClick={() => setFiltro("aprovada")}
+        />
+        <Indicador3D
+          icone={XCircle}
+          tom="perigo"
+          rotulo="Recusados"
+          valor={resumo.recusadas}
+          detalhe="com o motivo no histórico"
+          carregando={q.isLoading}
+          onClick={() => setFiltro("recusada")}
+        />
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-sm">
+        <AbasSituacao
+          valor={filtro}
+          aoMudar={setFiltro}
+          opcoes={[
+            { id: "todos", texto: "Todos", n: resumo.total },
+            { id: "pendente", texto: "Aguardando", n: resumo.pendentes },
+            { id: "aprovada", texto: "Aprovados", n: resumo.aprovadas },
+            { id: "recusada", texto: "Recusados", n: resumo.recusadas },
+          ]}
+        />
+        <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por descrição, categoria ou nº…"
+            placeholder="Buscar descrição, categoria ou nº"
+            aria-label="Buscar pedidos"
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {(["todos", "pendente", "aprovada", "recusada"] as const).map((s) => (
-            <Button
-              key={s}
-              variant={filtroStatus === s ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFiltroStatus(s)}
-            >
-              {s === "todos" ? "Todos" : s.charAt(0).toUpperCase() + s.slice(1)}
+      </div>
+
+      {q.isError ? (
+        <Estado3D
+          tipo="erro"
+          titulo="Não foi possível carregar os pedidos"
+          descricao={mensagemDeErro(q.error, "Tente de novo em instantes.")}
+          acao={
+            <Button variant="outline" size="sm" onClick={() => q.refetch()}>
+              Tentar de novo
             </Button>
+          }
+        />
+      ) : q.isLoading ? (
+        <Estado3D tipo="carregando" titulo="Carregando seus pedidos" compacto />
+      ) : lista.length === 0 ? (
+        <Estado3D
+          icone={PackageSearch}
+          titulo={
+            meus.length ? "Nenhum pedido neste filtro" : "Você ainda não fez pedidos de compra"
+          }
+          descricao={
+            meus.length
+              ? "Mude a situação ou limpe a busca."
+              : "Descreva o que precisa, o valor estimado e a justificativa: a gestão aprova ou recusa com o motivo."
+          }
+          acao={
+            !meus.length && podeCriar ? (
+              <Button onClick={() => setFormulario("novo")}>
+                <Plus className="mr-1.5 size-4" /> Fazer o primeiro pedido
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <div className="compra-lista">
+          {lista.map((c) => (
+            <CartaoPedido
+              key={c.id}
+              pedido={c}
+              acoes={
+                podeEditar && c.status === "pendente" ? (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setFormulario(c)}>
+                      <Pencil className="mr-1.5 size-3.5" /> Editar
+                    </Button>
+                    <ConfirmDelete
+                      descricao={`Excluir o pedido “${c.descricao}”? Essa ação não pode ser desfeita.`}
+                      onConfirm={async () => {
+                        try {
+                          await excluirCompra({ data: { id: c.id } });
+                          toast.success("Pedido excluído.");
+                          recarregar();
+                        } catch (e) {
+                          toast.error(mensagemDeErro(e, "Não foi possível excluir o pedido."));
+                        }
+                      }}
+                    />
+                  </>
+                ) : undefined
+              }
+            />
           ))}
         </div>
-      </div>
+      )}
 
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <Table className="min-w-[720px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nº</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Enviado em</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {q.isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7}>
-                  <Skeleton className="h-5 w-full" />
-                </TableCell>
-              </TableRow>
-            ) : meusPedidos.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                  Nenhum pedido encontrado. Clique em “Novo pedido” para começar.
-                </TableCell>
-              </TableRow>
-            ) : (
-              meusPedidos.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="tabular-nums text-muted-foreground">
-                    {c.numero ?? "—"}
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">{c.descricao}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.categoria ?? "—"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{brl(c.valor)}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant(c.status)}>
-                      {STATUS_LABEL[c.status] ?? c.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(c.created_at).toLocaleDateString("pt-BR", {
-                      timeZone: "America/Sao_Paulo",
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      {podeEditar && (
-                        <EditarPedidoDialog
-                          pedido={c}
-                          onSalvo={() => qc.invalidateQueries({ queryKey: ["admin-compras"] })}
-                        />
-                      )}
-                      {/* Só pedido pendente sai (o servidor recusa os decididos). */}
-                      {podeEditar && c.status === "pendente" && (
-                        <ConfirmDelete
-                          descricao={`Excluir o pedido “${c.descricao}”? Essa ação não pode ser desfeita.`}
-                          onConfirm={async () => {
-                            try {
-                              await excluirCompra({ data: { id: c.id } });
-                              toast.success("Pedido excluído.");
-                              qc.invalidateQueries({ queryKey: ["admin-compras"] });
-                            } catch (e) {
-                              // O diálogo não mostra o erro sozinho.
-                              toast.error(mensagemDeErro(e, "Não foi possível excluir o pedido."));
-                            }
-                          }}
-                        />
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <FormularioPedido
+        alvo={formulario}
+        onFechar={() => setFormulario(null)}
+        onSalvo={() => {
+          setFormulario(null);
+          recarregar();
+        }}
+      />
     </div>
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  tone = "outline",
+/** Pedido novo ou edição de um pendente (o servidor recusa editar o que já foi decidido). */
+function FormularioPedido({
+  alvo,
+  onFechar,
+  onSalvo,
 }: {
-  label: string;
-  value: number;
-  tone?: "default" | "secondary" | "destructive" | "outline";
+  alvo: CompraLinha | "novo" | null;
+  onFechar: () => void;
+  onSalvo: () => void;
 }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-1 flex items-baseline gap-2">
-        <p className="text-2xl font-semibold tabular-nums">{value}</p>
-        <Badge variant={tone} className="text-[10px]">
-          {label}
-        </Badge>
-      </div>
-    </div>
-  );
-}
-
-function EditarPedidoDialog({ pedido, onSalvo }: { pedido: CompraLinha; onSalvo: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [descricao, setDescricao] = useState(pedido.descricao);
-  const [categoria, setCategoria] = useState(pedido.categoria ?? "");
-  const [valor, setValor] = useState(String(pedido.valor));
-  const [salvando, setSalvando] = useState(false);
-  const pendente = pedido.status === "pendente";
-
-  async function salvar() {
-    setSalvando(true);
-    try {
-      await editarCompra({
-        data: {
-          id: pedido.id,
-          descricao: descricao.trim(),
-          valor: lerValor(valor),
-          categoria: categoria.trim() || null,
-        },
-      });
-      toast.success("Pedido atualizado.");
-      setOpen(false);
-      onSalvo();
-    } catch (e) {
-      toast.error(mensagemDeErro(e, "Não foi possível salvar o pedido."));
-    } finally {
-      setSalvando(false);
-    }
+  const editando = alvo && alvo !== "novo" ? alvo : null;
+  const [descricao, setDescricao] = useState("");
+  const [valor, setValor] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [justificativa, setJustificativa] = useState("");
+  const [aberto, setAberto] = useState<string | null>(null);
+  const chave = alvo === null ? null : alvo === "novo" ? "novo" : alvo.id;
+  if (chave !== aberto) {
+    // Abriu outro alvo: carrega os campos uma vez (sem efeito, sem piscar).
+    setAberto(chave);
+    setDescricao(editando?.descricao ?? "");
+    setValor(editando ? String(editando.valor).replace(".", ",") : "");
+    setCategoria(editando?.categoria ?? "");
+    setJustificativa("");
   }
+  const numero = lerValor(valor);
+  const valido = descricao.trim().length >= 3 && numero > 0;
+
+  const salvar = useMutation({
+    mutationFn: () => {
+      const texto =
+        !editando && justificativa.trim()
+          ? `${descricao.trim()} — ${justificativa.trim()}`
+          : descricao.trim();
+      const dados = { descricao: texto, valor: numero, categoria: categoria.trim() || null };
+      return editando
+        ? editarCompra({ data: { id: editando.id, ...dados } })
+        : criarCompra({ data: dados });
+    },
+    onSuccess: () => {
+      toast.success(editando ? "Pedido atualizado." : "Pedido enviado para aprovação.");
+      onSalvo();
+    },
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível salvar o pedido.")),
+  });
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (o) {
-          setDescricao(pedido.descricao);
-          setCategoria(pedido.categoria ?? "");
-          setValor(String(pedido.valor));
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          title={pendente ? "Editar pedido" : "Somente pedidos pendentes podem ser editados"}
-          disabled={!pendente}
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-md">
-        <DialogHeader>
-          <DialogTitle>Editar pedido</DialogTitle>
+    <Dialog open={alvo !== null} onOpenChange={(o) => !o && onFechar()}>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-lg">
+        <DialogHeader className="dialogo-cabecalho">
+          <DialogTitle>{editando ? "Editar pedido" : "Novo pedido de compra"}</DialogTitle>
+          <DialogDescription>
+            {editando
+              ? "Só pedidos aguardando aprovação podem mudar."
+              : "Vai para a Aprovação de compras; você acompanha a decisão aqui."}
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>Descrição</Label>
-            <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} />
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="c-desc">O que precisa ser comprado?</Label>
+            <Textarea
+              id="c-desc"
+              rows={2}
+              maxLength={500}
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Ex.: 4 cadeiras ergonômicas para a sala de atendimento"
+            />
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label>Categoria</Label>
-              <Input value={categoria} onChange={(e) => setCategoria(e.target.value)} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
+            <div className="space-y-1.5">
+              <Label htmlFor="c-valor">Valor estimado (R$)</Label>
+              <Input
+                id="c-valor"
+                inputMode="decimal"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                placeholder="0,00"
+                aria-invalid={valor.trim() !== "" && !(numero > 0)}
+              />
+              {valor.trim() !== "" && !(numero > 0) && (
+                <p className="text-xs text-destructive">Use só números, ex.: 1.250,00</p>
+              )}
             </div>
-            <div className="space-y-1">
-              <Label>Valor</Label>
-              <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label htmlFor="c-cat">Categoria</Label>
+              <Input
+                id="c-cat"
+                maxLength={60}
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                placeholder="Ex.: Mobiliário, TI, Marketing"
+              />
             </div>
           </div>
+          {!editando && (
+            <div className="space-y-1.5">
+              <Label htmlFor="c-just">Justificativa (opcional)</Label>
+              <Textarea
+                id="c-just"
+                rows={3}
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                placeholder="Por que essa compra é necessária agora?"
+              />
+            </div>
+          )}
         </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>
+        <DialogFooter className="dialogo-rodape">
+          <Button variant="outline" onClick={onFechar}>
             Cancelar
           </Button>
-          <Button
-            onClick={salvar}
-            disabled={salvando || descricao.trim().length < 3 || !(lerValor(valor) > 0)}
-          >
-            {salvando ? "Salvando…" : "Salvar"}
+          <Button onClick={() => salvar.mutate()} disabled={salvar.isPending || !valido}>
+            {salvar.isPending ? "Salvando…" : editando ? "Salvar" : "Enviar para aprovação"}
           </Button>
         </DialogFooter>
       </DialogContent>

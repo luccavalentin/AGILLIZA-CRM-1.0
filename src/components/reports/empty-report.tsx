@@ -1,23 +1,21 @@
 import { FileSearch } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Estado3D } from "@/components/ui/estado-3d";
 
-/** Estado vazio de relatório com sugestão de ampliar o período. */
+/** Estado vazio de relatório com sugestão de ampliar o período (ícone 3D, C00). */
 export function EmptyReport({ onAmpliar }: { onAmpliar?: () => void }) {
   return (
-    <Card className="flex flex-col items-center justify-center gap-3 p-12 text-center">
-      <FileSearch className="h-10 w-10 text-muted-foreground" />
-      <div>
-        <p className="text-sm font-medium text-foreground">Nenhum dado para os filtros atuais</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tente ampliar o período ou remover filtros para ver mais resultados.
-        </p>
-      </div>
-      {onAmpliar && (
-        <Button variant="outline" size="sm" onClick={onAmpliar}>
-          Ampliar para este ano
-        </Button>
-      )}
-    </Card>
+    <Estado3D
+      icone={FileSearch}
+      titulo="Nenhum dado para os filtros atuais"
+      descricao="Tente ampliar o período ou remover filtros para ver mais resultados."
+      acao={
+        onAmpliar && (
+          <Button variant="outline" size="sm" onClick={onAmpliar}>
+            Ampliar para este ano
+          </Button>
+        )
+      }
+    />
   );
 }
