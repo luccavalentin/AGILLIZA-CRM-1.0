@@ -25,7 +25,7 @@ import { DocumentosTab } from "@/components/crm/documentos-tab";
 import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { AtividadesClienteTab } from "@/components/crm/atividades-cliente-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
-import { ChatClienteInstagram } from "@/components/crm/chat-cliente-instagram";
+import { ChatAgilliza } from "@/components/chat/chat-agilliza";
 import { SimulacaoPreviewDialog } from "@/components/simulacao/simulacao-preview-dialog";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
@@ -289,23 +289,8 @@ function Pagina() {
             <AppClienteAcesso clienteId={id} ativo={Boolean((c as any)?.portal_acesso_ativo)} />
           )}
           <div className="h-[68dvh] max-h-[680px] min-h-[420px]">
-            <ChatClienteInstagram
-              clienteId={id}
-              info={{
-                nome: c.nome,
-                documento: docExib,
-                email: c.email,
-                celular: c.telefone_celular ? formatarCelular(c.telefone_celular) : null,
-                contexto: (() => {
-                  const nSim = negocios?.simulacoes.length ?? 0;
-                  const nProp = negocios?.propostas.length ?? 0;
-                  const partes: string[] = [];
-                  if (nProp > 0) partes.push(`${nProp} proposta${nProp > 1 ? "s" : ""}`);
-                  if (nSim > 0) partes.push(`${nSim} simulação${nSim > 1 ? "ões" : ""}`);
-                  return partes.join(" · ") || null;
-                })(),
-              }}
-            />
+            {/* Chat universal (t1, C14): a conversa com o cliente no mesmo chat do correspondente. */}
+            <ChatAgilliza canal="equipe" clienteAgillizaId={id} embutido />
           </div>
         </TabsContent>
 

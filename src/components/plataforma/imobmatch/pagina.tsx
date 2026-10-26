@@ -8,6 +8,7 @@ import { usePermissao, usePermissoesCarregadas } from "@/hooks/use-permissao";
 import { cn } from "@/lib/utils";
 import { lerResumoImobMatch } from "@/lib/plataforma/imobmatch.functions";
 import { AbaAnunciantes } from "./aba-anunciantes";
+import { AbaChat } from "./aba-chat";
 import { AbaComunidade } from "./aba-comunidade";
 import { AbaDenuncias } from "./aba-denuncias";
 import { AbaModerados } from "./aba-moderados";
@@ -35,6 +36,8 @@ export const ABAS_IMOBMATCH = [
   "revisao",
   "denuncias",
   "comunidade",
+  // Moderação do chat universal (t1, 0352).
+  "chat",
   "moderados",
   "profissionais",
   "anunciantes",
@@ -47,6 +50,7 @@ const ROTULO_IMOBMATCH: Record<AbaImobMatch, string> = {
   revisao: "Anúncios em revisão",
   denuncias: "Denúncias",
   comunidade: "Comunidade",
+  chat: "Chat",
   moderados: "Moderados",
   profissionais: "Profissionais (CRECI)",
   anunciantes: "Anunciantes",
@@ -229,6 +233,9 @@ export function GestaoParceirosAnuncios({
             </TabsContent>
             <TabsContent value="comunidade" className="mt-4">
               <AbaComunidade />
+            </TabsContent>
+            <TabsContent value="chat" className="mt-4">
+              <AbaChat />
             </TabsContent>
             <TabsContent value="moderados" className="mt-4">
               <AbaModerados />

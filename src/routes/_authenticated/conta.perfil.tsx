@@ -15,6 +15,7 @@ import { getMinhaSessao, atualizarMeuPerfil, atualizarMeuEmail } from "@/lib/ses
 import { supabase } from "@/integrations/supabase/client";
 import { ContaCabecalho, SecaoConta } from "@/components/conta/conta-cabecalho";
 import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
+import { CartaoMeuArroba } from "@/components/chat/cartao-meu-arroba";
 import { otimizarImagem } from "@/lib/imagem";
 
 // URL assinada de longa duração para exibir a foto do bucket privado.
@@ -311,6 +312,8 @@ function Pagina() {
           </div>
         </Secao>
 
+        {/* O @ único do ecossistema (t1, C01/C02): ver e trocar. */}
+        <CartaoMeuArroba canal="equipe" />
         <ChatSoundSetting />
       </div>
 

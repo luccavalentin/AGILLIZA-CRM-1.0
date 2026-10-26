@@ -1,0 +1,29 @@
+/*
+ * Chat universal hospedado no Agilliza (correspondente e portal do cliente): a mesma tela do
+ * Agilliza Tech, com a altura ajustada ao cabeçalho do Agilliza (barra de 64 px + respiro
+ * do conteúdo) e à barra de baixo do celular.
+ */
+.cu-host-agilliza.ec-tela {
+  --ec-altura: calc(100dvh - 4rem - 3rem);
+}
+@media (max-width: 1023px) {
+  .cu-host-agilliza.ec-tela {
+    --ec-altura: calc(100dvh - 4rem - 2rem);
+  }
+}
+@media (max-width: 767px) {
+  .cu-host-agilliza.ec-tela,
+  .cu-host-cliente.ec-tela {
+    --ec-altura: calc(100dvh - 4rem - 1.5rem);
+  }
+}
+.cu-host-cliente.ec-tela {
+  --ec-altura: calc(100dvh - 4rem - 4rem);
+}
+
+/* Dentro da ficha do cliente: a altura é a da caixa da aba. */
+.cu-host-embutido.ec-tela,
+.cu-host-embutido.ec-tela.ec-tela-aberta {
+  --ec-altura: 100%;
+  min-height: 420px;
+}

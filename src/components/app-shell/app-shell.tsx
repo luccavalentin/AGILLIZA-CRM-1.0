@@ -8,7 +8,7 @@ import { Logo } from "@/components/brand/Logo";
 import symbolLight from "@/assets/brand/agilliza-symbol-oficial-light.png";
 import { SidebarNav, SidebarRail } from "./sidebar-nav";
 import { Topbar, type ShellUser } from "./topbar";
-import { ChatAlertWatcher } from "@/components/shared/chat-alert-watcher";
+import { AvisoChatUniversalEquipe } from "@/components/chat/aviso-chat-equipe";
 import type { NavGroup } from "./nav-config";
 
 // A conversa flutuante arrasta toda a feature de chat do CRM. Carregada de
@@ -73,7 +73,8 @@ export function AppShell({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <ChatAlertWatcher meuId={user.id} />
+      {/* Chat universal (t1, T02): aviso flutuante de mensagem em todas as telas, menos no chat. */}
+      <AvisoChatUniversalEquipe />
       <a
         href="#conteudo-principal"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"

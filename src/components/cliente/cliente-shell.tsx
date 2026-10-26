@@ -33,13 +33,12 @@ import {
 import { ThemeToggle } from "@/components/app-shell/theme-toggle";
 import {
   clienteListarNotificacoes,
-  clienteListarAtendentes,
   clienteMarcarNotificacaoLida,
   type NotificacaoCliente,
 } from "@/lib/portal/cliente.functions";
-import { pollingPortal, POLL_ATENDENTES_MS } from "@/lib/portal/polling";
-import { ClienteChatWatcher } from "@/components/cliente/cliente-chat-watcher";
-import { ClienteChatFlutuante } from "@/components/cliente/cliente-chat-flutuante";
+import { pollingPortal } from "@/lib/portal/polling";
+import { AvisoChatAgilliza } from "@/components/chat/aviso-chat-agilliza";
+import { useContadorChat } from "@/components/chat-universal/contador";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "agilliza-cliente-sidebar-collapsed";
@@ -137,15 +136,9 @@ function BarraInferior() {
   );
 }
 
-/** Conta mensagens da equipe ainda não lidas pelo cliente (todas as threads). */
+/** Conversas não lidas e pedidos de mensagem do chat universal (publicado pelo aviso flutuante). */
 function useChatNaoLidas() {
-  const { data } = useQuery({
-    queryKey: ["cliente", "atendentes"],
-    queryFn: async () => { const r = await clienteListarAtendentes(); return Array.isArray(r) ? r : []; },
-    ...pollingPortal(POLL_ATENDENTES_MS),
-  });
-  // Sessão vencida devolve outra coisa que não a lista: sem isto o portal inteiro caía.
-  return (Array.isArray(data) ? data : []).reduce((acc, a) => acc + (a.nao_lidas ?? 0), 0);
+  return useContadorChat();
 }
 
 export interface ClienteShellUser {
@@ -374,7 +367,6 @@ export function ClienteShell({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <ClienteChatWatcher />
       <div className="flex min-h-[100dvh] w-full bg-muted/40">
         {/* Sidebar desktop */}
         <aside
@@ -515,7 +507,8 @@ export function ClienteShell({
           <BarraInferior />
         </div>
       </div>
-      <ClienteChatFlutuante />
+      {/* Chat universal (t1, T02): aviso flutuante de mensagem, menos na tela do chat. */}
+      <AvisoChatAgilliza canal="cliente" rotaChat="/cliente/chat" />
     </TooltipProvider>
   );
 }

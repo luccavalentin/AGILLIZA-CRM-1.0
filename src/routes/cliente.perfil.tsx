@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
+import { CartaoMeuArroba } from "@/components/chat/cartao-meu-arroba";
 import { CabecalhoPagina } from "@/components/cliente/cabecalho-pagina";
 
 export const Route = createFileRoute("/cliente/perfil")({
@@ -104,6 +105,8 @@ function Perfil() {
         </CardContent>
       </Card>
 
+      {/* O @ único do ecossistema (t1, C01/C02): ver e trocar. */}
+      <CartaoMeuArroba canal="cliente" />
       <ChatSoundSetting />
 
       {/* LGPD mudou para a tela própria (C15): consentimento, baixar dados e pedidos. */}

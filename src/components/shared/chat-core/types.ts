@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import type { ChatMensagem } from "@/lib/crm/chat-cliente.functions";
+import type { ChatMensagem } from "./mensagem";
 import type { ContextoResposta } from "@/lib/crm/respostas-rapidas";
-import type { ChatClienteInfo } from "@/components/crm/chat-cliente/utils";
+import type { ChatClienteInfo } from "./pecas/utils";
 import type { ChatOrigem } from "@/lib/chat-core/reacoes.functions";
 
 export type { ChatMensagem, ChatClienteInfo, ContextoResposta, ChatOrigem };
