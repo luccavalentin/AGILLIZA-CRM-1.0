@@ -1,18 +1,21 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PortalBadge } from "@/components/crm/tone-badge";
 import { estadoCivilCrmParaCodigo, regimeCasamentoCrmParaCodigo } from "@/lib/propostas/dominios";
 import { iniciaisDoNome } from "@/components/shared/iniciais";
+import { AppClienteAcesso } from "./app-cliente-acesso";
 
 export function ClienteHeader({
   cliente: c,
   docExib,
   celularExib,
+  podeEditar,
 }: {
   cliente: any;
   docExib: string;
   celularExib: string | null;
+  /** "Editar" em Clientes: liga e desliga o app do cliente (o servidor confere de novo). */
+  podeEditar: boolean;
 }) {
   const navigate = useNavigate();
   const iniciais = iniciaisDoNome(c.nome);
@@ -29,12 +32,9 @@ export function ClienteHeader({
             {iniciais}
           </span>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">
-                {c.nome}
-              </h1>
-              <PortalBadge ativo={Boolean(c.portal_acesso_ativo)} />
-            </div>
+            <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">
+              {c.nome}
+            </h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
               <span className="font-mono text-xs">{c.numero_cliente}</span>
               <span className="text-border">·</span>
@@ -54,47 +54,55 @@ export function ClienteHeader({
             </div>
           </div>
         </div>
-        <Button
-          variant="default"
-          className="shrink-0"
-          onClick={() => {
-            const ec = c.estado_civil ?? "";
-            const casado = ec === "casado" || ec === "uniao_estavel";
-            sessionStorage.setItem(
-              "simulacao_wizard",
-              JSON.stringify({
-                cliente_id: c.id,
-                nome_cliente: c.nome ?? "",
-                cpf_cnpj: c.documento ?? "",
-                data_nascimento: c.data_nascimento ?? "",
-                // Sexo, estado civil e regime ficavam de fora e o operador
-                // redigitava os três a cada nova simulação do mesmo cliente.
-                sexo: (c as any).sexo ?? "",
-                estado_civil: estadoCivilCrmParaCodigo(ec) || "",
-                regime_casamento: casado
-                  ? regimeCasamentoCrmParaCodigo((c as any).regime_casamento) || ""
-                  : "",
-                sexo_conjuge: casado ? ((c as any).conjuge_sexo ?? "") : "",
-                estado_civil_conjuge: casado ? estadoCivilCrmParaCodigo(ec) || "" : "",
-                email: (c as any).email ?? "",
-                celular: (c as any).telefone_celular ?? "",
-                renda_total: Number(c.renda_total_declarada) || 0,
-                uf: c.uf_interesse ?? "",
-                possui_conjuge: casado,
-                compoe_renda: casado && Number((c as any).conjuge_renda) > 0,
-                nome_conjuge: (c as any).conjuge_nome ?? "",
-                cpf_conjuge: (c as any).conjuge_cpf ?? "",
-                renda_conjuge: Number((c as any).conjuge_renda) || 0,
-                data_nascimento_conjuge: (c as any).conjuge_data_nascimento ?? "",
-                email_conjuge: (c as any).conjuge_email ?? "",
-                celular_conjuge: (c as any).conjuge_celular ?? "",
-              }),
-            );
-            navigate({ to: "/operacional/simulacoes/completa" });
-          }}
-        >
-          <Calculator className="size-4" /> Nova simulação
-        </Button>
+        {/* App do cliente (C10): só marcar e desmarcar, ao lado da ação principal. */}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+          <AppClienteAcesso
+            clienteId={c.id}
+            ativo={Boolean(c.portal_acesso_ativo)}
+            podeEditar={podeEditar}
+          />
+          <Button
+            variant="default"
+            className="h-11 shrink-0 max-sm:flex-1"
+            onClick={() => {
+              const ec = c.estado_civil ?? "";
+              const casado = ec === "casado" || ec === "uniao_estavel";
+              sessionStorage.setItem(
+                "simulacao_wizard",
+                JSON.stringify({
+                  cliente_id: c.id,
+                  nome_cliente: c.nome ?? "",
+                  cpf_cnpj: c.documento ?? "",
+                  data_nascimento: c.data_nascimento ?? "",
+                  // Sexo, estado civil e regime ficavam de fora e o operador
+                  // redigitava os três a cada nova simulação do mesmo cliente.
+                  sexo: (c as any).sexo ?? "",
+                  estado_civil: estadoCivilCrmParaCodigo(ec) || "",
+                  regime_casamento: casado
+                    ? regimeCasamentoCrmParaCodigo((c as any).regime_casamento) || ""
+                    : "",
+                  sexo_conjuge: casado ? ((c as any).conjuge_sexo ?? "") : "",
+                  estado_civil_conjuge: casado ? estadoCivilCrmParaCodigo(ec) || "" : "",
+                  email: (c as any).email ?? "",
+                  celular: (c as any).telefone_celular ?? "",
+                  renda_total: Number(c.renda_total_declarada) || 0,
+                  uf: c.uf_interesse ?? "",
+                  possui_conjuge: casado,
+                  compoe_renda: casado && Number((c as any).conjuge_renda) > 0,
+                  nome_conjuge: (c as any).conjuge_nome ?? "",
+                  cpf_conjuge: (c as any).conjuge_cpf ?? "",
+                  renda_conjuge: Number((c as any).conjuge_renda) || 0,
+                  data_nascimento_conjuge: (c as any).conjuge_data_nascimento ?? "",
+                  email_conjuge: (c as any).conjuge_email ?? "",
+                  celular_conjuge: (c as any).conjuge_celular ?? "",
+                }),
+              );
+              navigate({ to: "/operacional/simulacoes/completa" });
+            }}
+          >
+            <Calculator className="size-4" /> Nova simulação
+          </Button>
+        </div>
       </div>
     </div>
   );
