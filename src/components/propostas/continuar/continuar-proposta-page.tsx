@@ -28,7 +28,11 @@ import { BancoLogo } from "@/components/bancos/banco-logo";
 import { mensagemBancoLegivel } from "@/lib/bancos/mensagem-banco";
 import { AbaEnviarBanco, type AcoesEnvioBanco } from "@/components/proposta/aba-enviar-banco";
 import { statusProposta } from "@/components/propostas/status";
-import { obterProposta } from "@/lib/propostas/propostas.functions";
+import { marcarContratoRegistrado, obterProposta } from "@/lib/propostas/propostas.functions";
+import { erroDataRegistro, hojeEmSaoPaulo } from "@/lib/propostas/contrato-registrado";
+import { textoIdH } from "@/lib/propostas/id-h";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   avancarEtapaContinuar,
   salvarConferenciaProposta,
@@ -82,6 +86,8 @@ export function ContinuarPropostaPage({
   const obter = useServerFn(obterProposta);
   const salvar = useServerFn(salvarConferenciaProposta);
   const avancar = useServerFn(avancarEtapaContinuar);
+  const marcarRegistro = useServerFn(marcarContratoRegistrado);
+  const [dataRegistro, setDataRegistro] = useState(() => hojeEmSaoPaulo());
   const sincronizarComCrm = useServerFn(sincronizarPropostaComCrm);
 
   // O que mudou no CRM depois da proposta (participantes, vendedores, imóvel)
@@ -207,9 +213,19 @@ export function ContinuarPropostaPage({
     if (!avancarPara) return;
     setAvancando(true);
     try {
-      await avancar({
-        data: { proposta_id: propostaId, para: avancarPara.status },
-      });
+      if (avancarPara.status === "registrado") {
+        // C12: o registro vai com a data do cartório (servidor revalida as mesmas regras).
+        const erro = erroDataRegistro(dataRegistro, p?.contrato_emitido_em ?? null);
+        if (erro) {
+          toast.error(erro);
+          return;
+        }
+        await marcarRegistro({ data: { proposta_id: propostaId, data: dataRegistro } });
+      } else {
+        await avancar({
+          data: { proposta_id: propostaId, para: avancarPara.status },
+        });
+      }
       toast.success(`Proposta em "${avancarPara.titulo}".`);
       recarregar();
     } catch (e) {
@@ -221,7 +237,9 @@ export function ContinuarPropostaPage({
   }
 
   const elegivel = p
-    ? podeContinuarProposta(p.status, bancos) || p.status === "contrato_emitido"
+    ? podeContinuarProposta(p.status, bancos) ||
+      p.status === "contrato_emitido" ||
+      p.status === "registrado"
     : false;
   const condicionado =
     banco?.status_banco === "condicionado" || p?.status === "credito_condicionado";
@@ -253,7 +271,7 @@ export function ContinuarPropostaPage({
           <BancoLogo nome={banco?.nome_banco} size="xl" />
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-              Continuar proposta {p?.numero_proposta ?? ""}
+              Continuar proposta {p ? textoIdH(p) : ""}
             </h1>
             <p className="truncate text-sm text-muted-foreground">
               {p
@@ -472,11 +490,29 @@ export function ContinuarPropostaPage({
               A etapa não volta atrás depois de avançar. Confira se a etapa atual está concluída.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {avancarPara?.status === "registrado" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="data-registro-contrato">Data do registro em cartório</Label>
+              <Input
+                id="data-registro-contrato"
+                type="date"
+                value={dataRegistro}
+                max={hojeEmSaoPaulo()}
+                onChange={(e) => setDataRegistro(e.target.value)}
+                className="h-11 w-full sm:w-48"
+              />
+              {erroDataRegistro(dataRegistro, p?.contrato_emitido_em ?? null) && (
+                <p className="text-xs text-destructive">
+                  {erroDataRegistro(dataRegistro, p?.contrato_emitido_em ?? null)}
+                </p>
+              )}
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={avancando}>Cancelar</AlertDialogCancel>
             <AlertDialogAction disabled={avancando} onClick={confirmarAvanco}>
               {avancando && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-              Avançar
+              {avancarPara?.status === "registrado" ? "Marcar contrato registrado" : "Avançar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

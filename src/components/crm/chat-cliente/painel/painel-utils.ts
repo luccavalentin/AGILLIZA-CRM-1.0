@@ -15,7 +15,9 @@ export const MACRO_STAGES = [
     label: "Vistoria & Jurídico",
     codes: ["engenharia_vistoria", "analise_juridica"],
   },
-  { key: "contratacao", label: "Contrato", codes: ["contrato_emitido"] },
+  { key: "contratacao", label: "Contrato emitido", codes: ["contrato_emitido"] },
+  // C12 (26/10/2026): registro em cartório, depois do contrato emitido.
+  { key: "registro", label: "Contrato registrado", codes: ["contrato_registrado"] },
 ] as const;
 
 export function macroIndexOf(codigo: string | null): number {

@@ -24,7 +24,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { erroDataRegistro, hojeEmSaoPaulo } from "@/lib/propostas/contrato-registrado";
 import {
+  marcarContratoRegistrado,
   cancelarProposta,
   moverStatusProposta,
   sincronizarProposta,
@@ -66,6 +69,11 @@ export function AcoesTopo({
   const { enviar: handleEnviar, busy: enviarBusy } = useEnviarProposta();
   const cancelarFn = useServerFn(cancelarProposta);
   const moverFn = useServerFn(moverStatusProposta);
+  const registrarFn = useServerFn(marcarContratoRegistrado);
+  // C12: "Marcar contrato registrado" pede a data do cartório.
+  const [registroOpen, setRegistroOpen] = useState(false);
+  const [dataRegistro, setDataRegistro] = useState(() => hojeEmSaoPaulo());
+  const erroRegistro = erroDataRegistro(dataRegistro, proposta.contrato_emitido_em ?? null);
   const sincronizarFn = useServerFn(sincronizarProposta);
 
   const [busy, setBusy] = useState(false);
@@ -142,6 +150,25 @@ export function AcoesTopo({
       qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
     } catch (e) {
       toast.error(mensagemDeErro(e, "Transição inválida."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function marcarRegistro() {
+    if (erroRegistro) {
+      toast.error(erroRegistro);
+      return;
+    }
+    setBusy(true);
+    try {
+      await registrarFn({ data: { proposta_id: propostaId, data: dataRegistro } });
+      toast.success("Contrato registrado.");
+      setRegistroOpen(false);
+      qc.invalidateQueries({ queryKey: ["proposta", propostaId] });
+      qc.invalidateQueries({ queryKey: ["propostas"] });
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível marcar o registro."));
     } finally {
       setBusy(false);
     }
@@ -399,14 +426,49 @@ export function AcoesTopo({
                 key={s}
                 size="sm"
                 variant={isRecusa ? "destructive" : "secondary"}
-                onClick={() => mover(s)}
+                onClick={() => (s === "registrado" ? setRegistroOpen(true) : mover(s))}
                 disabled={busy}
                 className={cn(isAprova && "bg-success text-success-foreground hover:bg-success/90")}
               >
-                {isRecusa ? "✕" : "→"} {statusProposta(s, proposta?.nome_banco).label}
+                {isRecusa ? "✕" : "→"}{" "}
+                {s === "registrado"
+                  ? "Marcar contrato registrado"
+                  : statusProposta(s, proposta?.nome_banco).label}
               </Button>
             );
           })}
+          <Dialog open={registroOpen} onOpenChange={(o) => !busy && setRegistroOpen(o)}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Marcar contrato registrado</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Informe a data do registro em cartório. Ela fica na proposta, no financeiro e chega
+                ao cliente e ao assinante.
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="data-registro-topo">Data do registro</Label>
+                <Input
+                  id="data-registro-topo"
+                  type="date"
+                  value={dataRegistro}
+                  max={hojeEmSaoPaulo()}
+                  onChange={(e) => setDataRegistro(e.target.value)}
+                  className="h-11 w-full sm:w-48"
+                />
+                {erroRegistro && <p className="text-xs text-destructive">{erroRegistro}</p>}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRegistroOpen(false)} disabled={busy}>
+                  Voltar
+                </Button>
+                <Button onClick={marcarRegistro} disabled={busy || !!erroRegistro}>
+                  {busy && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                  Marcar contrato registrado
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           {status !== "cancelada" && status !== "registrado" && (
             <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
               <DialogTrigger asChild>

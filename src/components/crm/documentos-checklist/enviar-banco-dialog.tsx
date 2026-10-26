@@ -22,6 +22,7 @@ import {
 } from "@/lib/propostas/propostas.functions";
 import { nomeDoTipoDocumento } from "@/lib/documentos/tipos-banco";
 import { statusProposta } from "@/components/propostas/status";
+import { textoIdH } from "@/lib/propostas/id-h";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { cn } from "@/lib/utils";
 
@@ -162,7 +163,7 @@ export function EnviarBancoDialog({
                   <BancoLogo nome={p.nome_banco} size="sm" />
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium text-foreground">
-                      {p.numero_proposta} · {p.nome_banco ?? "Banco"}
+                      {textoIdH(p)} · {p.nome_banco ?? "Banco"}
                     </span>
                     <span className="text-xs text-muted-foreground">{st.label}</span>
                   </span>

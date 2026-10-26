@@ -1,8 +1,8 @@
 /**
  * Filtros da listagem de propostas (parte pura, para teste).
  *
- * A busca vale para número da proposta, número do banco, nome do cliente e
- * CPF/CNPJ. O CPF só entra quando o termo tem dígito: `cpf_cnpj.ilike.%%`
+ * A busca vale para número da proposta, número do banco, nome do cliente,
+ * CPF/CNPJ e o ID H. (C33). O CPF só entra quando o termo tem dígito: `cpf_cnpj.ilike.%%`
  * casava com todas as linhas, e procurar por nome devolvia a lista inteira.
  */
 export function clausulasDeBusca(termo: string): string[] {
@@ -15,6 +15,9 @@ export function clausulasDeBusca(termo: string): string[] {
   ];
   const digitos = q.replace(/\D/g, "");
   if (digitos) clausulas.push(`cpf_cnpj.ilike.%${digitos}%`);
+  // C33: o ID H. (oportunidade na integração) é o número visível da proposta — "ID H. 12345"
+  // ou só "12345" acham a proposta.
+  if (digitos && digitos.length <= 18) clausulas.push(`homefin_id_oportunidade.ilike.%${digitos}%`);
   return clausulas;
 }
 

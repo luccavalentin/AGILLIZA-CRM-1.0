@@ -2113,6 +2113,7 @@ export interface ClienteNegocios {
   propostas: Array<{
     id: string;
     numero_proposta: string | null;
+    homefin_id_oportunidade: string | null;
     nome_banco: string | null;
     produto: string | null;
     status: string | null;
@@ -2137,7 +2138,9 @@ export const getClienteNegocios = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false }),
       supabase
         .from("propostas")
-        .select("id, numero_proposta, nome_banco, produto, status, valor_financiamento, created_at")
+        .select(
+          "id, numero_proposta, homefin_id_oportunidade, nome_banco, produto, status, valor_financiamento, created_at",
+        )
         .eq("cliente_id", data.cliente_id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),

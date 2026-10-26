@@ -1,5 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { ChevronRight, FileText, Undo2, User, Trash2 } from "lucide-react";
+import { textoIdH } from "@/lib/propostas/id-h";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -110,7 +111,7 @@ export function ListaMobile({
                       {handleExcluirDefinitivo && (
                         <ConfirmDelete
                           titulo="Excluir definitivamente"
-                          descricao={`A proposta ${p.numero_proposta} será apagada permanentemente. Esta ação não pode ser desfeita.`}
+                          descricao={`A proposta ${textoIdH(p)} será apagada permanentemente. Esta ação não pode ser desfeita.`}
                           onConfirm={() => handleExcluirDefinitivo(p.id)}
                         />
                       )}
@@ -120,7 +121,7 @@ export function ListaMobile({
                       <MenuAcoesProposta propostaId={p.id} status={p.status} bancos={p.bancos} />
                       <ConfirmDelete
                         titulo="Excluir proposta"
-                        descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
+                        descricao={`A proposta ${textoIdH(p)} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
                         onConfirm={() => handleExcluir(p.id)}
                       />
                     </div>
@@ -140,12 +141,7 @@ export function ListaMobile({
                         Nº banco {nb}
                       </div>
                       <div className="mt-1 flex flex-col gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        <span>
-                          Interno <span className="tabular-nums">{p.numero_proposta}</span>
-                        </span>
-                        {p.homefin_id_oportunidade && (
-                          <span className="tabular-nums">ID {p.homefin_id_oportunidade}</span>
-                        )}
+                        <span className="tabular-nums">{textoIdH(p)}</span>
                         <span className="text-[9px] lowercase tracking-tight">
                           {formatDataHora(p.created_at)}
                         </span>
@@ -155,13 +151,8 @@ export function ListaMobile({
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 text-[14px] font-semibold tabular-nums text-foreground">
                         {p.deleted_at && <Trash2 className="h-4 w-4 text-destructive" />}
-                        {p.numero_proposta}
+                        {textoIdH(p)}
                       </div>
-                      {p.homefin_id_oportunidade && (
-                        <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
-                          ID {p.homefin_id_oportunidade}
-                        </span>
-                      )}
                       <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-tight">
                         {formatDataHora(p.created_at)}
                       </span>

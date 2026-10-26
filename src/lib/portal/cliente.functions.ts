@@ -161,6 +161,7 @@ const STATUS_PROPOSTA_AMIGAVEL: Record<string, string> = {
   emissao_contrato: "Análise jurídica",
   aprovada: "Aprovada",
   contrato_emitido: "Contrato emitido",
+  registrado: "Contrato registrado",
   recusada: "Não aprovada",
   cancelada: "Cancelada",
 };

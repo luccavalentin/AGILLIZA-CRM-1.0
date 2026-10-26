@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { numeroIdH, textoIdH } from "./id-h";
 
 import { formatBRL } from "@/lib/simulacao/format";
 import { extrairDetalheBanco, normalizarSistemaAmortizacao } from "@/lib/simulacao/detalhe-banco";
@@ -73,6 +74,7 @@ function tituloStatus(s: PropostaStatus | string | null | undefined): string {
     engenharia_vistoria: "Engenharia / vistoria",
     analise_juridica: "Análise jurídica",
     contrato_emitido: "Contrato emitido",
+    registrado: "Contrato registrado",
     cancelada: "Cancelada",
   };
   return m[String(s ?? "")] ?? String(s ?? "—");
@@ -172,11 +174,11 @@ function drawTituloProposta(doc: jsPDF, pageW: number, proposta: any, y: number)
   doc.setFontSize(14);
   doc.text("Ficha da Proposta de Financiamento", MARGIN, y);
 
-  const numero = String(proposta?.numero_proposta ?? "—");
+  // C33: o identificador visível é o ID H. (oportunidade na integração), não o número interno.
   doc.setTextColor(P.texto);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text(`Proposta Nº ${numero}`, pageW - MARGIN, y - 4, { align: "right" });
+  doc.text(`Proposta ${textoIdH(proposta)}`, pageW - MARGIN, y - 4, { align: "right" });
   doc.setTextColor(P.cinza);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
@@ -361,7 +363,7 @@ function drawImovel(doc: jsPDF, pageW: number, proposta: any, y: number): number
   return y + enderecoH + 12;
 }
 
-/** Linha do tempo horizontal das 7 etapas da oportunidade. */
+/** Linha do tempo horizontal das etapas da oportunidade (até o contrato registrado, C12). */
 function drawEtapas(doc: jsPDF, pageW: number, proposta: any, y: number): number {
   const etapas: { status: PropostaStatus; label: string }[] = [
     { status: "rascunho", label: "Simulação" },
@@ -372,6 +374,7 @@ function drawEtapas(doc: jsPDF, pageW: number, proposta: any, y: number): number
     { status: "engenharia_vistoria", label: "Engenharia / vistoria" },
     { status: "analise_juridica", label: "Análise jurídica" },
     { status: "contrato_emitido", label: "Contrato emitido" },
+    { status: "registrado", label: "Contrato registrado" },
   ];
 
   const atualIdx = ORDEM_STATUS.indexOf(proposta?.status as PropostaStatus);
@@ -797,7 +800,8 @@ export function baixarPropostaOficialPDF(input: Input) {
   // Nome do arquivo: "{Nº proposta} - Ficha - {descritivo}.pdf"
   let nome = "Ficha da Proposta";
   try {
-    const numero = String(proposta?.numero_proposta ?? "").trim();
+    const n = numeroIdH(proposta);
+    const numero = n ? `ID H. ${n}` : "";
     const descritivo = nomeDescritivo(proposta, bancos);
     nome = [numero, "Ficha", descritivo].filter(Boolean).join(" - ") || nome;
   } catch (err) {

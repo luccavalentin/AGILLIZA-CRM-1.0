@@ -12,6 +12,7 @@
  *  5  Engenharia / vistoria              -> engenharia_vistoria                   (manual)
  *  6  Análise jurídica                   -> analise_juridica                      (manual)
  *  7  Contrato emitido                   -> contrato_emitido                      (manual)
+ *  8  Contrato registrado (cartório)     -> registrado                            (manual, com data; C12)
  *
  * `formularios` é a etapa que Itaú e Santander têm entre o crédito e os
  * documentos ("Formulários Digitais" / "Cadastro das Informações" — o nome de
@@ -19,7 +20,7 @@
  *
  * Status granulares antigos (checklist_documentacao, cadastro_complementar,
  * dossie_completo, envio_documentos_banco, vistoria_agendamento,
- * vistoria_concluida, emissao_contrato, registrado) foram descontinuados e são
+ * vistoria_concluida, emissao_contrato) foram descontinuados e são
  * mantidos apenas como LEGADOS: encaminham para o fluxo novo, sem aparecer na UI.
  */
 import { temEtapaFormularios } from "@/lib/bancos/etapas-banco";

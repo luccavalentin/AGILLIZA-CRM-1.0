@@ -32,6 +32,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
+import { textoIdH } from "@/lib/propostas/id-h";
+import { MarcarRegistroDialog } from "@/components/propostas/marcar-registro-dialog";
 
 /** Máximo de cards visíveis antes de "empilhar" o restante numa pasta com busca. */
 const MAX_VISIVEIS_POR_COLUNA = 3;
@@ -146,6 +148,8 @@ function Pagina() {
   const qc = useQueryClient();
   const { q: qInicial } = Route.useSearch();
   const moverFn = useServerFn(moverStatusProposta);
+  // C12: soltar em "Contrato registrado" pede a data do cartório.
+  const [registrando, setRegistrando] = useState<any | null>(null);
   const [arrastando, setArrastando] = useState<{
     id: string;
     status: PropostaStatus;
@@ -244,6 +248,10 @@ function Pagina() {
     // Formulários é etapa do Itaú e do Santander; o Bradesco não a tem.
     if (!transicaoPermitidaNoBanco(status, coluna, banco)) {
       toast.error(`O ${banco ?? "banco"} não tem a etapa de formulários.`);
+      return;
+    }
+    if (coluna === "registrado") {
+      setRegistrando(itens.find((c: any) => c.id === id) ?? { id });
       return;
     }
     try {
@@ -388,13 +396,11 @@ function Pagina() {
                 <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-primary">
                   Nº banco {nb}
                 </span>
-                <span className="tabular-nums text-muted-foreground">
-                  Interno #{c.numero_proposta}
-                </span>
+                <span className="tabular-nums text-muted-foreground">{textoIdH(c)}</span>
               </>
             ) : (
               <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
-                #{c.numero_proposta}
+                {textoIdH(c)}
               </span>
             );
           })()}
@@ -433,6 +439,7 @@ function Pagina() {
         c.cpf_cnpj,
         c.numero_proposta,
         c.numero_proposta_banco,
+        c.homefin_id_oportunidade,
         c.nome_banco,
         c.nome_responsavel,
       ]
@@ -686,7 +693,7 @@ function Pagina() {
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <Input
                 autoFocus
-                placeholder="Buscar por cliente, CPF/CNPJ ou nº da proposta"
+                placeholder="Buscar por cliente, CPF/CNPJ, ID H. ou nº no banco"
                 value={buscaPasta}
                 onChange={(e) => setBuscaPasta(e.target.value)}
                 className="h-12 rounded-xl border-border/70 bg-background pl-11 pr-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_2px_8px_-2px_rgba(15,23,42,0.08),0_8px_24px_-12px_rgba(15,23,42,0.15)] transition-all duration-200 placeholder:text-muted-foreground/70 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_4px_14px_-2px_rgba(15,23,42,0.12),0_12px_32px_-12px_rgba(15,23,42,0.2)] focus-visible:border-primary/50 focus-visible:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_0_0_4px_color-mix(in_oklab,var(--primary)_18%,transparent),0_12px_32px_-12px_color-mix(in_oklab,var(--primary)_35%,transparent)] focus-visible:ring-0"
@@ -712,6 +719,7 @@ function Pagina() {
           </div>
         </DialogContent>
       </Dialog>
+      <MarcarRegistroDialog proposta={registrando} onClose={() => setRegistrando(null)} />
     </div>
   );
 }

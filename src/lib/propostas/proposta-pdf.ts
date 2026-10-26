@@ -4,6 +4,7 @@ import {
   baixarSimulacaoPDF,
   nomeDescritivo,
 } from "@/lib/simulacao/simulacao-pdf";
+import { numeroIdH, textoIdH } from "./id-h";
 
 interface PropostaPdfInput {
   proposta: any;
@@ -14,7 +15,7 @@ interface PropostaPdfInput {
  * Constrói o nome do arquivo da proposta seguindo o MESMO padrão da simulação,
  * porém prefixado com o número da proposta no banco (numero_proposta_banco),
  * quando existir. Ex.: "PROP-123 - Bradesco-SAC-C e V 500k - Finan 400k - ...".
- * Para PDFs consolidados (múltiplos bancos), usa o numero_proposta geral.
+ * Para PDFs consolidados (múltiplos bancos), usa o ID H. da proposta.
  */
 function prefixoNumeroProposta(proposta: any, bancos: any[]): string {
   // 1 banco: usa o protocolo daquele banco.
@@ -22,8 +23,9 @@ function prefixoNumeroProposta(proposta: any, bancos: any[]): string {
     const n = String(bancos[0]?.numero_proposta_banco ?? "").trim();
     if (n) return n;
   }
-  // Fallback: número interno da proposta.
-  return String(proposta?.numero_proposta ?? "").trim();
+  // Fallback (C33): o ID H. — o número interno (PRO-…) não aparece mais para quem recebe o PDF.
+  const idh = numeroIdH(proposta);
+  return idh ? `ID H. ${idh}` : "";
 }
 
 function montarFilePrefix(proposta: any, bancos: any[]): string {
@@ -60,7 +62,7 @@ export function baixarPropostaDetalhadaPDF({ proposta, bancos }: PropostaPdfInpu
 /** Comparativo consolidado dos bancos da proposta (uso interno). */
 export function baixarPropostaConsolidadoPDF({ proposta, bancos }: PropostaPdfInput) {
   return baixarSimulacaoPDF({
-    simulacao: { ...proposta, numero_simulacao: proposta.numero_proposta },
+    simulacao: { ...proposta, numero_simulacao: textoIdH(proposta) },
     bancos,
     filePrefix: montarFilePrefix(proposta, bancos),
   });

@@ -91,7 +91,7 @@ function PropostaRoute() {
     refetchInterval: (q: any) => {
       const st = q.state.data?.proposta?.status as string | undefined;
       if (!st) return 30_000;
-      const terminais = ["contrato_emitido", "cancelada", "credito_recusado"];
+      const terminais = ["contrato_emitido", "registrado", "cancelada", "credito_recusado"];
       return terminais.includes(st) ? false : 60_000;
     },
     refetchOnWindowFocus: true,
@@ -342,7 +342,7 @@ function PropostaRoute() {
   );
 
   React.useEffect(() => {
-    const terminais = ["contrato_emitido", "cancelada", "credito_recusado", "rascunho"];
+    const terminais = ["contrato_emitido", "registrado", "cancelada", "credito_recusado", "rascunho"];
     if (!propostaStatus || terminais.includes(propostaStatus)) return;
     if (!temProtocoloBanco) return;
     // Depois da decisão de crédito a tela não consulta sozinha: Itaú/Santander
