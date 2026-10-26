@@ -134,7 +134,13 @@ function PortalParceiro() {
         <BiometricAuth destino="/parceiro-inicio" disabled={carregando} />
       </form>
 
-      <p className="mt-6 text-center text-xs text-muted-foreground">
+      {/* C70: o portal do parceiro agora é o Agilliza Tech (vinculado ao correspondente). */}
+      <p className="mt-6 rounded-lg border border-primary/20 bg-primary/5 p-3 text-center text-xs text-foreground">
+        Novo: os parceiros do correspondente agora usam o portal do Agilliza Tech. Recebeu o
+        e-mail "Sua conta no AgillizaTech está pronta"? Entre por lá.
+      </p>
+
+      <p className="mt-4 text-center text-xs text-muted-foreground">
         Ainda não é parceiro cadastrado? Fale com o correspondente que trabalha com você para
         cadastrá-lo.
       </p>

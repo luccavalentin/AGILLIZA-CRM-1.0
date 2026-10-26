@@ -31,8 +31,11 @@ import { Route as ApiErrosRouteImport } from './routes/api/erros'
 import { Route as ApiSaudeRouteImport } from './routes/api/saude'
 import { Route as ClienteAcompanharMinhaPropostaRouteImport } from './routes/cliente.acompanhar-minha-proposta'
 import { Route as ClienteChatRouteImport } from './routes/cliente.chat'
+import { Route as ClienteDocumentosRouteImport } from './routes/cliente.documentos'
 import { Route as ClienteLogoutRouteImport } from './routes/cliente.logout'
 import { Route as ClientePerfilRouteImport } from './routes/cliente.perfil'
+import { Route as ClientePrivacidadeRouteImport } from './routes/cliente.privacidade'
+import { Route as ClienteSimulacoesRouteImport } from './routes/cliente.simulacoes'
 import { Route as ClienteVisaoGeralRouteImport } from './routes/cliente.visao-geral'
 import { Route as ParceiroClientesRouteImport } from './routes/parceiro.clientes'
 import { Route as ParceiroComissoesRouteImport } from './routes/parceiro.comissoes'
@@ -273,6 +276,11 @@ const ClienteChatRoute = ClienteChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => ClienteRoute,
 } as any)
+const ClienteDocumentosRoute = ClienteDocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => ClienteRoute,
+} as any)
 const ClienteLogoutRoute = ClienteLogoutRouteImport.update({
   id: '/logout',
   path: '/logout',
@@ -281,6 +289,16 @@ const ClienteLogoutRoute = ClienteLogoutRouteImport.update({
 const ClientePerfilRoute = ClientePerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
+  getParentRoute: () => ClienteRoute,
+} as any)
+const ClientePrivacidadeRoute = ClientePrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => ClienteRoute,
+} as any)
+const ClienteSimulacoesRoute = ClienteSimulacoesRouteImport.update({
+  id: '/simulacoes',
+  path: '/simulacoes',
   getParentRoute: () => ClienteRoute,
 } as any)
 const ClienteVisaoGeralRoute = ClienteVisaoGeralRouteImport.update({
@@ -1054,8 +1072,11 @@ export interface FileRoutesByFullPath {
   '/api/saude': typeof ApiSaudeRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
+  '/cliente/documentos': typeof ClienteDocumentosRoute
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
+  '/cliente/privacidade': typeof ClientePrivacidadeRoute
+  '/cliente/simulacoes': typeof ClienteSimulacoesRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/parceiro/clientes': typeof ParceiroClientesRoute
   '/parceiro/comissoes': typeof ParceiroComissoesRoute
@@ -1203,8 +1224,11 @@ export interface FileRoutesByTo {
   '/api/saude': typeof ApiSaudeRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
+  '/cliente/documentos': typeof ClienteDocumentosRoute
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
+  '/cliente/privacidade': typeof ClientePrivacidadeRoute
+  '/cliente/simulacoes': typeof ClienteSimulacoesRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/parceiro/clientes': typeof ParceiroClientesRoute
   '/parceiro/comissoes': typeof ParceiroComissoesRoute
@@ -1357,8 +1381,11 @@ export interface FileRoutesById {
   '/api/saude': typeof ApiSaudeRoute
   '/cliente/acompanhar-minha-proposta': typeof ClienteAcompanharMinhaPropostaRoute
   '/cliente/chat': typeof ClienteChatRoute
+  '/cliente/documentos': typeof ClienteDocumentosRoute
   '/cliente/logout': typeof ClienteLogoutRoute
   '/cliente/perfil': typeof ClientePerfilRoute
+  '/cliente/privacidade': typeof ClientePrivacidadeRoute
+  '/cliente/simulacoes': typeof ClienteSimulacoesRoute
   '/cliente/visao-geral': typeof ClienteVisaoGeralRoute
   '/parceiro/clientes': typeof ParceiroClientesRoute
   '/parceiro/comissoes': typeof ParceiroComissoesRoute
@@ -1511,8 +1538,11 @@ export interface FileRouteTypes {
     | '/api/saude'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
+    | '/cliente/documentos'
     | '/cliente/logout'
     | '/cliente/perfil'
+    | '/cliente/privacidade'
+    | '/cliente/simulacoes'
     | '/cliente/visao-geral'
     | '/parceiro/clientes'
     | '/parceiro/comissoes'
@@ -1660,8 +1690,11 @@ export interface FileRouteTypes {
     | '/api/saude'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
+    | '/cliente/documentos'
     | '/cliente/logout'
     | '/cliente/perfil'
+    | '/cliente/privacidade'
+    | '/cliente/simulacoes'
     | '/cliente/visao-geral'
     | '/parceiro/clientes'
     | '/parceiro/comissoes'
@@ -1813,8 +1846,11 @@ export interface FileRouteTypes {
     | '/api/saude'
     | '/cliente/acompanhar-minha-proposta'
     | '/cliente/chat'
+    | '/cliente/documentos'
     | '/cliente/logout'
     | '/cliente/perfil'
+    | '/cliente/privacidade'
+    | '/cliente/simulacoes'
     | '/cliente/visao-geral'
     | '/parceiro/clientes'
     | '/parceiro/comissoes'
@@ -2118,6 +2154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClienteChatRouteImport
       parentRoute: typeof ClienteRoute
     }
+    '/cliente/documentos': {
+      id: '/cliente/documentos'
+      path: '/documentos'
+      fullPath: '/cliente/documentos'
+      preLoaderRoute: typeof ClienteDocumentosRouteImport
+      parentRoute: typeof ClienteRoute
+    }
     '/cliente/logout': {
       id: '/cliente/logout'
       path: '/logout'
@@ -2130,6 +2173,20 @@ declare module '@tanstack/react-router' {
       path: '/perfil'
       fullPath: '/cliente/perfil'
       preLoaderRoute: typeof ClientePerfilRouteImport
+      parentRoute: typeof ClienteRoute
+    }
+    '/cliente/privacidade': {
+      id: '/cliente/privacidade'
+      path: '/privacidade'
+      fullPath: '/cliente/privacidade'
+      preLoaderRoute: typeof ClientePrivacidadeRouteImport
+      parentRoute: typeof ClienteRoute
+    }
+    '/cliente/simulacoes': {
+      id: '/cliente/simulacoes'
+      path: '/simulacoes'
+      fullPath: '/cliente/simulacoes'
+      preLoaderRoute: typeof ClienteSimulacoesRouteImport
       parentRoute: typeof ClienteRoute
     }
     '/cliente/visao-geral': {
@@ -3375,16 +3432,22 @@ const AuthenticatedRouteRouteWithChildren =
 interface ClienteRouteChildren {
   ClienteAcompanharMinhaPropostaRoute: typeof ClienteAcompanharMinhaPropostaRoute
   ClienteChatRoute: typeof ClienteChatRoute
+  ClienteDocumentosRoute: typeof ClienteDocumentosRoute
   ClienteLogoutRoute: typeof ClienteLogoutRoute
   ClientePerfilRoute: typeof ClientePerfilRoute
+  ClientePrivacidadeRoute: typeof ClientePrivacidadeRoute
+  ClienteSimulacoesRoute: typeof ClienteSimulacoesRoute
   ClienteVisaoGeralRoute: typeof ClienteVisaoGeralRoute
 }
 
 const ClienteRouteChildren: ClienteRouteChildren = {
   ClienteAcompanharMinhaPropostaRoute: ClienteAcompanharMinhaPropostaRoute,
   ClienteChatRoute: ClienteChatRoute,
+  ClienteDocumentosRoute: ClienteDocumentosRoute,
   ClienteLogoutRoute: ClienteLogoutRoute,
   ClientePerfilRoute: ClientePerfilRoute,
+  ClientePrivacidadeRoute: ClientePrivacidadeRoute,
+  ClienteSimulacoesRoute: ClienteSimulacoesRoute,
   ClienteVisaoGeralRoute: ClienteVisaoGeralRoute,
 }
 

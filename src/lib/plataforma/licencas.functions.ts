@@ -164,6 +164,8 @@ export const listarLicencas = createServerFn({ method: "GET" })
                         from nucleo.vinculos v where v.ativo group by v.tenant_id) vc
              on vc.tenant_id = t.id
           where t.deleted_at is null and t.tipo <> 'plataforma'
+            -- a8 (C70): vinculados ao correspondente ficam na aba própria ("Sua base").
+            and not t.vinculo_agilliza
             and ($1::text is null or t.tipo::text = $1)
             and ($2::text is null or t.status::text = $2)
             and ($3::text is null or t.nome ilike '%' || $3 || '%' or t.slug::text ilike '%' || $3 || '%'
@@ -211,7 +213,7 @@ export const listarLicencas = createServerFn({ method: "GET" })
       }
       const planos = await tx.consultar<PlanoLicenca>(
         `select id, codigo, nome, publico::text as publico, preco_mensal::float8 as preco_mensal
-           from nucleo.planos where ativo order by ordem, nome`,
+           from nucleo.planos where ativo and not vinculado_agilliza order by ordem, nome`,
       );
       return {
         licencas,

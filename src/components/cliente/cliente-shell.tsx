@@ -11,6 +11,9 @@ import {
   Gauge,
   ListChecks,
   MessageCircle,
+  Calculator,
+  FolderOpen,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -50,27 +53,89 @@ interface NavItemCliente {
   chat?: boolean;
 }
 
+/**
+ * Menu do portal do cliente do correspondente (C15), no desenho do portal do cliente dos
+ * assinantes (`NAVEGACAO.cliente` do Agilliza Tech): Início e Chat; Meu processo; Conta.
+ * Chat: encaixe do chat universal da frente t1 — quando ele chegar, só o `to` muda.
+ */
 const NAV_CLIENTE: { id: string; label: string; items: NavItemCliente[] }[] = [
   {
-    id: "meu-financiamento",
-    label: "Meu Financiamento",
+    id: "inicio",
+    label: "Início",
     items: [
       { label: "Início", icon: Gauge, to: "/cliente/visao-geral" },
-      { label: "Acompanhar", icon: ListChecks, to: "/cliente/acompanhar-minha-proposta" },
-      {
-        label: "Conversar",
-        icon: MessageCircle,
-        to: "/cliente/chat",
-        chat: true,
-      },
+      { label: "Chat com a equipe", icon: MessageCircle, to: "/cliente/chat", chat: true },
+    ],
+  },
+  {
+    id: "meu-processo",
+    label: "Meu processo",
+    items: [
+      { label: "Minha proposta", icon: ListChecks, to: "/cliente/acompanhar-minha-proposta" },
+      { label: "Minhas simulações", icon: Calculator, to: "/cliente/simulacoes" },
+      { label: "Meus documentos", icon: FolderOpen, to: "/cliente/documentos" },
     ],
   },
   {
     id: "conta",
     label: "Conta",
-    items: [{ label: "Meu perfil", icon: UserRound, to: "/cliente/perfil" }],
+    items: [
+      { label: "Meu perfil", icon: UserRound, to: "/cliente/perfil" },
+      { label: "Privacidade", icon: ShieldCheck, to: "/cliente/privacidade" },
+    ],
   },
 ];
+
+/** Barra de baixo no celular: o que o cliente mais usa, a um polegar. */
+const NAV_BARRA: NavItemCliente[] = [
+  { label: "Início", icon: Gauge, to: "/cliente/visao-geral" },
+  { label: "Proposta", icon: ListChecks, to: "/cliente/acompanhar-minha-proposta" },
+  { label: "Documentos", icon: FolderOpen, to: "/cliente/documentos" },
+  { label: "Chat", icon: MessageCircle, to: "/cliente/chat", chat: true },
+  { label: "Perfil", icon: UserRound, to: "/cliente/perfil" },
+];
+
+function BarraInferior() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const chatNaoLidas = useChatNaoLidas();
+  return (
+    <nav
+      aria-label="Atalhos do portal"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+    >
+      <ul className="grid grid-cols-5">
+        {NAV_BARRA.map((item) => {
+          const Icon = item.icon;
+          const ativo = pathname === item.to || pathname.startsWith(item.to + "/");
+          const novas = !!item.chat && chatNaoLidas > 0;
+          return (
+            <li key={item.to}>
+              <Link
+                to={item.to}
+                aria-current={ativo ? "page" : undefined}
+                className={cn(
+                  "relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[10.5px] font-medium transition-colors",
+                  ativo ? "text-primary" : "text-muted-foreground",
+                )}
+              >
+                {ativo && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />}
+                <span className="relative">
+                  <Icon className="size-5" />
+                  {novas && (
+                    <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-destructive-foreground">
+                      {chatNaoLidas > 9 ? "9+" : chatNaoLidas}
+                    </span>
+                  )}
+                </span>
+                {item.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
 
 /** Conta mensagens da equipe ainda não lidas pelo cliente (todas as threads). */
 function useChatNaoLidas() {
@@ -421,6 +486,9 @@ export function ClienteShell({
                   <DropdownMenuItem onSelect={() => navigate({ to: "/cliente/perfil" })}>
                     <UserRound className="mr-2 h-4 w-4" /> Meu perfil
                   </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate({ to: "/cliente/privacidade" })}>
+                    <ShieldCheck className="mr-2 h-4 w-4" /> Privacidade
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onSelect={onSignOut}
@@ -433,15 +501,16 @@ export function ClienteShell({
             </div>
           </header>
 
-          <main className="flex-1 p-2 sm:p-3 lg:p-4">
-            <div className="mx-auto w-full max-w-[1400px]">{children}</div>
+          <main className="flex-1 p-3 sm:p-4 lg:p-6">
+            <div className="mx-auto w-full max-w-[1280px]">{children}</div>
           </main>
 
-          <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-            <Link to="/cliente/perfil" className="underline underline-offset-2">
+          <footer className="border-t border-border py-4 pb-20 text-center text-xs text-muted-foreground lg:pb-4">
+            <Link to="/cliente/privacidade" className="underline underline-offset-2">
               Privacidade e meus dados (LGPD)
             </Link>
           </footer>
+          <BarraInferior />
         </div>
       </div>
       <ClienteChatFlutuante />

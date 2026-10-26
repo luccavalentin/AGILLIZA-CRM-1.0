@@ -51,6 +51,8 @@ import { RodapePaginas, useValorAssentado } from "@/components/plataforma/pagina
 import { CarteiraLicenca } from "@/components/plataforma/licencas/carteira-licenca";
 import { NovaLicenca } from "@/components/plataforma/licencas/nova-licenca";
 import { DescontoDaLicenca } from "@/components/plataforma/licencas/desconto-licenca";
+// a8 (C70): aba isolada dos vinculados ao correspondente.
+import { VinculadosAba } from "@/components/plataforma/vinculados/vinculados-aba";
 import {
   POR_PAGINA_LICENCAS,
   alterarSituacaoLicenca,
@@ -147,6 +149,8 @@ function Pagina() {
   const [nova, setNova] = useState(false);
   const podeCriar = usePermissao("saas.licencas", "edit");
   const termo = useValorAssentado(busca.trim());
+  // a8 (C70): "Assinantes" (licenças pagas) | "Vinculados ao correspondente" (Sua base).
+  const [aba, setAba] = useState<"assinantes" | "vinculados">("assinantes");
 
   const q = useQuery({
     queryKey: ["plataforma-licencas", tipo, situacao, termo, pagina],
@@ -168,14 +172,41 @@ function Pagina() {
   // A gaveta mostra a versão mais recente da conta (depois de mudar situação, plano ou teste).
   const abertaAtual = aberta ? (licencas.find((l) => l.id === aberta.id) ?? aberta) : null;
 
+  const hero = (
+    <AdminHero
+      secao="Gestão de sistemas"
+      icon={<KeyRound className="h-5 w-5" />}
+      titulo="Licenças e assinantes"
+      descricao="Contas de corretores, imobiliárias e parceiros: situação, plano, teste, créditos e uso."
+    />
+  );
+  // a8 (C70): seletor das abas; a de vinculados é um componente isolado.
+  const seletorAba = (
+    <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
+      <TabsList className="h-auto w-full sm:w-auto">
+        <TabsTrigger value="assinantes" className="min-h-10 flex-1 sm:flex-none">
+          Assinantes
+        </TabsTrigger>
+        <TabsTrigger value="vinculados" className="min-h-10 flex-1 sm:flex-none">
+          Vinculados ao correspondente
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+  if (aba === "vinculados") {
+    return (
+      <div className="space-y-6 p-4 md:p-6">
+        {hero}
+        {seletorAba}
+        <VinculadosAba planos={q.data?.planos ?? []} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <AdminHero
-        secao="Gestão de sistemas"
-        icon={<KeyRound className="h-5 w-5" />}
-        titulo="Licenças e assinantes"
-        descricao="Contas de corretores, imobiliárias e parceiros: situação, plano, teste, créditos e uso."
-      />
+      {hero}
+      {seletorAba}
       {podeCriar && (
         <div className="flex justify-end">
           <Button className="w-full sm:w-auto" onClick={() => setNova(true)}>
