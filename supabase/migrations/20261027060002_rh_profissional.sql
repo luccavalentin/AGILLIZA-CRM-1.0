@@ -806,7 +806,7 @@ begin
   insert into public.financial_payables (correspondente_id, descricao, fornecedor, vencimento, valor, status,
                                          origem_tipo, origem_ref, criador_id)
   select v_corr, format('Folha %s/%s · %s', lpad(p_mes::text, 2, '0'), p_ano, f.nome), f.nome, p_vencimento,
-         round((i ->> 'liquido')::numeric, 2), 'aberta', 'rh_folha', v_comp.id::text, auth.uid()
+         round((i ->> 'liquido')::numeric, 2), 'aberta', 'rh_folha', v_comp.id::text || ':' || f.id::text, auth.uid()
     from jsonb_array_elements(p_itens) i
     join public.rh_funcionarios f on f.id = (i ->> 'funcionario_id')::uuid
    where (i ->> 'liquido')::numeric > 0 and f.gerar_contas_pagar_automatico;
@@ -842,13 +842,13 @@ begin
     raise exception 'A competência %/% não está fechada.', lpad(p_mes::text, 2, '0'), p_ano using errcode = '55000';
   end if;
   if exists (select 1 from public.financial_payables p
-              where p.origem_tipo = 'rh_folha' and p.origem_ref = v_comp.id::text
+              where p.origem_tipo = 'rh_folha' and p.origem_ref like v_comp.id::text || ':%'
                 and (p.status in ('paga', 'parcial') or coalesce(p.valor_pago, 0) > 0)) then
     raise exception 'Há salário desta folha já pago no Financeiro. Estorne o pagamento antes de reabrir.' using errcode = '55000';
   end if;
 
   perform set_config('rh.folha_rpc', 'on', true);
-  delete from public.financial_payables p where p.origem_tipo = 'rh_folha' and p.origem_ref = v_comp.id::text;
+  delete from public.financial_payables p where p.origem_tipo = 'rh_folha' and p.origem_ref like v_comp.id::text || ':%';
   get diagnostics v_contas = row_count;
   delete from public.rh_folha_itens where competencia_id = v_comp.id;
   update public.rh_folha_competencias
