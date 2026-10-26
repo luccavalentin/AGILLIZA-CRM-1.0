@@ -16,6 +16,14 @@ const GRUPO = z.enum(["vinculados", "assinantes"]);
 const TERMO = z.string().trim().max(120).optional().nullable();
 const PAGINA = z.number().int().min(1).max(1000).default(1);
 
+/** Busca por CPF/CNPJ inteiro usa o índice cego do banco, que precisa da chave-mestra na transação. */
+async function opcoesDaBusca(termo: string | null | undefined): Promise<{ kek?: boolean }> {
+  const digitos = (termo ?? "").replace(/\D/g, "").length;
+  if (digitos !== 11 && digitos !== 14) return {};
+  const { comChave } = await import("./documentos.server");
+  return { kek: comChave() };
+}
+
 /** Contas para o combobox (busca e página no servidor). `id` resolve uma conta vinda da URL. */
 export const buscarContasDoFiltro = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
@@ -45,6 +53,7 @@ export const buscarContasDoFiltro = createServerFn({ method: "GET" })
           }),
         ],
       ),
+      await opcoesDaBusca(data.termo),
     );
     return {
       contas: r?.r?.contas ?? [],
@@ -100,6 +109,7 @@ export const listarClientesDoGrupo = createServerFn({ method: "GET" })
           }),
         ],
       ),
+      await opcoesDaBusca(data.termo),
     );
     return {
       clientes: r?.r?.clientes ?? [],

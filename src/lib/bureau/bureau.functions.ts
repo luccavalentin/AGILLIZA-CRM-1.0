@@ -9,6 +9,7 @@ import {
   type ProvedorCatalogo,
 } from "./provedores/catalogo";
 import { ErroBureau, type FichaBureau } from "./tipos";
+import { consultaVisivel, fichaSemDadosSensiveis } from "./visibilidade";
 
 const soDigitos = (v: string) => String(v ?? "").replace(/\D/g, "");
 
@@ -326,6 +327,19 @@ async function nomesPorId(
 }
 
 /**
+ * Visibilidade de uma consulta (LGPD, auditoria de 26/10/2026): quem fez a consulta, quem tem
+ * papel amplo (admin/correspondente) ou quem enxerga o cliente pela RLS de `clientes` (o mapa de
+ * nomes lido com o cliente da pessoa só traz os clientes visíveis a ela).
+ */
+async function papelAmplo(supabase: any, userId: string): Promise<boolean> {
+  const { data } = await supabase.rpc("has_any_role", {
+    _user_id: userId,
+    _roles: ["admin", "correspondente"],
+  });
+  return data === true;
+}
+
+/**
  * Histórico de consultas do ecossistema (as 50 mais recentes). Com `cliente_id`, só as
  * daquele cliente (a Consulta Ficha aberta a partir da ficha do cliente).
  */
@@ -345,9 +359,10 @@ export const listarConsultasBureau = createServerFn({ method: "GET" })
       )
       .eq("correspondente_id", corr);
     if (data.cliente_id) consulta = consulta.eq("cliente_id", data.cliente_id);
-    const [consultas, podePii] = await Promise.all([
+    const [consultas, podePii, amplo] = await Promise.all([
       consulta.order("created_at", { ascending: false }).limit(50),
       temPiiCliente(supabase, userId),
+      papelAmplo(supabase, userId),
     ]);
     if (consultas.error) throw new Error("Não foi possível carregar o histórico de consultas.");
     const linhas = (consultas.data ?? []) as Array<Record<string, any>>;
@@ -363,7 +378,7 @@ export const listarConsultasBureau = createServerFn({ method: "GET" })
         linhas.map((l) => l.ator_id),
       ),
     ]);
-    return linhas.map((c) => ({
+    return linhas.filter((c) => consultaVisivel(c, userId, amplo, clientes)).map((c) => ({
       id: c.id,
       documento: podePii ? c.documento : mascararDocumento(c.documento ?? ""),
       tipo_pessoa: c.tipo_pessoa,
@@ -444,7 +459,7 @@ export const obterConsultaBureau = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Consulta não encontrada.");
-    const [r, podePii] = await Promise.all([
+    const [r, podePii, amplo] = await Promise.all([
       db(supabase)
         .from("bureau_consultas")
         .select("id, documento, finalidade, sucesso, erro, created_at, cliente_id, ator_id, ficha")
@@ -452,6 +467,7 @@ export const obterConsultaBureau = createServerFn({ method: "GET" })
         .eq("correspondente_id", corr)
         .maybeSingle(),
       temPiiCliente(supabase, userId),
+      papelAmplo(supabase, userId),
     ]);
     if (r.error) throw new Error("Não foi possível abrir a consulta.");
     if (!r.data) throw new Error("Consulta não encontrada.");
@@ -461,6 +477,8 @@ export const obterConsultaBureau = createServerFn({ method: "GET" })
       nomesPorId(supabase, "clientes", [linha.cliente_id]),
       nomesPorId(supabase, "profiles", [linha.ator_id]),
     ]);
+    // Cliente de outro analista (fora da carteira de quem pede) não abre o relatório.
+    if (!consultaVisivel(linha, userId, amplo, clientes)) throw new Error("Consulta não encontrada.");
     return {
       id: linha.id as string,
       documento: podePii ? (linha.documento as string) : mascararDocumento(linha.documento ?? ""),
@@ -471,9 +489,7 @@ export const obterConsultaBureau = createServerFn({ method: "GET" })
       cliente_id: (linha.cliente_id ?? null) as string | null,
       cliente: ((linha.cliente_id && clientes[linha.cliente_id]) || null) as string | null,
       responsavel: ((linha.ator_id && pessoas[linha.ator_id]) || null) as string | null,
-      ficha: (ficha && !podePii
-        ? { ...ficha, documento: mascararDocumento(ficha.documento ?? ""), contatos: [] }
-        : ficha) as FichaBureau | null,
+      ficha: (ficha && !podePii ? fichaSemDadosSensiveis(ficha) : ficha) as FichaBureau | null,
     };
   });
 

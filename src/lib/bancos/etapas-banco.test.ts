@@ -92,7 +92,7 @@ describe("Régua da ficha por banco", () => {
       "Engenharia",
       "Análise Jurídica",
       "Contrato Emitido",
-      "Registro",
+      "Contrato registrado", // C12 (26/10/2026): a etapa ganhou o nome do pedido
     ]);
     expect(etapasDoBanco("Itaú").map((e) => e.numero)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
@@ -109,7 +109,7 @@ describe("Régua da ficha por banco", () => {
       "Engenharia",
       "Análise Jurídica",
       "Contrato Emitido",
-      "Registro",
+      "Contrato registrado", // C12 (26/10/2026): a etapa ganhou o nome do pedido
     ]);
   });
 

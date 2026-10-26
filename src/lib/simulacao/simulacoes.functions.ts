@@ -410,6 +410,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           .eq("valor_financiamento", dd.valor_financiamento || 0)
           .eq("prazo", dd.prazo || 0)
           .filter("agrupador_id", dd.agrupador_id ? "eq" : "is", dd.agrupador_id || null)
+          // C29 (auditoria 26/10): simulação feita para outra conta (ou para a sua base) não é
+          // reaproveitada para um destino diferente.
+          .filter("conta_assinante_id", contaDestino ? "eq" : "is", contaDestino || null)
           .in("status", ["rascunho", "erro_banco", "enviando", "parcialmente_simulada", "simulada"])
           .gte("created_at", vinteMinutosAtras)
           .is("deleted_at", null)

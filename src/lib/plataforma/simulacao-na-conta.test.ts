@@ -91,10 +91,32 @@ describe("criarSimulacao: conta de destino (C29)", () => {
     const r = await levarSimulacaoParaContaServidor(d, { userId: UID, simulacaoId: SIM, licenca: CONTA });
     expect(r?.ok).toBe(false);
     expect(r?.mensagem).toMatch(/Levar à conta de novo/);
-    expect(d.marcar).toHaveBeenCalledWith(SIM, {
-      conta_assinante_id: CONTA,
-      conta_assinante_nome: "Imobiliária Alfa",
+    expect(d.marcar).toHaveBeenCalledWith(
+      SIM,
+      { conta_assinante_id: CONTA, conta_assinante_nome: "Imobiliária Alfa" },
+      { soSemConta: true },
+    );
+  });
+
+  it("ATAQUE/auditoria: recusa de regra (já em outra conta) nunca troca a conta da simulação", async () => {
+    const { d } = deps({
+      comConta: vi.fn(async () => {
+        throw new Error("Esta simulação já está na carteira de outra conta.");
+      }),
     });
+    const r = await levarSimulacaoParaContaServidor(d, { userId: UID, simulacaoId: SIM, licenca: CONTA });
+    expect(r?.ok).toBe(false);
+    expect(d.marcar).not.toHaveBeenCalled();
+  });
+
+  it("recusa por permissão também não marca", async () => {
+    const { d } = deps({
+      comConta: vi.fn(async () => {
+        throw new Error("Você não tem permissão para esta operação na plataforma.");
+      }),
+    });
+    await levarSimulacaoParaContaServidor(d, { userId: UID, simulacaoId: SIM, licenca: CONTA });
+    expect(d.marcar).not.toHaveBeenCalled();
   });
 
   it("nome da conta indisponível não impede a cópia", async () => {

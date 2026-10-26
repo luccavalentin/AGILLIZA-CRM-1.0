@@ -28,6 +28,16 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { buscarContasDoFiltro } from "@/lib/plataforma/filtro-base.functions";
 import { iniciais, tipoDaConta, type ContaFiltro } from "@/lib/plataforma/filtro-base";
 import { definirContaDestino, type ContaDestino } from "@/lib/simulacao/destino-conta";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 /**
  * "Onde simular" (C29): Sua base (padrão) ou a conta de um assinante. Na conta, a simulação nasce
@@ -52,6 +62,9 @@ export function DestinoSimulacao({
     staleTime: 5 * 60_000,
   });
   const conta: ContaFiltro | null = resolvida.data?.contas?.[0] ?? null;
+  // LGPD (auditoria de 26/10/2026): escolher a conta copia o cliente para a carteira dela.
+  // Um clique errado no combobox não pode virar compartilhamento: confirmação com o nome da conta.
+  const [pendente, setPendente] = useState<ContaDestino | null>(null);
 
   // O fluxo de envio lê o destino daqui; ao sair da tela, volta para a sua base.
   useEffect(() => {
@@ -100,10 +113,33 @@ export function DestinoSimulacao({
           <SeletorDeConta
             conta={conta}
             carregando={naConta && resolvida.isLoading}
-            onEscolher={(c) => onConta(c.id)}
+            onEscolher={(c) => (c.id === contaId ? undefined : setPendente(c))}
           />
         </div>
       </div>
+      <AlertDialog open={!!pendente} onOpenChange={(o) => !o && setPendente(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Simular para {pendente?.nome}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O cliente desta simulação (nome, CPF, renda, contatos e dados do cônjuge) será copiado
+              para a carteira de <strong>{pendente?.nome}</strong> e ficará visível para a equipe
+              dessa conta. Confirme só se o cliente é atendido por ela.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendente) onConta(pendente.id);
+                setPendente(null);
+              }}
+            >
+              Simular para esta conta
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {contaInvalida && (
         <p className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
           <Info className="size-3.5" /> Conta não encontrada. Escolha outra ou volte para a sua base.

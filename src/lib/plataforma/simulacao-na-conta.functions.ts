@@ -29,11 +29,17 @@ export async function dependenciasReais() {
   return {
     comConta,
     comPlataforma,
-    marcar: async (simulacaoId: string, patch: Record<string, unknown>) => {
-      const { error } = await supabaseAdmin
+    marcar: async (
+      simulacaoId: string,
+      patch: Record<string, unknown>,
+      opcoes?: { soSemConta?: boolean },
+    ) => {
+      let q = supabaseAdmin
         .from("simulacoes")
         .update(patch as never)
         .eq("id", simulacaoId);
+      if (opcoes?.soSemConta) q = q.is("conta_assinante_id", null);
+      const { error } = await q;
       if (error) throw new Error(error.message);
     },
   };

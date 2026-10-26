@@ -27,7 +27,11 @@ export interface DependenciasNaConta {
   comConta: <R>(uid: string, licenca: string, fn: (tx: TxPlataforma) => Promise<R>) => Promise<R>;
   comPlataforma: <R>(uid: string, fn: (tx: TxPlataforma) => Promise<R>) => Promise<R>;
   /** Grava a marca na simulação do Agilliza (cliente admin, escopo já conferido). */
-  marcar: (simulacaoId: string, patch: Record<string, unknown>) => Promise<void>;
+  marcar: (
+    simulacaoId: string,
+    patch: Record<string, unknown>,
+    opcoes?: { soSemConta?: boolean },
+  ) => Promise<void>;
 }
 
 /**
@@ -88,14 +92,22 @@ export async function levarSimulacaoParaContaServidor(
       codigo: copia.codigo,
     };
   } catch (e) {
-    // A marca fica (com a conta escolhida), para "Levar à conta de novo" no detalhe.
-    await dep
-      .marcar(args.simulacaoId, {
-        conta_assinante_id: args.licenca,
-        ...(nome ? { conta_assinante_nome: nome } : {}),
-      })
-      .catch(() => undefined);
     const motivo = e instanceof Error && e.message ? e.message : "a conta não respondeu";
+    // A marca fica (com a conta escolhida), para "Levar à conta de novo" no detalhe — mas só
+    // quando a falha é técnica e a simulação ainda não tem conta: recusa de regra (outra conta,
+    // permissão, atendimento) nunca troca a conta de uma simulação já levada (auditoria 26/10).
+    if (!recusaDeRegra(motivo)) {
+      await dep
+        .marcar(
+          args.simulacaoId,
+          {
+            conta_assinante_id: args.licenca,
+            ...(nome ? { conta_assinante_nome: nome } : {}),
+          },
+          { soSemConta: true },
+        )
+        .catch(() => undefined);
+    }
     return {
       ok: false,
       mensagem: `A simulação foi criada na sua base, mas não chegou à conta${nome ? ` de ${nome}` : ""}: ${motivo} Use "Levar à conta de novo" no detalhe.`,
@@ -149,3 +161,10 @@ export const DADOS_RAPIDA_NA_CONTA = z
     path: ["valor_financiamento"],
   });
 export type DadosRapidaNaConta = z.infer<typeof DADOS_RAPIDA_NA_CONTA>;
+
+/** Recusa das regras do banco (não é falha técnica): a marca não deve ser gravada. */
+export function recusaDeRegra(motivo: string): boolean {
+  return /outra conta|permiss|não pertence|atendimento|não encontrada no seu|correspondente do agilliza não/i.test(
+    motivo,
+  );
+}
