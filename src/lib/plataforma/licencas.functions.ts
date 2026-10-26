@@ -71,7 +71,6 @@ export interface PessoaLicenca {
   papel: string;
   equipe: string | null;
   ativo: boolean;
-  mfa_ativo: boolean;
   status: string;
   ultimo_login_em: string | null;
   desde: string;
@@ -299,7 +298,7 @@ export const detalheLicenca = createServerFn({ method: "GET" })
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
       const pessoas = await tx.consultar<PessoaLicenca>(
-        `select id, nome, email_mascarado, papel::text as papel, equipe, ativo, mfa_ativo, status,
+        `select id, nome, email_mascarado, papel::text as papel, equipe, ativo, status,
                 ultimo_login_em::text as ultimo_login_em, desde::text as desde
            from plataforma.pessoas_da_conta($1)`,
         [data.id],
