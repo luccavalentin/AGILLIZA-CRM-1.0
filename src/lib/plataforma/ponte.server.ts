@@ -189,6 +189,51 @@ export async function comPlataforma<R>(
 }
 
 /**
+ * Transação da ponte SEM abrir o contexto de gestão da pessoa — só para funções da plataforma que
+ * recebem a pessoa do Agilliza por parâmetro e conferem a permissão dela no próprio banco (ex.:
+ * Consulta Ficha do correspondente, 0319: quem tem só Clientes não entra na gestão da plataforma,
+ * mas pode consultar). Concedidas apenas ao papel da ponte.
+ */
+export async function comPonteDireta<R>(
+  fn: (tx: TxPlataforma) => Promise<R>,
+  opcoes: { kek?: boolean } = {},
+): Promise<R> {
+  const banco = obterPool();
+  let c: pg.PoolClient;
+  try {
+    c = await banco.connect();
+  } catch (e) {
+    console.error("[ponte-plataforma] sem conexão", (e as Error)?.message);
+    throw new Error("A plataforma não respondeu agora. Tente de novo em instantes.");
+  }
+  const q = (sql: string, params?: unknown[]) =>
+    c.query(sql, params as unknown[]).catch(marcarDoBanco);
+  let descartar = false;
+  try {
+    await q("begin");
+    if (opcoes.kek) {
+      const kek = process.env.CORRETOR_KEK;
+      if (!kek) throw new Error("A chave de cifragem não está configurada neste servidor.");
+      await q("select set_config('app.kek', $1, true)", [kek]);
+    }
+    const tx: TxPlataforma = {
+      consultar: async (sql, params) => (await q(sql, params)).rows,
+      uma: async (sql, params) => (await q(sql, params)).rows[0] ?? null,
+    };
+    const r = await fn(tx);
+    await q("commit");
+    return r;
+  } catch (e) {
+    await c.query("rollback").catch(() => {
+      descartar = true;
+    });
+    throw traduzir(e);
+  } finally {
+    c.release(descartar);
+  }
+}
+
+/**
  * Credencial de um provedor guardada em "Chaves dos provedores" (cifrada no banco), lida
  * pelo SISTEMA — nunca em nome de uma pessoa: a função do banco recusa se houver contexto
  * de usuário. É assim que o Agilliza e o Corretor usam a MESMA chave da integração bancária,

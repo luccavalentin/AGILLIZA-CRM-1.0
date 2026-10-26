@@ -1,3 +1,4 @@
+import { numeroIdH } from "@/lib/propostas/id-h";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -495,8 +496,8 @@ function Acompanhar() {
             <dl className="space-y-2.5 text-sm">
               <ResumoLinha
                 icon={FileText}
-                label="Nº da proposta"
-                value={resumo?.numero_proposta ?? "—"}
+                label="ID H."
+                value={numeroIdH(resumo?.id_h ?? null) ?? "—"}
               />
               <ResumoLinha
                 icon={Building2}

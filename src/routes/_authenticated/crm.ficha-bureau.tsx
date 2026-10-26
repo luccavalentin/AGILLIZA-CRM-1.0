@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, BarChart3, CheckCircle2, FileSearch, RotateCcw } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Indicador3D } from "@/components/ui/indicador-3d";
 import {
+  acompanharConsultaFicha,
   clienteParaFichaBureau,
   consultarFichaBureau,
   listarConsultasBureau,
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/crm/ficha-bureau")({
 
 type Fase =
   | { tipo: "preenchendo" }
-  | { tipo: "consultando" }
+  | { tipo: "consultando"; registroId?: string; desde?: number; nome?: string | null; clienteId?: string | null }
   | { tipo: "pronto"; ficha: FichaBureau; nome: string | null; clienteId: string | null }
   | { tipo: "falhou"; mensagem: string };
 
@@ -55,6 +56,7 @@ function Pagina() {
   const historicoFn = useServerFn(listarConsultasBureau);
   const resumoFn = useServerFn(resumoConsultasBureau);
   const consultarFn = useServerFn(consultarFichaBureau);
+  const acompanharFn = useServerFn(acompanharConsultaFicha);
   const clienteFn = useServerFn(clienteParaFichaBureau);
 
   const [fase, setFase] = useState<Fase>({ tipo: "preenchendo" });
@@ -76,21 +78,66 @@ function Pagina() {
 
   const disp = disponibilidade(config.data);
 
+  // A consulta sai pela fila do worker do Agilliza Tech (APIFull): o pedido volta na hora e o
+  // resultado chega em segundos; a tela acompanha o pedido até concluir (ou falhar).
   const consulta = useMutation({
     mutationFn: (p: PedidoConsulta) =>
       consultarFn({
-        data: { documento: p.documento, finalidade: p.finalidade, cliente_id: p.cliente_id },
+        data: {
+          documento: p.documento,
+          finalidade: p.finalidade,
+          base_legal: p.base,
+          autorizou: p.autorizou,
+          nome: p.nome,
+          cliente_id: p.cliente_id,
+        },
       }),
     onMutate: () => setFase({ tipo: "consultando" }),
-    onSuccess: (ficha, p) =>
-      setFase({ tipo: "pronto", ficha, nome: p.nome, clienteId: p.cliente_id }),
+    onSuccess: (r, p) =>
+      setFase({
+        tipo: "consultando",
+        registroId: r.registroId,
+        desde: Date.now(),
+        nome: p.nome,
+        clienteId: p.cliente_id,
+      }),
     onError: (e) =>
       setFase({ tipo: "falhou", mensagem: mensagemDeErro(e, "Não foi possível consultar a ficha.") }),
     onSettled: () => {
       void historico.refetch();
-      void resumo.refetch();
     },
   });
+
+  const emAndamento = fase.tipo === "consultando" && fase.registroId ? fase : null;
+  const andamento = useQuery({
+    queryKey: ["bureau-andamento", emAndamento?.registroId ?? null],
+    queryFn: () => acompanharFn({ data: { id: emAndamento!.registroId! } }),
+    enabled: Boolean(emAndamento),
+    refetchInterval: 3_000,
+    retry: 2,
+  });
+  useEffect(() => {
+    if (!emAndamento) return;
+    const r = andamento.data;
+    if (r?.situacao === "concluida") {
+      setFase({ tipo: "pronto", ficha: r.ficha, nome: emAndamento.nome ?? null, clienteId: emAndamento.clienteId ?? null });
+      void historico.refetch();
+      void resumo.refetch();
+    } else if (r?.situacao === "falhou") {
+      setFase({ tipo: "falhou", mensagem: r.mensagem });
+      void historico.refetch();
+    } else if (andamento.isError) {
+      setFase({ tipo: "falhou", mensagem: mensagemDeErro(andamento.error, "Não foi possível acompanhar a consulta.") });
+    } else if (emAndamento.desde && Date.now() - emAndamento.desde > 4 * 60_000) {
+      setFase({
+        tipo: "falhou",
+        mensagem:
+          "O fornecedor ainda não respondeu. A consulta continua na fila e o resultado aparece no histórico assim que chegar.",
+      });
+      void historico.refetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [andamento.data, andamento.isError, andamento.dataUpdatedAt]);
 
   function novaConsulta() {
     setFase({ tipo: "preenchendo" });
@@ -165,7 +212,7 @@ function Pagina() {
                 }
               : null
           }
-          ocupado={consulta.isPending}
+          ocupado={consulta.isPending || fase.tipo === "consultando"}
           erro={null}
           onConsultar={(p) => consulta.mutate(p)}
           versao={versao}

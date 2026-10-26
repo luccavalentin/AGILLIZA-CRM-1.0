@@ -12,6 +12,7 @@ import {
   resumirFicha,
   scoreNaEscala,
   situacaoDoHistorico,
+  explicarIndisponivel,
   tomScore,
   validarFormulario,
   type FormularioConsulta,
@@ -323,5 +324,28 @@ describe("quandoRelativo", () => {
     expect(quandoRelativo("2026-10-25T11:00:00Z", agora)).toBe("ontem");
     expect(quandoRelativo("2026-10-01T12:00:00Z", agora)).toBe("01/10/2026");
     expect(quandoRelativo("não é data", agora)).toBe("—");
+  });
+});
+
+describe("caminho do Agilliza Tech (0319)", () => {
+  const base = { provedor: null, ativo: false, camposPreenchidos: [], catalogo: [] };
+  it("plataforma pronta vale mesmo sem contrato próprio", () => {
+    const d = disponibilidade({ ...base, plataforma: { pronto: true, motivo: null } });
+    expect(d.disponivel).toBe(true);
+    expect(d.fornecedor).toBe("Serasa Premium");
+  });
+  it("sem chave: a explicação é a frase exata do servidor", () => {
+    const msg = "A chave da APIFull não está cadastrada. Cadastre-a em Configurações gerais › Chaves dos provedores.";
+    const d = disponibilidade({ ...base, plataforma: { pronto: false, motivo: msg } });
+    expect(d.disponivel).toBe(false);
+    expect(d.motivo).toBe("plataforma");
+    expect(explicarIndisponivel(d)).toBe(msg);
+  });
+  it("histórico: na fila é andamento por 15 min; depois, aguardando o fornecedor", () => {
+    const agora = Date.parse("2026-10-26T12:00:00Z");
+    expect(situacaoDoHistorico({ sucesso: false, erro: "na_fila", created_at: "2026-10-26T11:55:00Z" }, agora).texto).toBe("Na fila");
+    expect(situacaoDoHistorico({ sucesso: false, erro: "na_fila", created_at: "2026-10-26T11:00:00Z" }, agora).texto).toBe(
+      "Aguardando o fornecedor",
+    );
   });
 });

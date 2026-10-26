@@ -42,6 +42,9 @@ import {
 export interface PedidoConsulta {
   documento: string;
   finalidade: string;
+  /** Base legal e autorização como a pessoa marcou (a plataforma confere de novo). */
+  base: BaseLegal;
+  autorizou: boolean;
   cliente_id: string | null;
   /** Nome para o cartão de resultado (cliente do CRM ou o digitado). */
   nome: string | null;
@@ -117,6 +120,8 @@ export function NovaConsulta({
     onConsultar({
       documento: documentoDaConsulta(form),
       finalidade: finalidadeRegistrada(finalidade, base, autorizou),
+      base,
+      autorizou,
       cliente_id: modo === "crm" ? (cliente?.id ?? null) : null,
       nome: modo === "crm" ? (cliente?.nome ?? null) : nome.trim() || null,
     });
@@ -147,14 +152,14 @@ export function NovaConsulta({
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning-foreground" aria-hidden />
             <span>
               Consulta indisponível
-              {podeConfigurar && (
+              {(podeConfigurar || disp.motivo === "plataforma") && (
                 <span className="block text-xs font-normal text-muted-foreground">
                   {explicarIndisponivel(disp)}
                 </span>
               )}
             </span>
           </p>
-          {podeConfigurar && (
+          {podeConfigurar && disp.motivo !== "plataforma" && (
             <Link
               to={"/admin/integracoes" as string}
               className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground hover:border-primary/40 hover:text-primary"

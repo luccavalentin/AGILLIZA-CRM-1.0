@@ -190,9 +190,16 @@ export interface ConfigDisponibilidade {
   integrado?: boolean;
   camposPreenchidos: string[];
   catalogo: { chave: string; nome: string; campos: { chave: string }[] }[];
+  /** Caminho do Agilliza Tech (APIFull pela fila do worker, 0319): quando vem, é ele que vale. */
+  plataforma?: { pronto: boolean; motivo: string | null } | null;
 }
 
-export type MotivoIndisponivel = "sem_provedor" | "inativo" | "sem_credenciais" | "nao_integrado";
+export type MotivoIndisponivel =
+  | "sem_provedor"
+  | "inativo"
+  | "sem_credenciais"
+  | "nao_integrado"
+  | "plataforma";
 
 export interface Disponibilidade {
   disponivel: boolean;
@@ -200,9 +207,27 @@ export interface Disponibilidade {
   /** Nome do fornecedor contratado (Serasa Experian, SPC…), quando há. */
   fornecedor: string | null;
   faltando: string[];
+  /** O motivo exato dito pelo servidor (ex.: "A chave da APIFull não está cadastrada…"). */
+  mensagem?: string | null;
 }
 
+/** Fornecedor da consulta pelo caminho do Agilliza Tech. */
+export const FORNECEDOR_PLATAFORMA = "Serasa Premium";
+
 export function disponibilidade(cfg: ConfigDisponibilidade | null | undefined): Disponibilidade {
+  // C16 (26/10/2026): a consulta sai pelo mesmo caminho do Agilliza Tech; o contrato próprio só
+  // vale enquanto o servidor não informa a plataforma (compatibilidade).
+  if (cfg?.plataforma) {
+    return cfg.plataforma.pronto
+      ? { disponivel: true, motivo: null, fornecedor: FORNECEDOR_PLATAFORMA, faltando: [] }
+      : {
+          disponivel: false,
+          motivo: "plataforma",
+          fornecedor: FORNECEDOR_PLATAFORMA,
+          faltando: [],
+          mensagem: cfg.plataforma.motivo ?? "Consulta indisponível no momento.",
+        };
+  }
   if (!cfg || !cfg.provedor) {
     return { disponivel: false, motivo: "sem_provedor", fornecedor: null, faltando: [] };
   }
@@ -231,6 +256,8 @@ export function explicarIndisponivel(d: Disponibilidade): string {
       return `Faltam chaves do ${d.fornecedor ?? "bureau"} em Integrações.`;
     case "nao_integrado":
       return `A integração com o ${d.fornecedor ?? "bureau"} ainda está em homologação.`;
+    case "plataforma":
+      return d.mensagem ?? "Consulta indisponível no momento.";
     default:
       return "";
   }
@@ -409,6 +436,13 @@ export function situacaoDoHistorico(
 ): { tom: Tom | "info"; texto: string } {
   if (l.sucesso) return { tom: "sucesso", texto: "Concluída" };
   const erro = (l.erro ?? "").trim();
+  // Pedido na fila do worker da plataforma (0319): até 15 min é andamento normal.
+  if (erro === "na_fila") {
+    const t = new Date(l.created_at).getTime();
+    if (Number.isFinite(t) && agora - t < 15 * 60_000) return { tom: "info", texto: "Na fila" };
+    return { tom: "alerta", texto: "Aguardando o fornecedor" };
+  }
+  if (erro === "repetida") return { tom: "neutro", texto: "Pedido repetido" };
   if (erro === "sem_retorno") {
     const t = new Date(l.created_at).getTime();
     if (Number.isFinite(t) && agora - t < JANELA_ANDAMENTO_MS) {

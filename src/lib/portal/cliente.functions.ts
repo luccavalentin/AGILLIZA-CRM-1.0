@@ -330,7 +330,8 @@ export const clienteObterVisaoGeral = createServerFn({ method: "GET" }).handler(
 // ----------------------------------------------------------------------------
 export interface AcompanhamentoResumo {
   proposta_id: string | null;
-  numero_proposta: string | null;
+  /** C33: id da oportunidade na integração, mostrado como "ID H." (o número interno não vem). */
+  id_h: string | null;
   banco: string | null;
   produto: string | null;
   valor_imovel: number | null;

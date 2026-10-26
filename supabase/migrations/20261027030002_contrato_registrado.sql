@@ -125,7 +125,8 @@ BEGIN
     NEW.correspondente_id,
     'proposta.status',
     v_titulo,
-    'Sua proposta ' || COALESCE(NEW.numero_proposta, '') || ' foi atualizada.',
+    -- C33: o cliente vê o "ID H." (id da oportunidade), nunca o número interno PRO-….
+    'Sua proposta' || COALESCE(' ID H. ' || NULLIF(btrim(NEW.homefin_id_oportunidade::text), ''), '') || ' foi atualizada.',
     '/cliente'
   );
 
