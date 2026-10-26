@@ -130,33 +130,42 @@ function Pagina() {
   const carteiras = q.data?.carteiras ?? [];
   const kpi = q.data?.resumo ?? { total: 0, ativas: 0, teste: 0, travadas: 0, mrr: 0, usuarios: 0 };
   // A gaveta mostra a versão mais recente da conta (depois de mudar situação, plano ou carteira).
-  const abertaAtual = aberta ? (licencas.find((l) => l.id === aberta.licenca.id) ?? aberta.licenca) : null;
+  const abertaAtual = aberta
+    ? (licencas.find((l) => l.id === aberta.licenca.id) ?? aberta.licenca)
+    : null;
 
-  const mudar = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
-    setPagina(1);
-  };
+  const mudar =
+    <T,>(set: (v: T) => void) =>
+    (v: T) => {
+      set(v);
+      setPagina(1);
+    };
   const filtrosAtivos =
-    (tipo !== TODOS ? 1 : 0) + (plano !== TODOS ? 1 : 0) + (carteira !== TODOS ? 1 : 0) + (termo ? 1 : 0);
+    (tipo !== TODOS ? 1 : 0) +
+    (plano !== TODOS ? 1 : 0) +
+    (carteira !== TODOS ? 1 : 0) +
+    (termo ? 1 : 0);
   const abrir = (licenca: Licenca, aba: AbaLicenca = "resumo", secao?: SecaoAcao) =>
     setAberta({ licenca, aba, secao });
 
   if (aba === "vinculados") {
     return (
       <PaginaGestao>
-      <CabecalhoGestao
-        titulo="Licenças e assinaturas"
-        icone={<KeyRound />}
-      <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
-        <TabsList className="h-auto w-full sm:w-auto">
-          <TabsTrigger value="assinantes" className="min-h-10 flex-1 sm:flex-none">
-            Assinantes
-          </TabsTrigger>
-          <TabsTrigger value="vinculados" className="min-h-10 flex-1 sm:flex-none">
-            Vinculados ao correspondente
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+        <CabecalhoGestao
+          titulo="Licenças e assinaturas"
+          icone={<KeyRound />}
+          descricao="Contas de corretores, imobiliárias e parceiros do Agilliza Tech: situação, plano, teste, créditos, carteira e uso."
+        />
+        <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
+          <TabsList className="h-auto w-full sm:w-auto">
+            <TabsTrigger value="assinantes" className="min-h-10 flex-1 sm:flex-none">
+              Assinantes
+            </TabsTrigger>
+            <TabsTrigger value="vinculados" className="min-h-10 flex-1 sm:flex-none">
+              Vinculados ao correspondente
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
         <VinculadosAba planos={planos} />
       </PaginaGestao>
     );
@@ -167,6 +176,15 @@ function Pagina() {
       <CabecalhoGestao
         titulo="Licenças e assinaturas"
         icone={<KeyRound />}
+        descricao="Contas de corretores, imobiliárias e parceiros do Agilliza Tech: situação, plano, teste, créditos, carteira e uso."
+        acoes={
+          podeCriar && (
+            <Button className="min-h-11 w-full sm:min-h-9 sm:w-auto" onClick={() => setNova(true)}>
+              <Plus className="mr-1.5 size-4" /> Nova licença
+            </Button>
+          )
+        }
+      />
       <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
         <TabsList className="h-auto w-full sm:w-auto">
           <TabsTrigger value="assinantes" className="min-h-10 flex-1 sm:flex-none">
@@ -177,16 +195,6 @@ function Pagina() {
           </TabsTrigger>
         </TabsList>
       </Tabs>
-
-        descricao="Contas de corretores, imobiliárias e parceiros do Agilliza Tech: situação, plano, teste, créditos, carteira e uso."
-        acoes={
-          podeCriar && (
-            <Button className="min-h-11 w-full sm:min-h-9 sm:w-auto" onClick={() => setNova(true)}>
-              <Plus className="mr-1.5 size-4" /> Nova licença
-            </Button>
-          )
-        }
-      />
 
       <FaixaIndicadores colunas={5}>
         <Indicador
@@ -313,7 +321,10 @@ function Pagina() {
       <Secao semRespiro>
         {q.isLoading && <ListaCarregando linhas={6} />}
         {q.isError && (
-          <EstadoErro mensagem={mensagemDeErro(q.error, "Não foi possível carregar as licenças.")} onTentar={() => q.refetch()} />
+          <EstadoErro
+            mensagem={mensagemDeErro(q.error, "Não foi possível carregar as licenças.")}
+            onTentar={() => q.refetch()}
+          />
         )}
         {!q.isLoading && !q.isError && licencas.length === 0 && (
           <EstadoVazio
@@ -362,13 +373,17 @@ function Pagina() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-2 py-2.5">{l.plano ?? <span className="text-muted-foreground">—</span>}</td>
+                        <td className="px-2 py-2.5">
+                          {l.plano ?? <span className="text-muted-foreground">—</span>}
+                        </td>
                         <td className="px-2 py-2.5">
                           <Selo tom={s.tom} ponto={l.status === "ativo"}>
                             {s.rotulo}
                           </Selo>
                           {l.status === "trial" && l.trial_ate && (
-                            <p className="mt-0.5 text-[11px] text-muted-foreground">até {formatData(l.trial_ate)}</p>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              até {formatData(l.trial_ate)}
+                            </p>
                           )}
                         </td>
                         <td className="px-2 py-2.5">
@@ -377,7 +392,11 @@ function Pagina() {
                           ) : (
                             <span className="text-xs text-muted-foreground">Sem carteira</span>
                           )}
-                          {l.carteira_nome && <p className="truncate text-[11px] text-muted-foreground">{l.carteira_nome}</p>}
+                          {l.carteira_nome && (
+                            <p className="truncate text-[11px] text-muted-foreground">
+                              {l.carteira_nome}
+                            </p>
+                          )}
                         </td>
                         <td className="px-2 py-2.5 text-right tabular-nums">{l.usuarios}</td>
                         <td className="px-2 py-2.5 text-right tabular-nums">
@@ -385,7 +404,9 @@ function Pagina() {
                             ? `${formatBRL(l.assinatura_valor)}/${rotuloDe(ROTULO_CICLO, l.ciclo ?? "mensal")}`
                             : "—"}
                         </td>
-                        <td className="px-2 py-2.5 text-muted-foreground">{formatData(l.criado_em)}</td>
+                        <td className="px-2 py-2.5 text-muted-foreground">
+                          {formatData(l.criado_em)}
+                        </td>
                         <td className="px-2 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                           <AcoesEmLinha licenca={l} podeEditar={podeCriar} onAbrir={abrir} />
                         </td>
@@ -402,7 +423,11 @@ function Pagina() {
                 const s = situacaoLicenca(l.status);
                 return (
                   <li key={l.id} className="flex items-start gap-3 px-4 py-3">
-                    <button type="button" className="flex min-w-0 flex-1 items-start gap-3 text-left" onClick={() => abrir(l)}>
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                      onClick={() => abrir(l)}
+                    >
                       <Avatar nome={l.nome} />
                       <span className="min-w-0 flex-1 space-y-1">
                         <span className="block truncate text-sm font-medium">{l.nome}</span>
@@ -416,7 +441,9 @@ function Pagina() {
                           </Selo>
                           <span className="text-xs tabular-nums text-muted-foreground">
                             <Users className="mr-0.5 inline size-3" /> {l.usuarios}
-                            {l.assinatura_valor ? ` · ${formatBRL(l.assinatura_valor)}/${rotuloDe(ROTULO_CICLO, l.ciclo ?? "mensal")}` : ""}
+                            {l.assinatura_valor
+                              ? ` · ${formatBRL(l.assinatura_valor)}/${rotuloDe(ROTULO_CICLO, l.ciclo ?? "mensal")}`
+                              : ""}
                           </span>
                         </span>
                       </span>
@@ -447,7 +474,12 @@ function Pagina() {
         onFechar={() => setAberta(null)}
       />
       {podeCriar && (
-        <NovaLicenca aberta={nova} aoFechar={() => setNova(false)} planos={planos} carteiras={carteiras} />
+        <NovaLicenca
+          aberta={nova}
+          aoFechar={() => setNova(false)}
+          planos={planos}
+          carteiras={carteiras}
+        />
       )}
     </PaginaGestao>
   );
@@ -466,7 +498,12 @@ function AcoesEmLinha({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-11 shrink-0 sm:size-8" aria-label={`Ações de ${licenca.nome}`}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-11 shrink-0 sm:size-8"
+          aria-label={`Ações de ${licenca.nome}`}
+        >
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -484,12 +521,24 @@ function AcoesEmLinha({
         {podeEditar && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "situacao")}>Mudar situação</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "teste")}>Teste grátis</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "plano")}>Trocar plano</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "desconto")}>Desconto</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "creditos")}>Lançar créditos</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "carteira")}>Carteira e acesso</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "situacao")}>
+              Mudar situação
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "teste")}>
+              Teste grátis
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "plano")}>
+              Trocar plano
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "desconto")}>
+              Desconto
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "creditos")}>
+              Lançar créditos
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "carteira")}>
+              Carteira e acesso
+            </DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>
