@@ -172,7 +172,8 @@ export type FiltrosPropostasGrupo = z.infer<typeof FILTROS_PROPOSTAS_GRUPO>;
 
 /** Propostas de um grupo, com as mesmas ações da fila (vínculo com o Agilliza anotado). */
 export const listarPropostasDoGrupo = createServerFn({ method: "GET" })
-  .middleware([exigirPermissao(["saas.contas", "view"])])
+  // Quem atende a fila (saas.fila) também lê as propostas dos assinantes (mesma consulta da fila).
+  .middleware([exigirPermissao(["saas.contas", "view"], ["saas.fila", "view"])])
   .inputValidator((d: unknown) => FILTROS_PROPOSTAS_GRUPO.parse(d))
   .handler(async ({ data, context }) => {
     if (data.de && data.ate && data.de > data.ate) {
@@ -227,7 +228,7 @@ export const listarPropostasDoGrupo = createServerFn({ method: "GET" })
 
 /** Usuários de uma conta (filtro "Responsável" quando um assinante está escolhido). */
 export const listarUsuariosDaConta = createServerFn({ method: "GET" })
-  .middleware([exigirPermissao(["saas.contas", "view"])])
+  .middleware([exigirPermissao(["saas.contas", "view"], ["saas.fila", "view"])])
   .inputValidator((d: unknown) => z.object({ licenca: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
