@@ -90,7 +90,6 @@ function Erros() {
     <div className="space-y-5 md:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-foreground">Erros dos usuários</h2>
           <p className="text-xs text-muted-foreground">
             O que quebrou no navegador e no servidor, agrupado. Sem dados pessoais: e-mail, CPF,
             telefone e nomes são removidos antes de gravar.
@@ -108,6 +107,7 @@ function Erros() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi
           rotulo="Grupos em aberto"
+          janela="agora"
           cor="vermelho"
           icone={<Bug className="size-4" />}
           carregando={q.isLoading}
@@ -115,7 +115,8 @@ function Erros() {
           valor={fmtNum(r?.abertos)}
         />
         <Kpi
-          rotulo="Novos em 24 h"
+          rotulo="Grupos novos"
+          janela="24 h"
           cor="amarelo"
           icone={<Sparkles />}
           carregando={q.isLoading}
@@ -123,14 +124,16 @@ function Erros() {
           valor={fmtNum(r?.novos_24h)}
         />
         <Kpi
-          rotulo="Ocorrências em 24 h"
+          rotulo="Ocorrências"
+          janela="24 h"
           cor="roxo"
           icone={<Activity />}
           carregando={q.isLoading}
           valor={fmtNum(r?.ocorrencias_24h)}
         />
         <Kpi
-          rotulo="Por sistema (abertos)"
+          rotulo="Abertos: Agilliza Tech · Agilliza"
+          janela="agora"
           cor="azul"
           icone={<Layers />}
           carregando={q.isLoading}

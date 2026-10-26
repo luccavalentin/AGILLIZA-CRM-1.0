@@ -70,7 +70,6 @@ function Servidor() {
     <div className="space-y-5 md:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-foreground">Servidor</h2>
           <p className="text-xs text-muted-foreground">
             Máquina (VPS), containers, banco, backup e certificado — lidos pelo coletor e pelo
             worker.
@@ -124,6 +123,7 @@ function Servidor() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi
           rotulo="Disco (mais cheio)"
+          janela={host ? `coleta ${ha(host.coletado_em)}` : undefined}
           cor="azul"
           icone={<HardDrive className="size-4" />}
           carregando={carregando}
@@ -134,6 +134,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Memória"
+          janela={host ? `coleta ${ha(host.coletado_em)}` : undefined}
           cor="roxo"
           icone={<MemoryStick className="size-4" />}
           carregando={carregando}
@@ -146,6 +147,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Carga (1 min)"
+          janela={host ? `coleta ${ha(host.coletado_em)}` : undefined}
           cor="amarelo"
           icone={<Cpu className="size-4" />}
           carregando={carregando}
@@ -157,6 +159,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Containers"
+          janela={host ? `coleta ${ha(host.coletado_em)}` : undefined}
           cor="verde"
           icone={<Boxes className="size-4" />}
           carregando={carregando}
@@ -168,6 +171,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Último backup"
+          janela={host ? `coleta ${ha(host.coletado_em)}` : undefined}
           cor="marca"
           icone={<DatabaseBackup className="size-4" />}
           carregando={carregando}
@@ -184,6 +188,7 @@ function Servidor() {
         />
         <Kpi
           rotulo="Certificado HTTPS"
+          janela={host ? `coleta ${ha(host.coletado_em)}` : undefined}
           cor="vermelho"
           icone={<Lock className="size-4" />}
           carregando={carregando}
