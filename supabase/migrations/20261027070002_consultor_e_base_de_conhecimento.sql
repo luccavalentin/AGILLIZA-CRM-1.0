@@ -9,8 +9,9 @@
 --    avaliação, certidões, limite de comprometimento, taxa de referência): as contas do
 --    Consultor saem calculadas com estes números, nunca fixos no código.
 -- 4. Mensagens do Consultor guardam os cálculos feitos e o aviso de "dado atual".
--- 5. Armazenamento: imagens dos artigos (bucket público, só imagem, nomes impossíveis de
---    adivinhar — precisam abrir na News e no e-mail) e anexos (bucket privado, por conta).
+-- 5. Armazenamento: imagens dos artigos e dos posts da News (bucket público, só imagem,
+--    nomes impossíveis de adivinhar — precisam abrir no Agilliza Tech) e anexos (bucket
+--    privado, por conta).
 
 -- ───────────── 1. Artigos ─────────────
 alter table public.consultor_ia_base
@@ -291,7 +292,10 @@ create policy conhecimento_imagens_insert on storage.objects
     bucket_id = 'conhecimento-imagens'
     and (storage.foldername(name))[1] = public.correspondente_do_usuario((select auth.uid()))::text
     and lower(storage.extension(name)) in ('jpg', 'jpeg', 'png', 'webp', 'gif')
-    and public.usuario_tem_permissao((select auth.uid()), 'admin.parametros', 'edit')
+    and (
+      public.usuario_tem_permissao((select auth.uid()), 'admin.parametros', 'edit')
+      or public.usuario_tem_permissao((select auth.uid()), 'saas.news', 'edit')
+    )
   );
 
 drop policy if exists conhecimento_imagens_delete on storage.objects;
@@ -300,7 +304,10 @@ create policy conhecimento_imagens_delete on storage.objects
   using (
     bucket_id = 'conhecimento-imagens'
     and (storage.foldername(name))[1] = public.correspondente_do_usuario((select auth.uid()))::text
-    and public.usuario_tem_permissao((select auth.uid()), 'admin.parametros', 'edit')
+    and (
+      public.usuario_tem_permissao((select auth.uid()), 'admin.parametros', 'edit')
+      or public.usuario_tem_permissao((select auth.uid()), 'saas.news', 'edit')
+    )
   );
 
 drop policy if exists conhecimento_anexos_select on storage.objects;

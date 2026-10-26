@@ -40,6 +40,13 @@ export interface ConversaConsultor {
   updated_at: string;
 }
 
+export interface AnexoBase {
+  nome: string;
+  caminho: string;
+  tamanho: number;
+  tipo: string;
+}
+
 export interface ItemBase {
   id: string;
   categoria: string;
@@ -49,6 +56,31 @@ export interface ItemBase {
   ativo: boolean;
   correspondente_id: string | null;
   updated_at: string;
+  /** C19: rascunho não alimenta o Consultor nem aparece fora da administração. */
+  status: "rascunho" | "publicado";
+  resumo: string | null;
+  capa_url: string | null;
+  anexos: AnexoBase[];
+  versao: number;
+  publicado_em: string | null;
+  /** C20: o post da Agilliza News feito a partir deste artigo. */
+  news_post_id: string | null;
+  news_publicado_em: string | null;
+  news_publico: string | null;
+  news_fim_em: string | null;
+}
+
+const COLUNAS_ITEM =
+  "id, categoria, titulo, conteudo, tags, ativo, correspondente_id, updated_at, status, resumo, capa_url, anexos, versao, publicado_em, news_post_id, news_publicado_em, news_publico, news_fim_em";
+
+function comoItem(r: any): ItemBase {
+  return {
+    ...r,
+    tags: Array.isArray(r.tags) ? r.tags : [],
+    status: r.status === "rascunho" ? "rascunho" : "publicado",
+    anexos: Array.isArray(r.anexos) ? r.anexos : [],
+    versao: Number(r.versao ?? 1),
+  };
 }
 
 export const CATEGORIAS_BASE = [
@@ -183,11 +215,11 @@ export const obterItemBase = createServerFn({ method: "GET" })
     const { supabase } = context as any;
     const { data: row, error } = await supabase
       .from("consultor_ia_base")
-      .select("id, categoria, titulo, conteudo, tags, ativo, correspondente_id, updated_at")
+      .select(COLUNAS_ITEM)
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error("Não foi possível abrir o verbete.");
-    return (row as ItemBase) ?? null;
+    return row ? comoItem(row) : null;
   });
 
 /* ─────────────── Administração da base de conhecimento ─────────────── */
@@ -207,7 +239,7 @@ export const listarBaseConhecimento = createServerFn({ method: "GET" })
     const { supabase } = context as any;
     let q = supabase
       .from("consultor_ia_base")
-      .select("id, categoria, titulo, conteudo, tags, ativo, correspondente_id, updated_at")
+      .select(COLUNAS_ITEM)
       .order("categoria", { ascending: true })
       .order("titulo", { ascending: true });
     if (data.categoria && data.categoria !== "todas") q = q.eq("categoria", data.categoria);
@@ -219,7 +251,7 @@ export const listarBaseConhecimento = createServerFn({ method: "GET" })
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return (rows ?? []) as ItemBase[];
+    return (rows ?? []).map(comoItem);
   });
 
 /** O que a tela da base pode oferecer a este usuário. */
@@ -241,16 +273,39 @@ export const salvarItemBase = createServerFn({ method: "POST" })
       tags: string[];
       ativo: boolean;
       global: boolean;
+      status?: "rascunho" | "publicado";
+      resumo?: string | null;
+      capa_url?: string | null;
+      anexos?: AnexoBase[];
     }) =>
       z
         .object({
           id: z.string().uuid().optional(),
-          categoria: z.string().min(1),
-          titulo: z.string().min(3),
-          conteudo: z.string().min(10),
-          tags: z.array(z.string()).default([]),
+          categoria: z.string().min(1).max(60),
+          titulo: z.string().trim().min(3).max(200),
+          conteudo: z.string().min(10).max(200_000),
+          tags: z.array(z.string().trim().min(1).max(40)).max(30).default([]),
           ativo: z.boolean().default(true),
           global: z.boolean().default(false),
+          status: z.enum(["rascunho", "publicado"]).default("publicado"),
+          resumo: z.string().max(400).nullable().optional(),
+          capa_url: z
+            .string()
+            .max(1000)
+            .regex(/^https:\/\//, "A capa precisa ser um endereço https://.")
+            .nullable()
+            .optional(),
+          anexos: z
+            .array(
+              z.object({
+                nome: z.string().min(1).max(200),
+                caminho: z.string().min(3).max(400),
+                tamanho: z.number().int().min(0).max(30 * 1024 * 1024),
+                tipo: z.string().max(120),
+              }),
+            )
+            .max(20)
+            .default([]),
         })
         .parse(d),
   )
@@ -280,15 +335,23 @@ export const salvarItemBase = createServerFn({ method: "POST" })
       throw new Error(MSG_SO_PLATAFORMA);
     }
     if (!data.global && !corr) throw new Error("Conta não identificada.");
+    // Anexo só da pasta da própria conta (o bucket já barra a leitura de outra).
+    if (data.anexos.some((a) => !corr || !a.caminho.startsWith(`${corr}/`) || a.caminho.includes(".."))) {
+      throw new Error("Anexo inválido.");
+    }
 
     const payload = {
       categoria: data.categoria,
       titulo: data.titulo,
       conteudo: data.conteudo,
-      tags: data.tags,
+      tags: [...new Set(data.tags.map((t) => t.toLowerCase()))],
       ativo: data.ativo,
       correspondente_id: data.global ? null : corr,
       atualizado_por: userId,
+      status: data.status,
+      resumo: data.resumo?.trim() || null,
+      capa_url: data.capa_url || null,
+      anexos: data.anexos,
     };
     if (data.id) {
       const { data: alterados, error } = await supabase

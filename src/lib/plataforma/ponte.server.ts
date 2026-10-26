@@ -275,3 +275,22 @@ export async function sondarPonte(): Promise<{
     return { configurada: true, ok: false, ms: null };
   }
 }
+
+/**
+ * Agilliza News para a equipe (frente a7): consulta pela ponte SEM contexto de operador.
+ * Só serve às funções do banco feitas para isso (`radar.feed_da_equipe`,
+ * `radar.registrar_eventos_equipe`), que recebem o id da pessoa e conferem no próprio banco
+ * que ela é da equipe ativa do Agilliza. Sem ponte configurada (desenvolvimento): null.
+ */
+export async function consultarNewsDaEquipe<T = Record<string, unknown>>(
+  sql: string,
+  params: unknown[],
+): Promise<T[] | null> {
+  if (!process.env.PONTE_DATABASE_URL) return null;
+  try {
+    const r = await obterPool().query(sql, params as unknown[]);
+    return r.rows as T[];
+  } catch (e) {
+    throw traduzir(e);
+  }
+}
