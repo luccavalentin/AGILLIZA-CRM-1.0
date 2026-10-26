@@ -1,31 +1,30 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  UsersRound,
-  UserCheck,
+  AlertTriangle,
+  CalendarClock,
+  CalendarRange,
+  Cake,
+  FileWarning,
+  Hourglass,
+  Palmtree,
+  Repeat,
+  Stethoscope,
   UserMinus,
   UserPlus,
-  Plane,
-  AlertTriangle,
-  FileClock,
+  UsersRound,
   Wallet,
-  CalendarClock,
-  CalendarCheck2,
-  Clock3,
-  Repeat,
-  type LucideIcon,
+  ClipboardCheck,
 } from "lucide-react";
-
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { obterKpisRh } from "@/lib/rh/dashboard.functions";
-import { listarFuncionarios } from "@/lib/rh/funcionarios.functions";
-import { ReportKpiCard, type KpiTone } from "@/components/financeiro/kpi-card";
+import { ReportKpiCard } from "@/components/financeiro/kpi-card";
 import { PanelHeader, SectionTitle } from "@/components/common/dashboard";
 import { Button } from "@/components/ui/button";
-import { formatBRL } from "@/lib/financeiro/format";
-import { KpiDrilldownDialog, type KpiDrillItem } from "@/components/reports/kpi-drilldown-dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EstadoLista } from "@/components/rh/estado-lista";
+import { formatBRL, formatData } from "@/lib/financeiro/format";
 
 export const Route = createFileRoute("/_authenticated/rh/")({
   head: () => ({ meta: [{ title: "Gestão de Pessoas e RH — Agilliza" }] }),
@@ -36,328 +35,283 @@ export const Route = createFileRoute("/_authenticated/rh/")({
   ),
 });
 
-type KpiRhKey = "ativos" | "afastados" | "ferias" | "total" | "custo";
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 function Pagina() {
   const fn = useServerFn(obterKpisRh);
-  const listarFn = useServerFn(listarFuncionarios);
-  const [drill, setDrill] = useState<KpiRhKey | null>(null);
-  const { data, dataUpdatedAt } = useQuery({
-    queryKey: ["rh-kpis"],
-    queryFn: () => fn(),
-  });
+  const navigate = useNavigate();
+  const q = useQuery({ queryKey: ["rh-kpis"], queryFn: () => fn() });
+  const d = q.data;
 
-  const drillQuery = useQuery({
-    enabled: !!drill,
-    queryKey: ["rh-kpi-drill", drill],
-    queryFn: async () => {
-      if (!drill) return { itens: [] as KpiDrillItem[] };
-      const statusMap: Record<KpiRhKey, string | undefined> = {
-        ativos: "ativo",
-        afastados: "afastado",
-        ferias: "ferias",
-        total: undefined,
-        custo: undefined,
-      };
-      const r = await listarFn({
-        data: { status: statusMap[drill] },
-      });
-      let itens = r;
-      if (drill === "total") {
-        itens = itens.filter((f) => f.status !== "desligado");
-      }
-      if (drill === "custo") {
-        itens = [...itens]
-          .filter((f) => f.status !== "desligado")
-          .sort((a, b) => (b.salario_atual ?? 0) - (a.salario_atual ?? 0))
-          .slice(0, 10);
-      }
-      const kpiItens: KpiDrillItem[] = itens.slice(0, 15).map((f) => ({
-        label: f.nome,
-        sub: [f.cargo_nome, f.departamento_nome].filter(Boolean).join(" · ") || undefined,
-        valor: drill === "custo" ? formatBRL(f.salario_atual ?? 0) : undefined,
-        to: "/rh/funcionarios",
-      }));
-      return { itens: kpiItens };
-    },
-  });
-
-  const drillMeta: Record<
-    KpiRhKey,
-    {
-      titulo: string;
-      subtitulo: string;
-      valor: string;
-      icon: LucideIcon;
-      tone: KpiTone;
-      empty: string;
-    }
-  > = useMemo(
-    () => ({
-      ativos: {
-        titulo: "Funcionários ativos",
-        subtitulo: "Colaboradores com contrato ativo",
-        valor: String(data?.ativos ?? 0),
-        icon: UserCheck,
-        tone: "success",
-        empty: "Sem funcionários ativos.",
-      },
-      afastados: {
-        titulo: "Funcionários afastados",
-        subtitulo: "Colaboradores em afastamento",
-        valor: String(data?.afastados ?? 0),
-        icon: UserMinus,
-        tone: "danger",
-        empty: "Sem afastamentos ativos.",
-      },
-      ferias: {
-        titulo: "Funcionários em férias",
-        subtitulo: "Períodos de férias em curso",
-        valor: String(data?.ferias ?? 0),
-        icon: Plane,
-        tone: "brand",
-        empty: "Sem funcionários em férias.",
-      },
-      total: {
-        titulo: "Quadro total",
-        subtitulo: "Ativos, em experiência, afastados e férias",
-        valor: String(
-          (data?.ativos ?? 0) +
-            (data?.experiencia ?? 0) +
-            (data?.afastados ?? 0) +
-            (data?.ferias ?? 0),
-        ),
-        icon: UsersRound,
-        tone: "brand",
-        empty: "Quadro vazio.",
-      },
-      custo: {
-        titulo: "Custo mensal estimado",
-        subtitulo: "Top 10 salários vigentes",
-        valor: formatBRL(data?.custoMensalEstimado ?? 0),
-        icon: Wallet,
-        tone: "brand",
-        empty: "Sem salários cadastrados.",
-      },
-    }),
-    [data],
-  );
-
-  const atualizado = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", {
+  const atualizado = q.dataUpdatedAt
+    ? new Date(q.dataUpdatedAt).toLocaleTimeString("pt-BR", {
         timeZone: "America/Sao_Paulo",
         hour: "2-digit",
         minute: "2-digit",
       })
     : undefined;
 
+  if (!d) {
+    return (
+      <div className="mx-auto w-full max-w-[1600px] p-3 sm:p-4 md:p-6">
+        <EstadoLista q={q} vazio="" erro="Não foi possível carregar o painel de RH." />
+      </div>
+    );
+  }
+
+  const maxMov = Math.max(1, ...d.admissoesUltimos12.map((m) => m.total), ...d.desligamentosUltimos12.map((m) => m.total));
+  const maxDep = Math.max(1, ...d.quadroPorDepartamento.map((x) => x.total));
+
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:space-y-8 md:p-6">
       <PanelHeader
         eyebrow="Gestão de Pessoas e RH · Painel"
         titulo="Gestão de Pessoas e RH"
-        descricao="Quadro de funcionários, custos e movimentações do período."
+        descricao="Quadro, movimentação, ausências, férias, documentos e custo da folha."
         atualizadoEm={atualizado}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link to="/rh/funcionarios">Ver funcionários</Link>
+              <Link to="/rh/folha">
+                <CalendarRange className="mr-2 h-4 w-4" /> Folha do mês
+              </Link>
             </Button>
             <Button asChild size="sm">
               <Link to="/rh/funcionarios/novo">
-                <UserPlus className="mr-2 h-4 w-4" /> Novo funcionário
+                <UserPlus className="mr-2 h-4 w-4" /> Admitir
               </Link>
             </Button>
           </div>
         }
       />
 
-      <SectionTitle>Quadro de funcionários</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <SectionTitle>Quadro e movimentação</SectionTitle>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <ReportKpiCard
-          titulo="Ativos"
-          valor={String(data?.ativos ?? 0)}
-          icon={UserCheck}
-          tone="success"
-          sub={`+ ${data?.experiencia ?? 0} em experiência`}
-          onClick={() => setDrill("ativos")}
-        />
-        <ReportKpiCard
-          titulo="Afastados"
-          valor={String(data?.afastados ?? 0)}
-          icon={UserMinus}
-          tone="danger"
-          onClick={() => setDrill("afastados")}
-        />
-        <ReportKpiCard
-          titulo="Em férias"
-          valor={String(data?.ferias ?? 0)}
-          icon={Plane}
-          tone="brand"
-          onClick={() => setDrill("ferias")}
-        />
-        <ReportKpiCard
-          titulo="Quadro total"
-          valor={String(
-            (data?.ativos ?? 0) +
-              (data?.experiencia ?? 0) +
-              (data?.afastados ?? 0) +
-              (data?.ferias ?? 0),
-          )}
+          titulo="Headcount"
+          valor={String(d.headcount)}
           icon={UsersRound}
           tone="brand"
-          onClick={() => setDrill("total")}
-        />
-      </div>
-
-      <SectionTitle>Financeiro do mês</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <ReportKpiCard
-          titulo="Custo mensal estimado"
-          valor={formatBRL(data?.custoMensalEstimado ?? 0)}
-          icon={Wallet}
-          tone="brand"
-          sub="Soma dos salários atuais"
-          onClick={() => setDrill("custo")}
-        />
-        <ReportKpiCard
-          titulo="Férias programadas"
-          valor={String(data?.feriasProgramadas ?? 0)}
-          icon={Plane}
-          tone="brand"
-          to="/rh/ferias"
-        />
-        <ReportKpiCard
-          titulo="Faltas no mês"
-          valor={String(data?.faltasMes ?? 0)}
-          icon={AlertTriangle}
-          tone="warning"
-          to="/rh/faltas-ocorrencias"
-        />
-        <ReportKpiCard
-          titulo="Atestados no mês"
-          valor={String(data?.atestadosMes ?? 0)}
-          icon={FileClock}
-          tone="warning"
-          to="/rh/atestados"
-        />
-      </div>
-
-      <SectionTitle>Férias (CLT) e tempo de casa</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <ReportKpiCard
-          titulo="Com férias vencidas"
-          valor={String(data?.feriasVencidas ?? 0)}
-          icon={AlertTriangle}
-          tone="danger"
-          sub="Risco de pagamento em dobro"
-          to="/rh/ferias"
-        />
-        <ReportKpiCard
-          titulo="Vencem em 90 dias"
-          valor={String(data?.feriasAVencer90 ?? 0)}
-          icon={CalendarClock}
-          tone="warning"
-          sub="Programar concessão"
-          to="/rh/ferias"
-        />
-        <ReportKpiCard
-          titulo="Saldo de dias"
-          valor={String(data?.feriasSaldoDias ?? 0)}
-          icon={CalendarCheck2}
-          tone="brand"
-          sub="Adquiridos e não gozados"
-          to="/rh/ferias"
-        />
-        <ReportKpiCard
-          titulo="Provisão de férias"
-          valor={formatBRL(data?.feriasProvisao ?? 0)}
-          icon={Wallet}
-          tone="brand"
-          sub="Valor provisionado"
-          to="/rh/ferias"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <ReportKpiCard
-          titulo="Tempo médio de casa"
-          valor={`${Math.floor((data?.tempoMedioCasaMeses ?? 0) / 12)}a ${(data?.tempoMedioCasaMeses ?? 0) % 12}m`}
-          icon={Clock3}
-          tone="brand"
-          sub="Média do quadro ativo"
+          sub={`${d.ativos} ativos · ${d.experiencia} em experiência`}
+          to="/rh/funcionarios"
         />
         <ReportKpiCard
           titulo="Admissões no mês"
-          valor={String(data?.admissoesMes ?? 0)}
+          valor={String(d.admissoesMes)}
           icon={UserPlus}
           tone="success"
+          sub={`${d.admissoes12} nos últimos 12 meses`}
           to="/rh/funcionarios"
         />
         <ReportKpiCard
           titulo="Desligamentos no mês"
-          valor={String(data?.desligamentosMes ?? 0)}
+          valor={String(d.desligamentosMes)}
           icon={UserMinus}
           tone="danger"
+          sub={`${d.desligamentos12} nos últimos 12 meses`}
           to="/rh/funcionarios"
         />
         <ReportKpiCard
-          titulo="Turnover do mês"
-          valor={`${(data?.turnoverMes ?? 0).toLocaleString("pt-BR")}%`}
+          titulo="Turnover 12 meses"
+          valor={`${d.turnover12.toLocaleString("pt-BR")}%`}
           icon={Repeat}
           tone="warning"
-          sub="Movimentação do quadro"
+          sub="Desligamentos ÷ quadro médio"
         />
       </div>
 
-      {/*
-        Visualizar todos: os lançamentos saíram do menu lateral e vivem na ficha
-        do funcionário, mas o gestor ainda precisa da visão consolidada.
-      */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <div className="mb-3">
-          <h2 className="text-sm font-semibold text-foreground">Visualizar todos</h2>
-          <p className="text-xs text-muted-foreground">
-            Visões consolidadas da empresa. O lançamento individual é feito na ficha de cada
-            funcionário.
-          </p>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { to: "/rh/beneficios", label: "Benefícios" },
-            { to: "/rh/adiantamentos", label: "Adiantamentos" },
-            { to: "/rh/descontos", label: "Descontos" },
-            { to: "/rh/alteracoes-salariais", label: "Alterações salariais" },
-            { to: "/rh/previa-folha", label: "Prévia da folha" },
-            { to: "/rh/holerites", label: "Holerites" },
-          ].map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              className="rounded-lg border border-border px-3 py-2 text-sm text-foreground transition-all hover:scale-[1.01] hover:border-primary/50 hover:shadow-sm"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </div>
+      <SectionTitle>Ausências, férias e documentos</SectionTitle>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <ReportKpiCard
+          titulo="Absenteísmo do mês"
+          valor={`${d.absenteismoMes.toLocaleString("pt-BR")}%`}
+          icon={Stethoscope}
+          tone={d.absenteismoMes > 3 ? "danger" : "warning"}
+          sub={`${d.faltasDiasMes} dia(s) de falta · ${d.atestadosDiasMes} de atestado`}
+          onClick={() => navigate({ to: "/rh/folha", search: { aba: "ocorrencias" } })}
+        />
+        <ReportKpiCard
+          titulo="Férias vencidas"
+          valor={String(d.feriasVencidas)}
+          icon={AlertTriangle}
+          tone="danger"
+          sub={`${d.feriasAVencer90} vencem em 90 dias`}
+          to="/rh/ferias"
+        />
+        <ReportKpiCard
+          titulo="Documentos vencendo"
+          valor={String(d.documentosVencendo30)}
+          icon={FileWarning}
+          tone="warning"
+          sub={`${d.documentosVencidos} vencido(s) · próximos 30 dias`}
+          to="/rh/documentos"
+        />
+        <ReportKpiCard
+          titulo="Admissão pendente"
+          valor={String(d.checklistPendentes)}
+          icon={ClipboardCheck}
+          tone="warning"
+          sub="Documentos obrigatórios não entregues"
+          to="/rh/funcionarios"
+        />
       </div>
 
-      {drill && (
-        <KpiDrilldownDialog
-          open={!!drill}
-          onOpenChange={(o) => !o && setDrill(null)}
-          titulo={drillMeta[drill].titulo}
-          subtitulo={drillMeta[drill].subtitulo}
-          valor={drillMeta[drill].valor}
-          icon={drillMeta[drill].icon}
-          tone={drillMeta[drill].tone}
-          itens={drillQuery.data?.itens ?? []}
-          isLoading={drillQuery.isLoading}
-          linkAbrir="/rh/funcionarios"
-          linkAbrirLabel="Ver todos os funcionários"
-          empty={drillMeta[drill].empty}
-        />
+      {d.custo && (
+        <>
+          <SectionTitle>Custo da folha</SectionTitle>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <ReportKpiCard
+              titulo={d.custo.fonte === "competencia" ? `Proventos ${d.custo.competencia}` : "Salários do quadro"}
+              valor={formatBRL(d.custo.totalProventos)}
+              icon={Wallet}
+              tone="brand"
+              sub={d.custo.fonte === "competencia" ? "Última competência fechada" : "Nenhuma competência fechada ainda"}
+              onClick={() => navigate({ to: "/rh/folha", search: { aba: "previa" } })}
+            />
+            <ReportKpiCard
+              titulo="Líquido pago"
+              valor={d.custo.fonte === "competencia" ? formatBRL(d.custo.totalLiquido) : "—"}
+              icon={Wallet}
+              tone="brand"
+              sub={d.custo.competencia ?? "—"}
+              onClick={() => navigate({ to: "/rh/folha", search: { aba: "previa" } })}
+            />
+            <ReportKpiCard
+              titulo="Salários vigentes"
+              valor={formatBRL(d.custo.salariosAtivos)}
+              icon={Wallet}
+              tone="brand"
+              sub="Soma do quadro hoje"
+            />
+            <ReportKpiCard
+              titulo="Provisão de férias"
+              valor={formatBRL(d.custo.provisaoFerias)}
+              icon={Palmtree}
+              tone="brand"
+              sub="Saldo + proporcional + 1/3"
+              to="/rh/ferias"
+            />
+          </div>
+        </>
       )}
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Admissões e desligamentos · 12 meses</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex h-40 items-end gap-1.5 sm:gap-2">
+              {d.admissoesUltimos12.map((m, i) => {
+                const des = d.desligamentosUltimos12[i]?.total ?? 0;
+                return (
+                  <div key={m.mes} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                    <div className="flex h-32 w-full items-end justify-center gap-0.5">
+                      <div
+                        className="w-1/2 max-w-[14px] rounded-t bg-primary"
+                        style={{ height: `${(m.total / maxMov) * 100}%` }}
+                        title={`${m.total} admissão(ões)`}
+                      />
+                      <div
+                        className="w-1/2 max-w-[14px] rounded-t bg-destructive/70"
+                        style={{ height: `${(des / maxMov) * 100}%` }}
+                        title={`${des} desligamento(s)`}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{MESES[Number(m.mes.slice(5, 7)) - 1]}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-sm bg-primary" /> Admissões
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-sm bg-destructive/70" /> Desligamentos
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Quadro por departamento</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {d.quadroPorDepartamento.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem colaboradores no quadro.</p>
+            ) : (
+              d.quadroPorDepartamento.map((x) => (
+                <div key={x.nome}>
+                  <div className="flex justify-between text-xs">
+                    <span className="truncate text-foreground">{x.nome}</span>
+                    <span className="tabular-nums text-muted-foreground">{x.total}</span>
+                  </div>
+                  <div className="mt-1 h-1.5 rounded-full bg-muted">
+                    <div className="h-1.5 rounded-full bg-primary" style={{ width: `${(x.total / maxDep) * 100}%` }} />
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Cake className="h-4 w-4 text-primary" /> Aniversariantes do mês
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {d.aniversariantes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Ninguém faz aniversário este mês.</p>
+            ) : (
+              <ul className="space-y-1.5 text-sm">
+                {d.aniversariantes.map((a) => (
+                  <li key={a.id} className="flex items-center justify-between gap-3">
+                    <Link to="/rh/funcionarios/$id" params={{ id: a.id }} className="min-w-0 truncate hover:text-primary">
+                      {a.nome}
+                      {a.cargo ? <span className="text-xs text-muted-foreground"> · {a.cargo}</span> : null}
+                    </Link>
+                    <span className="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                      dia {a.dia}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Hourglass className="h-4 w-4 text-primary" /> Experiência terminando (30 dias)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {d.experienciaVencendo.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum contrato de experiência terminando.</p>
+            ) : (
+              <ul className="space-y-1.5 text-sm">
+                {d.experienciaVencendo.map((e) => (
+                  <li key={e.id} className="flex items-center justify-between gap-3">
+                    <Link to="/rh/funcionarios/$id" params={{ id: e.id }} className="min-w-0 truncate hover:text-primary">
+                      {e.nome}
+                    </Link>
+                    <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                      <CalendarClock className="h-3.5 w-3.5" /> {formatData(e.fim)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

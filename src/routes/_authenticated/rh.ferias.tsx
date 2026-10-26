@@ -44,6 +44,7 @@ import { FERIAS_STATUS_LABEL as ROT } from "@/lib/rh/rotulos";
 import { formatData } from "@/lib/financeiro/format";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { LinhaEstadoLista } from "@/components/rh/estado-lista";
+import { usePermissao } from "@/hooks/use-permissao";
 
 const STATUS: Record<FeriasStatus, { label: string; tone: string }> = {
   planejada: { label: ROT.planejada, tone: "bg-muted text-muted-foreground" },
@@ -66,6 +67,10 @@ function Pagina() {
   const qc = useQueryClient();
   const fnList = useServerFn(listarFerias);
   const fnSalvar = useServerFn(salvarFerias);
+  // Programar (planejada) e aprovar são permissões separadas; o banco confere de novo.
+  const podeAprovar = usePermissao("rh.ferias", "edit");
+  const podeCriar = usePermissao("rh.ferias", "create");
+  const podeProgramar = podeCriar || podeAprovar;
 
   const [open, setOpen] = useState(false);
   // Abrir "Programar férias" começa do zero; antes reabria com o último preenchimento.
@@ -148,6 +153,7 @@ function Pagina() {
           </p>
         </div>
         <Button
+          disabled={!podeProgramar}
           onClick={() => {
             setForm(formVazio());
             setOpen(true);
@@ -235,8 +241,13 @@ function Pagina() {
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(STATUS).map(([k, s]) => (
-                      <SelectItem key={k} value={k}>
+                      <SelectItem
+                        key={k}
+                        value={k}
+                        disabled={!podeAprovar && ["aprovada", "em_curso", "concluida"].includes(k)}
+                      >
                         {s.label}
+                        {!podeAprovar && ["aprovada", "em_curso", "concluida"].includes(k) ? " (quem aprova)" : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>

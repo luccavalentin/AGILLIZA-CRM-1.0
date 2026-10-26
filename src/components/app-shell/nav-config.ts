@@ -561,32 +561,31 @@ export const navInterno: NavGroup[] = [
     label: "Gestão de Pessoas e RH",
     items: [
       {
+        // Sem permissão no pai: "Meu RH" é de todo usuário; cada filho exige o módulo da rota.
         label: "Gestão de Pessoas e RH",
         icon: UserRound,
         to: "/rh",
-        perm: { modulo: "rh.dashboard" },
         children: [
-          // Cada filho usa o módulo que a própria rota exige: herdando o do pai,
-          // quem só via o painel de RH enxergava telas que o devolviam ao início.
-          { label: "Dashboard", icon: Gauge, to: "/rh" },
+          { label: "Painel", icon: Gauge, to: "/rh", perm: { modulo: "rh.dashboard" } },
           {
-            label: "Funcionários",
+            label: "Colaboradores",
             icon: Users,
             to: "/rh/funcionarios",
             perm: { modulo: "rh.funcionarios" },
           },
           {
-            label: "Novo funcionário",
-            icon: UserRound,
+            label: "Admissão",
+            icon: UserCog,
             to: "/rh/funcionarios/novo",
             perm: { modulo: "rh.funcionarios" },
           },
           {
-            label: "Holerites",
-            icon: FileText,
-            to: "/rh/holerites",
-            perm: { modulo: "rh.holerites" },
+            label: "Folha mensal",
+            icon: ClipboardList,
+            to: "/rh/folha",
+            perm: { modulo: "rh.folha" },
           },
+          { label: "Férias", icon: CalendarDays, to: "/rh/ferias", perm: { modulo: "rh.ferias" } },
           {
             label: "Relatórios",
             icon: BarChart3,
@@ -599,6 +598,7 @@ export const navInterno: NavGroup[] = [
             to: "/rh/configuracoes",
             perm: { modulo: "rh.configuracoes" },
           },
+          { label: "Meu RH", icon: FileText, to: "/rh/meu" },
         ],
       },
     ],

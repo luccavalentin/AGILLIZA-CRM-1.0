@@ -89,7 +89,7 @@ function Pagina() {
         </div>
         <Button asChild>
           <Link to="/rh/funcionarios/novo">
-            <UserPlus className="mr-2 h-4 w-4" /> Novo funcionário
+            <UserPlus className="mr-2 h-4 w-4" /> Admitir
           </Link>
         </Button>
       </div>
@@ -184,7 +184,7 @@ function Pagina() {
                     {f.departamento_nome ? ` · ${f.departamento_nome}` : ""}
                   </p>
                   <p className="text-xs tabular-nums text-muted-foreground">
-                    {formatBRL(f.salario_atual)} · Admissão{" "}
+                    {f.salario_atual != null ? `${formatBRL(f.salario_atual)} · ` : ""}Admissão{" "}
                     {formatData(f.data_admissao)}
                   </p>
                   <div className="flex justify-end gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
@@ -247,7 +247,7 @@ function Pagina() {
                       {formatData(f.data_admissao)}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums">
-                      {formatBRL(f.salario_atual)}
+                      {f.salario_atual != null ? formatBRL(f.salario_atual) : "—"}
                     </td>
                     <td className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-1">

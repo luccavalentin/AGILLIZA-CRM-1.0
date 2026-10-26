@@ -38,7 +38,7 @@ export const listarCargos = createServerFn({ method: "GET" })
   });
 
 export const criarCargo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
   .inputValidator((data: unknown) =>
     z.object({ nome: z.string().min(1), cbo: z.string().optional().nullable() }).parse(data),
   )
@@ -55,6 +55,24 @@ export const criarCargo = createServerFn({ method: "POST" })
     return row as Cargo;
   });
 
+export interface CentroCusto {
+  id: string;
+  nome: string;
+}
+
+/** Centros de custo do Financeiro (a ficha aponta para um deles). */
+export const listarCentrosCusto = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<CentroCusto[]> => {
+    const { data, error } = await context.supabase
+      .from("financial_cost_centers")
+      .select("id, nome")
+      .eq("ativo", true)
+      .order("nome");
+    if (error) throw new Error(error.message);
+    return (data ?? []) as CentroCusto[];
+  });
+
 export const listarDepartamentos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<Departamento[]> => {
@@ -68,7 +86,7 @@ export const listarDepartamentos = createServerFn({ method: "GET" })
   });
 
 export const criarDepartamento = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({

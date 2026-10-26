@@ -9,16 +9,11 @@
  * - Faltas injustificadas descontam 1/30 avos + DSR correspondente.
  * - Vale-transporte: desconto limitado a 6% do salário base (Lei 7.418/85).
  * - INSS progressivo e IRRF (desconto simplificado, dependentes, pensão e a
- *   redução da Lei 15.270/2025) pela tabela vigente na competência.
- * - FGTS 8% (depósito do empregador — não desconta do empregado).
+ *   redução da Lei 15.270/2025), salário mínimo, salário-família e FGTS pela
+ *   tabela fiscal vigente na competência (rh_tabelas_fiscais — nada fixo aqui).
+ * - FGTS: depósito do empregador (não desconta do empregado).
  */
-import {
-  calcularINSS,
-  calcularIRRFMensal,
-  salarioFamilia as salarioFamiliaVigente,
-  salarioMinimo,
-  type Competencia,
-} from "@/lib/rh/clt";
+import { calcularINSS, calcularIRRFMensal, type TabelaFiscal } from "@/lib/rh/clt";
 
 export const JORNADA_MENSAL_PADRAO = 220;
 
@@ -28,6 +23,8 @@ export interface HoleriteEntrada {
   dias_trabalhados: number; // base 30
   faltas_dias: number;
   dsr_perdidos: number;
+  /** Horas de atraso injustificado no mês (descontadas pelo valor-hora). */
+  atrasos_horas: number;
   horas_extras_50: number;
   horas_extras_100: number;
   horas_noturnas: number;
@@ -67,6 +64,7 @@ export const ENTRADA_PADRAO: HoleriteEntrada = {
   dias_trabalhados: 30,
   faltas_dias: 0,
   dsr_perdidos: 0,
+  atrasos_horas: 0,
   horas_extras_50: 0,
   horas_extras_100: 0,
   horas_noturnas: 0,
@@ -130,11 +128,10 @@ function num(n: unknown): number {
 }
 
 /**
- * Calcula o holerite completo a partir das entradas informadas pelo DP. A
- * competência escolhe as tabelas (INSS, IRRF, salário mínimo, salário-família);
- * sem ela, vale o mês atual.
+ * Calcula o holerite completo a partir das entradas informadas pelo DP, com a
+ * tabela fiscal vigente na competência (ver `tabelaVigente` em clt.ts).
  */
-export function calcularHolerite(e: HoleriteEntrada, competencia?: Competencia): HoleriteResultado {
+export function calcularHolerite(e: HoleriteEntrada, tabela: TabelaFiscal): HoleriteResultado {
   const salario = num(e.salario_base);
   const jornada = num(e.jornada_mensal) || JORNADA_MENSAL_PADRAO;
   const valorHora = salario > 0 ? salario / jornada : 0;
@@ -180,7 +177,7 @@ export function calcularHolerite(e: HoleriteEntrada, competencia?: Competencia):
       valor: adNoturno,
     });
   }
-  const insal = r2(salarioMinimo(competencia) * (num(e.insalubridade_pct) / 100));
+  const insal = r2(tabela.salario_minimo * (num(e.insalubridade_pct) / 100));
   if (insal > 0) {
     proventos.push({
       codigo: "030",
@@ -235,11 +232,10 @@ export function calcularHolerite(e: HoleriteEntrada, competencia?: Competencia):
   }
 
   // Salário-família (não integra base de INSS/IRRF/FGTS).
-  const sf = salarioFamiliaVigente(competencia);
-  const temDireitoSF = salario > 0 && salario <= sf.teto;
+  const temDireitoSF = salario > 0 && salario <= tabela.salario_familia_teto;
   const salarioFamilia =
     temDireitoSF && num(e.filhos_salario_familia) > 0
-      ? r2(num(e.filhos_salario_familia) * sf.quota)
+      ? r2(num(e.filhos_salario_familia) * tabela.salario_familia_quota)
       : 0;
   if (salarioFamilia > 0) {
     proventos.push({
@@ -285,8 +281,18 @@ export function calcularHolerite(e: HoleriteEntrada, competencia?: Competencia):
     });
   }
 
-  const { valor: inss } = calcularINSS(Math.max(0, baseIncidencia - faltas - dsr), competencia);
-  const baseInss = r2(Math.max(0, baseIncidencia - faltas - dsr));
+  const atrasos = r2(valorHora * num(e.atrasos_horas));
+  if (atrasos > 0) {
+    descontos.push({
+      codigo: "103",
+      descricao: "Atrasos",
+      referencia: `${num(e.atrasos_horas).toFixed(2)} h`,
+      valor: atrasos,
+    });
+  }
+
+  const { valor: inss } = calcularINSS(Math.max(0, baseIncidencia - faltas - dsr - atrasos), tabela);
+  const baseInss = r2(Math.max(0, baseIncidencia - faltas - dsr - atrasos));
   if (inss > 0) {
     descontos.push({
       codigo: "110",
@@ -297,13 +303,10 @@ export function calcularHolerite(e: HoleriteEntrada, competencia?: Competencia):
   }
 
   const pensao = r2(num(e.pensao_alimenticia));
-  const { valor: irrf, base: baseIrrf } = calcularIRRFMensal({
-    rendimento: baseInss,
-    inss,
-    dependentes: num(e.dependentes_ir),
-    pensao,
-    competencia,
-  });
+  const { valor: irrf, base: baseIrrf } = calcularIRRFMensal(
+    { rendimento: baseInss, inss, dependentes: num(e.dependentes_ir), pensao },
+    tabela,
+  );
   if (irrf > 0) {
     descontos.push({
       codigo: "111",
@@ -415,7 +418,7 @@ export function calcularHolerite(e: HoleriteEntrada, competencia?: Competencia):
     base_irrf: baseIrrf,
     irrf,
     base_fgts: baseInss,
-    fgts: r2(baseInss * 0.08),
+    fgts: r2(baseInss * tabela.fgts_aliquota),
     valor_hora: r2(valorHora),
     valor_dia: r2(valorDia),
   };

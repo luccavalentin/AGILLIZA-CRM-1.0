@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import { hojeISO } from "@/lib/financeiro/format";
 import { validarCPF, validarPIS } from "@/lib/crm/documento";
 import { apagarArquivoRh } from "@/lib/rh/submodulos.functions";
+import { CAMPOS_SENSIVEIS, dadosSensiveis, pode } from "@/lib/rh/acesso";
 import {
   CONTRATO_LABEL as CONTRATO_LABEL_RH,
   STATUS_FUNCIONARIO_LABEL as STATUS_FUNCIONARIO_LABEL_RH,
@@ -24,7 +24,8 @@ export interface FuncionarioLista {
   tipo_contrato: TipoContrato;
   data_admissao: string;
   fim_experiencia: string | null;
-  salario_atual: number;
+  /** null = quem pede não tem RH · Salários · ver. */
+  salario_atual: number | null;
   cargo_id: string | null;
   cargo_nome: string | null;
   departamento_id: string | null;
@@ -64,6 +65,8 @@ export interface Funcionario extends FuncionarioLista {
   motivo_demissao: string | null;
   jornada_horas_semanais: number | null;
   jornada_descricao: string | null;
+  centro_custo_id: string | null;
+  centro_custo_nome: string | null;
   salario_desde: string | null;
   banco_nome: string | null;
   banco_agencia: string | null;
@@ -79,7 +82,18 @@ export interface Funcionario extends FuncionarioLista {
   dia_pagamento_adiantamento: number | null;
   gerar_contas_pagar_automatico: boolean;
   foto_url: string | null;
+  /** A ficha veio com salário e banco (quem pede tem RH · Salários · ver). */
+  com_dados_sensiveis: boolean;
 }
+
+/** Colunas não sensíveis da ficha (salário e banco vêm de `rh_dados_sensiveis`). */
+const COLUNAS_FICHA = `id, correspondente_id, numero, status, nome, nome_social, cpf, rg, rg_orgao, rg_uf,
+  data_nascimento, sexo, estado_civil, nacionalidade, naturalidade, nome_mae, nome_pai, email_pessoal,
+  telefone, foto_url, cep, logradouro, numero_endereco, complemento, bairro, cidade, uf, cargo_id,
+  departamento_id, gestor_id, centro_custo_id, tipo_contrato, matricula, ctps_numero, ctps_serie, ctps_uf, pis,
+  data_admissao, fim_experiencia, data_demissao, motivo_demissao, jornada_horas_semanais,
+  jornada_descricao, email_corporativo, observacoes, ativo, user_id, dia_pagamento_salario,
+  dia_pagamento_adiantamento, gerar_contas_pagar_automatico, created_at, updated_at`;
 
 const funcionarioSchema = z.object({
   id: z.string().uuid().optional(),
@@ -116,6 +130,7 @@ const funcionarioSchema = z.object({
   cargo_id: z.string().uuid().optional().nullable(),
   departamento_id: z.string().uuid().optional().nullable(),
   gestor_id: z.string().uuid().optional().nullable(),
+  centro_custo_id: z.string().uuid().optional().nullable(),
   tipo_contrato: z.enum(["clt", "pj", "estagio", "autonomo", "temporario", "aprendiz"]),
   status: z
     .enum(["ativo", "experiencia", "afastado", "ferias", "desligado"])
@@ -138,7 +153,7 @@ const funcionarioSchema = z.object({
   jornada_descricao: z.string().optional().nullable(),
   email_corporativo: z.string().email().optional().or(z.literal("")).nullable(),
 
-  salario_atual: z.number().min(0),
+  salario_atual: z.number().min(0).optional(),
   salario_desde: z.string().optional().nullable(),
 
   banco_nome: z.string().optional().nullable(),
@@ -151,7 +166,7 @@ const funcionarioSchema = z.object({
   user_id: z.string().uuid().optional().nullable(),
   dia_pagamento_salario: z.number().int().min(1).max(31).optional().nullable(),
   dia_pagamento_adiantamento: z.number().int().min(1).max(31).optional().nullable(),
-  gerar_contas_pagar_automatico: z.boolean().optional().default(false),
+  gerar_contas_pagar_automatico: z.boolean().optional().default(true),
   foto_url: z.string().optional().nullable(),
 });
 
@@ -166,9 +181,17 @@ async function correspondenteDoUsuario(supabase: any, userId: string) {
   return data?.correspondente_id as string | undefined;
 }
 
+/** Sem RH · Salários · alterar, salário e banco nem chegam ao banco (o gatilho recusaria). */
+async function semSensiveisSeNaoPode(supabase: any, userId: string, payload: Record<string, unknown>) {
+  if (await pode(supabase, userId, "rh.salarios", "edit")) return payload;
+  const limpo = { ...payload };
+  for (const c of CAMPOS_SENSIVEIS) delete limpo[c];
+  return limpo;
+}
+
 /** Lista funcionários do ecossistema (com filtros e busca). */
 export const listarFuncionarios = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -187,7 +210,7 @@ export const listarFuncionarios = createServerFn({ method: "GET" })
       .from("rh_funcionarios")
       .select(
         `id, numero, nome, cpf, status, tipo_contrato, data_admissao, fim_experiencia,
-         salario_atual, cargo_id, departamento_id, gestor_id, email_corporativo, telefone,
+         cargo_id, departamento_id, gestor_id, email_corporativo, telefone,
          rh_cargos(nome), rh_departamentos(nome)`,
       )
       .is("deletado_em", null)
@@ -210,6 +233,11 @@ export const listarFuncionarios = createServerFn({ method: "GET" })
     const { data: rows, error } = await query.limit(500);
     if (error) throw new Error(error.message);
 
+    const verSalario = await pode(supabase, context.userId, "rh.salarios", "view");
+    const sens = verSalario
+      ? await dadosSensiveis(supabase, (rows ?? []).map((r: any) => r.id as string))
+      : new Map();
+
     // Nome do gestor via segunda consulta pontual.
     const gestorIds = Array.from(
       new Set((rows ?? []).map((r: any) => r.gestor_id).filter(Boolean)),
@@ -229,7 +257,7 @@ export const listarFuncionarios = createServerFn({ method: "GET" })
       tipo_contrato: r.tipo_contrato,
       data_admissao: r.data_admissao,
       fim_experiencia: r.fim_experiencia,
-      salario_atual: Number(r.salario_atual ?? 0),
+      salario_atual: verSalario ? (sens.get(r.id)?.salario_atual ?? 0) : null,
       cargo_id: r.cargo_id,
       cargo_nome: r.rh_cargos?.nome ?? null,
       departamento_id: r.departamento_id,
@@ -243,13 +271,13 @@ export const listarFuncionarios = createServerFn({ method: "GET" })
 
 /** Obtém uma ficha completa do funcionário. */
 export const obterFuncionario = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "view"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<Funcionario | null> => {
     const { supabase } = context;
     const { data: row, error } = await supabase
       .from("rh_funcionarios")
-      .select(`*, rh_cargos(nome), rh_departamentos(nome)`)
+      .select(`${COLUNAS_FICHA}, rh_cargos(nome), rh_departamentos(nome), financial_cost_centers(nome)`)
       .eq("id", data.id)
       .is("deletado_em", null)
       .maybeSingle();
@@ -275,9 +303,19 @@ export const obterFuncionario = createServerFn({ method: "GET" })
       user_nome = u?.nome ?? null;
       user_email = u?.email ?? null;
     }
+    const verSalario = await pode(supabase, context.userId, "rh.salarios", "view");
+    const sens = verSalario ? (await dadosSensiveis(supabase, [data.id])).get(data.id) : undefined;
     return {
       ...(row as any),
-      salario_atual: Number(row.salario_atual ?? 0),
+      salario_atual: sens ? sens.salario_atual : null,
+      salario_desde: sens?.salario_desde ?? null,
+      banco_nome: sens?.banco_nome ?? null,
+      banco_agencia: sens?.banco_agencia ?? null,
+      banco_conta: sens?.banco_conta ?? null,
+      banco_tipo_conta: sens?.banco_tipo_conta ?? null,
+      banco_pix: sens?.banco_pix ?? null,
+      com_dados_sensiveis: verSalario,
+      centro_custo_nome: (row as any).financial_cost_centers?.nome ?? null,
       cargo_nome: (row as any).rh_cargos?.nome ?? null,
       departamento_nome: (row as any).rh_departamentos?.nome ?? null,
       gestor_nome,
@@ -300,7 +338,7 @@ async function garantirCpfLivre(supabase: any, cpf: string, ignorarId?: string) 
 }
 
 export const criarFuncionario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "create"])])
   .inputValidator((data: unknown) => funcionarioSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ id: string; numero: string }> => {
     const { supabase, userId } = context;
@@ -308,7 +346,7 @@ export const criarFuncionario = createServerFn({ method: "POST" })
     if (!correspondenteId) throw new Error("Ecossistema não identificado.");
 
     await garantirCpfLivre(supabase, data.cpf);
-    const payload = {
+    const payload: Record<string, unknown> = {
       ...data,
       correspondente_id: correspondenteId,
       criador_id: userId,
@@ -320,11 +358,11 @@ export const criarFuncionario = createServerFn({ method: "POST" })
       email_pessoal: data.email_pessoal || null,
       email_corporativo: data.email_corporativo || null,
     };
-    delete (payload as any).id;
+    delete payload.id;
 
     const { data: row, error } = await supabase
       .from("rh_funcionarios")
-      .insert(payload as never)
+      .insert((await semSensiveisSeNaoPode(supabase, userId, payload)) as never)
       .select("id, numero")
       .single();
     if (error) throw new Error(error.message);
@@ -345,7 +383,7 @@ export const criarFuncionario = createServerFn({ method: "POST" })
 
 /** Atualiza dados do funcionário; o histórico é gravado automaticamente pelo trigger. */
 export const atualizarFuncionario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
   .inputValidator((data: unknown) =>
     funcionarioSchema.extend({ id: z.string().uuid() }).parse(data),
   )
@@ -365,9 +403,11 @@ export const atualizarFuncionario = createServerFn({ method: "POST" })
       email_corporativo: rest.email_corporativo || null,
     };
 
+    // Campo sensível que não veio não é campo vazio: não regrava.
+    for (const c of CAMPOS_SENSIVEIS) if ((rest as any)[c] === undefined) delete payload[c];
     const { data: atualizados, error } = await supabase
       .from("rh_funcionarios")
-      .update(payload)
+      .update((await semSensiveisSeNaoPode(supabase, userId, payload)) as never)
       .eq("id", id)
       .select("id");
     if (error) throw new Error(error.message);
@@ -385,14 +425,14 @@ export const atualizarFuncionario = createServerFn({ method: "POST" })
       acao: "rh.funcionario.atualizar",
       entidade: "rh_funcionarios",
       entidadeId: id,
-      payloadNovo: { nome: rest.nome, status: rest.status, salario_atual: rest.salario_atual },
+      payloadNovo: { nome: rest.nome, status: rest.status },
     });
     return { ok: true };
   });
 
 /** Marca funcionário como desligado (soft delete + status). */
 export const desligarFuncionario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -468,7 +508,7 @@ export const desligarFuncionario = createServerFn({ method: "POST" })
  * As FKs estão em ON DELETE CASCADE, então o próprio banco cuida do vínculo.
  */
 export const excluirFuncionario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "delete"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
@@ -545,13 +585,13 @@ const dependenteSchema = z.object({
 });
 
 export const listarDependentes = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "view"])])
   .inputValidator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<Dependente[]> => {
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("rh_dependentes")
-      .select("*")
+      .select("id, funcionario_id, nome, cpf, data_nascimento, parentesco, ir, plano_saude, salario_familia, observacoes")
       .eq("funcionario_id", data.funcionario_id)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -559,7 +599,7 @@ export const listarDependentes = createServerFn({ method: "GET" })
   });
 
 export const salvarDependente = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
   .inputValidator((data: unknown) => dependenteSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ id: string }> => {
     const { supabase, userId } = context;
@@ -678,7 +718,7 @@ function valorHistorico(
 }
 
 export const listarHistoricoFuncionario = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "view"])])
   .inputValidator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<HistoricoItem[]> => {
     const { supabase } = context;
@@ -750,7 +790,7 @@ export interface UsuarioVinculavel {
 
 /** Lista usuários (profiles) do ecossistema que podem ser vinculados a um funcionário. */
 export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "edit"], ["rh.funcionarios", "create"])])
   .inputValidator((data: unknown) =>
     z
       .object({ funcionario_id: z.string().uuid().optional() })
@@ -793,7 +833,7 @@ export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
 
 /** Atualiza apenas a foto do funcionário (upload imediato na ficha). */
 export const salvarFotoFuncionario = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.funcionarios", "edit"], ["rh.funcionarios", "create"])])
   .inputValidator((data: unknown) =>
     z.object({ id: z.string().uuid(), foto_url: z.string().nullable() }).parse(data),
   )

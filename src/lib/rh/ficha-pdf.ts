@@ -145,8 +145,8 @@ export function gerarFichaFuncionarioPdf(input: {
       ["CTPS", [f.ctps_numero, f.ctps_serie, f.ctps_uf].filter(Boolean).join(" / ") || "—"],
       ["PIS", f.pis ?? "—"],
       ["Jornada", f.jornada_descricao ?? "—"],
-      ["Salário atual", formatBRL(Number(f.salario_atual ?? 0))],
-      ["Salário desde", fmtDate(f.salario_desde)],
+      ["Salário atual", f.com_dados_sensiveis ? formatBRL(Number(f.salario_atual ?? 0)) : "Restrito"],
+      ["Salário desde", f.com_dados_sensiveis ? fmtDate(f.salario_desde) : "Restrito"],
       ["Dia pagamento salário", f.dia_pagamento_salario ? String(f.dia_pagamento_salario) : "—"],
       [
         "Dia pagamento adiantamento",

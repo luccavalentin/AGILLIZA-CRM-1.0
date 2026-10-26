@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -51,28 +51,38 @@ import {
 } from "@/components/ui/dialog";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { EstadoLista } from "@/components/rh/estado-lista";
+import { BeneficiosVinculos } from "@/components/rh/beneficios-vinculos";
+import { TabelasFiscaisPanel } from "@/components/rh/tabelas-fiscais-panel";
+
+const ABAS_CFG = ["cargos", "departamentos", "beneficios", "tabelas", "regras"] as const;
+type AbaCfg = (typeof ABAS_CFG)[number];
 
 export const Route = createFileRoute("/_authenticated/rh/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações · RH — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("rh.configuracoes"),
+  validateSearch: (s: Record<string, unknown>): { aba?: AbaCfg } =>
+    ABAS_CFG.includes(s.aba as AbaCfg) ? { aba: s.aba as AbaCfg } : {},
   component: ConfiguracoesPage,
 });
 
 function ConfiguracoesPage() {
+  const { aba } = Route.useSearch();
+  const navigate = useNavigate({ from: "/rh/configuracoes" });
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-4 p-3 sm:p-4 md:p-6">
       <div>
         <h1 className="text-xl font-semibold text-foreground md:text-2xl">Configurações do RH</h1>
         <p className="text-xs text-muted-foreground">
-          Cargos, departamentos, catálogo de benefícios e as regras CLT aplicadas pelo sistema.
+          Cargos, departamentos, benefícios, tabelas da folha (INSS/IRRF por vigência) e as regras CLT aplicadas.
         </p>
       </div>
 
-      <Tabs defaultValue="cargos">
+      <Tabs value={aba ?? "cargos"} onValueChange={(v) => navigate({ search: { aba: v as AbaCfg }, replace: true })}>
         <TabsList className="h-auto max-w-full flex-wrap justify-start">
           <TabsTrigger value="cargos">Cargos</TabsTrigger>
           <TabsTrigger value="departamentos">Departamentos</TabsTrigger>
-          <TabsTrigger value="beneficios">Tipos de benefícios</TabsTrigger>
+          <TabsTrigger value="beneficios">Benefícios</TabsTrigger>
+          <TabsTrigger value="tabelas">Tabelas da folha</TabsTrigger>
           <TabsTrigger value="regras">Regras CLT</TabsTrigger>
         </TabsList>
 
@@ -82,8 +92,12 @@ function ConfiguracoesPage() {
         <TabsContent value="departamentos" className="mt-4">
           <DepartamentosTab />
         </TabsContent>
-        <TabsContent value="beneficios" className="mt-4">
+        <TabsContent value="beneficios" className="mt-4 space-y-4">
           <BeneficiosTab />
+          <BeneficiosVinculos />
+        </TabsContent>
+        <TabsContent value="tabelas" className="mt-4">
+          <TabelasFiscaisPanel />
         </TabsContent>
         <TabsContent value="regras" className="mt-4">
           <RegrasCltTab />
@@ -535,8 +549,10 @@ function RegrasCltTab() {
     {
       titulo: "Folha e holerite",
       itens: [
-        "INSS progressivo e IRRF pela tabela vigente na competência (2026: Portaria MPS/MF nº 13/2026 e redução da Lei 15.270/2025 — isenção até R$ 5.000), com desconto simplificado, dependentes e pensão.",
-        "FGTS de 8% é depósito do empregador e não é descontado do colaborador.",
+        "INSS progressivo, IRRF (desconto simplificado, dependentes, pensão e a redução da Lei 15.270/2025), salário mínimo, salário-família e FGTS pela vigência cadastrada em Tabelas da folha — nada fixo no sistema.",
+        "FGTS é depósito do empregador e não é descontado do colaborador.",
+        "Horas extras, atrasos, adicional noturno, comissões e descontos entram como lançamentos da competência; o valor-hora vem da jornada da ficha (44 h semanais = 220 h no mês).",
+        "Competência fechada fica travada no banco: lançamentos, faltas, atestados e adiantamentos do mês só mudam depois de reabrir (com motivo).",
         "Vale-transporte limitado a 6% do salário base.",
         "Horas extras a 50% em dias úteis e 100% em domingos e feriados; adicional noturno de 20%.",
         "Faltas injustificadas geram desconto do dia e do descanso semanal remunerado correspondente.",

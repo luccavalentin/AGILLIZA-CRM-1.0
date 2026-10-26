@@ -1,13 +1,17 @@
 /**
- * RH · Fases 2-5 (submódulos operacionais)
- * Documentos, ocorrências, férias, benefícios, alterações salariais,
- * adiantamentos, descontos, holerites.
- * Todas as funções escopadas por correspondente via RLS.
+ * RH · submódulos operacionais: documentos, ocorrências, férias, benefícios,
+ * alterações salariais, adiantamentos e holerites.
+ *
+ * Cada função confere a permissão do módulo na entrada (`exigirPermissao`, as mesmas
+ * ações do catálogo) e a RLS confere de novo no banco, com a empresa. Lançamentos do
+ * mês (horas extras, descontos…) moram em `folha.functions.ts`.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import { hojeISO } from "@/lib/financeiro/format";
+import { correspondenteId } from "@/lib/rh/acesso";
 
 /**
  * A RLS não dá erro quando bloqueia um UPDATE/DELETE: simplesmente não mexe
@@ -32,40 +36,30 @@ export type FeriasStatus = "planejada" | "aprovada" | "em_curso" | "concluida" |
 
 export type LancamentoStatus = "previsto" | "recebido" | "descontado" | "pago" | "cancelado";
 
+/** Resumo para seletores: sem salário (quem só vê a ficha também usa). */
 export interface FuncionarioResumo {
   id: string;
   nome: string;
   numero: string;
   cargo: string | null;
-  salario_atual: number;
 }
 
-async function funcResumo(supabase: any, ids: string[]) {
-  if (ids.length === 0) return new Map<string, FuncionarioResumo>();
-  const { data } = await supabase
-    .from("rh_funcionarios")
-    .select("id, nome, numero, salario_atual, rh_cargos(nome)")
-    .in("id", ids);
-  const map = new Map<string, FuncionarioResumo>();
-  (data ?? []).forEach((r: any) =>
-    map.set(r.id, {
-      id: r.id,
-      nome: r.nome,
-      numero: r.numero,
-      cargo: r.rh_cargos?.nome ?? null,
-      salario_atual: Number(r.salario_atual ?? 0),
-    }),
-  );
-  return map;
-}
-
-/** Lista simplificada de funcionários ativos para pickers. */
+/** Lista simplificada de funcionários ativos para seletores. */
 export const listarFuncionariosAtivos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([
+    exigirPermissao(
+      ["rh.funcionarios", "view"],
+      ["rh.folha", "view"],
+      ["rh.ferias", "view"],
+      ["rh.ocorrencias", "view"],
+      ["rh.documentos", "view"],
+      ["rh.beneficios", "view"],
+    ),
+  ])
   .handler(async ({ context }): Promise<FuncionarioResumo[]> => {
     const { data, error } = await context.supabase
       .from("rh_funcionarios")
-      .select("id, nome, numero, salario_atual, rh_cargos(nome)")
+      .select("id, nome, numero, rh_cargos(nome)")
       .is("deletado_em", null)
       .neq("status", "desligado")
       .order("nome");
@@ -75,23 +69,8 @@ export const listarFuncionariosAtivos = createServerFn({ method: "GET" })
       nome: r.nome,
       numero: r.numero,
       cargo: r.rh_cargos?.nome ?? null,
-      salario_atual: Number(r.salario_atual ?? 0),
     }));
   });
-
-async function correspondenteId(supabase: any, userId: string) {
-  const { data } = await supabase
-    .from("profiles")
-    .select("correspondente_id")
-    .eq("id", userId)
-    .maybeSingle();
-  const cid = data?.correspondente_id as string | undefined;
-  if (!cid) throw new Error(SEM_EMPRESA);
-  return cid;
-}
-
-const SEM_EMPRESA =
-  "Seu usuário não está vinculado a uma empresa. Peça ao administrador para revisar o cadastro.";
 
 /**
  * Apaga um arquivo do bucket do RH depois que o registro já saiu do banco.
@@ -127,13 +106,15 @@ export interface RhDocumento {
 }
 
 export const listarDocumentos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.documentos", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid().optional(),
         tipo: z.string().optional(),
         somente_vencidos: z.boolean().optional(),
+        /** Vence até esta data (yyyy-mm-dd) — "documentos vencendo". */
+        vence_ate: z.string().optional(),
       })
       .default({})
       .parse(data ?? {}),
@@ -151,6 +132,7 @@ export const listarDocumentos = createServerFn({ method: "GET" })
     if (data.funcionario_id) q = q.eq("funcionario_id", data.funcionario_id);
     if (data.tipo) q = q.eq("tipo", data.tipo);
     if (data.somente_vencidos) q = q.lte("validade", hojeISO());
+    if (data.vence_ate) q = q.not("validade", "is", null).lte("validade", data.vence_ate);
     const { data: rows, error } = await q.limit(1000);
     if (error) throw new Error(error.message);
     return (rows ?? []).map((r: any) => ({
@@ -170,7 +152,7 @@ export const listarDocumentos = createServerFn({ method: "GET" })
   });
 
 export const registrarDocumento = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.documentos", "create"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -208,7 +190,7 @@ export const registrarDocumento = createServerFn({ method: "POST" })
   });
 
 export const excluirDocumento = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.documentos", "delete"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
@@ -221,16 +203,17 @@ export const excluirDocumento = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** URL temporária de um arquivo do RH. A política do bucket decide quem abre cada pasta. */
 export const gerarUrlAssinada = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ path: z.string().min(1), expira_em: z.number().default(300) }).parse(data),
+    z.object({ path: z.string().min(1).max(500), expira_em: z.number().int().min(30).max(3600).default(300) }).parse(data),
   )
   .handler(async ({ data, context }) => {
     const { data: signed, error } = await context.supabase.storage
       .from("rh-documentos")
       .createSignedUrl(data.path, data.expira_em);
-    if (error) throw new Error(error.message);
+    if (error || !signed) throw new Error("Arquivo não encontrado ou sem permissão.");
     return { url: signed.signedUrl };
   });
 
@@ -255,7 +238,7 @@ export interface RhOcorrencia {
 }
 
 export const listarOcorrencias = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.ocorrencias", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -299,21 +282,13 @@ export const listarOcorrencias = createServerFn({ method: "GET" })
   });
 
 export const registrarOcorrencia = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.ocorrencias", "create"], ["rh.ocorrencias", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
         id: z.string().uuid().optional(),
         funcionario_id: z.string().uuid(),
-        tipo: z.enum([
-          "falta",
-          "atestado",
-          "advertencia",
-          "licenca",
-          "suspensao",
-          "elogio",
-          "outro",
-        ]),
+        tipo: z.enum(["falta", "atestado", "advertencia", "licenca", "suspensao", "elogio", "outro"]),
         data_inicio: z.string(),
         data_fim: z.string().optional().nullable(),
         dias: z.number().optional().nullable(),
@@ -346,11 +321,13 @@ export const registrarOcorrencia = createServerFn({ method: "POST" })
       criado_por: context.userId,
     };
     if (data.id) {
-      const { error } = await context.supabase
+      const { data: rows, error } = await context.supabase
         .from("rh_ocorrencias")
         .update(payload)
-        .eq("id", data.id);
+        .eq("id", data.id)
+        .select("id");
       if (error) throw new Error(error.message);
+      if (!rows || rows.length === 0) throw new Error(SEM_PERMISSAO);
       return { id: data.id };
     }
     const { data: row, error } = await context.supabase
@@ -363,7 +340,7 @@ export const registrarOcorrencia = createServerFn({ method: "POST" })
   });
 
 export const excluirOcorrencia = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.ocorrencias", "edit"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
@@ -397,7 +374,7 @@ export interface RhFerias {
 }
 
 export const listarFerias = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.ferias", "view"], ["rh.funcionarios", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -437,8 +414,12 @@ export const listarFerias = createServerFn({ method: "GET" })
     }));
   });
 
+/**
+ * Programar (planejada/cancelada) exige "programar"; aprovar, pôr em curso e concluir
+ * exigem "aprovar" — conferido aqui e no gatilho do banco.
+ */
 export const salvarFerias = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.ferias", "create"], ["rh.ferias", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -458,9 +439,18 @@ export const salvarFerias = createServerFn({ method: "POST" })
         message: "O fim das férias não pode ser antes do início.",
         path: ["data_fim"],
       })
+      .refine((d) => d.dias_gozados + d.abono_dias <= 30, {
+        message: "Gozo + abono não passam de 30 dias.",
+        path: ["abono_dias"],
+      })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
+    const { pode } = await import("@/lib/rh/acesso");
+    const aprova = ["aprovada", "em_curso", "concluida"].includes(data.status);
+    if (aprova && !(await pode(context.supabase, context.userId, "rh.ferias", "edit"))) {
+      throw new Error("Só quem aprova férias (RH · Férias · aprovar) pode aprovar ou concluir.");
+    }
     const cid = await correspondenteId(context.supabase, context.userId);
     const payload = {
       correspondente_id: cid,
@@ -476,26 +466,19 @@ export const salvarFerias = createServerFn({ method: "POST" })
       observacoes: data.observacoes || null,
     };
     if (data.id) {
-      const { error } = await context.supabase
+      const { data: rows, error } = await context.supabase
         .from("rh_ferias")
-        .update({
-          ...payload,
-          aprovado_por: data.status === "aprovada" ? context.userId : null,
-          aprovado_em: data.status === "aprovada" ? new Date().toISOString() : null,
-        })
-        .eq("id", data.id);
+        .update(payload)
+        .eq("id", data.id)
+        .select("id");
       if (error) throw new Error(error.message);
+      if (!rows || rows.length === 0) throw new Error(SEM_PERMISSAO);
 
       // Refletir status no funcionário
-      if (data.status === "em_curso") {
+      if (data.status === "em_curso" || data.status === "concluida") {
         await context.supabase
           .from("rh_funcionarios")
-          .update({ status: "ferias" })
-          .eq("id", data.funcionario_id);
-      } else if (data.status === "concluida") {
-        await context.supabase
-          .from("rh_funcionarios")
-          .update({ status: "ativo" })
+          .update({ status: data.status === "em_curso" ? "ferias" : "ativo" })
           .eq("id", data.funcionario_id);
       }
       return { id: data.id };
@@ -538,7 +521,7 @@ export interface RhFuncionarioBeneficio {
 }
 
 export const listarBeneficiosTipos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.beneficios", "view"], ["rh.funcionarios", "view"])])
   .handler(async ({ context }): Promise<RhBeneficioTipo[]> => {
     const { data, error } = await context.supabase
       .from("rh_beneficios_tipos")
@@ -549,7 +532,7 @@ export const listarBeneficiosTipos = createServerFn({ method: "GET" })
   });
 
 export const salvarBeneficioTipo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.beneficios", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -566,7 +549,7 @@ export const salvarBeneficioTipo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const cid = await correspondenteId(context.supabase, context.userId);
     if (data.id) {
-      const { error } = await context.supabase
+      const { data: rows, error } = await context.supabase
         .from("rh_beneficios_tipos")
         .update({
           nome: data.nome,
@@ -576,8 +559,10 @@ export const salvarBeneficioTipo = createServerFn({ method: "POST" })
           natureza: data.natureza,
           ativo: data.ativo,
         })
-        .eq("id", data.id);
+        .eq("id", data.id)
+        .select("id");
       if (error) throw new Error(error.message);
+      if (!rows || rows.length === 0) throw new Error(SEM_PERMISSAO);
       return { id: data.id };
     }
     const { data: row, error } = await context.supabase
@@ -590,7 +575,7 @@ export const salvarBeneficioTipo = createServerFn({ method: "POST" })
   });
 
 export const listarBeneficiosDoFuncionario = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.beneficios", "view"], ["rh.funcionarios", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({ funcionario_id: z.string().uuid().optional() })
@@ -624,7 +609,7 @@ export const listarBeneficiosDoFuncionario = createServerFn({ method: "GET" })
   });
 
 export const vincularBeneficio = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.beneficios", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -675,7 +660,7 @@ export const vincularBeneficio = createServerFn({ method: "POST" })
   });
 
 // ============================================================
-// ALTERAÇÕES SALARIAIS
+// ALTERAÇÕES SALARIAIS (salário = rh.salarios)
 // ============================================================
 
 export interface RhAlteracaoSalarial {
@@ -691,7 +676,7 @@ export interface RhAlteracaoSalarial {
 }
 
 export const listarAlteracoesSalariais = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.salarios", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({ funcionario_id: z.string().uuid().optional() })
@@ -723,7 +708,7 @@ export const listarAlteracoesSalariais = createServerFn({ method: "GET" })
   });
 
 export const registrarAlteracaoSalarial = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.salarios", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -737,16 +722,18 @@ export const registrarAlteracaoSalarial = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-
   .handler(async ({ data, context }) => {
+    const { dadosSensiveis } = await import("@/lib/rh/acesso");
     const cid = await correspondenteId(context.supabase, context.userId);
     const { data: func } = await context.supabase
       .from("rh_funcionarios")
-      .select("salario_atual, data_admissao")
+      .select("id, data_admissao")
       .eq("id", data.funcionario_id)
       .maybeSingle();
-    const anterior = Number(func?.salario_atual ?? 0);
-    if (func?.data_admissao && data.vigencia < func.data_admissao) {
+    if (!func) throw new Error("Funcionário não encontrado.");
+    const anterior = (await dadosSensiveis(context.supabase, [data.funcionario_id])).get(data.funcionario_id)
+      ?.salario_atual ?? 0;
+    if (func.data_admissao && data.vigencia < func.data_admissao) {
       throw new Error("Vigência não pode ser anterior à admissão do funcionário.");
     }
     if (Math.abs(data.salario_novo - anterior) < 0.01) {
@@ -772,10 +759,10 @@ export const registrarAlteracaoSalarial = createServerFn({ method: "POST" })
   });
 
 // ============================================================
-// ADIANTAMENTOS
+// ADIANTAMENTOS (folha)
 // ============================================================
 
-export interface RhLancamento {
+export interface RhAdiantamento {
   id: string;
   funcionario_id: string;
   funcionario_nome: string;
@@ -787,53 +774,8 @@ export interface RhLancamento {
   descricao: string | null;
 }
 
-async function listarLancamentos(
-  supabase: any,
-  tabela: "rh_adiantamentos" | "rh_descontos",
-  filtros: {
-    funcionario_id?: string;
-    competencia_mes?: number;
-    competencia_ano?: number;
-  },
-): Promise<RhLancamento[]> {
-  let q = supabase
-    .from(tabela)
-    .select(
-      `id, funcionario_id, data, valor, competencia_mes, competencia_ano,
-       status, ${tabela === "rh_adiantamentos" ? "descricao" : "motivo"}, rh_funcionarios(nome)`,
-    )
-    .order("data", { ascending: false });
-  if (filtros.funcionario_id) q = q.eq("funcionario_id", filtros.funcionario_id);
-  if (filtros.competencia_mes) q = q.eq("competencia_mes", filtros.competencia_mes);
-  if (filtros.competencia_ano) q = q.eq("competencia_ano", filtros.competencia_ano);
-  const { data, error } = await q.limit(1000);
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((r: any) => ({
-    id: r.id,
-    funcionario_id: r.funcionario_id,
-    funcionario_nome: r.rh_funcionarios?.nome ?? "—",
-    data: r.data,
-    valor: Number(r.valor ?? 0),
-    competencia_mes: r.competencia_mes,
-    competencia_ano: r.competencia_ano,
-    status: r.status,
-    descricao: (r.descricao ?? r.motivo) as string | null,
-  }));
-}
-
-const lancamentoInput = z.object({
-  id: z.string().uuid().optional(),
-  funcionario_id: z.string().uuid(),
-  data: z.string(),
-  valor: z.number().min(0),
-  competencia_mes: z.number().min(1).max(12),
-  competencia_ano: z.number().min(2020).max(2100),
-  descricao: z.string().optional().nullable(),
-  status: z.enum(["previsto", "recebido", "descontado", "pago", "cancelado"]).default("previsto"),
-});
-
 export const listarAdiantamentos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.folha", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -844,9 +786,30 @@ export const listarAdiantamentos = createServerFn({ method: "GET" })
       .default({})
       .parse(data ?? {}),
   )
-  .handler(async ({ data, context }) =>
-    listarLancamentos(context.supabase, "rh_adiantamentos", data),
-  );
+  .handler(async ({ data, context }): Promise<RhAdiantamento[]> => {
+    let q = context.supabase
+      .from("rh_adiantamentos")
+      .select(
+        "id, funcionario_id, data, valor, competencia_mes, competencia_ano, status, descricao, rh_funcionarios(nome)",
+      )
+      .order("data", { ascending: false });
+    if (data.funcionario_id) q = q.eq("funcionario_id", data.funcionario_id);
+    if (data.competencia_mes) q = q.eq("competencia_mes", data.competencia_mes);
+    if (data.competencia_ano) q = q.eq("competencia_ano", data.competencia_ano);
+    const { data: rows, error } = await q.limit(1000);
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((r: any) => ({
+      id: r.id,
+      funcionario_id: r.funcionario_id,
+      funcionario_nome: r.rh_funcionarios?.nome ?? "—",
+      data: r.data,
+      valor: Number(r.valor ?? 0),
+      competencia_mes: r.competencia_mes,
+      competencia_ano: r.competencia_ano,
+      status: r.status,
+      descricao: r.descricao,
+    }));
+  });
 
 /**
  * Espelha um adiantamento em contas a pagar (origem_tipo = "rh_adiantamento").
@@ -880,7 +843,7 @@ async function sincronizarAdiantamentoFinanceiro(
     .maybeSingle();
 
   if (input.status === "cancelado") {
-    if (existente && existente.status !== "pago") {
+    if (existente && existente.status !== "paga") {
       await supabase.from("financial_payables").delete().eq("id", existente.id);
     }
     return;
@@ -897,7 +860,7 @@ async function sincronizarAdiantamentoFinanceiro(
   };
 
   if (existente) {
-    if (existente.status === "pago") return;
+    if (existente.status === "paga") return;
     await supabase.from("financial_payables").update(payload).eq("id", existente.id);
     return;
   }
@@ -905,8 +868,21 @@ async function sincronizarAdiantamentoFinanceiro(
 }
 
 export const registrarAdiantamento = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => lancamentoInput.parse(data))
+  .middleware([exigirPermissao(["rh.folha", "edit"])])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        funcionario_id: z.string().uuid(),
+        data: z.string(),
+        valor: z.number().positive("Informe o valor."),
+        competencia_mes: z.number().min(1).max(12),
+        competencia_ano: z.number().min(2020).max(2100),
+        descricao: z.string().optional().nullable(),
+        status: z.enum(["previsto", "recebido", "descontado", "pago", "cancelado"]).default("previsto"),
+      })
+      .parse(data),
+  )
   .handler(async ({ data, context }) => {
     const cid = await correspondenteId(context.supabase, context.userId);
     const payload = {
@@ -952,60 +928,31 @@ export const registrarAdiantamento = createServerFn({ method: "POST" })
     return { id: id! };
   });
 
-// ============================================================
-// DESCONTOS
-// ============================================================
-
-export const listarDescontos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        funcionario_id: z.string().uuid().optional(),
-        competencia_mes: z.number().optional(),
-        competencia_ano: z.number().optional(),
-      })
-      .default({})
-      .parse(data ?? {}),
-  )
-  .handler(async ({ data, context }) => listarLancamentos(context.supabase, "rh_descontos", data));
-
-export const registrarDesconto = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => lancamentoInput.parse(data))
+export const excluirAdiantamento = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["rh.folha", "edit"])])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    const cid = await correspondenteId(context.supabase, context.userId);
-    const payload = {
-      correspondente_id: cid,
-      funcionario_id: data.funcionario_id,
-      data: data.data,
-      valor: data.valor,
-      competencia_mes: data.competencia_mes,
-      competencia_ano: data.competencia_ano,
-      motivo: data.descricao || null,
-      status: data.status,
-    };
-    if (data.id) {
-      const { data: rows, error } = await context.supabase
-        .from("rh_descontos")
-        .update(payload)
-        .eq("id", data.id)
-        .select("id");
-      if (error) throw new Error(error.message);
-      if (!rows || rows.length === 0) throw new Error(SEM_PERMISSAO);
-      return { id: data.id };
-    }
-    const { data: row, error } = await context.supabase
-      .from("rh_descontos")
-      .insert(payload)
-      .select("id")
-      .single();
+    const { data: rows, error } = await context.supabase
+      .from("rh_adiantamentos")
+      .delete()
+      .eq("id", data.id)
+      .select("id");
     if (error) throw new Error(error.message);
-    return { id: row!.id as string };
+    if (!rows || rows.length === 0) throw new Error(SEM_PERMISSAO);
+    const { data: conta } = await context.supabase
+      .from("financial_payables")
+      .select("id, status")
+      .eq("origem_tipo", "rh_adiantamento")
+      .eq("origem_ref", data.id)
+      .maybeSingle();
+    if (conta && conta.status !== "paga") {
+      await context.supabase.from("financial_payables").delete().eq("id", conta.id);
+    }
+    return { ok: true };
   });
 
 // ============================================================
-// HOLERITES
+// HOLERITES (valores = salário: ver exige rh.salarios; gerar exige rh.folha:edit)
 // ============================================================
 
 export interface RhHolerite {
@@ -1024,7 +971,7 @@ export interface RhHolerite {
 }
 
 export const listarHolerites = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.salarios", "view"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -1065,7 +1012,7 @@ export const listarHolerites = createServerFn({ method: "GET" })
   });
 
 export const anexarHolerite = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.folha", "edit"])])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -1079,7 +1026,7 @@ export const anexarHolerite = createServerFn({ method: "POST" })
         /** Em edição: atualiza este holerite em vez de procurar pelo mês. */
         id: z.string().uuid().optional(),
         entrada: z
-          .record(z.union([z.string(), z.number(), z.boolean()]))
+          .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
           .optional()
           .nullable(),
       })
@@ -1131,7 +1078,7 @@ export const anexarHolerite = createServerFn({ method: "POST" })
   });
 
 export const excluirHolerite = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([exigirPermissao(["rh.folha", "edit"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     // Primeiro o registro, depois o PDF: se o registro não sair, o arquivo fica.
@@ -1145,6 +1092,3 @@ export const excluirHolerite = createServerFn({ method: "POST" })
     const arquivoApagado = await apagarArquivoRh(context.supabase, rows[0].arquivo_path);
     return { ok: true, arquivoApagado };
   });
-
-// Exporta helper para uso em componentes
-export { funcResumo };

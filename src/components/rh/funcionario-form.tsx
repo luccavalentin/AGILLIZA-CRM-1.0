@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Save, ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
+import { Loader2, Save, ArrowLeft, ArrowRight, Check, ChevronsUpDown, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +37,8 @@ import {
   type StatusFuncionario,
   type TipoContrato,
 } from "@/lib/rh/funcionarios.functions";
-import { listarCargos, listarDepartamentos } from "@/lib/rh/cargos-departamentos.functions";
+import { listarCargos, listarCentrosCusto, listarDepartamentos } from "@/lib/rh/cargos-departamentos.functions";
+import { usePermissao } from "@/hooks/use-permissao";
 import { OPCOES_UF } from "@/components/crm/cliente-form/constants";
 import { mascararCep, apenasDigitosCep, consultarCep } from "@/lib/cep";
 import {
@@ -136,14 +137,28 @@ const STATUS_LABEL = STATUS_FUNCIONARIO_LABEL;
 export const ABA_CLASS =
   "shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm sm:text-sm";
 
-/** Formulário completo do funcionário (usado em Novo e Editar). */
+/** Etapas da admissão guiada (as abas do formulário viram passos). */
+const ETAPAS_ADMISSAO = [
+  { aba: "pessoal", rotulo: "Dados pessoais" },
+  { aba: "endereco", rotulo: "Endereço" },
+  { aba: "profissional", rotulo: "Contrato e cargo" },
+  { aba: "bancario", rotulo: "Remuneração e banco" },
+  { aba: "revisao", rotulo: "Revisão" },
+] as const;
+
+/** Formulário completo do funcionário: edição da ficha ou admissão guiada (modo "admissao"). */
 export function FuncionarioForm({
   inicial,
   abasExtras,
   conteudoExtra,
   acoes,
+  abaInicial,
+  modo = "ficha",
 }: {
   inicial?: Funcionario | null;
+  /** Aba aberta ao entrar (ex.: "admissao" logo depois de admitir). */
+  abaInicial?: string;
+  modo?: "ficha" | "admissao";
   /** <TabsTrigger> adicionais renderizados na mesma barra de abas. */
   abasExtras?: React.ReactNode;
   /** <TabsContent> adicionais renderizados dentro do mesmo <Tabs>. */
@@ -159,7 +174,15 @@ export function FuncionarioForm({
   const fnDeptos = useServerFn(listarDepartamentos);
   const fnUsuarios = useServerFn(listarUsuariosVinculaveis);
 
+  const fnCentros = useServerFn(listarCentrosCusto);
   const cargos = useQuery({ queryKey: ["rh-cargos"], queryFn: () => fnCargos() });
+  const centros = useQuery({ queryKey: ["rh-centros-custo"], queryFn: () => fnCentros() });
+  // Salário e banco: ver exige RH · Salários · ver (a ficha só vem com eles assim);
+  // alterar exige RH · Salários · alterar. O servidor e o banco conferem de novo.
+  const podeEditarSalario = usePermissao("rh.salarios", "edit");
+  const verSalario = inicial ? !!inicial.com_dados_sensiveis : podeEditarSalario;
+  const admissao = modo === "admissao";
+  const etapas = ETAPAS_ADMISSAO.filter((e) => e.aba !== "bancario" || podeEditarSalario);
   const deptos = useQuery({ queryKey: ["rh-departamentos"], queryFn: () => fnDeptos() });
   const usuarios = useQuery({
     queryKey: ["rh-usuarios-vinculaveis", inicial?.id ?? null],
@@ -167,7 +190,7 @@ export function FuncionarioForm({
   });
 
   const [erros, setErros] = useState<Set<string>>(new Set());
-  const [tab, setTab] = useState("pessoal");
+  const [tab, setTab] = useState(abaInicial ?? "pessoal");
   const [usuarioOpen, setUsuarioOpen] = useState(false);
   const [f, setF] = useState<FuncionarioInput & { salario_atual_str: string }>(() => ({
     id: inicial?.id,
@@ -197,6 +220,7 @@ export function FuncionarioForm({
     cargo_id: inicial?.cargo_id ?? null,
     departamento_id: inicial?.departamento_id ?? null,
     gestor_id: inicial?.gestor_id ?? null,
+    centro_custo_id: inicial?.centro_custo_id ?? null,
     tipo_contrato: inicial?.tipo_contrato ?? "clt",
     status: inicial?.status ?? "experiencia",
     matricula: inicial?.matricula ?? "",
@@ -223,7 +247,7 @@ export function FuncionarioForm({
     user_id: (inicial as any)?.user_id ?? null,
     dia_pagamento_salario: (inicial as any)?.dia_pagamento_salario ?? 5,
     dia_pagamento_adiantamento: (inicial as any)?.dia_pagamento_adiantamento ?? null,
-    gerar_contas_pagar_automatico: (inicial as any)?.gerar_contas_pagar_automatico ?? false,
+    gerar_contas_pagar_automatico: (inicial as any)?.gerar_contas_pagar_automatico ?? true,
   }));
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) =>
@@ -263,10 +287,15 @@ export function FuncionarioForm({
       return res.id;
     },
     onSuccess: (id) => {
-      toast.success("Funcionário salvo.");
+      toast.success(admissao ? "Admissão registrada. Agora, os documentos de admissão." : "Ficha salva.");
       qc.invalidateQueries({ queryKey: ["rh-funcionarios"] });
+      qc.invalidateQueries({ queryKey: ["rh-funcionario", id] });
       qc.invalidateQueries({ queryKey: ["rh-kpis"] });
-      navigate({ to: "/rh/funcionarios/$id", params: { id } });
+      navigate({
+        to: "/rh/funcionarios/$id",
+        params: { id },
+        search: admissao ? { aba: "admissao" } : {},
+      });
     },
     onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao salvar.")),
   });
@@ -315,8 +344,31 @@ export function FuncionarioForm({
       salario_atual: parseMoeda(f.salario_atual_str),
     };
     delete (payload as any).salario_atual_str;
+    // Sem permissão de alterar salário, salário e banco nem vão (o servidor também tira).
+    if (!podeEditarSalario) {
+      for (const k of ["salario_atual", "salario_desde", "banco_nome", "banco_agencia", "banco_conta", "banco_tipo_conta", "banco_pix"]) {
+        delete (payload as any)[k];
+      }
+    }
     mut.mutate(payload);
   }
+
+  /** Admissão guiada: confere a etapa antes de avançar. */
+  function avancar() {
+    const i = etapas.findIndex((e) => e.aba === tab);
+    if (tab === "pessoal" && (!f.nome.trim() || !validarCPF(f.cpf))) {
+      setErros(new Set([...(f.nome.trim() ? [] : ["nome"]), ...(validarCPF(f.cpf) ? [] : ["cpf"])]));
+      toast.error(!f.nome.trim() ? "Informe o nome completo." : "CPF inválido.");
+      return;
+    }
+    if (tab === "profissional" && !f.data_admissao) {
+      setErros(new Set(["data_admissao"]));
+      toast.error("Informe a data de admissão.");
+      return;
+    }
+    if (i >= 0 && i < etapas.length - 1) setTab(etapas[i + 1].aba);
+  }
+  const indiceEtapa = Math.max(0, etapas.findIndex((e) => e.aba === tab));
 
   const errClass = (k: string) =>
     erros.has(k) ? "border-destructive ring-1 ring-destructive/40" : undefined;
@@ -340,7 +392,7 @@ export function FuncionarioForm({
               <ArrowLeft className="h-3.5 w-3.5" /> Voltar
             </button>
             <h1 className="truncate text-lg font-semibold text-foreground sm:text-xl md:text-2xl">
-              {inicial ? `Editar · ${inicial.nome}` : "Novo funcionário"}
+              {inicial ? inicial.nome : "Admissão de colaborador"}
             </h1>
             {inicial?.numero && (
               <p className="text-xs text-muted-foreground">Nº {inicial.numero}</p>
@@ -349,14 +401,12 @@ export function FuncionarioForm({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {acoes}
-          <Button onClick={salvar} disabled={mut.isPending}>
-            {mut.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            Salvar
-          </Button>
+          {!admissao && (
+            <Button onClick={salvar} disabled={mut.isPending}>
+              {mut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Salvar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -465,7 +515,42 @@ export function FuncionarioForm({
       <Tabs value={tab} onValueChange={setTab}>
         {/* Barra única de navegação da ficha: cadastro + submódulos.
             Em telas pequenas rola horizontalmente; a partir de lg quebra em linhas. */}
-        <div className="sticky top-0 z-20 -mx-3 bg-background/85 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
+        {admissao && (
+          <ol className="mb-1 grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {etapas.map((e, i) => (
+              <li key={e.aba}>
+                <button
+                  type="button"
+                  onClick={() => i < indiceEtapa && setTab(e.aba)}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs sm:text-sm",
+                    i === indiceEtapa
+                      ? "border-primary/50 bg-primary/5 font-semibold text-primary"
+                      : i < indiceEtapa
+                        ? "border-primary/20 text-foreground"
+                        : "border-border/60 text-muted-foreground",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold",
+                      i < indiceEtapa ? "bg-primary text-primary-foreground" : i === indiceEtapa ? "bg-primary/15 text-primary" : "bg-muted",
+                    )}
+                  >
+                    {i < indiceEtapa ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                  </span>
+                  <span className="truncate">{e.rotulo}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+        <div
+          className={cn(
+            "sticky top-0 z-20 -mx-3 bg-background/85 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6",
+            admissao && "hidden",
+          )}
+        >
           <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-border/60 bg-muted/50 p-1 [scrollbar-width:none] lg:flex-wrap lg:overflow-visible [&::-webkit-scrollbar]:hidden">
             <TabsTrigger value="pessoal" className={ABA_CLASS}>
               Dados pessoais
@@ -476,9 +561,11 @@ export function FuncionarioForm({
             <TabsTrigger value="profissional" className={ABA_CLASS}>
               Profissional
             </TabsTrigger>
-            <TabsTrigger value="bancario" className={ABA_CLASS}>
-              Bancário
-            </TabsTrigger>
+            {verSalario && (
+              <TabsTrigger value="bancario" className={ABA_CLASS}>
+                Remuneração e banco
+              </TabsTrigger>
+            )}
             {abasExtras}
           </TabsList>
         </div>
@@ -851,21 +938,23 @@ export function FuncionarioForm({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Salário atual (R$)</Label>
-                <Input
-                  inputMode="decimal"
-                  value={f.salario_atual_str}
-                  onChange={(e) => setF((p) => ({ ...p, salario_atual_str: e.target.value }))}
-                  placeholder="0,00"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Salário vigente desde</Label>
-                <Input
-                  type="date"
-                  value={f.salario_desde ?? ""}
-                  onChange={(e) => set("salario_desde", e.target.value)}
-                />
+                <Label>Centro de custo</Label>
+                <Select
+                  value={f.centro_custo_id ?? "__nenhum__"}
+                  onValueChange={(v) => set("centro_custo_id", v === "__nenhum__" ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="—" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__nenhum__">Sem centro de custo</SelectItem>
+                    {(centros.data ?? []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5 md:col-span-3">
@@ -932,10 +1021,42 @@ export function FuncionarioForm({
           </Card>
         </TabsContent>
 
-        <TabsContent value="bancario" className="mt-4">
+        <TabsContent value="bancario" className="mt-4 space-y-4">
+          {!podeEditarSalario && (
+            <p className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              <Lock className="h-3.5 w-3.5" /> Só leitura: alterar salário e banco exige RH · Salários · alterar.
+              Reajuste é feito em Remuneração › Alteração salarial.
+            </p>
+          )}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Dados bancários para folha</CardTitle>
+              <CardTitle className="text-base">Salário</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Salário (R$)</Label>
+                <Input
+                  inputMode="decimal"
+                  disabled={!podeEditarSalario}
+                  value={f.salario_atual_str}
+                  onChange={(e) => setF((p) => ({ ...p, salario_atual_str: e.target.value }))}
+                  placeholder="0,00"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Vigente desde</Label>
+                <Input
+                  type="date"
+                  disabled={!podeEditarSalario}
+                  value={f.salario_desde ?? ""}
+                  onChange={(e) => set("salario_desde", e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Dados bancários para a folha</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-1.5">
@@ -986,8 +1107,58 @@ export function FuncionarioForm({
           </Card>
         </TabsContent>
 
+        {admissao && (
+          <TabsContent value="revisao" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Confira antes de admitir</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                <Resumo rotulo="Nome" valor={f.nome} />
+                <Resumo rotulo="CPF" valor={f.cpf} />
+                <Resumo rotulo="Admissão" valor={f.data_admissao ? f.data_admissao.split("-").reverse().join("/") : "—"} />
+                <Resumo rotulo="Contrato" valor={CONTRATO_LABEL[f.tipo_contrato as TipoContrato] ?? f.tipo_contrato} />
+                <Resumo rotulo="Cargo" valor={(cargos.data ?? []).find((c) => c.id === f.cargo_id)?.nome ?? "—"} />
+                <Resumo rotulo="Departamento" valor={(deptos.data ?? []).find((d) => d.id === f.departamento_id)?.nome ?? "—"} />
+                <Resumo rotulo="Jornada" valor={f.jornada_horas_semanais ? `${f.jornada_horas_semanais} h/semana` : "—"} />
+                {podeEditarSalario && <Resumo rotulo="Salário" valor={f.salario_atual_str ? `R$ ${f.salario_atual_str}` : "—"} />}
+                <Resumo rotulo="Fim da experiência" valor={f.fim_experiencia ? f.fim_experiencia.split("-").reverse().join("/") : "90 dias após a admissão"} />
+              </CardContent>
+            </Card>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Ao admitir, o sistema cria o checklist de documentos de admissão e o primeiro período aquisitivo de férias.
+            </p>
+          </TabsContent>
+        )}
         {conteudoExtra}
       </Tabs>
+
+      {admissao && (
+        <div className="sticky bottom-0 z-20 -mx-3 flex items-center justify-between gap-2 border-t border-border/60 bg-background/90 px-3 py-3 backdrop-blur sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
+          <Button variant="outline" disabled={indiceEtapa === 0} onClick={() => setTab(etapas[indiceEtapa - 1].aba)}>
+            <ArrowLeft className="mr-1.5 h-4 w-4" /> Voltar
+          </Button>
+          {indiceEtapa < etapas.length - 1 ? (
+            <Button onClick={avancar}>
+              Próximo <ArrowRight className="ml-1.5 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button onClick={salvar} disabled={mut.isPending}>
+              {mut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+              Concluir admissão
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Resumo({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{rotulo}</p>
+      <p className="truncate font-medium text-foreground">{valor || "—"}</p>
     </div>
   );
 }

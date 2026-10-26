@@ -108,8 +108,8 @@ export function ControleFeriasPanel({
         <Resumo
           icon={<Wallet className="h-4 w-4" />}
           titulo="Provisão de férias"
-          valor={formatBRL(r?.provisaoTotal ?? 0)}
-          detalhe="Valor total provisionado"
+          valor={r?.comValores ? formatBRL(r.provisaoTotal) : "Restrito"}
+          detalhe={r?.comValores ? "Valor total provisionado" : "Precisa de RH · Salários · ver"}
         />
       </div>
 
@@ -214,7 +214,7 @@ export function ControleFeriasPanel({
                           {dataBR(i.proximo_vencimento)}
                         </TableCell>
                         <TableCell className="hidden xl:table-cell text-right text-xs">
-                          {formatBRL(i.provisao)}
+                          {r?.comValores ? formatBRL(i.provisao) : "—"}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className={cn("text-[11px]", TONE[situacao])}>

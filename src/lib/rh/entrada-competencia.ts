@@ -2,16 +2,69 @@
  * Entrada do holerite de um funcionário numa competência, montada a partir do
  * que o DP lançou no sistema.
  *
- * É a única fonte da prévia da folha, da aba "Prévia da folha" da ficha e do
- * "Gerar holerite": antes cada tela montava a sua e o mesmo funcionário saía
- * com três líquidos diferentes no mesmo mês. Função pura — quem busca os dados
- * no banco é `folha.functions.ts`.
+ * É a única fonte da prévia da folha, da aba "Prévia da folha" da ficha, do
+ * fechamento e do "Gerar holerite": antes cada tela montava a sua e o mesmo
+ * funcionário saía com três líquidos diferentes no mesmo mês. Função pura —
+ * quem busca os dados no banco é `folha.functions.ts`.
  */
-import { ENTRADA_PADRAO, type HoleriteEntrada } from "@/lib/rh/holerite-calc";
+import { ENTRADA_PADRAO, JORNADA_MENSAL_PADRAO, type HoleriteEntrada } from "@/lib/rh/holerite-calc";
 import type { Competencia } from "@/lib/rh/clt";
+
+/** Tipos de `rh_lancamentos` (o que entra na competência além de salário e benefícios). */
+export type TipoLancamento =
+  | "hora_extra_50"
+  | "hora_extra_100"
+  | "adicional_noturno"
+  | "atraso"
+  | "comissao"
+  | "bonus"
+  | "outro_provento"
+  | "desconto"
+  | "emprestimo_consignado"
+  | "pensao_alimenticia"
+  | "contribuicao_sindical";
+
+/** Tipos medidos em horas (o motor converte pelo valor-hora). */
+export const LANCAMENTO_EM_HORAS: ReadonlySet<TipoLancamento> = new Set([
+  "hora_extra_50",
+  "hora_extra_100",
+  "adicional_noturno",
+  "atraso",
+]);
+
+export const LANCAMENTO_LABEL: Record<TipoLancamento, string> = {
+  hora_extra_50: "Horas extras 50%",
+  hora_extra_100: "Horas extras 100%",
+  adicional_noturno: "Adicional noturno (horas)",
+  atraso: "Atraso (horas)",
+  comissao: "Comissão",
+  bonus: "Bônus / prêmio",
+  outro_provento: "Outro provento",
+  desconto: "Desconto",
+  emprestimo_consignado: "Empréstimo consignado",
+  pensao_alimenticia: "Pensão alimentícia",
+  contribuicao_sindical: "Contribuição sindical",
+};
+
+/** Provento (soma) ou desconto (subtrai) — para a tela pintar o sinal certo. */
+export const LANCAMENTO_NATUREZA: Record<TipoLancamento, "provento" | "desconto"> = {
+  hora_extra_50: "provento",
+  hora_extra_100: "provento",
+  adicional_noturno: "provento",
+  atraso: "desconto",
+  comissao: "provento",
+  bonus: "provento",
+  outro_provento: "provento",
+  desconto: "desconto",
+  emprestimo_consignado: "desconto",
+  pensao_alimenticia: "desconto",
+  contribuicao_sindical: "desconto",
+};
 
 export interface DadosCompetencia {
   salarioAtual: number;
+  /** Jornada semanal da ficha (44 h → 220 h/mês). Sem ela, 220 h. */
+  jornadaSemanal?: number | null;
   alteracoesSalariais: Array<{ vigencia: string; salario_anterior: number | null; salario_novo: number }>;
   beneficios: Array<{
     nome: string;
@@ -23,8 +76,8 @@ export interface DadosCompetencia {
   /** Ocorrências do tipo falta (não abonadas são descontadas). */
   faltas: Array<{ data_inicio: string; data_fim: string | null; abonada: boolean }>;
   adiantamentos: number[];
-  descontos: number[];
-  ajustes: Array<{ tipo: "provento" | "desconto"; valor: number }>;
+  /** Lançamentos ativos da competência (`rh_lancamentos`). */
+  lancamentos: Array<{ tipo: TipoLancamento; quantidade: number | null; valor: number; descricao?: string | null }>;
   dependentes: Array<{ ir: boolean; salario_familia: boolean; data_nascimento: string | null }>;
 }
 
@@ -81,10 +134,18 @@ function idadeEm(nascimento: string, dia: string): number {
 }
 
 const soma = (xs: number[]) => xs.reduce((s, x) => s + (Number(x) || 0), 0);
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Jornada mensal a partir da semanal (CLT: semanal × 5; 44 h → 220 h). */
+export function jornadaMensal(semanal?: number | null): number {
+  const s = Number(semanal);
+  return Number.isFinite(s) && s > 0 ? Math.round(s * 5) : JORNADA_MENSAL_PADRAO;
+}
 
 export function montarEntradaDaCompetencia(d: DadosCompetencia, c: Competencia): HoleriteEntrada {
   const e: HoleriteEntrada = { ...ENTRADA_PADRAO };
   e.salario_base = salarioNaCompetencia(d, c);
+  e.jornada_mensal = jornadaMensal(d.jornadaSemanal);
 
   const faltas = faltasNaCompetencia(d, c);
   e.faltas_dias = faltas.dias;
@@ -117,10 +178,51 @@ export function montarEntradaDaCompetencia(d: DadosCompetencia, c: Competencia):
   }
 
   e.adiantamento = soma(d.adiantamentos);
-  e.outros_descontos += soma(d.descontos) + soma(d.ajustes.filter((a) => a.tipo === "desconto").map((a) => a.valor));
-  e.outros_proventos = soma(d.ajustes.filter((a) => a.tipo === "provento").map((a) => a.valor));
-  if (e.outros_descontos > 0) e.outros_descontos_desc = "Descontos e ajustes do mês";
-  if (e.outros_proventos > 0) e.outros_proventos_desc = "Ajustes do mês";
+
+  let descontosAvulsos = 0;
+  for (const l of d.lancamentos) {
+    const q = Number(l.quantidade) || 0;
+    const v = Number(l.valor) || 0;
+    switch (l.tipo) {
+      case "hora_extra_50":
+        e.horas_extras_50 += q;
+        break;
+      case "hora_extra_100":
+        e.horas_extras_100 += q;
+        break;
+      case "adicional_noturno":
+        e.horas_noturnas += q;
+        break;
+      case "atraso":
+        e.atrasos_horas += q;
+        break;
+      case "comissao":
+        e.comissoes += v;
+        break;
+      case "bonus":
+        e.bonificacoes += v;
+        break;
+      case "outro_provento":
+        e.outros_proventos += v;
+        break;
+      case "desconto":
+        descontosAvulsos += v;
+        break;
+      case "emprestimo_consignado":
+        e.emprestimo_consignado += v;
+        break;
+      case "pensao_alimenticia":
+        e.pensao_alimenticia += v;
+        break;
+      case "contribuicao_sindical":
+        e.contribuicao_sindical += v;
+        break;
+    }
+  }
+  e.outros_descontos = r2(e.outros_descontos + descontosAvulsos);
+  e.outros_proventos = r2(e.outros_proventos);
+  if (e.outros_descontos > 0) e.outros_descontos_desc = "Descontos do mês";
+  if (e.outros_proventos > 0) e.outros_proventos_desc = "Outros proventos do mês";
 
   const { fim } = limitesDaCompetencia(c);
   e.dependentes_ir = d.dependentes.filter((x) => x.ir).length;

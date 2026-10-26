@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/table";
 import {
   listarDocumentos,
-  listarBeneficiosDoFuncionario,
   listarFerias,
   listarOcorrencias,
   listarHolerites,
@@ -36,7 +35,6 @@ import {
   anexarHolerite,
   excluirHolerite,
 } from "@/lib/rh/submodulos.functions";
-import { ChecklistClt } from "@/components/rh/checklist-clt";
 import { formatBRL, formatData } from "@/lib/financeiro/format";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
@@ -175,7 +173,6 @@ export function FichaDocumentos({ funcionarioId }: { funcionarioId: string }) {
 
   return (
     <div className="space-y-4">
-      <ChecklistClt funcionarioId={funcionarioId} />
       <Chrome
         titulo="Documentos anexados"
         atalho={{ to: "/rh/documentos", label: "Ver todos" }}
@@ -292,53 +289,6 @@ export function FichaDocumentos({ funcionarioId }: { funcionarioId: string }) {
         </Table>
       </Chrome>
     </div>
-  );
-}
-
-export function FichaBeneficios({ funcionarioId }: { funcionarioId: string }) {
-  const fn = useServerFn(listarBeneficiosDoFuncionario);
-  const q = useQuery({
-    queryKey: ["rh-ficha-benef", funcionarioId],
-    queryFn: () => fn({ data: { funcionario_id: funcionarioId } }),
-  });
-  return (
-    <Chrome titulo="Benefícios" atalho={{ to: "/rh/beneficios", label: "Gerenciar" }}>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Desconto</TableHead>
-            <TableHead>Vigência</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(q.data?.length ?? 0) === 0 && <Empty q={q}>Nenhum benefício vinculado.</Empty>}
-          {q.data?.map((b) => (
-            <TableRow key={b.id}>
-              <TableCell className="font-medium">{b.tipo_nome}</TableCell>
-              <TableCell>{formatBRL(b.valor)}</TableCell>
-              <TableCell>{formatBRL(b.desconto)}</TableCell>
-              <TableCell>
-                {fmtDate(b.vigencia_inicio)} — {fmtDate(b.vigencia_fim)}
-              </TableCell>
-              <TableCell>
-                <span
-                  className={
-                    b.ativo
-                      ? "inline-flex rounded-md bg-[color-mix(in_oklab,var(--success)_15%,transparent)] px-2 py-0.5 text-[11px] font-medium text-success"
-                      : "inline-flex rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
-                  }
-                >
-                  {b.ativo ? "Ativo" : "Encerrado"}
-                </span>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Chrome>
   );
 }
 

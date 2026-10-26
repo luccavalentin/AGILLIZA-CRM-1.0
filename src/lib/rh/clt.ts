@@ -1,14 +1,11 @@
 /**
- * Tabelas e cálculos da folha CLT, por vigência.
+ * Cálculos da folha CLT (INSS, IRRF, FGTS) sobre uma tabela fiscal.
  *
- * A competência escolhe a tabela: um holerite de 2025 continua calculado como
- * em 2025 e o de 2026 usa as regras de 2026. Fontes:
- *  - INSS 2026, salário mínimo e salário-família: Portaria Interministerial
- *    MPS/MF nº 13, de 09/01/2026.
- *  - IRRF: tabela progressiva mensal vigente desde maio/2025, desconto
- *    simplificado mensal (R$ 607,20) e, a partir de jan/2026, a redução da
- *    Lei 15.270/2025 (isenção efetiva até R$ 5.000; redução decrescente até
- *    R$ 7.350).
+ * Nenhum número de lei mora aqui: as faixas, o salário mínimo, o salário-família, a
+ * dedução por dependente, o desconto simplificado e a redução da Lei 15.270/2025 vêm de
+ * `rh_tabelas_fiscais` (padrão do sistema + vigências próprias do correspondente,
+ * editáveis em RH › Configurações › Tabelas da folha). A competência escolhe a vigência:
+ * um holerite de 2025 continua calculado como em 2025.
  * FGTS é informativo (depósito do empregador, não desconta do empregado).
  */
 
@@ -17,75 +14,106 @@ export interface Competencia {
   mes: number;
 }
 
-interface Vigencia {
-  /** Primeira competência (ano*100+mês) em que a tabela vale. */
-  desde: number;
-  salarioMinimo: number;
-  inss: Array<{ ate: number; aliquota: number }>;
-  salarioFamilia: { quota: number; teto: number };
-  /** Redução da Lei 15.270/2025 (null antes de 2026). */
-  reducaoIr: { isencaoAte: number; reducaoMaxima: number; ate: number; a: number; b: number } | null;
+export interface FaixaINSS {
+  ate: number;
+  aliquota: number;
 }
 
-const VIGENCIAS: Vigencia[] = [
-  {
-    desde: 202501,
-    salarioMinimo: 1518,
-    inss: [
-      { ate: 1518.0, aliquota: 0.075 },
-      { ate: 2793.88, aliquota: 0.09 },
-      { ate: 4190.83, aliquota: 0.12 },
-      { ate: 8157.41, aliquota: 0.14 },
-    ],
-    salarioFamilia: { quota: 65.0, teto: 1906.04 },
-    reducaoIr: null,
-  },
-  {
-    desde: 202601,
-    salarioMinimo: 1621,
-    inss: [
-      { ate: 1621.0, aliquota: 0.075 },
-      { ate: 2902.84, aliquota: 0.09 },
-      { ate: 4354.27, aliquota: 0.12 },
-      { ate: 8475.55, aliquota: 0.14 },
-    ],
-    salarioFamilia: { quota: 67.54, teto: 1980.38 },
-    reducaoIr: { isencaoAte: 5000, reducaoMaxima: 312.89, ate: 7350, a: 978.62, b: 0.133145 },
-  },
-];
-
-// IRRF — tabela progressiva mensal vigente desde maio/2025.
-const IRRF_TABELA: Array<{ ate: number; aliquota: number; deducao: number }> = [
-  { ate: 2428.8, aliquota: 0, deducao: 0 },
-  { ate: 2826.65, aliquota: 0.075, deducao: 182.16 },
-  { ate: 3751.05, aliquota: 0.15, deducao: 394.16 },
-  { ate: 4664.68, aliquota: 0.225, deducao: 675.49 },
-  { ate: Infinity, aliquota: 0.275, deducao: 908.73 },
-];
-export const IRRF_DEP = 189.59;
-/** Desconto simplificado mensal: substitui as deduções legais quando é maior. */
-export const IRRF_DESCONTO_SIMPLIFICADO = 607.2;
-
-function hoje(): Competencia {
-  const d = new Date();
-  return { ano: d.getFullYear(), mes: d.getMonth() + 1 };
+export interface FaixaIRRF {
+  /** null = última faixa, sem limite. */
+  ate: number | null;
+  aliquota: number;
+  deducao: number;
 }
 
-/** Tabela vigente na competência (a mais recente com `desde` ≤ competência). */
-export function vigencia(c: Competencia = hoje()): Vigencia {
-  const chave = c.ano * 100 + c.mes;
-  return [...VIGENCIAS].reverse().find((v) => v.desde <= chave) ?? VIGENCIAS[0];
+export interface ReducaoIRRF {
+  isencao_ate: number;
+  reducao_maxima: number;
+  ate: number;
+  a: number;
+  b: number;
 }
 
-export const salarioMinimo = (c?: Competencia) => vigencia(c).salarioMinimo;
-export const salarioFamilia = (c?: Competencia) => vigencia(c).salarioFamilia;
+/** Uma vigência de `rh_tabelas_fiscais`. */
+export interface TabelaFiscal {
+  id?: string;
+  /** null = padrão do sistema. */
+  correspondente_id?: string | null;
+  /** Primeiro dia do mês em que passa a valer (yyyy-mm-01). */
+  vigencia_desde: string;
+  salario_minimo: number;
+  inss_faixas: FaixaINSS[];
+  irrf_faixas: FaixaIRRF[];
+  irrf_dependente: number;
+  irrf_desconto_simplificado: number;
+  irrf_reducao: ReducaoIRRF | null;
+  salario_familia_quota: number;
+  salario_familia_teto: number;
+  fgts_aliquota: number;
+  fonte?: string | null;
+}
 
-/** INSS progressivo por faixas, limitado ao teto da vigência. */
+const chave = (c: Competencia) => c.ano * 100 + c.mes;
+const chaveVigencia = (iso: string) => Number(iso.slice(0, 4)) * 100 + Number(iso.slice(5, 7));
+
+/**
+ * Vigência que vale na competência: a mais recente com início até ela. Na mesma data, a
+ * própria do correspondente vence a padrão do sistema. `null` se nenhuma alcança.
+ */
+export function tabelaVigente(tabelas: TabelaFiscal[], c: Competencia): TabelaFiscal | null {
+  const alvo = chave(c);
+  const candidatas = tabelas
+    .filter((t) => chaveVigencia(t.vigencia_desde) <= alvo)
+    .sort((a, b) => {
+      const d = chaveVigencia(b.vigencia_desde) - chaveVigencia(a.vigencia_desde);
+      if (d !== 0) return d;
+      return (b.correspondente_id ? 1 : 0) - (a.correspondente_id ? 1 : 0);
+    });
+  return candidatas[0] ?? null;
+}
+
+/** Normaliza a linha do banco (numeric chega como texto). */
+export function normalizarTabelaFiscal(r: Record<string, unknown>): TabelaFiscal {
+  const n = (v: unknown) => Number(v ?? 0);
+  const inss = (Array.isArray(r.inss_faixas) ? r.inss_faixas : []) as Array<Record<string, unknown>>;
+  const irrf = (Array.isArray(r.irrf_faixas) ? r.irrf_faixas : []) as Array<Record<string, unknown>>;
+  const red = r.irrf_reducao as Record<string, unknown> | null | undefined;
+  return {
+    id: r.id as string | undefined,
+    correspondente_id: (r.correspondente_id as string | null | undefined) ?? null,
+    vigencia_desde: String(r.vigencia_desde).slice(0, 10),
+    salario_minimo: n(r.salario_minimo),
+    inss_faixas: inss.map((f) => ({ ate: n(f.ate), aliquota: n(f.aliquota) })),
+    irrf_faixas: irrf.map((f) => ({
+      ate: f.ate == null ? null : n(f.ate),
+      aliquota: n(f.aliquota),
+      deducao: n(f.deducao),
+    })),
+    irrf_dependente: n(r.irrf_dependente),
+    irrf_desconto_simplificado: n(r.irrf_desconto_simplificado),
+    irrf_reducao: red
+      ? {
+          isencao_ate: n(red.isencao_ate),
+          reducao_maxima: n(red.reducao_maxima),
+          ate: n(red.ate),
+          a: n(red.a),
+          b: n(red.b),
+        }
+      : null,
+    salario_familia_quota: n(r.salario_familia_quota),
+    salario_familia_teto: n(r.salario_familia_teto),
+    fgts_aliquota: r.fgts_aliquota == null ? 0.08 : n(r.fgts_aliquota),
+    fonte: (r.fonte as string | null | undefined) ?? null,
+  };
+}
+
+/** INSS progressivo por faixas, limitado ao teto da tabela. */
 export function calcularINSS(
   bruto: number,
-  c?: Competencia,
+  t: TabelaFiscal,
 ): { valor: number; aliquotaEfetiva: number } {
-  const faixas = vigencia(c).inss;
+  const faixas = t.inss_faixas;
+  if (faixas.length === 0) return { valor: 0, aliquotaEfetiva: 0 };
   const base = Math.min(Math.max(0, bruto), faixas[faixas.length - 1].ate);
   let inss = 0;
   let anterior = 0;
@@ -99,9 +127,10 @@ export function calcularINSS(
 }
 
 /** Imposto da tabela progressiva sobre uma base já deduzida. */
-function impostoDaTabela(base: number): number {
+function impostoDaTabela(base: number, t: TabelaFiscal): number {
   if (base <= 0) return 0;
-  const faixa = IRRF_TABELA.find((f) => base <= f.ate)!;
+  const faixa = t.irrf_faixas.find((f) => f.ate == null || base <= f.ate);
+  if (!faixa) return 0;
   return Math.max(0, base * faixa.aliquota - faixa.deducao);
 }
 
@@ -111,21 +140,23 @@ export interface EntradaIRRF {
   inss: number;
   dependentes?: number;
   pensao?: number;
-  competencia?: Competencia;
 }
 
 /**
- * IRRF mensal: base pelo maior entre deduções legais (INSS + dependentes +
- * pensão) e o desconto simplificado; depois, a redução da Lei 15.270/2025
+ * IRRF mensal: base pelo maior entre deduções legais (INSS + dependentes + pensão) e o
+ * desconto simplificado; depois, a redução (Lei 15.270/2025, quando a tabela tiver)
  * calculada sobre o rendimento bruto, sem deixar o imposto negativo.
  */
-export function calcularIRRFMensal(e: EntradaIRRF): { valor: number; base: number; reducao: number } {
-  const legais = e.inss + (e.dependentes ?? 0) * IRRF_DEP + (e.pensao ?? 0);
-  const base = round2(Math.max(0, e.rendimento - Math.max(legais, IRRF_DESCONTO_SIMPLIFICADO)));
-  const imposto = impostoDaTabela(base);
-  const r = vigencia(e.competencia).reducaoIr;
+export function calcularIRRFMensal(
+  e: EntradaIRRF,
+  t: TabelaFiscal,
+): { valor: number; base: number; reducao: number } {
+  const legais = e.inss + (e.dependentes ?? 0) * t.irrf_dependente + (e.pensao ?? 0);
+  const base = round2(Math.max(0, e.rendimento - Math.max(legais, t.irrf_desconto_simplificado)));
+  const imposto = impostoDaTabela(base, t);
+  const r = t.irrf_reducao;
   let reducao = 0;
-  if (r && e.rendimento <= r.isencaoAte) reducao = Math.min(imposto, r.reducaoMaxima);
+  if (r && e.rendimento <= r.isencao_ate) reducao = Math.min(imposto, r.reducao_maxima);
   else if (r && e.rendimento <= r.ate) reducao = Math.max(0, r.a - r.b * e.rendimento);
   reducao = Math.min(imposto, reducao);
   return { valor: round2(imposto - reducao), base, reducao: round2(reducao) };
@@ -140,17 +171,17 @@ export interface CalculoCLT {
   fgts: number; // depósito do empregador (não desconta)
 }
 
-/** INSS + IRRF + FGTS de uma remuneração bruta CLT na competência. */
-export function calcularCLT(bruto: number, dependentesIR = 0, pensao = 0, c?: Competencia): CalculoCLT {
-  const { valor: inss, aliquotaEfetiva } = calcularINSS(bruto, c);
-  const ir = calcularIRRFMensal({ rendimento: bruto, inss, dependentes: dependentesIR, pensao, competencia: c });
+/** INSS + IRRF + FGTS de uma remuneração bruta CLT. */
+export function calcularCLT(bruto: number, t: TabelaFiscal, dependentesIR = 0, pensao = 0): CalculoCLT {
+  const { valor: inss, aliquotaEfetiva } = calcularINSS(bruto, t);
+  const ir = calcularIRRFMensal({ rendimento: bruto, inss, dependentes: dependentesIR, pensao }, t);
   return {
     inss,
     aliquota_efetiva_inss: aliquotaEfetiva,
     base_irrf: ir.base,
     irrf: ir.valor,
     aliquota_efetiva_irrf: ir.base > 0 ? ir.valor / ir.base : 0,
-    fgts: round2(bruto * 0.08),
+    fgts: round2(bruto * t.fgts_aliquota),
   };
 }
 

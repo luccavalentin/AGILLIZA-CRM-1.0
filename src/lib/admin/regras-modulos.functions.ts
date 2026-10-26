@@ -528,25 +528,36 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   {
     grupo: "Gestão de Pessoas e RH",
     modulo: "rh.dashboard",
-    label: "Dashboard de RH",
-    acoes: [{ acao: "view", label: "Ver" }],
+    label: "Painel de RH",
+    acoes: [
+      { acao: "view", label: "Ver" },
+    ],
   },
   {
     grupo: "Gestão de Pessoas e RH",
     modulo: "rh.funcionarios",
-    label: "Funcionários",
+    label: "Colaboradores (ficha, sem salário)",
     acoes: [
       { acao: "view", label: "Ver" },
-      { acao: "create", label: "Criar" },
-      { acao: "edit", label: "Editar" },
-      { acao: "delete", label: "Excluir" },
+      { acao: "create", label: "Admitir" },
+      { acao: "edit", label: "Editar ficha / desligar" },
+      { acao: "delete", label: "Excluir cadastro" },
       { acao: "export", label: "Exportar" },
     ],
   },
   {
     grupo: "Gestão de Pessoas e RH",
+    modulo: "rh.salarios",
+    label: "Salários e dados bancários",
+    acoes: [
+      { acao: "view", label: "Ver salário, banco, folha e holerites" },
+      { acao: "edit", label: "Alterar salário e banco" },
+    ],
+  },
+  {
+    grupo: "Gestão de Pessoas e RH",
     modulo: "rh.documentos",
-    label: "Documentos do funcionário",
+    label: "Documentos do colaborador",
     acoes: [
       { acao: "view", label: "Ver" },
       { acao: "create", label: "Enviar" },
@@ -560,7 +571,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     acoes: [
       { acao: "view", label: "Ver" },
       { acao: "create", label: "Registrar" },
-      { acao: "edit", label: "Editar" },
+      { acao: "edit", label: "Editar / excluir" },
     ],
   },
   {
@@ -570,7 +581,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     acoes: [
       { acao: "view", label: "Ver" },
       { acao: "create", label: "Programar" },
-      { acao: "edit", label: "Aprovar / editar" },
+      { acao: "edit", label: "Aprovar" },
     ],
   },
   {
@@ -579,52 +590,17 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     label: "Benefícios",
     acoes: [
       { acao: "view", label: "Ver" },
-      { acao: "edit", label: "Configurar" },
+      { acao: "edit", label: "Configurar e atribuir" },
     ],
   },
   {
     grupo: "Gestão de Pessoas e RH",
-    modulo: "rh.adiantamentos",
-    label: "Adiantamentos",
+    modulo: "rh.folha",
+    label: "Folha mensal",
     acoes: [
-      { acao: "view", label: "Ver" },
-      { acao: "create", label: "Registrar" },
-    ],
-  },
-  {
-    grupo: "Gestão de Pessoas e RH",
-    modulo: "rh.descontos",
-    label: "Descontos",
-    acoes: [
-      { acao: "view", label: "Ver" },
-      { acao: "create", label: "Registrar" },
-    ],
-  },
-  {
-    grupo: "Gestão de Pessoas e RH",
-    modulo: "rh.salariais",
-    label: "Alterações salariais",
-    acoes: [
-      { acao: "view", label: "Ver" },
-      { acao: "create", label: "Registrar" },
-    ],
-  },
-  {
-    grupo: "Gestão de Pessoas e RH",
-    modulo: "rh.previa_folha",
-    label: "Prévia da folha",
-    acoes: [
-      { acao: "view", label: "Ver" },
-      { acao: "export", label: "Exportar" },
-    ],
-  },
-  {
-    grupo: "Gestão de Pessoas e RH",
-    modulo: "rh.holerites",
-    label: "Holerites e recibos",
-    acoes: [
-      { acao: "view", label: "Ver" },
-      { acao: "create", label: "Anexar" },
+      { acao: "view", label: "Ver lançamentos e competências" },
+      { acao: "edit", label: "Lançar e gerar holerites" },
+      { acao: "gerir", label: "Fechar e reabrir competência" },
     ],
   },
   {
@@ -642,7 +618,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     label: "Configurações do RH",
     acoes: [
       { acao: "view", label: "Ver" },
-      { acao: "edit", label: "Editar" },
+      { acao: "edit", label: "Editar (cargos, tabelas da folha…)" },
     ],
   },
 ];

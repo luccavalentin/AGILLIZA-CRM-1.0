@@ -5281,54 +5281,181 @@ export type Database = {
           },
         ]
       }
-      rh_descontos: {
+      rh_desligamentos: {
         Row: {
-          competencia_ano: number
-          competencia_mes: number
+          aviso: string
+          checklist: Json
+          concluido_em: string | null
+          concluido_por: string | null
           correspondente_id: string
           created_at: string
-          data: string
+          criado_por: string | null
+          data_aviso: string | null
+          data_desligamento: string
           funcionario_id: string
           id: string
           motivo: string | null
-          status: Database["public"]["Enums"]["rh_lancamento_status"]
+          status: string
+          tipo: string
           updated_at: string
-          valor: number
         }
         Insert: {
-          competencia_ano: number
-          competencia_mes: number
+          aviso?: string
+          checklist?: Json
+          concluido_em?: string | null
+          concluido_por?: string | null
           correspondente_id: string
           created_at?: string
-          data?: string
+          criado_por?: string | null
+          data_aviso?: string | null
+          data_desligamento: string
           funcionario_id: string
           id?: string
           motivo?: string | null
-          status?: Database["public"]["Enums"]["rh_lancamento_status"]
+          status?: string
+          tipo: string
           updated_at?: string
-          valor: number
         }
         Update: {
-          competencia_ano?: number
-          competencia_mes?: number
+          aviso?: string
+          checklist?: Json
+          concluido_em?: string | null
+          concluido_por?: string | null
           correspondente_id?: string
           created_at?: string
-          data?: string
+          criado_por?: string | null
+          data_aviso?: string | null
+          data_desligamento?: string
           funcionario_id?: string
           id?: string
           motivo?: string | null
-          status?: Database["public"]["Enums"]["rh_lancamento_status"]
+          status?: string
+          tipo?: string
           updated_at?: string
-          valor?: number
         }
         Relationships: [
           {
-            foreignKeyName: "rh_descontos_funcionario_id_fkey"
+            foreignKeyName: "rh_desligamentos_funcionario_id_fkey"
             columns: ["funcionario_id"]
             isOneToOne: false
             referencedRelation: "rh_funcionarios"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      rh_lancamentos: {
+        Row: {
+          ano: number
+          ativo: boolean
+          correspondente_id: string
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          funcionario_id: string
+          id: string
+          mes: number
+          quantidade: number | null
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ano: number
+          ativo?: boolean
+          correspondente_id: string
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          funcionario_id: string
+          id?: string
+          mes: number
+          quantidade?: number | null
+          tipo: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ano?: number
+          ativo?: boolean
+          correspondente_id?: string
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          funcionario_id?: string
+          id?: string
+          mes?: number
+          quantidade?: number | null
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_lancamentos_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_tabelas_fiscais: {
+        Row: {
+          correspondente_id: string | null
+          created_at: string
+          criado_por: string | null
+          fgts_aliquota: number
+          fonte: string | null
+          id: string
+          inss_faixas: Json
+          irrf_desconto_simplificado: number
+          irrf_dependente: number
+          irrf_faixas: Json
+          irrf_reducao: Json | null
+          salario_familia_quota: number
+          salario_familia_teto: number
+          salario_minimo: number
+          updated_at: string
+          vigencia_desde: string
+        }
+        Insert: {
+          correspondente_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          fgts_aliquota?: number
+          fonte?: string | null
+          id?: string
+          inss_faixas: Json
+          irrf_desconto_simplificado: number
+          irrf_dependente: number
+          irrf_faixas: Json
+          irrf_reducao?: Json | null
+          salario_familia_quota: number
+          salario_familia_teto: number
+          salario_minimo: number
+          updated_at?: string
+          vigencia_desde: string
+        }
+        Update: {
+          correspondente_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          fgts_aliquota?: number
+          fonte?: string | null
+          id?: string
+          inss_faixas?: Json
+          irrf_desconto_simplificado?: number
+          irrf_dependente?: number
+          irrf_faixas?: Json
+          irrf_reducao?: Json | null
+          salario_familia_quota?: number
+          salario_familia_teto?: number
+          salario_minimo?: number
+          updated_at?: string
+          vigencia_desde?: string
+        }
+        Relationships: [
+
         ]
       }
       rh_documentos: {
@@ -5508,56 +5635,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "rh_ferias_funcionario_id_fkey"
-            columns: ["funcionario_id"]
-            isOneToOne: false
-            referencedRelation: "rh_funcionarios"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      rh_folha_ajustes: {
-        Row: {
-          ano: number
-          correspondente_id: string
-          created_at: string
-          criado_por: string | null
-          descricao: string
-          funcionario_id: string
-          id: string
-          mes: number
-          tipo: string
-          updated_at: string
-          valor: number
-        }
-        Insert: {
-          ano: number
-          correspondente_id: string
-          created_at?: string
-          criado_por?: string | null
-          descricao: string
-          funcionario_id: string
-          id?: string
-          mes: number
-          tipo: string
-          updated_at?: string
-          valor: number
-        }
-        Update: {
-          ano?: number
-          correspondente_id?: string
-          created_at?: string
-          criado_por?: string | null
-          descricao?: string
-          funcionario_id?: string
-          id?: string
-          mes?: number
-          tipo?: string
-          updated_at?: string
-          valor?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rh_folha_ajustes_funcionario_id_fkey"
             columns: ["funcionario_id"]
             isOneToOne: false
             referencedRelation: "rh_funcionarios"
@@ -5786,6 +5863,7 @@ export type Database = {
       rh_funcionarios: {
         Row: {
           ativo: boolean
+          centro_custo_id: string | null
           bairro: string | null
           banco_agencia: string | null
           banco_conta: string | null
@@ -5848,6 +5926,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          centro_custo_id?: string | null
           bairro?: string | null
           banco_agencia?: string | null
           banco_conta?: string | null
@@ -5910,6 +5989,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          centro_custo_id?: string | null
           bairro?: string | null
           banco_agencia?: string | null
           banco_conta?: string | null
@@ -5971,6 +6051,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "rh_funcionarios_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cost_centers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rh_funcionarios_cargo_id_fkey"
             columns: ["cargo_id"]
@@ -7483,6 +7570,47 @@ export type Database = {
             Returns: string
           }
       rh_atualizar_status_experiencia: { Args: never; Returns: number }
+      rh_dados_sensiveis: {
+        Args: { p_ids: string[] }
+        Returns: {
+          banco_agencia: string | null
+          banco_conta: string | null
+          banco_nome: string | null
+          banco_pix: string | null
+          banco_tipo_conta: string | null
+          funcionario_id: string
+          salario_atual: number
+          salario_desde: string | null
+        }[]
+      }
+      rh_faltas_para_ferias: {
+        Args: { p_ids: string[] }
+        Returns: {
+          abonada: boolean
+          data_inicio: string
+          dias: number | null
+          funcionario_id: string
+        }[]
+      }
+      rh_fechar_competencia: {
+        Args: {
+          p_ano: number
+          p_itens: Json
+          p_mes: number
+          p_observacoes?: string | null
+          p_vencimento: string
+        }
+        Returns: Json
+      }
+      rh_funcionario_do_usuario: { Args: never; Returns: string }
+      rh_holerite_do_usuario: { Args: { p_path: string }; Returns: boolean }
+      rh_meu_resumo: { Args: never; Returns: Json }
+      rh_painel_contagens: { Args: { p_fim: string; p_ini: string }; Returns: Json }
+      rh_pode: { Args: { _acao: string; _modulo: string }; Returns: boolean }
+      rh_reabrir_competencia: {
+        Args: { p_ano: number; p_mes: number; p_motivo: string }
+        Returns: Json
+      }
       rh_semear_checklist_clt: {
         Args: { _func_id: string }
         Returns: undefined

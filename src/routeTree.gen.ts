@@ -121,8 +121,10 @@ import { Route as AuthenticatedRhDescontosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedRhDocumentosRouteImport } from './routes/_authenticated/rh.documentos'
 import { Route as AuthenticatedRhFaltasOcorrenciasRouteImport } from './routes/_authenticated/rh.faltas-ocorrencias'
 import { Route as AuthenticatedRhFeriasRouteImport } from './routes/_authenticated/rh.ferias'
+import { Route as AuthenticatedRhFolhaRouteImport } from './routes/_authenticated/rh.folha'
 import { Route as AuthenticatedRhFuncionariosRouteImport } from './routes/_authenticated/rh.funcionarios'
 import { Route as AuthenticatedRhHoleritesRouteImport } from './routes/_authenticated/rh.holerites'
+import { Route as AuthenticatedRhMeuRouteImport } from './routes/_authenticated/rh.meu'
 import { Route as AuthenticatedRhPreviaFolhaRouteImport } from './routes/_authenticated/rh.previa-folha'
 import { Route as AuthenticatedRhRelatoriosRouteImport } from './routes/_authenticated/rh.relatorios'
 import { Route as AuthenticatedTecnologiaIndexRouteImport } from './routes/_authenticated/tecnologia.index'
@@ -800,6 +802,11 @@ const AuthenticatedRhFeriasRoute = AuthenticatedRhFeriasRouteImport.update({
   path: '/rh/ferias',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRhFolhaRoute = AuthenticatedRhFolhaRouteImport.update({
+  id: '/rh/folha',
+  path: '/rh/folha',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRhFuncionariosRoute =
   AuthenticatedRhFuncionariosRouteImport.update({
     id: '/rh/funcionarios',
@@ -812,6 +819,11 @@ const AuthenticatedRhHoleritesRoute =
     path: '/rh/holerites',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRhMeuRoute = AuthenticatedRhMeuRouteImport.update({
+  id: '/rh/meu',
+  path: '/rh/meu',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRhPreviaFolhaRoute =
   AuthenticatedRhPreviaFolhaRouteImport.update({
     id: '/rh/previa-folha',
@@ -1140,8 +1152,10 @@ export interface FileRoutesByFullPath {
   '/rh/documentos': typeof AuthenticatedRhDocumentosRoute
   '/rh/faltas-ocorrencias': typeof AuthenticatedRhFaltasOcorrenciasRoute
   '/rh/ferias': typeof AuthenticatedRhFeriasRoute
+  '/rh/folha': typeof AuthenticatedRhFolhaRoute
   '/rh/funcionarios': typeof AuthenticatedRhFuncionariosRoute
   '/rh/holerites': typeof AuthenticatedRhHoleritesRoute
+  '/rh/meu': typeof AuthenticatedRhMeuRoute
   '/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
   '/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
   '/tecnologia/alertas': typeof AuthenticatedTecnologiaAlertasRoute
@@ -1289,8 +1303,10 @@ export interface FileRoutesByTo {
   '/rh/documentos': typeof AuthenticatedRhDocumentosRoute
   '/rh/faltas-ocorrencias': typeof AuthenticatedRhFaltasOcorrenciasRoute
   '/rh/ferias': typeof AuthenticatedRhFeriasRoute
+  '/rh/folha': typeof AuthenticatedRhFolhaRoute
   '/rh/funcionarios': typeof AuthenticatedRhFuncionariosRoute
   '/rh/holerites': typeof AuthenticatedRhHoleritesRoute
+  '/rh/meu': typeof AuthenticatedRhMeuRoute
   '/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
   '/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
   '/tecnologia/alertas': typeof AuthenticatedTecnologiaAlertasRoute
@@ -1443,8 +1459,10 @@ export interface FileRoutesById {
   '/_authenticated/rh/documentos': typeof AuthenticatedRhDocumentosRoute
   '/_authenticated/rh/faltas-ocorrencias': typeof AuthenticatedRhFaltasOcorrenciasRoute
   '/_authenticated/rh/ferias': typeof AuthenticatedRhFeriasRoute
+  '/_authenticated/rh/folha': typeof AuthenticatedRhFolhaRoute
   '/_authenticated/rh/funcionarios': typeof AuthenticatedRhFuncionariosRoute
   '/_authenticated/rh/holerites': typeof AuthenticatedRhHoleritesRoute
+  '/_authenticated/rh/meu': typeof AuthenticatedRhMeuRoute
   '/_authenticated/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
   '/_authenticated/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
   '/_authenticated/tecnologia/alertas': typeof AuthenticatedTecnologiaAlertasRoute
@@ -1597,8 +1615,10 @@ export interface FileRouteTypes {
     | '/rh/documentos'
     | '/rh/faltas-ocorrencias'
     | '/rh/ferias'
+    | '/rh/folha'
     | '/rh/funcionarios'
     | '/rh/holerites'
+    | '/rh/meu'
     | '/rh/previa-folha'
     | '/rh/relatorios'
     | '/tecnologia/alertas'
@@ -1746,8 +1766,10 @@ export interface FileRouteTypes {
     | '/rh/documentos'
     | '/rh/faltas-ocorrencias'
     | '/rh/ferias'
+    | '/rh/folha'
     | '/rh/funcionarios'
     | '/rh/holerites'
+    | '/rh/meu'
     | '/rh/previa-folha'
     | '/rh/relatorios'
     | '/tecnologia/alertas'
@@ -1899,8 +1921,10 @@ export interface FileRouteTypes {
     | '/_authenticated/rh/documentos'
     | '/_authenticated/rh/faltas-ocorrencias'
     | '/_authenticated/rh/ferias'
+    | '/_authenticated/rh/folha'
     | '/_authenticated/rh/funcionarios'
     | '/_authenticated/rh/holerites'
+    | '/_authenticated/rh/meu'
     | '/_authenticated/rh/previa-folha'
     | '/_authenticated/rh/relatorios'
     | '/_authenticated/tecnologia/alertas'
@@ -2748,6 +2772,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRhFeriasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rh/folha': {
+      id: '/_authenticated/rh/folha'
+      path: '/rh/folha'
+      fullPath: '/rh/folha'
+      preLoaderRoute: typeof AuthenticatedRhFolhaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rh/funcionarios': {
       id: '/_authenticated/rh/funcionarios'
       path: '/rh/funcionarios'
@@ -2760,6 +2791,13 @@ declare module '@tanstack/react-router' {
       path: '/rh/holerites'
       fullPath: '/rh/holerites'
       preLoaderRoute: typeof AuthenticatedRhHoleritesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rh/meu': {
+      id: '/_authenticated/rh/meu'
+      path: '/rh/meu'
+      fullPath: '/rh/meu'
+      preLoaderRoute: typeof AuthenticatedRhMeuRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rh/previa-folha': {
@@ -3221,8 +3259,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRhDocumentosRoute: typeof AuthenticatedRhDocumentosRoute
   AuthenticatedRhFaltasOcorrenciasRoute: typeof AuthenticatedRhFaltasOcorrenciasRoute
   AuthenticatedRhFeriasRoute: typeof AuthenticatedRhFeriasRoute
+  AuthenticatedRhFolhaRoute: typeof AuthenticatedRhFolhaRoute
   AuthenticatedRhFuncionariosRoute: typeof AuthenticatedRhFuncionariosRoute
   AuthenticatedRhHoleritesRoute: typeof AuthenticatedRhHoleritesRoute
+  AuthenticatedRhMeuRoute: typeof AuthenticatedRhMeuRoute
   AuthenticatedRhPreviaFolhaRoute: typeof AuthenticatedRhPreviaFolhaRoute
   AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
   AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
@@ -3327,8 +3367,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRhDocumentosRoute: AuthenticatedRhDocumentosRoute,
   AuthenticatedRhFaltasOcorrenciasRoute: AuthenticatedRhFaltasOcorrenciasRoute,
   AuthenticatedRhFeriasRoute: AuthenticatedRhFeriasRoute,
+  AuthenticatedRhFolhaRoute: AuthenticatedRhFolhaRoute,
   AuthenticatedRhFuncionariosRoute: AuthenticatedRhFuncionariosRoute,
   AuthenticatedRhHoleritesRoute: AuthenticatedRhHoleritesRoute,
+  AuthenticatedRhMeuRoute: AuthenticatedRhMeuRoute,
   AuthenticatedRhPreviaFolhaRoute: AuthenticatedRhPreviaFolhaRoute,
   AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
   AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,

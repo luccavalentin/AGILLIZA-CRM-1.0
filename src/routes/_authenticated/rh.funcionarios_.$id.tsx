@@ -15,19 +15,17 @@ import {
 import { FuncionarioForm, ABA_CLASS } from "@/components/rh/funcionario-form";
 import {
   FichaDocumentos,
-  FichaBeneficios,
   FichaFerias,
   FichaOcorrencias,
   FichaHolerites,
 } from "@/components/rh/ficha-tabs";
 import { FichaDependentes } from "@/components/rh/ficha-dependentes";
 import { FichaPreviaFolha } from "@/components/rh/ficha-previa-folha";
-
-import {
-  FichaAdiantamentos,
-  FichaDescontos,
-  FichaAlteracoesSalariais,
-} from "@/components/rh/ficha-financeiro";
+import { BeneficiosVinculos } from "@/components/rh/beneficios-vinculos";
+import { ChecklistClt } from "@/components/rh/checklist-clt";
+import { FichaDesligamento } from "@/components/rh/ficha-desligamento";
+import { usePermissao } from "@/hooks/use-permissao";
+import { FichaAdiantamentos, FichaAlteracoesSalariais } from "@/components/rh/ficha-financeiro";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabsContent, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -46,14 +44,25 @@ import { gerarFichaFuncionarioPdf } from "@/lib/rh/pdf-lazy";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { EstadoLista } from "@/components/rh/estado-lista";
 
+const ABAS_FICHA = ["admissao", "desligamento", "remuneracao", "documentos", "beneficios", "ferias"] as const;
+type AbaFicha = (typeof ABAS_FICHA)[number];
+
 export const Route = createFileRoute("/_authenticated/rh/funcionarios_/$id")({
-  head: () => ({ meta: [{ title: "Funcionário — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Colaborador — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("rh.funcionarios"),
+  validateSearch: (s: Record<string, unknown>): { aba?: AbaFicha } =>
+    ABAS_FICHA.includes(s.aba as AbaFicha) ? { aba: s.aba as AbaFicha } : {},
   component: Pagina,
 });
 
 function Pagina() {
   const { id } = useParams({ strict: false }) as { id: string };
+  const { aba } = Route.useSearch();
+  const verDocumentos = usePermissao("rh.documentos", "view");
+  const verOcorrencias = usePermissao("rh.ocorrencias", "view");
+  const verFolha = usePermissao("rh.folha", "view");
+  const verSalario = usePermissao("rh.salarios", "view");
+  const podeExcluir = usePermissao("rh.funcionarios", "delete");
   const fnObter = useServerFn(obterFuncionario);
   const fnHist = useServerFn(listarHistoricoFuncionario);
   const fnDeps = useServerFn(listarDependentes);
@@ -125,40 +134,52 @@ function Pagina() {
     return <div className="p-6 text-sm text-muted-foreground">Funcionário não encontrado.</div>;
   }
 
+  const desligado = q.data.status === "desligado";
+  // Cada aba aparece só para quem tem a permissão dela (o servidor e a RLS conferem de novo).
   const abasExtras = (
     <>
-      <TabsTrigger value="historico" className={ABA_CLASS}>
-        Histórico
+      <TabsTrigger value="admissao" className={ABA_CLASS}>
+        Admissão
       </TabsTrigger>
       <TabsTrigger value="dependentes" className={ABA_CLASS}>
         Dependentes
       </TabsTrigger>
-      <TabsTrigger value="documentos" className={ABA_CLASS}>
-        Documentos
-      </TabsTrigger>
+      {verDocumentos && (
+        <TabsTrigger value="documentos" className={ABA_CLASS}>
+          Documentos
+        </TabsTrigger>
+      )}
       <TabsTrigger value="beneficios" className={ABA_CLASS}>
         Benefícios
       </TabsTrigger>
       <TabsTrigger value="ferias" className={ABA_CLASS}>
         Férias
       </TabsTrigger>
-      <TabsTrigger value="ocorrencias" className={ABA_CLASS}>
-        Ocorrências
+      {verOcorrencias && (
+        <TabsTrigger value="ocorrencias" className={ABA_CLASS}>
+          Ocorrências
+        </TabsTrigger>
+      )}
+      {verFolha && (
+        <TabsTrigger value="adiantamentos" className={ABA_CLASS}>
+          Adiantamentos
+        </TabsTrigger>
+      )}
+      {verSalario && (
+        <TabsTrigger value="remuneracao" className={ABA_CLASS}>
+          Remuneração
+        </TabsTrigger>
+      )}
+      {verSalario && (
+        <TabsTrigger value="holerites" className={ABA_CLASS}>
+          Holerites
+        </TabsTrigger>
+      )}
+      <TabsTrigger value="desligamento" className={ABA_CLASS}>
+        Desligamento
       </TabsTrigger>
-      <TabsTrigger value="adiantamentos" className={ABA_CLASS}>
-        Adiantamentos
-      </TabsTrigger>
-      <TabsTrigger value="descontos" className={ABA_CLASS}>
-        Descontos
-      </TabsTrigger>
-      <TabsTrigger value="salarios" className={ABA_CLASS}>
-        Alterações salariais
-      </TabsTrigger>
-      <TabsTrigger value="previa" className={ABA_CLASS}>
-        Prévia da folha
-      </TabsTrigger>
-      <TabsTrigger value="holerites" className={ABA_CLASS}>
-        Holerites
+      <TabsTrigger value="historico" className={ABA_CLASS}>
+        Histórico
       </TabsTrigger>
     </>
   );
@@ -204,35 +225,46 @@ function Pagina() {
         </Card>
       </TabsContent>
 
+      <TabsContent value="admissao" className="mt-4">
+        <ChecklistClt funcionarioId={id} />
+      </TabsContent>
       <TabsContent value="dependentes" className="mt-4">
         <FichaDependentes funcionarioId={id} />
       </TabsContent>
-      <TabsContent value="documentos" className="mt-4">
-        <FichaDocumentos funcionarioId={id} />
-      </TabsContent>
+      {verDocumentos && (
+        <TabsContent value="documentos" className="mt-4">
+          <FichaDocumentos funcionarioId={id} />
+        </TabsContent>
+      )}
       <TabsContent value="beneficios" className="mt-4">
-        <FichaBeneficios funcionarioId={id} />
+        <BeneficiosVinculos funcionarioId={id} />
       </TabsContent>
       <TabsContent value="ferias" className="mt-4">
         <FichaFerias funcionarioId={id} />
       </TabsContent>
-      <TabsContent value="ocorrencias" className="mt-4">
-        <FichaOcorrencias funcionarioId={id} />
-      </TabsContent>
-      <TabsContent value="adiantamentos" className="mt-4">
-        <FichaAdiantamentos funcionarioId={id} />
-      </TabsContent>
-      <TabsContent value="descontos" className="mt-4">
-        <FichaDescontos funcionarioId={id} />
-      </TabsContent>
-      <TabsContent value="salarios" className="mt-4">
-        <FichaAlteracoesSalariais funcionarioId={id} />
-      </TabsContent>
-      <TabsContent value="previa" className="mt-4">
-        <FichaPreviaFolha funcionarioId={id} />
-      </TabsContent>
-      <TabsContent value="holerites" className="mt-4">
-        <FichaHolerites funcionarioId={id} />
+      {verOcorrencias && (
+        <TabsContent value="ocorrencias" className="mt-4">
+          <FichaOcorrencias funcionarioId={id} />
+        </TabsContent>
+      )}
+      {verFolha && (
+        <TabsContent value="adiantamentos" className="mt-4">
+          <FichaAdiantamentos funcionarioId={id} />
+        </TabsContent>
+      )}
+      {verSalario && (
+        <TabsContent value="remuneracao" className="mt-4 space-y-4">
+          <FichaAlteracoesSalariais funcionarioId={id} />
+          <FichaPreviaFolha funcionarioId={id} />
+        </TabsContent>
+      )}
+      {verSalario && (
+        <TabsContent value="holerites" className="mt-4">
+          <FichaHolerites funcionarioId={id} />
+        </TabsContent>
+      )}
+      <TabsContent value="desligamento" className="mt-4">
+        <FichaDesligamento funcionarioId={id} desligado={desligado} />
       </TabsContent>
     </>
   );
@@ -241,6 +273,7 @@ function Pagina() {
     <div className="pb-10">
       <FuncionarioForm
         inicial={q.data}
+        abaInicial={aba}
         abasExtras={abasExtras}
         conteudoExtra={conteudoExtra}
         acoes={
@@ -250,15 +283,17 @@ function Pagina() {
               <span className="hidden sm:inline">Imprimir ficha (PDF)</span>
               <span className="sm:hidden">Ficha</span>
             </Button>
-            <Button
-              variant="outline"
-              className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setConfirmar(true)}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Excluir funcionário</span>
-              <span className="sm:hidden">Excluir</span>
-            </Button>
+            {podeExcluir && (
+              <Button
+                variant="outline"
+                className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setConfirmar(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Excluir cadastro</span>
+                <span className="sm:hidden">Excluir</span>
+              </Button>
+            )}
           </>
         }
       />

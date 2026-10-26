@@ -1,7 +1,7 @@
 /**
- * Abas financeiras individuais da ficha do funcionário:
- * adiantamentos (espelhados em contas a pagar), descontos e
- * alterações salariais — tudo lançado direto no cadastro.
+ * Abas financeiras individuais da ficha do funcionário: adiantamentos (espelhados em
+ * contas a pagar) e alterações salariais. Descontos, horas extras e demais lançamentos
+ * do mês ficam na Folha mensal (rh_lancamentos).
  */
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -37,9 +37,7 @@ import {
 } from "@/components/ui/select";
 import {
   listarAdiantamentos,
-  listarDescontos,
   registrarAdiantamento,
-  registrarDesconto,
   listarAlteracoesSalariais,
   registrarAlteracaoSalarial,
   type LancamentoStatus,
@@ -78,20 +76,13 @@ function Bloco({
   );
 }
 
-/** Adiantamentos e descontos compartilham a mesma estrutura de lançamento. */
-function LancamentosTab({
-  funcionarioId,
-  tipo,
-}: {
-  funcionarioId: string;
-  tipo: "adiantamento" | "desconto";
-}) {
+/** Adiantamentos do funcionário (geram a conta a pagar). */
+function LancamentosTab({ funcionarioId }: { funcionarioId: string }) {
+  const tipo = "adiantamento" as "adiantamento" | "desconto";
   const qc = useQueryClient();
   const hoje = new Date();
-  const listar = useServerFn(tipo === "adiantamento" ? listarAdiantamentos : listarDescontos);
-  const registrar = useServerFn(
-    tipo === "adiantamento" ? registrarAdiantamento : registrarDesconto,
-  );
+  const listar = useServerFn(listarAdiantamentos);
+  const registrar = useServerFn(registrarAdiantamento);
   const chave = tipo === "adiantamento" ? "rh-ficha-adiant" : "rh-ficha-desc";
 
   const [open, setOpen] = useState(false);
@@ -270,16 +261,12 @@ function LancamentosTab({
 export function FichaAdiantamentos({ funcionarioId }: { funcionarioId: string }) {
   return (
     <div className="space-y-3">
-      <LancamentosTab funcionarioId={funcionarioId} tipo="adiantamento" />
+      <LancamentosTab funcionarioId={funcionarioId} />
       <p className="px-1 text-xs text-muted-foreground">
         Cada adiantamento gera automaticamente uma conta a pagar no Financeiro.
       </p>
     </div>
   );
-}
-
-export function FichaDescontos({ funcionarioId }: { funcionarioId: string }) {
-  return <LancamentosTab funcionarioId={funcionarioId} tipo="desconto" />;
 }
 
 export function FichaAlteracoesSalariais({ funcionarioId }: { funcionarioId: string }) {

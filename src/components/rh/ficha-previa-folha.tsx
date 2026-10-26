@@ -24,7 +24,7 @@ import {
 import { YearPicker } from "@/components/rh/year-picker";
 import { HoleriteBuilderDialog } from "@/components/rh/holerite-builder-dialog";
 import { calcularHolerite, ENTRADA_PADRAO } from "@/lib/rh/holerite-calc";
-import { entradaHoleriteDaCompetencia } from "@/lib/rh/folha.functions";
+import { entradaHoleriteDaCompetencia, obterTabelaFiscal } from "@/lib/rh/folha.functions";
 import { formatBRL } from "@/lib/financeiro/format";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -41,8 +41,17 @@ export function FichaPreviaFolha({ funcionarioId }: { funcionarioId: string }) {
     queryFn: () => fnEntrada({ data: { funcionario_id: funcionarioId, mes, ano } }),
   });
   const entrada = qEntrada.data ?? ENTRADA_PADRAO;
-  const calc = useMemo(() => calcularHolerite(entrada, { ano, mes }), [entrada, ano, mes]);
-  const carregando = qEntrada.isLoading;
+  const fnTabela = useServerFn(obterTabelaFiscal);
+  const qTabela = useQuery({
+    queryKey: ["rh-tabela-fiscal", ano, mes],
+    queryFn: () => fnTabela({ data: { ano, mes } }),
+    staleTime: 10 * 60_000,
+  });
+  const calc = useMemo(
+    () => (qTabela.data ? calcularHolerite(entrada, qTabela.data) : null),
+    [entrada, qTabela.data],
+  );
+  const carregando = qEntrada.isLoading || qTabela.isLoading;
 
   return (
     <Card>
@@ -88,6 +97,12 @@ export function FichaPreviaFolha({ funcionarioId }: { funcionarioId: string }) {
         {carregando ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Calculando…
+          </p>
+        ) : !calc ? (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            {qTabela.error instanceof Error
+              ? qTabela.error.message
+              : "Não há tabela da folha vigente nesta competência."}
           </p>
         ) : (
           <>

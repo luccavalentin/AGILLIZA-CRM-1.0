@@ -238,6 +238,8 @@ export interface GrupoExport {
   tabela: string;
   /** Tabela-mãe que carrega o `correspondente_id` e a coluna que aponta para ela. */
   via?: { mae: string; coluna: string };
+  /** Colunas exportadas quando a tabela tem coluna fechada ao SELECT (ex.: salário no RH). */
+  colunas?: string;
 }
 
 const doCliente = { mae: "clientes", coluna: "cliente_id" };
@@ -315,7 +317,13 @@ export const GRUPOS_EXPORT: GrupoExport[] = [
   { label: "RH — Departamentos", tabela: "rh_departamentos" },
   { label: "RH — Cargos", tabela: "rh_cargos" },
   { label: "RH — Tipos de Benefício", tabela: "rh_beneficios_tipos" },
-  { label: "RH — Funcionários", tabela: "rh_funcionarios" },
+  // Salário e banco ficam fora do SELECT direto (migração 20261027060002): o backup leva a ficha sem eles.
+  {
+    label: "RH — Funcionários",
+    tabela: "rh_funcionarios",
+    colunas:
+      "id, correspondente_id, numero, status, nome, nome_social, cpf, rg, rg_orgao, rg_uf, data_nascimento, sexo, estado_civil, nacionalidade, naturalidade, nome_mae, nome_pai, email_pessoal, telefone, foto_url, cep, logradouro, numero_endereco, complemento, bairro, cidade, uf, cargo_id, departamento_id, gestor_id, centro_custo_id, tipo_contrato, matricula, ctps_numero, ctps_serie, ctps_uf, pis, data_admissao, fim_experiencia, data_demissao, motivo_demissao, jornada_horas_semanais, jornada_descricao, email_corporativo, observacoes, criador_id, ativo, deletado_em, created_at, updated_at, user_id, dia_pagamento_salario, dia_pagamento_adiantamento, gerar_contas_pagar_automatico",
+  },
   { label: "RH — Dependentes", tabela: "rh_dependentes" },
   { label: "RH — Benefícios", tabela: "rh_funcionario_beneficios" },
   { label: "RH — Histórico", tabela: "rh_funcionario_historico" },
@@ -325,10 +333,11 @@ export const GRUPOS_EXPORT: GrupoExport[] = [
   { label: "RH — Férias", tabela: "rh_ferias" },
   { label: "RH — Ocorrências", tabela: "rh_ocorrencias" },
   { label: "RH — Adiantamentos", tabela: "rh_adiantamentos" },
-  { label: "RH — Descontos", tabela: "rh_descontos" },
+  { label: "RH — Lançamentos da folha", tabela: "rh_lancamentos" },
   { label: "RH — Competências", tabela: "rh_folha_competencias" },
   { label: "RH — Itens da Folha", tabela: "rh_folha_itens" },
-  { label: "RH — Ajustes da Folha", tabela: "rh_folha_ajustes" },
+  { label: "RH — Desligamentos", tabela: "rh_desligamentos" },
+  { label: "RH — Tabelas da folha (próprias)", tabela: "rh_tabelas_fiscais" },
   { label: "RH — Holerites", tabela: "rh_holerites" },
 ];
 
@@ -381,7 +390,7 @@ export const exportarBackupCompleto = createServerFn({ method: "GET" })
         // Paginado: `.limit(5000)` devolvia as primeiras 1.000 linhas e o
         // backup saía pela metade, sem nenhum aviso (QA 19/09/2026).
         const { data, error } = await todasAsLinhas(() =>
-          consultaDoGrupo(supabase, g, corr, "*").order("id"),
+          consultaDoGrupo(supabase, g, corr, g.colunas ?? "*").order("id"),
         );
         if (error) {
           tabelasComFalha.push(g.label);

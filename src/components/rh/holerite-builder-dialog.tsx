@@ -44,7 +44,7 @@ import { gerarHoleritePdf } from "@/lib/rh/pdf-lazy";
 import { calcularHolerite, ENTRADA_PADRAO, type HoleriteEntrada } from "@/lib/rh/holerite-calc";
 import { formatBRL } from "@/lib/financeiro/format";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
-import { entradaHoleriteDaCompetencia } from "@/lib/rh/folha.functions";
+import { entradaHoleriteDaCompetencia, obterTabelaFiscal } from "@/lib/rh/folha.functions";
 import { caminhoHolerite, enviarArquivoRh } from "@/lib/rh/arquivos";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -162,12 +162,27 @@ export function HoleriteBuilderDialog({
     });
   }, [qEntrada.data]);
 
-  const calc = useMemo(() => calcularHolerite(e, { ano, mes }), [e, ano, mes]);
+  // INSS/IRRF/mínimo/salário-família da vigência da competência (RH › Configurações).
+  const fnTabela = useServerFn(obterTabelaFiscal);
+  const qTabela = useQuery({
+    queryKey: ["rh-tabela-fiscal", ano, mes],
+    queryFn: () => fnTabela({ data: { ano, mes } }),
+    staleTime: 10 * 60_000,
+  });
+  const tabela = qTabela.data;
+  const calc = useMemo(
+    () =>
+      tabela
+        ? calcularHolerite(e, tabela)
+        : { proventos: [], descontos: [], total_proventos: 0, total_descontos: 0, liquido: 0, base_inss: 0, inss: 0, base_irrf: 0, irrf: 0, base_fgts: 0, fgts: 0, valor_hora: 0, valor_dia: 0 },
+    [e, tabela],
+  );
   const func = qFunc.data;
 
   const gerar = useMutation({
     mutationFn: async () => {
       if (!funcionarioId || !func) throw new Error("Selecione o funcionário.");
+      if (!tabela) throw new Error(mensagemDeErro(qTabela.error, "Tabela da folha indisponível para esta competência."));
       // Campos não preenchidos são tratados como zero: o PDF sempre é gerado.
 
       const { blob, filename } = await gerarHoleritePdf({
