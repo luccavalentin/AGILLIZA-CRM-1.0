@@ -157,6 +157,14 @@ describe("guardas das server functions da ponte", () => {
     expect(fonte).not.toMatch(/(update|insert into|delete from)\s+(nucleo|plataforma|imobmatch)\./i);
   });
 
+  it("receita do ImobMatch no financeiro da matriz (0461): financeiro.repasses ver, só leitura", () => {
+    const fs = todas.filter((f) => f.arquivo === "financeiro/imobmatch-matriz.functions.ts");
+    expect(fs.map((f) => f.nome)).toEqual(["receitaImobMatchMatriz"]);
+    expect(fs[0].guardas.join()).toBe('["financeiro.repasses","view"]');
+    expect(fs[0].metodo).toBe("GET");
+    expect(fs[0].corpo).toContain("plataforma.financeiro_matriz_imobmatch($1::date, $2::date)");
+  });
+
   it("moderação do ImobMatch: aceita o módulo novo (imobmatch.moderacao) e o antigo, com a mesma ação", () => {
     for (const arquivo of [
       "plataforma/imobmatch.functions.ts",

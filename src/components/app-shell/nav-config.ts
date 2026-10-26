@@ -556,6 +556,8 @@ export const navInterno: NavGroup[] = [
       { label: "Contas a pagar", icon: ArrowUpCircle, to: "/financeiro/contas-a-pagar", perm: { modulo: "financeiro.contas_pagar" } },
       { label: "Contas a receber", icon: ArrowDownCircle, to: "/financeiro/contas-a-receber", perm: { modulo: "financeiro.contas_receber" } },
       { label: "Licenças dos assinantes", icon: Building2, to: "/financeiro/assinantes", perm: { modulo: "financeiro.repasses" } },
+      // Receita do ImobMatch, só leitura como as licenças (0461 do Corretor, 28/10/2026).
+      { label: "Receita do ImobMatch", icon: HeartHandshake, to: "/financeiro/imobmatch", perm: { modulo: "financeiro.repasses" } },
       { label: "Conciliação", icon: FileCheck2, to: "/financeiro/conciliacao", perm: { modulo: "financeiro.conciliacao" } },
       { label: "Fluxo de caixa", icon: Wallet, to: "/financeiro/fluxo-de-caixa", perm: { modulo: "financeiro.fluxo_caixa" } },
       { label: "Relatórios", icon: BarChart3, to: "/financeiro/relatorios", perm: { modulo: "financeiro.painel", equivalentes: ["financeiro.fluxo_caixa"] } },

@@ -1825,6 +1825,29 @@ export const ROTEIROS: Record<string, RoteiroTour> = {
   },
 
   // ---- Financeiro: Licenças dos assinantes
+  "financeiro.imobmatch": {
+    versao: 1,
+    titulo: "Receita do ImobMatch",
+    passos: [
+      {
+        alvo: "titulo",
+        titulo: "O dinheiro do ImobMatch",
+        texto:
+          "Pro avulso, anunciantes particulares e banners, lidos do Agilliza Tech sem cópia. Nada aqui gera conta a receber nem baixa.",
+      },
+      {
+        alvo: "financeiro-periodo",
+        titulo: "Período",
+        texto: "Escolha as datas ou um atalho. Inadimplência e a receber são sempre os de hoje.",
+      },
+      {
+        alvo: "financeiro-imobmatch-grafico",
+        titulo: "Mês a mês e por produto",
+        texto:
+          "O recebido de cada mês, separado por produto. Fatura estornada sai do recebido e aparece em Estornado.",
+      },
+    ],
+  },
   "financeiro.assinantes": {
     versao: 1,
     titulo: "Licenças dos assinantes",

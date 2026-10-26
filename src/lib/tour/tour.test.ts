@@ -148,5 +148,6 @@ describe("tour: roteiros", () => {
         .map((a) => `${chave} → ${a}`),
     );
     expect(orfaos).toEqual([]);
-  });
+    // Lê o src inteiro do disco: com a suíte toda rodando em paralelo passa dos 5 s padrão.
+  }, 30_000);
 });

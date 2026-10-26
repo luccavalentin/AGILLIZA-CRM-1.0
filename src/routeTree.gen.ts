@@ -78,6 +78,7 @@ import { Route as AuthenticatedFinanceiroConfiguracoesRouteImport } from './rout
 import { Route as AuthenticatedFinanceiroContasAPagarRouteImport } from './routes/_authenticated/financeiro.contas-a-pagar'
 import { Route as AuthenticatedFinanceiroContasAReceberRouteImport } from './routes/_authenticated/financeiro.contas-a-receber'
 import { Route as AuthenticatedFinanceiroFluxoDeCaixaRouteImport } from './routes/_authenticated/financeiro.fluxo-de-caixa'
+import { Route as AuthenticatedFinanceiroImobmatchRouteImport } from './routes/_authenticated/financeiro.imobmatch'
 import { Route as AuthenticatedFinanceiroMinhasComissoesRouteImport } from './routes/_authenticated/financeiro.minhas-comissoes'
 import { Route as AuthenticatedFinanceiroPainelRouteImport } from './routes/_authenticated/financeiro.painel'
 import { Route as AuthenticatedFinanceiroRelatoriosRouteImport } from './routes/_authenticated/financeiro.relatorios'
@@ -561,6 +562,12 @@ const AuthenticatedFinanceiroFluxoDeCaixaRoute =
   AuthenticatedFinanceiroFluxoDeCaixaRouteImport.update({
     id: '/financeiro/fluxo-de-caixa',
     path: '/financeiro/fluxo-de-caixa',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroImobmatchRoute =
+  AuthenticatedFinanceiroImobmatchRouteImport.update({
+    id: '/financeiro/imobmatch',
+    path: '/financeiro/imobmatch',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedFinanceiroMinhasComissoesRoute =
@@ -1266,6 +1273,7 @@ export interface FileRoutesByFullPath {
   '/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
   '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
+  '/financeiro/imobmatch': typeof AuthenticatedFinanceiroImobmatchRoute
   '/financeiro/minhas-comissoes': typeof AuthenticatedFinanceiroMinhasComissoesRoute
   '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/financeiro/relatorios': typeof AuthenticatedFinanceiroRelatoriosRoute
@@ -1439,6 +1447,7 @@ export interface FileRoutesByTo {
   '/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
   '/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
+  '/financeiro/imobmatch': typeof AuthenticatedFinanceiroImobmatchRoute
   '/financeiro/minhas-comissoes': typeof AuthenticatedFinanceiroMinhasComissoesRoute
   '/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/financeiro/relatorios': typeof AuthenticatedFinanceiroRelatoriosRoute
@@ -1618,6 +1627,7 @@ export interface FileRoutesById {
   '/_authenticated/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
   '/_authenticated/financeiro/contas-a-receber': typeof AuthenticatedFinanceiroContasAReceberRoute
   '/_authenticated/financeiro/fluxo-de-caixa': typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
+  '/_authenticated/financeiro/imobmatch': typeof AuthenticatedFinanceiroImobmatchRoute
   '/_authenticated/financeiro/minhas-comissoes': typeof AuthenticatedFinanceiroMinhasComissoesRoute
   '/_authenticated/financeiro/painel': typeof AuthenticatedFinanceiroPainelRoute
   '/_authenticated/financeiro/relatorios': typeof AuthenticatedFinanceiroRelatoriosRoute
@@ -1797,6 +1807,7 @@ export interface FileRouteTypes {
     | '/financeiro/contas-a-pagar'
     | '/financeiro/contas-a-receber'
     | '/financeiro/fluxo-de-caixa'
+    | '/financeiro/imobmatch'
     | '/financeiro/minhas-comissoes'
     | '/financeiro/painel'
     | '/financeiro/relatorios'
@@ -1970,6 +1981,7 @@ export interface FileRouteTypes {
     | '/financeiro/contas-a-pagar'
     | '/financeiro/contas-a-receber'
     | '/financeiro/fluxo-de-caixa'
+    | '/financeiro/imobmatch'
     | '/financeiro/minhas-comissoes'
     | '/financeiro/painel'
     | '/financeiro/relatorios'
@@ -2148,6 +2160,7 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro/contas-a-pagar'
     | '/_authenticated/financeiro/contas-a-receber'
     | '/_authenticated/financeiro/fluxo-de-caixa'
+    | '/_authenticated/financeiro/imobmatch'
     | '/_authenticated/financeiro/minhas-comissoes'
     | '/_authenticated/financeiro/painel'
     | '/_authenticated/financeiro/relatorios'
@@ -2760,6 +2773,13 @@ declare module '@tanstack/react-router' {
       path: '/financeiro/fluxo-de-caixa'
       fullPath: '/financeiro/fluxo-de-caixa'
       preLoaderRoute: typeof AuthenticatedFinanceiroFluxoDeCaixaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro/imobmatch': {
+      id: '/_authenticated/financeiro/imobmatch'
+      path: '/financeiro/imobmatch'
+      fullPath: '/financeiro/imobmatch'
+      preLoaderRoute: typeof AuthenticatedFinanceiroImobmatchRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/financeiro/minhas-comissoes': {
@@ -3717,6 +3737,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinanceiroContasAPagarRoute: typeof AuthenticatedFinanceiroContasAPagarRoute
   AuthenticatedFinanceiroContasAReceberRoute: typeof AuthenticatedFinanceiroContasAReceberRoute
   AuthenticatedFinanceiroFluxoDeCaixaRoute: typeof AuthenticatedFinanceiroFluxoDeCaixaRoute
+  AuthenticatedFinanceiroImobmatchRoute: typeof AuthenticatedFinanceiroImobmatchRoute
   AuthenticatedFinanceiroMinhasComissoesRoute: typeof AuthenticatedFinanceiroMinhasComissoesRoute
   AuthenticatedFinanceiroPainelRoute: typeof AuthenticatedFinanceiroPainelRoute
   AuthenticatedFinanceiroRelatoriosRoute: typeof AuthenticatedFinanceiroRelatoriosRoute
@@ -3832,6 +3853,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedFinanceiroContasAReceberRoute,
   AuthenticatedFinanceiroFluxoDeCaixaRoute:
     AuthenticatedFinanceiroFluxoDeCaixaRoute,
+  AuthenticatedFinanceiroImobmatchRoute: AuthenticatedFinanceiroImobmatchRoute,
   AuthenticatedFinanceiroMinhasComissoesRoute:
     AuthenticatedFinanceiroMinhasComissoesRoute,
   AuthenticatedFinanceiroPainelRoute: AuthenticatedFinanceiroPainelRoute,
