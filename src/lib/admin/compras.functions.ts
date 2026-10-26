@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { esquemaDecisao, esquemaPedido } from "./compras-regras";
 
 export interface CompraLinha {
   id: string;
@@ -12,7 +13,12 @@ export interface CompraLinha {
   observacao: string | null;
   solicitante_id: string | null;
   solicitante_nome: string | null;
+  /** Quem aprovou ou recusou (histórico do pedido). */
+  aprovador_id: string | null;
+  aprovador_nome: string | null;
   aprovado_em: string | null;
+  /** Conta a pagar gerada na aprovação (quando o financeiro já lançou). */
+  payable_id: string | null;
   created_at: string;
 }
 
@@ -26,7 +32,13 @@ async function corr(supabase: any, userId: string): Promise<string | null> {
 }
 
 export const listarCompras = createServerFn({ method: "GET" })
-  .middleware([exigirPermissao(["admin.compras.pedidos", "view"], ["admin.compras.aprovacoes", "view"], ["admin.compras", "view"])])
+  .middleware([
+    exigirPermissao(
+      ["admin.compras.pedidos", "view"],
+      ["admin.compras.aprovacoes", "view"],
+      ["admin.compras", "view"],
+    ),
+  ])
   .handler(async ({ context }): Promise<CompraLinha[]> => {
     const { supabase, userId } = context;
     const c = await corr(supabase, userId);
@@ -34,7 +46,7 @@ export const listarCompras = createServerFn({ method: "GET" })
     const { data, error } = await supabase
       .from("purchase_requests")
       .select(
-        "id, numero, descricao, valor, categoria, status, observacao, solicitante_id, aprovado_em, created_at",
+        "id, numero, descricao, valor, categoria, status, observacao, solicitante_id, aprovador_id, aprovado_em, payable_id, created_at",
       )
       .eq("correspondente_id", c)
       .order("created_at", { ascending: false })
@@ -42,30 +54,25 @@ export const listarCompras = createServerFn({ method: "GET" })
     if (error) throw error;
     if (!data || data.length === 0) return [];
 
-    const ids = [...new Set(data.map((r) => r.solicitante_id).filter(Boolean))] as string[];
+    const ids = [
+      ...new Set(data.flatMap((r: any) => [r.solicitante_id, r.aprovador_id]).filter(Boolean)),
+    ] as string[];
     const nomes = new Map<string, string>();
     if (ids.length > 0) {
       const { data: profs } = await supabase.from("profiles").select("id, nome").in("id", ids);
       (profs ?? []).forEach((p) => nomes.set(p.id, p.nome ?? ""));
     }
-    return data.map((r) => ({
+    return data.map((r: any) => ({
       ...r,
       valor: Number(r.valor),
       solicitante_nome: r.solicitante_id ? (nomes.get(r.solicitante_id) ?? null) : null,
+      aprovador_nome: r.aprovador_id ? (nomes.get(r.aprovador_id) ?? null) : null,
     }));
   });
 
 export const criarCompra = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.compras.pedidos", "create"], ["admin.compras", "create"])])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        descricao: z.string().min(3, "Descreva a solicitação."),
-        valor: z.number().positive("Informe um valor maior que zero."),
-        categoria: z.string().optional().nullable(),
-      })
-      .parse(data),
-  )
+  .inputValidator((data: unknown) => esquemaPedido.parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const c = await corr(supabase, userId);
@@ -84,16 +91,7 @@ export const criarCompra = createServerFn({ method: "POST" })
 
 export const editarCompra = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.compras.pedidos", "edit"])])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        id: z.string().uuid(),
-        descricao: z.string().min(3, "Descreva a solicitação."),
-        valor: z.number().positive("Informe um valor maior que zero."),
-        categoria: z.string().optional().nullable(),
-      })
-      .parse(data),
-  )
+  .inputValidator((data: unknown) => esquemaPedido.extend({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
     // Só pedido pendente muda: editar um aprovado trocava o valor depois da aprovação.
@@ -109,7 +107,10 @@ export const editarCompra = createServerFn({ method: "POST" })
       .select("id")
       .maybeSingle();
     if (error) throw error;
-    if (!row) throw new Error("Pedido não encontrado ou já decidido: só pedidos pendentes podem ser editados.");
+    if (!row)
+      throw new Error(
+        "Pedido não encontrado ou já decidido: só pedidos pendentes podem ser editados.",
+      );
     return { ok: true };
   });
 
@@ -127,7 +128,10 @@ export const excluirCompra = createServerFn({ method: "POST" })
       .select("id")
       .maybeSingle();
     if (error) throw error;
-    if (!row) throw new Error("Pedido não encontrado ou já decidido: só pedidos pendentes podem ser excluídos.");
+    if (!row)
+      throw new Error(
+        "Pedido não encontrado ou já decidido: só pedidos pendentes podem ser excluídos.",
+      );
     return { ok: true };
   });
 
@@ -135,15 +139,8 @@ export const decidirCompra = createServerFn({ method: "POST" })
   // A matriz (Aprovação de compras: aprovar/reprovar) decide; antes era só o papel
   // (admin/correspondente/gestor) e a ação do catálogo nunca era conferida.
   .middleware([exigirPermissao(["admin.compras.aprovacoes", "edit"])])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        id: z.string().uuid(),
-        aprovar: z.boolean(),
-        observacao: z.string().optional().nullable(),
-      })
-      .parse(data),
-  )
+  // Recusar exige motivo (C67): fica no histórico e o solicitante vê.
+  .inputValidator((data: unknown) => esquemaDecisao.parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
 
@@ -153,7 +150,7 @@ export const decidirCompra = createServerFn({ method: "POST" })
         status: data.aprovar ? "aprovada" : "recusada",
         aprovador_id: userId,
         aprovado_em: new Date().toISOString(),
-        observacao: data.observacao ?? null,
+        observacao: data.observacao?.trim() || null,
       })
       .eq("id", data.id)
       .eq("status", "pendente")

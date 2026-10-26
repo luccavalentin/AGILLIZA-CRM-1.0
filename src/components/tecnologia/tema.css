@@ -78,3 +78,38 @@
     opacity: 0;
   }
 }
+
+/* Submenus da central (C66): trilho com as peças 3D; a seção atual em "papel" com fio de
+   realce embaixo, as outras com a peça dessaturada. */
+.tec-abas {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--card) 70%, transparent);
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.tec-aba[aria-current="page"] {
+  color: var(--foreground);
+  background: var(--card);
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 1px 2px rgb(0 0 0 / 0.12);
+}
+.tec-aba[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -5px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--realce);
+}
+.tec-aba:not([aria-current="page"]) .i3d {
+  filter: saturate(0.15) brightness(1.05);
+  opacity: 0.75;
+}
+.tec-aba:hover .i3d {
+  filter: none;
+  opacity: 1;
+}

@@ -59,9 +59,10 @@ function Usuarios() {
     <div className="space-y-5 md:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-foreground">Usuários ativos</h2>
           <p className="text-xs text-muted-foreground">
-            Quem está usando o ecossistema, de onde e com qual perfil — Brasil inteiro.
+            Medido pelas sessões do Agilliza Tech (corretores, imobiliárias, parceiros e clientes).
+            Quem usa o Agilliza correspondente só aparece, como "Plataforma", ao abrir telas da
+            plataforma pela ponte.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -96,6 +97,7 @@ function Usuarios() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Kpi
           rotulo="Online agora"
+          janela="5 min"
           cor="verde"
           icone={<Radio />}
           carregando={carregando}
@@ -105,6 +107,7 @@ function Usuarios() {
         />
         <Kpi
           rotulo="Ativos em 24 horas"
+          janela="24 h"
           cor="azul"
           icone={<Users className="size-4" />}
           carregando={carregando}
@@ -112,6 +115,7 @@ function Usuarios() {
         />
         <Kpi
           rotulo="Ativos em 30 dias"
+          janela="30 dias"
           cor="roxo"
           icone={<CalendarDays className="size-4" />}
           carregando={carregando}

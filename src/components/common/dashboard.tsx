@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { BancoLogo } from "@/components/bancos/banco-logo";
+import { Icone3D, tomIcone3D } from "@/components/ui/icone-3d";
 
 /** Tendência vs. período anterior equivalente. */
 export interface MetricDelta {
@@ -92,14 +93,6 @@ const toneWash: Record<Tone, string> = {
   neutral: "color-mix(in oklab, var(--muted-foreground) 6%, transparent)",
 };
 
-const toneIconBg: Record<Tone, string> = {
-  brand: "color-mix(in oklab, var(--primary) 12%, transparent)",
-  success: "color-mix(in oklab, var(--success) 14%, transparent)",
-  warning: "color-mix(in oklab, var(--warning) 16%, transparent)",
-  danger: "color-mix(in oklab, var(--destructive) 14%, transparent)",
-  neutral: "color-mix(in oklab, var(--muted-foreground) 10%, transparent)",
-};
-
 /** Cabeçalho da página de painel: eyebrow, título, descrição, chip de atualização e ações. */
 export function PanelHeader({
   eyebrow,
@@ -109,7 +102,10 @@ export function PanelHeader({
   onRefresh,
   actions,
   variant = "light",
+  icone,
 }: {
+  /** Ícone 3D ao lado do título (C00, 26/10/2026). */
+  icone?: LucideIcon;
   eyebrow: string;
   titulo: string;
   descricao: string;
@@ -124,40 +120,43 @@ export function PanelHeader({
   return (
     <div className={cn(dark ? "op-hero-dark p-3 sm:p-4 md:p-6" : "")}>
       <div className="relative grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-        <div className={cn("min-w-0 flex flex-col justify-center", !actions && "md:col-span-2")}>
-          <p
-            className={cn(
-              "flex min-w-0 items-center gap-2",
-              dark
-                ? "text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 sm:text-[11px] sm:tracking-[0.18em]"
-                : "text-xs font-medium text-muted-foreground",
-            )}
-          >
-            {dark && (
-              <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-white/80 sm:w-6" />
-            )}
-            <span className="truncate">{eyebrow}</span>
-          </p>
-          <h1
-            className={cn(
-              "leading-tight tracking-tight",
-              dark
-                ? "mt-2 text-xl font-bold text-white sm:mt-3 sm:text-2xl md:text-3xl lg:text-4xl"
-                : "mt-0.5 text-xl font-medium text-foreground sm:text-2xl",
-            )}
-          >
-            {titulo}
-          </h1>
-          <p
-            className={cn(
-              "max-w-xl",
-              dark
-                ? "mt-2 text-sm leading-relaxed text-white/70 opacity-85 md:text-base"
-                : "mt-0.5 text-sm text-muted-foreground",
-            )}
-          >
-            {descricao}
-          </p>
+        <div className={cn("flex min-w-0 items-start gap-3", !actions && "md:col-span-2")}>
+          {icone && !dark && <Icone3D icone={icone} tamanho="lg" className="mt-0.5" />}
+          <div className="min-w-0 flex flex-col justify-center">
+            <p
+              className={cn(
+                "flex min-w-0 items-center gap-2",
+                dark
+                  ? "text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 sm:text-[11px] sm:tracking-[0.18em]"
+                  : "text-xs font-medium text-muted-foreground",
+              )}
+            >
+              {dark && (
+                <span className="inline-block h-1 w-5 shrink-0 rounded-full bg-white/80 sm:w-6" />
+              )}
+              <span className="truncate">{eyebrow}</span>
+            </p>
+            <h1
+              className={cn(
+                "leading-tight tracking-tight",
+                dark
+                  ? "mt-2 text-xl font-bold text-white sm:mt-3 sm:text-2xl md:text-3xl lg:text-4xl"
+                  : "mt-0.5 text-xl font-medium text-foreground sm:text-2xl",
+              )}
+            >
+              {titulo}
+            </h1>
+            <p
+              className={cn(
+                "max-w-xl",
+                dark
+                  ? "mt-2 text-sm leading-relaxed text-white/70 opacity-85 md:text-base"
+                  : "mt-0.5 text-sm text-muted-foreground",
+              )}
+            >
+              {descricao}
+            </p>
+          </div>
         </div>
         <div
           className={cn(
@@ -302,7 +301,7 @@ export function HeroMetric({
   const conteudo = (
     <Card
       className={cn(
-        "group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border-border/70 p-3.5 shadow-sm transition-all duration-300 sm:p-4",
+        "i3d-grupo group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border-border/70 p-3.5 shadow-sm transition-all duration-300 sm:p-4",
         clicavel &&
           "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/[0.06]",
       )}
@@ -316,15 +315,7 @@ export function HeroMetric({
       />
       <div className="relative flex items-start justify-between gap-2">
         {Icon ? (
-          <span
-            className={cn(
-              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-              toneText[tone],
-            )}
-            style={{ background: toneIconBg[tone] }}
-          >
-            <Icon className="h-4 w-4" strokeWidth={2} />
-          </span>
+          <Icone3D icone={Icon} tom={tomIcone3D(tone)} tamanho="md" />
         ) : (
           <span className={cn("h-8 w-1 shrink-0 rounded-full", toneBar[tone])} />
         )}

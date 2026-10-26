@@ -129,7 +129,6 @@ function Logs() {
     <div className="space-y-5 md:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-foreground">Logs</h2>
           <p className="text-xs text-muted-foreground">
             Requisições com erro, chamadas aos provedores e rotinas numa linha do tempo só (até 14
             dias).
