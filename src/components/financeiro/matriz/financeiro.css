@@ -15,3 +15,18 @@
   border-radius: 999px;
 }
 
+/*
+ * Indicadores do financeiro: o valor nunca é cortado com "…" (375 px). O tamanho acompanha a
+ * largura do próprio cartão (cqi) e, se ainda não couber (valor muito longo), quebra inteiro.
+ */
+.fin-metrica {
+  container-type: inline-size;
+}
+.fin-metrica .i3d-indicador-valor {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  /* Nunca maior que o tamanho de antes; só diminui quando o cartão é estreito. */
+  font-size: max(0.95rem, min(clamp(1.25rem, 1.12rem + 0.5vw, 1.625rem), 12cqi));
+}

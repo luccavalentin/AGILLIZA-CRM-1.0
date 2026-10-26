@@ -54,7 +54,7 @@ export function PaginaFin({
           <Icone3D icone={Icone} tamanho="lg" tom="marca" />
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">Financeiro da matriz</p>
-            <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{titulo}</h1>
+            <h1 className="text-balance break-words text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{titulo}</h1>
             <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">{descricao}</p>
           </div>
         </div>
@@ -109,7 +109,7 @@ export function Metrica({
       detalhe={ajuda}
       natureza={natureza}
       onClick={onClick}
-      className={cn("min-w-0", ativo && "ring-2 ring-primary/25")}
+      className={cn("fin-metrica min-w-0", ativo && "ring-2 ring-primary/25")}
     />
   );
 }
@@ -254,10 +254,11 @@ export function FiltroPeriodo({
 }) {
   return (
     <div data-tour="financeiro-periodo" className="flex flex-wrap items-center gap-2">
-      <div className="flex items-center gap-1.5">
-        <Input type="date" value={de} onChange={(e) => onChange({ de: e.target.value, ate })} className="h-9 w-[9.5rem]" aria-label="De" />
+      {/* Celular: as duas datas dividem a largura do cartão (nunca encostam na borda). */}
+      <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 sm:flex sm:w-auto">
+        <Input type="date" value={de} onChange={(e) => onChange({ de: e.target.value, ate })} className="h-9 w-full min-w-0 sm:w-[9.5rem]" aria-label="De" />
         <span className="text-xs text-muted-foreground">até</span>
-        <Input type="date" value={ate} onChange={(e) => onChange({ de, ate: e.target.value })} className="h-9 w-[9.5rem]" aria-label="Até" />
+        <Input type="date" value={ate} onChange={(e) => onChange({ de, ate: e.target.value })} className="h-9 w-full min-w-0 sm:w-[9.5rem]" aria-label="Até" />
       </div>
       <div className="flex flex-wrap gap-1">
         {PRESETS.map((p) => (
