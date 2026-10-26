@@ -161,11 +161,7 @@ export function Avatar({
       className={clsx("ec-foto cu-avatar", grupo && "cu-avatar-grupo")}
       style={{ width: tamanho, height: tamanho }}
     >
-      {url ? (
-        <img src={url} alt="" loading="lazy" />
-      ) : (
-        <span aria-hidden>{ini}</span>
-      )}
+      {url ? <img src={url} alt="" loading="lazy" /> : <span aria-hidden>{ini}</span>}
       {online && <span className="ec-online" aria-label="online" />}
     </span>
   );
