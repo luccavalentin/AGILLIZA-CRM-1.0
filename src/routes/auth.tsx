@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate, useRouter, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { BiometricAuth } from "@/components/auth/BiometricAuth";
+import { NovaSenhaRecuperacao } from "@/components/auth/NovaSenhaRecuperacao";
 import { marcarAppDesbloqueado } from "@/lib/pwa/biometria";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { getMinhasPermissoes } from "@/lib/permissions.functions";
 import { ERRO_CREDENCIAIS, portaEntradaDeRoles, destinoPosLogin } from "@/lib/auth-routing";
+import { pedirRecuperacaoDeSenha } from "@/lib/auth/recuperar-senha.functions";
+import {
+  LINK_DE_RECUPERACAO_INVALIDO,
+  sessaoDeRecuperacao,
+  voltouDoLinkDeRecuperacao,
+} from "@/lib/auth/recuperacao";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -36,6 +43,40 @@ function AuthPage() {
   const navigate = useNavigate();
   const router = useRouter();
   const [carregando, setCarregando] = useState(false);
+  // Volta do link de "Esqueci minha senha": no lugar das abas, o formulário de senha nova.
+  const [recuperando, setRecuperando] = useState(false);
+  const recuperandoRef = useRef(false);
+
+  useEffect(() => {
+    let vivo = true;
+    const abrirRecuperacao = () => {
+      recuperandoRef.current = true;
+      setRecuperando(true);
+    };
+    const { data: sub } = supabase.auth.onAuthStateChange((evento) => {
+      if (evento === "PASSWORD_RECOVERY" && vivo) abrirRecuperacao();
+    });
+    if (voltouDoLinkDeRecuperacao(window.location.search)) {
+      // getSession espera o supabase-js terminar de ler o "#access_token…" da URL.
+      void supabase.auth.getSession().then(async ({ data }) => {
+        if (!vivo) return;
+        const deLink = sessaoDeRecuperacao(data.session?.access_token);
+        // Tira o "?recuperar=1" (e um "#error=…" de link vencido) da barra de endereço.
+        void navigate({ to: "/auth", replace: true });
+        if (deLink) {
+          abrirRecuperacao();
+          return;
+        }
+        // O evento PASSWORD_RECOVERY sai logo depois: dá um instante antes de dizer que falhou.
+        await new Promise((r) => setTimeout(r, 400));
+        if (vivo && !recuperandoRef.current) toast.error(LINK_DE_RECUPERACAO_INVALIDO);
+      });
+    }
+    return () => {
+      vivo = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   async function entrar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -143,13 +184,17 @@ function AuthPage() {
     }
   }
 
+  // O link vai pelo e-mail da plataforma (o SMTP do Auth de produção não entrega: defeito de
+  // 30/10/2026). A resposta é sempre a mesma, exista a conta ou não.
   async function esqueciSenha() {
     const email = prompt("Informe seu e-mail para redefinir a senha:");
-    if (!email) return;
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
-    });
-    toast.success("Se o e-mail existir, você receberá as instruções.");
+    if (!email?.trim()) return;
+    try {
+      const r = await pedirRecuperacaoDeSenha({ data: { email: email.trim() } });
+      toast.success(r.mensagem);
+    } catch {
+      toast.error("Não foi possível pedir a nova senha agora. Tente de novo em instantes.");
+    }
   }
 
   return (
@@ -159,82 +204,91 @@ function AuthPage() {
       bannerTitulo="Sua operação de crédito imobiliário, organizada."
       bannerSubtitulo="Simulações, propostas, contratos, financeiro e comissões em um só lugar."
     >
-      <Tabs defaultValue="entrar" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="entrar">Entrar</TabsTrigger>
-          <TabsTrigger value="criar">Criar conta</TabsTrigger>
-        </TabsList>
+      {recuperando ? (
+        <NovaSenhaRecuperacao
+          onConcluir={() => {
+            recuperandoRef.current = false;
+            setRecuperando(false);
+          }}
+        />
+      ) : (
+        <Tabs defaultValue="entrar" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="entrar">Entrar</TabsTrigger>
+            <TabsTrigger value="criar">Criar conta</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="entrar">
-          <form onSubmit={entrar} className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="login-email">E-mail</Label>
-              <Input id="login-email" name="email" type="email" autoComplete="email" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="login-senha">Senha</Label>
-              <Input
-                id="login-senha"
-                name="senha"
-                type="password"
-                autoComplete="current-password"
-                required
-              />
-            </div>
-            <button
-              type="button"
-              onClick={esqueciSenha}
-              className="text-sm text-primary hover:underline"
-            >
-              Esqueci minha senha
-            </button>
-            <Button type="submit" className="w-full" disabled={carregando}>
-              {carregando ? "Entrando…" : "Entrar"}
-            </Button>
-            <BiometricAuth destino={destinoPosLogin("sistema")} disabled={carregando} />
-          </form>
-        </TabsContent>
+          <TabsContent value="entrar">
+            <form onSubmit={entrar} className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email">E-mail</Label>
+                <Input id="login-email" name="email" type="email" autoComplete="email" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-senha">Senha</Label>
+                <Input
+                  id="login-senha"
+                  name="senha"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+              <button
+                type="button"
+                onClick={esqueciSenha}
+                className="text-sm text-primary hover:underline"
+              >
+                Esqueci minha senha
+              </button>
+              <Button type="submit" className="w-full" disabled={carregando}>
+                {carregando ? "Entrando…" : "Entrar"}
+              </Button>
+              <BiometricAuth destino={destinoPosLogin("sistema")} disabled={carregando} />
+            </form>
+          </TabsContent>
 
-        <TabsContent value="criar">
-          <form onSubmit={criarConta} className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="reg-nome">Nome completo</Label>
-              <Input id="reg-nome" name="nome" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="reg-email">E-mail</Label>
-              <Input id="reg-email" name="email" type="email" autoComplete="email" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="reg-senha">Senha</Label>
-              <Input
-                id="reg-senha"
-                name="senha"
-                type="password"
-                autoComplete="new-password"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="reg-conf">Confirmar senha</Label>
-              <Input
-                id="reg-conf"
-                name="confirmar"
-                type="password"
-                autoComplete="new-password"
-                required
-              />
-            </div>
-            <label className="flex items-start gap-2 text-sm text-muted-foreground">
-              <Checkbox name="aceite" id="reg-aceite" className="mt-0.5" />
-              <span>Li e aceito os termos de uso e a política de privacidade.</span>
-            </label>
-            <Button type="submit" className="w-full" disabled={carregando}>
-              {carregando ? "Criando…" : "Criar conta de correspondente"}
-            </Button>
-          </form>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="criar">
+            <form onSubmit={criarConta} className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reg-nome">Nome completo</Label>
+                <Input id="reg-nome" name="nome" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-email">E-mail</Label>
+                <Input id="reg-email" name="email" type="email" autoComplete="email" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-senha">Senha</Label>
+                <Input
+                  id="reg-senha"
+                  name="senha"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-conf">Confirmar senha</Label>
+                <Input
+                  id="reg-conf"
+                  name="confirmar"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
+              <label className="flex items-start gap-2 text-sm text-muted-foreground">
+                <Checkbox name="aceite" id="reg-aceite" className="mt-0.5" />
+                <span>Li e aceito os termos de uso e a política de privacidade.</span>
+              </label>
+              <Button type="submit" className="w-full" disabled={carregando}>
+                {carregando ? "Criando…" : "Criar conta de correspondente"}
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
+      )}
       <p className="mt-6 text-center text-xs text-muted-foreground">
         <Link
           to="/politica-de-privacidade"
