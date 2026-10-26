@@ -4,6 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 export type ChatTipo = "dm" | "cliente" | "demanda" | "portal_cliente";
 
@@ -326,7 +327,7 @@ export const pesquisarConversas = createServerFn({ method: "POST" })
       .from("clientes")
       .select("id, nome")
       .is("deleted_at", null)
-      .ilike("nome", like)
+      .or(clausulaTexto("nome", termo))
       .limit(15);
     for (const c of (clientesLike ?? []) as any[]) {
       resultados.push({

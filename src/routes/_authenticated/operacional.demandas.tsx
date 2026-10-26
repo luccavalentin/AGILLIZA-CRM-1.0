@@ -60,6 +60,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { contemBusca } from "@/lib/busca-texto";
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas")({
   head: () => ({ meta: [{ title: "Demandas — Agilliza" }] }),
@@ -182,12 +183,7 @@ function Pagina() {
       if (statusFiltro !== "todas" && d.status !== statusFiltro) return false;
       if (tipoFiltro !== "todos" && d.tipo_responsavel !== tipoFiltro) return false;
       if (!termo) return true;
-      return (
-        d.titulo.toLowerCase().includes(termo) ||
-        (d.numero ?? "").toLowerCase().includes(termo) ||
-        (d.nome_cliente ?? "").toLowerCase().includes(termo) ||
-        (d.nome_responsavel ?? "").toLowerCase().includes(termo)
-      );
+      return contemBusca([d.titulo, d.numero, d.nome_cliente, d.nome_responsavel], termo);
     });
   }, [itens, q, statusFiltro, tipoFiltro]);
 

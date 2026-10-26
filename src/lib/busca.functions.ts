@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 export interface ResultadoBusca {
   id: string;
@@ -29,8 +30,8 @@ export const buscaGlobal = createServerFn({ method: "GET" })
     // termo quebravam a consulta. Aspas, barra e `%` saem do termo (`_` fica:
     // como curinga de um caractere, ainda casa com o próprio `_`).
     const limpo = termo.replace(/["\\%]/g, "");
-    const like = `%${limpo}%`;
-    const ilike = (col: string) => `${col}.ilike."${like}"`;
+    // Sem diferenciar acento e por palavra ("Crisleia Camizao" acha "Crisléia").
+    const ilike = (col: string) => clausulaTexto(col, limpo);
     // CPF/CNPJ digitado com pontuação ("123.456.789-00"): o gravado é só dígito.
     const digitos = limpo.replace(/\D/g, "");
     const porDoc = (col: string) =>

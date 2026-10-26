@@ -11,6 +11,7 @@ import {
 } from "@/lib/crm/chat-gestao.functions";
 import { listarEstadoChatDoUsuario } from "@/lib/chats/gestao.functions";
 import type { FiltroChat } from "./helpers";
+import { contemBusca } from "@/lib/busca-texto";
 
 /**
  * Estado + queries + derivações do Chat CRM.
@@ -206,9 +207,7 @@ export function useChatConversas() {
     const t = busca.trim().toLowerCase();
     let lista = (conversas ?? []).filter((c) => !ocultaCliente(c.cliente_id, c.ultima_em));
     if (t) {
-      lista = lista.filter(
-        (c) => c.nome.toLowerCase().includes(t) || (c.documento ?? "").toLowerCase().includes(t),
-      );
+      lista = lista.filter((c) => contemBusca([c.nome, c.documento], t));
     }
     if (etiquetaFiltro !== "all") {
       lista = lista.filter((c) =>

@@ -46,6 +46,7 @@ import {
 import { DateInput } from "@/components/shared/date-input";
 import type { ContratoEmitido } from "@/lib/crm/clientes.functions";
 import type { PainelClienteItem } from "./utils";
+import { contemBusca } from "@/lib/busca-texto";
 
 /** Diálogo que lista clientes de uma etapa (ou de toda a esteira). */
 export function DialogClientesEtapa({
@@ -70,9 +71,10 @@ export function DialogClientesEtapa({
   const termo = busca.trim().toLowerCase();
   const filtrados = termo
     ? clientes.filter((c) =>
-        [c.nome, c.numero_cliente, c.etapaNome, c.responsavel_nome, c.numero_proposta]
-          .filter(Boolean)
-          .some((v) => String(v).toLowerCase().includes(termo)),
+        contemBusca(
+          [c.nome, c.numero_cliente, c.etapaNome, c.responsavel_nome, c.numero_proposta],
+          termo,
+        ),
       )
     : clientes;
   return (

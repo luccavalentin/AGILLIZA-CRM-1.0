@@ -16,6 +16,7 @@ import {
   emailConjugeOuPadrao,
   PADROES_CADASTRO,
 } from "@/lib/crm/padroes-cadastro";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 /** ===== Tipos de saída ===== */
 
@@ -165,9 +166,9 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
       .is("deleted_at", null)
       .limit(8);
     if (digitos.length >= 3) {
-      query = query.or(`nome.ilike.%${termo}%,documento.ilike.%${digitos}%`);
+      query = query.or(`${clausulaTexto("nome", termo)},documento.ilike.%${digitos}%`);
     } else {
-      query = query.ilike("nome", `%${termo}%`);
+      query = query.or(clausulaTexto("nome", termo));
     }
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
@@ -1175,7 +1176,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
         if (data.ate) q = q.lte("created_at", `${data.ate}T23:59:59.999-03:00`);
         if (data.q) {
           const digitos = data.q.replace(/\D/g, "");
-          const filtros = [`numero_simulacao.ilike.%${data.q}%`, `nome_cliente.ilike.%${data.q}%`];
+          const filtros = [clausulaTexto("numero_simulacao", data.q), clausulaTexto("nome_cliente", data.q)];
           if (digitos.length >= 3) filtros.push(`cpf_cnpj.ilike.%${digitos}%`);
           q = q.or(filtros.join(","));
         }

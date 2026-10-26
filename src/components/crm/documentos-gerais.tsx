@@ -50,6 +50,7 @@ import { FiltrosBar } from "@/components/crm/documentos-gerais/filtros-bar";
 import { SecaoHeader } from "@/components/crm/documentos-gerais/secao-header";
 import { FaixaSeguranca } from "@/components/crm/documentos-gerais/faixa-seguranca";
 import { SheetFiltrosAvancados } from "@/components/crm/documentos-gerais/sheet-filtros-avancados";
+import { contemBusca } from "@/lib/busca-texto";
 
 export function DocumentosGerais() {
   const explorar = useServerFn(explorarDocumentosGerais);
@@ -92,10 +93,7 @@ export function DocumentosGerais() {
     const q = busca.trim().toLowerCase();
     return clientes.filter((c) => {
       const matchBusca =
-        !q ||
-        c.nome.toLowerCase().includes(q) ||
-        (c.numero_cliente ?? "").toLowerCase().includes(q) ||
-        (c.documento ?? "").includes(q);
+        !q || contemBusca([c.nome, c.numero_cliente, c.documento], q);
       const matchComercial = filtroComercial === "todos" || c.comercial_id === filtroComercial;
       const matchImob =
         filtroImob === "todas"

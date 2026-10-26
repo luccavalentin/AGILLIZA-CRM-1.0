@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { carregarReacoes } from "@/lib/chat-core/reacoes.functions";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 // =============================================================================
 // Central de Conversas — server functions
@@ -48,7 +49,7 @@ export const buscarColegasDm = createServerFn({ method: "POST" })
       .limit(30);
 
     const termo = data.termo?.trim();
-    if (termo) q = q.ilike("nome", `%${termo}%`);
+    if (termo) q = q.or(clausulaTexto("nome", termo));
     const { data: rows } = await q;
     return (rows ?? []) as Array<{
       id: string;

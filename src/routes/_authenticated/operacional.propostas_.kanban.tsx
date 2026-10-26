@@ -32,6 +32,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
+import { contemBusca } from "@/lib/busca-texto";
 
 /** Máximo de cards visíveis antes de "empilhar" o restante numa pasta com busca. */
 const MAX_VISIVEIS_POR_COLUNA = 3;
@@ -428,16 +429,17 @@ function Pagina() {
     const q = buscaPasta.trim().toLowerCase();
     if (!q) return todos;
     return todos.filter((c: any) =>
-      [
-        c.nome_cliente,
-        c.cpf_cnpj,
-        c.numero_proposta,
-        c.numero_proposta_banco,
-        c.nome_banco,
-        c.nome_responsavel,
-      ]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
+      contemBusca(
+        [
+          c.nome_cliente,
+          c.cpf_cnpj,
+          c.numero_proposta,
+          c.numero_proposta_banco,
+          c.nome_banco,
+          c.nome_responsavel,
+        ],
+        q,
+      ),
     );
   }, [pastaAberta, cardsPorColuna, buscaPasta]);
 

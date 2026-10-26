@@ -10,6 +10,7 @@ import {
   aplicarPadroesIdentificacao,
   ENDERECO_PADRAO,
 } from "@/lib/crm/padroes-cadastro";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 type TipoPessoa = Database["public"]["Enums"]["tipo_pessoa"];
 type EstadoCivil = Database["public"]["Enums"]["cliente_estado_civil"];
@@ -137,7 +138,9 @@ export const listarClientes = createServerFn({ method: "GET" })
         const safe = term.replace(/[,()%*]/g, " ").trim();
         const dig = term.replace(/\D/g, "");
         const ors: string[] = [];
-        if (safe) ors.push(`nome.ilike.%${safe}%`, `email.ilike.%${safe}%`);
+        // Nome sem diferenciar acento e por palavra (ver busca-texto).
+        if (safe) ors.push(clausulaTexto("nome", safe), clausulaTexto("email", safe));
+        if (safe) ors.push(clausulaTexto("numero_cliente", safe));
         if (dig) ors.push(`documento.ilike.%${dig}%`);
         if (ors.length) query = query.or(ors.join(","));
       }
@@ -1610,7 +1613,7 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     const safe = term.replace(/[,()%*]/g, " ").trim();
     if (!safe) return [];
     const dig = term.replace(/\D/g, "");
-    const ors = [`nome.ilike.%${safe}%`, `email.ilike.%${safe}%`];
+    const ors = [clausulaTexto("nome", safe), clausulaTexto("email", safe)].filter(Boolean);
     if (dig) ors.push(`documento.ilike.%${dig}%`);
     const { data: rows, error } = await context.supabase
       .from("clientes")

@@ -34,6 +34,7 @@ import {
   AlertLimparVinculo,
 } from "@/components/crm/painel/dialogs";
 import type { Arrasto } from "@/components/crm/painel/utils";
+import { contemBusca } from "@/lib/busca-texto";
 
 /**
  * Etapas COMERCIAIS da esteira (pré-proposta) — arrasto manual liberado.
@@ -379,12 +380,7 @@ function Pagina() {
       (data ?? []).map((s) => ({
         ...s,
         clientes: s.clientes.filter((c) => {
-          if (
-            termo &&
-            !c.nome.toLowerCase().includes(termo) &&
-            !(c.numero_cliente ?? "").toLowerCase().includes(termo)
-          )
-            return false;
+          if (termo && !contemBusca([c.nome, c.numero_cliente], termo)) return false;
           if (respFiltro !== "todos" && (c.responsavel_nome ?? "") !== respFiltro) return false;
           if (analistaFiltro !== "todos" && (c.analista_nome ?? "") !== analistaFiltro)
             return false;

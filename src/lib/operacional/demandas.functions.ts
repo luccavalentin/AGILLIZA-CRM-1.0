@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 import { carregarReacoes } from "@/lib/chat-core/reacoes.functions";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 export type DemandaStatus = "aberta" | "em_andamento" | "aguardando" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
@@ -173,7 +174,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
     if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
     if (data.q) {
       const t = data.q.trim();
-      query = query.or(`titulo.ilike.%${t}%,numero.ilike.%${t}%`);
+      query = query.or(`${clausulaTexto("titulo", t)},${clausulaTexto("numero", t)}`);
     }
 
     const { data: itens, error } = await query;

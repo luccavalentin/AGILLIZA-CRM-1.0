@@ -32,6 +32,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { contemBusca } from "@/lib/busca-texto";
 
 export const Route = createFileRoute("/cliente/chat")({
   head: () => ({ meta: [{ title: "Conversar — Meu Financiamento" }] }),
@@ -70,9 +71,7 @@ function ChatPage() {
       if (filtro === "nao_lidas" && a.nao_lidas <= 0) return false;
       if (filtro === "arquivadas") return false;
       if (!q) return true;
-      return (
-        a.nome.toLowerCase().includes(q) || (a.ultima_mensagem ?? "").toLowerCase().includes(q)
-      );
+      return contemBusca([a.nome, a.ultima_mensagem], q);
     });
   }, [atendentes, busca, filtro]);
 

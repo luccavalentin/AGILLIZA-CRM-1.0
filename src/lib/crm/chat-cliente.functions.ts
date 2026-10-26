@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { carregarReacoes, type ReacaoAgrupada } from "@/lib/chat-core/reacoes.functions";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 export interface ChatMensagem {
   id: string;
@@ -281,7 +282,7 @@ export const buscarClientesApp = createServerFn({ method: "GET" })
 
     const termo = data.q?.trim();
     if (termo) {
-      query = query.or(`nome.ilike.%${termo}%,documento.ilike.%${termo}%`);
+      query = query.or(`${clausulaTexto("nome", termo)},documento.ilike.%${termo.replace(/\D/g, "") || termo}%`);
     }
 
     const { data: rows, error } = await query;
