@@ -153,7 +153,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<Store className="h-5 w-5" />}
         titulo="Marketplace de especialistas"
         descricao="Quem pediu para entrar na vitrine, o registro profissional de cada um, as avaliações contestadas e o que cada anunciante entrega."

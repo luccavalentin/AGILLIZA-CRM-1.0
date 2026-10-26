@@ -1,5 +1,5 @@
 /**
- * Curadoria da Agilliza News (o "Radar" que corretores e imobiliárias leem no Corretor 2.0).
+ * Curadoria da Agilliza News (o "Radar" que corretores e imobiliárias leem no Agilliza Tech).
  *
  * Mesmas consultas da antiga Gestão (`apps/web/src/app/[portal]/radar/curadoria*.ts(x)`,
  * `news-acoes.ts`). Quem pode o quê é decidido no banco: as políticas `extra_curar` de

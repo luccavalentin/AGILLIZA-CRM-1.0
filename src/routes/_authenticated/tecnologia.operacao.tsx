@@ -75,7 +75,7 @@ function Operacao() {
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-foreground">Operação</h2>
           <p className="text-xs text-muted-foreground">
-            Tráfego, falhas e latência do Corretor 2.0, rota a rota e licença a licença.
+            Tráfego, falhas e latência do Agilliza Tech, rota a rota e licença a licença.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

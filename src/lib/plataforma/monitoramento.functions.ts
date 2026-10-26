@@ -1,5 +1,5 @@
 /**
- * Monitoramento e incidentes da plataforma (Corretor 2.0 + banco único), no Agilliza.
+ * Monitoramento e incidentes da plataforma (Agilliza Tech + banco único), no Agilliza.
  * `listar_incidentes` pagina de 50 em 50 (POR_PAGINA_INCIDENTES).
  * Mesmas leituras da Gestão: `plataforma.painel_tecnico()` e `plataforma.listar_incidentes`.
  */

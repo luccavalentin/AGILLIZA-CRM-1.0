@@ -113,7 +113,7 @@ export async function assumirEPreparar(
     } catch (e) {
       if ((e as { code?: string }).code === "42883") {
         throw erroLegivel(
-          "O envio pela simulação do assinante ainda não está disponível neste servidor (falta a migração 0208 do Corretor 2.0).",
+          "O envio pela simulação do assinante ainda não está disponível neste servidor (falta a migração 0208 do Agilliza Tech).",
         );
       }
       throw e;

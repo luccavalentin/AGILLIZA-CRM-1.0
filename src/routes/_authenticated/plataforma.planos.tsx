@@ -151,7 +151,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<Tags className="h-5 w-5" />}
         titulo="Planos, preços e créditos"
         descricao="Catálogo dos assinantes. Plano com dias de acesso e à venda aparece na página de vendas: o cliente paga e a conta fica liberada pelos dias."

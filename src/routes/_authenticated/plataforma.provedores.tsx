@@ -48,7 +48,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<KeySquare className="h-5 w-5" />}
         titulo="Chaves dos provedores"
         descricao="Integração bancária, birôs de crédito, cobrança e e-mail. As chaves ficam cifradas no banco; aqui aparecem só os últimos caracteres. Com o Asaas ativo, as faturas dos assinantes são cobradas e baixadas automaticamente."

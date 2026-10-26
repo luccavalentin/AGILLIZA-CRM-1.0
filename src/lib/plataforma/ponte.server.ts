@@ -1,5 +1,5 @@
 /**
- * Ponte para a gestão da plataforma (Corretor 2.0) — SÓ SERVIDOR.
+ * Ponte para a gestão da plataforma (Agilliza Tech) — SÓ SERVIDOR.
  *
  * O Agilliza correspondente administra as licenças, a receita, o monitoramento e a fila
  * de propostas dos assinantes. Esses dados moram no mesmo banco (banco único), nos

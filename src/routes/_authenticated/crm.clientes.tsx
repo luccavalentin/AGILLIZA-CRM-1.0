@@ -45,7 +45,7 @@ function Pagina() {
   const etapasFn = useServerFn(listarEtapasPipeline);
   const colegasFn = useServerFn(listarColegas);
 
-  // Base exibida: a própria do Agilliza (null) ou a de uma conta assinante do Corretor 2.0.
+  // Base exibida: a própria do Agilliza (null) ou a de uma conta assinante do Agilliza Tech.
   const [conta, setConta] = useState<ContaAssinante | null>(null);
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");

@@ -132,7 +132,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<FileSearch className="h-5 w-5" />}
         titulo="Consultas pagas"
         descricao="Serasa Premium vendida por unidade às licenças: receita, custo da APIFull, taxas do Asaas e o que ainda falta entregar."

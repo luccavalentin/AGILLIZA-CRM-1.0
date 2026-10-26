@@ -1,5 +1,5 @@
 /**
- * Suporte da plataforma (Corretor 2.0) no Agilliza: o lado de QUEM ATENDE os chamados
+ * Suporte da plataforma (Agilliza Tech) no Agilliza: o lado de QUEM ATENDE os chamados
  * abertos pelas contas (corretores, imobiliárias, parceiros).
  *
  * Mesmas consultas e funções da antiga Gestão (`apps/web/src/app/[portal]/suporte`):

@@ -1,5 +1,5 @@
 /**
- * Planos, preços e créditos do Corretor 2.0, administrados pelo Agilliza (antes na Gestão).
+ * Planos, preços e créditos do Agilliza Tech, administrados pelo Agilliza (antes na Gestão).
  *
  * Escrita direta no catálogo (`nucleo.planos`, `nucleo.entitlements`, `nucleo.creditos_pacotes`,
  * `nucleo.creditos_custos`, `plataforma.sla_suporte`), protegida no banco pela permissão de

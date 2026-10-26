@@ -143,7 +143,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<Cable className="h-5 w-5" />}
         titulo="Integrações e filas"
         descricao="Mensagens na fila, mensagens que falharam de vez, rotinas automáticas e chamadas aos provedores. Atualiza a cada 30 segundos."

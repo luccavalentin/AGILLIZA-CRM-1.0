@@ -104,7 +104,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<CircleDollarSign className="h-5 w-5" />}
         titulo="Receita e cobrança"
         descricao="Assinaturas e faturas dos assinantes. Com a chave do Asaas salva em Chaves dos provedores, cada fatura é cobrada e baixada automaticamente. Sem a chave, a baixa é feita aqui."

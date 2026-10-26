@@ -1,5 +1,5 @@
 /**
- * Base das contas assinantes (corretores e imobiliárias do Corretor 2.0) no Agilliza.
+ * Base das contas assinantes (corretores e imobiliárias do Agilliza Tech) no Agilliza.
  *
  * - Clientes: `plataforma.crm_da_licenca` (permissão de plataforma crm.ler_todos), com o
  *   CPF/CNPJ COMPLETO para o analista (`documentos.server`, migração 0212: decifrar auditado,

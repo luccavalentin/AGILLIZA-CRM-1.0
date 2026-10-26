@@ -1,5 +1,5 @@
 /**
- * Fila de propostas dos assinantes (corretores e imobiliárias do Corretor 2.0).
+ * Fila de propostas dos assinantes (corretores e imobiliárias do Agilliza Tech).
  *
  * A proposta que o assinante envia fica pendente aqui até um analista do Agilliza assumir
  * ou ser designado. Mesmas funções da Gestão: `plataforma.consultar_propostas`,
@@ -469,7 +469,7 @@ export const detalhePropostaAssinante = createServerFn({ method: "GET" })
         } catch (e) {
           if ((e as { code?: string }).code === "42883") {
             throw erroLegivel(
-              "Os detalhes da proposta ainda não estão disponíveis neste servidor (falta a migração 0207 do Corretor 2.0).",
+              "Os detalhes da proposta ainda não estão disponíveis neste servidor (falta a migração 0207 do Agilliza Tech).",
             );
           }
           throw e;

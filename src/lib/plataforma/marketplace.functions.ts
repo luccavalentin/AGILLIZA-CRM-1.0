@@ -1,5 +1,5 @@
 /**
- * Marketplace de especialistas do Corretor 2.0, moderado pelo Agilliza correspondente.
+ * Marketplace de especialistas do Agilliza Tech, moderado pelo Agilliza correspondente.
  *
  * É a antiga tela "Marketplace (moderação)" da Gestão (`/gestao/especialistas` e
  * `/gestao/especialistas/metricas`). Duas portas: a permissão do Agilliza

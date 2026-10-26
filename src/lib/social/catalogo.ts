@@ -1,4 +1,4 @@
-// Cópia do catálogo das redes do Corretor 2.0 (packages/integrations/src/social/catalogo.ts):
+// Cópia do catálogo das redes do Agilliza Tech (packages/integrations/src/social/catalogo.ts):
 // mesmas regras para validar o post na tela do Agilliza. Ao mudar lá, mude aqui.
 /**
  * Catálogo das redes sociais: seguro no navegador (sem segredo, sem rede). As regras

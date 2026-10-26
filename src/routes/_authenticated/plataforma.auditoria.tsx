@@ -168,7 +168,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<ScrollText className="h-5 w-5" />}
         titulo="Auditoria da plataforma"
         descricao="Quem mudou o quê, quando e em qual conta de assinante. O registro não pode ser alterado depois de gravado. A auditoria do próprio Agilliza fica em Administração › Auditoria."

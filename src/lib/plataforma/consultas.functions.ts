@@ -1,5 +1,5 @@
 /**
- * Consultas pagas (Serasa Premium vendida por unidade às licenças do Corretor 2.0), no Agilliza.
+ * Consultas pagas (Serasa Premium vendida por unidade às licenças do Agilliza Tech), no Agilliza.
  *
  * Mesmas leituras e escritas da Gestão (apps/web/src/app/[portal]/consultas-pagas):
  * `plataforma.indicadores_consultas_pagas`, `plataforma.pedidos_consulta`, a oferta em

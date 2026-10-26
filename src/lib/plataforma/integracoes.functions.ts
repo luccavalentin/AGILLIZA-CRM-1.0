@@ -1,5 +1,5 @@
 /**
- * Integrações e filas da plataforma (Corretor 2.0 + banco único), no Agilliza.
+ * Integrações e filas da plataforma (Agilliza Tech + banco único), no Agilliza.
  *
  * Mesmas leituras e escritas da Gestão (apps/web/src/app/[portal]/integracoes e
  * integracoes-credito): `plataforma.resumo_filas()`, `plataforma.filas(...)` (payload já

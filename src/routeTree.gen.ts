@@ -92,7 +92,6 @@ import { Route as AuthenticatedPlataformaParceirosAnunciosRouteImport } from './
 import { Route as AuthenticatedPlataformaPlanosRouteImport } from './routes/_authenticated/plataforma.planos'
 import { Route as AuthenticatedPlataformaProvedoresRouteImport } from './routes/_authenticated/plataforma.provedores'
 import { Route as AuthenticatedPlataformaReceitaRouteImport } from './routes/_authenticated/plataforma.receita'
-import { Route as AuthenticatedPlataformaRedeRouteImport } from './routes/_authenticated/plataforma.rede'
 import { Route as AuthenticatedPlataformaSuporteRouteImport } from './routes/_authenticated/plataforma.suporte'
 import { Route as AuthenticatedRelatoriosIndexRouteImport } from './routes/_authenticated/relatorios.index'
 import { Route as AuthenticatedRelatoriosAppClienteRouteImport } from './routes/_authenticated/relatorios.app-cliente'
@@ -629,12 +628,6 @@ const AuthenticatedPlataformaReceitaRoute =
     path: '/plataforma/receita',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPlataformaRedeRoute =
-  AuthenticatedPlataformaRedeRouteImport.update({
-    id: '/plataforma/rede',
-    path: '/plataforma/rede',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedPlataformaSuporteRoute =
   AuthenticatedPlataformaSuporteRouteImport.update({
     id: '/plataforma/suporte',
@@ -1120,7 +1113,6 @@ export interface FileRoutesByFullPath {
   '/plataforma/planos': typeof AuthenticatedPlataformaPlanosRoute
   '/plataforma/provedores': typeof AuthenticatedPlataformaProvedoresRoute
   '/plataforma/receita': typeof AuthenticatedPlataformaReceitaRoute
-  '/plataforma/rede': typeof AuthenticatedPlataformaRedeRoute
   '/plataforma/suporte': typeof AuthenticatedPlataformaSuporteRoute
   '/relatorios/app-cliente': typeof AuthenticatedRelatoriosAppClienteRoute
   '/relatorios/clientes': typeof AuthenticatedRelatoriosClientesRoute
@@ -1270,7 +1262,6 @@ export interface FileRoutesByTo {
   '/plataforma/planos': typeof AuthenticatedPlataformaPlanosRoute
   '/plataforma/provedores': typeof AuthenticatedPlataformaProvedoresRoute
   '/plataforma/receita': typeof AuthenticatedPlataformaReceitaRoute
-  '/plataforma/rede': typeof AuthenticatedPlataformaRedeRoute
   '/plataforma/suporte': typeof AuthenticatedPlataformaSuporteRoute
   '/relatorios/app-cliente': typeof AuthenticatedRelatoriosAppClienteRoute
   '/relatorios/clientes': typeof AuthenticatedRelatoriosClientesRoute
@@ -1425,7 +1416,6 @@ export interface FileRoutesById {
   '/_authenticated/plataforma/planos': typeof AuthenticatedPlataformaPlanosRoute
   '/_authenticated/plataforma/provedores': typeof AuthenticatedPlataformaProvedoresRoute
   '/_authenticated/plataforma/receita': typeof AuthenticatedPlataformaReceitaRoute
-  '/_authenticated/plataforma/rede': typeof AuthenticatedPlataformaRedeRoute
   '/_authenticated/plataforma/suporte': typeof AuthenticatedPlataformaSuporteRoute
   '/_authenticated/relatorios/app-cliente': typeof AuthenticatedRelatoriosAppClienteRoute
   '/_authenticated/relatorios/clientes': typeof AuthenticatedRelatoriosClientesRoute
@@ -1580,7 +1570,6 @@ export interface FileRouteTypes {
     | '/plataforma/planos'
     | '/plataforma/provedores'
     | '/plataforma/receita'
-    | '/plataforma/rede'
     | '/plataforma/suporte'
     | '/relatorios/app-cliente'
     | '/relatorios/clientes'
@@ -1730,7 +1719,6 @@ export interface FileRouteTypes {
     | '/plataforma/planos'
     | '/plataforma/provedores'
     | '/plataforma/receita'
-    | '/plataforma/rede'
     | '/plataforma/suporte'
     | '/relatorios/app-cliente'
     | '/relatorios/clientes'
@@ -1884,7 +1872,6 @@ export interface FileRouteTypes {
     | '/_authenticated/plataforma/planos'
     | '/_authenticated/plataforma/provedores'
     | '/_authenticated/plataforma/receita'
-    | '/_authenticated/plataforma/rede'
     | '/_authenticated/plataforma/suporte'
     | '/_authenticated/relatorios/app-cliente'
     | '/_authenticated/relatorios/clientes'
@@ -2558,13 +2545,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlataformaReceitaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/plataforma/rede': {
-      id: '/_authenticated/plataforma/rede'
-      path: '/plataforma/rede'
-      fullPath: '/plataforma/rede'
-      preLoaderRoute: typeof AuthenticatedPlataformaRedeRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/plataforma/suporte': {
       id: '/_authenticated/plataforma/suporte'
       path: '/plataforma/suporte'
@@ -3231,7 +3211,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlataformaPlanosRoute: typeof AuthenticatedPlataformaPlanosRoute
   AuthenticatedPlataformaProvedoresRoute: typeof AuthenticatedPlataformaProvedoresRoute
   AuthenticatedPlataformaReceitaRoute: typeof AuthenticatedPlataformaReceitaRoute
-  AuthenticatedPlataformaRedeRoute: typeof AuthenticatedPlataformaRedeRoute
   AuthenticatedPlataformaSuporteRoute: typeof AuthenticatedPlataformaSuporteRoute
   AuthenticatedRhAdiantamentosRoute: typeof AuthenticatedRhAdiantamentosRoute
   AuthenticatedRhAlteracoesSalariaisRoute: typeof AuthenticatedRhAlteracoesSalariaisRoute
@@ -3337,7 +3316,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlataformaProvedoresRoute:
     AuthenticatedPlataformaProvedoresRoute,
   AuthenticatedPlataformaReceitaRoute: AuthenticatedPlataformaReceitaRoute,
-  AuthenticatedPlataformaRedeRoute: AuthenticatedPlataformaRedeRoute,
   AuthenticatedPlataformaSuporteRoute: AuthenticatedPlataformaSuporteRoute,
   AuthenticatedRhAdiantamentosRoute: AuthenticatedRhAdiantamentosRoute,
   AuthenticatedRhAlteracoesSalariaisRoute:

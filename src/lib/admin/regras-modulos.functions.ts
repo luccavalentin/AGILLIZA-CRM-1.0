@@ -241,11 +241,11 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
       { acao: "export", label: "Exportar" },
     ],
   },
-  // Gestão da plataforma (Corretor 2.0): o Agilliza correspondente administra as
+  // Gestão da plataforma (Agilliza Tech): o Agilliza correspondente administra as
   // licenças dos assinantes, a receita, o monitoramento e a fila de propostas deles.
   // Ponte no banco: plataforma.abrir_contexto_agilliza (migração 0175 do Corretor).
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.licencas",
     label: "Licenças e assinantes",
     acoes: [
@@ -254,7 +254,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.receita",
     label: "Receita e cobrança",
     acoes: [
@@ -263,7 +263,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.planos",
     label: "Planos, preços e créditos",
     acoes: [
@@ -272,7 +272,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.provedores",
     label: "Chaves dos provedores",
     acoes: [
@@ -284,7 +284,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.monitoramento",
     label: "Monitoramento e incidentes",
     acoes: [
@@ -293,7 +293,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.contas",
     label: "Clientes das contas (corretores e imobiliárias)",
     acoes: [
@@ -302,7 +302,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.consultas",
     label: "Consultas pagas",
     acoes: [
@@ -311,7 +311,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.integracoes",
     label: "Integrações e filas",
     acoes: [
@@ -320,7 +320,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.suporte",
     label: "Suporte aos assinantes",
     acoes: [
@@ -329,13 +329,13 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.auditoria",
     label: "Auditoria da plataforma",
     acoes: [{ acao: "view", label: "Ver" }],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.lgpd",
     label: "LGPD da plataforma",
     acoes: [
@@ -344,7 +344,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.configuracoes",
     label: "Configurações globais",
     acoes: [
@@ -353,7 +353,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.marketplace",
     label: "Marketplace e rede de corretores",
     acoes: [
@@ -364,7 +364,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   // Gestão de Parceiros e Anúncios do ImobMatch (migração 0283 do Corretor): revisão de
   // duplicados, moderação, denúncias, CRECI, anunciantes, compradores e números.
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.imobmatch",
     label: "Gestão de Parceiros e Anúncios (ImobMatch)",
     acoes: [
@@ -374,7 +374,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   },
   // Banners patrocinados do ImobMatch (frente F3 do Corretor): criativos, campanhas e pacotes.
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.patrocinados",
     label: "Banners patrocinados (ImobMatch)",
     acoes: [
@@ -383,7 +383,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.comissoes",
     label: "Comissões dos assinantes",
     acoes: [
@@ -392,7 +392,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.news",
     label: "Agilliza News (curadoria)",
     acoes: [
@@ -401,7 +401,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.tecnologia",
     label: "Gestão de Tecnologia (servidor, erros, logs, usuários ativos)",
     acoes: [
@@ -410,7 +410,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     ],
   },
   {
-    grupo: "Plataforma (SaaS)",
+    grupo: "Gestão de sistemas",
     modulo: "saas.fila",
     label: "Fila de propostas dos assinantes",
     acoes: [

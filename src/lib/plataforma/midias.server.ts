@@ -2,7 +2,7 @@
  * Arquivos da plataforma (capa da News, anexos do suporte, fotos do marketplace) vistos e
  * enviados pelo Agilliza.
  *
- * Os bytes moram no armazenamento do Corretor 2.0 (disco hoje, R2 quando ligado); o
+ * Os bytes moram no armazenamento do Agilliza Tech (disco hoje, R2 quando ligado); o
  * registro mora em `integracao.midias`. Divisão de papéis:
  *   · **quem pode** é sempre o banco: a linha da mídia é lida (ou gravada) com o contexto
  *     de plataforma da pessoa (`comPlataforma`), sob a RLS de sempre — se ela não aparece,

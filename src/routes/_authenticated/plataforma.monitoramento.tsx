@@ -111,7 +111,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<Activity className="h-5 w-5" />}
         titulo="Monitoramento e incidentes"
         descricao="Saúde do banco de dados, do processador de tarefas, das rotinas automáticas e das integrações. Atualiza a cada 30 segundos."

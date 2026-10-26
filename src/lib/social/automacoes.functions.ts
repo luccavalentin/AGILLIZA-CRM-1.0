@@ -1,7 +1,7 @@
 /**
  * Automações no Agilliza correspondente: a AgillizaTech posta nas PRÓPRIAS redes.
  *
- * O motor é o do Corretor 2.0 (migrações 0227–0231, banco único): pela ponte (0175), no
+ * O motor é o do Agilliza Tech (migrações 0227–0231, banco único): pela ponte (0175), no
  * contexto da plataforma, as funções social.* trabalham na conta da plataforma. O login
  * oficial das redes passa pela página do Corretor com um pedido de uso único (0231).
  */

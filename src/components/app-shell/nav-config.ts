@@ -5,7 +5,6 @@ import {
   LifeBuoy,
   Newspaper,
   Store,
-  Network,
   Handshake,
   ScrollText,
   KeySquare,
@@ -90,21 +89,51 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-/** Navegação do shell interno (usuários do correspondente). */
+/**
+ * Navegação do shell interno (usuários do correspondente).
+ *
+ * Ordem pedida pelo dono (26/10/2026): Visão geral › CRM › Operacional, depois
+ * documentos e checklists, marketing, financeiro, Diversos antes de Gestão de
+ * pessoas e RH, relatórios, Gestão de sistemas (os assinantes do Agilliza Tech),
+ * Gestão de tecnologia, Configurações gerais e Conta. Cada bloco é de um módulo:
+ * quem mexe num módulo mexe só no bloco dele.
+ */
 export const navInterno: NavGroup[] = [
   {
     id: "visao-geral",
     label: "Visão Geral",
-    // Três itens "Painel" no menu (Visão Geral, CRM e Operacional) confundiam:
-    // cada um ganhou o nome do que mostra.
     items: [{ label: "Painel geral", icon: Gauge, to: "/visao-geral/painel" }],
   },
   {
     id: "crm",
     label: "CRM",
     items: [
-      { label: "Clientes", icon: Users, to: "/crm/clientes", perm: { modulo: "crm.clientes" } },
-      { label: "Esteira", icon: KanbanSquare, to: "/crm/painel", perm: { modulo: "crm.clientes" } },
+      {
+        label: "Clientes",
+        icon: Users,
+        to: "/crm/clientes",
+        perm: { modulo: "crm.clientes" },
+        children: [
+          {
+            label: "Consultar clientes",
+            icon: Users,
+            to: "/crm/clientes",
+            perm: { modulo: "crm.clientes" },
+          },
+          {
+            label: "Novo cliente",
+            icon: UserRound,
+            to: "/crm/clientes/novo",
+            perm: { modulo: "crm.clientes" },
+          },
+          {
+            label: "Documentos de clientes",
+            icon: FolderTree,
+            to: "/crm/documentos",
+            perm: { modulo: "crm.clientes" },
+          },
+        ],
+      },
       {
         // Consulta a bureau de crédito (SPC/Serasa). Fica no CRM porque é
         // decisão sobre a pessoa, e não sobre uma proposta já aberta.
@@ -114,7 +143,9 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "crm.clientes" },
       },
       {
-        label: "Chat e Follow-up Cliente",
+        // Chat único do ecossistema (o mesmo dos assinantes): clientes,
+        // parceiros, assinantes e qualquer pessoa achada pelo @.
+        label: "Chat",
         icon: MessagesSquare,
         to: "/crm/chat",
         perm: { modulo: "crm.chat" },
@@ -140,7 +171,7 @@ export const navInterno: NavGroup[] = [
           },
           {
             label: "Base de Conhecimento",
-            icon: Bot,
+            icon: BookOpen,
             to: "/admin/consultor-ia-base",
             // Mesma regra da rota (admin.parametros): sem isso o item aparecia
             // para quem só vê clientes e o clique voltava para o início.
@@ -148,27 +179,7 @@ export const navInterno: NavGroup[] = [
           },
         ],
       },
-
-      {
-        label: "Documentos Gerais",
-        icon: FolderTree,
-        to: "/crm/documentos",
-        perm: { modulo: "crm.clientes" },
-      },
-      {
-        // Imobiliárias e corretores parceiros (somente consulta).
-        label: "Parceiros",
-        icon: Building2,
-        to: "/crm/parceiros",
-        perm: { modulo: "crm.parceiros" },
-      },
     ],
-  },
-  // Automações de marketing nas redes (pedido do dono, 21/10/2026): anunciada com "Em breve".
-  {
-    id: "marketing",
-    label: "Marketing",
-    items: [{ label: "Automações", icon: Workflow, to: "/automacoes", emBreve: true }],
   },
   {
     id: "operacional",
@@ -232,7 +243,6 @@ export const navInterno: NavGroup[] = [
           },
         ],
       },
-
       {
         label: "Tarefas",
         icon: ListChecks,
@@ -260,13 +270,15 @@ export const navInterno: NavGroup[] = [
         ],
       },
       {
+        // Central de demandas: quem cuida de cada conta de assinante, a fila
+        // justa dos vinculados e o que foi delegado a quem.
         label: "Demandas",
         icon: Inbox,
         to: "/operacional/demandas",
         perm: { modulo: "operacional.demandas" },
         children: [
           {
-            label: "Consultar demandas",
+            label: "Central de demandas",
             icon: Inbox,
             to: "/operacional/demandas",
             perm: { modulo: "operacional.demandas" },
@@ -280,15 +292,10 @@ export const navInterno: NavGroup[] = [
         ],
       },
       {
-        label: "Chats",
-        icon: MessagesSquare,
-        to: "/operacional/chats",
-        perm: { modulo: "operacional.chats" },
-      },
-      {
-        // Códigos que os bancos mandam para a caixa da equipe (substitui o reencaminhamento).
-        label: "Códigos de acesso",
-        icon: KeyRound,
+        // Caixas de e-mail vigiadas (códigos que os bancos mandam, avisos), com
+        // filtro de palavras. Substitui o antigo "Códigos de acesso".
+        label: "Servidor de e-mail",
+        icon: Inbox,
         to: "/operacional/codigos",
         perm: { modulo: "operacional.codigos" },
       },
@@ -296,7 +303,7 @@ export const navInterno: NavGroup[] = [
   },
   {
     id: "documentos",
-    label: "Documentos",
+    label: "Documentos diversos",
     items: [
       {
         label: "Arquivos",
@@ -375,9 +382,8 @@ export const navInterno: NavGroup[] = [
     ],
   },
   {
-    // Checklists saíram de submenu de Formulários para grupo próprio: são
-    // material de apoio usado ANTES de existir proposta, e ficavam três
-    // níveis abaixo, onde ninguém achava.
+    // Checklists em grupo próprio: material de apoio usado ANTES de existir
+    // proposta. Cada banco aparece com a logo oficial no menu e nas telas.
     id: "checklists",
     label: "Checklists",
     items: [
@@ -388,7 +394,7 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "documentos.formularios" },
       },
       {
-        label: "Abertura de conta",
+        label: "Docs para abertura de conta",
         icon: Landmark,
         to: "/checklists",
         perm: { modulo: "documentos.formularios" },
@@ -424,16 +430,14 @@ export const navInterno: NavGroup[] = [
         ],
       },
       {
-        label: "Seguir com a proposta",
+        label: "Docs para sequenciar proposta",
         icon: FileCheck2,
         to: "/checklists/$id",
         params: { id: "seguir-proposta" },
         perm: { modulo: "documentos.formularios" },
       },
       {
-        // Rótulo curto: o anterior ("Documentos exigidos pelo banco") não
-        // cabia na largura da barra e aparecia cortado como "Documentos exigid…".
-        label: "Exigidos pelo banco",
+        label: "Checklist de documentos por banco",
         icon: ListChecks,
         to: "/formularios/checklist",
         perm: { modulo: "documentos.formularios" },
@@ -477,7 +481,16 @@ export const navInterno: NavGroup[] = [
       },
     ],
   },
+  // Automações de marketing nas redes (pedido do dono, 21/10/2026): anunciada com "Em breve".
   {
+    id: "marketing",
+    label: "Marketing",
+    items: [{ label: "Automações", icon: Workflow, to: "/automacoes", emBreve: true }],
+  },
+  {
+    // Financeiro da matriz: três fluxos separados (comissão dos bancos, repasse
+    // aos assinantes, comissão de corretores e parceiros) mais as despesas e
+    // receitas da operação, com conciliação e painel consolidado.
     id: "financeiro",
     label: "Financeiro",
     items: [
@@ -525,7 +538,24 @@ export const navInterno: NavGroup[] = [
       },
     ],
   },
-
+  {
+    id: "diversos",
+    label: "Diversos",
+    items: [
+      {
+        label: "Pedidos de Compras",
+        icon: ShoppingCart,
+        to: "/admin/compras/pedidos",
+        perm: { modulo: "admin.compras.pedidos", equivalentes: ["admin.compras"] },
+      },
+      {
+        label: "Aprovação de Compras",
+        icon: ShoppingCart,
+        to: "/admin/compras/aprovacoes",
+        perm: { modulo: "admin.compras.aprovacoes", equivalentes: ["admin.compras"] },
+      },
+    ],
+  },
   {
     id: "rh",
     label: "Gestão de Pessoas e RH",
@@ -551,10 +581,6 @@ export const navInterno: NavGroup[] = [
             to: "/rh/funcionarios/novo",
             perm: { modulo: "rh.funcionarios" },
           },
-          // Documentos, Férias, Faltas/Ocorrências, Atestados, Benefícios,
-          // Adiantamentos, Descontos, Alterações salariais e Prévia da folha
-          // ficam centralizados nas abas da ficha do funcionário.
-
           {
             label: "Holerites",
             icon: FileText,
@@ -577,7 +603,6 @@ export const navInterno: NavGroup[] = [
       },
     ],
   },
-
   {
     id: "relatorios",
     label: "Relatórios gerenciais",
@@ -606,69 +631,9 @@ export const navInterno: NavGroup[] = [
             perm: { modulo: "relatorios.geral" },
           },
           {
-            label: "Dashboards comparativos",
-            icon: BarChart3,
-            to: "/relatorios/comparativos",
-            perm: { modulo: "relatorios.geral" },
-          },
-          {
             label: "Produção e Comissões (Comercial)",
             icon: Percent,
             to: "/relatorios/comerciais",
-            perm: { modulo: "relatorios.geral" },
-          },
-          {
-            label: "Relatórios de CRM",
-            icon: KanbanSquare,
-            to: "/relatorios/crm",
-            perm: { modulo: "relatorios.geral" },
-          },
-          {
-            label: "Clientes",
-            icon: Users,
-            to: "/relatorios/clientes",
-            perm: { modulo: "relatorios.geral" },
-          },
-          {
-            label: "Simulações",
-            icon: Calculator,
-            to: "/relatorios/simulacoes",
-            perm: { modulo: "relatorios.geral" },
-          },
-          {
-            label: "Propostas",
-            icon: FileSignature,
-            to: "/relatorios/propostas",
-            perm: { modulo: "relatorios.geral" },
-          },
-          {
-            label: "Comissões",
-            icon: Wallet,
-            to: "/relatorios/comissoes",
-            perm: { modulo: "relatorios.geral" },
-          },
-          {
-            label: "Tarefas",
-            icon: ListChecks,
-            to: "/relatorios/tarefas",
-            perm: { modulo: "relatorios.geral" },
-          },
-          {
-            label: "Demandas",
-            icon: Inbox,
-            to: "/relatorios/demandas",
-            perm: { modulo: "relatorios.geral" },
-          },
-          {
-            label: "Gestão de pessoas",
-            icon: UserRound,
-            to: "/rh/relatorios",
-            perm: { modulo: "rh.relatorios" },
-          },
-          {
-            label: "App do cliente",
-            icon: Gauge,
-            to: "/relatorios/app-cliente",
             perm: { modulo: "relatorios.geral" },
           },
           {
@@ -682,14 +647,21 @@ export const navInterno: NavGroup[] = [
     ],
   },
   {
-    // Gestão do Corretor 2.0 (assinantes) feita pelo Agilliza — ponte 0175.
+    // Gestão do Agilliza Tech (assinantes) feita pelo Agilliza — ponte 0175.
     id: "plataforma",
-    label: "Plataforma (Corretor 2.0)",
+    label: "Gestão de sistemas",
     items: [
       {
-        label: "Licenças e assinantes",
+        label: "Licenças e assinaturas",
         icon: KeyRound,
         to: "/plataforma/licencas",
+        perm: { modulo: "saas.licencas" },
+      },
+      {
+        // Carteiras de contas: grupos de licenças com um responsável.
+        label: "Carteiras",
+        icon: FolderTree,
+        to: "/plataforma/carteiras",
         perm: { modulo: "saas.licencas" },
       },
       {
@@ -712,34 +684,16 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "saas.planos" },
       },
       {
-        label: "Chaves dos provedores",
-        icon: KeySquare,
-        to: "/plataforma/provedores",
-        perm: { modulo: "saas.provedores" },
-      },
-      {
         label: "Monitoramento e incidentes",
         icon: Activity,
         to: "/plataforma/monitoramento",
         perm: { modulo: "saas.monitoramento" },
       },
       {
-        label: "Fila de propostas dos assinantes",
-        icon: Inbox,
-        to: "/plataforma/fila",
-        perm: { modulo: "saas.fila" },
-      },
-      {
         label: "Consultas pagas",
         icon: FileSearch,
         to: "/plataforma/consultas",
         perm: { modulo: "saas.consultas" },
-      },
-      {
-        label: "Integrações e filas",
-        icon: Cable,
-        to: "/plataforma/integracoes",
-        perm: { modulo: "saas.integracoes" },
       },
       {
         label: "Suporte aos assinantes",
@@ -754,15 +708,9 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "saas.news" },
       },
       {
-        label: "Marketplace",
+        label: "Marketplace de especialistas",
         icon: Store,
         to: "/plataforma/marketplace",
-        perm: { modulo: "saas.marketplace" },
-      },
-      {
-        label: "Rede de corretores",
-        icon: Network,
-        to: "/plataforma/rede",
         perm: { modulo: "saas.marketplace" },
       },
       {
@@ -773,27 +721,16 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "saas.imobmatch", equivalentes: ["saas.patrocinados"] },
       },
       {
-        label: "Auditoria da plataforma",
+        // Auditoria da plataforma e LGPD numa aba só (pedido do dono, 26/10/2026).
+        label: "Auditoria e LGPD",
         icon: ScrollText,
         to: "/plataforma/auditoria",
-        perm: { modulo: "saas.auditoria" },
-      },
-      {
-        label: "LGPD",
-        icon: ShieldCheck,
-        to: "/plataforma/lgpd",
-        perm: { modulo: "saas.lgpd" },
-      },
-      {
-        label: "Configurações globais",
-        icon: SlidersHorizontal,
-        to: "/plataforma/configuracoes",
-        perm: { modulo: "saas.configuracoes" },
+        perm: { modulo: "saas.auditoria", equivalentes: ["saas.lgpd"] },
       },
     ],
   },
   {
-    // Centro de controle técnico do ecossistema (Agilliza + Corretor 2.0) — migração 0233.
+    // Centro de controle técnico do ecossistema (Agilliza + Agilliza Tech) — migração 0233.
     id: "tecnologia",
     label: "Gestão de Tecnologia",
     items: [
@@ -802,79 +739,76 @@ export const navInterno: NavGroup[] = [
         icon: Radar,
         to: "/tecnologia",
         perm: { modulo: "saas.tecnologia" },
-      },
-      {
-        label: "Operação",
-        icon: Waves,
-        to: "/tecnologia/operacao",
-        perm: { modulo: "saas.tecnologia" },
-      },
-      {
-        label: "Servidor",
-        icon: Server,
-        to: "/tecnologia/servidor",
-        perm: { modulo: "saas.tecnologia" },
-      },
-      {
-        label: "Erros dos usuários",
-        icon: Bug,
-        to: "/tecnologia/erros",
-        perm: { modulo: "saas.tecnologia" },
-      },
-      {
-        label: "Logs",
-        icon: TerminalSquare,
-        to: "/tecnologia/logs",
-        perm: { modulo: "saas.tecnologia" },
-      },
-      {
-        label: "Usuários ativos",
-        icon: MapPinned,
-        to: "/tecnologia/usuarios",
-        perm: { modulo: "saas.tecnologia" },
-      },
-      {
-        label: "Alertas",
-        icon: BellRing,
-        to: "/tecnologia/alertas",
-        perm: { modulo: "saas.tecnologia" },
+        children: [
+          {
+            label: "Visão geral ao vivo",
+            icon: Radar,
+            to: "/tecnologia",
+            perm: { modulo: "saas.tecnologia" },
+          },
+          {
+            label: "Operação",
+            icon: Waves,
+            to: "/tecnologia/operacao",
+            perm: { modulo: "saas.tecnologia" },
+          },
+          {
+            label: "Servidor",
+            icon: Server,
+            to: "/tecnologia/servidor",
+            perm: { modulo: "saas.tecnologia" },
+          },
+          {
+            label: "Erros dos usuários",
+            icon: Bug,
+            to: "/tecnologia/erros",
+            perm: { modulo: "saas.tecnologia" },
+          },
+          {
+            label: "Logs",
+            icon: TerminalSquare,
+            to: "/tecnologia/logs",
+            perm: { modulo: "saas.tecnologia" },
+          },
+          {
+            label: "Usuários ativos",
+            icon: MapPinned,
+            to: "/tecnologia/usuarios",
+            perm: { modulo: "saas.tecnologia" },
+          },
+          {
+            label: "Alertas",
+            icon: BellRing,
+            to: "/tecnologia/alertas",
+            perm: { modulo: "saas.tecnologia" },
+          },
+        ],
       },
     ],
   },
   {
+    // Antiga "Administração": tudo que configura o ecossistema num lugar só,
+    // inclusive Parâmetros, chaves dos provedores e integrações.
     id: "administracao",
-    label: "Administração",
+    label: "Configurações gerais",
     items: [
       {
-        label: "Administração",
-
+        label: "Configurações gerais",
         icon: SlidersHorizontal,
         to: "/admin/pessoas",
         perm: { modulo: "admin.pessoas" },
         children: [
           {
-            label: "Pessoas e Permissões de Acessos",
+            label: "Pessoas e permissões",
             icon: UserCog,
             to: "/admin/pessoas",
             perm: { modulo: "admin.pessoas" },
           },
           {
-            label: "Auditoria e Logs",
-            icon: ShieldCheck,
-            to: "/admin/auditoria",
-            perm: { modulo: "admin.auditoria" },
-          },
-          {
-            label: "APIs de IA",
-            icon: Cpu,
-            to: "/admin/apis-ia",
-            perm: { modulo: "admin.integracoes" },
-          },
-          {
-            label: "Exportações",
-            icon: FolderOpen,
-            to: "/relatorios/exportacoes",
-            perm: { modulo: "relatorios.geral" },
+            label: "Parâmetros",
+            icon: Building2,
+            to: "/admin/parametros",
+            perm: { modulo: "admin.parametros" },
           },
           {
             label: "Bancos",
@@ -883,54 +817,71 @@ export const navInterno: NavGroup[] = [
             perm: { modulo: "admin.integracoes" },
           },
           {
-            label: "Backup",
-            icon: DatabaseBackup,
-            to: "/admin/backup",
-            perm: { modulo: "admin.backup" },
-          },
-          {
             label: "Notificações",
             icon: Bell,
             to: "/admin/notificacoes",
             perm: { modulo: "admin.notificacoes" },
           },
+          {
+            label: "APIs de IA",
+            icon: Cpu,
+            to: "/admin/apis-ia",
+            perm: { modulo: "admin.integracoes" },
+          },
+          {
+            label: "Chaves dos provedores",
+            icon: KeySquare,
+            to: "/plataforma/provedores",
+            perm: { modulo: "saas.provedores" },
+          },
+          {
+            label: "Integrações e filas",
+            icon: Cable,
+            to: "/plataforma/integracoes",
+            perm: { modulo: "saas.integracoes" },
+          },
+          {
+            label: "Configurações do Agilliza Tech",
+            icon: SlidersHorizontal,
+            to: "/plataforma/configuracoes",
+            perm: { modulo: "saas.configuracoes" },
+          },
+          {
+            label: "Auditoria e logs",
+            icon: ShieldCheck,
+            to: "/admin/auditoria",
+            perm: { modulo: "admin.auditoria" },
+          },
+          {
+            label: "Exportações",
+            icon: FolderOpen,
+            to: "/relatorios/exportacoes",
+            perm: { modulo: "relatorios.geral" },
+          },
+          {
+            label: "Backup",
+            icon: DatabaseBackup,
+            to: "/admin/backup",
+            perm: { modulo: "admin.backup" },
+          },
         ],
       },
-
-      {
-        label: "Parâmetros",
-        icon: Building2,
-        to: "/admin/parametros",
-        perm: { modulo: "admin.parametros" },
-      },
     ],
   },
-
-  {
-    id: "diversos",
-    label: "Diversos",
-    items: [
-      {
-        label: "Pedidos de Compras",
-        icon: ShoppingCart,
-        to: "/admin/compras/pedidos",
-        perm: { modulo: "admin.compras.pedidos", equivalentes: ["admin.compras"] },
-      },
-      {
-        label: "Aprovação de Compras",
-        icon: ShoppingCart,
-        to: "/admin/compras/aprovacoes",
-        perm: { modulo: "admin.compras.aprovacoes", equivalentes: ["admin.compras"] },
-      },
-    ],
-  },
-
   {
     id: "conta",
     label: "Conta",
     items: [
-      { label: "Meu perfil", icon: UserRound, to: "/conta/perfil" },
-      { label: "Segurança", icon: Lock, to: "/conta/seguranca" },
+      {
+        label: "Meu perfil",
+        icon: UserRound,
+        to: "/conta/perfil",
+        children: [
+          { label: "Meus dados", icon: UserRound, to: "/conta/perfil" },
+          { label: "Segurança", icon: Lock, to: "/conta/seguranca" },
+          { label: "Notificações", icon: Bell, to: "/conta/notificacoes" },
+        ],
+      },
     ],
   },
 ];

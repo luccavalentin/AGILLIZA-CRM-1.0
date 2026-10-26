@@ -74,7 +74,7 @@ function Conteudo() {
             <Logo variant={tema === "escuro" ? "light" : "dark"} className="h-7 shrink-0 sm:h-8" />
             <span aria-hidden className="h-9 w-px shrink-0 bg-border" />
             <div className="min-w-0">
-              <p className="text-xs font-medium text-muted-foreground">Agilliza · Corretor 2.0</p>
+              <p className="text-xs font-medium text-muted-foreground">Agilliza · Agilliza Tech</p>
               <h1 className="truncate text-xl font-medium tracking-tight text-foreground sm:text-2xl">
                 Gestão de Tecnologia
               </h1>

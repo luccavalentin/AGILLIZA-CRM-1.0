@@ -1,5 +1,5 @@
 /**
- * Comissão dos assinantes (Corretor 2.0, migração 0229): o corretor ou a imobiliária
+ * Comissão dos assinantes (Agilliza Tech, migração 0229): o corretor ou a imobiliária
  * que envia a proposta ao correspondente recebe um percentual do valor financiado,
  * liberado só quando o contrato é REGISTRADO em cartório. Antes disso a comissão não
  * existe — não aparece nem soma em relatório.

@@ -1,5 +1,5 @@
 /**
- * Licenças e assinantes do Corretor 2.0, administradas pelo Agilliza correspondente.
+ * Licenças e assinantes do Agilliza Tech, administradas pelo Agilliza correspondente.
  *
  * Duas portas: a permissão do Agilliza (`saas.licencas`, aqui) e a da plataforma (no
  * banco, pela ponte). As ações chamam as MESMAS funções que a Gestão do Corretor usava —

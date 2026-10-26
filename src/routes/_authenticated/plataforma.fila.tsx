@@ -28,7 +28,7 @@ function Pagina() {
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-3 sm:space-y-6 sm:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<Inbox className="h-5 w-5" />}
         titulo="Fila de propostas dos assinantes"
         descricao="Propostas enviadas por corretores e imobiliárias. Ficam pendentes até um analista assumir ou ser designado."

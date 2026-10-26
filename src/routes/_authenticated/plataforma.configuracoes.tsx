@@ -114,7 +114,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<SlidersHorizontal className="h-5 w-5" />}
         titulo="Configurações globais"
         descricao="Os números que valem para todas as contas de assinantes: taxas dos bancos, parâmetros de simulação, retenção e recursos liberados. Cada gravação entra na auditoria da plataforma."

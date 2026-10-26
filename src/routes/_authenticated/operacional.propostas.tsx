@@ -51,7 +51,7 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas")({
 });
 
 function Pagina() {
-  // Base exibida: a do Agilliza (null) ou a de uma conta assinante do Corretor 2.0.
+  // Base exibida: a do Agilliza (null) ou a de uma conta assinante do Agilliza Tech.
   const [conta, setConta] = useState<ContaAssinante | null>(null);
   const abaPedida = Route.useSearch().aba;
   const navigate = Route.useNavigate();

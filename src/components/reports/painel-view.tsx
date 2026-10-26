@@ -469,7 +469,7 @@ export function PainelView({
                 <PanelCard
                   titulo={data.clientesPorEtapa.titulo}
                   subtitulo={data.clientesPorEtapa.subtitulo}
-                  abrirTo="/crm/painel"
+                  abrirTo="/crm/clientes"
                   onOpen={() => abrirDetalhe("clientes_por_etapa")}
                 >
                   <div

@@ -87,7 +87,7 @@ let cacheConfig: { v: ConfigIntegracao | null; ate: number } | null = null;
 
 /**
  * Chaves da integração bancária. Fonte principal: Agilliza › Plataforma › Chaves dos
- * provedores (a MESMA credencial que o Corretor 2.0 usa, cifrada no banco). As variáveis
+ * provedores (a MESMA credencial que o Agilliza Tech usa, cifrada no banco). As variáveis
  * `HOMEFIN_*` do servidor continuam valendo e têm prioridade, para quem já as usa.
  * A leitura do banco fica guardada 1 minuto: trocar a chave na tela vale em seguida.
  */

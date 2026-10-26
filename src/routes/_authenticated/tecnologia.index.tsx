@@ -104,7 +104,7 @@ function VisaoGeral() {
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-foreground">Central de operações</h2>
           <p className="text-xs text-muted-foreground">
-            Agilliza e Corretor 2.0 ao vivo — tráfego, usuários, erros e licenças.
+            Agilliza e Agilliza Tech ao vivo — tráfego, usuários, erros e licenças.
           </p>
         </div>
         <SeloAoVivo
@@ -364,7 +364,7 @@ function FaixaSaude({
     selos.push({
       chave: s.sistema,
       marca: s.sistema,
-      rotulo: s.sistema === "corretor" ? "Corretor 2.0" : "Agilliza",
+      rotulo: s.sistema === "corretor" ? "Agilliza Tech" : "Agilliza",
       valor: s.ok ? fmtMs(s.ms) : "fora do ar",
       tom: !s.ok ? "critico" : s.ms != null && s.ms > 1500 ? "atencao" : "ok",
     });

@@ -2334,7 +2334,7 @@ export const getPanelDrilldown = createServerFn({ method: "POST" })
               data: fmtData(c.created_at),
               to: `/crm/clientes/${c.id}`,
             })),
-            linkAbrir: "/crm/painel",
+            linkAbrir: "/crm/clientes",
           };
         }
 

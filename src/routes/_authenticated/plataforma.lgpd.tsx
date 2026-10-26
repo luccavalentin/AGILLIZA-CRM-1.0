@@ -238,7 +238,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<ShieldCheck className="h-5 w-5" />}
         titulo="LGPD"
         descricao="Pedidos de titulares das contas de assinantes, termos vigentes e consentimentos registrados. O prazo legal de resposta é de 15 dias."

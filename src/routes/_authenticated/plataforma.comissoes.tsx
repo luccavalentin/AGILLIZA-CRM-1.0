@@ -82,7 +82,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<HandCoins className="h-5 w-5" />}
         titulo="Comissões dos assinantes"
         descricao="O corretor ou a imobiliária que envia a proposta recebe um percentual do valor financiado, liberado quando o contrato é registrado em cartório."

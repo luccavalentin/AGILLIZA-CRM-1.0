@@ -1,5 +1,5 @@
 /**
- * Auditoria da PLATAFORMA (contas de assinantes do Corretor 2.0), no Agilliza.
+ * Auditoria da PLATAFORMA (contas de assinantes do Agilliza Tech), no Agilliza.
  *
  * Não confundir com a auditoria do próprio Agilliza (`/admin/auditoria`): aqui é o
  * `auditoria.audit_log` do banco único — imutável e encadeado por hash. A tela só lê.

@@ -121,7 +121,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<LifeBuoy className="h-5 w-5" />}
         titulo="Suporte"
         descricao="Os chamados das contas (corretores, imobiliárias e parceiros), com o prazo que o plano de cada uma promete."

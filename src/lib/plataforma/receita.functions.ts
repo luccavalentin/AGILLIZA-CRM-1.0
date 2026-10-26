@@ -1,5 +1,5 @@
 /**
- * Receita e cobrança da plataforma (assinaturas e faturas dos assinantes do Corretor 2.0),
+ * Receita e cobrança da plataforma (assinaturas e faturas dos assinantes do Agilliza Tech),
  * administradas pelo Agilliza. Mesmas consultas e regras da Gestão do Corretor.
  *
  * Sem gateway ligado, é aqui que o Agilliza confirma o Pix recebido ("dar baixa"): a baixa

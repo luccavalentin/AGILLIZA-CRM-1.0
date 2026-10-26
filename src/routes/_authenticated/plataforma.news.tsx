@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/plataforma/news")({
 });
 
 /**
- * Curadoria da Agilliza News — o que corretores e imobiliárias leem no Corretor 2.0.
+ * Curadoria da Agilliza News — o que corretores e imobiliárias leem no Agilliza Tech.
  * A notícia crua não ajuda ninguém: o que vai ao ar é a leitura que diz o que aquilo muda
  * na parcela do cliente.
  */
@@ -45,7 +45,7 @@ function Pagina() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma"
+        secao="Gestão de sistemas"
         icon={<Newspaper className="h-5 w-5" />}
         titulo="Agilliza News"
         descricao="Curadoria do que corretores e imobiliárias leem no Corretor: a fila que chega das fontes, as publicações da Agilliza e a reação de quem lê."

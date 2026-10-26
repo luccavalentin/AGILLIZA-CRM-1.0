@@ -1,5 +1,5 @@
 /**
- * LGPD da plataforma (Corretor 2.0 + banco único), no Agilliza.
+ * LGPD da plataforma (Agilliza Tech + banco único), no Agilliza.
  *
  * Mesmas leituras e gravações da antiga Gestão (`[portal]/lgpd/page.tsx` e `acoes.ts`):
  *  - pedidos de titulares (art. 18) em `auditoria.solicitacoes_titular` — a RLS exige

@@ -1,5 +1,5 @@
 /**
- * Configurações globais da plataforma (Corretor 2.0 + banco único), no Agilliza.
+ * Configurações globais da plataforma (Agilliza Tech + banco único), no Agilliza.
  *
  * Os números que valem para TODAS as contas de assinantes: parâmetros
  * (`plataforma.configuracoes`), bancos e taxas (`operacional.bancos`), produtos de crédito
