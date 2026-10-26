@@ -2,13 +2,18 @@
  * Peças visuais da Gestão de Tecnologia: painel, indicador grande, pulso "ao vivo",
  * seletor segmentado, estados vazio/carregando/erro e formatação.
  *
- * Regras de marca: traço fino (borda 1px), azul #000F9F, Inter, sem 3D, sem degradê, sem
- * vidro. Celular primeiro: alvos de toque com 44 px, nada que role a página de lado.
+ * Regras de marca: traço fino (borda 1px), azul #000F9F, Inter, sem vidro. Celular primeiro:
+ * alvos de toque com 44 px, nada que role a página de lado.
+ *
+ * 26/10/2026 (C00/C65): os ícones dos cartões viraram a peça 3D do sistema (`Icone3D`) e cada
+ * indicador diz a janela de tempo e de onde vem ("5 min · Agilliza Tech"); número ausente
+ * aparece como "sem dados", nunca como zero.
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { AlertTriangle, Inbox, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { Icone3D, type TomIcone3D } from "@/components/ui/icone-3d";
 
 export type Tom = "ok" | "atencao" | "critico" | "neutro";
 
@@ -105,8 +110,12 @@ export function Painel({
         <header className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-5">
           <div className="min-w-0 flex-1">
             {titulo && (
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                {icone && <span className="text-[color:var(--realce)]">{icone}</span>}
+              <h2 className="flex items-center gap-2.5 text-sm font-semibold text-foreground">
+                {icone && (
+                  <Icone3D tamanho="sm" tom="marca">
+                    {icone}
+                  </Icone3D>
+                )}
                 {titulo}
               </h2>
             )}
@@ -131,7 +140,16 @@ export const COR_BLOCO: Record<CorBloco, [string, string]> = {
   marca: ["#3047f0", "#000f9f"],
 };
 
-/** Quadrado colorido com o ícone (cartões de indicador da central). */
+const TOM_DO_BLOCO: Record<CorBloco, TomIcone3D> = {
+  vermelho: "perigo",
+  azul: "info",
+  amarelo: "alerta",
+  roxo: "violeta",
+  verde: "sucesso",
+  marca: "marca",
+};
+
+/** Ícone do cartão de indicador: a peça 3D do sistema (src/components/ui/icone-3d.tsx). */
 export function BlocoIcone({
   cor,
   children,
@@ -141,16 +159,17 @@ export function BlocoIcone({
   children: ReactNode;
   className?: string;
 }) {
-  const [a, b] = COR_BLOCO[cor];
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "grid size-11 shrink-0 place-items-center rounded-xl text-white [&_svg]:size-5",
-        className,
-      )}
-      style={{ background: `linear-gradient(135deg, ${a}, ${b})` }}
-    >
+    <Icone3D tom={TOM_DO_BLOCO[cor]} tamanho="lg" className={className}>
+      {children}
+    </Icone3D>
+  );
+}
+
+/** Selo discreto da janela de tempo / origem do número ("5 min", "agora", "Agilliza Tech"). */
+export function SeloJanela({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex h-5 shrink-0 items-center rounded-md border border-border bg-muted/60 px-1.5 text-[10.5px] font-medium tracking-wide text-muted-foreground tabular-nums">
       {children}
     </span>
   );
@@ -167,9 +186,12 @@ export function Kpi({
   cor,
   carregando,
   children,
+  janela,
 }: {
   rotulo: string;
   valor: ReactNode;
+  /** Janela de tempo do número ("5 min", "1 h", "agora", "coletado há 2 min"). */
+  janela?: ReactNode;
   unidade?: string;
   rodape?: ReactNode;
   tom?: Tom;
@@ -178,8 +200,13 @@ export function Kpi({
   carregando?: boolean;
   children?: ReactNode;
 }) {
+  // "—" vindo da formatação = o número não existe (telemetria desligada, coleta parada):
+  // escrito por extenso para ninguém ler um traço como zero.
+  const semDados = valor === "—" || valor === null || valor === undefined;
   const numero = carregando ? (
     <div className="mt-2 h-8 w-20 animate-pulse rounded-md bg-muted" />
+  ) : semDados ? (
+    <p className="mt-2 text-sm font-medium text-muted-foreground">sem dados</p>
   ) : (
     <p className="mt-1 flex items-baseline gap-1 text-[1.65rem] font-semibold leading-none tracking-tight text-foreground tabular-nums sm:text-[1.75rem]">
       {valor}
@@ -202,8 +229,17 @@ export function Kpi({
             <p className="line-clamp-2 text-xs font-medium leading-snug text-muted-foreground">
               {rotulo}
             </p>
+            {janela && (
+              <div className="mt-1">
+                <SeloJanela>{janela}</SeloJanela>
+              </div>
+            )}
             {numero}
-            {rodape && <div className="mt-1.5 min-w-0 break-words text-xs text-muted-foreground">{rodape}</div>}
+            {rodape && !carregando && (
+              <div className="mt-1.5 min-w-0 break-words text-xs text-muted-foreground">
+                {rodape}
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -212,10 +248,16 @@ export function Kpi({
             <p className="line-clamp-2 text-xs font-medium leading-snug text-muted-foreground">
               {rotulo}
             </p>
-            {icone && <span className="shrink-0 text-muted-foreground">{icone}</span>}
+            {janela ? (
+              <SeloJanela>{janela}</SeloJanela>
+            ) : (
+              icone && <span className="shrink-0 text-muted-foreground">{icone}</span>
+            )}
           </div>
           {numero}
-          {rodape && <div className="mt-2 text-xs text-muted-foreground">{rodape}</div>}
+          {rodape && !carregando && (
+            <div className="mt-2 text-xs text-muted-foreground">{rodape}</div>
+          )}
         </>
       )}
       {children}
@@ -277,8 +319,26 @@ export function SeloAoVivo({
     >
       <Pulso tom={falhou ? "critico" : atualizando ? "atencao" : "ok"} vivo={!falhou} />
       <span className="text-foreground">Ao vivo</span>
-      <span className="tabular-nums">
+      <span
+        className="tabular-nums"
+        title={
+          atualizadoEm
+            ? `Última leitura às ${new Date(atualizadoEm).toLocaleTimeString("pt-BR")}`
+            : undefined
+        }
+      >
         {falhou ? "sem resposta" : seg == null ? "conectando…" : seg < 3 ? "agora" : `há ${seg} s`}
+        {atualizadoEm && !falhou && (
+          <span className="max-sm:hidden">
+            {" "}
+            · às{" "}
+            {new Date(atualizadoEm).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })}
+          </span>
+        )}
         {intervaloS ? ` · a cada ${intervaloS} s` : ""}
       </span>
       <RefreshCw
@@ -354,9 +414,9 @@ export function EstadoVazio({
     <div
       className={cn("flex flex-col items-center justify-center px-4 py-10 text-center", className)}
     >
-      <span className="grid size-11 place-items-center rounded-full border border-border bg-muted/50 text-muted-foreground">
-        {icone ?? <Inbox className="size-5" />}
-      </span>
+      <Icone3D tom="neutro" tamanho="lg">
+        {icone ?? <Inbox />}
+      </Icone3D>
       <p className="mt-3 text-sm font-medium text-foreground">{titulo}</p>
       {texto && <p className="mt-1 max-w-sm text-xs text-muted-foreground">{texto}</p>}
     </div>

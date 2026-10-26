@@ -1,0 +1,247 @@
+/* Diversos > compras (C67, 26/10/2026): cartões de pedido no padrão 3D do Agilliza. */
+.compra-lista {
+  display: grid;
+  gap: 10px;
+}
+@media (min-width: 1280px) {
+  .compra-lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+.compra-cartao {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #eceef2;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.25s;
+}
+.compra-cartao:hover {
+  border-color: color-mix(in srgb, var(--primary) 20%, #e4e7ec);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.05),
+    0 10px 24px -16px rgb(0 15 159 / 0.25);
+}
+.compra-cartao::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: transparent;
+}
+.compra-cartao-pendente::before {
+  background: #e89a22;
+}
+.compra-cartao-topo {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 12px;
+}
+.compra-cartao-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.compra-categoria {
+  display: inline-flex;
+  height: 20px;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-weight: 500;
+  color: var(--primary);
+  background: var(--accent);
+}
+.compra-cartao-titulo {
+  margin-top: 3px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--foreground);
+  word-break: break-word;
+}
+.compra-cartao-valor {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.compra-cartao-valor b {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+.compra-selo {
+  display: inline-flex;
+  height: 22px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.compra-selo-pendente {
+  color: #8c4e06;
+  background: #fff4dc;
+}
+.compra-selo-aprovada {
+  color: var(--success-texto);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+.compra-selo-recusada {
+  color: var(--destructive);
+  background: color-mix(in srgb, var(--destructive) 9%, transparent);
+}
+.compra-historico {
+  display: grid;
+  gap: 6px;
+  margin-left: 42px;
+  padding-left: 12px;
+  border-left: 1px dashed #dfe2ea;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.compra-historico li {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+}
+.compra-historico b {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.compra-ponto {
+  position: absolute;
+  left: -16.5px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--card);
+  border-radius: 999px;
+  background: #b9c0d4;
+}
+.compra-historico-aprovada .compra-ponto {
+  background: var(--success);
+}
+.compra-historico-recusada .compra-ponto {
+  background: var(--destructive);
+}
+.compra-historico-espera {
+  color: #8c4e06;
+}
+.compra-avatar {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  margin-right: 5px;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  vertical-align: -4px;
+  color: var(--primary);
+  background: var(--accent);
+}
+.compra-motivo {
+  display: block;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-style: normal;
+  color: var(--foreground);
+  background: var(--muted);
+  quotes: "“" "”";
+}
+.compra-cartao-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f1f5;
+}
+.compra-abas {
+  display: inline-flex;
+  max-width: 100%;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 3px;
+  border: 1px solid #e4e7ec;
+  border-radius: 10px;
+  background: var(--secondary);
+  scrollbar-width: none;
+}
+.compra-abas button {
+  display: inline-flex;
+  flex: none;
+  min-height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.compra-abas button span {
+  min-width: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  text-align: center;
+  background: rgb(15 23 42 / 0.06);
+}
+.compra-abas button[aria-selected="true"] {
+  color: var(--primary);
+  background: var(--card);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.1),
+    0 0 0 1px #e4e7ec;
+}
+@media (max-width: 639px) {
+  .compra-cartao {
+    padding: 12px;
+  }
+  .compra-cartao-topo {
+    flex-wrap: wrap;
+  }
+  .compra-cartao-valor {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 42px;
+  }
+  .compra-historico {
+    margin-left: 15px;
+  }
+  .compra-cartao-acoes > * {
+    flex: 1;
+  }
+}
