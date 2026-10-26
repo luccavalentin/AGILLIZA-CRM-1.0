@@ -26,6 +26,18 @@ import {
 import { criarTarefa } from "@/lib/operacional/tarefas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
 import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
+import {
+  LISTA_TIPOS_TAREFA,
+  RECORRENCIAS,
+  TIPOS_TAREFA,
+  type Recorrencia,
+} from "@/lib/operacional/agenda-tarefas";
+import type { TipoTarefa } from "@/lib/operacional/frase-tarefa";
+import { IconeTipoTarefa } from "@/components/operacional/tarefas/icone-tipo-tarefa";
+import { cn } from "@/lib/utils";
+
+/** Durações oferecidas (minutos). */
+const DURACOES = [15, 30, 45, 60, 90, 120, 180];
 
 export function NovaTarefaDialog({
   onCriada,
@@ -44,6 +56,9 @@ export function NovaTarefaDialog({
   const [responsavel, setResponsavel] = useState<string>("");
   const [cliente, setCliente] = useState<string>(clientePreSelecionado ?? "");
   const [checklist, setChecklist] = useState<string[]>([]);
+  const [tipo, setTipo] = useState<TipoTarefa>("lembrete");
+  const [duracao, setDuracao] = useState<string>("nenhuma");
+  const [recorrencia, setRecorrencia] = useState<string>("nenhuma");
   const [novoItem, setNovoItem] = useState("");
   const [salvando, setSalvando] = useState(false);
   const criarFn = useServerFn(criarTarefa);
@@ -72,6 +87,9 @@ export function NovaTarefaDialog({
           responsavel_id: responsavel || undefined,
           cliente_id: cliente || undefined,
           checklist: checklist.length ? checklist : undefined,
+          tipo,
+          duracao_min: duracao !== "nenhuma" ? Number(duracao) : null,
+          recorrencia: recorrencia !== "nenhuma" ? (recorrencia as Recorrencia) : null,
         },
       });
       toast.success("Tarefa criada.");
@@ -85,6 +103,9 @@ export function NovaTarefaDialog({
       setResponsavel("");
       setCliente(clientePreSelecionado ?? "");
       setChecklist([]);
+      setTipo("lembrete");
+      setDuracao("nenhuma");
+      setRecorrencia("nenhuma");
       onCriada();
     } catch (e) {
       toast.error(mensagemDeErro(e, "Falha ao criar."));
@@ -116,6 +137,29 @@ export function NovaTarefaDialog({
             />
           </div>
           <div className="space-y-1.5">
+            <Label>Tipo</Label>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Tipo da tarefa">
+              {LISTA_TIPOS_TAREFA.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={tipo === t}
+                  onClick={() => setTipo(t)}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition",
+                    tipo === t
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                  )}
+                >
+                  <IconeTipoTarefa tipo={t} className="h-3.5 w-3.5" />
+                  {TIPOS_TAREFA[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
             <Label>Descrição</Label>
             <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={2} />
           </div>
@@ -140,6 +184,40 @@ export function NovaTarefaDialog({
                 value={prazo}
                 onChange={(e) => setPrazo(e.target.value)}
               />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Duração</Label>
+              <Select value={duracao} onValueChange={setDuracao}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nenhuma">Sem duração</SelectItem>
+                  {DURACOES.map((d) => (
+                    <SelectItem key={d} value={String(d)}>
+                      {d < 60 ? `${d} min` : `${d / 60} h`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Repetir</Label>
+              <Select value={recorrencia} onValueChange={setRecorrencia}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nenhuma">Não repete</SelectItem>
+                  {(Object.keys(RECORRENCIAS) as Recorrencia[]).map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {RECORRENCIAS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

@@ -8,6 +8,11 @@ import { exigirAcao, exigirMesmoCorrespondente } from "./permissao-acao";
 export type TarefaStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
 
+/** Campos de agenda iguais às Tarefas do Agilliza Tech (C35, migração 20261027040060). */
+const TIPO_TAREFA = z.enum(["ligacao", "visita", "reuniao", "documento", "lembrete", "outro"]);
+const DURACAO_TAREFA = z.number().int().min(5).max(1440);
+const RECORRENCIA_TAREFA = z.enum(["diaria", "semanal", "mensal"]);
+
 /** Transições válidas de status de tarefa. Movimentação livre entre colunas. */
 const TODOS_STATUS_TAREFA: TarefaStatus[] = ["aberta", "em_andamento", "concluida", "cancelada"];
 const TRANSICOES: Record<TarefaStatus, TarefaStatus[]> = {
@@ -36,6 +41,12 @@ export interface TarefaItem {
   nome_solicitante: string | null;
   created_at: string;
   concluida_em: string | null;
+  tipo: string;
+  duracao_min: number | null;
+  recorrencia: string | null;
+  /** Itens do checklist (feitos / total) — "subtarefas" no Agilliza Tech. */
+  n_checklist: number;
+  n_checklist_feitos: number;
 }
 
 async function nomesPorId(
@@ -58,8 +69,9 @@ export const listarTarefas = createServerFn({ method: "GET" })
         escopo: z.enum(["todas", "minhas"]).default("todas"),
         status: z.string().optional(),
         prioridade: z.enum(["p1", "p2", "p3"]).optional(),
+        tipo: TIPO_TAREFA.optional(),
         responsavel_id: z.string().uuid().optional(),
-        q: z.string().optional(),
+        q: z.string().max(120).optional(),
         cliente_id: z.string().uuid().optional(),
         ordem: z.enum(["prazo", "prioridade", "recentes"]).default("recentes"),
       })
@@ -71,7 +83,7 @@ export const listarTarefas = createServerFn({ method: "GET" })
     let query = supabase
       .from("tasks")
       .select(
-        "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, criador_id, created_at, concluida_em, clientes(nome)",
+        "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, criador_id, created_at, concluida_em, tipo, duracao_min, recorrencia, clientes(nome)",
       )
       .limit(1000);
 
@@ -99,6 +111,7 @@ export const listarTarefas = createServerFn({ method: "GET" })
     }
     if (data.status) query = query.eq("status", data.status as any);
     if (data.prioridade) query = query.eq("prioridade", data.prioridade);
+    if (data.tipo) query = query.eq("tipo", data.tipo);
     if (data.responsavel_id) query = query.eq("responsavel_id", data.responsavel_id);
     if (data.cliente_id) query = query.eq("cliente_id", data.cliente_id);
     if (data.q) query = query.ilike("titulo", `%${data.q.trim()}%`);
@@ -110,6 +123,21 @@ export const listarTarefas = createServerFn({ method: "GET" })
       supabase,
       rows.flatMap((r) => [r.responsavel_id, r.criador_id]),
     );
+    // Checklist de cada tarefa (feitos/total), em lotes para não estourar a URL.
+    const checklist = new Map<string, { n: number; feitos: number }>();
+    const ids = rows.map((r) => r.id as string);
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data: itensCk } = await supabase
+        .from("task_checklist_items")
+        .select("task_id, concluido")
+        .in("task_id", ids.slice(i, i + 200));
+      for (const c of (itensCk ?? []) as { task_id: string; concluido: boolean | null }[]) {
+        const x = checklist.get(c.task_id) ?? { n: 0, feitos: 0 };
+        x.n += 1;
+        if (c.concluido) x.feitos += 1;
+        checklist.set(c.task_id, x);
+      }
+    }
     return rows.map((r) => ({
       id: r.id,
       numero: r.numero,
@@ -125,6 +153,11 @@ export const listarTarefas = createServerFn({ method: "GET" })
       nome_solicitante: r.criador_id ? (nomes.get(r.criador_id) ?? null) : null,
       created_at: r.created_at,
       concluida_em: r.concluida_em ?? null,
+      tipo: r.tipo ?? "lembrete",
+      duracao_min: r.duracao_min ?? null,
+      recorrencia: r.recorrencia ?? null,
+      n_checklist: checklist.get(r.id)?.n ?? 0,
+      n_checklist_feitos: checklist.get(r.id)?.feitos ?? 0,
     }));
   });
 
@@ -214,6 +247,9 @@ export const criarTarefa = createServerFn({ method: "POST" })
         responsavel_id: z.string().uuid().optional().nullable(),
         checklist: z.array(z.string()).optional(),
         participantes: z.array(z.string().uuid()).optional(),
+        tipo: TIPO_TAREFA.default("lembrete"),
+        duracao_min: DURACAO_TAREFA.optional().nullable(),
+        recorrencia: RECORRENCIA_TAREFA.optional().nullable(),
       })
       .parse(data),
   )
@@ -262,7 +298,10 @@ export const criarTarefa = createServerFn({ method: "POST" })
         cliente_id: data.cliente_id ?? null,
         responsavel_id: data.responsavel_id ?? userId,
         criador_id: userId,
-      })
+        tipo: data.tipo,
+        duracao_min: data.duracao_min ?? null,
+        recorrencia: data.recorrencia ?? null,
+      } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -394,6 +433,9 @@ export const atualizarTarefa = createServerFn({ method: "POST" })
         prazo: z.string().nullable().optional(),
         cliente_id: z.string().uuid().nullable().optional(),
         responsavel_id: z.string().uuid().nullable().optional(),
+        tipo: TIPO_TAREFA.optional(),
+        duracao_min: DURACAO_TAREFA.nullable().optional(),
+        recorrencia: RECORRENCIA_TAREFA.nullable().optional(),
       })
       .parse(d),
   )
