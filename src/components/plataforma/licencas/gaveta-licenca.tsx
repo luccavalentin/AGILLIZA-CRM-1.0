@@ -275,7 +275,6 @@ export function GavetaLicenca({
                           </p>
                         </div>
                         <div className="flex shrink-0 flex-wrap justify-end gap-1">
-                          {p.mfa_ativo && <Selo tom="info">2 fatores</Selo>}
                           <Selo tom={p.ativo ? "sucesso" : "neutro"}>{p.ativo ? "Ativo" : "Desligado"}</Selo>
                         </div>
                       </li>
