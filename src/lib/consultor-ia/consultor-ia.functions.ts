@@ -11,6 +11,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import type { ResultadoFerramenta } from "./ferramentas";
+import type { ParametrosCalculo } from "./calculos";
 
 export interface FonteCitada {
   id: string;
@@ -26,6 +28,10 @@ export interface MensagemConsultor {
   sem_resposta: boolean;
   avaliacao: "util" | "nao_util" | null;
   created_at: string;
+  /** Contas feitas pelo sistema (SAC/PRICE, comprometimento, custos) para esta resposta. */
+  calculos: ResultadoFerramenta[];
+  /** A pergunta dependia de dado atual que a base não trazia. */
+  aviso_dado_atual: boolean;
 }
 
 export interface ConversaConsultor {
@@ -106,13 +112,15 @@ export const listarMensagensConsultor = createServerFn({ method: "GET" })
     const { supabase } = context as any;
     const { data: msgs, error } = await supabase
       .from("consultor_ia_mensagens")
-      .select("id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at")
+      .select("id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at, calculos, aviso_dado_atual")
       .eq("conversa_id", data.conversa_id)
       .order("created_at", { ascending: true });
     if (error) throw new Error("Não foi possível carregar a conversa.");
     return (msgs ?? []).map((m: any) => ({
       ...m,
       fontes_usadas: Array.isArray(m.fontes_usadas) ? m.fontes_usadas : [],
+      calculos: Array.isArray(m.calculos) ? m.calculos : [],
+      aviso_dado_atual: !!m.aviso_dado_atual,
     })) as MensagemConsultor[];
   });
 
@@ -358,5 +366,60 @@ export const resolverSugestaoBase = createServerFn({ method: "POST" })
       .update({ status: data.status })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/* ─────────────── Parâmetros de cálculo do Consultor (C18) ─────────────── */
+
+/** Os parâmetros da conta (a calculadora da tela e o Consultor usam os mesmos). */
+export const obterParametrosConsultor = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["crm.clientes", "view"], ["admin.parametros", "view"])])
+  .handler(async ({ context }): Promise<ParametrosCalculo & { atualizado_em: string | null }> => {
+    const { supabase } = context as any;
+    const { data, error } = await supabase.rpc("consultor_ia_parametros_da_conta");
+    if (error || !data) throw new Error("Não foi possível ler os parâmetros de cálculo.");
+    const r = Array.isArray(data) ? data[0] : data;
+    return {
+      itbi_percentual: Number(r.itbi_percentual),
+      itbi_municipios: Array.isArray(r.itbi_municipios) ? r.itbi_municipios : [],
+      cartorio_percentual: Number(r.cartorio_percentual),
+      avaliacao_banco: Number(r.avaliacao_banco),
+      certidoes_valor: Number(r.certidoes_valor),
+      comprometimento_max_percentual: Number(r.comprometimento_max_percentual),
+      taxa_referencia_anual: r.taxa_referencia_anual == null ? null : Number(r.taxa_referencia_anual),
+      atualizado_em: r.atualizado_em ?? null,
+    };
+  });
+
+const parametrosSchema = z.object({
+  itbi_percentual: z.number().min(0).max(10),
+  itbi_municipios: z
+    .array(
+      z.object({
+        municipio: z.string().trim().min(2).max(80),
+        uf: z.string().trim().length(2).toUpperCase(),
+        percentual: z.number().min(0).max(10),
+      }),
+    )
+    .max(200),
+  cartorio_percentual: z.number().min(0).max(10),
+  avaliacao_banco: z.number().min(0).max(100000),
+  certidoes_valor: z.number().min(0).max(100000),
+  comprometimento_max_percentual: z.number().min(1).max(100),
+  taxa_referencia_anual: z.number().min(0).max(60).nullable(),
+});
+
+export const salvarParametrosConsultor = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["admin.parametros", "edit"])])
+  .inputValidator((d: unknown) => parametrosSchema.parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context as any;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Conta não identificada.");
+    const { error } = await supabase.from("consultor_ia_parametros").upsert(
+      { correspondente_id: corr, ...data, atualizado_por: userId, atualizado_em: new Date().toISOString() },
+      { onConflict: "correspondente_id" },
+    );
+    if (error) throw new Error("Não foi possível salvar os parâmetros.");
     return { ok: true };
   });

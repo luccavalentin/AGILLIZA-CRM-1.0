@@ -77,7 +77,16 @@ export function ConsultorComposer({
 }
 
 export const SUGESTOES = [
-  { icone: Cpu, titulo: "SAC x PRICE", prompt: "Qual a diferença entre SAC e PRICE?" },
+  {
+    icone: Cpu,
+    titulo: "Simular SAC x PRICE",
+    prompt: "Simule um financiamento de R$ 400 mil em 30 anos a 11% a.a. no SAC e no PRICE e compare.",
+  },
+  {
+    icone: Sparkles,
+    titulo: "Capacidade pela renda",
+    prompt: "Quanto um cliente com renda de R$ 15 mil consegue financiar a 11% a.a. em 35 anos?",
+  },
   {
     icone: Zap,
     titulo: "FGTS habitacional",
@@ -88,5 +97,4 @@ export const SUGESTOES = [
     titulo: "Documentação",
     prompt: "Quais documentos são obrigatórios na proposta?",
   },
-  { icone: Sparkles, titulo: "Produtos bancários", prompt: "O Santander opera Home Equity?" },
 ];

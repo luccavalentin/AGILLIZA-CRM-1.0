@@ -59,23 +59,23 @@ export const Route = createFileRoute("/api/consultor-ia/stream")({
                 pergunta,
               });
               enviar({ tipo: "conversa", conversa_id: preparo.conversaId });
+              // Os cálculos do sistema aparecem antes do texto: o número não depende da IA.
+              if (preparo.calculos.length || preparo.avisoDadoAtual) {
+                enviar({ tipo: "calculos", calculos: preparo.calculos, aviso_dado_atual: preparo.avisoDadoAtual });
+              }
 
               let bruto = "";
               for await (const pedaco of gerarTextoStream(preparo)) {
                 bruto += pedaco;
                 // Não exibe os metadados internos enquanto digita.
                 const visivel = bruto
-                  .replace(new RegExp(MARCADOR_SEM_INFO, "g"), "")
-                  .replace(/^FONTES:.*$/gim, "");
+                  .split(MARCADOR_SEM_INFO)
+                  .join("")
+                  .replace(/^\s*FONTES:.*$/gim, "");
                 enviar({ tipo: "texto", texto: visivel });
               }
 
-              const fim = await finalizarResposta(
-                supabase,
-                preparo.conversaId,
-                preparo.trechos,
-                bruto,
-              );
+              const fim = await finalizarResposta(supabase, preparo, bruto);
               enviar({ tipo: "fim", ...fim, conversa_id: preparo.conversaId });
             } catch (e) {
               enviar({

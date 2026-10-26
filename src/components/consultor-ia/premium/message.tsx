@@ -1,4 +1,5 @@
-import { Bot, User, ThumbsUp, ThumbsDown, Copy, BookMarked, TriangleAlert } from "lucide-react";
+import { Bot, ThumbsUp, ThumbsDown, Copy, BookMarked, TriangleAlert, Clock } from "lucide-react";
+import { CartoesCalculo } from "@/components/consultor-ia/calculos-consultor";
 import { Markdown } from "@/components/ui/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,12 +54,25 @@ export function ConsultorMessage({
             <Badge
               variant="outline"
               className="h-5 gap-1 border-amber-500/20 bg-amber-500/5 text-[9px] font-bold uppercase text-amber-600"
+              title="A base de conhecimento não cobre este ponto; a resposta traz orientação geral."
             >
               <TriangleAlert className="size-2.5" />
-              Conhecimento Geral
+              Fora da base
+            </Badge>
+          )}
+          {message.aviso_dado_atual && (
+            <Badge
+              variant="outline"
+              className="h-5 gap-1 border-amber-500/20 bg-amber-500/5 text-[9px] font-bold uppercase text-amber-600"
+              title="A pergunta depende de dado atual (taxa, índice, teto vigente). Confirme na fonte oficial."
+            >
+              <Clock className="size-2.5" />
+              Confirme o dado atual
             </Badge>
           )}
         </div>
+
+        <CartoesCalculo calculos={message.calculos ?? []} />
 
         <div className="text-[15px] leading-relaxed text-foreground/90 selection:bg-primary/10">
           <Markdown conteudo={message.conteudo} />
