@@ -62,6 +62,7 @@ import { Route as AuthenticatedCrmPainelRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCrmParceirosRouteImport } from './routes/_authenticated/crm.parceiros'
 import { Route as AuthenticatedCrmScanIaRouteImport } from './routes/_authenticated/crm.scan-ia'
 import { Route as AuthenticatedFinanceiroComissoesRouteImport } from './routes/_authenticated/financeiro.comissoes'
+import { Route as AuthenticatedFinanceiroComissoesBancosRouteImport } from './routes/_authenticated/financeiro.comissoes-bancos'
 import { Route as AuthenticatedFinanceiroComissoesUsuarioRouteImport } from './routes/_authenticated/financeiro.comissoes-usuario'
 import { Route as AuthenticatedFinanceiroConfiguracoesRouteImport } from './routes/_authenticated/financeiro.configuracoes'
 import { Route as AuthenticatedFinanceiroContasAPagarRouteImport } from './routes/_authenticated/financeiro.contas-a-pagar'
@@ -446,6 +447,12 @@ const AuthenticatedFinanceiroComissoesRoute =
   AuthenticatedFinanceiroComissoesRouteImport.update({
     id: '/financeiro/comissoes',
     path: '/financeiro/comissoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinanceiroComissoesBancosRoute =
+  AuthenticatedFinanceiroComissoesBancosRouteImport.update({
+    id: '/financeiro/comissoes-bancos',
+    path: '/financeiro/comissoes-bancos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedFinanceiroComissoesUsuarioRoute =
@@ -1084,6 +1091,7 @@ export interface FileRoutesByFullPath {
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/crm/scan-ia': typeof AuthenticatedCrmScanIaRoute
   '/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
+  '/financeiro/comissoes-bancos': typeof AuthenticatedFinanceiroComissoesBancosRoute
   '/financeiro/comissoes-usuario': typeof AuthenticatedFinanceiroComissoesUsuarioRoute
   '/financeiro/configuracoes': typeof AuthenticatedFinanceiroConfiguracoesRoute
   '/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
@@ -1233,6 +1241,7 @@ export interface FileRoutesByTo {
   '/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/crm/scan-ia': typeof AuthenticatedCrmScanIaRoute
   '/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
+  '/financeiro/comissoes-bancos': typeof AuthenticatedFinanceiroComissoesBancosRoute
   '/financeiro/comissoes-usuario': typeof AuthenticatedFinanceiroComissoesUsuarioRoute
   '/financeiro/configuracoes': typeof AuthenticatedFinanceiroConfiguracoesRoute
   '/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
@@ -1387,6 +1396,7 @@ export interface FileRoutesById {
   '/_authenticated/crm/parceiros': typeof AuthenticatedCrmParceirosRoute
   '/_authenticated/crm/scan-ia': typeof AuthenticatedCrmScanIaRoute
   '/_authenticated/financeiro/comissoes': typeof AuthenticatedFinanceiroComissoesRoute
+  '/_authenticated/financeiro/comissoes-bancos': typeof AuthenticatedFinanceiroComissoesBancosRoute
   '/_authenticated/financeiro/comissoes-usuario': typeof AuthenticatedFinanceiroComissoesUsuarioRoute
   '/_authenticated/financeiro/configuracoes': typeof AuthenticatedFinanceiroConfiguracoesRoute
   '/_authenticated/financeiro/contas-a-pagar': typeof AuthenticatedFinanceiroContasAPagarRoute
@@ -1541,6 +1551,7 @@ export interface FileRouteTypes {
     | '/crm/parceiros'
     | '/crm/scan-ia'
     | '/financeiro/comissoes'
+    | '/financeiro/comissoes-bancos'
     | '/financeiro/comissoes-usuario'
     | '/financeiro/configuracoes'
     | '/financeiro/contas-a-pagar'
@@ -1690,6 +1701,7 @@ export interface FileRouteTypes {
     | '/crm/parceiros'
     | '/crm/scan-ia'
     | '/financeiro/comissoes'
+    | '/financeiro/comissoes-bancos'
     | '/financeiro/comissoes-usuario'
     | '/financeiro/configuracoes'
     | '/financeiro/contas-a-pagar'
@@ -1843,6 +1855,7 @@ export interface FileRouteTypes {
     | '/_authenticated/crm/parceiros'
     | '/_authenticated/crm/scan-ia'
     | '/_authenticated/financeiro/comissoes'
+    | '/_authenticated/financeiro/comissoes-bancos'
     | '/_authenticated/financeiro/comissoes-usuario'
     | '/_authenticated/financeiro/configuracoes'
     | '/_authenticated/financeiro/contas-a-pagar'
@@ -2333,6 +2346,13 @@ declare module '@tanstack/react-router' {
       path: '/financeiro/comissoes'
       fullPath: '/financeiro/comissoes'
       preLoaderRoute: typeof AuthenticatedFinanceiroComissoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financeiro/comissoes-bancos': {
+      id: '/_authenticated/financeiro/comissoes-bancos'
+      path: '/financeiro/comissoes-bancos'
+      fullPath: '/financeiro/comissoes-bancos'
+      preLoaderRoute: typeof AuthenticatedFinanceiroComissoesBancosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/financeiro/comissoes-usuario': {
@@ -3183,6 +3203,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContaPerfilRoute: typeof AuthenticatedContaPerfilRoute
   AuthenticatedContaSegurancaRoute: typeof AuthenticatedContaSegurancaRoute
   AuthenticatedFinanceiroComissoesRoute: typeof AuthenticatedFinanceiroComissoesRoute
+  AuthenticatedFinanceiroComissoesBancosRoute: typeof AuthenticatedFinanceiroComissoesBancosRoute
   AuthenticatedFinanceiroComissoesUsuarioRoute: typeof AuthenticatedFinanceiroComissoesUsuarioRoute
   AuthenticatedFinanceiroConfiguracoesRoute: typeof AuthenticatedFinanceiroConfiguracoesRoute
   AuthenticatedFinanceiroContasAPagarRoute: typeof AuthenticatedFinanceiroContasAPagarRoute
@@ -3275,6 +3296,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContaPerfilRoute: AuthenticatedContaPerfilRoute,
   AuthenticatedContaSegurancaRoute: AuthenticatedContaSegurancaRoute,
   AuthenticatedFinanceiroComissoesRoute: AuthenticatedFinanceiroComissoesRoute,
+  AuthenticatedFinanceiroComissoesBancosRoute:
+    AuthenticatedFinanceiroComissoesBancosRoute,
   AuthenticatedFinanceiroComissoesUsuarioRoute:
     AuthenticatedFinanceiroComissoesUsuarioRoute,
   AuthenticatedFinanceiroConfiguracoesRoute:
