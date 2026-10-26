@@ -235,7 +235,7 @@ function Moderacao({ perfis, carregando }: { perfis: PerfilEspecialista[]; carre
           />
         </Secao>
       )}
-      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visiveis.map((p) => (
           <CartaoEspecialista
             key={p.id}
@@ -280,9 +280,9 @@ function CartaoEspecialista({
     <article className="flex min-w-0 flex-col overflow-hidden rounded-[14px] border border-border/80 bg-card shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
       <button type="button" onClick={onAbrir} className="relative block text-left" aria-label={`Ver o anúncio de ${p.nome}`}>
         {p.capa_url ? (
-          <img src={p.capa_url} alt="" className="aspect-[16/6] w-full object-cover" loading="lazy" />
+          <img src={p.capa_url} alt="" className="h-28 w-full object-cover" loading="lazy" />
         ) : (
-          <div className="flex aspect-[16/6] w-full items-center justify-center bg-gradient-to-br from-secondary to-primary/[0.06] text-xs text-muted-foreground">
+          <div className="flex h-28 w-full items-center justify-center gap-1.5 bg-secondary text-xs text-muted-foreground">
             sem capa
           </div>
         )}
@@ -293,7 +293,7 @@ function CartaoEspecialista({
         </span>
       </button>
       <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="-mt-10 flex items-end gap-3">
+        <div className="relative z-10 -mt-9 flex items-end gap-3">
           {p.foto_url ? (
             <img src={p.foto_url} alt="" className="size-14 shrink-0 rounded-full border-2 border-card object-cover shadow-sm" />
           ) : (
@@ -301,10 +301,10 @@ function CartaoEspecialista({
               {p.nome.slice(0, 1).toUpperCase()}
             </span>
           )}
-          <div className="min-w-0 pb-0.5">
-            <h3 className="truncate text-[15px] font-semibold">{p.nome}</h3>
-            <p className="truncate text-xs text-muted-foreground">{p.conta ?? "Conta sem nome"}</p>
-          </div>
+        </div>
+        <div className="-mt-1 min-w-0">
+          <h3 className="line-clamp-2 break-words text-[15px] font-semibold leading-snug">{p.nome}</h3>
+          <p className="truncate text-xs text-muted-foreground">{p.conta ?? "Conta sem nome"}</p>
         </div>
         {p.chamada && <p className="line-clamp-2 text-sm text-muted-foreground">{p.chamada}</p>}
         <dl className="grid grid-cols-2 gap-2">
@@ -343,22 +343,28 @@ function CartaoEspecialista({
             Motivo enviado: {p.motivo_status}
           </p>
         )}
-        <div className="mt-auto flex flex-col gap-2 pt-1 sm:flex-row">
-          {podeModerar && p.status !== "aprovado" && (
-            <BotaoAprovar perfil={p} className="min-h-11 flex-1 sm:min-h-9" />
+        <div className="mt-auto space-y-2 pt-1">
+          {podeModerar && (
+            <div className="grid grid-cols-2 gap-2">
+              {p.status !== "aprovado" && <BotaoAprovar perfil={p} className="min-h-11 w-full sm:min-h-9" />}
+              {(p.status === "em_analise" || p.status === "rascunho") && (
+                <Button
+                  variant="outline"
+                  className="min-h-11 w-full border-destructive/40 text-destructive hover:bg-destructive/5 sm:min-h-9"
+                  onClick={() => onMotivo("nao_aprovar")}
+                >
+                  <X className="mr-1.5 size-4" /> Não aprovar
+                </Button>
+              )}
+              {p.status === "aprovado" && (
+                <Button variant="outline" className="col-span-2 min-h-11 w-full sm:min-h-9" onClick={() => onMotivo("suspender")}>
+                  Suspender
+                </Button>
+              )}
+            </div>
           )}
-          {podeModerar && (p.status === "em_analise" || p.status === "rascunho") && (
-            <Button variant="outline" className="min-h-11 flex-1 border-destructive/40 text-destructive hover:bg-destructive/5 sm:min-h-9" onClick={() => onMotivo("nao_aprovar")}>
-              <X className="mr-1.5 size-4" /> Não aprovar
-            </Button>
-          )}
-          {podeModerar && p.status === "aprovado" && (
-            <Button variant="outline" className="min-h-11 flex-1 sm:min-h-9" onClick={() => onMotivo("suspender")}>
-              Suspender
-            </Button>
-          )}
-          <Button variant="ghost" className="min-h-11 sm:min-h-9" onClick={onAbrir}>
-            Ver tudo{pendentes > 0 ? ` · ${pendentes} pendência(s)` : ""}
+          <Button variant="ghost" size="sm" className="min-h-11 w-full text-muted-foreground sm:min-h-8" onClick={onAbrir}>
+            Ver o anúncio completo{pendentes > 0 ? ` · ${pendentes} pendência(s)` : ""}
           </Button>
         </div>
       </div>

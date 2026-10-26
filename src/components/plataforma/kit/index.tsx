@@ -100,6 +100,8 @@ export function FaixaIndicadores({ children, colunas = 4 }: { children: ReactNod
     <div
       className={cn(
         "grid grid-cols-2 gap-3",
+        // Número ímpar de indicadores no celular: o último ocupa a linha inteira (sem buraco).
+        "max-lg:[&>*:last-child:nth-child(odd)]:col-span-2",
         colunas === 3 && "lg:grid-cols-3",
         colunas === 4 && "lg:grid-cols-4",
         colunas === 5 && "lg:grid-cols-3 xl:grid-cols-5",
@@ -137,7 +139,7 @@ export function Indicador({
       onClick={onClick}
       aria-pressed={onClick ? !!ativo : undefined}
       className={cn(
-        "group min-h-[92px] min-w-0 rounded-[14px] border border-border/80 bg-card p-3.5 text-left shadow-[0_1px_2px_rgb(16_24_40/0.04)] sm:p-4",
+        "group flex min-h-[92px] min-w-0 flex-col justify-start rounded-[14px] border border-border/80 bg-card p-3.5 text-left shadow-[0_1px_2px_rgb(16_24_40/0.04)] sm:p-4",
         onClick &&
           "transition-shadow hover:shadow-[0_6px_16px_-10px_rgb(0_10_112/0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
         ativo && "border-primary/40 ring-1 ring-primary/20",

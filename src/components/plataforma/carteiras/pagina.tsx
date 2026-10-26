@@ -189,8 +189,10 @@ export function PaginaCarteiras({
                   >
                     <Avatar nome={c.responsavel.nome} />
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2">
-                        <span className="truncate text-sm font-medium text-foreground">{c.nome}</span>
+                      <span className="flex items-start gap-2">
+                        <span className="line-clamp-2 break-words text-sm font-medium leading-snug text-foreground">
+                          {c.nome}
+                        </span>
                         {c.arquivada_em && <Selo>Arquivada</Selo>}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
@@ -360,7 +362,7 @@ function DetalheDaCarteira({
         {q.isError ? (
           <EstadoErro mensagem={mensagemDeErro(q.error, "Não foi possível carregar a produção.")} onTentar={() => q.refetch()} />
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 2xl:grid-cols-6">
             <Numero rotulo="Simulações" valor={t?.simulacoes} icone={<Calculator />} carregando={q.isLoading} />
             <Numero rotulo="Propostas" valor={t?.propostas} icone={<FileText />} carregando={q.isLoading} />
             <Numero rotulo="Contratos emitidos" valor={t?.contratos} icone={<FileSignature />} carregando={q.isLoading} />
@@ -569,7 +571,7 @@ function Numero({
       {carregando ? (
         <span className="mt-1 block h-6 w-12 animate-pulse rounded bg-secondary" />
       ) : (
-        <p className="mt-0.5 truncate text-lg font-medium tabular-nums tracking-tight">{valor ?? 0}</p>
+        <p className="mt-0.5 break-words text-lg font-medium leading-tight tabular-nums tracking-tight">{valor ?? 0}</p>
       )}
     </div>
   );

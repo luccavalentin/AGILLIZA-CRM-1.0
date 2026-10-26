@@ -381,7 +381,7 @@ function Central() {
 
         <div className="hidden min-w-0 xl:block">
           {aberto ? (
-            <Secao semRespiro className="overflow-hidden">
+            <Secao semRespiro className="overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100dvh-2rem)] xl:overflow-y-auto">
               <PainelChamado chamado={aberto} podeAtender={podeAtender} />
             </Secao>
           ) : (

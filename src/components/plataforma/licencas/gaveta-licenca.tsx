@@ -167,7 +167,7 @@ export function GavetaLicenca({
                         <Uso rotulo="Locações" valor={d.uso.contratos_locacao} icone={<KeyRound />} />
                         <Uso rotulo="Sites no ar" valor={d.uso.sites_publicados} icone={<Globe />} />
                       </div>
-                      <dl className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2">
+                      <dl className="grid grid-cols-2 gap-3 rounded-xl border border-border p-4">
                         <Dado rotulo="Última atividade">
                           {d.uso.ultima_atividade ? formatData(d.uso.ultima_atividade) : "Nenhuma"}
                         </Dado>
