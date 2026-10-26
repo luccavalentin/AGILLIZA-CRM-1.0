@@ -502,20 +502,32 @@ function AvisoRendaCrm({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 }
 
 /**
- * Trava de renda (pedido do dono, 26/10/2026): avisa na hora que a renda que
- * vai ao banco está abaixo da mínima de SAC/PRICE. O envio fica travado até
- * corrigir (ou tirar os bancos do sistema que não cabe).
+ * Trava de renda (pedido do dono, 26/10/2026): abaixo da mínima seca de
+ * SAC/PRICE, em vermelho, e o envio fica travado até corrigir (ou tirar os
+ * bancos do sistema que não cabe); na faixa até a margem, aviso amarelo.
  */
 function AvisoTravaRenda({ f, erros }: { f: any; erros: Record<string, string> }) {
-  const { mensagem } = travaRendaDoFormulario(f);
-  // Depois de tentar enviar, a mesma mensagem já aparece no erro do campo.
-  if (!mensagem || erros.renda_total === mensagem || erros.renda_price === mensagem) return null;
+  const { mensagem, aviso } = travaRendaDoFormulario(f);
+  if (mensagem) {
+    // Depois de tentar enviar, a mesma mensagem já aparece no erro do campo.
+    if (erros.renda_total === mensagem || erros.renda_price === mensagem) return null;
+    return (
+      <p
+        role="alert"
+        className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-medium leading-snug text-destructive"
+      >
+        {mensagem}
+      </p>
+    );
+  }
+  // Entre a mínima seca e a com margem: aviso amarelo, o envio segue.
+  if (!aviso) return null;
   return (
     <p
-      role="alert"
-      className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-medium leading-snug text-destructive"
+      role="status"
+      className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-medium leading-snug text-amber-700 dark:text-amber-300"
     >
-      {mensagem}
+      {aviso}
     </p>
   );
 }

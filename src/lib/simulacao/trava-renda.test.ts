@@ -4,6 +4,7 @@ import { avaliarRendaMinima } from "./renda";
 import {
   avaliarTravaRenda,
   mensagemRendaInsuficiente,
+  mensagemRendaNoLimite,
   rendaEnviadaAoBanco,
   travaRendaDaSimulacao,
   travaRendaDoFormulario,
@@ -12,7 +13,8 @@ import { humanizarErroBanco, humanizarRespostaErro } from "./bank-error-humanize
 
 /*
  * Trava de renda (pedido do dono, 26/10/2026): a simulação ia ao banco com
- * renda abaixo da necessária para SAC e PRICE e voltava erro.
+ * renda abaixo da necessária para SAC e PRICE e voltava erro. Abaixo do limite
+ * seco trava; entre o seco e a margem, aviso; acima da margem, nada.
  */
 
 /** O Intl separa "R$" do número com espaço não separável. */
@@ -87,25 +89,80 @@ describe("rendaEnviadaAoBanco (igual ao rendaTotal do envio)", () => {
   });
 });
 
+const seca = (sistema: "S" | "P", prazo = 360) =>
+  avaliarTravaRenda({
+    sistemas: [{ sistema, renda: 0 }],
+    prazos: [prazo],
+    valor_financiamento: 400_000,
+    valor_imovel: 500_000,
+  })[0]!.seca;
+
+describe("limite seco (trava) e limite com margem (aviso)", () => {
+  it("limite seco = prestação sobre 30% (SAC) / 15% (PRICE), sem margem — igual ao Corretor", () => {
+    expect(seca("S")).toBe(16_968.75);
+    expect(seca("P")).toBe(27_405.56);
+    expect(min("S")).toBeGreaterThan(seca("S"));
+    expect(min("P")).toBeGreaterThan(seca("P"));
+  });
+
+  it("exatamente no limite seco: envia, com aviso; R$ 1 abaixo: trava", () => {
+    const na = travaRendaDoFormulario(form({ renda_total: seca("S") }));
+    expect(na.mensagem).toBeNull();
+    expect(na.aviso).not.toBeNull();
+    const abaixo = travaRendaDoFormulario(form({ renda_total: seca("S") - 1 }));
+    expect(abaixo.mensagem).not.toBeNull();
+    expect(abaixo.aviso).toBeNull();
+  });
+
+  it("faixa do aviso (entre o seco e a margem): aviso amarelo, sem trava", () => {
+    const t = travaRendaDoFormulario(form({ renda_total: 20_000 }));
+    expect(t.mensagem).toBeNull();
+    expect(t.campo).toBeNull();
+    expect(t.aviso).toBe(
+      "A renda está no limite para SAC: o banco pode recusar. Para aumentar a chance, some a renda de um segundo proponente, aumente a entrada ou o prazo.",
+    );
+  });
+
+  it("na margem ou acima: nada a mostrar", () => {
+    for (const r of [min("S"), min("S") + 5_000]) {
+      const t = travaRendaDoFormulario(form({ renda_total: r }));
+      expect(t.mensagem).toBeNull();
+      expect(t.aviso).toBeNull();
+    }
+  });
+
+  it("Ambos: o aviso cita só o sistema no limite; o que trava não entra no aviso", () => {
+    const ambos = (rs: number, rp: number) =>
+      travaRendaDoFormulario(
+        form({ sistema_amortizacao: "B", renda_total: rs, renda_price: rp, bancos_sac_ids: ["itau"], bancos_price_ids: ["bradesco"] }),
+      );
+    expect(ambos(20_000, 30_000).aviso).toContain("no limite para SAC e PRICE");
+    expect(ambos(30_000, 30_000).aviso).toContain("no limite para PRICE:");
+    const travaPrice = ambos(20_000, 20_000);
+    expect(travaPrice.aviso).toContain("no limite para SAC:");
+    expect(travaPrice.mensagem).toContain("abaixo da mínima para PRICE");
+    expect(mensagemRendaNoLimite([])).toBeNull();
+  });
+});
+
 describe("travaRendaDoFormulario", () => {
-  it("renda exatamente na mínima passa; um real abaixo trava com a mensagem", () => {
-    expect(travaRendaDoFormulario(form({ renda_total: min("S") })).mensagem).toBeNull();
+  it("abaixo do seco: trava com a renda, a mínima e o que fazer", () => {
     const t = travaRendaDoFormulario(form({ renda_total: 15_000 }));
     expect(t.campo).toBe("renda_total");
     expect(semNbsp(t.mensagem)).toBe(
-      "A renda informada (R$ 15.000,00) está abaixo da mínima para SAC (R$ 22.000,00). Aumente a renda (some a de um segundo proponente), aumente a entrada ou o prazo.",
+      "A renda informada (R$ 15.000,00) está abaixo da mínima para SAC (R$ 16.968,75). Aumente a renda (some a de um segundo proponente), aumente a entrada ou o prazo.",
     );
-    expect(travaRendaDoFormulario(form({ renda_total: min("S") - 1 })).mensagem).not.toBeNull();
   });
 
-  it("composição de renda resolve: titular 15 mil + cônjuge 7 mil cobre o SAC", () => {
-    const f = form({ renda_total: 15_000, estado_civil: "casado", nome_conjuge: "C", compoe_renda_conjuge: true, renda_conjuge: 7_000 });
+  it("composição de renda resolve: titular 10 mil + cônjuge 7 mil cobre o SAC", () => {
+    const f = form({ renda_total: 10_000, estado_civil: "casado", nome_conjuge: "C", compoe_renda_conjuge: true, renda_conjuge: 7_000 });
     expect(travaRendaDoFormulario(f).mensagem).toBeNull();
+    expect(travaRendaDoFormulario({ ...f, compoe_renda_conjuge: false }).mensagem).not.toBeNull();
   });
 
-  it("PRICE simples usa a mínima do PRICE", () => {
-    const t = travaRendaDoFormulario(form({ sistema_amortizacao: "P", renda_total: 30_000 }));
-    expect(semNbsp(t.mensagem)).toContain("abaixo da mínima para PRICE (R$ 40.000,00)");
+  it("PRICE simples usa o seco do PRICE", () => {
+    const t = travaRendaDoFormulario(form({ sistema_amortizacao: "P", renda_total: 25_000 }));
+    expect(semNbsp(t.mensagem)).toContain("abaixo da mínima para PRICE (R$ 27.405,56)");
   });
 
   it("Ambos: só o PRICE não cabe — destaca a renda PRICE e explica que o SAC pode ir sozinho", () => {
@@ -126,13 +183,13 @@ describe("travaRendaDoFormulario", () => {
     );
     expect(t.campo).toBe("renda_total");
     expect(semNbsp(t.mensagem)).toBe(
-      "A renda informada para SAC (R$ 10.000,00) está abaixo da mínima (R$ 22.000,00). A renda informada para PRICE (R$ 12.000,00) está abaixo da mínima (R$ 40.000,00). Aumente a renda (some a de um segundo proponente), aumente a entrada ou o prazo.",
+      "A renda informada para SAC (R$ 10.000,00) está abaixo da mínima (R$ 16.968,75). A renda informada para PRICE (R$ 12.000,00) está abaixo da mínima (R$ 27.405,56). Aumente a renda (some a de um segundo proponente), aumente a entrada ou o prazo.",
     );
   });
 
   it("segundo prazo mais curto também é conferido e aparece na mensagem", () => {
-    const t = travaRendaDoFormulario(form({ renda_total: 23_000, prazo_2: 180 }));
-    expect(semNbsp(t.mensagem)).toContain("SAC em 180 meses");
+    const t = travaRendaDoFormulario(form({ renda_total: 17_000, prazo_2: 300 }));
+    expect(semNbsp(t.mensagem)).toContain("SAC em 300 meses (R$ 17.709,49)");
   });
 
   it("renda vazia e PJ ficam fora (pendência de campo e fluxo bloqueado à parte)", () => {
@@ -142,16 +199,16 @@ describe("travaRendaDoFormulario", () => {
 });
 
 describe("travaRendaDaSimulacao (servidor)", () => {
-  it("simulação gravada abaixo da mínima é barrada antes da integração", () => {
+  it("simulação gravada abaixo do seco é barrada antes da integração; no seco, segue", () => {
     expect(
-      semNbsp(travaRendaDaSimulacao({ ...form({ renda_total: "15000.00" }), sistema_amortizacao: "S" })),
+      semNbsp(travaRendaDaSimulacao({ ...form({ renda_total: "16967.75" }), sistema_amortizacao: "S" })),
     ).toContain("abaixo da mínima para SAC");
-    expect(travaRendaDaSimulacao({ ...form({ renda_total: "22000.00" }), sistema_amortizacao: "S" })).toBeNull();
+    expect(travaRendaDaSimulacao({ ...form({ renda_total: "16968.75" }), sistema_amortizacao: "S" })).toBeNull();
   });
 
   it("simulação PRICE do modo Ambos usa a sua própria renda_total", () => {
-    expect(travaRendaDaSimulacao({ ...form({ renda_total: 39_999 }), sistema_amortizacao: "P" })).not.toBeNull();
-    expect(travaRendaDaSimulacao({ ...form({ renda_total: 40_000 }), sistema_amortizacao: "P" })).toBeNull();
+    expect(travaRendaDaSimulacao({ ...form({ renda_total: 27_404.56 }), sistema_amortizacao: "P" })).not.toBeNull();
+    expect(travaRendaDaSimulacao({ ...form({ renda_total: 27_405.56 }), sistema_amortizacao: "P" })).toBeNull();
   });
 
   it("mensagemRendaInsuficiente: nada faltando, nada a dizer", () => {

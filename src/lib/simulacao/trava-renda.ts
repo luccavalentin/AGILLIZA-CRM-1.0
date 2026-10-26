@@ -9,12 +9,18 @@
  * (`avaliarRendaMinima`: 1ª parcela + MIP + DFI + taxa, sobre o teto de
  * comprometimento SAC 30% / PRICE 15%, com a margem de segurança).
  *
+ * Faixas (decisão do dono, 26/10/2026):
+ *   · abaixo da mínima "seca" (prestação acima de 30% da renda no SAC / 15% no
+ *     PRICE, sem a margem): TRAVA;
+ *   · entre a seca e a mínima com margem (a da tela): AVISO, sem travar;
+ *   · acima da mínima com margem: nada.
+ *
  * Módulo puro: roda na tela (antes de enviar) e no servidor (antes de chamar a
  * integração bancária) — nunca confiar só na tela.
  */
 import { rendaConjugeOuPadrao } from "@/lib/crm/padroes-cadastro";
 import { ehCasado } from "./prazo";
-import { avaliarRendaMinima } from "./renda";
+import { avaliarRendaMinima, COMPROMETIMENTO_MAX, COMPROMETIMENTO_MAX_PRICE } from "./renda";
 
 /** Taxa de referência das estimativas (`melhorTaxaAno` da simulação completa). */
 export const TAXA_REFERENCIA_ANO = 0.1199;
@@ -26,11 +32,16 @@ export interface RendaDoSistema {
   prazo: number;
   /** Renda que vai ao banco neste sistema. */
   renda: number;
-  /** Renda mínima estimada para o financiamento, o prazo e o sistema. */
+  /** Renda mínima com margem (a que a tela mostra e sugere). */
   minima: number;
+  /** Renda mínima seca (sem margem): abaixo dela, trava. */
+  seca: number;
   /** 1ª parcela estimada com os encargos (MIP, DFI e taxa). */
   primeiraParcela: number;
+  /** Renda >= mínima seca: pode enviar. */
   suficiente: boolean;
+  /** Pode enviar, mas abaixo da mínima com margem: o banco pode recusar (aviso). */
+  noLimite: boolean;
 }
 
 const num = (v: unknown) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : 0);
@@ -90,13 +101,20 @@ export function avaliarTravaRenda(o: {
         sistema,
       });
       if (!aval) continue;
+      // Seca: a prestação (1ª parcela + MIP + DFI + taxa) sobre o teto, sem margem,
+      // em centavos para cima.
+      const teto = sistema === "P" ? COMPROMETIMENTO_MAX_PRICE : COMPROMETIMENTO_MAX;
+      const seca = Math.ceil(Math.round((aval.primeiraParcela / teto) * 1e6) / 1e4) / 100;
+      const suficiente = renda >= seca;
       out.push({
         sistema,
         prazo,
         renda,
         minima: aval.rendaMinima,
+        seca,
         primeiraParcela: Math.round(aval.primeiraParcela * 100) / 100,
-        suficiente: renda >= aval.rendaMinima,
+        suficiente,
+        noLimite: suficiente && renda < aval.rendaMinima,
       });
     }
   }
@@ -118,19 +136,19 @@ export function mensagemRendaInsuficiente(avaliacao: RendaDoSistema[]): string |
   const pior = new Map<SistemaTrava, RendaDoSistema>();
   for (const a of faltam) {
     const atual = pior.get(a.sistema);
-    if (!atual || a.minima > atual.minima) pior.set(a.sistema, a);
+    if (!atual || a.seca > atual.seca) pior.set(a.sistema, a);
   }
   const lista = (["S", "P"] as SistemaTrava[]).filter((s) => pior.has(s)).map((s) => pior.get(s)!);
   const mesmaRenda = new Set(lista.map((a) => a.renda)).size === 1;
   const emPrazo = (a: RendaDoSistema) => (variosPrazos ? ` em ${a.prazo} meses` : "");
   const inicio = mesmaRenda
     ? `A renda informada (${brl(lista[0]!.renda)}) está abaixo da mínima para ${lista
-        .map((a) => `${nomeSistema(a.sistema)}${emPrazo(a)} (${brl(a.minima)})`)
+        .map((a) => `${nomeSistema(a.sistema)}${emPrazo(a)} (${brl(a.seca)})`)
         .join(" / ")}.`
     : lista
         .map(
           (a) =>
-            `A renda informada para ${nomeSistema(a.sistema)} (${brl(a.renda)}) está abaixo da mínima${emPrazo(a)} (${brl(a.minima)}).`,
+            `A renda informada para ${nomeSistema(a.sistema)} (${brl(a.renda)}) está abaixo da mínima${emPrazo(a)} (${brl(a.seca)}).`,
         )
         .join(" ");
   const ok = Array.from(new Set(avaliacao.map((a) => a.sistema))).filter((s) => !pior.has(s));
@@ -141,6 +159,19 @@ export function mensagemRendaInsuficiente(avaliacao: RendaDoSistema[]): string |
           .join(" e ")} para enviar só ${ok.map(nomeSistema).join(" e ")}.`
       : "";
   return `${inicio} Aumente a renda (some a de um segundo proponente), aumente a entrada ou o prazo.${outro}`;
+}
+
+/**
+ * O aviso amarelo (não trava): a renda passa da mínima seca, mas fica abaixo da
+ * mínima com margem em algum sistema que vai ao banco. `null` sem nada a avisar.
+ */
+export function mensagemRendaNoLimite(avaliacao: RendaDoSistema[]): string | null {
+  const travados = new Set(avaliacao.filter((a) => !a.suficiente).map((a) => a.sistema));
+  const sistemas = (["S", "P"] as SistemaTrava[]).filter(
+    (s) => !travados.has(s) && avaliacao.some((a) => a.sistema === s && a.noLimite),
+  );
+  if (sistemas.length === 0) return null;
+  return `A renda está no limite para ${sistemas.map(nomeSistema).join(" e ")}: o banco pode recusar. Para aumentar a chance, some a renda de um segundo proponente, aumente a entrada ou o prazo.`;
 }
 
 /** Formulário da simulação completa (os campos que a trava lê). */
@@ -164,7 +195,10 @@ export interface FormTrava extends FonteRenda {
  */
 export function travaRendaDoFormulario(f: FormTrava): {
   avaliacao: RendaDoSistema[];
+  /** Trava (não envia). */
   mensagem: string | null;
+  /** Aviso amarelo (envia). */
+  aviso: string | null;
   campo: "renda_total" | "renda_price" | null;
 } {
   const ambos = f.sistema_amortizacao === "B";
@@ -181,7 +215,8 @@ export function travaRendaDoFormulario(f: FormTrava): {
     });
   }
   // Renda vazia já é pendência de campo obrigatório; a trava confere o valor.
-  if (sistemas.some((s) => !(s.renda > 0))) return { avaliacao: [], mensagem: null, campo: null };
+  if (sistemas.some((s) => !(s.renda > 0)))
+    return { avaliacao: [], mensagem: null, aviso: null, campo: null };
   const avaliacao = avaliarTravaRenda({
     sistemas,
     prazos: [f.prazo, f.prazo_2],
@@ -195,6 +230,7 @@ export function travaRendaDoFormulario(f: FormTrava): {
   return {
     avaliacao,
     mensagem,
+    aviso: mensagemRendaNoLimite(avaliacao),
     campo: !mensagem ? null : ambos && priceFalta && !sacFalta ? "renda_price" : "renda_total",
   };
 }
