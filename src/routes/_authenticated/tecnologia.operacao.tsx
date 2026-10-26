@@ -33,6 +33,13 @@ import {
 import { GraficoSerie, Legenda } from "@/components/tecnologia/grafico-serie";
 import { lerOperacao, type Janela } from "@/lib/tecnologia/tecnologia.functions";
 
+const TEXTO_JANELA: Record<string, string> = {
+  "1h": "1 h",
+  "6h": "6 h",
+  "24h": "24 h",
+  "7d": "7 dias",
+};
+
 export const Route = createFileRoute("/_authenticated/tecnologia/operacao")({
   head: () => ({ meta: [{ title: "Operação — Gestão de Tecnologia — Agilliza" }] }),
   component: Operacao,
@@ -73,7 +80,6 @@ function Operacao() {
     <div className="space-y-5 md:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-foreground">Operação</h2>
           <p className="text-xs text-muted-foreground">
             Tráfego, falhas e latência do Agilliza Tech, rota a rota e licença a licença.
           </p>
@@ -100,7 +106,8 @@ function Operacao() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi
-          rotulo="Requisições"
+          rotulo="Requisições (Agilliza Tech)"
+          janela={TEXTO_JANELA[janela]}
           cor="azul"
           icone={<Waves className="size-4" />}
           carregando={carregando}
@@ -108,7 +115,8 @@ function Operacao() {
           rodape={variacao(r?.requisicoes, r?.anterior.requisicoes) ?? "sem período anterior"}
         />
         <Kpi
-          rotulo="Taxa de falha"
+          rotulo="Taxa de falha (5xx)"
+          janela={TEXTO_JANELA[janela]}
           cor="vermelho"
           icone={<AlertTriangle />}
           carregando={carregando}
@@ -118,7 +126,8 @@ function Operacao() {
           rodape={`${fmtNum(r?.falhas)} falhas · ${fmtNum(r?.recusas)} recusas`}
         />
         <Kpi
-          rotulo="p95"
+          rotulo="Tempo de resposta p95"
+          janela={TEXTO_JANELA[janela]}
           cor="amarelo"
           icone={<Gauge className="size-4" />}
           carregando={carregando}
@@ -129,15 +138,17 @@ function Operacao() {
           rodape={`p50 ${fmtMs(r?.p50_ms)}`}
         />
         <Kpi
-          rotulo="Licenças ativas"
+          rotulo="Licenças com uso"
+          janela={TEXTO_JANELA[janela]}
           cor="verde"
           icone={<Building2 className="size-4" />}
           carregando={carregando}
           valor={fmtNum(r?.licencas)}
-          rodape={`${fmtNum(r?.sessoes_ativas)} sessões abertas agora`}
+          rodape={`${fmtNum(r?.sessoes_ativas)} sessões usadas nos últimos 15 min`}
         />
         <Kpi
           rotulo="Chamadas a provedores"
+          janela={TEXTO_JANELA[janela]}
           cor="roxo"
           icone={<Plug className="size-4" />}
           carregando={carregando}
@@ -146,13 +157,14 @@ function Operacao() {
           rodape={`${fmtNum(r?.provedor_falhas)} com falha`}
         />
         <Kpi
-          rotulo="Fila"
+          rotulo="Fila de mensagens"
+          janela="agora"
           cor="marca"
           icone={<Workflow className="size-4" />}
           carregando={carregando}
           tom={(r?.fila_mortas ?? 0) > 0 ? "atencao" : "neutro"}
           valor={fmtNum(r?.fila_pendentes)}
-          rodape={`${fmtNum(r?.fila_mortas)} descartadas · ${fmtNum(r?.jobs_falhas)} rotinas com erro`}
+          rodape={`${fmtNum(r?.fila_mortas)} descartadas no total · ${fmtNum(r?.jobs_falhas)} rotinas com erro na janela`}
         />
       </div>
 
