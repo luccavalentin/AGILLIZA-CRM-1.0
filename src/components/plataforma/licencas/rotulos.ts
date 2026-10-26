@@ -4,7 +4,7 @@
  * em teste = marca, somente leitura = atenção, suspensa = perigo, cancelada = neutro.
  */
 import type { Tom } from "@/components/plataforma/kit";
-import type { SituacaoLicenca, TipoLicenca } from "@/lib/plataforma/licencas.functions";
+import type { Licenca, SituacaoLicenca, TipoLicenca } from "@/lib/plataforma/licencas.functions";
 
 export const ROTULO_TIPO: Record<TipoLicenca, string> = {
   corretor: "Corretor",
@@ -52,3 +52,8 @@ export const ROTULO_PAPEL: Record<string, string> = {
 
 export const rotuloDe = (mapa: Record<string, string>, v: string | null | undefined) =>
   v ? (mapa[v] ?? v.replace(/_/g, " ")) : "—";
+
+/** Licença de cortesia ainda no período dela (criada no Agilliza como cortesia, 0228). */
+export function ehCortesia(l: Pick<Licenca, "status" | "status_motivo">): boolean {
+  return l.status === "ativo" && (l.status_motivo ?? "").startsWith("cortesia:");
+}

@@ -22,6 +22,13 @@ import { formatBRL } from "@/lib/financeiro/format";
 import { cn } from "@/lib/utils";
 import { criarLicenca, type PlanoLicenca, type TipoLicenca } from "@/lib/plataforma/licencas.functions";
 import { CamposDesconto, DESCONTO_INICIAL, paraDesconto, type EstadoDesconto } from "./desconto-licenca";
+import {
+  CamposIndicacao,
+  INDICACAO_INICIAL,
+  paraIndicacao,
+  resumoIndicacao,
+  type EstadoIndicacao,
+} from "./indicacao-licenca";
 import { ROTULO_TIPO } from "./rotulos";
 
 type Modalidade = "cortesia" | "teste" | "pagamento";
@@ -42,8 +49,8 @@ const SEM_CARTEIRA = "__nenhuma__";
 
 /**
  * "Nova licença": cria a conta de um corretor, imobiliária ou parceiro sem o cadastro do
- * site, em quatro passos numa gaveta (conta, plano e modalidade, desconto, carteira e
- * motivo) com o resumo do que vai acontecer antes de confirmar. A pessoa recebe o e-mail
+ * site, em cinco passos numa gaveta (conta, plano e modalidade, desconto, indicação, carteira
+ * e motivo) com o resumo do que vai acontecer antes de confirmar. A pessoa recebe o e-mail
  * para criar a própria senha — ninguém escolhe a senha por ela.
  */
 export function NovaLicenca({
@@ -75,6 +82,8 @@ export function NovaLicenca({
   const [comDesconto, setComDesconto] = useState(false);
   const [desconto, setDesconto] = useState<EstadoDesconto>(DESCONTO_INICIAL);
   const descontoPronto = comDesconto ? paraDesconto(desconto) : null;
+  const [indicacao, setIndicacao] = useState<EstadoIndicacao>(INDICACAO_INICIAL);
+  const indicacaoPronta = paraIndicacao(indicacao);
 
   const planosDoTipo = planos.filter((p) => p.publico === tipo || p.publico === "todos");
   const plano = planosDoTipo.find((p) => p.id === planoId) ?? null;
@@ -93,6 +102,7 @@ export function NovaLicenca({
     setMotivo("");
     setComDesconto(false);
     setDesconto(DESCONTO_INICIAL);
+    setIndicacao(INDICACAO_INICIAL);
   }
 
   const criar = useMutation({
@@ -113,6 +123,7 @@ export function NovaLicenca({
           carteiraGrupo: carteira === SEM_CARTEIRA ? null : carteira,
           motivo,
           desconto: descontoPronto,
+          indicacao: indicacaoPronta ?? null,
         },
       }),
     onSuccess: () => {
@@ -134,6 +145,7 @@ export function NovaLicenca({
     !!planoId &&
     diasOk &&
     (!comDesconto || descontoPronto !== null) &&
+    indicacaoPronta !== undefined &&
     motivo.trim().length >= 5;
 
   const resumo = [
@@ -141,6 +153,7 @@ export function NovaLicenca({
     plano ? `plano ${plano.nome}` : "sem plano escolhido",
     modalidade === "pagamento" ? "liberada depois do pagamento" : `${modalidade} de ${dias || "?"} dias`,
     descontoPronto ? "com desconto" : null,
+    resumoIndicacao(indicacao),
     carteira !== SEM_CARTEIRA ? `na carteira ${carteiras.find((c) => c.id === carteira)?.nome ?? ""}` : "sem carteira",
   ]
     .filter(Boolean)
@@ -294,7 +307,11 @@ export function NovaLicenca({
             {comDesconto && <CamposDesconto estado={desconto} aoMudar={setDesconto} prefixo="nl-desc" />}
           </Passo>
 
-          <Passo n={4} titulo="Carteira e motivo">
+          <Passo n={4} titulo="Indicação" opcional>
+            <CamposIndicacao estado={indicacao} aoMudar={setIndicacao} prefixo="nl-ind" />
+          </Passo>
+
+          <Passo n={5} titulo="Carteira e motivo">
             <Campo id="nl-carteira" rotulo="Carteira">
               <Select value={carteira} onValueChange={setCarteira}>
                 <SelectTrigger id="nl-carteira" aria-label="Carteira">

@@ -12,6 +12,7 @@ import {
   Home,
   KeyRound,
   ShieldCheck,
+  UserRoundPlus,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
   type SituacaoLicenca,
 } from "@/lib/plataforma/licencas.functions";
 import { CarteiraLicenca } from "./carteira-licenca";
+import { IndicacaoDaLicenca } from "./indicacao-licenca";
 import { DescontoDaLicenca } from "./desconto-licenca";
 import {
   ROTULO_ASSINATURA,
@@ -53,11 +55,12 @@ import {
   SITUACAO_LICENCA,
   rotuloDe,
   situacaoLicenca,
+  ehCortesia,
 } from "./rotulos";
 
 export type AbaLicenca = "resumo" | "cobranca" | "pessoas" | "acoes";
 /** Bloco das ações para onde a gaveta rola ao abrir por uma ação da lista. */
-export type SecaoAcao = "situacao" | "teste" | "plano" | "desconto" | "creditos" | "carteira";
+export type SecaoAcao = "situacao" | "teste" | "plano" | "desconto" | "creditos" | "carteira" | "indicacao";
 
 const TOM_FATURA: Record<string, "sucesso" | "alerta" | "perigo" | "neutro"> = {
   paga: "sucesso",
@@ -124,6 +127,10 @@ export function GavetaLicenca({
                 <Selo tom="marca">{licenca.plano ?? "Sem plano"}</Selo>
                 {licenca.carteira_grupo_nome && <Selo>Carteira {licenca.carteira_grupo_nome}</Selo>}
                 {licenca.trial_ate && <Selo tom="info">Teste até {formatData(licenca.trial_ate)}</Selo>}
+                {ehCortesia(licenca) && licenca.acesso_ate && (
+                  <Selo tom="info">Cortesia até {formatData(licenca.acesso_ate)}</Selo>
+                )}
+                {licenca.indicado_por_nome && <Selo>Indicada por {licenca.indicado_por_nome}</Selo>}
               </div>
               {licenca.status_motivo && (
                 <p className="text-xs text-muted-foreground">Motivo da situação: {licenca.status_motivo}</p>
@@ -548,9 +555,19 @@ function AcoesLicenca({
         </div>
       </BlocoAcao>
 
+      <BlocoAcao
+        id="indicacao"
+        titulo="Indicação"
+        descricao="Quem indicou a conta. A cortesia vence e passa a cobrar normalmente."
+        icone={<UserRoundPlus />}
+      >
+        <IndicacaoDaLicenca licenca={licenca} />
+      </BlocoAcao>
+
       <BlocoAcao id="carteira" titulo="Carteira e acesso" icone={<Users />}>
         <CarteiraLicenca licenca={licenca} carteiras={carteiras} />
       </BlocoAcao>
     </div>
   );
 }
+

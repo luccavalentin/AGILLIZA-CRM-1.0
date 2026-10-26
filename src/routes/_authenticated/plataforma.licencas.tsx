@@ -66,6 +66,7 @@ import {
   SITUACAO_LICENCA,
   rotuloDe,
   situacaoLicenca,
+  ehCortesia,
 } from "@/components/plataforma/licencas/rotulos";
 import {
   POR_PAGINA_LICENCAS,
@@ -96,7 +97,7 @@ interface Aberta {
 /**
  * Licenças e assinaturas (C49): lista densa com busca, situação em chips, filtros por tipo,
  * plano e carteira, ações em linha e o detalhe numa gaveta com abas. A criação (cortesia,
- * teste ou pagamento, com desconto e carteira) é uma gaveta em quatro passos.
+ * teste ou pagamento, com desconto, indicação e carteira) é uma gaveta em cinco passos.
  */
 function Pagina() {
   const listarFn = useServerFn(listarLicencas);
@@ -105,6 +106,8 @@ function Pagina() {
   const [tipo, setTipo] = useState<string>(TODOS);
   const [plano, setPlano] = useState<string>(TODOS);
   const [carteira, setCarteira] = useState<string>(TODOS);
+  // Indicação (0501): todas ou só as contas que vieram por indicação.
+  const [indicacao, setIndicacao] = useState<string>(TODOS);
   const [situacao, setSituacao] = useState<FiltroSituacao>("todas");
   const [pagina, setPagina] = useState(1);
   const [aberta, setAberta] = useState<Aberta | null>(null);
@@ -133,7 +136,7 @@ function Pagina() {
   };
 
   const q = useQuery({
-    queryKey: ["plataforma-licencas", tipo, situacao, termo, plano, carteira, pagina],
+    queryKey: ["plataforma-licencas", tipo, situacao, termo, plano, carteira, indicacao, pagina],
     queryFn: () =>
       listarFn({
         data: {
@@ -142,6 +145,7 @@ function Pagina() {
           busca: termo || null,
           plano: plano === TODOS ? null : plano,
           carteira: carteira === TODOS ? null : carteira,
+          indicacao: indicacao === TODOS ? null : "qualquer",
           pagina,
         },
       }),
@@ -167,6 +171,7 @@ function Pagina() {
     (tipo !== TODOS ? 1 : 0) +
     (plano !== TODOS ? 1 : 0) +
     (carteira !== TODOS ? 1 : 0) +
+    (indicacao !== TODOS ? 1 : 0) +
     (termo ? 1 : 0);
   const abrir = (licenca: Licenca, aba: AbaLicenca = "resumo", secao?: SecaoAcao) =>
     setAberta({ licenca, aba, secao });
@@ -309,6 +314,15 @@ function Pagina() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={indicacao} onValueChange={mudar(setIndicacao)}>
+            <SelectTrigger className="col-span-2 h-10 sm:col-span-1 sm:w-48" aria-label="Indicação">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Com ou sem indicação</SelectItem>
+              <SelectItem value="qualquer">Só as indicadas</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {filtrosAtivos > 0 && (
           <Button
@@ -320,6 +334,7 @@ function Pagina() {
               setTipo(TODOS);
               setPlano(TODOS);
               setCarteira(TODOS);
+              setIndicacao(TODOS);
               setPagina(1);
             }}
           >
@@ -392,6 +407,7 @@ function Pagina() {
                               <p className="truncate font-medium text-foreground">{l.nome}</p>
                               <p className="max-w-[22rem] truncate text-xs text-muted-foreground">
                                 {ROTULO_TIPO[l.tipo]} · {l.email_contato ?? l.slug}
+                                {l.indicado_por_nome ? ` · indicada por ${l.indicado_por_nome}` : ""}
                               </p>
                             </div>
                           </div>
@@ -406,6 +422,11 @@ function Pagina() {
                           {l.status === "trial" && l.trial_ate && (
                             <p className="mt-0.5 text-[11px] text-muted-foreground">
                               até {formatData(l.trial_ate)}
+                            </p>
+                          )}
+                          {ehCortesia(l) && l.acesso_ate && (
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              cortesia até {formatData(l.acesso_ate)}
                             </p>
                           )}
                         </td>
@@ -458,6 +479,16 @@ function Pagina() {
                           {ROTULO_TIPO[l.tipo]} · {l.plano ?? "sem plano"}
                           {l.carteira_grupo_nome ? ` · ${l.carteira_grupo_nome}` : ""}
                         </span>
+                        {(l.indicado_por_nome || (ehCortesia(l) && l.acesso_ate)) && (
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {[
+                              ehCortesia(l) && l.acesso_ate ? `Cortesia até ${formatData(l.acesso_ate)}` : null,
+                              l.indicado_por_nome ? `indicada por ${l.indicado_por_nome}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        )}
                         <span className="flex flex-wrap items-center gap-1.5">
                           <Selo tom={s.tom} ponto={l.status === "ativo"}>
                             {s.rotulo}
@@ -559,6 +590,9 @@ function AcoesEmLinha({
             <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "creditos")}>
               Lançar créditos
             </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "indicacao")}>
+              Indicação
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "carteira")}>
               Carteira e acesso
             </DropdownMenuItem>
@@ -568,3 +602,4 @@ function AcoesEmLinha({
     </DropdownMenu>
   );
 }
+

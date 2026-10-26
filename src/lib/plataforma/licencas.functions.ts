@@ -40,6 +40,20 @@ export interface Licenca {
   /** Carteira nomeada da conta (0308), quando houver. */
   carteira_grupo_id: string | null;
   carteira_grupo_nome: string | null;
+  /** Fim do acesso pago ou da cortesia (a renovação é cobrada antes dele). */
+  acesso_ate: string | null;
+  /** Quem indicou a conta (0501): a conta assinante, quando é uma, e o nome. */
+  indicado_por: string | null;
+  indicado_por_nome: string | null;
+}
+
+/** Conta assinante que pode ser escolhida como "quem indicou". */
+export interface ContaIndicadora {
+  id: string;
+  nome: string;
+  tipo: TipoLicenca;
+  /** Quantas contas ela já indicou. */
+  indicacoes: number;
 }
 
 export interface PlanoLicenca {
@@ -150,6 +164,8 @@ export const listarLicencas = createServerFn({ method: "GET" })
         carteira: z.union([z.string().uuid(), z.literal("sem")]).optional().nullable(),
         /** Uma conta só (link `?conta=` do financeiro da matriz, que abre a gaveta). */
         conta: z.string().uuid().optional().nullable(),
+        /** Indicação (0501): a conta que indicou ou "qualquer" (só as contas com indicação). */
+        indicacao: z.union([z.string().uuid(), z.literal("qualquer")]).optional().nullable(),
         pagina: z.number().int().min(1).max(10_000).default(1),
       })
       .parse(d ?? {}),
@@ -166,6 +182,8 @@ export const listarLicencas = createServerFn({ method: "GET" })
       data.carteira && data.carteira !== "sem" ? data.carteira : null,
       data.carteira === "sem",
       data.conta ?? null,
+      !!data.indicacao,
+      data.indicacao && data.indicacao !== "qualquer" ? data.indicacao : null,
     ];
     // Assinatura vigente: no máximo uma por conta (índice assinaturas_uma_vigente). A antiga
     // junção por `cancelada_em is null` também pegava assinatura encerrada e duplicava a conta.
@@ -191,13 +209,15 @@ export const listarLicencas = createServerFn({ method: "GET" })
                                               where c.tenant_id = t.id and c.grupo_id = $5))
             and (not $6::boolean or not exists (select 1 from plataforma.carteira c
                                                  where c.tenant_id = t.id and c.grupo_id is not null))
-            and ($7::uuid is null or t.id = $7)`;
+            and ($7::uuid is null or t.id = $7)
+            and (not $8::boolean or t.id in (select plataforma.contas_indicadas($9::uuid)))`;
     return comPlataforma(context.userId, async (tx) => {
       const licencas = await tx.consultar<Licenca>(
         `select t.id, t.tipo::text as tipo, t.nome, t.slug::text as slug, t.status::text as status,
                 t.status_motivo, t.creci, t.creci_uf, t.documento_mascarado,
                 t.email_contato::text as email_contato, t.celular_contato,
                 t.criado_em::date::text as criado_em, t.trial_ate::text as trial_ate,
+                t.acesso_ate::text as acesso_ate,
                 t.plano_id, p.nome as plano,
                 a.status::text as assinatura_status, a.ciclo::text as ciclo,
                 a.valor::float8 as assinatura_valor,
@@ -205,7 +225,7 @@ export const listarLicencas = createServerFn({ method: "GET" })
                 sa.score::int as score, sa.faixa::text as faixa
            ${origem}
           order by t.criado_em desc, t.id
-          limit ${POR_PAGINA_LICENCAS} offset $8`,
+          limit ${POR_PAGINA_LICENCAS} offset $10`,
         [...filtros, (data.pagina - 1) * POR_PAGINA_LICENCAS],
       );
       const resumo = await tx.uma<ResumoLicencas>(
@@ -238,11 +258,21 @@ export const listarLicencas = createServerFn({ method: "GET" })
           )
         : [];
       const grupoDaConta = new Map(grupos.map((g) => [g.tenant_id, g]));
+      // Quem indicou (0501). O módulo de licenças tem tenants.ler, que a função pede.
+      const indicacoes = licencas.length
+        ? await tx.consultar<{ tenant_id: string; indicado_por: string | null; indicado_por_nome: string }>(
+            "select tenant_id, indicado_por, indicado_por_nome from plataforma.indicacoes_das_contas($1::uuid[])",
+            [licencas.map((l) => l.id)],
+          )
+        : [];
+      const indicacaoDaConta = new Map(indicacoes.map((i) => [i.tenant_id, i]));
       for (const l of licencas) {
         l.carteira_uid = porConta.get(l.id)?.auth_uid ?? null;
         l.carteira_nome = porConta.get(l.id)?.nome ?? null;
         l.carteira_grupo_id = grupoDaConta.get(l.id)?.carteira_id ?? null;
         l.carteira_grupo_nome = grupoDaConta.get(l.id)?.carteira_nome ?? null;
+        l.indicado_por = indicacaoDaConta.get(l.id)?.indicado_por ?? null;
+        l.indicado_por_nome = indicacaoDaConta.get(l.id)?.indicado_por_nome ?? null;
       }
       const planos = await tx.consultar<PlanoLicenca>(
         `select id, codigo, nome, publico::text as publico, preco_mensal::float8 as preco_mensal
@@ -426,6 +456,19 @@ const DESCONTO = z
 
 export type DescontoNovo = z.infer<typeof DESCONTO>;
 
+/** Quem indicou: a conta assinante (conta) ou, quando não é assinante, o nome. */
+const INDICACAO = z
+  .object({
+    conta: z.string().uuid().nullable(),
+    nome: z.string().trim().max(200).nullable(),
+  })
+  .refine((v) => v.conta !== null || (v.nome ?? "").length >= 2, {
+    message: "Escolha a conta que indicou ou escreva o nome de quem indicou.",
+    path: ["nome"],
+  });
+
+export type IndicacaoNova = z.infer<typeof INDICACAO>;
+
 /**
  * Cria a licença à mão (cortesia, teste ou pagamento) e, se escolhida, já põe a conta na
  * carteira de alguém do Agilliza. A pessoa recebe o e-mail para criar a própria senha.
@@ -450,6 +493,8 @@ export const criarLicenca = createServerFn({ method: "POST" })
         carteiraGrupo: z.string().uuid().nullable().optional(),
         motivo: MOTIVO,
         desconto: DESCONTO.nullable().optional(),
+        /** Quem indicou (0501): a conta assinante ou, de fora, o nome. */
+        indicacao: INDICACAO.nullable().optional(),
       })
       .refine((v) => v.modalidade === "pagamento" || v.dias !== null, {
         message: "Informe os dias de acesso.",
@@ -488,6 +533,14 @@ export const criarLicenca = createServerFn({ method: "POST" })
           data.desconto.valor,
           data.desconto.faturas,
           data.motivo,
+        ]);
+      }
+      // Indicação na mesma transação: indicador inválido desfaz a criação inteira.
+      if (id && data.indicacao) {
+        await tx.consultar("select plataforma.definir_indicacao_licenca($1, $2, $3, null)", [
+          id,
+          data.indicacao.conta,
+          data.indicacao.conta ? null : data.indicacao.nome,
         ]);
       }
       // Na mesma transação: carteira arquivada ou inexistente desfaz a criação inteira.
@@ -583,4 +636,37 @@ export const encerrarDescontoLicenca = createServerFn({ method: "POST" })
       ]),
     );
     return { encerrado: r?.ok ?? false };
+  });
+
+/* ---------------------------------------------------- indicação da licença (0501) --- */
+
+/** Busca a conta assinante que indicou (nome, endereço ou e-mail; no máximo 20). */
+export const buscarContasIndicacao = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) => z.object({ busca: z.string().trim().max(120) }).parse(d))
+  .handler(async ({ data, context }) => {
+    if (data.busca.length < 2) return [] as ContaIndicadora[];
+    const { comPlataforma } = await ponte();
+    return comPlataforma(context.userId, (tx) =>
+      tx.consultar<ContaIndicadora>(
+        "select id, nome, tipo, indicacoes from plataforma.contas_para_indicacao($1)",
+        [data.busca],
+      ),
+    );
+  });
+
+/** Liga a licença a quem indicou, troca ou tira (com null). Fica no histórico da conta. */
+export const definirIndicacaoLicenca = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) => z.object({ id: UUID, indicacao: INDICACAO.nullable() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    await comPlataforma(context.userId, (tx) =>
+      tx.consultar("select plataforma.definir_indicacao_licenca($1, $2, $3, null)", [
+        data.id,
+        data.indicacao?.conta ?? null,
+        data.indicacao?.conta ? null : (data.indicacao?.nome ?? null),
+      ]),
+    );
+    return { ok: true as const };
   });
