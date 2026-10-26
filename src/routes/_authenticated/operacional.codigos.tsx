@@ -17,6 +17,7 @@ import {
   PlugZap,
   Search,
   Trash2,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BancoLogo } from "@/components/bancos/banco-logo";
@@ -439,7 +440,13 @@ function CartaoCaixa({
           )}
         </div>
       </div>
-      {podeEditar && (
+      <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Users className="h-3.5 w-3.5" aria-hidden />
+        {caixa.pessoas.length
+          ? `Liberada para ${caixa.pessoas.length} pessoa(s), além de quem cadastrou e da administração`
+          : "Só quem cadastrou e a administração veem"}
+      </p>
+      {podeEditar && caixa.pode_gerir && (
         <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3">
           <Button size="sm" variant="outline" onClick={aoEditar}>
             <Pencil className="mr-1.5 h-3.5 w-3.5" />
