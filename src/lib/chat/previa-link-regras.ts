@@ -31,21 +31,41 @@ export function ipPrivado(ip: string): boolean {
     );
   }
   if (v === 6) {
-    const x = ip.toLowerCase();
-    if (x === "::" || x === "::1") return true;
-    const mapeado = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(x) ?? /^::(\d+\.\d+\.\d+\.\d+)$/.exec(x);
-    if (mapeado) return ipPrivado(mapeado[1]!);
-    if (/^::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}$/.test(x)) {
-      // ::ffff:7f00:1 = 127.0.0.1 em hexadecimal.
-      const [h1, h2] = x
-        .slice(7)
-        .split(":")
-        .map((h) => parseInt(h, 16));
-      return ipPrivado(`${h1! >> 8}.${h1! & 255}.${h2! >> 8}.${h2! & 255}`);
+    // eco-aud: pelos 128 bits, não por texto. Antes "[::127.0.0.1]" (normalizado para ::7f00:1),
+    // fec0::/10, 6to4 (2002::/16) e Teredo passavam. Só unicast global (2000::/3) é público,
+    // e o IPv4 embutido (::/96, ::ffff:0:0/96, 6to4) é conferido.
+    const h = hextetos(ip);
+    if (!h) return true;
+    const ipv4 = (a: number, b: number) => `${a >> 8}.${a & 255}.${b >> 8}.${b & 255}`;
+    if (h.slice(0, 5).every((n) => n === 0) && (h[5] === 0 || h[5] === 0xffff)) {
+      if (h[5] === 0 && h[6] === 0) return true; // ::, ::1 e o resto de ::/112
+      return ipPrivado(ipv4(h[6]!, h[7]!));
     }
-    return /^(fc|fd|fe8|fe9|fea|feb|ff|2001:db8|2001:0db8|64:ff9b|100::)/.test(x);
+    if (h[0] === 0x2002) return ipPrivado(ipv4(h[1]!, h[2]!)); // 6to4
+    if ((h[0]! & 0xe000) !== 0x2000) return true; // fora de 2000::/3: ULA, link/site-local, multicast, NAT64…
+    if (h[0] === 0x2001 && (h[1] === 0 || h[1] === 0xdb8 || h[1]! < 0x200)) return true; // Teredo, documentação, IETF
+    return false;
   }
   return true;
+}
+
+/** Os 8 grupos de 16 bits de um IPv6 (aceita "::" e IPv4 no fim), ou null. */
+function hextetos(ip: string): number[] | null {
+  let s = ip.toLowerCase().split("%")[0]!;
+  const v4 = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(s);
+  if (v4) {
+    const [a, b, c, d] = v4.slice(1).map(Number) as [number, number, number, number];
+    s = s.slice(0, v4.index) + ((a << 8) | b).toString(16) + ":" + ((c << 8) | d).toString(16);
+  }
+  const partes = s.split("::");
+  if (partes.length > 2) return null;
+  const esq = partes[0] ? partes[0].split(":") : [];
+  const dir = partes.length === 2 && partes[1] ? partes[1].split(":") : [];
+  const faltam = 8 - esq.length - dir.length;
+  if (partes.length === 1 ? faltam !== 0 : faltam < 1) return null;
+  const todos = [...esq, ...Array(partes.length === 2 ? faltam : 0).fill("0"), ...dir];
+  const n = todos.map((x) => (/^[0-9a-f]{1,4}$/.test(x) ? parseInt(x, 16) : NaN));
+  return n.length === 8 && n.every((x) => Number.isInteger(x)) ? n : null;
 }
 
 /** A URL pode ser buscada pelo servidor? (o IP é conferido de novo na conexão). */

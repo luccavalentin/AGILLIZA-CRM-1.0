@@ -40,7 +40,10 @@ function clienteSupabase(token: string) {
  * `exigirChat: false` só para o @ (C01: toda pessoa do Agilliza tem o seu, mesmo sem acesso
  * ao chat).
  */
-export async function pessoaDoChat(canal: CanalChat, exigirChat = true): Promise<PessoaChat> {
+export async function pessoaDoChat(
+  canal: CanalChat,
+  exigirChat: boolean | "view" | "create" = true,
+): Promise<PessoaChat> {
   if (canal === "cliente") {
     const sess = lerSessaoCliente();
     if (!sess?.cid) throw new Error("Sua sessão terminou. Entre de novo no portal.");
@@ -54,8 +57,14 @@ export async function pessoaDoChat(canal: CanalChat, exigirChat = true): Promise
   const uid = data?.claims?.sub;
   if (error || !uid) throw new Error("Sua sessão terminou. Entre de novo.");
   if (exigirChat) {
-    const { data: pode } = await sb.rpc("usuario_tem_permissao", { _user_id: uid, _modulo: "crm.chat", _acao: "view" });
-    if (!pode) throw new Error("Você não tem permissão para usar o chat.");
+    // eco-aud: "Ver conversas" (view) só lê; mandar, apagar, encaminhar, criar grupo e anexar é
+    // "Enviar mensagens" (create) — o chat antigo exigia isso e o novo tinha deixado de exigir.
+    const acao = exigirChat === "create" ? "create" : "view";
+    const { data: pode } = await sb.rpc("usuario_tem_permissao", { _user_id: uid, _modulo: "crm.chat", _acao: acao });
+    if (!pode)
+      throw new Error(
+        acao === "create" ? "Você só tem permissão para ver as conversas." : "Você não tem permissão para usar o chat.",
+      );
   }
   return { authUid: uid };
 }

@@ -8,6 +8,9 @@
 import { inflateSync, inflateRawSync } from "node:zlib";
 
 const LIMITE_FLUXOS = 400;
+/** eco-aud: teto do fluxo descomprimido (bomba de descompressão) e do total lido. */
+const LIMITE_FLUXO_BYTES = 8 * 1024 * 1024;
+const LIMITE_TOTAL_BYTES = 32 * 1024 * 1024;
 
 function decodificarLiteral(s: string): string {
   let out = "";
@@ -55,7 +58,11 @@ function decodificarHex(h: string): string {
 /** Cadeias de texto de um fluxo de conteúdo. */
 export function textoDoConteudo(conteudo: string): string {
   const partes: string[] = [];
-  const re = /\[((?:\((?:\\.|[^\\)])*\)|<[0-9A-Fa-f\s]*>|[^\]])*)\]\s*TJ|(\((?:\\.|[^\\)])*\)|<[0-9A-Fa-f\s]*>)\s*(?:Tj|'|")|(ET|T\*|Td|TD)\b/g;
+  // eco-aud: alternativas disjuntas ("(" só abre literal, "<" só abre hexadecimal, "[" não entra
+  // no meio do vetor) e repetição limitada: antes "[" + "()"×40 sem "]…TJ" retrocedia
+  // exponencialmente e "[[[[…" era quadrático — o servidor travava lendo um "boleto".
+  const re =
+    /\[((?:\((?:\\.|[^\\)]){0,4000}\)|<[0-9A-Fa-f\s]{0,4000}>|[^\]()<[]){0,2000})\]\s*TJ|(\((?:\\.|[^\\)]){0,4000}\)|<[0-9A-Fa-f\s]{0,4000}>)\s*(?:Tj|'|")|(ET|T\*|Td|TD)\b/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(conteudo))) {
     if (m[1] !== undefined) {
@@ -85,7 +92,8 @@ export function extrairTextoPdf(arquivo: Uint8Array): string {
   const re = /stream\r?\n/g;
   let m: RegExpExecArray | null;
   let n = 0;
-  while ((m = re.exec(bin)) && n++ < LIMITE_FLUXOS) {
+  let lidos = 0;
+  while ((m = re.exec(bin)) && n++ < LIMITE_FLUXOS && lidos < LIMITE_TOTAL_BYTES) {
     const ini = m.index + m[0].length;
     const fim = bin.indexOf("endstream", ini);
     if (fim < 0) break;
@@ -95,7 +103,7 @@ export function extrairTextoPdf(arquivo: Uint8Array): string {
     if (/FlateDecode/.test(cabeca)) {
       for (const f of [inflateSync, inflateRawSync]) {
         try {
-          conteudo = f(bruto).toString("latin1");
+          conteudo = f(bruto, { maxOutputLength: LIMITE_FLUXO_BYTES }).toString("latin1");
           break;
         } catch {
           /* tenta o próximo */
@@ -104,6 +112,8 @@ export function extrairTextoPdf(arquivo: Uint8Array): string {
     } else if (!/\/Filter/.test(cabeca)) {
       conteudo = bruto.toString("latin1");
     }
+    if (conteudo && conteudo.length > LIMITE_FLUXO_BYTES) conteudo = null;
+    if (conteudo) lidos += conteudo.length;
     if (conteudo && /(Tj|TJ)/.test(conteudo)) textos.push(textoDoConteudo(conteudo));
     re.lastIndex = fim;
   }

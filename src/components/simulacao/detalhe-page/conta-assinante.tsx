@@ -22,7 +22,7 @@ export function ContaAssinanteDaSimulacao({
     conta_assinante_simulacao_id?: string | null;
   };
 }) {
-  const pode = usePermissao("saas.contas", "view");
+  const pode = usePermissao("saas.contas", "edit"); // eco-aud: grava na conta do assinante
   const qc = useQueryClient();
   const levarFn = useServerFn(levarSimulacaoParaConta);
   const [levando, setLevando] = useState(false);

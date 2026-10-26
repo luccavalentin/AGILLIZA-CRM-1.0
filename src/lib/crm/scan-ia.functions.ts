@@ -619,6 +619,12 @@ async function garantirClientePorDocumento(
     .eq("documento", documento)
     .maybeSingle();
 
+  // eco-aud: cliente NOVO só com CPF/CNPJ de dígito verificador válido (a leitura avulsa
+  // criava "111.111.111-11"); o lote já conferia.
+  if (!existente && !(documento.length === 11 ? cpfValido(documento) : cnpjValido(documento))) {
+    throw new Error("O CPF/CNPJ não confere (dígito verificador). Corrija antes de criar o cliente.");
+  }
+
   let clienteId: string | null = existente?.id ?? null;
   let reaproveitado = !!existente;
 

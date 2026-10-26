@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { AuditoriaLinha } from "@/lib/admin/auditoria.functions";
+import { celulaCSV } from "@/lib/relatorios/report-docx";
 import { hojeISO } from "@/lib/financeiro/format";
 
 export const TODOS = "__todos__";
@@ -159,10 +160,8 @@ export function exportarCsv(registros: AuditoriaLinha[]): void {
     "IP",
     "Navegador",
   ];
-  const escapar = (v: unknown) => {
-    const s = v == null ? "" : String(v);
-    return `"${s.replace(/"/g, '""')}"`;
-  };
+  // eco-aud: user_agent e textos vêm de fora: célula com fórmula sai neutralizada.
+  const escapar = (v: unknown) => celulaCSV(v);
   const linhas = registros.map((r) =>
     [
       fmtDataHora(r.created_at),

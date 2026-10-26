@@ -198,7 +198,10 @@ const ACOES = {
   },
   abrirPorArroba: {
     args: z.object({ arroba: ARROBA }),
-    rodar: async (tx: Tx, a: { arroba: string }) => (await tx.uma<{ id: string }>("select chat.abrir_por_arroba($1) as id", [a.arroba]))?.id,
+    // 0422 (Agilliza Tech): @ inexistente/bloqueado volta nulo, SEM erro — um erro aqui desfaria a
+    // transação e, com ela, o registro da busca no limite (enumeração de @). A mensagem sai depois.
+    rodar: async (tx: Tx, a: { arroba: string }) =>
+      (await tx.uma<{ id: string | null }>("select chat.abrir_por_arroba($1) as id", [a.arroba]))?.id ?? null,
   },
   pedidos: {
     args: z.object({}),
@@ -336,6 +339,26 @@ export type AcaoChat = keyof typeof ACOES;
 const SEM_BANCO = new Set<AcaoChat>(["previaLink"]);
 /** O @ é de toda pessoa do Agilliza (C01), mesmo de quem não usa o chat. */
 const SO_ARROBA = new Set<AcaoChat>(["meuArroba", "arrobaDisponivel", "trocarArroba"]);
+/**
+ * eco-aud: ações que só leem ou cuidam da própria pessoa (ler, marcar lida, bloquear, denunciar,
+ * preferências) bastam "Ver conversas"; as que falam com alguém exigem "Enviar mensagens"
+ * (crm.chat › create). Ação nova entra numa das listas (o teste confere).
+ */
+export const ACOES_DE_LEITURA = new Set<AcaoChat>([
+  "listar", "carregar", "desde", "unica", "extra", "marcarLida", "marcarNaoLida", "marcarEntregues", "presenca",
+  "preferencia", "buscarNaConversa", "buscarGlobal", "contatos", "localizarArroba", "pedidos", "participantes",
+  "leituras", "bloquear", "desbloquear", "bloqueados", "denunciar", "preferencias", "salvarPreferencias",
+  "avisos", "ocultarAviso", "anexoAntigo", "previaLink",
+]);
+export const ACOES_DE_ESCRITA = new Set<AcaoChat>([
+  "enviar", "editar", "apagar", "reagir", "encaminhar", "fixar", "digitando", "abrirCom", "abrirPorArroba",
+  "responderPedido", "criarGrupo", "adicionar", "remover", "renomear", "definirAdmin", "fotoGrupo",
+]);
+/** Permissão do chat que a ação exige (false = só o @, que é de toda pessoa). */
+export function permissaoDaAcao(acao: AcaoChat): false | "view" | "create" {
+  if (SO_ARROBA.has(acao)) return false;
+  return ACOES_DE_ESCRITA.has(acao) ? "create" : "view";
+}
 
 export const chatAcao = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
@@ -348,7 +371,7 @@ export const chatAcao = createServerFn({ method: "POST" })
       const acao = ACOES[data.acao as AcaoChat];
       const args = acao.args.parse(data.args ?? {});
       const { pessoaDoChat } = await import("./pessoa.server");
-      const pessoa = await pessoaDoChat(data.canal as CanalChat, !SO_ARROBA.has(data.acao as AcaoChat));
+      const pessoa = await pessoaDoChat(data.canal as CanalChat, permissaoDaAcao(data.acao as AcaoChat));
       if (SEM_BANCO.has(data.acao as AcaoChat)) {
         return { ok: true, dados: comoJson(await (acao.rodar as (tx: Tx, a: unknown) => Promise<unknown>)(null as never, args)) };
       }
@@ -369,6 +392,7 @@ export const chatAcao = createServerFn({ method: "POST" })
         }
         return (acao.rodar as (tx: Tx, a: unknown) => Promise<unknown>)(tx, args);
       });
+      if (data.acao === "abrirPorArroba" && !dados) return { ok: false, mensagem: "Ninguém com este @." };
       return { ok: true, dados: comoJson(dados) };
     } catch (e) {
       if (e instanceof z.ZodError) return { ok: false, mensagem: "Algum dado chegou em formato inválido." };
@@ -448,7 +472,7 @@ export const chatEnviarArquivo = createServerFn({ method: "POST" })
     if (!confereConteudo(conteudo, mime)) throw new Error("O arquivo não é o que diz ser. Exporte de novo e tente outra vez.");
     const nome = arquivo.name.slice(0, 200) || "arquivo";
     const { pessoaDoChat } = await import("./pessoa.server");
-    const pessoa = await pessoaDoChat(data.canal);
+    const pessoa = await pessoaDoChat(data.canal, "create");
     const m = await import("@/lib/plataforma/midias.server");
     const { comChatAgilliza } = await import("@/lib/plataforma/ponte.server");
     let guardado: { chave: string; bytes: number; sha256: string } | null = null;
