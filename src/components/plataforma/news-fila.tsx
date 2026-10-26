@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, ExternalLink, EyeOff, PenLine, Pin, PinOff, ThumbsUp } from "lucide-react";
+import {
+  Check,
+  ExternalLink,
+  EyeOff,
+  PenLine,
+  Pin,
+  PinOff,
+  RefreshCw,
+  ThumbsUp,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +33,7 @@ import {
 } from "@/components/ui/sheet";
 import { formatData } from "@/lib/financeiro/format";
 import {
+  coletarAgoraNews,
   curarNoticia,
   type CategoriaNews,
   type NoticiaCuradoria,
@@ -91,6 +101,11 @@ export function FilaCuradoriaNews({
     (d: Curar) => curarFn({ data: d }),
     "Não foi possível salvar a notícia.",
   );
+  const coletarFn = useServerFn(coletarAgoraNews);
+  const coletar = useAcaoNews(
+    () => coletarFn({ data: { id: null } }),
+    "Não foi possível pedir a coleta.",
+  );
   const [grupo, setGrupo] = useState<Grupo>("fila");
   const [aberta, setAberta] = useState<NoticiaCuradoria | null>(null);
   const visiveis = noticias.filter((n) => grupo === "todas" || grupoDe(n.status) === grupo);
@@ -126,11 +141,16 @@ export function FilaCuradoriaNews({
         </div>
       </div>
 
-      {semColeta && (
-        <p className="rounded-md border border-amber-400/60 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-          As fontes estão cadastradas, mas o coletor de RSS ainda não rodou neste ambiente. Enquanto
-          isso, a fila fica vazia e a News mostra só o que for apontado ou escrito aqui.
-        </p>
+      {semColeta && pode && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/[0.04] p-3 text-sm">
+          <span>
+            Nenhuma coleta ainda. O coletor lê as fontes sozinho no intervalo de cada uma; para
+            começar agora, peça a coleta.
+          </span>
+          <Button size="sm" disabled={coletar.isPending} onClick={() => coletar.mutate(undefined)}>
+            <RefreshCw className="mr-1 size-4" /> Coletar agora
+          </Button>
+        </div>
       )}
 
       {carregando ? (

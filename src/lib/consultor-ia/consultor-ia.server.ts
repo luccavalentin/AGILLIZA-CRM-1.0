@@ -1,21 +1,46 @@
 /**
- * Núcleo do Consultor IA (server-only).
+ * Núcleo do Consultor IA (server-only) — C18.
  *
- * Compartilhado entre a server function (resposta única) e a rota de streaming
- * (`/api/consultor-ia/stream`), que entrega o texto token a token — é isso que
- * dá a sensação de resposta imediata, como no ChatGPT/Gemini.
+ * Fluxo de uma pergunta:
+ *   1. RAG: os artigos PUBLICADOS da Base de conhecimento mais próximos da pergunta
+ *      (`consultor_ia_trechos`, busca textual sem acento no banco + reordenação aqui);
+ *   2. ferramentas determinísticas: parcela SAC/PRICE, comprometimento, capacidade e custos
+ *      com os parâmetros da conta — o número sai calculado, não "chutado";
+ *   3. detecção de pergunta que depende de dado atual;
+ *   4. prompt de especialista + histórico real da conversa → provedor da conta (camada
+ *      única, com streaming);
+ *   5. resposta limpa, fontes citadas (só as que vieram da base), cálculos e aviso gravados.
+ *
+ * Compartilhado pela rota de streaming (`/api/consultor-ia/stream`).
  */
 import { createClient } from "@supabase/supabase-js";
 import { paraRedeInterna } from "@/integrations/supabase/rede-interna";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  configDaLinha,
+  erroDaResposta,
+  gerarTextoStream as gerarStreamProvedor,
+  MODELO_PADRAO,
+  type ConfigProvedor,
+  type Mensagem,
+} from "@/lib/ia/provedor.server";
+import type { ParametrosCalculo } from "./calculos";
+import {
+  blocoParaPrompt,
+  executarFerramentas,
+  precisaDadoAtual,
+  type ResultadoFerramenta,
+} from "./ferramentas";
+import {
+  limparResposta,
+  mensagemComContexto,
+  promptDeSistema,
+  MARCADOR_SEM_INFO,
+  type FonteCitada,
+} from "./prompt";
 
-export const MARCADOR_SEM_INFO = "SEM_INFORMACAO_NA_BASE";
-
-export interface FonteCitada {
-  id: string;
-  titulo: string;
-  categoria: string;
-}
+export { MARCADOR_SEM_INFO };
+export type { FonteCitada };
 
 export interface TrechoBase {
   id: string;
@@ -69,7 +94,7 @@ function tokens(texto: string): string[] {
   return texto
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length > 2 && !STOPWORDS.has(t));
 }
@@ -83,9 +108,6 @@ export function selecionarTrechos(itens: TrechoBase[], pergunta: string, limite 
     let score = 0;
     for (const t of termos) {
       if (alvoTitulo.some((x) => x.startsWith(t) || t.startsWith(x))) score += 3;
-      // Mesma tolerância a plural/conjugação usada no título (ex.: "documento"
-      // casando com "documentos", "financia" com "financiamento") — antes o
-      // conteúdo só pontuava em igualdade exata e perdia trechos relevantes.
       score += Math.min(
         alvoConteudo.filter((x) => x === t || x.startsWith(t) || t.startsWith(x)).length,
         4,
@@ -122,6 +144,7 @@ export function clienteDoToken(token: string) {
   });
 }
 
+/** Formato antigo (usado pelo e-book): provedor, modelo, chave e endereço. */
 export interface ConfigIa {
   provedor: "gemini" | "openai";
   modelo: string;
@@ -130,17 +153,26 @@ export interface ConfigIa {
 }
 
 /**
- * Provedor, modelo e chave da IA da conta (Admin › APIs de IA), com a chave da
- * plataforma como reserva. A tabela só é legível por administradores; quem
- * consulta o Consultor é qualquer usuário da conta, então a linha é lida com o
- * client de serviço, filtrada pela conta, e a chave não sai do servidor.
+ * Provedor, modelo e chave da IA da conta (Configurações gerais › APIs de IA), lidos com o
+ * client de serviço e filtrados pela conta (a tabela só é legível por administradores; quem
+ * consulta é qualquer pessoa da conta). A chave não sai do servidor. O segundo parâmetro é
+ * mantido por compatibilidade: o modelo padrão agora é o da camada única de provedor.
  */
 export async function configIaDaConta(
   corr: string | null,
-  modeloGeminiPadrao: string,
+  _modeloPadraoAntigo?: string,
 ): Promise<ConfigIa> {
-  let cfgRow: { api_key: string | null; base_url: string | null; config: unknown; ativo: boolean } | null =
-    null;
+  const cfg = await configProvedorDaConta(corr);
+  return { provedor: cfg.provedor, modelo: cfg.modelo, apiKey: cfg.apiKey, baseUrl: cfg.baseUrl };
+}
+
+async function configProvedorDaConta(corr: string | null): Promise<ConfigProvedor> {
+  let linha: {
+    api_key: string | null;
+    base_url: string | null;
+    config: unknown;
+    ativo: boolean;
+  } | null = null;
   if (corr) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await (supabaseAdmin as any)
@@ -150,42 +182,15 @@ export async function configIaDaConta(
       .eq("chave", "ia")
       .maybeSingle();
     if (error) throw new Error("Não foi possível ler a integração de IA da conta.");
-    cfgRow = data ?? null;
+    linha = data ?? null;
   }
-
-  if (cfgRow && cfgRow.ativo === false) {
-    throw new Error("Integração de IA desativada. Ative-a em Admin › APIs de IA.");
-  }
-  const cfg = (cfgRow?.config ?? {}) as Record<string, unknown>;
-  const provedor: "gemini" | "openai" = cfg.provedor === "openai" ? "openai" : "gemini";
-  const modelo =
-    typeof cfg.modelo === "string" && cfg.modelo.trim()
-      ? cfg.modelo.trim()
-      : provedor === "openai"
-        ? "gpt-4o"
-        : modeloGeminiPadrao;
-  const apiKeySalva = typeof cfgRow?.api_key === "string" ? cfgRow.api_key.trim() : "";
-  const apiKey =
-    apiKeySalva ||
-    (provedor === "openai" ? process.env.OPENAI_API_KEY : process.env.GEMINI_API_KEY) ||
-    "";
-  if (!apiKey) {
-    throw new Error("Chave da API não cadastrada. Configure-a em Admin › APIs de IA.");
-  }
-  const baseUrl = (
-    (typeof cfgRow?.base_url === "string" && cfgRow.base_url) ||
-    (provedor === "openai"
-      ? "https://api.openai.com/v1"
-      : "https://generativelanguage.googleapis.com")
-  ).replace(/\/+$/, "");
-  return { provedor, modelo, apiKey, baseUrl };
+  const cfg = configDaLinha(linha);
+  // Modelo descontinuado salvo numa configuração antiga: usa o padrão atual.
+  if (/-exp$|^gemini-1\.5/.test(cfg.modelo)) cfg.modelo = MODELO_PADRAO.gemini;
+  return { ...cfg, temperatura: Math.min(cfg.temperatura, 0.4) };
 }
 
-/**
- * Os verbetes mais relevantes para a pergunta. O banco faz a busca textual
- * (`consultor_ia_trechos`, índice GIN, mesma regra de leitura da base) e devolve
- * poucos candidatos; aqui só se refina a ordem com título e etiquetas.
- */
+/** Os artigos mais relevantes para a pergunta (só publicados, regra de leitura no banco). */
 export async function buscarTrechosBase(
   supabase: any,
   pergunta: string,
@@ -199,198 +204,140 @@ export async function buscarTrechosBase(
   return selecionarTrechos((data ?? []) as TrechoBase[], pergunta, limite);
 }
 
-export interface Preparo extends ConfigIa {
-  conversaId: string;
-  trechos: TrechoBase[];
-  prompt: string;
+/** Parâmetros de cálculo da conta (a linha nasce com os padrões da tabela). */
+export async function parametrosDaConta(supabase: any): Promise<ParametrosCalculo> {
+  const { data, error } = await supabase.rpc("consultor_ia_parametros_da_conta");
+  if (error || !data) throw new Error("Não foi possível ler os parâmetros de cálculo da conta.");
+  const r = Array.isArray(data) ? data[0] : data;
+  return {
+    itbi_percentual: Number(r.itbi_percentual),
+    itbi_municipios: Array.isArray(r.itbi_municipios) ? r.itbi_municipios : [],
+    cartorio_percentual: Number(r.cartorio_percentual),
+    avaliacao_banco: Number(r.avaliacao_banco),
+    certidoes_valor: Number(r.certidoes_valor),
+    comprometimento_max_percentual: Number(r.comprometimento_max_percentual),
+    taxa_referencia_anual: r.taxa_referencia_anual == null ? null : Number(r.taxa_referencia_anual),
+  };
 }
 
-/** Limite de contexto por trecho — prompts menores = resposta mais rápida. */
-const MAX_CHARS_TRECHO = 2500;
+export interface Preparo {
+  cfg: ConfigProvedor;
+  conversaId: string;
+  trechos: TrechoBase[];
+  sistema: string;
+  mensagens: Mensagem[];
+  calculos: ResultadoFerramenta[];
+  avisoDadoAtual: boolean;
+}
+
+const MAX_HISTORICO = 8;
 
 export async function prepararConsulta(
   supabase: any,
   userId: string,
   entrada: { conversa_id?: string | null; pergunta: string },
 ): Promise<Preparo> {
-  // Perfil (conta e nome) + trechos da base em paralelo.
-  const [perfilRes, trechos] = await Promise.all([
+  const [perfilRes, trechos, parametros] = await Promise.all([
     supabase.from("profiles").select("correspondente_id, nome").eq("id", userId).maybeSingle(),
-    buscarTrechosBase(supabase, entrada.pergunta, 4),
+    buscarTrechosBase(supabase, entrada.pergunta, 5),
+    parametrosDaConta(supabase),
   ]);
   if (perfilRes.error) throw new Error("Não foi possível carregar seu perfil.");
   const corr = (perfilRes.data?.correspondente_id as string | null) ?? null;
   const nomeUsuario = (perfilRes.data?.nome as string | null)?.trim() || "Especialista";
 
+  const cfg = await configProvedorDaConta(corr);
+
   let conversaId = entrada.conversa_id ?? null;
-  const [ia] = await Promise.all([
-    configIaDaConta(corr, "gemini-1.5-flash"),
-    (async () => {
-      if (conversaId) return;
-      const bruto = entrada.pergunta.trim();
-      const titulo = bruto.slice(0, 80) + (bruto.length > 80 ? "…" : "");
-      const { data: nova, error } = await supabase
-        .from("consultor_ia_conversas")
-        .insert({ usuario_id: userId, correspondente_id: corr, titulo })
-        .select("id")
-        .single();
-      if (error) throw new Error(error.message);
-      conversaId = nova.id as string;
-    })(),
-  ]);
+  if (!conversaId) {
+    const bruto = entrada.pergunta.trim();
+    const titulo = bruto.slice(0, 80) + (bruto.length > 80 ? "…" : "");
+    const { data: nova, error } = await supabase
+      .from("consultor_ia_conversas")
+      .insert({ usuario_id: userId, correspondente_id: corr, titulo })
+      .select("id")
+      .single();
+    if (error) throw new Error("Não foi possível abrir a conversa.");
+    conversaId = nova.id as string;
+  }
 
   const historicoRes = await supabase
     .from("consultor_ia_mensagens")
     .select("papel, conteudo")
     .eq("conversa_id", conversaId)
     .order("created_at", { ascending: false })
-    .limit(6);
+    .limit(MAX_HISTORICO);
   if (historicoRes.error) throw new Error("Não foi possível carregar a conversa.");
 
-  // Grava a pergunta sem bloquear a montagem do prompt.
-  const gravaPergunta = supabase.from("consultor_ia_mensagens").insert({
-    conversa_id: conversaId,
-    papel: "usuario",
-    conteudo: entrada.pergunta,
-  });
-  const { provedor, modelo, apiKey, baseUrl } = ia;
-
-  const referencias = trechos.length
-    ? trechos
-        .map(
-          (t, i) =>
-            `--- TRECHO ${i + 1} | id=${t.id} | categoria=${t.categoria} | título="${t.titulo}"\n${t.conteudo.slice(0, MAX_CHARS_TRECHO)}`,
-        )
-        .join("\n\n")
-    : "(nenhum trecho cadastrado na base corresponde a esta pergunta)";
-
-  const ultimas = ((historicoRes.data ?? []) as any[]).reverse();
-  const historicoTexto = ultimas.length
-    ? ultimas
-        .map(
-          (m: any) =>
-            `${m.papel === "usuario" ? "Usuário" : "Consultor"}: ${m.conteudo.slice(0, 800)}`,
-        )
-        .join("\n")
-    : "(sem histórico)";
-
-  const prompt =
-    `Você é o Consultor Especialista de Elite da Agilliza, a maior referência em crédito imobiliário sofisticado do Brasil. Sua atuação deve ser marcada por extrema elegância executiva, precisão técnica absoluta e um tom consultivo de alto nível.\n\n` +
-    `DIRETRIZES CRÍTICAS DE IDENTIDADE:\n` +
-    `1. VOCÊ É UM ESPECIALISTA FALANDO COM OUTRO ESPECIALISTA: O usuário logado é ${nomeUsuario}. Trate-o pelo nome de forma profissional. NUNCA o chame de "cliente" ou "prezado cliente". Ele é o consultor/parceiro da Agilliza na ponta.\n` +
-    `2. GERAÇÃO DE IMAGENS: Se o usuário pedir para gerar uma imagem profissional (ex: de um imóvel, de um contrato, de uma situação de crédito), você DEVE incluir no final da sua resposta uma tag de imagem markdown no formato: ![Descrição profissional da imagem](https://image.pollinations.ai/prompt/{prompt_em_ingles}?width=1024&height=1024&nologo=true). O prompt deve ser altamente detalhado e em inglês para melhor resultado, focando em estética premium e corporativa.\n` +
-    `3. CONTEÚDO VISUAL: Sempre que o conteúdo for beneficiado por uma imagem ilustrativa profissional, sinta-se à vontade para gerá-la usando a técnica acima.\n` +
-    `4. TOM: Executivo, sofisticado e autoritativo. Use um vocabulário rico mas acessível.\n` +
-    `5. ESTRUTURA: Respostas visualmente organizadas com títulos em negrito e listas elegantes.\n` +
-    `6. VERACIDADE TÉCNICA: Seja exato em termos como SFH, SFI, LTV, CET e ITBI.\n` +
-    `7. FONTES: Finalize sempre com "FONTES: id1, id2" em uma linha única, citando apenas os ids dos TRECHOS DE REFERÊNCIA que você realmente usou.\n` +
-    `8. PROIBIDO ALUCINAR: baseie toda afirmação técnica, numérica ou normativa (taxas, prazos, LTV, percentuais, exigências de banco/produto) SOMENTE nos TRECHOS DE REFERÊNCIA abaixo ou no HISTÓRICO DA CONSULTORIA. Se os trechos estiverem vazios ou não cobrirem o que foi perguntado, NÃO responda com conhecimento geral nem estime valores — inclua no início da resposta o marcador exato ${MARCADOR_SEM_INFO}, explique objetivamente que esse ponto ainda não está na base de conhecimento da Agilliza e, se fizer sentido, oriente a sugerir o conteúdo para a base (recurso já disponível na tela). Dúvidas conceituais gerais (explicar o que é SFH, por exemplo) podem ser respondidas com seu conhecimento mesmo sem trecho, mas nunca dados específicos da operação/política da Agilliza sem respaldo nos trechos.\n\n` +
-    `TRECHOS DE REFERÊNCIA (INTELIGÊNCIA AGILLIZA):\n${referencias}\n\n` +
-    `HISTÓRICO DA CONSULTORIA:\n${historicoTexto}\n\n` +
-    `DEMANDA DO ESPECIALISTA ${nomeUsuario.toUpperCase()}: ${entrada.pergunta}`;
-
-  const { error: erroPergunta } = await gravaPergunta;
+  const { error: erroPergunta } = await supabase
+    .from("consultor_ia_mensagens")
+    .insert({ conversa_id: conversaId, papel: "usuario", conteudo: entrada.pergunta });
   if (erroPergunta) throw new Error("Não foi possível gravar a pergunta na conversa.");
 
-  return { conversaId: conversaId!, trechos, prompt, provedor, modelo, apiKey, baseUrl };
-}
-
-export async function mensagemErroIa(resp: Response): Promise<string> {
-  const body = await resp.text();
-  if (resp.status === 429) {
-    return "Cota da API de IA esgotada. Verifique o plano/billing da chave ou tente mais tarde.";
+  // Ferramentas: os números da pergunta (e, se faltar, o pedido do dado que falta).
+  let calculos: ResultadoFerramenta[] = [];
+  try {
+    calculos = executarFerramentas(entrada.pergunta, parametros);
+  } catch (e) {
+    calculos = [
+      {
+        tipo: "faltando",
+        titulo: "Cálculo",
+        dados: { faltam: [] },
+        markdown: `Não foi possível calcular: ${e instanceof Error ? e.message : "dados inválidos"}.`,
+      },
+    ];
   }
-  if (resp.status === 401 || resp.status === 403) {
-    return "Chave da API inválida ou sem permissão. Revise em Admin › APIs de IA.";
-  }
-  return `Provedor de IA retornou ${resp.status}: ${body.slice(0, 200)}`;
-}
+  const avisoDadoAtual = precisaDadoAtual(entrada.pergunta);
 
-function corpoGemini(prompt: string) {
-  return {
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 1200,
-      // Desliga o "pensamento" do Gemini 2.5 Flash: é o que mais atrasa a
-      // primeira palavra da resposta neste caso de uso (RAG objetivo).
-      thinkingConfig: { thinkingBudget: 0 },
+  const historico = ((historicoRes.data ?? []) as Array<{ papel: string; conteudo: string }>)
+    .reverse()
+    .map(
+      (m) =>
+        ({
+          papel: m.papel === "usuario" ? "usuario" : "assistente",
+          texto: m.conteudo.slice(0, 1500),
+        }) as Mensagem,
+    );
+  // O Gemini exige que a conversa comece pelo usuário.
+  while (historico.length && historico[0]!.papel !== "usuario") historico.shift();
+
+  const mensagens: Mensagem[] = [
+    ...historico,
+    {
+      papel: "usuario",
+      texto: mensagemComContexto({
+        pergunta: entrada.pergunta,
+        trechos,
+        calculos: blocoParaPrompt(calculos),
+        dadoAtual: avisoDadoAtual,
+      }),
     },
+  ];
+  const hoje = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  return {
+    cfg,
+    conversaId,
+    trechos,
+    sistema: promptDeSistema({ nomeUsuario, hoje }),
+    mensagens,
+    calculos,
+    avisoDadoAtual,
   };
 }
 
-/** Chamada sem streaming (fallback). */
-export async function gerarTexto(p: Preparo): Promise<string> {
-  if (p.provedor === "openai") {
-    const resp = await fetch(`${p.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${p.apiKey}` },
-      body: JSON.stringify({ model: p.modelo, messages: [{ role: "user", content: p.prompt }] }),
-    });
-    if (!resp.ok) throw new Error(await mensagemErroIa(resp));
-    const json: any = await resp.json();
-    return json?.choices?.[0]?.message?.content ?? "";
-  }
-  const resp = await fetch(
-    `${p.baseUrl}/v1beta/models/${encodeURIComponent(p.modelo)}:generateContent?key=${encodeURIComponent(p.apiKey)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(corpoGemini(p.prompt)),
-    },
-  );
-  if (!resp.ok) throw new Error(await mensagemErroIa(resp));
-  const json: any = await resp.json();
-  return json?.candidates?.[0]?.content?.parts?.map((x: any) => x.text).join("") ?? "";
+/** Mensagem de erro de uma resposta HTTP do provedor (usada pelo e-book). */
+export async function mensagemErroIa(resp: Response): Promise<string> {
+  return erroDaResposta(resp.status, await resp.text().catch(() => "")).message;
 }
 
-/** Chamada com streaming — devolve pedaços de texto conforme o modelo gera. */
-export async function* gerarTextoStream(p: Preparo): AsyncGenerator<string> {
-  const url =
-    p.provedor === "openai"
-      ? `${p.baseUrl}/chat/completions`
-      : `${p.baseUrl}/v1beta/models/${encodeURIComponent(p.modelo)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(p.apiKey)}`;
-
-  const resp = await fetch(url, {
-    method: "POST",
-    headers:
-      p.provedor === "openai"
-        ? { "Content-Type": "application/json", Authorization: `Bearer ${p.apiKey}` }
-        : { "Content-Type": "application/json" },
-    body: JSON.stringify(
-      p.provedor === "openai"
-        ? { model: p.modelo, messages: [{ role: "user", content: p.prompt }], stream: true }
-        : corpoGemini(p.prompt),
-    ),
-  });
-  if (!resp.ok || !resp.body) throw new Error(await mensagemErroIa(resp));
-
-  const reader = resp.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const linhas = buffer.split("\n");
-    buffer = linhas.pop() ?? "";
-    for (const linha of linhas) {
-      const l = linha.trim();
-      if (!l.startsWith("data:")) continue;
-      const payload = l.slice(5).trim();
-      if (!payload || payload === "[DONE]") continue;
-      try {
-        const json = JSON.parse(payload);
-        const pedaco =
-          p.provedor === "openai"
-            ? (json?.choices?.[0]?.delta?.content ?? "")
-            : (json?.candidates?.[0]?.content?.parts ?? []).map((x: any) => x?.text ?? "").join("");
-        if (pedaco) yield pedaco as string;
-      } catch {
-        // linha parcial — ignora
-      }
-    }
-  }
+/** Streaming da resposta pelo provedor da conta. */
+export function gerarTextoStream(p: Preparo, f?: typeof fetch): AsyncGenerator<string> {
+  return gerarStreamProvedor(
+    p.cfg,
+    { sistema: p.sistema, mensagens: p.mensagens, maxTokens: 2048 },
+    f,
+  );
 }
 
 export interface Finalizacao {
@@ -398,50 +345,42 @@ export interface Finalizacao {
   resposta: string;
   fontes: FonteCitada[];
   sem_resposta: boolean;
+  calculos: ResultadoFerramenta[];
+  aviso_dado_atual: boolean;
 }
 
-/** Limpa marcadores, extrai fontes e grava a resposta do assistente. */
+/** Limpa marcadores, extrai fontes e grava a resposta (com cálculos e aviso). */
 export async function finalizarResposta(
   supabase: any,
-  conversaId: string,
-  trechos: TrechoBase[],
+  p: Preparo,
   bruto: string,
 ): Promise<Finalizacao> {
-  let texto = bruto;
-  const idsCitados = new Set<string>();
-  const linhaFontes = texto.match(/^FONTES:\s*(.*)$/im);
-  if (linhaFontes) {
-    for (const parte of linhaFontes[1].split(/[,\s]+/)) {
-      const id = parte.trim();
-      if (id && trechos.some((t) => t.id === id)) idsCitados.add(id);
-    }
-    texto = texto.replace(/^FONTES:.*$/gim, "").trim();
-  }
-  const semResposta = texto.includes(MARCADOR_SEM_INFO);
-  texto = texto.replace(new RegExp(MARCADOR_SEM_INFO, "g"), "").trim();
-  if (!texto) texto = "Não consegui gerar uma resposta agora. Tente reformular a pergunta.";
-
-  const fontes: FonteCitada[] = trechos
-    .filter((t) => idsCitados.has(t.id))
-    .map((t) => ({ id: t.id, titulo: t.titulo, categoria: t.categoria }));
-
+  const { texto, fontes, semInfo } = limparResposta(bruto, p.trechos);
+  const aviso = semInfo || (p.avisoDadoAtual && fontes.length === 0);
   const { data: msg, error } = await supabase
     .from("consultor_ia_mensagens")
     .insert({
-      conversa_id: conversaId,
+      conversa_id: p.conversaId,
       papel: "assistente",
       conteudo: texto,
       fontes_usadas: fontes,
-      sem_resposta: semResposta,
+      sem_resposta: semInfo,
+      calculos: p.calculos,
+      aviso_dado_atual: aviso,
     })
     .select("id")
     .single();
-  if (error) throw new Error(error.message);
-
+  if (error) throw new Error("Não foi possível gravar a resposta.");
   await supabase
     .from("consultor_ia_conversas")
     .update({ updated_at: new Date().toISOString() })
-    .eq("id", conversaId);
-
-  return { mensagem_id: msg.id as string, resposta: texto, fontes, sem_resposta: semResposta };
+    .eq("id", p.conversaId);
+  return {
+    mensagem_id: msg.id as string,
+    resposta: texto,
+    fontes,
+    sem_resposta: semInfo,
+    calculos: p.calculos,
+    aviso_dado_atual: aviso,
+  };
 }

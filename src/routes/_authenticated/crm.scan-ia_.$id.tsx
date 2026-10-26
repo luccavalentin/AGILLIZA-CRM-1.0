@@ -491,6 +491,11 @@ function Pagina() {
                             setValores((v) => ({ ...v, [campo.id]: e.target.value }))
                           }
                         />
+                        {campo.valido === false && campo.motivo_validacao ? (
+                          <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                            <AlertTriangle className="h-3 w-3" /> {campo.motivo_validacao}
+                          </p>
+                        ) : null}
                       </div>
                     );
                   })}
