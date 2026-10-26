@@ -134,14 +134,14 @@ export function SolicitacaoDialog({
             <Pencil className="h-4 w-4" />
           </Button>
         ) : (
-          <Button size="sm">
-            <Plus className="mr-1 h-4 w-4" /> Nova solicitação
+          <Button size="sm" variant="outline" title="Registrar uma matrícula que já foi puxada">
+            <Plus className="mr-1 h-4 w-4" /> Lançamento manual
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="w-[calc(100%-2rem)] max-w-lg">
         <DialogHeader>
-          <DialogTitle>{inicial ? "Editar solicitação" : "Nova solicitação"}</DialogTitle>
+          <DialogTitle>{inicial ? "Editar lançamento" : "Lançamento manual de matrícula já puxada"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
