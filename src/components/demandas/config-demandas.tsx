@@ -56,7 +56,6 @@ import {
   type TipoDemanda,
 } from "@/lib/operacional/demandas-central.functions";
 import { ROTULO_ORIGEM, type DemandaOrigem } from "@/lib/operacional/demandas-regras";
-import { definirCarteira, listarLicencas, pessoasParaCarteira } from "@/lib/plataforma/licencas.functions";
 import { TipoIcone, VazioDemandas } from "./pecas";
 
 function Secao({
@@ -738,92 +737,25 @@ function RecebimentoSecao({ cfg, onMudou }: { cfg: ConfigDemandas; onMudou: () =
 /* ------------------------------------------------------------------- Analista da conta --- */
 
 function AnalistaDaContaSecao() {
-  const podeGerir = usePermissao("saas.licencas", "edit");
-  const [busca, setBusca] = useState("");
-  const [termo, setTermo] = useState("");
-  useEffect(() => {
-    const t = setTimeout(() => setTermo(busca.trim()), 350);
-    return () => clearTimeout(t);
-  }, [busca]);
-  const definir = useServerFn(definirCarteira);
-  const { data: lic, refetch, isLoading } = useQuery({
-    queryKey: ["demandas-carteira", termo],
-    queryFn: () => listarLicencas({ data: { busca: termo || null, pagina: 1 } }),
-    enabled: podeGerir,
-    staleTime: 30_000,
-  });
-  const { data: pessoas } = useQuery({
-    queryKey: ["pessoas-carteira"],
-    queryFn: () => pessoasParaCarteira(),
-    enabled: podeGerir,
-    staleTime: 5 * 60_000,
-  });
-
+  const podeVer = usePermissao("saas.licencas", "view");
   return (
     <Secao
       icone={Users}
       titulo="Analista de cada conta"
-      descricao="A carteira do Agilliza Tech: toda demanda e proposta da conta cai direto no analista (se ele estiver ausente, vai para a fila)."
-      acoes={
-        <Link to="/plataforma/licencas" className="text-[12px] font-medium text-primary hover:underline">
-          Gestão de sistemas
-        </Link>
-      }
+      descricao="Quem responde por cada conta do Agilliza Tech vem das Carteiras (Gestão de sistemas): toda demanda e proposta da conta cai direto no responsável da carteira; se ele estiver ausente, vai para a fila justa."
     >
-      {!podeGerir ? (
-        <p className="text-[12.5px] text-muted-foreground">
-          Quem gere as licenças (Gestão de sistemas) define o analista de cada conta.
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/25 p-3">
+        <p className="max-w-md text-[12.5px] leading-relaxed text-muted-foreground">
+          Conta sem carteira entra na fila do correspondente que recebe as demandas dos assinantes.
         </p>
-      ) : (
-        <div className="space-y-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar conta" className="h-9 rounded-xl pl-8" />
-          </div>
-          {isLoading ? (
-            <div className="h-32 animate-pulse rounded-xl bg-muted/40" />
-          ) : (
-            <ul className="max-h-80 divide-y divide-border/60 overflow-y-auto rounded-xl border border-border/70">
-              {(lic?.licencas ?? []).slice(0, 30).map((l) => (
-                <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-                  <span className="min-w-0">
-                    <span className="block truncate text-[12.5px] font-medium">{l.nome}</span>
-                    <span className="block text-[10.5px] capitalize text-muted-foreground">{l.tipo}</span>
-                  </span>
-                  <Select
-                    value={l.carteira_uid ?? "__sem__"}
-                    onValueChange={async (v) => {
-                      try {
-                        await definir({ data: { id: l.id, carteira: v === "__sem__" ? null : v } });
-                        toast.success("Analista da conta salvo.");
-                        refetch();
-                      } catch (e) {
-                        toast.error(mensagemDeErro(e, "Não foi possível salvar."));
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-8 w-48 rounded-lg text-[12px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__sem__">Sem analista (fila)</SelectItem>
-                      {(pessoas ?? []).map((p) => (
-                        <SelectItem key={p.auth_uid} value={p.auth_uid}>
-                          {p.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </li>
-              ))}
-              {(lic?.licencas ?? []).length === 0 && (
-                <li className="px-3 py-6 text-center text-[12px] text-muted-foreground">Nenhuma conta encontrada.</li>
-              )}
-            </ul>
-          )}
-        </div>
-      )}
+        {podeVer ? (
+          <Button asChild variant="outline" size="sm" className="h-9 rounded-xl">
+            <Link to="/plataforma/carteiras">Abrir Carteiras</Link>
+          </Button>
+        ) : (
+          <span className="text-[12px] text-muted-foreground">Quem gere as licenças define as carteiras.</span>
+        )}
+      </div>
     </Secao>
   );
 }
-

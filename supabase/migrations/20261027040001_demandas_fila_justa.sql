@@ -458,6 +458,25 @@ begin
 end $$;
 
 /**
+ * Já avisou "sem fila"/"aguardando a fila" desde a última atribuição? (A fila roda de 5 em 5
+ * minutos: sem isto o histórico repetiria o mesmo aviso a cada volta.)
+ */
+create or replace function public._demanda_ja_avisou(p_dem uuid, p_acao text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.demanda_historico h
+     where h.demanda_id = p_dem and h.acao = p_acao
+       and not exists (select 1 from public.demanda_historico h2
+                        where h2.demanda_id = p_dem and h2.acao in ('atribuida', 'transferida', 'devolvida')
+                          and h2.created_at > h.created_at))
+$$;
+
+/**
  * Distribui uma demanda sem responsável:
  *   1. conta com analista (carteira) → o analista, se estiver ativo e não ausente;
  *   2. senão a fila da demanda (ou a primeira que atende tipo + origem) → candidato justo;
@@ -524,8 +543,7 @@ begin
   end if;
   if v_fila is null then
     update public.demandas set fila_id = null where id = p_dem and fila_id is not null;
-    select acao into v_ultimo from public.demanda_historico where demanda_id = p_dem order by created_at desc, id desc limit 1;
-    if v_ultimo is distinct from 'sem_fila' then
+    if not public._demanda_ja_avisou(p_dem, 'sem_fila') then
       insert into public.demanda_historico (demanda_id, ator_id, acao, detalhe, dados)
       values (p_dem, p_ator, 'sem_fila', concat_ws(' ', v_nota,
               'Nenhuma fila ativa atende este tipo e esta origem: a demanda fica sem responsável.'),
@@ -539,8 +557,7 @@ begin
   select coalesce(jsonb_agg(to_jsonb(c)), '[]'::jsonb) into v_cand from public.demanda_candidatos(v_fila, p_excluir) c;
   select * into esc from public.demanda_candidatos(v_fila, p_excluir) c where c.disponivel limit 1;
   if esc.user_id is null then
-    select acao into v_ultimo from public.demanda_historico where demanda_id = p_dem order by created_at desc, id desc limit 1;
-    if v_ultimo is distinct from 'aguardando_fila' then
+    if not public._demanda_ja_avisou(p_dem, 'aguardando_fila') then
       insert into public.demanda_historico (demanda_id, ator_id, acao, detalhe, dados)
       values (p_dem, p_ator, 'aguardando_fila',
               concat_ws(' ', v_nota, 'Fila ' || v_fila_nome || ': ninguém disponível agora ('
@@ -1488,6 +1505,7 @@ begin
     'public._demanda_analista_da_conta(uuid)',
     'public._demanda_conta(uuid)',
     'public._demanda_fila_para(uuid, text, text)',
+    'public._demanda_ja_avisou(uuid, text)',
     'public.demanda_candidatos(uuid, uuid[])',
     'public._demanda_atribuir(uuid, uuid, text, uuid, text, jsonb, text, text)',
     'public.demanda_distribuir(uuid, uuid[], uuid)',
