@@ -32,6 +32,7 @@ const TIPO: Record<string, string> = {
   conta_pagar: "Conta a pagar",
   comissao_participante: "Comissão de corretor/parceiro",
   repasse_assinante: "Repasse ao assinante",
+  matricula: "Matrícula a receber",
 };
 const SINAL: Record<string, DefChip> = {
   exato: { rotulo: "valor exato", tom: "sucesso" },

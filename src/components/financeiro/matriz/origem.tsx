@@ -34,6 +34,12 @@ export function LinkOrigem({ origem, rotulo = "Abrir" }: { origem: Origem; rotul
           {conteudo}
         </Link>
       );
+    case "matricula":
+      return (
+        <Link to="/matriculas" className={classe}>
+          {conteudo}
+        </Link>
+      );
     case "conta_receber":
       return (
         <Link to="/financeiro/contas-a-receber" search={{ id: origem.id }} className={classe}>

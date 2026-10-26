@@ -1,13 +1,18 @@
 /**
  * Matrículas pedidas por terceiros (frente a4): o que cada solicitante deve à Agilliza.
- * Só leitura no financeiro — o pagamento é registrado na tela de Matrículas, para a mesma
- * receita não ser contada duas vezes.
+ * Consolidação c1: o pagamento entra no livro único de baixas (natureza `matricula`) — por aqui,
+ * pela conciliação do extrato ou marcando paga em Matrículas; é a mesma baixa nos três caminhos,
+ * e não nasce conta a receber paralela (a receita conta uma vez só).
  */
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, FileSearch } from "lucide-react";
-import { consultar } from "@/lib/financeiro/cliente";
+import { toast } from "sonner";
+import { consultar, executarOuFalhar, invalidarFinanceiro } from "@/lib/financeiro/cliente";
+import { usePermissao } from "@/hooks/use-permissao";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Carregando, Chip, Erro, dataBR, moeda } from "./base";
 import { SecaoCartao } from "./comuns";
@@ -51,7 +56,7 @@ export function MatriculasAReceber() {
   return (
     <SecaoCartao
       titulo="Matrículas pedidas por terceiros"
-      descricao={`Em aberto ${moeda(q.data?.totais.em_aberto)} (${q.data?.totais.matriculas_em_aberto ?? 0} matrículas) · recebido ${moeda(q.data?.totais.pago)}. O pagamento é registrado em Matrículas.`}
+      descricao={`Em aberto ${moeda(q.data?.totais.em_aberto)} (${q.data?.totais.matriculas_em_aberto ?? 0} matrículas) · recebido ${moeda(q.data?.totais.pago)}. O pagamento entra no livro de baixas (aqui, na conciliação ou em Matrículas).`}
       acoes={
         <Link to="/matriculas" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted">
           <FileSearch className="h-3.5 w-3.5" /> Abrir Matrículas
@@ -102,6 +107,29 @@ function Detalhe({ chave }: { chave: string }) {
     queryKey: ["financeiro", "matriculas-solicitante", chave],
     queryFn: () => consultar<Item[]>("matriculasDoSolicitante", { _chave: chave }),
   });
+  const qc = useQueryClient();
+  const podeBaixar = usePermissao("financeiro.contas_receber", "baixar");
+  const [registrando, setRegistrando] = useState<string | null>(null);
+  const registrar = async (i: Item) => {
+    setRegistrando(i.id);
+    try {
+      const hoje = new Date();
+      const p = (n: number) => String(n).padStart(2, "0");
+      await executarOuFalhar("baixa", {
+        _natureza: "matricula",
+        _alvo: i.id,
+        _valor: Number(i.valor),
+        _data: `${hoje.getFullYear()}-${p(hoje.getMonth() + 1)}-${p(hoje.getDate())}`,
+        _observacao: "Recebimento da matrícula registrado no financeiro",
+      });
+      toast.success("Recebimento registrado no livro de baixas.");
+      await invalidarFinanceiro(qc);
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível registrar o recebimento."));
+    } finally {
+      setRegistrando(null);
+    }
+  };
   if (q.isLoading) return <Carregando linhas={1} />;
   if (q.error) return <Erro erro={q.error} />;
   return (
@@ -115,6 +143,17 @@ function Detalhe({ chave }: { chave: string }) {
           <span className="flex items-center gap-2">
             <span className="font-mono tabular-nums">{moeda(i.valor)}</span>
             <Chip def={i.reembolsado ? { rotulo: `Pago ${dataBR(i.data_pagto_reembolso ?? null)}`, tom: "sucesso" } : { rotulo: "Em aberto", tom: "alerta" }} />
+            {!i.reembolsado && podeBaixar && Number(i.valor) > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[11px]"
+                disabled={registrando === i.id}
+                onClick={() => void registrar(i)}
+              >
+                {registrando === i.id ? "Registrando…" : "Registrar recebimento"}
+              </Button>
+            )}
           </span>
         </li>
       ))}

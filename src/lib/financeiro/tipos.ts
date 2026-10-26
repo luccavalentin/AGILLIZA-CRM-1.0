@@ -1,6 +1,7 @@
 /** Formatos que as funções fin_* do banco devolvem (migrações 2026102705000*). */
 
-export type Natureza = "comissao_banco" | "comissao_participante" | "conta_pagar" | "conta_receber" | "repasse_assinante";
+/** `matricula` (c1): recebimento da matrícula pedida por terceiro, no mesmo livro de baixas. */
+export type Natureza = "comissao_banco" | "comissao_participante" | "conta_pagar" | "conta_receber" | "repasse_assinante" | "matricula";
 
 export type SituacaoBanco = "previsto" | "a_receber" | "parcial" | "recebido" | "divergente" | "contestado" | "cancelado";
 export type SituacaoParticipante =
