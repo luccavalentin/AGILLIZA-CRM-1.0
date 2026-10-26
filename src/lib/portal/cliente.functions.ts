@@ -405,22 +405,6 @@ export const clienteMeusDocumentos = createServerFn({ method: "GET" }).handler(
   },
 );
 
-export const clienteMinhasPropostas = createServerFn({ method: "GET" }).handler(
-  async (): Promise<PropostaResumo[]> => {
-    const sess = requireClienteSession();
-    const { portalDb } = await import("./portal-db.server");
-    const { data } = await portalDb().rpc("portal_minhas_propostas", { _cid: sess.cid });
-    return ((data as any[]) ?? []).map((p) => ({
-      id: p.id,
-      banco: p.banco,
-      produto: p.produto,
-      valor: p.valor,
-      status_amigavel: statusPropostaAmigavel(p.status),
-      enviada_em: p.enviada_em ?? null,
-    }));
-  },
-);
-
 // ----------------------------------------------------------------------------
 // Chat
 // ----------------------------------------------------------------------------
@@ -686,45 +670,6 @@ export const clienteMarcarNotificacaoLida = createServerFn({ method: "POST" })
 
 // ----------------------------------------------------------------------------
 // Upload de documento (camera/galeria no mobile) — base64
-// ----------------------------------------------------------------------------
-const uploadSchema = z.object({
-  tipo: z.string().trim().min(1).max(120),
-  nome_arquivo: z.string().trim().min(1).max(255),
-  mime_type: z.string().trim().min(1).max(120),
-  conteudo_base64: z.string().min(1).max(15_000_000),
-});
-
-export const clienteEnviarDocumentoPendente = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => uploadSchema.parse(d))
-  .handler(async ({ data }): Promise<{ ok: boolean }> => {
-    const sess = requireClienteSession();
-    const { portalDb } = await import("./portal-db.server");
-
-    const bin = Buffer.from(data.conteudo_base64, "base64");
-    if (bin.length > 10 * 1024 * 1024) throw new Error("Arquivo muito grande (máx. 10MB).");
-    const ext = extensaoSegura(data.nome_arquivo);
-    const path = `${sess.cid}/app/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-
-    const db = portalDb();
-    const { error: upErr } = await db.storage
-      .from("cliente-documentos")
-      .upload(path, bin, { contentType: data.mime_type, upsert: false });
-    if (upErr) throw new Error("Falha ao enviar o arquivo. Tente novamente.");
-
-    const { error: insErr } = await db.rpc("portal_registrar_documento", {
-      _cid: sess.cid,
-      _tipo: data.tipo,
-      _nome: data.nome_arquivo,
-      _path: path,
-      _mime: data.mime_type,
-      _tamanho: bin.length,
-    });
-    if (insErr)
-      throw new Error("Arquivo enviado, mas não foi possível registrar. Tente novamente.");
-
-    return { ok: true };
-  });
-
 // ----------------------------------------------------------------------------
 // LGPD — baixar dados e solicitar exclusao (abre demanda para o DPO)
 // ----------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Calculator, FileText, Percent } from "lucide-react";
 import { ParceiroPage, formatBRL } from "@/components/parceiro/parceiro-page";
+import { AvisoPortalNovo } from "@/components/parceiro/aviso-portal-novo";
 import { getResumoParceiro } from "@/lib/parceiro/portal.functions";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 
@@ -24,6 +25,8 @@ function InicioParceiro() {
 
   return (
     <ParceiroPage titulo="Início" descricao="Resumo da sua carteira de parceria.">
+      {/* C70: o portal antigo continua, com o convite para o portal novo (Agilliza Tech). */}
+      <AvisoPortalNovo />
       {resumo.isError && (
         // Sem isto, uma falha aparecia como carteira zerada.
         <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">

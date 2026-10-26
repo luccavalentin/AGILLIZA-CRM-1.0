@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// a8 (C70): aba isolada dos vinculados ao correspondente.
+import { VinculadosAba } from "@/components/plataforma/vinculados/vinculados-aba";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -102,6 +105,8 @@ function Pagina() {
   const [pagina, setPagina] = useState(1);
   const [aberta, setAberta] = useState<Aberta | null>(null);
   const [nova, setNova] = useState(false);
+  // a8 (C70): "Assinantes" (licenças pagas) | "Vinculados ao correspondente" (Sua base).
+  const [aba, setAba] = useState<"assinantes" | "vinculados">("assinantes");
   const termo = useValorAssentado(busca.trim());
 
   const q = useQuery({
@@ -136,11 +141,43 @@ function Pagina() {
   const abrir = (licenca: Licenca, aba: AbaLicenca = "resumo", secao?: SecaoAcao) =>
     setAberta({ licenca, aba, secao });
 
+  if (aba === "vinculados") {
+    return (
+      <PaginaGestao>
+      <CabecalhoGestao
+        titulo="Licenças e assinaturas"
+        icone={<KeyRound />}
+      <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
+        <TabsList className="h-auto w-full sm:w-auto">
+          <TabsTrigger value="assinantes" className="min-h-10 flex-1 sm:flex-none">
+            Assinantes
+          </TabsTrigger>
+          <TabsTrigger value="vinculados" className="min-h-10 flex-1 sm:flex-none">
+            Vinculados ao correspondente
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+        <VinculadosAba planos={planos} />
+      </PaginaGestao>
+    );
+  }
+
   return (
     <PaginaGestao>
       <CabecalhoGestao
         titulo="Licenças e assinaturas"
         icone={<KeyRound />}
+      <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
+        <TabsList className="h-auto w-full sm:w-auto">
+          <TabsTrigger value="assinantes" className="min-h-10 flex-1 sm:flex-none">
+            Assinantes
+          </TabsTrigger>
+          <TabsTrigger value="vinculados" className="min-h-10 flex-1 sm:flex-none">
+            Vinculados ao correspondente
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
         descricao="Contas de corretores, imobiliárias e parceiros do Agilliza Tech: situação, plano, teste, créditos, carteira e uso."
         acoes={
           podeCriar && (
