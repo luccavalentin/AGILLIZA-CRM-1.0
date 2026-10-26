@@ -372,6 +372,15 @@ export const chatAcao = createServerFn({ method: "POST" })
       const args = acao.args.parse(data.args ?? {});
       const { pessoaDoChat } = await import("./pessoa.server");
       const pessoa = await pessoaDoChat(data.canal as CanalChat, permissaoDaAcao(data.acao as AcaoChat));
+      if (data.acao === "previaLink") {
+        // Auditoria rodada 2: a busca que não está no cache passa pelo limite da pessoa (no banco).
+        const { buscarPreviaLink } = await import("./previa-link.server");
+        const { comChatAgilliza } = await import("@/lib/plataforma/ponte.server");
+        const dados = await buscarPreviaLink((args as { url: string }).url, () =>
+          comChatAgilliza(pessoa, (tx) => tx.consultar("select chat.limite_previa_link()")),
+        );
+        return { ok: true, dados: comoJson(dados) };
+      }
       if (SEM_BANCO.has(data.acao as AcaoChat)) {
         return { ok: true, dados: comoJson(await (acao.rodar as (tx: Tx, a: unknown) => Promise<unknown>)(null as never, args)) };
       }
