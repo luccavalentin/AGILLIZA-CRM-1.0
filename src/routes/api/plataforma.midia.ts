@@ -17,6 +17,13 @@ export const Route = createFileRoute("/api/plataforma/midia")({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        // Matrícula pronta baixada pelo portal do assinante (vale de uso único, 2 min,
+        // emitido pelo Agilliza Tech só para quem pediu — 0323 / 20261027040022).
+        const vale = new URL(request.url).searchParams.get("m");
+        if (vale !== null) {
+          const { baixarMatriculaPorVale } = await import("@/lib/matriculas/download.server");
+          return baixarMatriculaPorVale(vale);
+        }
         const { abrirSelo, lerDoCorretor } = await import("@/lib/plataforma/midias.server");
         const token = new URL(request.url).searchParams.get("t") ?? "";
         const selo = token.length < 2000 ? abrirSelo(token) : null;

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BancoLogo } from "@/components/bancos/banco-logo";
+import { BancoMarca } from "@/components/bancos/banco-logo";
 import { type ChecklistOperacao, totalItens } from "@/lib/formularios/checklists-operacao";
 
 /**
@@ -56,16 +56,17 @@ export function ChecklistOperacaoView({
   return (
     <div className="mx-auto w-full max-w-4xl space-y-5 p-4 md:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
+        <div className={banco ? "flex min-w-0 flex-col items-start gap-3" : "flex min-w-0 items-start gap-3"}>
           {banco ? (
-            <BancoLogo nome={banco} size="xl" className="shrink-0" />
+            // Logo oficial completa do banco (C42): marca, não ícone genérico.
+            <BancoMarca nome={banco} altura={26} />
           ) : (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-              <ClipboardList className="h-6 w-6 text-primary" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <ClipboardList className="h-5 w-5 text-primary" />
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               {checklist.titulo}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">{checklist.descricao}</p>
@@ -103,9 +104,9 @@ export function ChecklistOperacaoView({
       {checklist.blocos.map((bloco, i) => (
         <Card key={bloco.titulo ?? `bloco-${i}`} className="overflow-hidden">
           {(bloco.titulo || bloco.condicao) && (
-            <CardHeader className="border-b border-border bg-muted/30 py-3">
+            <CardHeader className="border-b border-border bg-muted/30 px-4 py-2.5">
               {bloco.titulo && (
-                <CardTitle className="text-sm font-bold uppercase tracking-wide text-foreground">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wide text-primary">
                   {bloco.titulo}
                 </CardTitle>
               )}
@@ -124,7 +125,7 @@ export function ChecklistOperacaoView({
                 const marcado = marcados.has(chave);
                 return (
                   <li key={chave}>
-                    <label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-accent/40">
+                    <label className="flex cursor-pointer items-start gap-3 px-4 py-2.5 transition-colors hover:bg-accent/40">
                       <Checkbox
                         aria-label={item}
                         checked={marcado}

@@ -7094,13 +7094,19 @@ export type Database = {
           deleted_by: string | null
           deleted_motivo: string | null
           descricao: string | null
+          duracao_min: number | null
+          lembrete_minutos: number | null
+          lembrete_enviado_em: string | null
           id: string
           numero: string | null
           origem: string
           prazo: string | null
           prioridade: Database["public"]["Enums"]["prioridade_op"]
+          recorrencia: string | null
+          recorrencia_gerada_id: string | null
           responsavel_id: string | null
           status: Database["public"]["Enums"]["tarefa_status"]
+          tipo: string
           titulo: string
           updated_at: string
         }
@@ -7114,13 +7120,19 @@ export type Database = {
           deleted_by?: string | null
           deleted_motivo?: string | null
           descricao?: string | null
+          duracao_min?: number | null
+          lembrete_minutos?: number | null
+          lembrete_enviado_em?: string | null
           id?: string
           numero?: string | null
           origem?: string
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          recorrencia?: string | null
+          recorrencia_gerada_id?: string | null
           responsavel_id?: string | null
           status?: Database["public"]["Enums"]["tarefa_status"]
+          tipo?: string
           titulo: string
           updated_at?: string
         }
@@ -7134,13 +7146,19 @@ export type Database = {
           deleted_by?: string | null
           deleted_motivo?: string | null
           descricao?: string | null
+          duracao_min?: number | null
+          lembrete_minutos?: number | null
+          lembrete_enviado_em?: string | null
           id?: string
           numero?: string | null
           origem?: string
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          recorrencia?: string | null
+          recorrencia_gerada_id?: string | null
           responsavel_id?: string | null
           status?: Database["public"]["Enums"]["tarefa_status"]
+          tipo?: string
           titulo?: string
           updated_at?: string
         }

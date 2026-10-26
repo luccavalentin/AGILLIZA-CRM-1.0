@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { iconeDeBanco } from "@/components/bancos/banco-logo";
 import {
   Activity,
   Cable,
@@ -88,6 +89,15 @@ export interface NavGroup {
   label: string;
   items: NavItem[];
 }
+
+/** Logo oficial pequena dos bancos no menu (Documentos diversos e Checklists — frente a4). */
+const ICONE_BANCO = {
+  itau: iconeDeBanco("Itaú"),
+  bradesco: iconeDeBanco("Bradesco"),
+  santander: iconeDeBanco("Santander"),
+  inter: iconeDeBanco("Banco Inter"),
+  caixa: iconeDeBanco("Caixa"),
+};
 
 /**
  * Módulos das áreas de Configurações gerais: o hub `/admin` abre para quem vê qualquer um
@@ -336,25 +346,25 @@ export const navInterno: NavGroup[] = [
         children: [
           {
             label: "Itaú",
-            icon: Landmark,
+            icon: ICONE_BANCO.itau,
             to: "/formularios/itau",
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Bradesco",
-            icon: Landmark,
+            icon: ICONE_BANCO.bradesco,
             to: "/formularios/bradesco",
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Santander",
-            icon: Landmark,
+            icon: ICONE_BANCO.santander,
             to: "/formularios/santander",
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Inter",
-            icon: Landmark,
+            icon: ICONE_BANCO.inter,
             to: "/formularios/inter",
             perm: { modulo: "documentos.formularios" },
           },
@@ -418,28 +428,28 @@ export const navInterno: NavGroup[] = [
         children: [
           {
             label: "Bradesco",
-            icon: Landmark,
+            icon: ICONE_BANCO.bradesco,
             to: "/checklists/$id",
             params: { id: "abertura-bradesco" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Itaú",
-            icon: Landmark,
+            icon: ICONE_BANCO.itau,
             to: "/checklists/$id",
             params: { id: "abertura-itau" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Santander",
-            icon: Landmark,
+            icon: ICONE_BANCO.santander,
             to: "/checklists/$id",
             params: { id: "abertura-santander" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Inter",
-            icon: Landmark,
+            icon: ICONE_BANCO.inter,
             to: "/checklists/$id",
             params: { id: "abertura-inter" },
             perm: { modulo: "documentos.formularios" },
@@ -461,35 +471,35 @@ export const navInterno: NavGroup[] = [
         children: [
           {
             label: "Itaú",
-            icon: Landmark,
+            icon: ICONE_BANCO.itau,
             to: "/formularios/checklist",
             search: { banco: "itau" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Bradesco",
-            icon: Landmark,
+            icon: ICONE_BANCO.bradesco,
             to: "/formularios/checklist",
             search: { banco: "bradesco" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Santander",
-            icon: Landmark,
+            icon: ICONE_BANCO.santander,
             to: "/formularios/checklist",
             search: { banco: "santander" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Inter",
-            icon: Landmark,
+            icon: ICONE_BANCO.inter,
             to: "/formularios/checklist",
             search: { banco: "inter" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Caixa",
-            icon: Landmark,
+            icon: ICONE_BANCO.caixa,
             to: "/formularios/checklist",
             search: { banco: "caixa" },
             perm: { modulo: "documentos.formularios" },

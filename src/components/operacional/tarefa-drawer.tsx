@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { lembreteDoCampo, OPCOES_LEMBRETE, rotuloLembrete } from "@/lib/operacional/lembrete-tarefa";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -60,6 +61,15 @@ import {
 } from "@/lib/operacional/tarefas.functions";
 import { listarColegas, buscarClientesOpcoes } from "@/lib/operacional/shared.functions";
 import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
+import {
+  LISTA_TIPOS_TAREFA,
+  RECORRENCIAS,
+  TIPOS_TAREFA,
+  rotuloTipoTarefa,
+  type Recorrencia,
+} from "@/lib/operacional/agenda-tarefas";
+import type { TipoTarefa } from "@/lib/operacional/frase-tarefa";
+import { IconeTipoTarefa } from "@/components/operacional/tarefas/icone-tipo-tarefa";
 
 function fmtData(iso: string | null): string {
   if (!iso) return "—";
@@ -120,6 +130,10 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
     prazo: "",
     responsavel_id: "",
     cliente_id: "",
+    tipo: "lembrete",
+    duracao: "nenhuma",
+    lembrete: "nenhum",
+    recorrencia: "nenhuma",
   });
   const [salvando, setSalvando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -178,6 +192,10 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
       prazo: t.prazo ? toDatetimeLocal(t.prazo) : "",
       responsavel_id: t.responsavel_id ?? "",
       cliente_id: t.cliente_id ?? "",
+      tipo: (t as any).tipo ?? "lembrete",
+      duracao: (t as any).duracao_min ? String((t as any).duracao_min) : "nenhuma",
+      lembrete: (t as any).lembrete_minutos != null ? String((t as any).lembrete_minutos) : "nenhum",
+      recorrencia: (t as any).recorrencia ?? "nenhuma",
     });
   }, [data?.tarefa?.id]);
 
@@ -203,6 +221,10 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
           prazo: form.prazo ? new Date(form.prazo).toISOString() : null,
           responsavel_id: form.responsavel_id || null,
           cliente_id: form.cliente_id || null,
+          tipo: form.tipo as TipoTarefa,
+          duracao_min: form.duracao !== "nenhuma" ? Number(form.duracao) : null,
+          lembrete_minutos: lembreteDoCampo(form.lembrete),
+          recorrencia: form.recorrencia !== "nenhuma" ? (form.recorrencia as Recorrencia) : null,
         },
       });
       toast.success("Tarefa atualizada.");
@@ -321,6 +343,17 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                       {statusTarefa(t.status).label}
                     </ToneBadge>
                     <ToneBadge tone="muted">{PRIORIDADE[t.prioridade as "p1"].label}</ToneBadge>
+                    <ToneBadge tone="info">
+                      <span className="inline-flex items-center gap-1">
+                        <IconeTipoTarefa tipo={(t as any).tipo} className="h-3 w-3" />
+                        {rotuloTipoTarefa((t as any).tipo)}
+                      </span>
+                    </ToneBadge>
+                    {(t as any).recorrencia && (
+                      <ToneBadge tone="muted">
+                        {RECORRENCIAS[(t as any).recorrencia as Recorrencia] ?? "Repete"}
+                      </ToneBadge>
+                    )}
                   </div>
                   <div className="mr-8 flex items-center gap-1.5">
                     {!editando ? (
@@ -418,6 +451,95 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                 {/* Metadados */}
                 {editando ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Tipo
+                      </Label>
+                      <Select value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LISTA_TIPOS_TAREFA.map((x) => (
+                            <SelectItem key={x} value={x}>
+                              {TIPOS_TAREFA[x]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Duração
+                        </Label>
+                        <Select
+                          value={form.duracao}
+                          onValueChange={(v) => setForm((f) => ({ ...f, duracao: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nenhuma">Sem duração</SelectItem>
+                            {[15, 30, 45, 60, 90, 120, 180].map((d) => (
+                              <SelectItem key={d} value={String(d)}>
+                                {d < 60 ? `${d} min` : `${d / 60} h`}
+                              </SelectItem>
+                            ))}
+                            {form.duracao !== "nenhuma" &&
+                              ![15, 30, 45, 60, 90, 120, 180].includes(Number(form.duracao)) && (
+                                <SelectItem value={form.duracao}>{form.duracao} min</SelectItem>
+                              )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Lembrete
+                        </Label>
+                        <Select
+                          value={form.lembrete}
+                          onValueChange={(v) => setForm((f) => ({ ...f, lembrete: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nenhum">Sem lembrete</SelectItem>
+                            {OPCOES_LEMBRETE.map((m) => (
+                              <SelectItem key={m} value={String(m)}>
+                                {rotuloLembrete(m)}
+                              </SelectItem>
+                            ))}
+                            {form.lembrete !== "nenhum" && !OPCOES_LEMBRETE.includes(Number(form.lembrete)) && (
+                              <SelectItem value={form.lembrete}>{rotuloLembrete(Number(form.lembrete))}</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Repetir
+                        </Label>
+                        <Select
+                          value={form.recorrencia}
+                          onValueChange={(v) => setForm((f) => ({ ...f, recorrencia: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nenhuma">Não repete</SelectItem>
+                            {(Object.keys(RECORRENCIAS) as Recorrencia[]).map((r) => (
+                              <SelectItem key={r} value={r}>
+                                {RECORRENCIAS[r]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         Prioridade

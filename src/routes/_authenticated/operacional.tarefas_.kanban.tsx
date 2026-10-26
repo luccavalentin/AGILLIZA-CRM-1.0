@@ -1,17 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  CalendarDays,
   CheckCircle2,
   Clock,
   Flag,
   KanbanSquare,
   List,
   Loader2,
+  Repeat,
   Search,
   User2,
   XCircle,
@@ -26,6 +26,9 @@ import {
 import { statusTarefa } from "@/components/operacional/status";
 import { PriorityChip, OpAvatar, OpHero } from "@/components/operacional/ui";
 import { NovaTarefaDialog } from "@/components/operacional/nova-tarefa-dialog";
+import { VisoesTarefas } from "@/components/operacional/tarefas/visoes-tarefas";
+import { IconeTipoTarefa } from "@/components/operacional/tarefas/icone-tipo-tarefa";
+import { rotuloTipoTarefa } from "@/lib/operacional/agenda-tarefas";
 import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -192,16 +195,7 @@ function Pagina() {
         descricao="Acompanhe o fluxo das atividades da operação com visão por etapa."
         acoes={
           <>
-            <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
-              <Link to="/operacional/tarefas">
-                <List className="mr-1.5 h-4 w-4" /> Lista
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
-              <Link to="/operacional/tarefas/calendario">
-                <CalendarDays className="mr-1.5 h-4 w-4" /> Calendário
-              </Link>
-            </Button>
+            <VisoesTarefas atual="kanban" />
             <NovaTarefaDialog onCriada={refetch} />
           </>
         }
@@ -362,8 +356,18 @@ function Pagina() {
                           <PriorityChip prioridade={t.prioridade} />
                         </div>
 
-                        <p className="mt-1 pl-1.5 text-[10.5px] font-medium uppercase tracking-wider tabular-nums text-muted-foreground">
-                          {t.numero ?? "—"}
+                        <p className="mt-1 flex items-center gap-2 pl-1.5 text-[10.5px] font-medium tabular-nums text-muted-foreground">
+                          <span className="inline-flex items-center gap-1 normal-case">
+                            <IconeTipoTarefa tipo={t.tipo} className="size-3" />
+                            {rotuloTipoTarefa(t.tipo)}
+                          </span>
+                          <span className="uppercase tracking-wider">{t.numero ?? "—"}</span>
+                          {t.recorrencia && <Repeat className="size-3" aria-label="Repete" />}
+                          {t.n_checklist > 0 && (
+                            <span>
+                              {t.n_checklist_feitos}/{t.n_checklist}
+                            </span>
+                          )}
                         </p>
 
                         {t.nome_cliente ? (
