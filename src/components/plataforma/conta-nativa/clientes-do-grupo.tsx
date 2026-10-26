@@ -13,6 +13,8 @@ import { ETAPA_CLIENTE_ASSINANTE } from "@/lib/plataforma/contas.functions";
 import { espelharClienteDaConta } from "@/lib/plataforma/conta-nativa.functions";
 import { listarClientesDoGrupo } from "@/lib/plataforma/filtro-base.functions";
 import { documentoSeguro, type Grupo } from "@/lib/plataforma/filtro-base";
+import { Icone3D } from "@/components/ui/icone-3d";
+import { Estado3D } from "@/components/ui/estado-3d";
 
 const POR_PAGINA = 20;
 
@@ -88,9 +90,7 @@ export function ClientesDoGrupo({
       {secao && (
         <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/12">
-              <Network className="size-4" />
-            </span>
+            <Icone3D icone={Network} tamanho="sm" />
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold text-foreground">
                 Corretores e parceiros vinculados
@@ -116,9 +116,16 @@ export function ClientesDoGrupo({
       )}
 
       {consulta.isError && (
-        <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          {mensagemDeErro(consulta.error, "Não foi possível carregar os clientes.")}
-        </p>
+        <Estado3D
+          tipo="erro"
+          compacto
+          descricao={mensagemDeErro(consulta.error, "Não foi possível carregar os clientes.")}
+          acao={
+            <Button size="sm" variant="outline" className="h-9" onClick={() => consulta.refetch()}>
+              Tentar de novo
+            </Button>
+          }
+        />
       )}
 
       <ListaMobile

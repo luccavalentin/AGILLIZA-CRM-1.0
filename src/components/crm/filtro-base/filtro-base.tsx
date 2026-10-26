@@ -35,6 +35,7 @@ import {
   type FiltroBase as Filtro,
 } from "@/lib/plataforma/filtro-base";
 import type { UsoFiltroBase } from "./use-filtro-base";
+import { Icone3D } from "@/components/ui/icone-3d";
 
 /**
  * Barra "Sua base | Assinantes" (C07, C08, C27/C28, C29, C30). Compacta: o segmentado escolhe a
@@ -127,16 +128,15 @@ const sem = (s: string) =>
     .toLowerCase();
 
 function AvatarConta({ conta, tamanho = "md" }: { conta: Pick<ContaFiltro, "nome" | "tipo">; tamanho?: "sm" | "md" }) {
+  // Peça 3D do Agilliza com as iniciais da conta e o selo do tipo (imobiliária ou corretor).
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "relative grid shrink-0 place-items-center rounded-lg bg-gradient-to-b from-primary/12 to-primary/5 font-semibold text-primary ring-1 ring-inset ring-primary/15",
-        tamanho === "sm" ? "size-6 text-[10px]" : "size-8 text-[11px]",
-      )}
-    >
-      {iniciais(conta.nome)}
-      <span className="absolute -bottom-1 -right-1 grid size-3.5 place-items-center rounded-full bg-background ring-1 ring-border">
+    <span aria-hidden className="relative inline-flex shrink-0">
+      <Icone3D tom={conta.tipo === "imobiliaria" ? "marca" : "info"} tamanho={tamanho === "sm" ? "xs" : "md"}>
+        <span className={cn("relative z-[1] font-semibold", tamanho === "sm" ? "text-[9px]" : "text-[11px]")}>
+          {iniciais(conta.nome)}
+        </span>
+      </Icone3D>
+      <span className="absolute -bottom-1 -right-1 z-[2] grid size-3.5 place-items-center rounded-full bg-background ring-1 ring-border">
         {conta.tipo === "imobiliaria" ? (
           <Building2 className="size-2.5 text-muted-foreground" />
         ) : (
@@ -276,9 +276,7 @@ function SeletorDeRecorte({ uso, semMisturar }: { uso: UsoFiltroBase; semMistura
             {filtro.contaId && conta ? (
               <AvatarConta conta={conta} tamanho="sm" />
             ) : (
-              <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary">
-                {filtro.base === "assinantes" ? <Users className="size-3.5" /> : <Layers className="size-3.5" />}
-              </span>
+              <Icone3D icone={filtro.base === "assinantes" ? Users : Layers} tamanho="xs" />
             )}
             <span className="truncate text-sm">{rotuloBotao}</span>
           </span>
@@ -307,9 +305,7 @@ function SeletorDeRecorte({ uso, semMisturar }: { uso: UsoFiltroBase; semMistura
                     onSelect={() => escolher(o.valor)}
                     className="min-h-12 gap-2.5 py-2"
                   >
-                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/10">
-                      <o.Icone className="size-4" />
-                    </span>
+                    <Icone3D icone={o.Icone} tamanho="sm" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{o.rotulo}</span>
                       <span className="block truncate text-[11px] text-muted-foreground">{o.detalhe}</span>

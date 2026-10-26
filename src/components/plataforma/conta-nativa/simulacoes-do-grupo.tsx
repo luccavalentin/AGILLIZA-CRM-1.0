@@ -12,6 +12,8 @@ import { espelharSimulacaoDaConta } from "@/lib/plataforma/conta-nativa.function
 import { listarSimulacoesDoGrupo } from "@/lib/plataforma/filtro-base.functions";
 import type { Grupo } from "@/lib/plataforma/filtro-base";
 import { destinoDaLinha, type LinhaDeConta } from "./espelho-linha";
+import { Icone3D } from "@/components/ui/icone-3d";
+import { Estado3D } from "@/components/ui/estado-3d";
 
 /**
  * Handlers da tela de Simulações para linhas do Agilliza Tech: cada ação abre a simulação no
@@ -138,9 +140,7 @@ export function SimulacoesDoGrupo({
       {secao && (
         <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary ring-1 ring-inset ring-primary/12">
-              <Network className="size-4" />
-            </span>
+            <Icone3D icone={Network} tamanho="sm" />
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold text-foreground">
                 Simulações de corretores vinculados
@@ -157,12 +157,16 @@ export function SimulacoesDoGrupo({
       )}
 
       {consulta.isError && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          {mensagemDeErro(consulta.error, "Não foi possível carregar as simulações.")}
-          <Button size="sm" variant="outline" className="h-9" onClick={() => consulta.refetch()}>
-            Tentar de novo
-          </Button>
-        </div>
+        <Estado3D
+          tipo="erro"
+          compacto
+          descricao={mensagemDeErro(consulta.error, "Não foi possível carregar as simulações.")}
+          acao={
+            <Button size="sm" variant="outline" className="h-9" onClick={() => consulta.refetch()}>
+              Tentar de novo
+            </Button>
+          }
+        />
       )}
 
       <TabelaSimulacoes

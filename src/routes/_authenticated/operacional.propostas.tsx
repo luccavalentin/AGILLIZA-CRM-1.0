@@ -16,6 +16,7 @@ import {
 } from "@/lib/propostas/propostas.functions";
 
 import { Button } from "@/components/ui/button";
+import { Icone3D } from "@/components/ui/icone-3d";
 import { listarColegas } from "@/lib/operacional/shared.functions";
 import { GRUPOS_PROPOSTA, type GrupoProposta } from "@/lib/propostas/status-grupos";
 import { StatusCard, VolumeCard } from "@/components/propostas/lista-page/cards-status";
@@ -337,9 +338,7 @@ function Pagina() {
       {/* Cabeçalho */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary ring-1 ring-inset ring-primary/12">
-            <FileText className="h-5 w-5" />
-          </span>
+          <Icone3D icone={FileText} tamanho="lg" />
           <div className="min-w-0 space-y-0.5">
             <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               Propostas

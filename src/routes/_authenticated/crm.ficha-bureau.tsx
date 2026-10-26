@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, BarChart3, CheckCircle2, FileSearch, RotateCcw } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
+import { Indicador3D } from "@/components/ui/indicador-3d";
 import {
   clienteParaFichaBureau,
   consultarFichaBureau,
@@ -230,17 +231,15 @@ function Pagina() {
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-3">
         {metricas.map((m, i) => (
-          <div
+          <Indicador3D
             key={m.rotulo}
-            className={`flex min-w-0 items-start gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm sm:p-4 ${i === 2 ? "col-span-2 xl:col-span-1" : ""}`}
-          >
-            <Ladrilho icone={m.icone} tom={m.tom} />
-            <div className="min-w-0">
-              <p className="truncate text-xs text-muted-foreground">{m.rotulo}</p>
-              <p className="truncate text-xl font-semibold tabular-nums text-foreground">{m.valor}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{m.detalhe}</p>
-            </div>
-          </div>
+            icone={m.icone}
+            tom={m.tom === "info" ? "marca" : m.tom}
+            rotulo={m.rotulo}
+            valor={m.valor}
+            detalhe={m.detalhe}
+            className={i === 2 ? "col-span-2 xl:col-span-1" : undefined}
+          />
         ))}
       </div>
 

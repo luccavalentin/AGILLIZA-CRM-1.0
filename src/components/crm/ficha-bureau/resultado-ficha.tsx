@@ -23,6 +23,7 @@ import { formatBRL } from "@/lib/simulacao/format";
 import { exibirDocumento } from "@/lib/crm/documento";
 import type { FichaBureau } from "@/lib/bureau/tipos";
 import { MedidorScore } from "./medidor-score";
+import { Icone3D, type TomIcone3D } from "@/components/ui/icone-3d";
 import { pluralizar, resumirFicha, tomDoFator, type ChaveFator, type Tom } from "./logica";
 
 /** Classes por tom (tokens; vermelho só para alerta de verdade). */
@@ -59,20 +60,17 @@ export function Selo({
   );
 }
 
-/** Ícone em ladrilho com o tom (o padrão das telas vizinhas até o ícone 3D chegar à base). */
-export function Ladrilho({ icone: Icone, tom, grande }: { icone: LucideIcon; tom: Tom | "info"; grande?: boolean }) {
-  return (
-    <span
-      className={cn(
-        "grid shrink-0 place-items-center rounded-xl border shadow-sm",
-        grande ? "size-11" : "size-9",
-        CLASSE_TOM[tom],
-      )}
-      aria-hidden
-    >
-      <Icone className={grande ? "size-5" : "size-[18px]"} strokeWidth={1.6} />
-    </span>
-  );
+/** Peça 3D do Agilliza (`Icone3D`) no tom da ficha; vermelho só para alerta de verdade. */
+const TOM_3D: Record<Tom | "info", TomIcone3D> = {
+  sucesso: "sucesso",
+  alerta: "alerta",
+  perigo: "perigo",
+  neutro: "neutro",
+  info: "marca",
+};
+
+export function Ladrilho({ icone, tom, grande }: { icone: LucideIcon; tom: Tom | "info"; grande?: boolean }) {
+  return <Icone3D icone={icone} tom={TOM_3D[tom]} tamanho={grande ? "lg" : "md"} />;
 }
 
 const ICONE_FATOR: Record<ChaveFator, LucideIcon> = {

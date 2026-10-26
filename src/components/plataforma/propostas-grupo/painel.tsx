@@ -13,9 +13,10 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Icone3D } from "@/components/ui/icone-3d";
+import { Indicador3D } from "@/components/ui/indicador-3d";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -143,24 +144,42 @@ export function PainelPropostasGrupo({
     <div className="space-y-4">
       {/* Indicadores */}
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">
-        <Indicador icone={Sigma} rotulo="Propostas" valor={r ? String(total) : undefined} detalhe="com estes filtros" />
-        <Indicador
+        <Indicador3D
+          icone={Sigma}
+          rotulo="Propostas"
+          natureza="quantidade"
+          valor={r ? String(total) : "—"}
+          carregando={!r}
+          detalhe="com estes filtros"
+        />
+        <Indicador3D
           icone={Hourglass}
+          tom={(r?.pendentes ?? 0) > 0 ? "alerta" : "marca"}
           rotulo="Esperando analista"
-          valor={r ? String(r.pendentes) : undefined}
+          valor={r ? String(r.pendentes) : "—"}
+          carregando={!r}
           detalhe={filtros.aceite === "pendentes" ? "filtrando" : "toque para filtrar"}
           destaque={(r?.pendentes ?? 0) > 0}
           onClick={() => mudar({ aceite: filtros.aceite === "pendentes" ? "todas" : "pendentes" })}
-          ativo={filtros.aceite === "pendentes"}
+          className={cn(filtros.aceite === "pendentes" && "ring-2 ring-primary/30")}
         />
-        <Indicador
+        <Indicador3D
           icone={AlarmClock}
+          tom={(r?.atrasadas ?? 0) > 0 ? "perigo" : "neutro"}
           rotulo="Prazo estourado"
-          valor={r ? String(r.atrasadas) : undefined}
+          valor={r ? String(r.atrasadas) : "—"}
+          carregando={!r}
           detalhe="antes do envio ao banco"
-          alerta={(r?.atrasadas ?? 0) > 0}
         />
-        <Indicador icone={Wallet} rotulo="Volume financiado" valor={r ? formatBRL(r.volume) : undefined} detalhe="pedido nas propostas" />
+        <Indicador3D
+          icone={Wallet}
+          tom="sucesso"
+          rotulo="Volume financiado"
+          natureza="R$"
+          valor={r ? formatBRL(r.volume) : "—"}
+          carregando={!r}
+          detalhe="pedido nas propostas"
+        />
       </div>
 
       {/* Situações com contagem (rolam dentro da faixa no celular, nunca a página) */}
@@ -378,9 +397,7 @@ export function SecaoPropostasVinculadas({ termo }: { termo: string }) {
     <section className="space-y-3 border-t border-border/60 pt-5" aria-label="Propostas de corretores vinculados">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary ring-1 ring-inset ring-primary/12">
-            <Network className="size-4" />
-          </span>
+          <Icone3D icone={Network} tamanho="sm" />
           <div className="min-w-0">
             <h2 className="truncate text-sm font-semibold text-foreground">Propostas de corretores vinculados</h2>
             <p className="truncate text-xs text-muted-foreground">
@@ -471,53 +488,3 @@ function ChipSituacao({ ativo, rotulo, n, onClick }: { ativo: boolean; rotulo: s
   );
 }
 
-function Indicador({
-  icone: Icone,
-  rotulo,
-  valor,
-  detalhe,
-  destaque,
-  alerta,
-  ativo,
-  onClick,
-}: {
-  icone: typeof Sigma;
-  rotulo: string;
-  valor?: string;
-  detalhe?: string;
-  destaque?: boolean;
-  alerta?: boolean;
-  ativo?: boolean;
-  onClick?: () => void;
-}) {
-  const Corpo = onClick ? "button" : "div";
-  return (
-    <Corpo
-      {...(onClick ? { type: "button" as const, onClick, "aria-pressed": !!ativo } : {})}
-      className={cn(
-        "group relative flex min-w-0 items-start gap-2.5 overflow-hidden rounded-2xl border bg-card p-3 text-left shadow-sm transition-all sm:p-4",
-        onClick && "hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-        alerta ? "border-destructive/40" : ativo || destaque ? "border-primary/30" : "border-border/60",
-      )}
-    >
-      <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/50" aria-hidden />
-      <span
-        className={cn(
-          "grid size-9 shrink-0 place-items-center rounded-xl ring-1 ring-inset",
-          alerta ? "bg-destructive/10 text-destructive ring-destructive/15" : "bg-primary/10 text-primary ring-primary/15",
-        )}
-      >
-        <Icone className="size-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{rotulo}</span>
-        {valor === undefined ? (
-          <Skeleton className="mt-1.5 h-6 w-14" />
-        ) : (
-          <span className="mt-0.5 block break-words text-lg font-semibold tabular-nums text-foreground sm:text-xl">{valor}</span>
-        )}
-        {detalhe && <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{detalhe}</span>}
-      </span>
-    </Corpo>
-  );
-}

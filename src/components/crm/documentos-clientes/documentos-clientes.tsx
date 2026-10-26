@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PageHeader } from "@/components/shared/page-header";
+import { Estado3D } from "@/components/ui/estado-3d";
 import { FichaDialog } from "@/components/crm/documentos-gerais/ficha-dialog";
 import { titulo } from "@/components/crm/documentos-gerais/helpers";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -191,24 +192,28 @@ export function DocumentosDeClientes() {
               ))}
             </div>
           ) : arvore.isError ? (
-            <div className="flex flex-col items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-              {mensagemDeErro(arvore.error, "Não foi possível carregar os clientes.")}
-              <Button size="sm" variant="outline" onClick={() => arvore.refetch()}>
-                Tentar de novo
-              </Button>
-            </div>
+            <Estado3D
+              tipo="erro"
+              compacto
+              descricao={mensagemDeErro(arvore.error, "Não foi possível carregar os clientes.")}
+              acao={
+                <Button size="sm" variant="outline" onClick={() => arvore.refetch()}>
+                  Tentar de novo
+                </Button>
+              }
+            />
           ) : clientes.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-2xl border border-border/60 bg-card px-4 py-10 text-center">
-              <span className="grid size-12 place-items-center rounded-2xl bg-primary/8 text-primary ring-1 ring-inset ring-primary/15">
-                <FileSearch className="size-6" strokeWidth={1.5} />
-              </span>
-              <p className="text-sm font-medium text-foreground">
-                {termo ? "Nenhum cliente ou arquivo encontrado." : "Nenhum cliente cadastrado."}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {termo ? "Confira a grafia ou busque pelo código do cliente." : "Os clientes cadastrados aparecem aqui com as pastas deles."}
-              </p>
-            </div>
+            <Estado3D
+              icone={FileSearch}
+              tom="marca"
+              compacto
+              titulo={termo ? "Nenhum cliente ou arquivo encontrado." : "Nenhum cliente cadastrado."}
+              descricao={
+                termo
+                  ? "Confira a grafia ou busque pelo código do cliente."
+                  : "Os clientes cadastrados aparecem aqui com as pastas deles."
+              }
+            />
           ) : (
             <ul className="space-y-2">
               {clientes.map((c) => {
@@ -286,7 +291,7 @@ export function DocumentosDeClientes() {
                                     : "text-foreground hover:bg-background",
                                 )}
                               >
-                                <IconePasta pasta={p} ativa={selecionada && !isMobile} className="size-7 rounded-md" />
+                                <IconePasta pasta={p} ativa={selecionada && !isMobile} tamanho="sm" />
                                 <span className="min-w-0 flex-1 truncate">{PASTAS[p].rotulo}</span>
                                 <span
                                   className={cn(
@@ -370,15 +375,13 @@ export function DocumentosDeClientes() {
               {painel}
             </div>
           ) : (
-            <div className="flex h-full min-h-80 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.02] p-8 text-center">
-              <span className="grid size-14 place-items-center rounded-2xl bg-primary/8 text-primary ring-1 ring-inset ring-primary/15">
-                <FolderTree className="size-7" strokeWidth={1.5} />
-              </span>
-              <p className="text-sm font-medium text-foreground">Escolha um cliente</p>
-              <p className="max-w-sm text-xs text-muted-foreground">
-                Abra um cliente na lista para ver as pastas dele, enviar arquivos em lote e organizar
-                os documentos arrastando de uma pasta para outra.
-              </p>
+            <div className="flex h-full min-h-80 items-center justify-center rounded-2xl border border-dashed border-primary/25 bg-primary/[0.02] p-4">
+              <Estado3D
+                icone={FolderTree}
+                tom="marca"
+                titulo="Escolha um cliente"
+                descricao="Abra um cliente na lista para ver as pastas dele, enviar arquivos em lote e organizar os documentos arrastando de uma pasta para outra."
+              />
             </div>
           )}
         </div>

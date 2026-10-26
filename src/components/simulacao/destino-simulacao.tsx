@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Icone3D } from "@/components/ui/icone-3d";
 import {
   Command,
   CommandGroup,
@@ -73,9 +74,7 @@ export function DestinoSimulacao({
     >
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
-            <MapPin className="size-4" />
-          </span>
+          <Icone3D icone={MapPin} tamanho="md" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">Onde simular</p>
             <p className="truncate text-xs text-muted-foreground">
@@ -150,13 +149,13 @@ function BotaoAba({
 }
 
 function Avatar({ conta }: { conta: Pick<ContaFiltro, "nome" | "tipo"> }) {
+  // Peça 3D do Agilliza com as iniciais da conta e o selo do tipo.
   return (
-    <span
-      aria-hidden
-      className="relative grid size-7 shrink-0 place-items-center rounded-lg bg-gradient-to-b from-primary/12 to-primary/5 text-[10px] font-semibold text-primary ring-1 ring-inset ring-primary/15"
-    >
-      {iniciais(conta.nome)}
-      <span className="absolute -bottom-1 -right-1 grid size-3.5 place-items-center rounded-full bg-background ring-1 ring-border">
+    <span aria-hidden className="relative inline-flex shrink-0">
+      <Icone3D tom={conta.tipo === "imobiliaria" ? "marca" : "info"} tamanho="sm">
+        <span className="relative z-[1] text-[10px] font-semibold">{iniciais(conta.nome)}</span>
+      </Icone3D>
+      <span className="absolute -bottom-1 -right-1 z-[2] grid size-3.5 place-items-center rounded-full bg-background ring-1 ring-border">
         {conta.tipo === "imobiliaria" ? (
           <Building2 className="size-2.5 text-muted-foreground" />
         ) : (

@@ -21,6 +21,7 @@ import {
 import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { useEnviarProposta } from "@/hooks/use-enviar-proposta";
 import { Button } from "@/components/ui/button";
+import { Icone3D } from "@/components/ui/icone-3d";
 
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
 import { formatBRL } from "@/lib/simulacao/format";
@@ -749,13 +750,11 @@ function Pagina() {
                     key={k.id}
                     type="button"
                     onClick={() => setKpiAberto(k.id)}
-                    className="group relative flex flex-col items-start gap-2 overflow-hidden rounded-xl border border-border/60 bg-card px-2.5 py-2.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:flex-row sm:items-center sm:gap-3"
+                    className="i3d-grupo group relative flex flex-col items-start gap-2 overflow-hidden rounded-xl border border-border/60 bg-card px-2.5 py-2.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:flex-row sm:items-center sm:gap-3"
                   >
                     <span className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-primary to-primary/40 transition-transform duration-300 group-hover:scale-x-100" />
                     <span className="absolute left-0 top-0 h-full w-[3px] rounded-r bg-primary/60" />
-                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15 transition-colors group-hover:bg-primary/15">
-                      <k.icon className="size-4" />
-                    </div>
+                    <Icone3D icone={k.icon} tamanho="md" />
                     <div className="min-w-0 flex-1">
                       <p className="font-mono text-base font-semibold leading-tight tracking-tight tabular-nums text-foreground sm:text-xl">
                         {k.valor}

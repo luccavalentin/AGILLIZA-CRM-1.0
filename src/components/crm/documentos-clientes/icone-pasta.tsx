@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Icone3D, type TamanhoIcone3D, type TomIcone3D } from "@/components/ui/icone-3d";
 import type { PastaPadrao } from "@/lib/crm/documentos-clientes/pastas";
 
 const ICONES: Record<PastaPadrao, LucideIcon> = {
@@ -23,29 +24,45 @@ const ICONES: Record<PastaPadrao, LucideIcon> = {
   outros: FolderOpen,
 };
 
-/** Insígnia da pasta: traço fino azul sobre fundo claro (padrão Agilliza). */
+/** Tom de cada pasta na peça 3D (vermelho nunca: é só para alerta). */
+export const TOM_DA_PASTA: Record<PastaPadrao, TomIcone3D> = {
+  comprador: "marca",
+  participantes: "info",
+  vendedor: "ciano",
+  imovel: "sucesso",
+  renda: "alerta",
+  banco_proposta: "violeta",
+  contratos: "marca",
+  outros: "neutro",
+};
+
+export const ICONE_DA_PASTA = ICONES;
+
+/**
+ * Insígnia da pasta: a peça 3D do Agilliza (`Icone3D`) no tom da pasta. `plano` = só o glifo de
+ * traço fino, para itens de menu (ícone de interface).
+ */
 export function IconePasta({
   pasta,
   ativa,
+  tamanho = "sm",
+  plano,
   className,
 }: {
   pasta: PastaPadrao;
   ativa?: boolean;
+  tamanho?: TamanhoIcone3D;
+  plano?: boolean;
   className?: string;
 }) {
   const Icone = ICONES[pasta];
+  if (plano) return <Icone aria-hidden className={cn("size-4 text-primary", className)} strokeWidth={1.75} />;
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-lg ring-1 ring-inset transition-colors",
-        ativa
-          ? "bg-primary text-primary-foreground ring-primary shadow-sm"
-          : "bg-primary/8 text-primary ring-primary/15",
-        className,
-      )}
-    >
-      <Icone className="size-4" strokeWidth={1.75} />
-    </span>
+    <Icone3D
+      icone={Icone}
+      tom={TOM_DA_PASTA[pasta]}
+      tamanho={tamanho}
+      className={cn(ativa && "drop-shadow-sm", className)}
+    />
   );
 }

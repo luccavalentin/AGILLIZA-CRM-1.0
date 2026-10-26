@@ -2,6 +2,7 @@ import { Check, Loader2, ScanSearch, ShieldCheck } from "lucide-react";
 import simbolo from "@/assets/brand/agilliza-symbol-oficial-light.png";
 import "./ficha-bureau.css";
 import type { Disponibilidade } from "./logica";
+import { Icone3D } from "@/components/ui/icone-3d";
 
 /**
  * Cartão da marca no lugar do "saldo de créditos" dos assinantes: no Agilliza a consulta sai
@@ -65,8 +66,8 @@ export function Andamento() {
       aria-live="polite"
     >
       <div className="flex items-center gap-3">
-        <span className="fb-radar grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-          <ScanSearch className="size-5" aria-hidden />
+        <span className="fb-radar shrink-0 rounded-xl">
+          <Icone3D icone={ScanSearch} tamanho="lg" />
         </span>
         <div className="min-w-0">
           <b className="block text-sm font-semibold text-foreground">Consultando…</b>

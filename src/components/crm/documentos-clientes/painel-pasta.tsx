@@ -47,7 +47,8 @@ import { nomeArquivoSeguro } from "@/lib/storage/nome-arquivo";
 import { EXTENSOES_DOCUMENTO } from "@/lib/storage/tipos-documento";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatData } from "@/lib/financeiro/format";
-import { IconePasta } from "./icone-pasta";
+import { ICONE_DA_PASTA, IconePasta, TOM_DA_PASTA } from "./icone-pasta";
+import { Estado3D } from "@/components/ui/estado-3d";
 import { tipoDePrevia } from "./previa-dialog";
 
 /** Tipo arrastado entre a lista de arquivos e as pastas da árvore. */
@@ -173,7 +174,7 @@ export function PainelPasta({
     <section className="flex min-w-0 flex-col gap-3">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <IconePasta pasta={pasta} ativa className="size-10" />
+          <IconePasta pasta={pasta} ativa tamanho="md" />
           <div className="min-w-0">
             <h2 className="truncate text-base font-semibold text-foreground">{info.rotulo}</h2>
             <p className="truncate text-xs text-muted-foreground">{info.descricao}</p>
@@ -268,26 +269,30 @@ export function PainelPasta({
           ))}
         </div>
       ) : erro ? (
-        <div className="flex flex-col items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          {erro}
-          <Button size="sm" variant="outline" onClick={onTentarDeNovo}>
-            Tentar de novo
-          </Button>
-        </div>
+        <Estado3D
+          tipo="erro"
+          compacto
+          descricao={erro}
+          acao={
+            <Button size="sm" variant="outline" onClick={onTentarDeNovo}>
+              Tentar de novo
+            </Button>
+          }
+        />
       ) : daPasta.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-border/60 bg-card px-4 py-10 text-center">
-          <IconePasta pasta={pasta} className="size-12 rounded-2xl" />
-          <p className="text-sm font-medium text-foreground">
-            {busca ? "Nenhum arquivo encontrado nesta pasta." : "Pasta vazia."}
-          </p>
-          <p className="max-w-sm text-xs text-muted-foreground">
-            {busca
+        <Estado3D
+          icone={ICONE_DA_PASTA[pasta]}
+          tom={TOM_DA_PASTA[pasta]}
+          compacto
+          titulo={busca ? "Nenhum arquivo encontrado nesta pasta." : "Pasta vazia."}
+          descricao={
+            busca
               ? "Tente outro nome ou limpe a busca."
               : recebeEnvio
                 ? "Arraste os arquivos para cá ou mova arquivos de outra pasta."
-                : "Os arquivos deste cliente aparecem aqui quando forem enviados."}
-          </p>
-        </div>
+                : "Os arquivos deste cliente aparecem aqui quando forem enviados."
+          }
+        />
       ) : (
         <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-card">
           {daPasta.map((d) => {
@@ -375,7 +380,7 @@ export function PainelPasta({
                             key={p}
                             onSelect={() => mover.mutate({ documento: d, pasta: p })}
                           >
-                            <IconePasta pasta={p} className="mr-2 size-6 rounded-md" />
+                            <IconePasta pasta={p} plano className="mr-2" />
                             {PASTAS[p].rotulo}
                           </DropdownMenuItem>
                         ))}

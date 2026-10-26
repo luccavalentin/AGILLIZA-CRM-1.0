@@ -11,6 +11,7 @@ import {
   tomScore,
 } from "./logica";
 import { Selo } from "./resultado-ficha";
+import { Estado3D } from "@/components/ui/estado-3d";
 
 /** Histórico de consultas: tabela no computador, cartões no celular (sem rolagem lateral). */
 export function HistoricoConsultas({
@@ -51,23 +52,22 @@ export function HistoricoConsultas({
           <Loader2 className="size-4 animate-spin" aria-hidden /> Carregando histórico…
         </div>
       ) : erro ? (
-        <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
-          <p className="text-sm text-destructive">{erro}</p>
-          <Button variant="outline" size="sm" onClick={onTentar}>
-            Tentar de novo
-          </Button>
-        </div>
+        <Estado3D
+          tipo="erro"
+          descricao={erro}
+          acao={
+            <Button variant="outline" size="sm" onClick={onTentar}>
+              Tentar de novo
+            </Button>
+          }
+        />
       ) : linhas.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-          <span className="grid size-12 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-            <FileSearch className="size-6" aria-hidden />
-          </span>
-          <p className="text-sm font-semibold text-foreground">Nenhuma consulta ainda</p>
-          <p className="max-w-sm text-xs text-muted-foreground">
-            Consulte a ficha antes de enviar a proposta: evita queimar a operação com uma restrição
-            que ninguém viu.
-          </p>
-        </div>
+        <Estado3D
+          icone={FileSearch}
+          tom="marca"
+          titulo="Nenhuma consulta ainda"
+          descricao="Consulte a ficha antes de enviar a proposta: evita queimar a operação com uma restrição que ninguém viu."
+        />
       ) : (
         <>
           {/* Computador */}

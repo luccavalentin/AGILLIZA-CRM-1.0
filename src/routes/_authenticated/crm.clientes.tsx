@@ -6,6 +6,7 @@ import { Plus, Search, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Icone3D } from "@/components/ui/icone-3d";
 import { Card } from "@/components/ui/card";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
@@ -158,11 +159,9 @@ function Pagina() {
   return (
     <div className="space-y-4 p-3 sm:space-y-6 sm:p-6">
       <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4">
-        {/* Mesmo padrão do `PageHeader` (título 24/500, ícone discreto). */}
+        {/* Mesmo padrão do `PageHeader` (título 24/500, peça 3D do Agilliza). */}
         <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-            <Users className="size-5" />
-          </span>
+          <Icone3D icone={Users} tamanho="lg" className="mt-0.5" />
           <div className="min-w-0 space-y-0.5">
             <h1 className="truncate text-xl font-medium tracking-tight text-foreground sm:text-2xl">
               Clientes

@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2, Save } from "lucide-react";
+import { CheckCircle2, Loader2, Network, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Icone3D } from "@/components/ui/icone-3d";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { buscarContasDoFiltro } from "@/lib/plataforma/filtro-base.functions";
 import { salvarSimulacaoRapidaNaConta } from "@/lib/plataforma/simulacao-na-conta.functions";
@@ -71,16 +72,17 @@ export function GuardarRapidaNaConta({
 
   return (
     <div className="mt-3 flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/[0.04] p-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="min-w-0 text-xs text-muted-foreground">
+      <p className="flex min-w-0 items-center gap-2.5 text-xs text-muted-foreground">
+        <Icone3D icone={codigo ? CheckCircle2 : Network} tom={codigo ? "sucesso" : "marca"} tamanho="sm" />
         {codigo ? (
-          <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-            <CheckCircle2 className="size-4 text-primary" /> Guardada na carteira de {nome} ({codigo}).
+          <span className="min-w-0 font-medium text-foreground">
+            Guardada na carteira de {nome} ({codigo}).
           </span>
         ) : (
-          <>
+          <span className="min-w-0">
             Destino: <strong className="text-foreground">{nome}</strong>. A rápida não fica na sua base;
             guarde para o assinante ver.
-          </>
+          </span>
         )}
       </p>
       <Button
