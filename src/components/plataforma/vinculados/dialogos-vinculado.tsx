@@ -186,7 +186,7 @@ export function NovoVinculado({ aberto, aoFechar }: { aberto: boolean; aoFechar:
 
         <div className="space-y-4">
           <TipoSegmentado valor={tipo} aoMudar={setTipo} />
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="nv-nome">{tipo === "corretor" ? "Nome do corretor" : "Nome ou razão social"}</Label>
               <Input id="nv-nome" value={nome} maxLength={200} onChange={(e) => setNome(e.target.value)} />
@@ -390,7 +390,7 @@ export function ConverterParceiro({ aberto, aoFechar }: { aberto: boolean; aoFec
             ) : (
               <>
                 <TipoSegmentado valor={tipo} aoMudar={setTipo} />
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="cp-doc">CPF ou CNPJ</Label>
                     <Input id="cp-doc" inputMode="numeric" value={documento} onChange={(e) => setDocumento(e.target.value)} />
@@ -656,7 +656,7 @@ export function Desvincular({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <fieldset className="grid gap-2 sm:grid-cols-2">
+          <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <legend className="sr-only">O que acontece com a conta</legend>
             {(
               [
@@ -681,7 +681,7 @@ export function Desvincular({
           </fieldset>
 
           {destino === "assinante" && (
-            <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_120px]">
               <div className="space-y-1.5">
                 <Label>Plano</Label>
                 <Select value={planoId} onValueChange={setPlanoId}>

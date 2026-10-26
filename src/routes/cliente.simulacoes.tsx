@@ -91,14 +91,12 @@ function CartaoSimulacao({ s }: { s: SimulacaoCliente }) {
             >
               <BancoLogo nome={b.banco} size="lg" />
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 truncate text-sm font-medium text-foreground">
-                  {b.banco ?? "Banco"}
-                  {i === 0 && s.bancos.length > 1 && (
-                    <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                      <Trophy className="size-3" /> menor parcela
-                    </span>
-                  )}
-                </p>
+                <p className="truncate text-sm font-medium text-foreground">{b.banco ?? "Banco"}</p>
+                {i === 0 && s.bancos.length > 1 && (
+                  <span className="mb-0.5 inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                    <Trophy className="size-3" /> menor parcela
+                  </span>
+                )}
                 <p className="truncate text-xs text-muted-foreground">
                   {pct(b.taxa_ano)}
                   {b.cet_ano ? ` · CET ${pct(b.cet_ano)}` : ""}

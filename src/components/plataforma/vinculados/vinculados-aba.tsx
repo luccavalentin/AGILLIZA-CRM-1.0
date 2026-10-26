@@ -137,9 +137,9 @@ export function VinculadosAba({ planos }: { planos: PlanoLicenca[] }) {
         <Numero rotulo="Vinculados" valor={r?.total} icone={<Users className="size-4" />} />
         <Numero rotulo="Corretores" valor={r?.corretores} icone={<Briefcase className="size-4" />} />
         <Numero rotulo="Parceiros" valor={r?.parceiros} icone={<Handshake className="size-4" />} />
-        <Numero rotulo="Com acesso ativo" valor={r?.ativos} icone={<BadgeCheck className="size-4" />} />
+        <Numero rotulo="Ativos" valor={r?.ativos} icone={<BadgeCheck className="size-4" />} detalhe="Já entram no portal" />
         <Numero
-          rotulo="Aguardando acesso"
+          rotulo="Aguardando"
           valor={r?.aguardando_acesso}
           icone={<Hourglass className="size-4" />}
           detalhe="Ainda não criaram a senha"
@@ -174,7 +174,7 @@ export function VinculadosAba({ planos }: { planos: PlanoLicenca[] }) {
       </div>
 
       {q.isLoading && (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-36 rounded-xl" />
           ))}
@@ -213,7 +213,7 @@ export function VinculadosAba({ planos }: { planos: PlanoLicenca[] }) {
       )}
 
       {itens.length > 0 && (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {itens.map((v) => (
             <li key={v.id}>
               <CartaoVinculado v={v} onAbrir={() => setAberto(v)} />
@@ -402,7 +402,7 @@ function GavetaVinculado({
               {podeEditar && (
                 <section className="space-y-2">
                   <h3 className="text-sm font-medium text-foreground">Ações</h3>
-                  <div className="grid gap-2 min-[420px]:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
                     {!vinculado.acesso_criado && ativo && (
                       <Button
                         variant="outline"

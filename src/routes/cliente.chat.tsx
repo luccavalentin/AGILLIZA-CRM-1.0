@@ -42,7 +42,7 @@ function ChatPage() {
     refetch: recarregarAt,
   } = useQuery({
     queryKey: ["cliente", "atendentes"],
-    queryFn: () => clienteListarAtendentes(),
+    queryFn: async () => { const r = await clienteListarAtendentes(); return Array.isArray(r) ? r : []; },
     ...pollingPortal(POLL_ATENDENTES_MS),
   });
 
@@ -75,7 +75,7 @@ function ChatPage() {
   }, [selId, lista]);
 
   const selecionado = useMemo(
-    () => (atendentes ?? []).find((a) => a.atendente_id === selId) ?? null,
+    () => (Array.isArray(atendentes) ? atendentes : []).find((a) => a.atendente_id === selId) ?? null,
     [atendentes, selId],
   );
 

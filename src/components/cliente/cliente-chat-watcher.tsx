@@ -20,7 +20,7 @@ import {
 export function ClienteChatWatcher() {
   const { data: atendentes } = useQuery({
     queryKey: ["cliente", "atendentes"],
-    queryFn: () => clienteListarAtendentes(),
+    queryFn: async () => { const r = await clienteListarAtendentes(); return Array.isArray(r) ? r : []; },
     // Mesmo intervalo das outras telas (a chave é a mesma e o menor valia para
     // todas). Em segundo plano não consulta: o alerta sonoro é bloqueado pelo
     // navegador de qualquer forma.

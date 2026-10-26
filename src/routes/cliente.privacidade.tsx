@@ -141,7 +141,7 @@ function Privacidade() {
     <div className="space-y-4 sm:space-y-5">
       <CabecalhoPagina icon={ShieldCheck} titulo="Privacidade e meus dados" subtitulo="Seus direitos pela LGPD, a um toque." />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Bloco titulo="Seu consentimento" icone={FileCheck2}>
           {q.isLoading ? (
             <p className="text-sm text-muted-foreground">Carregando…</p>
@@ -173,7 +173,7 @@ function Privacidade() {
               {q.data!.pedidos.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">{p.titulo.replace(/^Solicitação LGPD: /, "")}</p>
+                    <p className="truncate text-sm font-medium text-foreground">{((t) => t.charAt(0).toUpperCase() + t.slice(1))(p.titulo.replace(/^Solicitação LGPD: /, ""))}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(p.criado_em).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                     </p>
@@ -187,7 +187,7 @@ function Privacidade() {
       </div>
 
       <Bloco titulo="O que você pode fazer" icone={ShieldCheck}>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button variant="outline" size="lg" className="w-full justify-start" disabled={baixar.isPending} onClick={() => baixar.mutate()}>
             <Download className="mr-2 size-5" /> {baixar.isPending ? "Gerando PDF…" : "Baixar meus dados (PDF)"}
           </Button>

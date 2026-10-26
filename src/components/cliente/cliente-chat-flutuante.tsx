@@ -24,12 +24,12 @@ export function ClienteChatFlutuante() {
 
   const { data: atendentes } = useQuery({
     queryKey: ["cliente", "atendentes"],
-    queryFn: () => clienteListarAtendentes(),
+    queryFn: async () => { const r = await clienteListarAtendentes(); return Array.isArray(r) ? r : []; },
     ...pollingPortal(POLL_ATENDENTES_MS),
   });
 
   const totalNaoLidas = useMemo(
-    () => (atendentes ?? []).reduce((s, a) => s + (a.nao_lidas ?? 0), 0),
+    () => (Array.isArray(atendentes) ? atendentes : []).reduce((s, a) => s + (a.nao_lidas ?? 0), 0),
     [atendentes],
   );
 

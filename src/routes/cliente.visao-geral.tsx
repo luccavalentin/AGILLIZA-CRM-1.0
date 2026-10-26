@@ -69,7 +69,7 @@ function Inicio() {
       <section className="relative overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground shadow-[0_18px_40px_-24px_rgba(0,15,159,0.8)] sm:p-6">
         <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full border border-white/10" />
         <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-32 rounded-full border border-white/10" />
-        <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="relative grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div className="min-w-0">
             <p className="text-sm text-primary-foreground/80">
               {saudacao()}, {primeiroNome(d.cliente.nome)}
@@ -124,9 +124,9 @@ function Inicio() {
               </Link>
             </Button>
           </div>
-          <ul className="mt-3 grid gap-2 md:grid-cols-2">
+          <ul className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
             {d.pendencias.slice(0, 4).map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 rounded-xl bg-background p-3">
+              <li key={p.id} className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-background p-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{p.tipo_documento ?? "Documento"}</p>
                   <p className="truncate text-xs text-muted-foreground">
@@ -140,7 +140,7 @@ function Inicio() {
         </section>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Atalho
           icone={FolderOpen}
           rotulo="Documentos aprovados"
@@ -172,7 +172,7 @@ function Inicio() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <Bloco titulo="Sua jornada" icone={IconeRota} className="lg:col-span-3">
           <JornadaCompra etapas={d.jornada} />
         </Bloco>

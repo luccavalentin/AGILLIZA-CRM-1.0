@@ -141,10 +141,11 @@ function BarraInferior() {
 function useChatNaoLidas() {
   const { data } = useQuery({
     queryKey: ["cliente", "atendentes"],
-    queryFn: () => clienteListarAtendentes(),
+    queryFn: async () => { const r = await clienteListarAtendentes(); return Array.isArray(r) ? r : []; },
     ...pollingPortal(POLL_ATENDENTES_MS),
   });
-  return (data ?? []).reduce((acc, a) => acc + (a.nao_lidas ?? 0), 0);
+  // Sessão vencida devolve outra coisa que não a lista: sem isto o portal inteiro caía.
+  return (Array.isArray(data) ? data : []).reduce((acc, a) => acc + (a.nao_lidas ?? 0), 0);
 }
 
 export interface ClienteShellUser {
@@ -273,7 +274,8 @@ function NotificacoesBell() {
     queryFn: () => clienteListarNotificacoes(),
     ...pollingPortal(20_000),
   });
-  const naoLidas = (notificacoes ?? []).filter((n) => !n.lida).length;
+  const lista = Array.isArray(notificacoes) ? notificacoes : [];
+  const naoLidas = lista.filter((n) => !n.lida).length;
 
   // Sem isto o aviso nunca saía de "não lido": o selo vermelho ficava no sino
   // para sempre, mesmo o cliente tendo aberto e lido (QA 19/09/2026).
@@ -307,12 +309,12 @@ function NotificacoesBell() {
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel>Notificações</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {(notificacoes ?? []).length === 0 ? (
+        {lista.length === 0 ? (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">
             Nenhuma notificação por enquanto.
           </p>
         ) : (
-          (notificacoes ?? []).slice(0, 8).map((n) => (
+          lista.slice(0, 8).map((n) => (
             <button
               key={n.id}
               type="button"

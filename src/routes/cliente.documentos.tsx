@@ -62,9 +62,9 @@ function Documentos() {
                 <CheckCircle2 className="size-4" /> Tudo entregue. A equipe avisa por aqui se precisar de mais algum.
               </p>
             ) : (
-              <ul className="grid gap-2 md:grid-cols-2">
+              <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 {pendencias.map((d) => (
-                  <li key={d.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3">
+                  <li key={d.id} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-border bg-background p-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">{d.tipo_documento ?? "Documento"}</p>
                       <p className="truncate text-xs text-muted-foreground">
@@ -85,7 +85,7 @@ function Documentos() {
               texto="Os documentos que você e a equipe enviarem aparecem aqui, organizados por pasta."
             />
           ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {porPasta.map(([pasta, lista]) => (
                 <Bloco key={pasta} titulo={pasta} icone={FolderOpen}>
                   <ul className="divide-y divide-border">
@@ -99,8 +99,8 @@ function Documentos() {
                             <p className="truncate text-sm text-foreground">{d.tipo_documento ?? d.nome_arquivo ?? "Documento"}</p>
                             {d.versao > 1 && <p className="text-[11px] text-muted-foreground">versão {d.versao}</p>}
                           </div>
+                          {/* O reenvio fica nas pendências, logo acima: aqui só a situação. */}
                           <Selo tom={st.tom}>{st.rotulo}</Selo>
-                          {d.status === "reprovado" && <EnviarPendencia documentoId={d.id} rotulo="Reenviar" variante="outline" />}
                         </li>
                       );
                     })}
