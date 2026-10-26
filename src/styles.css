@@ -2045,3 +2045,541 @@ html[data-crm-motion="off"] .crm-page-transition {
     gap: 0.5rem;
   }
 }
+
+/* ===========================================================================
+ * Sistema 3D do Agilliza (frente a1, pedido do dono de 26/10/2026, item C00)
+ *
+ * "Deve ter elementos 3D igual dos demais portais, profissional e sofisticado."
+ * Mesma linguagem do `.b3d` dos portais dos assinantes (Agilliza Tech,
+ * apps/web/src/components/shell/padrao-agilliza.css): peça pequena com face em
+ * degradê do tom, lateral escura que dá espessura e sombra colorida no chão.
+ * Componentes: src/components/ui/icone-3d.tsx (Icone3D), indicador-3d.tsx
+ * (Indicador3D), estado-3d.tsx (Estado3D) e sub-navegacao.tsx (SubNavegacao).
+ * Guia: docs/visual-3d.md. Fora de @layer de propósito: vence o h-5/w-5 que a
+ * tela passar no glifo.
+ * ======================================================================== */
+.i3d {
+  --l: 30px;
+  --c1: #3a4dff;
+  --c2: #000f9f;
+  --c3: #00063f;
+  --rim: #c9cef5;
+  --sombra-chao: rgb(0 15 159 / 0.42);
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--l);
+  height: var(--l);
+  transform-style: preserve-3d;
+  transform: perspective(420px) rotateX(var(--i3d-rx, 0deg)) rotateY(var(--i3d-ry, 0deg))
+    translateY(var(--i3d-ty, 0));
+  transition: transform 0.45s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+.i3d-xs {
+  --l: 20px;
+}
+.i3d-sm {
+  --l: 24px;
+}
+.i3d-md {
+  --l: 30px;
+}
+.i3d-lg {
+  --l: 38px;
+}
+.i3d-xl {
+  --l: 48px;
+}
+.i3d-lado {
+  position: absolute;
+  inset: 0;
+  border-radius: 30%;
+  background: var(--c3);
+  opacity: 0.88;
+  transform: translate3d(0, max(1.5px, calc(var(--l) * 0.075)), -3px);
+}
+.i3d-sombra {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -15%;
+  height: 18%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--sombra-chao), transparent);
+  filter: blur(3px);
+  opacity: 0.55;
+  transform: translateZ(-12px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.45s ease;
+}
+.i3d-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 30%;
+  color: #fff;
+  background:
+    radial-gradient(110% 80% at 28% 10%, rgb(255 255 255 / 0.3), transparent 46%),
+    linear-gradient(160deg, var(--c1), var(--c2) 60%, var(--c3));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.42),
+    inset 0 -3px 6px rgb(0 0 0 / 0.18),
+    0 0 0 0.5px rgb(0 0 0 / 0.06),
+    0 1px 2px rgb(15 23 42 / 0.14);
+}
+/* Fio de luz na borda (claro em cima, tom aceso embaixo). */
+.i3d-face::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.75),
+    transparent 35%,
+    transparent 65%,
+    var(--rim)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.45;
+  pointer-events: none;
+}
+/* Reflexo diagonal no alto da face. */
+.i3d-face::after {
+  content: "";
+  position: absolute;
+  top: -22%;
+  left: -20%;
+  width: 140%;
+  height: 42%;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.3), transparent);
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+.i3d-face > svg,
+.i3d-face > img {
+  position: relative;
+  z-index: 1;
+  width: 52%;
+  height: 52%;
+  color: #fff;
+  filter: drop-shadow(0 0.5px 0.5px rgb(0 0 0 / 0.28));
+}
+.i3d-face > img {
+  object-fit: contain;
+  filter: none;
+}
+/* Tons: marca e semânticos (vermelho = só alerta/perigo). */
+.i3d-sucesso {
+  --c1: #3fe0a8;
+  --c2: #10a37f;
+  --c3: #04513d;
+  --rim: #c9f7e6;
+  --sombra-chao: rgb(16 163 127 / 0.45);
+}
+.i3d-alerta {
+  --c1: #ffd27f;
+  --c2: #e89a22;
+  --c3: #8c4e06;
+  --rim: #fff1d2;
+  --sombra-chao: rgb(232 154 34 / 0.45);
+}
+.i3d-perigo {
+  --c1: #ff5a6e;
+  --c2: #c8102e;
+  --c3: #6b0716;
+  --rim: #ffc9d1;
+  --sombra-chao: rgb(200 16 46 / 0.4);
+}
+.i3d-info {
+  --c1: #6f9bff;
+  --c2: #2457d6;
+  --c3: #0b2a7a;
+  --rim: #d6e3ff;
+  --sombra-chao: rgb(36 87 214 / 0.4);
+}
+.i3d-neutro {
+  --c1: #9aa1bd;
+  --c2: #4a5175;
+  --c3: #1b1f3b;
+  --rim: #dde0f2;
+  --sombra-chao: rgb(27 31 59 / 0.32);
+}
+.i3d-violeta {
+  --c1: #b49bff;
+  --c2: #6d3fe0;
+  --c3: #2e1270;
+  --rim: #e6dcff;
+  --sombra-chao: rgb(109 63 224 / 0.4);
+}
+.i3d-ciano {
+  --c1: #6be6f5;
+  --c2: #0e98b8;
+  --c3: #0b4a5c;
+  --rim: #d3f7fc;
+  --sombra-chao: rgb(14 152 184 / 0.4);
+}
+
+/* Inclina com o cartão: o pai leva `i3d-grupo`. */
+.i3d-grupo:hover .i3d,
+.i3d-grupo:focus-visible .i3d {
+  --i3d-rx: 10deg;
+  --i3d-ry: -12deg;
+  --i3d-ty: -1px;
+}
+.i3d-grupo:hover .i3d-sombra {
+  opacity: 0.75;
+}
+.i3d-girando .i3d-face > svg {
+  animation: i3d-gira 1s linear infinite;
+}
+@keyframes i3d-gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .i3d,
+  .i3d-sombra {
+    transition: none;
+  }
+  .i3d-grupo:hover .i3d,
+  .i3d-grupo:focus-visible .i3d {
+    --i3d-rx: 0deg;
+    --i3d-ry: 0deg;
+    --i3d-ty: 0;
+  }
+  .i3d-girando .i3d-face > svg {
+    animation: none;
+  }
+}
+html[data-crm-motion="off"] .i3d-grupo:hover .i3d {
+  --i3d-rx: 0deg;
+  --i3d-ry: 0deg;
+  --i3d-ty: 0;
+}
+
+/* ---------------------------------------------------- cartão de indicador --- */
+.i3d-indicador {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 104px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 14px 12px;
+  border: 1px solid #eceef2;
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--card-foreground);
+  text-align: left;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+:is(a, button).i3d-indicador {
+  cursor: pointer;
+}
+:is(a, button).i3d-indicador:hover {
+  border-color: color-mix(in srgb, var(--primary) 26%, #e4e7ec);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.05),
+    0 10px 24px -14px rgb(0 15 159 / 0.28);
+  transform: translateY(-1px);
+}
+:is(a, button).i3d-indicador:focus-visible {
+  outline: 2px solid rgb(0 15 159 / 0.35);
+  outline-offset: 2px;
+}
+.i3d-indicador-destaque {
+  border-color: color-mix(in srgb, var(--primary) 16%, #eceef2);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--primary) 4%, transparent), transparent 60%),
+    var(--card);
+}
+.i3d-indicador-topo {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+.i3d-indicador-rotulo {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--muted-foreground);
+}
+.i3d-indicador-rotulo small {
+  font-size: 11px;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--muted-foreground) 75%, transparent);
+}
+.i3d-indicador-seta {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1.2, 0.36, 1),
+    color 0.2s;
+}
+.i3d-grupo:hover .i3d-indicador-seta {
+  transform: translateX(2px);
+  color: var(--primary);
+}
+.i3d-indicador-valor {
+  min-width: 0;
+  overflow: hidden;
+  font-size: clamp(1.25rem, 1.12rem + 0.5vw, 1.625rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+.i3d-indicador-esqueleto {
+  display: block;
+  width: 60%;
+  height: 26px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f1f2f7, #e7e9f1, #f1f2f7);
+  background-size: 200% 100%;
+  animation: i3d-brilho 1.4s ease-in-out infinite;
+}
+@keyframes i3d-brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+.i3d-indicador-rodape {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.i3d-indicador-detalhe {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.i3d-variacao {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.i3d-variacao-boa {
+  color: var(--success-texto);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+.i3d-variacao-ruim {
+  color: var(--destructive);
+  background: color-mix(in srgb, var(--destructive) 10%, transparent);
+}
+.i3d-variacao-neutra {
+  color: var(--muted-foreground);
+  background: var(--secondary);
+}
+
+/* ------------------------------------------------------------- estados --- */
+.i3d-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px 20px;
+  border: 1px dashed #dfe2ea;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--muted) 70%, var(--card));
+  text-align: center;
+}
+.i3d-estado-compacto {
+  flex-direction: row;
+  gap: 12px;
+  padding: 14px 16px;
+  border-style: solid;
+  border-color: #eceef2;
+  text-align: left;
+}
+.i3d-estado-texto {
+  min-width: 0;
+  max-width: 440px;
+}
+.i3d-estado-compacto .i3d-estado-texto {
+  flex: 1;
+}
+.i3d-estado-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.i3d-estado-descricao {
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+.i3d-estado[data-tipo="erro"] {
+  border-color: color-mix(in srgb, var(--destructive) 22%, #eceef2);
+  background: color-mix(in srgb, var(--destructive) 3%, var(--card));
+}
+@media (max-width: 479px) {
+  .i3d-estado-compacto {
+    flex-wrap: wrap;
+  }
+  .i3d-estado-compacto .i3d-estado-acao {
+    width: 100%;
+  }
+}
+
+/* ----------------------------------------------- sub-navegação de página --- */
+/* Abas entre telas irmãs (Conta, Tecnologia...): trilho cinza, escolhida em papel. */
+.subnav-3d {
+  display: flex;
+  max-width: 100%;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 4px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: var(--secondary);
+  scrollbar-width: none;
+}
+.subnav-3d::-webkit-scrollbar {
+  display: none;
+}
+.subnav-3d a {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px 0 6px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  transition:
+    background-color 0.16s,
+    color 0.16s,
+    box-shadow 0.16s;
+}
+.subnav-3d a:hover {
+  color: var(--foreground);
+  background: rgb(255 255 255 / 0.6);
+}
+.subnav-3d a[aria-current="page"] {
+  color: var(--foreground);
+  background: var(--card);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.08),
+    0 0 0 1px #e4e7ec;
+}
+.subnav-3d a:not([aria-current="page"]) .i3d {
+  filter: saturate(0.2) brightness(1.12);
+  opacity: 0.85;
+}
+
+/* ------------------------------------------------- menu lateral: insígnias --- */
+/* Igual ao `menu-insignia` dos assinantes (assinatura.css): cada glifo mora numa
+   insígnia de 28 px (24 nos filhos) com véu branco e fio de luz, glifo em duotom; a
+   tela atual vira peça branca em relevo com o glifo azul. */
+.app-sidebar .menu-insignia {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.04));
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 1px 0 rgb(0 0 0 / 0.12);
+  color: #b9c4ff;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.3s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+.app-sidebar .menu-insignia.filho {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+.app-sidebar .menu-insignia svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  fill-opacity: 0.14;
+  stroke-width: 1.6;
+}
+.app-sidebar .menu-insignia.filho svg {
+  width: 14px;
+  height: 14px;
+}
+.app-sidebar :is(a, button):hover .menu-insignia {
+  color: #fff;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.07));
+}
+.app-sidebar .menu-insignia.contem-ativo {
+  color: #fff;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.08));
+}
+.app-sidebar [aria-current="page"] .menu-insignia {
+  color: var(--primary);
+  background: linear-gradient(180deg, #ffffff, #e9ecff);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -2px 0 rgb(0 15 159 / 0.12),
+    0 2px 0 rgb(0 5 46 / 0.35),
+    0 4px 10px -2px rgb(0 0 0 / 0.35);
+  transform: translateY(-1px);
+}
+.app-sidebar [aria-current="page"] .menu-insignia svg {
+  fill-opacity: 0.16;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar .menu-insignia {
+    transition: none;
+  }
+  .app-sidebar [aria-current="page"] .menu-insignia {
+    transform: none;
+  }
+}
+/* =================================================== fim do sistema 3D (a1) === */
