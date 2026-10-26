@@ -186,11 +186,54 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
       { acao: "edit", label: "Editar" },
     ],
   },
+  // Financeiro da matriz (frente a5): ações separadas pedidas pelo dono — ver, lançar,
+  // editar regras, aprovar, confirmar recebimento, registrar pagamento e conciliar. O banco
+  // confere a mesma matriz em cada função (fin_pode).
   {
     grupo: "Financeiro",
     modulo: "financeiro.painel",
-    label: "Painel financeiro",
-    acoes: [{ acao: "view", label: "Ver" }],
+    label: "Painel e relatórios",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "export", label: "Exportar" },
+    ],
+  },
+  {
+    grupo: "Financeiro",
+    modulo: "financeiro.comissoes_bancos",
+    label: "Comissões dos bancos",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Lançar / informar valor" },
+      { acao: "edit", label: "Corrigir, contestar e cancelar" },
+      { acao: "regras", label: "Editar regras" },
+      { acao: "receber", label: "Confirmar recebimento" },
+    ],
+  },
+  {
+    grupo: "Financeiro",
+    modulo: "financeiro.repasses",
+    label: "Repasses aos assinantes",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "regras", label: "Editar regras" },
+      { acao: "aprovar", label: "Aprovar para pagamento" },
+      { acao: "pagar", label: "Registrar pagamento" },
+      { acao: "edit", label: "Ajustar e cancelar" },
+    ],
+  },
+  {
+    grupo: "Financeiro",
+    modulo: "financeiro.comissoes",
+    label: "Comissões de corretores e parceiros",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "create", label: "Lançar e definir participantes" },
+      { acao: "regras", label: "Editar regras" },
+      { acao: "aprovar", label: "Aprovar para pagamento" },
+      { acao: "pagar", label: "Registrar pagamento" },
+      { acao: "edit", label: "Ajustar, contestar e cancelar" },
+    ],
   },
   {
     grupo: "Financeiro",
@@ -198,9 +241,9 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     label: "Contas a pagar",
     acoes: [
       { acao: "view", label: "Ver" },
-      { acao: "create", label: "Criar" },
-      { acao: "edit", label: "Editar" },
-      { acao: "baixar", label: "Baixar" },
+      { acao: "create", label: "Lançar (e ler boleto)" },
+      { acao: "edit", label: "Editar e cancelar" },
+      { acao: "baixar", label: "Registrar pagamento" },
     ],
   },
   {
@@ -209,18 +252,19 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
     label: "Contas a receber",
     acoes: [
       { acao: "view", label: "Ver" },
-      { acao: "create", label: "Criar" },
-      { acao: "edit", label: "Editar" },
-      { acao: "baixar", label: "Baixar" },
+      { acao: "create", label: "Lançar" },
+      { acao: "edit", label: "Editar e cancelar" },
+      { acao: "baixar", label: "Confirmar recebimento" },
     ],
   },
   {
     grupo: "Financeiro",
-    modulo: "financeiro.comissoes",
-    label: "Repasses",
+    modulo: "financeiro.conciliacao",
+    label: "Conciliação bancária",
     acoes: [
       { acao: "view", label: "Ver" },
-      { acao: "edit", label: "Editar" },
+      { acao: "create", label: "Importar extrato" },
+      { acao: "conciliar", label: "Conciliar e desfazer" },
     ],
   },
   {
@@ -231,6 +275,21 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
       { acao: "view", label: "Ver" },
       { acao: "export", label: "Exportar" },
     ],
+  },
+  {
+    grupo: "Financeiro",
+    modulo: "financeiro.regras",
+    label: "Cadastros e parâmetros",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Editar" },
+    ],
+  },
+  {
+    grupo: "Financeiro",
+    modulo: "financeiro.auditoria",
+    label: "Auditoria do financeiro",
+    acoes: [{ acao: "view", label: "Ver" }],
   },
   {
     grupo: "Relatórios",

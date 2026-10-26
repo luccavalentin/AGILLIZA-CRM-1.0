@@ -2,7 +2,20 @@ import { createMiddleware } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "./auth-middleware";
 
 /** Ações da matriz de permissões (tabela `permissions`). */
-export type AcaoPermissao = "view" | "create" | "edit" | "delete" | "export" | "gerir";
+export type AcaoPermissao =
+  | "view"
+  | "create"
+  | "edit"
+  | "delete"
+  | "export"
+  | "gerir"
+  // Financeiro da matriz (frente a5): ações separadas pedidas pelo dono.
+  | "baixar"
+  | "regras"
+  | "aprovar"
+  | "receber"
+  | "pagar"
+  | "conciliar";
 
 /**
  * Server function protegida pela matriz de permissões — a mesma regra que as

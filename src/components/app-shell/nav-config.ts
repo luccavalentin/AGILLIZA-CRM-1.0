@@ -505,54 +505,43 @@ export const navInterno: NavGroup[] = [
     items: [{ label: "Automações", icon: Workflow, to: "/automacoes", emBreve: true }],
   },
   {
-    // Financeiro da matriz: três fluxos separados (comissão dos bancos, repasse
-    // aos assinantes, comissão de corretores e parceiros) mais as despesas e
-    // receitas da operação, com conciliação e painel consolidado.
+    // Financeiro da matriz (frente a5, 26/10/2026): três fluxos separados — comissões dos
+    // bancos, repasse aos assinantes, comissões de corretores e parceiros — mais as despesas
+    // e receitas da operação, conciliação, painel consolidado (sem misturar naturezas),
+    // relatórios, regras e auditoria. Endereços antigos redirecionam (comissoes →
+    // comissoes-bancos; comissoes-usuario → comissoes-corretores).
     id: "financeiro",
     label: "Financeiro",
     items: [
+      { label: "Painel", icon: LineChart, to: "/financeiro/painel", perm: { modulo: "financeiro.painel" } },
       {
-        label: "Painel",
-        icon: LineChart,
-        to: "/financeiro/painel",
-        perm: { modulo: "financeiro.painel" },
+        label: "Comissões dos bancos",
+        icon: Landmark,
+        to: "/financeiro/comissoes-bancos",
+        perm: { modulo: "financeiro.comissoes_bancos", equivalentes: ["financeiro.comissoes"] },
       },
+      { label: "Repasses aos assinantes", icon: Percent, to: "/financeiro/repasses", perm: { modulo: "financeiro.repasses" } },
       {
-        label: "Contas a pagar",
-        icon: ArrowUpCircle,
-        to: "/financeiro/contas-a-pagar",
-        perm: { modulo: "financeiro.contas_pagar" },
-      },
-      {
-        label: "Contas a receber",
-        icon: ArrowDownCircle,
-        to: "/financeiro/contas-a-receber",
-        perm: { modulo: "financeiro.contas_receber" },
-      },
-      {
-        label: "Fluxo de caixa",
-        icon: Wallet,
-        to: "/financeiro/fluxo-de-caixa",
-        perm: { modulo: "financeiro.fluxo_caixa" },
-      },
-      {
-        label: "Repasses",
-        icon: Percent,
-        to: "/financeiro/comissoes",
+        label: "Corretores e parceiros",
+        icon: HandCoins,
+        to: "/financeiro/comissoes-corretores",
         perm: { modulo: "financeiro.comissoes" },
       },
+      { label: "Contas a pagar", icon: ArrowUpCircle, to: "/financeiro/contas-a-pagar", perm: { modulo: "financeiro.contas_pagar" } },
+      { label: "Contas a receber", icon: ArrowDownCircle, to: "/financeiro/contas-a-receber", perm: { modulo: "financeiro.contas_receber" } },
+      { label: "Licenças dos assinantes", icon: Building2, to: "/financeiro/assinantes", perm: { modulo: "financeiro.repasses" } },
+      { label: "Conciliação", icon: FileCheck2, to: "/financeiro/conciliacao", perm: { modulo: "financeiro.conciliacao" } },
+      { label: "Fluxo de caixa", icon: Wallet, to: "/financeiro/fluxo-de-caixa", perm: { modulo: "financeiro.fluxo_caixa" } },
+      { label: "Relatórios", icon: BarChart3, to: "/financeiro/relatorios", perm: { modulo: "financeiro.painel", equivalentes: ["financeiro.fluxo_caixa"] } },
       {
-        label: "Comissões (usuários)",
-        icon: Percent,
-        to: "/financeiro/comissoes-usuario",
-        perm: { modulo: "financeiro.comissoes" },
-      },
-      {
-        label: "Configurações",
+        label: "Regras e configurações",
         icon: SlidersHorizontal,
         to: "/financeiro/configuracoes",
-        perm: { modulo: "financeiro.painel" },
+        perm: { modulo: "financeiro.regras", equivalentes: ["financeiro.painel"] },
       },
+      { label: "Auditoria", icon: ScrollText, to: "/financeiro/auditoria", perm: { modulo: "financeiro.auditoria" } },
+      // Demonstrativo individual: cada pessoa vê só as próprias comissões (o banco confere).
+      { label: "Minhas comissões", icon: UserRound, to: "/financeiro/minhas-comissoes" },
     ],
   },
   {
