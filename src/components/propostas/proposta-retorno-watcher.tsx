@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { propostaComIdH, textoIdH } from "@/lib/propostas/id-h";
 import { usePropostaNotificacaoStore } from "@/hooks/use-proposta-notificacao-store";
 import { signalIncomingChat } from "@/components/chat/chat-alerta";
 import { tipoAtivo, tipoComSom } from "@/lib/notification-prefs";
@@ -143,7 +144,9 @@ export function PropostaRetornoWatcher({ userId }: Props) {
           // Busca dados da proposta para the popup
           const { data: prop } = await supabase
             .from("propostas")
-            .select("id, numero_proposta, nome_cliente, usuario_responsavel_id, usuario_criador_id")
+            .select(
+              "id, numero_proposta, homefin_id_oportunidade, nome_cliente, usuario_responsavel_id, usuario_criador_id",
+            )
             .eq("id", row.proposta_id)
             .maybeSingle();
 
@@ -174,7 +177,7 @@ export function PropostaRetornoWatcher({ userId }: Props) {
           // Notificação de chat interna
           signalIncomingChat(`prop-${row.id}`, {
             titulo: `Retorno de Proposta: ${row.nome_banco || "Banco"}`,
-            corpo: `Proposta ${prop.numero_proposta} - Cliente: ${prop.nome_cliente || "—"}`,
+            corpo: `${propostaComIdH(prop)} - Cliente: ${prop.nome_cliente || "—"}`,
             skipSound: true,
           });
 
@@ -182,7 +185,7 @@ export function PropostaRetornoWatcher({ userId }: Props) {
           adicionarPopup({
             id: row.id,
             tipo: "proposta",
-            numero: prop.numero_proposta,
+            numero: textoIdH(prop),
             status: row.status_banco || "Atualizada",
             mensagem_banco: row.mensagem_banco,
             nome_cliente: prop.nome_cliente || "—",

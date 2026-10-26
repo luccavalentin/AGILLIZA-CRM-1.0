@@ -1,4 +1,6 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
+import { textoIdH } from "@/lib/propostas/id-h";
+import { MarcarRegistroDialog } from "@/components/propostas/marcar-registro-dialog";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -274,8 +276,8 @@ function Pagina() {
             status: c.status,
             cliente: c.nome_cliente ?? "—",
             documento: c.cpf_cnpj ? maskCpfCnpj(c.cpf_cnpj) : null,
-            numero: nb ? `Nº banco ${nb}` : `#${c.numero_proposta}`,
-            numeroSecundario: nb ? `Interno #${c.numero_proposta}` : null,
+            numero: nb ? `Nº banco ${nb}` : textoIdH(c),
+            numeroSecundario: nb ? textoIdH(c) : null,
             selo: { rotulo: cfg.label, tom: cfg.tone },
             banco: c.nome_banco ?? null,
             valor: Number(c.valor_financiamento) || 0,
@@ -393,7 +395,14 @@ function Pagina() {
     }
   }
 
+  const [registrando, setRegistrando] = useState<any | null>(null);
+
   async function mover(c: Cartao, destino: PropostaStatus) {
+    // C12: "Contrato registrado" pede a data do cartório na ação própria.
+    if (destino === "registrado") {
+      setRegistrando(c.bruto ?? { id: c.chave });
+      return;
+    }
     setMovendo(c.chave);
     try {
       await moverFn({ data: { proposta_id: c.chave, novo_status: destino } });
@@ -872,7 +881,7 @@ function Pagina() {
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 autoFocus
-                placeholder="Buscar por cliente, nº, banco ou responsável"
+                placeholder="Buscar por cliente, ID H., nº no banco ou responsável"
                 value={buscaPasta}
                 onChange={(e) => setBuscaPasta(e.target.value)}
                 className="h-11 rounded-xl pl-10"
@@ -951,6 +960,8 @@ function Pagina() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <MarcarRegistroDialog proposta={registrando} onClose={() => setRegistrando(null)} />
 
       <PrazosKanbanDialog
         aberto={prazosAbertos}

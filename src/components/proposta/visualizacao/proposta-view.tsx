@@ -76,6 +76,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { textoIdH } from "@/lib/propostas/id-h";
+import { formatarDataRegistro } from "@/lib/propostas/contrato-registrado";
 
 const TAB_ICONS: Record<Tab, React.ComponentType<{ className?: string }>> = {
   RESUMO: LayoutDashboard,
@@ -192,7 +194,7 @@ export function PropostaView({
             {/* Pedido do dono (21/10/2026): número nunca em letra de título. O título é
                 curto; número interno, número no banco e ID ficam na linha de apoio. */}
             <h1 className="mt-2 truncate text-lg font-semibold tracking-tight text-foreground">
-              Proposta <span className="tabular-nums">{p.numero_proposta}</span>
+              Proposta <span className="tabular-nums">{textoIdH(p)}</span>
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {numeroBancoParaExibir(p.numero_proposta_banco) && (
@@ -200,10 +202,7 @@ export function PropostaView({
                   Nº no banco {numeroBancoParaExibir(p.numero_proposta_banco)} ·
                 </span>
               )}
-              {/* ID da operação na integração bancária — escrito só "ID". */}
-              {p.homefin_id_oportunidade && (
-                <span className="mr-2 tabular-nums">ID {p.homefin_id_oportunidade} ·</span>
-              )}
+              {/* O ID H. (oportunidade na integração) já está no título (C33). */}
               {status === "cancelada"
                 ? "Proposta cancelada"
                 : status === "credito_recusado"
@@ -447,6 +446,12 @@ export function PropostaView({
               <span className="inline-flex items-center gap-1 font-medium text-success">
                 <Check className="h-3 w-3" />
                 Contrato emitido em {formatarDataHora(p.contrato_emitido_em)}
+              </span>
+            )}
+            {p.contrato_registrado_em && (
+              <span className="inline-flex items-center gap-1 font-medium text-success">
+                <Check className="h-3 w-3" />
+                Contrato registrado em {formatarDataRegistro(p.contrato_registrado_em)}
               </span>
             )}
           </div>

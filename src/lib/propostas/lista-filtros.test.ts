@@ -19,6 +19,12 @@ describe("busca da listagem de propostas", () => {
     expect(c).toContain("numero_proposta_banco.ilike.%PRO-000311%");
   });
 
+  it("C33: o ID H. acha a proposta (com ou sem o prefixo)", () => {
+    expect(clausulasDeBusca("ID H. 123456")).toContain("homefin_id_oportunidade.ilike.%123456%");
+    expect(clausulasDeBusca("123456")).toContain("homefin_id_oportunidade.ilike.%123456%");
+    expect(clausulasDeBusca("Maria").some((x) => x.startsWith("homefin"))).toBe(false);
+  });
+
   it("termo vazio não filtra nada", () => {
     expect(clausulasDeBusca("   ")).toEqual([]);
   });

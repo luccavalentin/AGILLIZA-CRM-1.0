@@ -1,5 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { FileText, Undo2, User, Trash2 } from "lucide-react";
+import { textoIdH } from "@/lib/propostas/id-h";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -145,7 +146,7 @@ export function ListaDesktop({
                       <Checkbox
                         checked={sel.has(p.id)}
                         onCheckedChange={() => onToggleSelecionado?.(p.id)}
-                        aria-label={`Selecionar proposta ${p.numero_proposta}`}
+                        aria-label={`Selecionar proposta ${textoIdH(p)}`}
                       />
                     </TableCell>
                   )}
@@ -160,12 +161,7 @@ export function ListaDesktop({
                             Nº banco {nb}
                           </div>
                           <div className="mt-1 flex flex-col gap-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                            <span>
-                              Interno <span className="tabular-nums">{p.numero_proposta}</span>
-                            </span>
-                            {p.homefin_id_oportunidade && (
-                              <span className="tabular-nums">ID {p.homefin_id_oportunidade}</span>
-                            )}
+                            <span className="tabular-nums">{textoIdH(p)}</span>
                             <span className="text-[10px] lowercase tracking-tight">
                               {formatDataHora(p.created_at)}
                             </span>
@@ -175,13 +171,8 @@ export function ListaDesktop({
                         <div className="flex flex-col gap-1 font-medium tabular-nums text-foreground transition-colors group-hover/row:text-[var(--banco)] text-[14px]">
                           <div className="flex items-center gap-2">
                             {p.deleted_at && <Trash2 className="h-3.5 w-3.5 text-destructive" />}
-                            <span>{p.numero_proposta}</span>
+                            <span>{textoIdH(p)}</span>
                           </div>
-                          {p.homefin_id_oportunidade && (
-                            <span className="text-[11px] font-medium text-muted-foreground">
-                              ID {p.homefin_id_oportunidade}
-                            </span>
-                          )}
                           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">
                             {formatDataHora(p.created_at)}
                           </span>
@@ -231,7 +222,7 @@ export function ListaDesktop({
                         {handleExcluirDefinitivo && (
                           <ConfirmDelete
                             titulo="Excluir definitivamente"
-                            descricao={`A proposta ${p.numero_proposta} será apagada permanentemente. Esta ação não pode ser desfeita.`}
+                            descricao={`A proposta ${textoIdH(p)} será apagada permanentemente. Esta ação não pode ser desfeita.`}
                             onConfirm={() => handleExcluirDefinitivo(p.id)}
                           />
                         )}
@@ -241,7 +232,7 @@ export function ListaDesktop({
                         <MenuAcoesProposta propostaId={p.id} status={p.status} bancos={p.bancos} />
                         <ConfirmDelete
                           titulo="Excluir proposta"
-                          descricao={`A proposta ${p.numero_proposta} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
+                          descricao={`A proposta ${textoIdH(p)} será movida para a aba "Excluídas". Você poderá restaurá-la a qualquer momento.`}
                           onConfirm={() => handleExcluir(p.id)}
                         />
                       </div>

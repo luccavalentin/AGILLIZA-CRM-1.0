@@ -9,6 +9,7 @@ import {
   type ProvedorCatalogo,
 } from "./provedores/catalogo";
 import { ErroBureau, type FichaBureau } from "./tipos";
+import { consultaVisivel, fichaSemDadosSensiveis } from "./visibilidade";
 
 const soDigitos = (v: string) => String(v ?? "").replace(/\D/g, "");
 
@@ -65,9 +66,19 @@ export interface ConfigBureau {
   nome: string | null;
   base_url: string | null;
   ativo: boolean;
+  /**
+   * O adaptador do fornecedor já existe? Sem ele a consulta não sai: a tela mostra
+   * "Consulta indisponível" em vez de deixar a pessoa tentar e falhar.
+   */
+  integrado: boolean;
   /** Nomes dos campos já preenchidos, para a tela mostrar o que falta. */
   camposPreenchidos: string[];
   catalogo: ProvedorCatalogo[];
+  /**
+   * Consulta pelo caminho do Agilliza Tech (APIFull pela fila do worker, 0319): pronta ou o motivo
+   * exato (sem chave cadastrada, desligada, sem custo…). É o que a Consulta Ficha usa.
+   */
+  plataforma?: { pronto: boolean; motivo: string | null };
 }
 
 // A tela de consulta (CRM) só precisa saber se há bureau ativo; a de
@@ -81,6 +92,7 @@ export const obterConfigBureau = createServerFn({ method: "GET" })
       nome: null,
       base_url: null,
       ativo: false,
+      integrado: false,
       camposPreenchidos: [],
       catalogo: PROVEDORES_BUREAU,
     };
@@ -88,19 +100,30 @@ export const obterConfigBureau = createServerFn({ method: "GET" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return vazio;
 
+    const { dependenciasReaisConsulta, prontidaoDaConsulta } = await import(
+      "./consulta-plataforma.server"
+    );
+    const plataforma = await prontidaoDaConsulta(await dependenciasReaisConsulta()).catch(() => ({
+      pronto: false,
+      motivo: "A plataforma não respondeu agora. Tente de novo em instantes.",
+    }));
+
     const data = await lerConfig(corr);
-    if (!data) return vazio;
+    if (!data) return { ...vazio, plataforma };
 
     const creds = data.credenciais ?? {};
+    const { adaptadorDe } = await import("./provedores");
     return {
       provedor: data.provedor,
       nome: data.nome,
       base_url: data.base_url,
       ativo: Boolean(data.ativo),
+      integrado: adaptadorDe(data.provedor) != null,
       camposPreenchidos: Object.entries(creds)
         .filter(([, v]) => String(v ?? "").trim().length > 0)
         .map(([k]) => k),
       catalogo: PROVEDORES_BUREAU,
+      plataforma,
     };
   });
 
@@ -164,18 +187,30 @@ export const salvarConfigBureau = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Consulta Ficha (C16): sai pelo MESMO caminho do Agilliza Tech — APIFull pela fila do worker, com a
+ * credencial de "Chaves dos provedores" —, sem crédito (contrato do correspondente) e com o custo
+ * registrado em "Consultas pagas" (0319 de lá). A consulta é assíncrona: aqui nasce o registro do
+ * histórico (rastro LGPD, antes de qualquer pedido) e o pedido; `acompanharConsultaFicha` traz o
+ * resultado quando o worker conclui.
+ */
 export const consultarFichaBureau = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
   .inputValidator((d: unknown) =>
     z
       .object({
-        documento: z.string().min(11),
-        finalidade: z.string().min(3),
+        documento: z.string().min(11).max(20),
+        finalidade: z.string().trim().min(5).max(500),
+        base_legal: z
+          .enum(["consentimento", "protecao_credito", "execucao_contrato", "legitimo_interesse"])
+          .default("legitimo_interesse"),
+        autorizou: z.boolean().default(false),
+        nome: z.string().trim().max(120).nullable().optional(),
         cliente_id: z.string().uuid().nullable().optional(),
       })
       .parse(d),
   )
-  .handler(async ({ data, context }): Promise<FichaBureau> => {
+  .handler(async ({ data, context }): Promise<{ registroId: string; pedidoId: string }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Ecossistema não identificado.");
@@ -184,90 +219,126 @@ export const consultarFichaBureau = createServerFn({ method: "POST" })
     const tipoPessoa: "F" | "J" = documento.length > 11 ? "J" : "F";
     const valido = tipoPessoa === "F" ? validarCPF(documento) : validarCNPJ(documento);
     if (!valido) throw new ErroBureau("documento_invalido");
-
-    const cfg = await lerConfig(corr);
-
-    /**
-     * Toda consulta vira registro, inclusive a que falhou: é o rastro LGPD.
-     * Gravado em nome do usuário (a política confere conta e autor) e antes de
-     * chamar o fornecedor; sem registro, a consulta não sai.
-     */
-    const registrar = async (erro: string): Promise<string> => {
-      const { data: reg, error } = await db(supabase)
-        .from("bureau_consultas")
-        .insert({
-          correspondente_id: corr,
-          cliente_id: data.cliente_id ?? null,
-          documento,
-          tipo_pessoa: tipoPessoa,
-          finalidade: data.finalidade,
-          provedor: cfg?.provedor ?? "nenhum",
-          sucesso: false,
-          erro,
-          ator_id: userId,
-        })
-        .select("id")
-        .single();
-      if (error || !reg) {
-        throw new Error(
-          "Não foi possível registrar a consulta no histórico. Por exigência da LGPD, a consulta não foi feita.",
-        );
-      }
-      return reg.id as string;
-    };
-
-    if (!cfg || !cfg.ativo) {
-      await registrar("sem_provedor");
-      throw new ErroBureau("sem_provedor");
+    if (data.base_legal === "consentimento" && !data.autorizou) {
+      throw new Error("Com base no consentimento, confirme a autorização do titular.");
     }
 
-    const catalogo = provedorDoCatalogo(cfg.provedor);
-    const creds = cfg.credenciais ?? {};
-    const faltando = (catalogo?.campos ?? [])
-      .map((c) => c.chave)
-      .filter((c) => !String(creds[c] ?? "").trim());
-    if (faltando.length > 0) {
-      await registrar(`sem_credenciais: ${faltando.join(", ")}`);
-      throw new ErroBureau("sem_credenciais");
-    }
+    const { dependenciasReaisConsulta, prontidaoDaConsulta, solicitarNaPlataforma } = await import(
+      "./consulta-plataforma.server"
+    );
+    const dep = await dependenciasReaisConsulta();
+    const pronto = await prontidaoDaConsulta(dep);
 
-    const { adaptadorDe } = await import("./provedores");
-    const adaptador = adaptadorDe(cfg.provedor);
-    if (!adaptador) {
-      await registrar("adaptador_ausente");
-      throw new ErroBureau(
-        "sem_provedor",
-        `O adaptador do ${catalogo?.nome ?? cfg.provedor} ainda não foi escrito. Envie a documentação da API do fornecedor para concluir a integração.`,
+    // Toda consulta vira registro, inclusive a que não saiu: é o rastro LGPD. Gravado em nome de
+    // quem consulta (a política confere conta e autor) e ANTES do pedido.
+    const { data: reg, error } = await db(supabase)
+      .from("bureau_consultas")
+      .insert({
+        correspondente_id: corr,
+        cliente_id: data.cliente_id ?? null,
+        documento,
+        tipo_pessoa: tipoPessoa,
+        finalidade: data.finalidade,
+        provedor: "apifull",
+        sucesso: false,
+        erro: pronto.pronto ? "na_fila" : "sem_provedor",
+        ator_id: userId,
+      })
+      .select("id")
+      .single();
+    if (error || !reg) {
+      throw new Error(
+        "Não foi possível registrar a consulta no histórico. Por exigência da LGPD, a consulta não foi feita.",
       );
     }
+    if (!pronto.pronto) throw new Error(pronto.motivo ?? "Consulta indisponível.");
 
-    // Registro antes da chamada; o resultado é anotado nele depois, pelo
-    // servidor (pela API ninguém altera o histórico).
-    const registroId = await registrar("sem_retorno");
-    const concluir = async (campos: Record<string, unknown>) => {
-      const admin = await clienteServico();
-      const { error } = await admin.from("bureau_consultas").update(campos).eq("id", registroId);
-      // O rastro (quem, quando, documento, finalidade) já está gravado; aqui só
-      // falta o resultado. Não derruba a ficha que o fornecedor já cobrou.
-      if (error) console.error("[bureau] resultado da consulta não anotado", registroId, error.message);
-    };
-
-    let ficha: FichaBureau;
+    const admin = await clienteServico();
     try {
-      ficha = await adaptador.consultar(
-        { documento, finalidade: data.finalidade, clienteId: data.cliente_id ?? null },
-        {
-          ...creds,
-          base_url: cfg.base_url ?? catalogo?.baseUrlPadrao ?? "",
-        },
-      );
+      const r = await solicitarNaPlataforma(dep, {
+        userId,
+        documento,
+        nome: data.nome ?? null,
+        finalidade: data.finalidade,
+        base: data.base_legal,
+        autorizou: data.autorizou,
+      });
+      // Pedido repetido (dois cliques): o pedido já está em outro registro (índice único); este
+      // fica como rastro do clique e a tela acompanha o registro original.
+      const { error: e2 } = await admin
+        .from("bureau_consultas")
+        .update({ pedido_plataforma_id: r.pedidoId })
+        .eq("id", reg.id);
+      if (e2 && r.existente) {
+        const { data: outro } = await admin
+          .from("bureau_consultas")
+          .select("id")
+          .eq("pedido_plataforma_id", r.pedidoId)
+          .maybeSingle();
+        await admin.from("bureau_consultas").update({ erro: "repetida" }).eq("id", reg.id);
+        return { registroId: (outro?.id as string) ?? (reg.id as string), pedidoId: r.pedidoId };
+      }
+      return { registroId: reg.id as string, pedidoId: r.pedidoId };
     } catch (e) {
-      await concluir({ erro: e instanceof Error ? e.message : String(e) });
+      await admin
+        .from("bureau_consultas")
+        .update({ erro: e instanceof Error ? e.message.slice(0, 300) : "falha ao pedir" })
+        .eq("id", reg.id);
       throw e;
     }
+  });
 
-    await concluir({ sucesso: true, erro: null, ficha });
-    return ficha;
+/**
+ * Situação de uma consulta pedida (a tela pergunta a cada poucos segundos). Concluída, a ficha é
+ * anotada no histórico do Agilliza e devolvida; só quem pode ver a consulta acompanha.
+ */
+export const acompanharConsultaFicha = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["crm.clientes", "view"])])
+  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Consulta não encontrada.");
+    const { data: linha, error } = await db(supabase)
+      .from("bureau_consultas")
+      .select("id, documento, sucesso, erro, ficha, ator_id, cliente_id, pedido_plataforma_id")
+      .eq("id", data.id)
+      .eq("correspondente_id", corr)
+      .maybeSingle();
+    if (error || !linha) throw new Error("Consulta não encontrada.");
+    const l = linha as Record<string, any>;
+    const [clientes, amplo] = await Promise.all([
+      nomesPorId(supabase, "clientes", [l.cliente_id]),
+      supabase
+        .rpc("has_any_role", { _user_id: userId, _roles: ["admin", "correspondente"] })
+        .then((r: { data: unknown }) => r.data === true),
+    ]);
+    if (!consultaVisivel(l, userId, amplo, clientes)) throw new Error("Consulta não encontrada.");
+    if (l.sucesso && l.ficha) return { situacao: "concluida" as const, ficha: l.ficha as FichaBureau };
+    if (!l.pedido_plataforma_id) {
+      return { situacao: "falhou" as const, mensagem: String(l.erro ?? "A consulta não saiu.") };
+    }
+    const { dependenciasReaisConsulta, acompanharNaPlataforma } = await import(
+      "./consulta-plataforma.server"
+    );
+    const dep = await dependenciasReaisConsulta();
+    const r = await acompanharNaPlataforma(dep, {
+      userId: (l.ator_id as string) ?? userId,
+      pedidoId: l.pedido_plataforma_id as string,
+      documento: l.documento as string,
+    });
+    if (r.situacao === "concluida" || r.situacao === "falhou") {
+      const admin = await clienteServico();
+      await admin
+        .from("bureau_consultas")
+        .update(
+          r.situacao === "concluida"
+            ? { sucesso: true, erro: null, ficha: r.ficha }
+            : { sucesso: false, erro: r.mensagem },
+        )
+        .eq("id", l.id);
+    }
+    return r;
   });
 
 export interface ConsultaHistorico {
@@ -280,26 +351,236 @@ export interface ConsultaHistorico {
   sucesso: boolean;
   erro: string | null;
   created_at: string;
+  cliente_id: string | null;
+  /** Nome do cadastro (CRM) ou o devolvido na ficha. */
+  nome: string | null;
+  /** Score como o fornecedor devolveu (a tela leva para 0–1.000). */
+  score: number | null;
+  score_maximo: number | null;
+  apontamentos: number | null;
+  /** Quem consultou. */
+  responsavel: string | null;
 }
 
+const UUID = z.string().uuid();
+
+function numeroOuNull(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Nomes por id numa consulta só (clientes do CRM ou pessoas que consultaram). */
+async function nomesPorId(
+  supabase: any,
+  tabela: "clientes" | "profiles",
+  ids: (string | null | undefined)[],
+): Promise<Record<string, string>> {
+  const unicos = [...new Set(ids.filter((x): x is string => Boolean(x)))];
+  if (!unicos.length) return {};
+  const { data, error } = await supabase.from(tabela).select("id, nome").in("id", unicos);
+  // Nome é complemento do histórico: sem ele a linha mostra o documento.
+  if (error) return {};
+  const mapa: Record<string, string> = {};
+  for (const r of (data ?? []) as { id: string; nome: string | null }[]) {
+    if (r.nome) mapa[r.id] = r.nome;
+  }
+  return mapa;
+}
+
+/**
+ * Visibilidade de uma consulta (LGPD, auditoria de 26/10/2026): quem fez a consulta, quem tem
+ * papel amplo (admin/correspondente) ou quem enxerga o cliente pela RLS de `clientes` (o mapa de
+ * nomes lido com o cliente da pessoa só traz os clientes visíveis a ela).
+ */
+async function papelAmplo(supabase: any, userId: string): Promise<boolean> {
+  const { data } = await supabase.rpc("has_any_role", {
+    _user_id: userId,
+    _roles: ["admin", "correspondente"],
+  });
+  return data === true;
+}
+
+/**
+ * Histórico de consultas do ecossistema (as 50 mais recentes). Com `cliente_id`, só as
+ * daquele cliente (a Consulta Ficha aberta a partir da ficha do cliente).
+ */
 export const listarConsultasBureau = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .handler(async ({ context }): Promise<ConsultaHistorico[]> => {
+  .inputValidator((d: unknown) =>
+    z.object({ cliente_id: UUID.nullable().optional() }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<ConsultaHistorico[]> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) return [];
-    const [consultas, podePii] = await Promise.all([
-      db(supabase)
-        .from("bureau_consultas")
-        .select("id, documento, tipo_pessoa, finalidade, provedor, sucesso, erro, created_at")
-        .eq("correspondente_id", corr)
-        .order("created_at", { ascending: false })
-        .limit(50),
+    let consulta = db(supabase)
+      .from("bureau_consultas")
+      .select(
+        "id, documento, tipo_pessoa, finalidade, provedor, sucesso, erro, created_at, cliente_id, ator_id, nome_ficha:ficha->>nome, score:ficha->score->>valor, score_maximo:ficha->score->>maximo, apontamentos:ficha->>totalRestricoes",
+      )
+      .eq("correspondente_id", corr);
+    if (data.cliente_id) consulta = consulta.eq("cliente_id", data.cliente_id);
+    const [consultas, podePii, amplo] = await Promise.all([
+      consulta.order("created_at", { ascending: false }).limit(50),
       temPiiCliente(supabase, userId),
+      papelAmplo(supabase, userId),
     ]);
     if (consultas.error) throw new Error("Não foi possível carregar o histórico de consultas.");
-    return ((consultas.data ?? []) as ConsultaHistorico[]).map((c) => ({
-      ...c,
+    const linhas = (consultas.data ?? []) as Array<Record<string, any>>;
+    const [clientes, pessoas] = await Promise.all([
+      nomesPorId(
+        supabase,
+        "clientes",
+        linhas.map((l) => l.cliente_id),
+      ),
+      nomesPorId(
+        supabase,
+        "profiles",
+        linhas.map((l) => l.ator_id),
+      ),
+    ]);
+    return linhas.filter((c) => consultaVisivel(c, userId, amplo, clientes)).map((c) => ({
+      id: c.id,
       documento: podePii ? c.documento : mascararDocumento(c.documento ?? ""),
+      tipo_pessoa: c.tipo_pessoa,
+      finalidade: c.finalidade,
+      provedor: c.provedor,
+      sucesso: Boolean(c.sucesso),
+      erro: c.erro ?? null,
+      created_at: c.created_at,
+      cliente_id: c.cliente_id ?? null,
+      nome: (c.cliente_id && clientes[c.cliente_id]) || c.nome_ficha || null,
+      score: numeroOuNull(c.score),
+      score_maximo: numeroOuNull(c.score_maximo),
+      apontamentos: numeroOuNull(c.apontamentos),
+      responsavel: (c.ator_id && pessoas[c.ator_id]) || null,
     }));
+  });
+
+/** Números do topo da tela: consultas do mês, total concluído e score médio (0–1.000). */
+export const resumoConsultasBureau = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["crm.clientes", "view"])])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) return { mes: 0, total: 0, scoreMedio: null as number | null };
+    // Início do mês no fuso de São Paulo (o servidor pode estar em UTC).
+    const partes = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+    }).formatToParts(new Date());
+    const ano = partes.find((p) => p.type === "year")?.value;
+    const mesAtual = partes.find((p) => p.type === "month")?.value;
+    const inicioMes = `${ano}-${mesAtual}-01T00:00:00-03:00`;
+    const base = () =>
+      db(supabase)
+        .from("bureau_consultas")
+        .select("id", { count: "exact", head: true })
+        .eq("correspondente_id", corr)
+        .eq("sucesso", true);
+    const [mes, total, scores] = await Promise.all([
+      base().gte("created_at", inicioMes),
+      base(),
+      db(supabase)
+        .from("bureau_consultas")
+        .select("score:ficha->score->>valor, maximo:ficha->score->>maximo")
+        .eq("correspondente_id", corr)
+        .eq("sucesso", true)
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]);
+    if (mes.error || total.error || scores.error) {
+      throw new Error("Não foi possível carregar os números das consultas.");
+    }
+    const valores = ((scores.data ?? []) as Array<{ score: unknown; maximo: unknown }>)
+      .map((r) => {
+        const v = numeroOuNull(r.score);
+        const m = numeroOuNull(r.maximo);
+        return v == null ? null : (v / (m && m > 0 ? m : 1000)) * 1000;
+      })
+      .filter((v): v is number => v != null);
+    return {
+      mes: (mes.count as number | null) ?? 0,
+      total: (total.count as number | null) ?? 0,
+      scoreMedio: valores.length
+        ? Math.round(valores.reduce((a, b) => a + b, 0) / valores.length)
+        : null,
+    };
+  });
+
+/**
+ * Uma consulta do histórico com a ficha guardada (o "Relatório completo"). Quem não vê
+ * dado sensível recebe o documento mascarado e a ficha sem os contatos.
+ */
+export const obterConsultaBureau = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["crm.clientes", "view"])])
+  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Consulta não encontrada.");
+    const [r, podePii, amplo] = await Promise.all([
+      db(supabase)
+        .from("bureau_consultas")
+        .select("id, documento, finalidade, sucesso, erro, created_at, cliente_id, ator_id, ficha")
+        .eq("id", data.id)
+        .eq("correspondente_id", corr)
+        .maybeSingle(),
+      temPiiCliente(supabase, userId),
+      papelAmplo(supabase, userId),
+    ]);
+    if (r.error) throw new Error("Não foi possível abrir a consulta.");
+    if (!r.data) throw new Error("Consulta não encontrada.");
+    const linha = r.data as Record<string, any>;
+    const ficha = (linha.ficha ?? null) as FichaBureau | null;
+    const [clientes, pessoas] = await Promise.all([
+      nomesPorId(supabase, "clientes", [linha.cliente_id]),
+      nomesPorId(supabase, "profiles", [linha.ator_id]),
+    ]);
+    // Cliente de outro analista (fora da carteira de quem pede) não abre o relatório.
+    if (!consultaVisivel(linha, userId, amplo, clientes)) throw new Error("Consulta não encontrada.");
+    return {
+      id: linha.id as string,
+      documento: podePii ? (linha.documento as string) : mascararDocumento(linha.documento ?? ""),
+      finalidade: linha.finalidade as string,
+      sucesso: Boolean(linha.sucesso),
+      erro: (linha.erro ?? null) as string | null,
+      created_at: linha.created_at as string,
+      cliente_id: (linha.cliente_id ?? null) as string | null,
+      cliente: ((linha.cliente_id && clientes[linha.cliente_id]) || null) as string | null,
+      responsavel: ((linha.ator_id && pessoas[linha.ator_id]) || null) as string | null,
+      ficha: (ficha && !podePii ? fichaSemDadosSensiveis(ficha) : ficha) as FichaBureau | null,
+    };
+  });
+
+/** Cliente do CRM para abrir a Consulta Ficha já escolhido (`?cliente=`). */
+export const clienteParaFichaBureau = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["crm.clientes", "view"])])
+  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const [r, podePii] = await Promise.all([
+      supabase
+        .from("clientes")
+        .select("id, nome, documento, telefone_celular")
+        .eq("id", data.id)
+        .is("deleted_at", null)
+        .maybeSingle(),
+      temPiiCliente(supabase, userId),
+    ]);
+    if (r.error || !r.data) return null;
+    const c = r.data as {
+      id: string;
+      nome: string;
+      documento: string | null;
+      telefone_celular: string | null;
+    };
+    return {
+      id: c.id,
+      nome: c.nome,
+      documento: c.documento ? (podePii ? c.documento : mascararDocumento(c.documento)) : null,
+      celular: c.telefone_celular,
+    };
   });

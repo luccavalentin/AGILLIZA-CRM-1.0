@@ -8,24 +8,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { ROTULO_PROPOSTA_ASSINANTE } from "./rotulos-proposta-assinante";
 
-export const ROTULO_PROPOSTA_ASSINANTE: Record<string, string> = {
-  aguardando_correspondente: "Aguardando correspondente",
-  em_envio: "Em envio",
-  enviada: "Enviada ao banco",
-  em_analise: "Em análise",
-  aguardando_documentos: "Aguardando documentos",
-  condicionada: "Condicionada",
-  aprovada: "Aprovada",
-  recusada: "Recusada",
-  erro_envio: "Erro de envio",
-  formularios: "Formulários do banco",
-  engenharia_vistoria: "Engenharia / vistoria",
-  analise_juridica: "Análise jurídica",
-  contrato: "Contrato emitido",
-  registrado: "Registrado",
-  cancelada: "Cancelada",
-};
+// Rótulos num arquivo puro (sem servidor): a tela e os testes dos filtros usam o mesmo.
+export { ROTULO_PROPOSTA_ASSINANTE };
 
 export interface PropostaAssinante {
   id: string;
@@ -56,6 +42,12 @@ export interface PropostaAssinante {
   /** Conta (licença) dona da proposta. */
   tenant_id?: string;
   sla_ate?: string | null;
+  /** Banco (id do Agilliza Tech: bradesco, itau…). */
+  banco_id?: string | null;
+  /** Id da oportunidade na integração bancária — na tela só "ID H." (0315). */
+  id_h?: string | null;
+  contrato_emitido_em?: string | null;
+  registrado_em?: string | null;
 }
 
 export interface ResultadoFila {

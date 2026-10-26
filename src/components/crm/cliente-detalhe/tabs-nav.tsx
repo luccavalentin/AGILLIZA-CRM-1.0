@@ -8,7 +8,6 @@ import {
   History,
   Home,
   LayoutDashboard,
-  MessageCircle,
   UserCog,
   Users,
 } from "lucide-react";
@@ -20,26 +19,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ABAS_CLIENTE, ABA_CLIENTE_PADRAO, type AbaCliente } from "./abas-cliente";
 
 type IconType = ComponentType<{ className?: string }>;
 
-export const SECOES_CLIENTE: ReadonlyArray<{ v: string; label: string; Icon: IconType }> = [
-  { v: "resumo", label: "Resumo", Icon: LayoutDashboard },
-  { v: "vinculo", label: "Vínculo de atendimento", Icon: UserCog },
-  { v: "dados", label: "Dados do comprador", Icon: ContactRound },
-  { v: "vendedores", label: "Vendedores", Icon: Users },
-  { v: "imovel", label: "Imóvel", Icon: Home },
-  { v: "iq", label: "IQ", Icon: ClipboardCheck },
-  { v: "documentos", label: "Documentos", Icon: FileText },
-  { v: "negocios", label: "Negócios", Icon: Handshake },
-  { v: "mensagens", label: "App cliente", Icon: MessageCircle },
-  { v: "atividades", label: "Demandas & Tarefas", Icon: Activity },
-  { v: "interacoes", label: "Registro de interações", Icon: History },
-  { v: "historico", label: "Histórico", Icon: History },
-];
+const ICONE: Record<AbaCliente, IconType> = {
+  vinculo: UserCog,
+  dados: ContactRound,
+  vendedores: Users,
+  imovel: Home,
+  iq: ClipboardCheck,
+  documentos: FileText,
+  negocios: Handshake,
+  atividades: Activity,
+  historico: History,
+  resumo: LayoutDashboard,
+};
+
+/** Ordem e nomes em `abas-cliente.ts` (item C09); aqui só o ícone de cada seção. */
+export const SECOES_CLIENTE: ReadonlyArray<{ v: AbaCliente; label: string; Icon: IconType }> =
+  ABAS_CLIENTE.map((a) => ({ ...a, Icon: ICONE[a.v] }));
 
 export function TabsNav({ aba, setAba }: { aba: string; setAba: (v: string) => void }) {
-  const atual = SECOES_CLIENTE.find((s) => s.v === aba) ?? SECOES_CLIENTE[0]!;
+  const atual =
+    SECOES_CLIENTE.find((s) => s.v === aba) ??
+    SECOES_CLIENTE.find((s) => s.v === ABA_CLIENTE_PADRAO)!;
   return (
     <>
       {/* Mobile: seletor explícito de seção */}
@@ -64,7 +68,7 @@ export function TabsNav({ aba, setAba }: { aba: string; setAba: (v: string) => v
         </Select>
       </div>
 
-      {/* Monitor e tablet: as 12 seções à vista, quebrando em linhas — sem trilho que
+      {/* Monitor e tablet: as 10 seções à vista, quebrando em linhas — sem trilho que
           rola escondido (pedido do dono, 21/10/2026: "achatada e sem responsividade"). */}
       <TabsList className="hidden h-auto w-full flex-wrap justify-start gap-1.5 rounded-xl border border-border/60 bg-card p-1.5 shadow-sm sm:flex">
         {SECOES_CLIENTE.map((s) => (

@@ -28,7 +28,8 @@ export const STATUS_PROPOSTA: Record<PropostaStatus, { tone: Tone; label: string
   vistoria_agendamento: { tone: "warning", label: "Engenharia / vistoria" },
   vistoria_concluida: { tone: "warning", label: "Engenharia / vistoria" },
   emissao_contrato: { tone: "warning", label: "Análise jurídica" },
-  registrado: { tone: "success", label: "Registrado" },
+  // C12 (26/10/2026): etapa própria depois do contrato emitido.
+  registrado: { tone: "success", label: "Contrato registrado" },
 };
 
 /**

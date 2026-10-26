@@ -20,11 +20,19 @@ import {
   obterSimulacao,
 } from "@/lib/simulacao/simulacoes.functions";
 import { criarProposta } from "@/lib/propostas/propostas.functions";
+import { comContaDestino } from "@/lib/simulacao/destino-conta";
 import { listarTitularesAlternativos, type TitularAlternativo } from "./titulares-alternativos";
 import type { Form } from "./state";
 import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 
 type Router = { navigate: (opts: any) => void };
+
+/** C29: diz se a simulação também nasceu na conta do assinante (ou por que não). */
+function avisarConta(conta: { ok: boolean; mensagem: string } | undefined) {
+  if (!conta) return;
+  if (conta.ok) toast.success(conta.mensagem);
+  else toast.warning(conta.mensagem, { duration: 10_000 });
+}
 
 interface CtxBase {
   f: Form;
@@ -442,17 +450,20 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
       console.log(`[Envio ${sistema === "S" ? "SAC" : "PRICE"}] Iniciando fluxo`);
 
       const tCriacao = performance.now();
-      const { id } = await criarSimulacao({
+      // C29: só as simulações principais vão para a conta do assinante escolhido (o teste de
+      // CPF dos demais proponentes fica na sua base).
+      const { id, conta } = await criarSimulacao({
         data: {
           modo: "completa",
-          dados: {
+          dados: comContaDestino({
             ...dados,
             id_operacao_homefin: idOperacao,
             email_verificado_em: f.email_verificado_em,
             agrupador_id,
-          } as any,
+          }) as any,
         },
       });
+      avisarConta(conta);
       if (!primeiraCriacaoLogada) {
         primeiraCriacaoLogada = true;
         console.log(
@@ -688,18 +699,23 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
       ? (crypto.randomUUID?.() ??
         `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`)
       : null;
-    const { id, agrupador_id: agrupadorServidor } = await criarSimulacao({
+    const {
+      id,
+      agrupador_id: agrupadorServidor,
+      conta,
+    } = await criarSimulacao({
       data: {
         modo: "completa",
-        dados: {
+        dados: comContaDestino({
           ...data,
           id_operacao_homefin: idOperacao,
           email_verificado_em: f.email_verificado_em,
           prazo_2: Number(fValidado.prazo_2) !== Number(fValidado.prazo) ? fValidado.prazo_2 : null,
           ...(agrupadorPreDefinido ? { agrupador_id: agrupadorPreDefinido } : {}),
-        } as any,
+        }) as any,
       },
     });
+    avisarConta(conta);
     const agrupador_id = agrupadorServidor ?? agrupadorPreDefinido;
     sessionStorage.removeItem("simulacao_wizard");
 

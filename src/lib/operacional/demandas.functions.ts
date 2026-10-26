@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { textoIdH } from "@/lib/propostas/id-h";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 import { carregarReacoes } from "@/lib/chat-core/reacoes.functions";
@@ -128,7 +129,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
     let query = supabase
       .from("demandas")
       .select(
-        "id, numero, tipo, titulo, descricao, status, prioridade, cliente_id, proposta_id, simulacao_id, responsavel_id, criador_id, prazo_sla, sla_inicio, sla_horas, concluida_em, escalonada, created_at, clientes(nome), propostas(numero_proposta), simulacoes(numero_simulacao)",
+        "id, numero, tipo, titulo, descricao, status, prioridade, cliente_id, proposta_id, simulacao_id, responsavel_id, criador_id, prazo_sla, sla_inicio, sla_horas, concluida_em, escalonada, created_at, clientes(nome), propostas(numero_proposta, homefin_id_oportunidade), simulacoes(numero_simulacao)",
       )
       .limit(300);
 
@@ -212,7 +213,8 @@ export const listarDemandas = createServerFn({ method: "GET" })
       cliente_id: r.cliente_id,
       nome_cliente: r.clientes?.nome ?? null,
       proposta_id: r.proposta_id ?? null,
-      numero_proposta: r.propostas?.numero_proposta ?? null,
+      // C33: o número visível da proposta é o ID H.
+      numero_proposta: r.propostas ? textoIdH(r.propostas) : null,
       simulacao_id: r.simulacao_id ?? null,
       numero_simulacao: r.simulacoes?.numero_simulacao ?? null,
       criador_id: r.criador_id,
@@ -240,7 +242,7 @@ export const listarPropostasOpcoes = createServerFn({ method: "GET" })
     const { supabase } = context;
     let query = supabase
       .from("propostas")
-      .select("id, numero_proposta, cliente_id, clientes(nome)")
+      .select("id, numero_proposta, homefin_id_oportunidade, cliente_id, clientes(nome)")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -249,7 +251,7 @@ export const listarPropostasOpcoes = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return ((rows ?? []) as any[]).map((r) => ({
       id: r.id as string,
-      numero: r.numero_proposta as string | null,
+      numero: textoIdH(r),
       nome_cliente: r.clientes?.nome ?? null,
     }));
   });

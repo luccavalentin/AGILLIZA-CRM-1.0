@@ -1,4 +1,5 @@
 import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
+import { textoIdH } from "@/lib/propostas/id-h";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -96,7 +97,7 @@ export function ComentariosPropostaDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Comentários da proposta{d ? ` ${d.numero_proposta}` : ""}</DialogTitle>
+          <DialogTitle>Comentários da proposta{d ? ` ${textoIdH(d)}` : ""}</DialogTitle>
           <DialogDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>{d?.nome_cliente ?? "Conversa do FUP e retorno da análise dos documentos."}</span>
             <Link

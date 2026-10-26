@@ -23,6 +23,7 @@ import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { usePermissao } from "@/hooks/use-permissao";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { SelecionarBancosPdfDialog } from "@/components/simulacao/selecionar-bancos-pdf-dialog";
+import { ContaAssinanteDaSimulacao } from "./conta-assinante";
 
 type Props = {
   s: any;
@@ -100,6 +101,7 @@ export function HeaderAcoes({
               </>
             )}
           </p>
+          <ContaAssinanteDaSimulacao s={s} />
         </div>
       </div>
       <div className="flex items-center gap-2">

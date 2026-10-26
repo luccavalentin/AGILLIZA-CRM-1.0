@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { rotuloIdH } from "@/components/plataforma/propostas-grupo/filtros";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -177,12 +178,13 @@ export function DetalhePropostaSheet({
           <>
             <DialogHeader className="mb-0 space-y-1.5 border-b border-border/60 px-4 pb-4 pr-12 pt-5 text-left sm:px-6 sm:pr-14">
               <div className="flex flex-wrap items-center gap-2">
-                <DialogTitle className="text-base tabular-nums">{p.codigo}</DialogTitle>
-                {d?.id_op && (
-                  <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                    ID {d.id_op}
-                  </span>
-                )}
+                {/* C33: o identificador visível é o ID H.; o código da conta fica ao lado, discreto. */}
+                <DialogTitle className="text-base tabular-nums">
+                  {rotuloIdH(d?.id_op ?? p.id_h)}
+                </DialogTitle>
+                <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                  Cód. na conta {p.codigo}
+                </span>
                 <SeloSituacao status={d?.status ?? p.status} atrasada={d?.atrasada ?? p.atrasada} banco={p.banco} />
               </div>
               <DialogDescription className="text-left">
@@ -190,9 +192,7 @@ export function DetalhePropostaSheet({
                 {p.conta_tipo === "imobiliaria" ? "imobiliária" : "corretor"})
               </DialogDescription>
               {d?.agilliza?.numero_proposta && (
-                <p className="text-xs font-medium text-primary">
-                  Proposta no Agilliza: {d.agilliza.numero_proposta}
-                </p>
+                <p className="text-xs font-medium text-primary">Já está no Agilliza (enviada pelo fluxo de sempre).</p>
               )}
             </DialogHeader>
 
@@ -254,8 +254,9 @@ function Conteudo({ d }: { d: DetalhePropostaAssinante }) {
             ["Analista", d.analista ?? (d.pendente ? "Aguardando um analista" : "—")],
             ["Prazo (SLA)", d.sla_ate ? dataHora(d.sla_ate) : "—"],
             ["Número no banco", txt(d.numero_proposta_banco)],
-            ["ID", txt(d.id_op)],
-            ["Proposta no Agilliza", txt(d.agilliza?.numero_proposta)],
+            ["ID H.", txt(d.id_op)],
+            ["Cód. na conta", txt(d.codigo)],
+            ["No Agilliza", d.agilliza?.numero_proposta ? "Sim" : "Ainda não"],
           ]}
         />
         {d.mensagem_banco && (
