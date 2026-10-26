@@ -117,7 +117,7 @@ function Pagina() {
       />
       <SubNavCompras />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="compras-aprovacoes-indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Indicador3D
           destaque
           icone={Hourglass}
@@ -213,7 +213,7 @@ function Pagina() {
           }
         />
       ) : (
-        <div className="compra-lista">
+        <div data-tour="compras-aprovacoes-lista" className="compra-lista">
           {filtradas.map((c) => (
             <CartaoPedido
               key={c.id}

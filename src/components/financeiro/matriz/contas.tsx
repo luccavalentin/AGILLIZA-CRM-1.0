@@ -252,7 +252,7 @@ export function PaginaContas({ tipo, abrirId }: { tipo: Tipo; abrirId?: string }
         )}
       </Metricas>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm xl:flex-row xl:items-center xl:justify-between">
+      <div data-tour="financeiro-contas-filtros" className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm xl:flex-row xl:items-center xl:justify-between">
         <FiltroPeriodo de={periodo.de} ate={periodo.ate} onChange={setPeriodo} />
         <div className="flex flex-wrap gap-2">
           <Select value={categoria || "_"} onValueChange={(v) => setCategoria(v === "_" ? "" : v)}>

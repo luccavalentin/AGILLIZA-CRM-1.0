@@ -225,7 +225,7 @@ function Pagina() {
       ) : (
         <>
           <Pilulas valor={atual.tipo} onChange={setTipo} opcoes={permitidos.map((r) => ({ valor: r.tipo, rotulo: r.rotulo }))} />
-          <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm xl:flex-row xl:items-center xl:justify-between">
+          <div data-tour="financeiro-relatorios-filtros" className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm xl:flex-row xl:items-center xl:justify-between">
             <FiltroPeriodo de={periodo.de} ate={periodo.ate} onChange={setPeriodo} />
             <div className="flex flex-wrap gap-2">
               {["comissoes_bancos", "vencidas", "diferencas", "sem_previsao", "comissoes_participantes"].includes(atual.tipo) && (

@@ -73,13 +73,13 @@ export function ChecklistOperacaoView({
           </div>
         </div>
 
-        <Button variant="outline" onClick={copiarTexto} className="shrink-0">
+        <Button data-tour="checklist-copiar" variant="outline" onClick={copiarTexto} className="shrink-0">
           <Copy className="mr-1.5 h-4 w-4" /> Copiar para o cliente
         </Button>
       </div>
 
       {/* Progresso da conferência */}
-      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div data-tour="checklist-progresso" className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             Conferência

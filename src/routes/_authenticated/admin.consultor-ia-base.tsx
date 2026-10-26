@@ -315,7 +315,7 @@ function BibliotecaPage() {
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-tour="base-acoes">
               <Button variant="outline" className="gap-2" onClick={() => setParametros(true)}>
                 <Calculator className="size-4" /> Parâmetros de cálculo
               </Button>
@@ -381,7 +381,7 @@ function BibliotecaPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5" data-tour="base-situacao">
             {(
               [
                 ["todos", `Todos ${total}`],
@@ -409,7 +409,7 @@ function BibliotecaPage() {
       </section>
 
       <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start" data-tour="base-categorias">
           <Categorias
             categorias={listaCategorias}
             contagem={contagem}
@@ -459,7 +459,7 @@ function BibliotecaPage() {
           )}
         </aside>
 
-        <section className="space-y-3">
+        <section className="space-y-3" data-tour="base-artigos">
           <p className="text-sm text-muted-foreground">
             {resultados.length} artigo{resultados.length === 1 ? "" : "s"}
             {q.trim() ? (

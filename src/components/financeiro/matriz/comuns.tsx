@@ -71,7 +71,7 @@ export function MenuAcoes({ itens }: { itens: ItemMenuAcao[] }) {
 
 export function CampoBusca({ valor, onChange, placeholder }: { valor: string; onChange: (v: string) => void; placeholder: string }) {
   return (
-    <div className="relative w-full sm:w-64">
+    <div data-tour="financeiro-busca" className="relative w-full sm:w-64">
       <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input value={valor} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="h-9 pl-8" />
     </div>
@@ -157,9 +157,22 @@ export function BuscaProposta({
   );
 }
 
-export function SecaoCartao({ titulo, descricao, acoes, children }: { titulo: string; descricao?: string; acoes?: ReactNode; children: ReactNode }) {
+export function SecaoCartao({
+  titulo,
+  descricao,
+  acoes,
+  children,
+  tour,
+}: {
+  titulo: string;
+  descricao?: string;
+  acoes?: ReactNode;
+  children: ReactNode;
+  /** Âncora do tour guiado (`data-tour`); não muda nada na tela. */
+  tour?: string;
+}) {
   return (
-    <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+    <section data-tour={tour} className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">

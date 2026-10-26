@@ -16,7 +16,7 @@ export function PixBanner({ chave, titular }: { chave?: string | null; titular?:
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
+    <div data-tour="matriculas-pix" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
       <div className="flex min-w-0 items-center gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
           <Landmark className="h-4 w-4" />

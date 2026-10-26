@@ -139,7 +139,7 @@ export function PaginaCarteiras({
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
         {/* Lista de carteiras */}
-        <div className={cn("min-w-0 space-y-3", atual && "hidden lg:block")}>
+        <div data-tour="plataforma-carteiras-lista" className={cn("min-w-0 space-y-3", atual && "hidden lg:block")}>
           <ChipsFiltro<Vista>
             rotulo="Carteiras"
             valor={vista}
@@ -211,7 +211,7 @@ export function PaginaCarteiras({
         </div>
 
         {/* Carteira escolhida */}
-        <div className={cn("min-w-0", !atual && "hidden lg:block")}>
+        <div data-tour="plataforma-carteiras-detalhe" className={cn("min-w-0", !atual && "hidden lg:block")}>
           {atual ? (
             <DetalheDaCarteira
               key={atual.id}

@@ -521,7 +521,7 @@ export function GerenciadorArquivos({
       <div className={cn("grid gap-4", !embutido && "lg:grid-cols-[13.5rem_minmax(0,1fr)]")}>
         {/* Navegação: coluna no computador, faixa rolável no celular */}
         <aside className="min-w-0 space-y-3">
-          <nav
+          <nav data-tour="arquivos-visoes"
             aria-label="Visões dos arquivos"
             className={cn(
               "-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
@@ -559,7 +559,7 @@ export function GerenciadorArquivos({
 
         <section className="min-w-0 space-y-3">
           {/* Barra: trilha/título, busca, vista e ações */}
-          <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-2 sm:flex-row sm:items-center">
+          <div data-tour="arquivos-barra" className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-2 sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1 px-1">
               {visaoEfetiva === "pasta" ? (
                 <TrilhaNavegacao
@@ -654,7 +654,7 @@ export function GerenciadorArquivos({
           {visaoEfetiva === "lixeira" ? (
             <LixeiraView onRestaurado={(p) => setPasta(p)} />
           ) : (
-            <div
+            <div data-tour="arquivos-conteudo"
               onDragOver={onDragOver}
               onDragLeave={(e) => {
                 if (e.currentTarget.contains(e.relatedTarget as Node)) return;

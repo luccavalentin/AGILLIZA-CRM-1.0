@@ -130,7 +130,7 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
         descricao={`Modelos de formulários em PDF da categoria ${label}.`}
         acoes={
           podeEnviar ? (
-            <Button onClick={() => setUploadOpen(true)}>
+            <Button data-tour="formularios-enviar" onClick={() => setUploadOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Enviar formulário
             </Button>
@@ -139,7 +139,7 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
       />
 
       <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-2 lg:flex-row lg:items-center">
-        <nav
+        <nav data-tour="formularios-categorias"
           aria-label="Categorias de formulários"
           className="-mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
@@ -183,7 +183,7 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
         </div>
       </div>
 
-      <div className="space-y-2.5">
+      <div data-tour="formularios-lista" className="space-y-2.5">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
         ) : itens.length === 0 ? (

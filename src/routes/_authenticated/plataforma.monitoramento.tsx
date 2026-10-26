@@ -187,6 +187,7 @@ function Pagina() {
 
       {/* Faixa de situação geral */}
       <section
+        data-tour="plataforma-monitoramento-situacao"
         aria-live="polite"
         className={cn(
           "flex flex-col gap-3 rounded-[14px] border bg-card p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)] sm:flex-row sm:items-center sm:justify-between",
@@ -222,7 +223,7 @@ function Pagina() {
       </section>
 
       {/* Serviços */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div data-tour="plataforma-monitoramento-servicos" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <PainelServico
           titulo="Banco de dados"
           icone={<Database />}
@@ -446,7 +447,7 @@ function Incidentes({
       icone={<Clock />}
       semRespiro
     >
-      <div className="border-b border-border/70 px-4 py-3">
+      <div data-tour="plataforma-monitoramento-incidentes" className="border-b border-border/70 px-4 py-3">
         <ChipsFiltro
           rotulo="Situação dos incidentes"
           valor={status}
@@ -617,7 +618,7 @@ function Rotinas({ rotinas, carregando }: { rotinas: RotinaPlataforma[]; carrega
       ) : ordenadas.length === 0 ? (
         <EstadoVazio titulo="Nenhuma rotina registrada" />
       ) : (
-        <ul className="grid gap-px bg-border/70 sm:grid-cols-2 xl:grid-cols-3">
+        <ul data-tour="plataforma-monitoramento-rotinas" className="grid gap-px bg-border/70 sm:grid-cols-2 xl:grid-cols-3">
           {ordenadas.map((r) => {
             const saude: Saude =
               r.ultimo_status === "erro" ? "critico" : r.ultimo_status === "sucesso" ? "ok" : "carregando";

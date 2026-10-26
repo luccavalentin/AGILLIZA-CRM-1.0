@@ -147,7 +147,7 @@ function Conteudo() {
               </p>
             </div>
           </div>
-          <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center">
+          <div data-tour="tecnologia-tema-atalhos" className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center">
             <TrocaTema />
             {atalhos.length > 0 && (
               <nav
@@ -171,6 +171,7 @@ function Conteudo() {
         </header>
 
         <nav
+          data-tour="tecnologia-secoes"
           aria-label="Seções da Gestão de Tecnologia"
           className="tec-abas no-scrollbar -mx-3 flex gap-1 overflow-x-auto px-3 sm:mx-0 sm:px-1"
         >

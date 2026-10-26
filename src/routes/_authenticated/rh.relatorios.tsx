@@ -144,7 +144,7 @@ function RelatoriosRhPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="rh-relatorios-indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi icon={Users} titulo="Headcount" valor={String(d?.headcount ?? 0)} detalhe={`${d?.desligados ?? 0} desligados no histórico`} />
         <Kpi icon={Repeat} titulo="Turnover 12 meses" valor={`${(d?.turnover12 ?? 0).toLocaleString("pt-BR")}%`} detalhe={`${d?.admissoes12 ?? 0} admissões · ${d?.desligamentos12 ?? 0} saídas`} />
         <Kpi icon={Stethoscope} titulo="Absenteísmo do mês" valor={`${(d?.absenteismoMes ?? 0).toLocaleString("pt-BR")}%`} detalhe={`${d?.faltasDiasMes ?? 0} falta(s) · ${d?.atestadosDiasMes ?? 0} atestado(s)`} />
@@ -153,7 +153,7 @@ function RelatoriosRhPage() {
 
       <Card>
         <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-          <div className="flex flex-wrap gap-2">
+          <div data-tour="rh-relatorios-tipo" className="flex flex-wrap gap-2">
             <Button size="sm" variant={rel === "quadro" ? "default" : "outline"} onClick={() => setRel("quadro")}>
               <Users className="mr-1.5 h-4 w-4" /> Quadro
             </Button>
@@ -162,7 +162,7 @@ function RelatoriosRhPage() {
             </Button>
           </div>
           {podeExportar && (
-            <div className="flex flex-wrap gap-2">
+            <div data-tour="rh-relatorios-exportar" className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={() => exportar("csv")} disabled={exportando}>
                 <FileText className="mr-1.5 h-4 w-4" /> CSV
               </Button>
@@ -223,7 +223,7 @@ function RelatoriosRhPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div data-tour="rh-relatorios-atalhos" className="grid gap-2 sm:grid-cols-3">
         <Atalho to="/rh/folha" titulo="Folha mensal" desc="Lançamentos, prévia, fechamento e holerites." />
         <Atalho to="/rh/ferias" titulo="Férias" desc="Programação, aprovação e vencimentos." />
         <Atalho to="/rh/documentos" titulo="Documentos" desc="Vencidos e a vencer." />

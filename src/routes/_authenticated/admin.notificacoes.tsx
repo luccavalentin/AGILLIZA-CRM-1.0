@@ -165,7 +165,7 @@ function Pagina() {
 
         <TabsContent value="lista" className="space-y-4">
           {(naoLidas.length > 0 || itens.length > 0) && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div data-tour="notificacoes-acoes" className="flex flex-wrap items-center justify-end gap-2">
               {naoLidas.length > 0 && (
                 <Button variant="outline" size="sm" onClick={() => marcarTodas.mutate()}>
                   <CheckCheck className="mr-1 h-4 w-4" /> Marcar todas como lidas
@@ -205,7 +205,7 @@ function Pagina() {
               Você não tem notificações.
             </Card>
           ) : (
-            <div className="space-y-6">
+            <div data-tour="notificacoes-lista" className="space-y-6">
               {naoLidas.length > 0 && (
                 <Card className="overflow-hidden">
                   <p className="border-b bg-muted/50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

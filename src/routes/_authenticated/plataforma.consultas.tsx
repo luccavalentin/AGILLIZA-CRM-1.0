@@ -279,7 +279,7 @@ function Pagina() {
         descricao="Receita dos pedidos pagos e não estornados, menos o custo do fornecedor e as taxas do pagamento."
         icone={<CircleDollarSign />}
       >
-        <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr]">
+        <div data-tour="plataforma-consultas-resultado" className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr]">
           <PassoConta
             rotulo="Receita bruta"
             valor={i ? formatBRL(i.receita_bruta) : "—"}
@@ -362,7 +362,7 @@ function Pagina() {
         />
       </FaixaIndicadores>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div data-tour="plataforma-consultas-preco" className="grid gap-4 lg:grid-cols-2">
         <CartaoPreco
           preco={d?.oferta?.preco ?? null}
           ativo={Boolean(d?.oferta?.ativo)}
@@ -728,7 +728,7 @@ function Pedidos({
       descricao="Cada compra de consulta feita por uma licença, do pagamento à entrega."
       semRespiro
     >
-      <div className="flex flex-col gap-2 border-b border-border/70 px-4 py-3 md:flex-row md:items-center">
+      <div data-tour="plataforma-consultas-pedidos" className="flex flex-col gap-2 border-b border-border/70 px-4 py-3 md:flex-row md:items-center">
         <ChipsFiltro
           rotulo="Situação dos pedidos"
           className="min-w-0 flex-1"

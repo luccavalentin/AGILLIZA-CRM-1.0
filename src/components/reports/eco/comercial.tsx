@@ -190,7 +190,7 @@ export function RelatorioComercial() {
 
       {t && bloco && (
         <>
-          <div className="pg-indicadores">
+          <div data-tour="relatorios-comercial-indicadores" className="pg-indicadores">
             <Indicador3D icone={Percent} rotulo="Propostas" natureza="quantidade" valor={int(t.propostas)}
               variacao={variacao(t.propostas, bloco.anterior.propostas)} link={linkOrigem(filtros, intervalo, "propostas")} />
             <Indicador3D icone={Building2} tom="violeta" rotulo="Contratos" natureza="quantidade" valor={int(t.contratos)}

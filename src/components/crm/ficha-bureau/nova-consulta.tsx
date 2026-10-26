@@ -130,6 +130,7 @@ export function NovaConsulta({
   return (
     <section
       className="space-y-5 rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5"
+      data-tour="ficha-nova-consulta"
       aria-labelledby="fb-form-titulo"
     >
       <header className="flex flex-wrap items-center justify-between gap-2">

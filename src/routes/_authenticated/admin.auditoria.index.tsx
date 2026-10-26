@@ -107,7 +107,7 @@ function Pagina() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="auditoria-indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {q.isLoading || stats.isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-[76px] w-full rounded-xl" />

@@ -234,7 +234,7 @@ function Pagina() {
         )}
       >
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="max-w-md">
+          <div data-tour="simulacao-rapida-cliente" className="max-w-md">
             <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
               Vincular Cliente do CRM
             </label>
@@ -264,7 +264,7 @@ function Pagina() {
             erroCpf={erroCpf}
           />
 
-          <div className="mt-2 flex justify-center">
+          <div data-tour="simulacao-rapida-simular" className="mt-2 flex justify-center">
             <Button
               variant="default"
               className="h-12 w-full max-w-xs gap-2 rounded-2xl bg-primary text-sm font-bold shadow-lg ring-1 ring-primary/20 transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98] md:w-64"

@@ -122,6 +122,7 @@ function Pagina() {
             </div>
           </div>
           <Button
+            data-tour="nova-proposta-gerar"
             onClick={() => router.navigate({ to: "/operacional/propostas/nova" })}
             className="group col-span-2 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 font-semibold shadow-md ring-1 ring-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 hover:brightness-105 active:translate-y-0 sm:col-auto"
           >
@@ -149,7 +150,7 @@ function Pagina() {
         </TabsList>
 
         {/* Filtros compartilhados */}
-        <Card className="rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
+        <Card data-tour="nova-proposta-filtros" className="rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
           <div className="flex flex-wrap items-end gap-3">
             <Tabs value={escopo} onValueChange={(v) => setEscopo(v as typeof escopo)}>
               <TabsList className="h-11 rounded-xl">

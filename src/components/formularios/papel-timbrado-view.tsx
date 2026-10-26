@@ -100,7 +100,7 @@ export function PapelTimbradoView() {
         descricao="Escolha entre 10 modelos e baixe em PDF ou WORD com marca d'água e formatação profissional."
         accent={modelo.primaria}
         acoes={
-          <div className="flex flex-wrap items-center gap-2">
+          <div data-tour="papel-timbrado-acoes" className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={limpar}>
               <Eraser className="mr-2 h-4 w-4" />
               Limpar
@@ -122,7 +122,7 @@ export function PapelTimbradoView() {
       />
 
       {/* Seletor de modelos */}
-      <section className="space-y-2.5">
+      <section data-tour="papel-timbrado-modelos" className="space-y-2.5">
         <div className="flex items-baseline justify-between gap-3 px-1">
           <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Modelos de papel timbrado
@@ -145,7 +145,7 @@ export function PapelTimbradoView() {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Formulário */}
-        <Card>
+        <Card data-tour="papel-timbrado-campos">
           <CardContent className="space-y-4 p-5">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
@@ -225,7 +225,7 @@ export function PapelTimbradoView() {
         </Card>
 
         {/* Preview */}
-        <div className="lg:sticky lg:top-4 lg:self-start">
+        <div data-tour="papel-timbrado-previa" className="lg:sticky lg:top-4 lg:self-start">
           <div className="mb-2 flex items-center justify-between px-1">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Visualização

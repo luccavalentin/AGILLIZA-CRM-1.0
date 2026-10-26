@@ -43,7 +43,7 @@ export function DemonstrativoConteudo({ d }: { d: Demonstrativo }) {
         <Metrica rotulo="A pagar" valor={moeda(d.totais.a_pagar)} tom="alerta" icone={Wallet} />
         <Metrica rotulo="Pago" valor={moeda(d.totais.pago)} tom="sucesso" icone={BadgeCheck} />
       </Metricas>
-      <div className="flex justify-end">
+      <div data-tour="financeiro-demonstrativo-exportar" className="flex justify-end">
         <ExportarFinanceiro
           titulo={`Demonstrativo de comissões — ${d.pessoa.nome ?? ""}`}
           descricao="Comissões, bases, percentuais gravados e pagamentos"
@@ -74,7 +74,7 @@ export function DemonstrativoConteudo({ d }: { d: Demonstrativo }) {
       {d.itens.length === 0 ? (
         <Vazio titulo="Sem comissões no período" />
       ) : (
-        <ul className="space-y-2">
+        <ul data-tour="financeiro-demonstrativo-lista" className="space-y-2">
           {d.itens.map((i) => (
             <li key={i.id} className="rounded-xl border border-border/70 p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">

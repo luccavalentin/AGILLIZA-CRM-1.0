@@ -174,7 +174,7 @@ function CadastroSimplesRh({ tipo }: { tipo: "cargo" | "departamento" }) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">{ehCargo ? "Cargos" : "Departamentos"}</CardTitle>
-        <Button size="sm" onClick={() => abrir()}>
+        <Button data-tour="rh-config-novo" size="sm" onClick={() => abrir()}>
           <Plus className="mr-1 h-4 w-4" /> Novo {rotulo}
         </Button>
         <Dialog open={open} onOpenChange={setOpen}>

@@ -115,7 +115,7 @@ function Pagina() {
         </Link>
       }
     >
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <div data-tour="financeiro-painel-filtros" className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
         <FiltroPeriodo de={periodo.de} ate={periodo.ate} onChange={setPeriodo} />
         <div className="flex flex-wrap gap-2">
           <Select value={banco || "_"} onValueChange={(v) => setBanco(v === "_" ? "" : v)}>
@@ -153,7 +153,7 @@ function Pagina() {
         <Erro erro={q.error} onTentar={() => q.refetch()} />
       ) : !p ? null : (
         <>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div data-tour="financeiro-painel-naturezas" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {NATUREZAS.map((n) => {
               const v = realizado.get(n.chave);
               const visivel =
@@ -187,7 +187,7 @@ function Pagina() {
             })}
           </div>
 
-          <SecaoCartao titulo="Fluxo de caixa: previsto x realizado" descricao="Entradas (bancos e outras receitas) e saídas (despesas, corretores/parceiros e repasses pagos), mês a mês.">
+          <SecaoCartao tour="financeiro-painel-grafico" titulo="Fluxo de caixa: previsto x realizado" descricao="Entradas (bancos e outras receitas) e saídas (despesas, corretores/parceiros e repasses pagos), mês a mês.">
             {grafico.length === 0 ? (
               <Vazio titulo="Sem movimento no período" />
             ) : (
@@ -210,7 +210,7 @@ function Pagina() {
           </SecaoCartao>
 
           {al && (
-            <SecaoCartao titulo="Pede atenção" descricao="Cada alerta leva à lista de origem.">
+            <SecaoCartao tour="financeiro-painel-alertas" titulo="Pede atenção" descricao="Cada alerta leva à lista de origem.">
               <div className="grid gap-2 md:grid-cols-2">
                 {(al.sem_previsao ?? 0) > 0 && (
                   <AlertRow tone="danger" titulo="Contratos sem previsão de comissão do banco" descricao="Emitido/registrado e nenhuma comissão prevista." contador={al.sem_previsao ?? 0} to="/financeiro/relatorios" />

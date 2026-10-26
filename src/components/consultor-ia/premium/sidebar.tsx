@@ -90,7 +90,7 @@ export function ConsultorSidebar({
         aria-hidden="true"
         onClick={toggle}
       />
-      <aside className="fixed inset-y-0 left-0 z-40 flex h-full w-[min(280px,85vw)] flex-col border-r border-border/40 bg-card backdrop-blur-xl transition-all md:relative md:z-auto md:w-[280px] md:bg-card/30">
+      <aside data-tour="consultor-ia-historico" className="fixed inset-y-0 left-0 z-40 flex h-full w-[min(280px,85vw)] flex-col border-r border-border/40 bg-card backdrop-blur-xl transition-all md:relative md:z-auto md:w-[280px] md:bg-card/30">
         <div className="flex items-center justify-between p-4">
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
             Histórico

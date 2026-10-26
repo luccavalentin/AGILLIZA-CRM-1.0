@@ -117,7 +117,7 @@ export function PowerPointModelosView() {
       />
 
       {/* Seletor de modelos (estilo Papel Timbrado) */}
-      <section className="space-y-3">
+      <section data-tour="powerpoint-modelos" className="space-y-3">
         <div className="flex items-baseline justify-between gap-3 px-1">
           <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Modelos Disponíveis
@@ -168,7 +168,7 @@ export function PowerPointModelosView() {
 
       {/* Preview Section */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 overflow-hidden border-none shadow-2xl bg-[#0F172A] relative group min-h-[400px]">
+        <Card data-tour="powerpoint-previa" className="lg:col-span-2 overflow-hidden border-none shadow-2xl bg-[#0F172A] relative group min-h-[400px]">
           {/* Main Slide Preview */}
           <div className="absolute inset-0 p-8 flex flex-col items-center justify-center">
             <div className="relative w-full max-w-3xl aspect-video rounded-lg overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.02] transition-transform duration-500">
@@ -225,7 +225,7 @@ export function PowerPointModelosView() {
           </div>
         </Card>
 
-        <Card className="h-full border-border/60 shadow-lg">
+        <Card data-tour="powerpoint-ficha" className="h-full border-border/60 shadow-lg">
           <CardHeader className="border-b border-border/50 bg-muted/30">
             <div className="flex items-center gap-2">
               <Layers className="h-4 w-4 text-primary" />

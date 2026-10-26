@@ -64,7 +64,7 @@ export function FiltrosClientes({
   setPagina,
 }: Props) {
   return (
-    <Card className="rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
+    <Card className="rounded-2xl border-border/60 p-3 shadow-sm sm:p-4" data-tour="clientes-filtros">
       <form
         className="space-y-3"
         onSubmit={(e) => {

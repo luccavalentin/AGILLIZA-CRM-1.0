@@ -247,7 +247,7 @@ export function AbaAuditoria() {
           </>
         }
       >
-        <div className="space-y-3">
+        <div data-tour="plataforma-auditoria-filtros" className="space-y-3">
           <form
             className="flex flex-col gap-2 sm:flex-row sm:items-end"
             onSubmit={(e) => {
@@ -327,7 +327,7 @@ export function AbaAuditoria() {
         </div>
       </Secao>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div data-tour="plataforma-auditoria-registros" className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Secao
           titulo="Registros"
           descricao="Do mais recente para o mais antigo. Toque em um registro para ver o que mudou."

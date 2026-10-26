@@ -156,7 +156,7 @@ function Pagina() {
               />
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div data-tour="plataforma-planos-cartoes" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {visiveis.map((p) => (
                 <CartaoPlano key={p.id} plano={p} pode={pode} onAbrir={() => setAbertoId(p.id)} />
               ))}

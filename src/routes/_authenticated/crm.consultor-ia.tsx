@@ -303,6 +303,7 @@ function ConsultorIaPage() {
               variant="outline"
               size="sm"
               className="h-9 gap-1.5 rounded-xl"
+              data-tour="consultor-ia-calculadora"
               onClick={() => setCalculadoraAberta(true)}
               title="Calculadora: SAC/PRICE, renda e custos"
             >
@@ -342,7 +343,7 @@ function ConsultorIaPage() {
                   apoiar suas decisões de crédito imobiliário.
                 </p>
 
-                <div className="mt-12 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="mt-12 grid w-full grid-cols-1 gap-4 sm:grid-cols-2" data-tour="consultor-ia-sugestoes">
                   {SUGESTOES.map((s) => (
                     <button
                       key={s.prompt}

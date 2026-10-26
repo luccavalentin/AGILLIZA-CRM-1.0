@@ -52,7 +52,7 @@ export function FiltrosLista(p: PropsFiltrosLista) {
   const n = contarFiltrosAtivos({ ...p.filtros, q: p.q }, p.verExcluidas);
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-1.5 shadow-sm">
+      <div data-tour="simulacoes-filtros" className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-1.5 shadow-sm">
         <BuscaSimulacoes q={p.q} setQ={p.setQ} />
         {/* Computador: tudo na mesma linha. */}
         <div className="hidden items-center gap-2 lg:flex">

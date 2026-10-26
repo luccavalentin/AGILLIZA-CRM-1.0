@@ -124,7 +124,7 @@ export function RelatorioFinanceiro() {
 
       {p && (
         <>
-          <div className="pg-indicadores">
+          <div data-tour="relatorios-financeiro-indicadores" className="pg-indicadores">
             {p.bancos && (
               <>
                 <Indicador3D icone={Landmark} rotulo="Comissão dos bancos prevista" natureza="R$" valor={brlCurto(p.bancos.previsto)}
@@ -153,7 +153,7 @@ export function RelatorioFinanceiro() {
             )}
           </div>
 
-          <div className="pg-grade-2">
+          <div data-tour="relatorios-financeiro-paineis" className="pg-grade-2">
             <Cartao className="pg-col-8" titulo="Fluxo previsto x realizado" subtitulo="Saldo do mês: entradas menos saídas" icone={LineChart} tom="sucesso">
               <div className="h-64">
                 <ReportChartView

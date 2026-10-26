@@ -177,6 +177,7 @@ function Pagina() {
           {alvo.agilliza && podeCriar && (
             <Button
               asChild
+              data-tour="clientes-novo"
               className="h-11 w-full shrink-0 rounded-xl bg-gradient-to-br from-primary to-primary/80 px-5 font-semibold text-primary-foreground shadow-md ring-1 ring-primary/20 transition-all hover:shadow-lg hover:brightness-105 sm:w-auto"
             >
               <Link to="/crm/clientes/novo">

@@ -85,7 +85,7 @@ export function KpiCards({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4" data-tour="clientes-indicadores">
       {cards.map((k) => (
         <button
           key={k.label}

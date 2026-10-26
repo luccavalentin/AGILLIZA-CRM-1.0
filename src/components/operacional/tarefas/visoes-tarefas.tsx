@@ -16,6 +16,7 @@ export function VisoesTarefas({ atual }: { atual: "lista" | "kanban" | "calendar
   ] as const;
   return (
     <nav
+      data-tour="tarefas-visoes"
       aria-label="Visões das tarefas"
       className="inline-flex h-10 items-center gap-0.5 rounded-xl border border-border/70 bg-card/70 p-1 shadow-sm backdrop-blur"
     >

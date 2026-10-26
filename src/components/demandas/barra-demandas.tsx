@@ -144,7 +144,7 @@ export function IndicadoresDemandas({
         }
       : {};
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 xl:grid-cols-6">
+    <div data-tour="demandas-indicadores" className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 xl:grid-cols-6">
       <Indicador3D
         icone={Inbox}
         rotulo="Minhas abertas"
@@ -221,7 +221,7 @@ export function FaixaFiltros({
   tipos: TipoDemanda[];
 }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center">
+    <div data-tour="demandas-filtros" className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input

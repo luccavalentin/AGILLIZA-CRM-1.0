@@ -73,7 +73,7 @@ function MinhaProposta() {
             texto="Quando o banco aprovar o seu crédito, a proposta aparece aqui com o número (ID H.) e as condições aprovadas."
           />
         ) : (
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+          <div data-tour="cliente-proposta-cartoes" className="grid grid-cols-1 gap-3 xl:grid-cols-2">
             {d.propostas.map((p) => (
               <CartaoProposta key={p.id} p={p} detalhada />
             ))}
@@ -81,7 +81,7 @@ function MinhaProposta() {
         )}
       </Bloco>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+      <div data-tour="cliente-proposta-etapas" className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <Bloco titulo="Etapas da compra" icone={IconeRota} className="lg:col-span-3">
           <JornadaCompra etapas={d.jornada} />
         </Bloco>

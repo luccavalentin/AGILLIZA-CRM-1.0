@@ -72,6 +72,7 @@ export function CriacaoRapida({
 
   return (
     <section
+      data-tour="tarefas-frase"
       aria-label="Criar tarefa pela frase"
       className="rounded-2xl border border-border/70 bg-card p-3 shadow-card sm:p-3.5"
     >

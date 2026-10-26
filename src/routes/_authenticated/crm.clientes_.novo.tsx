@@ -90,7 +90,7 @@ function Pagina() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="order-last space-y-4 lg:order-first lg:sticky lg:top-6 lg:self-start">
+        <aside className="order-last space-y-4 lg:order-first lg:sticky lg:top-6 lg:self-start" data-tour="cliente-novo-dicas">
           <Card className="overflow-hidden">
             <CardContent className="space-y-5 p-5">
               <div className="space-y-1">
@@ -114,7 +114,7 @@ function Pagina() {
           </Card>
         </aside>
 
-        <div className="min-w-0">
+        <div className="min-w-0" data-tour="cliente-novo-formulario">
           {carregandoPrefill ? (
             <div className="flex items-center justify-center rounded-lg border border-border bg-card p-10 text-sm text-muted-foreground">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando dados da proposta…

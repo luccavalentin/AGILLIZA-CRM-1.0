@@ -82,7 +82,7 @@ function Pagina() {
     <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
       {cabecalho}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="matriculas-indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <OpStat
           icon={<Wallet className="h-5 w-5" />}
           label="Saldo de crédito"

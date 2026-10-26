@@ -55,6 +55,7 @@ export function MatriculasAReceber() {
   const lista = (q.data?.solicitantes ?? []).filter((s) => s.valor_total > 0);
   return (
     <SecaoCartao
+      tour="financeiro-contas-matriculas"
       titulo="Matrículas pedidas por terceiros"
       descricao={`Em aberto ${moeda(q.data?.totais.em_aberto)} (${q.data?.totais.matriculas_em_aberto ?? 0} matrículas) · recebido ${moeda(q.data?.totais.pago)}. O pagamento entra no livro de baixas (aqui, na conciliação ou em Matrículas).`}
       acoes={

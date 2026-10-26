@@ -53,7 +53,7 @@ function Perfil() {
     <div className="space-y-4">
       <CabecalhoPagina icon={UserRound} titulo="Meu perfil" subtitulo="Seus dados, aparência e som das mensagens" />
 
-      <Card className="border-border">
+      <Card data-tour="cliente-perfil-dados" className="border-border">
         <CardContent className="flex items-center gap-4 p-4 sm:p-5">
           <Avatar className="size-14">
             {cliente.foto_url ? <AvatarImage src={cliente.foto_url} alt={cliente.nome} /> : null}
@@ -71,7 +71,7 @@ function Perfil() {
         </CardContent>
       </Card>
 
-      <Card className="border-border">
+      <Card data-tour="cliente-perfil-aparencia" className="border-border">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Aparência</CardTitle>
         </CardHeader>
@@ -111,6 +111,7 @@ function Perfil() {
 
       {/* LGPD mudou para a tela própria (C15): consentimento, baixar dados e pedidos. */}
       <Link
+        data-tour="cliente-perfil-privacidade"
         to="/cliente/privacidade"
         className="group flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
       >

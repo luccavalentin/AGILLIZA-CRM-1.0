@@ -160,7 +160,7 @@ function Pagina() {
         />
       </FaixaIndicadores>
 
-      <div className="flex items-start gap-2.5 rounded-[10px] border border-primary/15 bg-primary/[0.03] px-4 py-3 text-sm text-muted-foreground">
+      <div data-tour="plataforma-comissoes-regra" className="flex items-start gap-2.5 rounded-[10px] border border-primary/15 bg-primary/[0.03] px-4 py-3 text-sm text-muted-foreground">
         <Stamp className="mt-0.5 size-4 shrink-0 text-primary" />
         <p>
           A comissão <b className="font-medium text-foreground">nasce no dia do registro em cartório</b>.
@@ -180,7 +180,7 @@ function Pagina() {
             { valor: "todas", rotulo: "Todas" },
           ]}
         />
-        <div className="flex flex-wrap items-center gap-2 md:ml-auto">
+        <div data-tour="plataforma-comissoes-periodo" className="flex flex-wrap items-center gap-2 md:ml-auto">
           <div className="flex items-center gap-1.5">
             <Label htmlFor="cm-de" className="whitespace-nowrap text-xs text-muted-foreground">
               Registro de
@@ -216,7 +216,7 @@ function Pagina() {
         />
       </BarraFiltros>
 
-      <div className="overflow-hidden rounded-[14px] border border-border/80 bg-card shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
+      <div data-tour="plataforma-comissoes-lista" className="overflow-hidden rounded-[14px] border border-border/80 bg-card shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
         {q.isLoading ? (
           <ListaCarregando />
         ) : q.isError ? (

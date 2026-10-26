@@ -685,7 +685,7 @@ function Pagina() {
               Financiamento imobiliário e home equity, em um só lugar.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+          <div data-tour="simulacoes-novas" className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
             <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
               <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
                 <Calculator className="h-4 w-4" />
@@ -731,7 +731,7 @@ function Pagina() {
       ) : (
         <>
           {/* KPIs */}
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-4">
+          <div data-tour="simulacoes-indicadores" className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-4">
             {isLoading
               ? Array.from({ length: 4 }).map((_, i) => (
                   <div

@@ -113,7 +113,7 @@ export function FilaCuradoriaNews({
     g === "todas" ? noticias.length : noticias.filter((n) => grupoDe(n.status) === g).length;
 
   return (
-    <section className="space-y-3 rounded-lg border border-border bg-card p-4">
+    <section data-tour="plataforma-news-fila" className="space-y-3 rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-semibold">Fila de notícias</h2>

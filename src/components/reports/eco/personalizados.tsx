@@ -158,7 +158,7 @@ export function RelatoriosPersonalizados() {
       <div className="pg-grade-2">
         <Cartao className="pg-col-8" titulo="Monte o relatório" subtitulo="Até 8 métricas; a primeira ordena e vai para o gráfico" icone={Columns3}>
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Métricas">
+            <div data-tour="relatorios-personalizados-metricas" className="flex flex-wrap gap-2" role="group" aria-label="Métricas">
               {METRICAS.map((m) => {
                 const ativo = metricas.includes(m.id);
                 return (
@@ -180,7 +180,7 @@ export function RelatoriosPersonalizados() {
                 );
               })}
             </div>
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,240px)_minmax(0,1fr)_auto] sm:items-end">
+            <div data-tour="relatorios-personalizados-salvar" className="grid gap-3 sm:grid-cols-[minmax(0,240px)_minmax(0,1fr)_auto] sm:items-end">
               <label className="pg-filtro">
                 <span className="pg-filtro-rotulo">Agrupar por</span>
                 <Select value={dimensao} onValueChange={(v) => setDimensao(v as Dimensao)}>
@@ -260,7 +260,7 @@ export function RelatoriosPersonalizados() {
         <Estado3D icone={Columns3} titulo="Escolha ao menos uma métrica" descricao="Toque nas métricas acima para montar o relatório." />
       )}
       {q.data && metricas.length > 0 && (
-        <div className="pg-grade-2">
+        <div data-tour="relatorios-personalizados-resultado" className="pg-grade-2">
           {principal && (
             <Cartao className="pg-col-4 lg:order-2" titulo={METRICAS.find((m) => m.id === principal)!.rotulo} subtitulo={`Por ${rotuloDim.toLowerCase()}`} icone={BarChart3}>
               <div className="h-72">

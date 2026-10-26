@@ -73,7 +73,7 @@ function Pagina() {
           </TabsContent>
         </Tabs>
       ) : null}
-      <p className="text-xs text-muted-foreground">
+      <p data-tour="financeiro-config-repasse" className="text-xs text-muted-foreground">
         As regras do repasse aos assinantes (0,25% padrão e percentual próprio por conta) ficam em{" "}
         <Link to="/financeiro/repasses" className="text-primary hover:underline">
           Repasses aos assinantes
@@ -92,6 +92,7 @@ function RegrasBanco({ regras, bancos, produtos }: { regras: RegraBanco[] | null
   if (!regras) return <Vazio titulo="Sem acesso às regras dos bancos" />;
   return (
     <SecaoCartao
+      tour="financeiro-config-regras-banco"
       titulo="Comissão que cada banco paga"
       descricao="Gera a previsão no gatilho (contrato emitido/registrado). A regra mais específica (produto, banco, faixa) vence."
       acoes={

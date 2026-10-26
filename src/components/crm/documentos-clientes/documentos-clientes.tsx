@@ -154,7 +154,7 @@ export function DocumentosDeClientes() {
 
       <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(260px,340px)_minmax(0,1fr)] lg:gap-6">
         {/* Árvore de clientes */}
-        <aside className="flex min-w-0 flex-col gap-3">
+        <aside className="flex min-w-0 flex-col gap-3" data-tour="documentos-clientes-lista">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -342,7 +342,7 @@ export function DocumentosDeClientes() {
         </aside>
 
         {/* Pasta aberta (computador) */}
-        <div className="hidden min-w-0 md:block">
+        <div className="hidden min-w-0 md:block" data-tour="documentos-clientes-pastas">
           {aberto ? (
             <div className="space-y-4 rounded-2xl border border-border/60 bg-card/50 p-4 lg:p-5">
               <CabecalhoCliente cliente={aberto} onFicha={() => setFicha(true)} />

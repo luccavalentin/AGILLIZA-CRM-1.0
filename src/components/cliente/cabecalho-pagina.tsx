@@ -51,7 +51,7 @@ export function CabecalhoPagina({
             </p>
           )}
         </div>
-        {acao && <div className="col-span-2 sm:col-span-1 sm:ml-auto">{acao}</div>}
+        {acao && <div data-tour="cliente-acao" className="col-span-2 sm:col-span-1 sm:ml-auto">{acao}</div>}
       </div>
     </div>
   );

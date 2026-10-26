@@ -175,7 +175,7 @@ export function ChecklistBancosView() {
         })}
       </div>
 
-      <section className="overflow-hidden rounded-xl border border-border/70 bg-card">
+      <section data-tour="checklist-bancos-lista" className="overflow-hidden rounded-xl border border-border/70 bg-card">
         <div className="flex flex-col gap-3 border-b border-border/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <BancoMarca nome={nomeBanco} altura={22} />
@@ -183,7 +183,7 @@ export function ChecklistBancosView() {
               <span className="font-semibold text-foreground">{totalMarcados}</span> de {documentos.length} documentos
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div data-tour="checklist-bancos-acoes" className="flex flex-wrap gap-2">
             <Button size="sm" variant="ghost" className="h-8" onClick={() => marcarTodos(totalMarcados < documentos.length)}>
               <CheckCheck className="mr-1.5 h-4 w-4" />
               {totalMarcados < documentos.length ? "Marcar todos" : "Desmarcar todos"}

@@ -385,7 +385,7 @@ function Filas({
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div data-tour="integracoes-filas" className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <Secao
           titulo="Mensagens"
           descricao="O conteúdo aparece mascarado: e-mail, telefone e documento nunca em claro."

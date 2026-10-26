@@ -149,13 +149,13 @@ export function Pedidos({
         </div>
         {podeCriar && <SolicitacaoDialog onMudou={onMudou} />}
         {podeCriar && (
-          <Button size="sm" onClick={() => setNovo(true)}>
+          <Button data-tour="matriculas-novo-pedido" size="sm" onClick={() => setNovo(true)}>
             <Plus className="mr-1 h-4 w-4" />
             Novo pedido
           </Button>
         )}
       </div>
-      <div className="flex gap-1.5 overflow-x-auto border-b px-4 py-2.5">
+      <div data-tour="matriculas-filtros" className="flex gap-1.5 overflow-x-auto border-b px-4 py-2.5">
         {FILTROS.map((f) => (
           <button
             key={f.id}

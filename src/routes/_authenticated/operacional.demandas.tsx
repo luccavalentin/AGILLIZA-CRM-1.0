@@ -159,7 +159,7 @@ function Pagina() {
 
       <IndicadoresDemandas c={data} carregando={isLoading} onSla={aba === "config" ? undefined : setSla} slaAtual={sla} />
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div data-tour="demandas-abas" className="flex flex-wrap items-center justify-between gap-2">
         <AbasEscopo atual={aba} onTrocar={trocarAba} contadores={data?.contadores} config />
         {aba !== "config" && (
           <div className="flex items-center gap-2">

@@ -186,7 +186,7 @@ function Pagina() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="space-y-5 rounded-lg border border-border p-4 md:p-6">
+        <div data-tour="apis-ia-provedor" className="space-y-5 rounded-lg border border-border p-4 md:p-6">
           <div className="flex items-center justify-between rounded-md border border-border p-3">
             <Label htmlFor="ativo">Integração de IA ativa</Label>
             <Switch
@@ -288,7 +288,7 @@ function Pagina() {
             </p>
           </div>
 
-          <div className="flex flex-col justify-end gap-2 sm:flex-row">
+          <div data-tour="apis-ia-testar" className="flex flex-col justify-end gap-2 sm:flex-row">
             <Button
               variant="outline"
               disabled={!podeEditar || testar.isPending || (!apiKey.trim() && !hasApiKey)}
@@ -303,7 +303,7 @@ function Pagina() {
           </div>
         </div>
 
-        <div className="space-y-5 rounded-lg border border-border p-4 md:p-6">
+        <div data-tour="apis-ia-prompt" className="space-y-5 rounded-lg border border-border p-4 md:p-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Temperatura</Label>

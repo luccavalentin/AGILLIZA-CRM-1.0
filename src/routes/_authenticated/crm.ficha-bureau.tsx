@@ -218,7 +218,7 @@ function Pagina() {
           versao={versao}
         />
 
-        <div className="space-y-4 xl:sticky xl:top-20">
+        <div className="space-y-4 xl:sticky xl:top-20" data-tour="ficha-resultado">
           <CartaoBureau
             disp={disp}
             carregando={config.isLoading}
@@ -276,7 +276,7 @@ function Pagina() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-3" data-tour="ficha-indicadores">
         {metricas.map((m, i) => (
           <Indicador3D
             key={m.rotulo}

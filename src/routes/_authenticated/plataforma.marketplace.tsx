@@ -202,7 +202,7 @@ function Moderacao({ perfis, carregando }: { perfis: PerfilEspecialista[]; carre
   const atual = aberto ? (perfis.find((p) => p.id === aberto.id) ?? aberto) : null;
 
   return (
-    <div className="space-y-4">
+    <div data-tour="plataforma-marketplace-moderacao" className="space-y-4">
       <ChipsFiltro<Grupo>
         rotulo="Situação dos anúncios"
         valor={grupo}

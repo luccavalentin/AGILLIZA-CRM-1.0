@@ -202,7 +202,7 @@ function Pagina() {
         descricao="Contas de corretores, imobiliárias e parceiros do Agilliza Tech: situação, plano, teste, créditos, carteira e uso."
         acoes={
           podeCriar && (
-            <Button className="min-h-11 w-full sm:min-h-9 sm:w-auto" onClick={() => setNova(true)}>
+            <Button data-tour="plataforma-licencas-nova" className="min-h-11 w-full sm:min-h-9 sm:w-auto" onClick={() => setNova(true)}>
               <Plus className="mr-1.5 size-4" /> Nova licença
             </Button>
           )
@@ -268,7 +268,7 @@ function Pagina() {
           rotulo="Buscar licença"
           placeholder="Nome, endereço do site ou e-mail"
         />
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div data-tour="plataforma-licencas-filtros" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Select value={tipo} onValueChange={mudar(setTipo)}>
             <SelectTrigger className="h-10 sm:w-40" aria-label="Tipo de conta">
               <SelectValue />
@@ -360,7 +360,7 @@ function Pagina() {
         {licencas.length > 0 && (
           <>
             {/* Monitor largo: tabela densa */}
-            <div className="hidden xl:block">
+            <div data-tour="plataforma-licencas-lista" className="hidden xl:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/70 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -441,7 +441,7 @@ function Pagina() {
             </div>
 
             {/* Celular e telas médias: cartões */}
-            <ul className="divide-y divide-border/60 xl:hidden">
+            <ul data-tour="plataforma-licencas-lista" className="divide-y divide-border/60 xl:hidden">
               {licencas.map((l) => {
                 const s = situacaoLicenca(l.status);
                 return (

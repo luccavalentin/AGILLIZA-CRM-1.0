@@ -222,7 +222,7 @@ function Pagina() {
         </div>
         {/* O Consultor IA exige "Ver" em Clientes; sem ela o link só voltava ao início. */}
         {podeVerClientes && (
-          <Button asChild variant="outline" className="col-span-2 w-full sm:w-auto">
+          <Button asChild variant="outline" className="col-span-2 w-full sm:w-auto" data-tour="scan-ia-consultor">
             <Link to="/crm/consultor-ia">
               <Bot className="mr-2 h-4 w-4" />
               Consultor IA
@@ -234,7 +234,7 @@ function Pagina() {
 
       {podeProcessar && (
         <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-          <div className="grid gap-2 sm:max-w-sm">
+          <div className="grid gap-2 sm:max-w-sm" data-tour="scan-ia-tipo">
             <Label htmlFor="tipo-doc">Tipo de documento (opcional)</Label>
             <Select value={tipo} onValueChange={setTipo}>
               <SelectTrigger id="tipo-doc">
@@ -255,6 +255,7 @@ function Pagina() {
 
           <button
             type="button"
+            data-tour="scan-ia-envio"
             disabled={enviando}
             onClick={() => inputRef.current?.click()}
             onDragOver={(e) => {
@@ -358,7 +359,7 @@ function Pagina() {
         </div>
       )}
 
-      <div className="rounded-lg border border-border bg-card">
+      <div className="rounded-lg border border-border bg-card" data-tour="scan-ia-leituras">
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="text-sm font-semibold">Leituras recentes</h2>
           <Button

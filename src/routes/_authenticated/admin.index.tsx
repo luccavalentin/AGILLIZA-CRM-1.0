@@ -206,7 +206,7 @@ function Blocos() {
   }
 
   return (
-    <div className="space-y-6">
+    <div data-tour="configuracoes-areas" className="space-y-6">
       {visiveis.map((b) => (
         <section key={b.titulo} aria-labelledby={`bloco-${b.titulo}`} className="space-y-3">
           <div>

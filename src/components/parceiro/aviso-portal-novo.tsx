@@ -16,7 +16,7 @@ export function AvisoPortalNovo() {
   const { convertido, urlEntrar } = q.data;
 
   return (
-    <section className="relative mb-6 overflow-hidden rounded-xl border border-primary/20 bg-primary/[0.04] p-4 sm:p-5">
+    <section data-tour="parceiro-portal-novo" className="relative mb-6 overflow-hidden rounded-xl border border-primary/20 bg-primary/[0.04] p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_6px_16px_-6px_rgba(0,15,159,0.55)]">

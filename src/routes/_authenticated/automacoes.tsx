@@ -109,7 +109,7 @@ function Previa() {
           Estamos preparando as automações de marketing: seus conteúdos viram posts prontos para as
           suas redes, sem sair da plataforma.
         </p>
-        <ul
+        <ul data-tour="automacoes-redes"
           aria-label="Redes previstas"
           className="mx-auto mt-6 flex max-w-3xl flex-wrap justify-center gap-2 sm:gap-3"
         >

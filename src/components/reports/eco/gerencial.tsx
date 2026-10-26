@@ -157,7 +157,7 @@ export function RelatorioGerencial() {
 
       {t && a && bloco && (
         <>
-          <div className="pg-indicadores">
+          <div data-tour="relatorios-gerencial-indicadores" className="pg-indicadores">
             <Indicador3D icone={Calculator} rotulo="Simulações" natureza="quantidade" valor={int(t.simulacoes)}
               variacao={variacao(t.simulacoes, a.simulacoes)} link={link("simulacoes")} />
             <Indicador3D icone={Send} tom="info" rotulo="Propostas" natureza="quantidade" valor={int(t.propostas)}
@@ -174,7 +174,7 @@ export function RelatorioGerencial() {
               variacao={variacao(t.valor_contratado, a.valor_contratado)} link={link("contratos")} />
           </div>
 
-          <div className="pg-grade-2">
+          <div data-tour="relatorios-gerencial-paineis" className="pg-grade-2">
             <Cartao className="pg-col-6" titulo="Funil do ecossistema" subtitulo="Cada etapa abre a lista de origem" icone={Layers}>
               <Funil t={t} link={(e) => link(e)} />
             </Cartao>

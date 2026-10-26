@@ -78,7 +78,7 @@ export function NavegacaoCalendario({
   const podeZoomIn = idx > 0;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
+    <div data-tour="calendario-navegacao" className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2">
         {visao === "mes" ? (
           <SeletorMesAno ref={ref} onChange={onChange} />

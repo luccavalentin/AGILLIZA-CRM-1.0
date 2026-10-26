@@ -75,7 +75,7 @@ function Pagina() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="meu-rh-indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Indicador rotulo="Situação" valor={STATUS_FUNCIONARIO_LABEL[f.status as keyof typeof STATUS_FUNCIONARIO_LABEL] ?? f.status} />
         <Indicador rotulo="Admissão" valor={formatData(f.data_admissao)} />
         <Indicador rotulo="Férias disponíveis" valor={saldo ? `${saldo.saldo_total} dia(s)` : "—"} destaque={!!saldo && saldo.saldo_total > 0} />
@@ -95,7 +95,7 @@ function Pagina() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <Card>
+        <Card data-tour="meu-rh-holerites">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <FileText className="h-4 w-4 text-primary" /> Meus holerites
@@ -134,7 +134,7 @@ function Pagina() {
         </Card>
 
         <div className="space-y-4">
-          <Card>
+          <Card data-tour="meu-rh-ferias">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Palmtree className="h-4 w-4 text-primary" /> Minhas férias
@@ -178,7 +178,7 @@ function Pagina() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-tour="meu-rh-dados">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Meus dados</CardTitle>
             </CardHeader>

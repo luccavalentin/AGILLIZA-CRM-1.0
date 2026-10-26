@@ -58,7 +58,7 @@ export function PaginaFin({
             <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">{descricao}</p>
           </div>
         </div>
-        {acoes && <div className="flex flex-wrap items-center gap-2 md:justify-end">{acoes}</div>}
+        {acoes && <div data-tour="financeiro-acoes" className="flex flex-wrap items-center gap-2 md:justify-end">{acoes}</div>}
       </header>
       {children}
     </div>
@@ -253,7 +253,7 @@ export function FiltroPeriodo({
   onChange: (p: { de: string; ate: string }) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div data-tour="financeiro-periodo" className="flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-1.5">
         <Input type="date" value={de} onChange={(e) => onChange({ de: e.target.value, ate })} className="h-9 w-[9.5rem]" aria-label="De" />
         <span className="text-xs text-muted-foreground">até</span>
@@ -413,7 +413,7 @@ export function Pilulas<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="-mx-1 flex flex-wrap gap-1.5 px-1">
+    <div data-tour="financeiro-situacoes" className="-mx-1 flex flex-wrap gap-1.5 px-1">
       {opcoes.map((o) => (
         <button
           key={o.valor}

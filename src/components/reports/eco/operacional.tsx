@@ -95,7 +95,7 @@ export function RelatoriosOperacionais() {
 
       {d && (
         <>
-          <div className="pg-indicadores">
+          <div data-tour="relatorios-operacional-indicadores" className="pg-indicadores">
             <Indicador3D icone={Send} rotulo="Propostas enviadas" natureza="quantidade" valor={int(d.propostas.enviadas)}
               detalhe={`de ${int(d.propostas.total)} no período`} />
             <Indicador3D icone={AlarmClock} tom="info" rotulo="Enviadas em até 24 h" natureza="%"
@@ -114,7 +114,7 @@ export function RelatoriosOperacionais() {
               link={{ to: "/operacional/tarefas" }} />
           </div>
 
-          <div className="pg-grade-2">
+          <div data-tour="relatorios-operacional-paineis" className="pg-grade-2">
             <Cartao className="pg-col-6" titulo="Gargalos por etapa" subtitulo="Propostas em aberto agora, mais paradas primeiro" icone={TrafficCone} tom="alerta">
               <Tabela
                 linhas={gargalos}

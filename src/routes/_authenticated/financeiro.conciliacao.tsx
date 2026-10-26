@@ -89,7 +89,7 @@ function Pagina() {
         />
       ) : (
         <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
-          <ul className="space-y-2">
+          <ul data-tour="financeiro-conciliacao-extratos" className="space-y-2">
             {lista.map((e) => (
               <li key={e.id}>
                 <button
@@ -166,7 +166,7 @@ function ExtratoDetalhe({ id, podeConciliar }: { id: string; podeConciliar: bool
   }
 
   return (
-    <section className="min-w-0 space-y-3">
+    <section data-tour="financeiro-conciliacao-movimentacoes" className="min-w-0 space-y-3">
       <Pilulas
         valor={filtro}
         onChange={setFiltro}

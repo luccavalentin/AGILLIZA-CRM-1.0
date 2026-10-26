@@ -75,7 +75,7 @@ function Servidor() {
             worker.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div data-tour="tecnologia-servidor-janela" className="flex flex-wrap items-center gap-2">
           <Segmentos
             rotulo="Janela"
             valor={janela}
@@ -120,7 +120,7 @@ function Servidor() {
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div data-tour="tecnologia-servidor-indicadores" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi
           rotulo="Disco (mais cheio)"
           janela={host ? `coleta ${ha(host.coletado_em)}` : undefined}
@@ -207,7 +207,7 @@ function Servidor() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+      <div data-tour="tecnologia-servidor-graficos" className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         <Painel
           titulo="Disco e memória"
           descricao="Uso em %, com os limites de alerta."

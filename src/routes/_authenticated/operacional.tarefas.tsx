@@ -198,7 +198,7 @@ function Pagina() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+      <div data-tour="tarefas-indicadores" className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <button type="button" className="text-left" onClick={irPara("atrasadas", m.atrasadas)}>
           <OpStat
             label="Atrasadas"
@@ -230,6 +230,7 @@ function Pagina() {
       </div>
 
       <section
+        data-tour="tarefas-filtros"
         aria-label="Filtros das tarefas"
         className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-border/70 bg-card p-3 shadow-card"
       >

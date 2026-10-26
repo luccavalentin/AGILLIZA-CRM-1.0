@@ -66,7 +66,7 @@ function Inicio() {
   return (
     <div className="space-y-4 sm:space-y-5">
       {/* Onde está a compra */}
-      <section className="relative overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground shadow-[0_18px_40px_-24px_rgba(0,15,159,0.8)] sm:p-6">
+      <section data-tour="cliente-inicio-andamento" className="relative overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground shadow-[0_18px_40px_-24px_rgba(0,15,159,0.8)] sm:p-6">
         <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full border border-white/10" />
         <span aria-hidden className="pointer-events-none absolute -right-6 -top-6 size-32 rounded-full border border-white/10" />
         <div className="relative grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
@@ -112,7 +112,7 @@ function Inicio() {
 
       {/* O que falta da parte do cliente */}
       {pendentes > 0 && (
-        <section className="rounded-2xl border border-warning/40 bg-warning/10 p-4">
+        <section data-tour="cliente-inicio-pendencias" className="rounded-2xl border border-warning/40 bg-warning/10 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="flex items-start gap-2 text-sm font-medium text-warning-foreground">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -140,7 +140,7 @@ function Inicio() {
         </section>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div data-tour="cliente-inicio-atalhos" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Atalho
           icone={FolderOpen}
           rotulo="Documentos aprovados"
@@ -172,7 +172,7 @@ function Inicio() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+      <div data-tour="cliente-inicio-jornada" className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <Bloco titulo="Sua jornada" icone={IconeRota} className="lg:col-span-3">
           <JornadaCompra etapas={d.jornada} />
         </Bloco>

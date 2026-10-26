@@ -20,7 +20,7 @@ interface GradeCalendarioProps {
 export function GradeCalendario(props: GradeCalendarioProps) {
   const { visao } = props;
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-border shadow-card">
+    <div data-tour="calendario-grade" className="relative overflow-hidden rounded-2xl border border-border/70 bg-border shadow-card">
       <div className="relative z-10 bg-card">
         {visao === "dia" && <VisaoDia {...props} />}
         {visao === "semana" && <VisaoSemana {...props} />}

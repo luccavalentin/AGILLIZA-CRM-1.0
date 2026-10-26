@@ -78,7 +78,7 @@ export function NotificacoesSistemaCard() {
   const motivo = motivoSemSuporte();
 
   return (
-    <Card>
+    <Card data-tour="notificacoes-sistema">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm">
           <Smartphone className="h-4 w-4 text-muted-foreground" />

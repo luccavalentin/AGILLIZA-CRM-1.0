@@ -129,7 +129,7 @@ function Pagina() {
         />
       }
     >
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <div data-tour="financeiro-auditoria-filtros" className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
         <FiltroPeriodo de={periodo.de} ate={periodo.ate} onChange={setPeriodo} />
         <div className="flex flex-wrap gap-2">
           <Select value={entidade || "_"} onValueChange={(v) => setEntidade(v === "_" ? "" : v)}>
@@ -167,7 +167,7 @@ function Pagina() {
       ) : itens.length === 0 ? (
         <Vazio titulo="Nenhum registro no período" icone={History} />
       ) : (
-        <ol className="space-y-2">
+        <ol data-tour="financeiro-auditoria-trilha" className="space-y-2">
           {itens.map((i) => (
             <li key={i.id} className="rounded-2xl border border-border/70 bg-card p-3 text-sm shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">

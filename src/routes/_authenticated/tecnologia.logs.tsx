@@ -143,7 +143,7 @@ function Logs() {
         />
       </div>
 
-      <div className="flex gap-2">
+      <div data-tour="tecnologia-logs-busca" className="flex gap-2">
         <label className="relative block min-w-0 flex-1">
           <span className="sr-only">Buscar</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -170,7 +170,7 @@ function Logs() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="hidden lg:block">
+        <aside data-tour="tecnologia-logs-filtros" className="hidden lg:block">
           <Painel titulo="Filtros" icone={<Filter className="size-4" />}>
             {filtros}
           </Painel>
@@ -195,7 +195,7 @@ function Logs() {
           </SheetContent>
         </Sheet>
 
-        <div className="min-w-0 space-y-3">
+        <div data-tour="tecnologia-logs-lista" className="min-w-0 space-y-3">
           {q.isError && (
             <EstadoErro
               erro={q.error}

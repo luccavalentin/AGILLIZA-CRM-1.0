@@ -540,7 +540,7 @@ function Pagina() {
             </Tabs>
           </div>
 
-          <aside className="min-w-0 space-y-4 lg:sticky lg:top-20">
+          <aside data-tour="parametros-cadastro" className="min-w-0 space-y-4 lg:sticky lg:top-20">
             <Secao titulo="Cadastro da empresa" icone={completude === 100 ? <CheckCircle2 /> : <Circle />}>
               <div className="space-y-3">
                 <div className="flex items-baseline justify-between">
@@ -581,7 +581,7 @@ function Pagina() {
         </form>
       )}
 
-      <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border/80 bg-card/95 px-4 py-3 shadow-[0_8px_24px_-12px_rgb(0_10_112/0.3)]">
+      <div data-tour="parametros-salvar" className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border/80 bg-card/95 px-4 py-3 shadow-[0_8px_24px_-12px_rgb(0_10_112/0.3)]">
         <span className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className={`size-2 rounded-full ${alterado ? "bg-warning" : "bg-success"}`} />
           {alterado ? "Alterações não salvas" : "Tudo salvo"}

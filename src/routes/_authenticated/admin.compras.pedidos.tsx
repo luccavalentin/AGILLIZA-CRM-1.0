@@ -105,7 +105,7 @@ function Pagina() {
       />
       <SubNavCompras />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="compras-pedidos-indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Indicador3D
           icone={ShoppingCart}
           rotulo="Meus pedidos"
@@ -199,7 +199,7 @@ function Pagina() {
           }
         />
       ) : (
-        <div className="compra-lista">
+        <div data-tour="compras-pedidos-lista" className="compra-lista">
           {lista.map((c) => (
             <CartaoPedido
               key={c.id}

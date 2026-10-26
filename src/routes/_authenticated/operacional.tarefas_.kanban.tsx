@@ -202,7 +202,7 @@ function Pagina() {
       />
 
       {/* Barra de controle */}
-      <div className="flex flex-wrap items-center gap-2.5">
+      <div data-tour="tarefas-kanban-controles" className="flex flex-wrap items-center gap-2.5">
         <Tabs
           value={escopo}
           onValueChange={(v) => {
@@ -272,7 +272,7 @@ function Pagina() {
       </div>
 
       {/* Colunas */}
-      <div className="brand-scroll flex gap-4 overflow-x-auto pb-3">
+      <div data-tour="tarefas-kanban-colunas" className="brand-scroll flex gap-4 overflow-x-auto pb-3">
         {COLUNAS.map((col) => {
           const cfg = statusTarefa(col.id);
           const doStatus = filtrados.filter((t) => t.status === col.id);

@@ -172,7 +172,7 @@ function Pagina() {
           acao={<Button onClick={() => refetch()}>Tentar de novo</Button>}
         />
       ) : (
-        <div className="-mx-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0">
+        <div data-tour="demandas-kanban-colunas" className="-mx-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0">
           <div className="grid min-w-max auto-cols-[minmax(17rem,1fr)] grid-flow-col gap-3 xl:min-w-0">
             {STATUS_DEMANDA_ORDEM.map((s) => {
               const itens = colunas.get(s) ?? [];

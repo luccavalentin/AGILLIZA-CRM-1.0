@@ -410,7 +410,7 @@ export function FuncionarioForm({
         </div>
       </div>
 
-      <Card className="border-primary/30 bg-primary/5">
+      <Card data-tour="rh-admissao-vinculo" className="border-primary/30 bg-primary/5">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Vincular a usuário do sistema</CardTitle>
         </CardHeader>
@@ -516,7 +516,7 @@ export function FuncionarioForm({
         {/* Barra única de navegação da ficha: cadastro + submódulos.
             Em telas pequenas rola horizontalmente; a partir de lg quebra em linhas. */}
         {admissao && (
-          <ol className="mb-1 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <ol data-tour="rh-admissao-etapas" className="mb-1 grid grid-cols-2 gap-2 sm:grid-cols-5">
             {etapas.map((e, i) => (
               <li key={e.aba}>
                 <button
@@ -1134,7 +1134,7 @@ export function FuncionarioForm({
       </Tabs>
 
       {admissao && (
-        <div className="sticky bottom-0 z-20 -mx-3 flex items-center justify-between gap-2 border-t border-border/60 bg-background/90 px-3 py-3 backdrop-blur sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
+        <div data-tour="rh-admissao-navegacao" className="sticky bottom-0 z-20 -mx-3 flex items-center justify-between gap-2 border-t border-border/60 bg-background/90 px-3 py-3 backdrop-blur sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
           <Button variant="outline" disabled={indiceEtapa === 0} onClick={() => setTab(etapas[indiceEtapa - 1].aba)}>
             <ArrowLeft className="mr-1.5 h-4 w-4" /> Voltar
           </Button>

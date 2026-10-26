@@ -569,7 +569,7 @@ export function PainelGeral({ search }: { search: Record<string, unknown> }) {
       />
 
       {/* Filtros: tudo na URL (link compartilhável) e lembrado neste navegador. */}
-      <section className="pg-filtros" aria-label="Filtros da produção">
+      <section className="pg-filtros" aria-label="Filtros da produção" data-tour="painel-filtros">
         <div className="pg-filtro">
           <span className="pg-filtro-rotulo">Visão</span>
           <Segmentado
@@ -749,7 +749,7 @@ export function PainelGeral({ search }: { search: Record<string, unknown> }) {
         />
       ) : (
         <>
-          <div className="pg-indicadores">
+          <div className="pg-indicadores" data-tour="painel-indicadores">
             {METRICAS.map((m, i) => {
               const atual = r?.atual[m.chave] ?? 0;
               const ant = r?.anterior[m.chave] ?? 0;
@@ -789,7 +789,7 @@ export function PainelGeral({ search }: { search: Record<string, unknown> }) {
             />
           ) : (
             <>
-              <div className="pg-grade-2">
+              <div className="pg-grade-2" data-tour="painel-evolucao">
                 <Cartao
                   titulo="Evolução no período"
                   subtitulo={`Simulações, propostas e contratos por ${r && r.serie.length && r.serie[0].chave.length === 7 ? "mês" : "dia"}`}
@@ -894,7 +894,7 @@ export function PainelGeral({ search }: { search: Record<string, unknown> }) {
                 </Cartao>
               </div>
 
-              <div className="pg-grade-2">
+              <div className="pg-grade-2" data-tour="painel-ranking">
                 <Cartao
                   titulo="Ranking por usuário"
                   subtitulo="Contratos, propostas e valor financiado no período"
@@ -947,7 +947,7 @@ export function PainelGeral({ search }: { search: Record<string, unknown> }) {
           )}
 
           {/* Agilliza News da equipe (C60, a7): o que a curadoria publicou, no mesmo cartão 3D. */}
-          <div className="pg-grade-2">
+          <div className="pg-grade-2" data-tour="painel-news">
             <Cartao
               titulo="Agilliza News"
               subtitulo="Mercado, crédito e comunicados da Agilliza para a equipe"

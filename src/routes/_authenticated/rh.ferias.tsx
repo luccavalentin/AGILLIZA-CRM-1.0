@@ -153,6 +153,7 @@ function Pagina() {
           </p>
         </div>
         <Button
+          data-tour="rh-ferias-programar"
           disabled={!podeProgramar}
           onClick={() => {
             setForm(formVazio());

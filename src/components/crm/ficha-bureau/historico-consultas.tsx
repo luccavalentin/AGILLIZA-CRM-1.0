@@ -32,7 +32,7 @@ export function HistoricoConsultas({
   onVerTodas: () => void;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm" data-tour="ficha-historico">
       <header className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
         <ScrollText className="size-4 text-primary" aria-hidden />
         <h2 className="text-sm font-semibold text-foreground">Histórico de consultas</h2>

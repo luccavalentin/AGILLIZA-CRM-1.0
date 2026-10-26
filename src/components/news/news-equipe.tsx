@@ -260,7 +260,7 @@ export function NewsEquipePagina() {
     if (q.data?.length) m.impressoes(q.data);
   }, [q.data]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="mx-auto max-w-3xl space-y-4" data-tour="news-lista">
       {q.isLoading ? (
         <Skeleton className="h-80" />
       ) : q.isError ? (

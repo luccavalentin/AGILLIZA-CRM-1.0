@@ -122,7 +122,7 @@ export function LinksView() {
         titulo="Links úteis"
         descricao="Links de uso diário da equipe, por categoria."
         acoes={
-          <div className="flex flex-wrap items-center gap-2">
+          <div data-tour="links-acoes" className="flex flex-wrap items-center gap-2">
             {podeEditar && (
               <Button variant="outline" onClick={() => setGerenciandoCats(true)}>
                 <Tags className="mr-2 h-4 w-4" />
@@ -139,7 +139,7 @@ export function LinksView() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div data-tour="links-indicadores" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <OpStat
           label="Links cadastrados"
           value={totalLinks}
@@ -161,7 +161,7 @@ export function LinksView() {
       </div>
 
       {((categorias ?? []) as LinkCategoria[]).length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div data-tour="links-categorias" className="flex flex-wrap gap-2">
           {((categorias ?? []) as LinkCategoria[]).map((c) => {
             const Icon = iconeCategoria(c.icone);
             const ativo = busca.trim().toLowerCase() === c.nome.toLowerCase();
@@ -194,7 +194,7 @@ export function LinksView() {
         />
       </div>
 
-      <div className="space-y-2.5">
+      <div data-tour="links-lista" className="space-y-2.5">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
         ) : filtrados.length === 0 ? (

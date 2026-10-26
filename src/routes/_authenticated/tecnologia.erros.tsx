@@ -104,7 +104,7 @@ function Erros() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="tecnologia-erros-indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi
           rotulo="Grupos em aberto"
           janela="agora"
@@ -172,7 +172,7 @@ function Erros() {
       </Painel>
 
       {/* Filtros: linha própria que rola no celular; a página nunca rola de lado. */}
-      <div className="space-y-2">
+      <div data-tour="tecnologia-erros-filtros" className="space-y-2">
         <label className="relative block">
           <span className="sr-only">Buscar</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -258,7 +258,7 @@ function Erros() {
           />
         </Painel>
       ) : (
-        <ul className="space-y-3">
+        <ul data-tour="tecnologia-erros-lista" className="space-y-3">
           {lista.itens.map((e) => (
             <CartaoErro key={e.id} erro={e} podeEditar={podeEditar} />
           ))}

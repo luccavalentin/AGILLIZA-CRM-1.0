@@ -48,7 +48,7 @@ export function NotificationSettings() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card data-tour="notificacoes-mestra">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
             <BellRing className="h-4 w-4 text-muted-foreground" />
@@ -77,7 +77,7 @@ export function NotificationSettings() {
 
       <NotificacoesSistemaCard />
 
-      <Card>
+      <Card data-tour="notificacoes-por-tipo">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
             <Volume2 className="h-4 w-4 text-muted-foreground" />

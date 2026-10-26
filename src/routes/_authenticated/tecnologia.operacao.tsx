@@ -84,7 +84,7 @@ function Operacao() {
             Tráfego, falhas e latência do Agilliza Tech, rota a rota e licença a licença.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div data-tour="tecnologia-operacao-janela" className="flex flex-wrap items-center gap-2">
           <Segmentos rotulo="Janela" valor={janela} opcoes={JANELAS} onChange={setJanela} />
           <SeloAoVivo
             atualizadoEm={q.dataUpdatedAt || null}
@@ -104,7 +104,7 @@ function Operacao() {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div data-tour="tecnologia-operacao-indicadores" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi
           rotulo="Requisições (Agilliza Tech)"
           janela={TEXTO_JANELA[janela]}
@@ -168,7 +168,7 @@ function Operacao() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+      <div data-tour="tecnologia-operacao-graficos" className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         <Painel titulo="Tráfego" descricao="Requisições, falhas do servidor (5xx) e recusas (4xx).">
           {carregando ? (
             <Esqueleto className="h-[200px] sm:h-[240px]" />
@@ -284,7 +284,7 @@ function Operacao() {
         </Painel>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+      <div data-tour="tecnologia-operacao-ranking" className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         <Painel
           titulo="Rotas mais lentas"
           icone={<Timer className="size-4" />}

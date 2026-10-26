@@ -80,6 +80,7 @@ export function PaginaGestao({ children, className }: { children: ReactNode; cla
 export function FaixaIndicadores({ children, colunas = 4 }: { children: ReactNode; colunas?: 3 | 4 | 5 }) {
   return (
     <div
+      data-tour="indicadores"
       className={cn(
         "grid grid-cols-2 gap-3",
         // Número ímpar de indicadores no celular: o último ocupa a linha inteira (sem buraco).
@@ -149,6 +150,7 @@ export function Indicador({
 export function BarraFiltros({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div
+      data-tour="filtros"
       className={cn(
         "flex flex-col gap-2.5 rounded-[14px] border border-border/80 bg-card p-3 shadow-[0_1px_2px_rgb(16_24_40/0.04)] md:flex-row md:flex-wrap md:items-center",
         className,

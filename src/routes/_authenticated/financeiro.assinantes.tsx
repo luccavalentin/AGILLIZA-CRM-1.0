@@ -164,7 +164,7 @@ function Pagina() {
             <Metrica rotulo="Contas ativas / em teste" valor={`${d.totais.contas_ativas} / ${d.totais.contas_teste}`} tom="marca" icone={Users} />
           </Metricas>
           {grafico.length > 0 && (
-            <SecaoCartao titulo="Mês a mês" descricao="Licença paga, receita avulsa e repasse pago aos assinantes.">
+            <SecaoCartao tour="financeiro-assinantes-grafico" titulo="Mês a mês" descricao="Licença paga, receita avulsa e repasse pago aos assinantes.">
               <div className="h-60 w-full">
                 <ResponsiveContainer>
                   <BarChart data={grafico}>

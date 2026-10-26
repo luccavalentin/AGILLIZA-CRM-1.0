@@ -61,7 +61,7 @@ export function FiltrosPropostas({
   comerciais,
 }: Props) {
   return (
-    <Card className="rounded-xl border-border/60 p-3 shadow-sm sm:p-4">
+    <Card data-tour="propostas-filtros" className="rounded-xl border-border/60 p-3 shadow-sm sm:p-4">
       <div className="flex flex-wrap items-end gap-3">
         <Tabs value={escopo} onValueChange={(v) => setEscopo(v as Escopo)}>
           <TabsList className="h-11 rounded-xl">

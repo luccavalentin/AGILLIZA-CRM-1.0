@@ -187,7 +187,7 @@ export function PainelView({
               />
             )}
             <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
-              <SelectTrigger className="h-9 w-full sm:w-40">
+              <SelectTrigger data-tour="painel-operacional-periodo" className="h-9 w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -238,7 +238,7 @@ export function PainelView({
       ) : (
         <>
           <SectionTitle>Indicadores</SectionTitle>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div data-tour="painel-operacional-indicadores" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {(data?.heros ?? []).map((h: any) => (
               <HeroMetric
                 key={h.label}
@@ -266,7 +266,7 @@ export function PainelView({
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          <div data-tour="painel-operacional-graficos" className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             {data?.evolucao && (data.evolucao.dados?.length ?? 0) > 1 && (
               <div className="lg:col-span-5">
                 <PanelCard

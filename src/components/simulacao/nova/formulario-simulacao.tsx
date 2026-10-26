@@ -81,7 +81,7 @@ export function FormularioSimulacao({
   }, [isPrice, w.renda_familiar]);
 
   return (
-    <Card className="overflow-hidden">
+    <Card data-tour="simulacao-rapida-formulario" className="overflow-hidden">
       <div className="flex flex-col border-b border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-5 md:p-6 sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">

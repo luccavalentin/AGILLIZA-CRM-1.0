@@ -186,7 +186,7 @@ function Pagina() {
           </div>
         ) : (
           <div className="space-y-5">
-            <div className="flex items-center gap-4 rounded-xl border border-border/50 bg-muted/20 p-4">
+            <div data-tour="perfil-foto" className="flex items-center gap-4 rounded-xl border border-border/50 bg-muted/20 p-4">
               <Avatar className="h-16 w-16 ring-2 ring-primary/10">
                 <AvatarImage src={fotoUrl || undefined} alt={nome} />
                 <AvatarFallback className="text-lg">{iniciais}</AvatarFallback>
@@ -263,7 +263,7 @@ function Pagina() {
         titulo="E-mail de acesso"
         descricao="Altere o e-mail usado para entrar no sistema."
       >
-        <div className="space-y-4">
+        <div data-tour="perfil-email" className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="novo-email" className="text-xs font-medium text-muted-foreground">
               Novo e-mail
@@ -292,7 +292,7 @@ function Pagina() {
         </div>
       </Secao>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div data-tour="perfil-arroba-som" className="grid gap-6 lg:grid-cols-2">
         <Secao
           numero="03"
           icon={<Lock className="size-5" />}
@@ -317,7 +317,7 @@ function Pagina() {
         <ChatSoundSetting />
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div data-tour="perfil-salvar" className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
             <span

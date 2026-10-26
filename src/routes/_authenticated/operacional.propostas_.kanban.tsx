@@ -559,7 +559,7 @@ function Pagina() {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div data-tour="propostas-kanban-prazos" className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" className="h-10 rounded-xl" onClick={() => setPrazosAbertos(true)}>
             <Timer className="mr-1.5 h-4 w-4" /> Prazos
           </Button>
@@ -572,7 +572,7 @@ function Pagina() {
       </div>
 
       {/* Filtros */}
-      <Card className="space-y-3 rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
+      <Card data-tour="propostas-kanban-filtros" className="space-y-3 rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
         <div className="flex flex-wrap items-center gap-2.5">
           {podeVerAssinantes && (
             <div
@@ -726,7 +726,7 @@ function Pagina() {
       </Card>
 
       {/* Indicadores */}
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+      <div data-tour="propostas-kanban-indicadores" className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <div className="op-stat p-3.5">
           <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Em andamento</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">{totais.ativos.quantidade}</p>
@@ -765,13 +765,13 @@ function Pagina() {
           </Button>
         </div>
       ) : carregando ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div data-tour="propostas-kanban-colunas" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="h-72 animate-pulse rounded-2xl bg-muted/60" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        <div data-tour="propostas-kanban-colunas" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {colunasVisiveis.map((col) => {
             const cfg = statusProposta(col.destino);
             const lista = porColuna.get(col.destino) ?? [];

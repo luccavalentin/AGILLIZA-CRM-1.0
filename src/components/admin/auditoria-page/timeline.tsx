@@ -30,7 +30,7 @@ export function TimelineAuditoria({
   onSelecionar: (r: AuditoriaLinha) => void;
 }) {
   return (
-    <div className="space-y-6">
+    <div data-tour="auditoria-linha-do-tempo" className="space-y-6">
       {grupos.map(([dia, itens]) => (
         <section key={dia}>
           <div className="mb-3 flex items-center gap-3">

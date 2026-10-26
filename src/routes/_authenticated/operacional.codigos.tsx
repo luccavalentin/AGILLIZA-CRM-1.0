@@ -173,7 +173,7 @@ function Pagina() {
           </div>
         </div>
         {podeEditar && (
-          <Button size="sm" onClick={() => setDialogo({ aberto: true, caixa: null })}>
+          <Button data-tour="codigos-nova-caixa" size="sm" onClick={() => setDialogo({ aberto: true, caixa: null })}>
             <Plus className="mr-1.5 h-4 w-4" />
             Nova caixa
           </Button>
@@ -205,7 +205,7 @@ function Pagina() {
           )}
         </div>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2">
+        <ul data-tour="codigos-caixas" className="grid gap-3 md:grid-cols-2">
           {listaCaixas.map((c) => (
             <CartaoCaixa
               key={c.id}
@@ -219,7 +219,7 @@ function Pagina() {
       )}
 
       {!semCaixa && (
-        <section className="space-y-3">
+        <section data-tour="codigos-mensagens" className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="mr-auto text-base font-semibold text-foreground">Mensagens capturadas</h2>
             <div className="relative w-full sm:w-56">

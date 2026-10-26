@@ -134,7 +134,7 @@ function Pagina() {
       ) : meses.length === 0 ? (
         <Vazio titulo="Sem movimento no período" />
       ) : (
-        <SecaoCartao titulo="Mês a mês" descricao="Previsto x realizado por natureza (repasse previsto fica na tela de repasses).">
+        <SecaoCartao tour="financeiro-fluxo-meses" titulo="Mês a mês" descricao="Previsto x realizado por natureza (repasse previsto fica na tela de repasses).">
           <div className="space-y-3">
             {meses.map((l) => (
               <div key={l.mes} className="rounded-xl border border-border/70 p-3">
@@ -164,7 +164,7 @@ function Pagina() {
         </SecaoCartao>
       )}
 
-      <SecaoCartao titulo="Movimentos realizados" descricao="Do livro de recebimentos e pagamentos, com o caminho até o lançamento.">
+      <SecaoCartao tour="financeiro-fluxo-movimentos" titulo="Movimentos realizados" descricao="Do livro de recebimentos e pagamentos, com o caminho até o lançamento.">
         {mov.isLoading ? (
           <Carregando linhas={3} />
         ) : mov.error ? (

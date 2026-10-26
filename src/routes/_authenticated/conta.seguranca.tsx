@@ -150,7 +150,7 @@ function Pagina() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card data-tour="seguranca-senha" className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-3 text-sm">
               <Icone3D icone={KeyRound} tom="sucesso" tamanho="md" />
@@ -227,7 +227,7 @@ function Pagina() {
           </CardContent>
         </Card>
 
-        <Card className="border-primary/20 bg-primary/[0.03]">
+        <Card data-tour="seguranca-dicas" className="border-primary/20 bg-primary/[0.03]">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-3 text-sm">
               <Icone3D icone={ShieldCheck} tom="marca" tamanho="md" />
@@ -256,7 +256,7 @@ function Pagina() {
           </CardContent>
         </Card>
 
-        <div className="lg:col-span-2">
+        <div data-tour="seguranca-biometria" className="lg:col-span-2">
           <BiometriaCard />
         </div>
       </div>

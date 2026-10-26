@@ -351,7 +351,7 @@ function Pagina() {
           </div>
         </div>
         {/* flex-wrap: no celular (390 px) "Nova proposta" saía da tela. */}
-        <div className="col-span-2 flex flex-wrap gap-2 sm:col-auto sm:flex-nowrap">
+        <div data-tour="propostas-botoes" className="col-span-2 flex flex-wrap gap-2 sm:col-auto sm:flex-nowrap">
           <Button
             asChild
             variant="outline"
@@ -404,7 +404,7 @@ function Pagina() {
       ) : (
         <>
           {/* Cards por status (clicáveis) + volume financiado */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+          <div data-tour="propostas-status" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
             <StatusCard
               ativo={grupo === null}
               label="Todas"

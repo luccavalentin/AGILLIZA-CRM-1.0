@@ -45,7 +45,7 @@ function Simulacoes() {
           texto="Assim que a equipe simular o seu financiamento nos bancos, as cotações aparecem aqui."
         />
       ) : (
-        <div className="space-y-4">
+        <div data-tour="cliente-simulacoes-lista" className="space-y-4">
           {q.data.map((s) => (
             <CartaoSimulacao key={s.id} s={s} />
           ))}
@@ -80,7 +80,7 @@ function CartaoSimulacao({ s }: { s: SimulacaoCliente }) {
       {s.bancos.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">Os bancos ainda não responderam esta simulação.</p>
       ) : (
-        <ul className="mt-4 space-y-2">
+        <ul data-tour="cliente-simulacoes-bancos" className="mt-4 space-y-2">
           {s.bancos.map((b, i) => (
             <li
               key={`${b.banco}-${i}`}

@@ -152,7 +152,7 @@ function Pagina() {
         />
       </FaixaIndicadores>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div data-tour="plataforma-receita-grafico" className="grid gap-3 lg:grid-cols-3">
         <div className="min-w-0 lg:col-span-2">
           <GraficoMrr meses={meses} carregando={carregando} />
         </div>

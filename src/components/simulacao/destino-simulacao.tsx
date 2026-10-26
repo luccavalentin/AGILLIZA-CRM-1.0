@@ -79,6 +79,7 @@ export function DestinoSimulacao({
 
   return (
     <div
+      data-tour="simulacao-destino"
       className={cn(
         "rounded-xl border bg-card p-3 shadow-sm transition-colors sm:p-4",
         naConta ? "border-primary/30 bg-primary/[0.03]" : "border-border/60",

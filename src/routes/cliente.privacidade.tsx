@@ -141,7 +141,7 @@ function Privacidade() {
     <div className="space-y-4 sm:space-y-5">
       <CabecalhoPagina icon={ShieldCheck} titulo="Privacidade e meus dados" subtitulo="Seus direitos pela LGPD, a um toque." />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div data-tour="cliente-privacidade-consentimento" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Bloco titulo="Seu consentimento" icone={FileCheck2}>
           {q.isLoading ? (
             <p className="text-sm text-muted-foreground">Carregando…</p>
@@ -187,7 +187,7 @@ function Privacidade() {
       </div>
 
       <Bloco titulo="O que você pode fazer" icone={ShieldCheck}>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div data-tour="cliente-privacidade-acoes" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button variant="outline" size="lg" className="w-full justify-start" disabled={baixar.isPending} onClick={() => baixar.mutate()}>
             <Download className="mr-2 size-5" /> {baixar.isPending ? "Gerando PDF…" : "Baixar meus dados (PDF)"}
           </Button>

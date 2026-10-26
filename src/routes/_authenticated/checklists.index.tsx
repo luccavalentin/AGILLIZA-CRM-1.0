@@ -56,7 +56,7 @@ function Pagina() {
       </header>
 
       <Secao titulo="Docs para abertura de conta" descricao="O mínimo que cada banco pede para abrir a conta do cliente.">
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        <div data-tour="checklists-abertura" className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           {BANCOS_ABERTURA.map((banco) => {
             const checklist = CHECKLIST_ABERTURA_CONTA[banco];
             return (
@@ -70,7 +70,7 @@ function Pagina() {
 
       <Secao titulo="Docs para sequenciar proposta" descricao="O dossiê para dar andamento à proposta — igual para todos os bancos.">
         <Link to="/checklists/$id" params={{ id: CHECKLIST_PROPOSTA.id }} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <span className="group flex items-center gap-3 rounded-xl border border-border/70 bg-card px-3 py-3 transition-all hover:border-primary/40 hover:shadow-sm">
+          <span data-tour="checklists-proposta" className="group flex items-center gap-3 rounded-xl border border-border/70 bg-card px-3 py-3 transition-all hover:border-primary/40 hover:shadow-sm">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <FileCheck2 className="h-5 w-5" />
             </span>
@@ -86,7 +86,7 @@ function Pagina() {
       </Secao>
 
       <Secao titulo="Checklist de documentos por banco" descricao="A lista completa da esteira de crédito de cada banco, com PDF.">
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+        <div data-tour="checklists-por-banco" className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
           {BANCOS_EXIGIDOS.map((banco) => (
             <Link
               key={banco}

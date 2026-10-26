@@ -100,7 +100,7 @@ function VisaoGeral() {
 
   return (
     <div className="space-y-4 md:space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div data-tour="tecnologia-visao-aovivo" className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">
             Fontes: telemetria do portal do Agilliza Tech (requisições e sessões), erros dos dois
@@ -127,7 +127,7 @@ function VisaoGeral() {
       <FaixaSaude sondas={q.data?.sondas ?? null} resumo={r ?? null} falhou={q.isError} />
 
       {/* Indicadores */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div data-tour="tecnologia-visao-indicadores" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Kpi
           cor="vermelho"
           icone={<Users />}
@@ -185,7 +185,7 @@ function VisaoGeral() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]">
+      <div data-tour="tecnologia-visao-graficos" className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]">
         <div className="min-w-0 space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <MiniArea
@@ -275,7 +275,7 @@ function VisaoGeral() {
         </CartaoFerramentas>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]">
+      <div data-tour="tecnologia-visao-mapa" className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]">
         <CartaoFerramentas
           titulo="Brasil ao vivo"
           subtitulo="Cor: pessoas ativas em 30 dias · ponto verde: gente online agora."
@@ -423,7 +423,7 @@ function FaixaSaude({
   });
 
   return (
-    <ul aria-label="Saúde dos sistemas" className="flex flex-wrap gap-2">
+    <ul data-tour="tecnologia-visao-saude" aria-label="Saúde dos sistemas" className="flex flex-wrap gap-2">
       {selos.map((s) => (
         <li
           key={s.chave}

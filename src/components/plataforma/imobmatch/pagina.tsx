@@ -124,6 +124,7 @@ export function GestaoParceirosAnuncios({
 
       {verImobMatch && verBanners && (
         <div
+          data-tour="plataforma-parceiros-area"
           className="inline-flex w-full rounded-lg bg-muted p-1 sm:w-auto"
           role="tablist"
           aria-label="Área"
@@ -169,7 +170,7 @@ export function GestaoParceirosAnuncios({
 
       {area === "imobmatch" && verImobMatch && (
         <>
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <div data-tour="plataforma-parceiros-resumo" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             <Resumo
               rotulo="Em revisão"
               valor={String(r?.revisao ?? 0)}
@@ -204,7 +205,7 @@ export function GestaoParceirosAnuncios({
           </div>
 
           <Tabs value={aba} onValueChange={(v) => irPara(v as AbaGestao)}>
-            <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+            <div data-tour="plataforma-parceiros-abas" className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
               <TabsList className="h-auto min-h-10 w-max">
                 {ABAS_IMOBMATCH.map((a) => (
                   <TabsTrigger key={a} value={a} className="min-h-8 gap-1.5">

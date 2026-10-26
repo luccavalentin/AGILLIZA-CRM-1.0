@@ -96,7 +96,7 @@ export function DpsView() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div data-tour="formularios-dps-opcoes" className="grid gap-4 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => {

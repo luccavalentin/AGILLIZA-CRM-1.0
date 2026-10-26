@@ -245,7 +245,7 @@ function Central() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-2 md:ml-auto">
+        <div data-tour="plataforma-suporte-atender" className="flex gap-2 md:ml-auto">
           {podeAtender && (
             <Button
               variant="outline"
@@ -293,7 +293,7 @@ function Central() {
         ]}
       />
 
-      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(340px,440px)_minmax(0,1fr)]">
+      <div data-tour="plataforma-suporte-fila" className="grid min-w-0 gap-4 xl:grid-cols-[minmax(340px,440px)_minmax(0,1fr)]">
         <Secao semRespiro className="min-w-0 self-start">
           {q.isLoading && <ListaCarregando linhas={6} />}
           {q.isError && (

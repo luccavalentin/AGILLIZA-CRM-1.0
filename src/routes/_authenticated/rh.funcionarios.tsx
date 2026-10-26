@@ -87,14 +87,14 @@ function Pagina() {
             </p>
           </div>
         </div>
-        <Button asChild>
+        <Button data-tour="rh-colaboradores-admitir" asChild>
           <Link to="/rh/funcionarios/novo">
             <UserPlus className="mr-2 h-4 w-4" /> Admitir
           </Link>
         </Button>
       </div>
 
-      <Card>
+      <Card data-tour="rh-colaboradores-filtros">
         <CardContent className="grid gap-3 p-3 sm:grid-cols-2 md:grid-cols-4 md:p-4">
           <div className="relative sm:col-span-2 md:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

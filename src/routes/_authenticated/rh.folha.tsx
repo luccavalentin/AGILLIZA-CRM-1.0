@@ -80,7 +80,7 @@ function Pagina() {
             Tudo da competência num lugar: lançamentos, ocorrências, prévia, fechamento e holerites.
           </p>
         </div>
-        <div className="flex items-center gap-1 self-start rounded-xl border border-border/60 bg-card p-1 md:self-auto">
+        <div data-tour="rh-folha-competencia" className="flex items-center gap-1 self-start rounded-xl border border-border/60 bg-card p-1 md:self-auto">
           <Button size="icon" variant="ghost" aria-label="Competência anterior" onClick={() => mover(-1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -98,7 +98,7 @@ function Pagina() {
         </div>
       </div>
 
-      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <ol data-tour="rh-folha-passos" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {passos.map((p, i) => (
           <li
             key={p.rotulo}

@@ -70,7 +70,7 @@ function Pagina() {
         descricao="Quadro, movimentação, ausências, férias, documentos e custo da folha."
         atualizadoEm={atualizado}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div data-tour="rh-painel-acoes" className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
               <Link to="/rh/folha">
                 <CalendarRange className="mr-2 h-4 w-4" /> Folha do mês
@@ -86,7 +86,7 @@ function Pagina() {
       />
 
       <SectionTitle>Quadro e movimentação</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="rh-painel-quadro" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <ReportKpiCard
           titulo="Headcount"
           valor={String(d.headcount)}
@@ -121,7 +121,7 @@ function Pagina() {
       </div>
 
       <SectionTitle>Ausências, férias e documentos</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-tour="rh-painel-ausencias" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <ReportKpiCard
           titulo="Absenteísmo do mês"
           valor={`${d.absenteismoMes.toLocaleString("pt-BR")}%`}
@@ -196,7 +196,7 @@ function Pagina() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card data-tour="rh-painel-movimentacao" className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Admissões e desligamentos · 12 meses</CardTitle>
           </CardHeader>

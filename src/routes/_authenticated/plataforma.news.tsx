@@ -74,7 +74,7 @@ function Pagina() {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div data-tour="plataforma-news-indicadores" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Indicador3D
           icone={Inbox}
           tom={naFila ? "alerta" : "neutro"}

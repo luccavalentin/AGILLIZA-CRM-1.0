@@ -65,7 +65,7 @@ function Usuarios() {
             plataforma pela ponte.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div data-tour="tecnologia-usuarios-recorte" className="flex flex-wrap items-center gap-2">
           <Segmentos
             rotulo="Recorte"
             valor={janela}
@@ -94,7 +94,7 @@ function Usuarios() {
         />
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div data-tour="tecnologia-usuarios-indicadores" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Kpi
           rotulo="Online agora"
           janela="5 min"
@@ -123,7 +123,7 @@ function Usuarios() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div data-tour="tecnologia-usuarios-mapa" className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <Painel
           titulo="Por estado"
           icone={<MapPinned className="size-4" />}

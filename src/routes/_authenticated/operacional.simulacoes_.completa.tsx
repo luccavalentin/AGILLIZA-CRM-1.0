@@ -217,7 +217,7 @@ function Pagina() {
             carregandoOrigem && "opacity-50 pointer-events-none",
           )}
         >
-          <Card className="overflow-hidden">
+          <Card data-tour="simulacao-completa-titular" className="overflow-hidden">
             <SecaoCabecalho
               icone={<User className="h-4 w-4" />}
               titulo="Titular"
@@ -274,7 +274,7 @@ function Pagina() {
               </div>
             </Card>
 
-            <Card className="overflow-hidden">
+            <Card data-tour="simulacao-completa-bancos" className="overflow-hidden">
               <SecaoCabecalho
                 icone={<Landmark className="h-4 w-4" />}
                 titulo="Bancos"
@@ -298,7 +298,7 @@ function Pagina() {
           </fieldset>
 
           {/* Ação sempre disponível no final do formulário */}
-          <div className="flex justify-end pt-1">
+          <div data-tour="simulacao-completa-gerar" className="flex justify-end pt-1">
             <Button
               className="h-11 w-full gap-2 sm:w-auto sm:px-8"
               onClick={() => {

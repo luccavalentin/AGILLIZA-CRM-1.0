@@ -33,7 +33,7 @@ function InicioParceiro() {
           {mensagemDeErro(resumo.error, "Não foi possível carregar o resumo da sua carteira.")}
         </div>
       )}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div data-tour="parceiro-resumo" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
           <div key={c.label} className="rounded-xl border bg-card p-4">
             <div className="flex items-center justify-between">
@@ -55,7 +55,7 @@ function InicioParceiro() {
       </div>
 
       {resumo.data && (
-        <div className="mt-6 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+        <div data-tour="parceiro-comissao" className="mt-6 rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           Seu percentual de comissão padrão é{" "}
           <span className="font-medium text-foreground">{resumo.data.percentual_comissao}%</span>.
           As comissões são calculadas automaticamente quando um contrato é emitido para um cliente

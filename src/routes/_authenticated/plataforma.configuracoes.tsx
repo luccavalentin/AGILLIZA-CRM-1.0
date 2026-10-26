@@ -264,7 +264,7 @@ function Pagina() {
               <EstadoVazio icone={<Landmark />} titulo="Nenhum banco cadastrado" />
             </Secao>
           ) : (
-            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <ul data-tour="agilliza-tech-bancos" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {bancosOrdenados.map((b) => (
                 <li key={b.id} className="min-w-0">
                   <button

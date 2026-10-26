@@ -408,6 +408,7 @@ function Regras({ podeEditar, aoNova }: { podeEditar: boolean; aoNova: () => voi
   const padrao = q.data?.vigente_padrao;
   return (
     <SecaoCartao
+      tour="financeiro-repasses-regras"
       titulo="Regras do repasse"
       descricao="Padrão para todas as contas; o percentual próprio de uma conta prevalece. Regra nova vale de hoje em diante e nunca recalcula repasse já nascido."
       acoes={

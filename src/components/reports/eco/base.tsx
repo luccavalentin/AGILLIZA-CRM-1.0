@@ -268,7 +268,7 @@ export function BarraFiltros({
   const ativo = JSON.stringify(searchDoFiltro(f)) !== JSON.stringify(searchDoFiltro(FILTROS_RELATORIO_PADRAO));
 
   return (
-    <div className="pg-filtros" aria-label="Filtros do relatório">
+    <div data-tour="relatorios-filtros" className="pg-filtros" aria-label="Filtros do relatório">
       {!soPeriodo && usoBase.pode && (
         <Campo rotulo="Abrangência">
           <Segmentado

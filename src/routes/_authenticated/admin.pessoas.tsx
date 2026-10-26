@@ -337,7 +337,7 @@ function PessoasPage() {
                   }
                 />
               ) : (
-                <ul className="divide-y divide-border/70">
+                <ul data-tour="pessoas-lista" className="divide-y divide-border/70">
                   {pessoas.map((p: any) => {
                     const ativo = p.ativo && !p.bloqueado_em;
                     // O próprio cadastro não se altera por aqui (o servidor recusa).

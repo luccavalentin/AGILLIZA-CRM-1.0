@@ -34,7 +34,7 @@ export function ConsultorComposer({
   }, [pergunta]);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-6">
+    <div className="mx-auto w-full max-w-3xl px-4 pb-6" data-tour="consultor-ia-pergunta">
       <div className="relative group rounded-[1.5rem] border border-border bg-card p-1 shadow-xl shadow-black/5 transition-all focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
         <Textarea
           ref={textareaRef}

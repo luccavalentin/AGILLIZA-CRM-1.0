@@ -139,7 +139,7 @@ function Pagina() {
         />
       </FaixaIndicadores>
 
-      <div className="flex items-start gap-2.5 rounded-[14px] border border-primary/15 bg-primary/[0.04] p-3 text-sm text-foreground">
+      <div data-tour="provedores-aviso" className="flex items-start gap-2.5 rounded-[14px] border border-primary/15 bg-primary/[0.04] p-3 text-sm text-foreground">
         <Lock className="mt-0.5 size-4 shrink-0 text-primary" />
         <p>
           Nenhuma tela devolve o valor de uma chave. Guardar, ligar e apagar ficam na auditoria com
@@ -167,7 +167,7 @@ function Pagina() {
       ) : (
         grupos.map((g) => (
           <Secao key={g.titulo} titulo={g.titulo} descricao={g.descricao || undefined}>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div data-tour="provedores-cartoes" className="grid gap-3 md:grid-cols-2">
               {g.provedores.map((p) => (
                 <CartaoProvedor
                   key={p}
