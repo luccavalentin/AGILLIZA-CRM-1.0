@@ -22,7 +22,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, ChipsFiltro, EstadoErro, EstadoVazio, ListaCarregando, Selo, type Tom } from "@/components/plataforma/kit";
-import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import {
   decidirDenunciaComunidade,
@@ -32,6 +31,7 @@ import {
   type DenunciaComunidade,
 } from "@/lib/plataforma/comunidade.functions";
 import { CHAVE_IMOBMATCH } from "./aba-revisao";
+import { useModeraImobMatch } from "@/hooks/use-permissao-imobmatch";
 
 type Situacao = (typeof SITUACOES_COMUNIDADE)[number];
 
@@ -87,7 +87,7 @@ const quando = (iso: string | null | undefined) =>
 
 export function AbaComunidade() {
   const lerFn = useServerFn(lerDenunciasComunidade);
-  const podeDecidir = usePermissao("saas.imobmatch", "edit");
+  const podeDecidir = useModeraImobMatch("edit");
   const [situacao, setSituacao] = useState<Situacao>("aberta");
   const [decidindo, setDecidindo] = useState<{ d: DenunciaComunidade; decisao: "aprovar" | "remover" } | null>(null);
   const q = useQuery({

@@ -14,8 +14,14 @@ import { z } from "zod";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const VER = exigirPermissao(["saas.imobmatch", "view"]);
-const MODERAR = exigirPermissao(["saas.imobmatch", "edit"]);
+const VER = exigirPermissao(["saas.imobmatch", "view"], ["imobmatch.moderacao", "view"]);
+const MODERAR = exigirPermissao(["saas.imobmatch", "edit"], ["imobmatch.moderacao", "edit"]);
+/** Contagens e números (só leitura agregada): também a Visão geral do ImobMatch Gestão. */
+const VER_NUMEROS = exigirPermissao(
+  ["saas.imobmatch", "view"],
+  ["imobmatch.moderacao", "view"],
+  ["imobmatch.visao", "view"],
+);
 
 async function ponte() {
   return import("./ponte.server");
@@ -260,7 +266,7 @@ const motivoObrigatorio = z
 
 /** Contagens das abas (revisão, denúncias, moderados, CRECI a conferir, anúncios no ar). */
 export const lerResumoImobMatch = createServerFn({ method: "GET" })
-  .middleware([VER])
+  .middleware([VER_NUMEROS])
   .handler(({ context }) =>
     chamar<ResumoImobMatch>(context.userId, "select plataforma.imobmatch_resumo() as r"),
   );
@@ -426,7 +432,7 @@ export const lerCompradores = createServerFn({ method: "GET" })
 
 /** Totais e série diária do ImobMatch (7 a 90 dias). */
 export const lerNumerosImobMatch = createServerFn({ method: "GET" })
-  .middleware([VER])
+  .middleware([VER_NUMEROS])
   .inputValidator((d: unknown) =>
     z.object({ dias: z.number().int().min(7).max(90).default(30) }).parse(d ?? {}),
   )

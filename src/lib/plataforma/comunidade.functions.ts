@@ -73,7 +73,7 @@ async function ponte() {
 
 /** Denúncias da comunidade numa situação (abertas primeiro: as mais antigas no topo). */
 export const lerDenunciasComunidade = createServerFn({ method: "GET" })
-  .middleware([exigirPermissao(["saas.imobmatch", "view"])])
+  .middleware([exigirPermissao(["saas.imobmatch", "view"], ["imobmatch.moderacao", "view"])])
   .inputValidator((d: unknown) =>
     z.object({ situacao: z.enum(SITUACOES_COMUNIDADE).default("aberta") }).parse(d ?? {}),
   )
@@ -104,7 +104,7 @@ export const lerDenunciasComunidade = createServerFn({ method: "GET" })
 
 /** Aprovar (o conteúdo fica) ou Remover (sai; denúncia de membro suspende o membro). */
 export const decidirDenunciaComunidade = createServerFn({ method: "POST" })
-  .middleware([exigirPermissao(["saas.imobmatch", "edit"])])
+  .middleware([exigirPermissao(["saas.imobmatch", "edit"], ["imobmatch.moderacao", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({

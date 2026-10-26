@@ -23,6 +23,7 @@ import {
   ROTULO_PATROCINADOS,
   type AbaPatrocinados,
 } from "./patrocinados";
+import { useModeraImobMatch } from "@/hooks/use-permissao-imobmatch";
 
 /**
  * Gestão de Parceiros e Anúncios (pedido do dono, 25/10/2026): o ImobMatch gerido pela
@@ -73,7 +74,7 @@ export function GestaoParceirosAnuncios({
   abaPedida: AbaGestao | undefined;
   onAba: (a: AbaGestao) => void;
 }) {
-  const verImobMatch = usePermissao("saas.imobmatch", "view");
+  const verImobMatch = useModeraImobMatch("view");
   const verBanners = usePermissao("saas.patrocinados", "view");
   const carregadas = usePermissoesCarregadas();
   const qc = useQueryClient();

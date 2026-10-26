@@ -6,7 +6,6 @@ import {
   LifeBuoy,
   Newspaper,
   Store,
-  Handshake,
   ScrollText,
   KeySquare,
   Tags,
@@ -59,6 +58,9 @@ import {
   MapPinned,
   BellRing,
   Waves,
+  HeartHandshake,
+  BadgeCheck,
+  Megaphone,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -98,6 +100,16 @@ const ICONE_BANCO = {
   inter: iconeDeBanco("Banco Inter"),
   caixa: iconeDeBanco("Caixa"),
 };
+
+/** Módulos do ImobMatch Gestão: o item do menu abre para quem vê qualquer um deles. */
+export const MODULOS_IMOBMATCH_GESTAO = [
+  "imobmatch.financeiro",
+  "imobmatch.moderacao",
+  "imobmatch.planos",
+  "imobmatch.config",
+  "saas.imobmatch",
+  "saas.patrocinados",
+];
 
 /**
  * Módulos das áreas de Configurações gerais: o hub `/admin` abre para quem vê qualquer um
@@ -734,18 +746,72 @@ export const navInterno: NavGroup[] = [
         perm: { modulo: "saas.marketplace" },
       },
       {
-        // ImobMatch (0283): revisão, denúncias, moderação, CRECI, anunciantes, números e banners.
-        label: "Gestão de Parceiros e Anúncios",
-        icon: Handshake,
-        to: "/plataforma/parceiros-anuncios",
-        perm: { modulo: "saas.imobmatch", equivalentes: ["saas.patrocinados"] },
-      },
-      {
         // Auditoria da plataforma e LGPD numa aba só (pedido do dono, 26/10/2026).
         label: "Auditoria e LGPD",
         icon: ScrollText,
         to: "/plataforma/auditoria",
         perm: { modulo: "saas.auditoria", equivalentes: ["saas.lgpd"] },
+      },
+    ],
+  },
+  {
+    // ImobMatch Gestão (28/10/2026): a gestão sistêmica e financeira do ImobMatch inteira no
+    // Agilliza (antes "Gestão de Parceiros e Anúncios", dentro de Gestão de sistemas).
+    id: "imobmatch",
+    label: "ImobMatch Gestão",
+    items: [
+      {
+        label: "ImobMatch Gestão",
+        icon: HeartHandshake,
+        to: "/imobmatch",
+        perm: { modulo: "imobmatch.visao", equivalentes: MODULOS_IMOBMATCH_GESTAO },
+        children: [
+          {
+            label: "Visão geral",
+            icon: LayoutDashboard,
+            to: "/imobmatch",
+            perm: { modulo: "imobmatch.visao", equivalentes: ["imobmatch.financeiro"] },
+          },
+          {
+            label: "Anúncios e moderação",
+            icon: ShieldCheck,
+            to: "/imobmatch/moderacao",
+            perm: { modulo: "imobmatch.moderacao", equivalentes: ["saas.imobmatch"] },
+          },
+          {
+            label: "Profissionais e anunciantes",
+            icon: BadgeCheck,
+            to: "/imobmatch/profissionais",
+            perm: {
+              modulo: "imobmatch.moderacao",
+              equivalentes: ["saas.imobmatch", "imobmatch.financeiro"],
+            },
+          },
+          {
+            label: "Patrocinados e banners",
+            icon: Megaphone,
+            to: "/imobmatch/patrocinados",
+            perm: { modulo: "saas.patrocinados" },
+          },
+          {
+            label: "Financeiro",
+            icon: Wallet,
+            to: "/imobmatch/financeiro",
+            perm: { modulo: "imobmatch.financeiro" },
+          },
+          {
+            label: "Planos e preços",
+            icon: Tags,
+            to: "/imobmatch/planos",
+            perm: { modulo: "imobmatch.planos" },
+          },
+          {
+            label: "Configurações",
+            icon: SlidersHorizontal,
+            to: "/imobmatch/configuracoes",
+            perm: { modulo: "imobmatch.config" },
+          },
+        ],
       },
     ],
   },

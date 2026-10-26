@@ -50,7 +50,13 @@ export function SubNavegacao({
   return (
     <nav ref={nav} aria-label={rotulo} className={cn("subnav-3d", className)}>
       {itens.map((i) => (
-        <Link key={i.to} to={i.to as never} aria-current={atual(i) ? "page" : undefined}>
+        <Link
+          key={i.to}
+          to={i.to as never}
+          // Sem isto o Link marca a tela-raiz (`exato`) como atual em todas as filhas.
+          activeOptions={{ exact: !!i.exato }}
+          aria-current={atual(i) ? "page" : undefined}
+        >
           <Icone3D icone={i.icone} tom={i.tom ?? "marca"} tamanho="sm" />
           {i.rotulo}
         </Link>

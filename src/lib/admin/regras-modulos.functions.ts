@@ -420,12 +420,56 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
       { acao: "edit", label: "Moderar e verificar" },
     ],
   },
-  // Gestão de Parceiros e Anúncios do ImobMatch (migração 0283 do Corretor): revisão de
-  // duplicados, moderação, denúncias, CRECI, anunciantes, compradores e números.
+  // ImobMatch Gestão (28/10/2026): a gestão sistêmica e financeira do ImobMatch inteira no
+  // Agilliza. Cada módulo abre a sua tela e, pela ponte, só a permissão dela (0460 do Corretor).
   {
-    grupo: "Gestão de sistemas",
+    grupo: "ImobMatch Gestão",
+    modulo: "imobmatch.visao",
+    label: "ImobMatch — Visão geral",
+    acoes: [{ acao: "view", label: "Ver os números (a receita só com o Financeiro)" }],
+  },
+  {
+    grupo: "ImobMatch Gestão",
+    modulo: "imobmatch.moderacao",
+    label: "ImobMatch — Anúncios, moderação, profissionais e anunciantes",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Moderar anúncios, julgar denúncias e verificar CRECI" },
+    ],
+  },
+  {
+    grupo: "ImobMatch Gestão",
+    modulo: "imobmatch.financeiro",
+    label: "ImobMatch — Financeiro",
+    acoes: [
+      { acao: "view", label: "Ver vendas, assinaturas, Pix, patrocínios e inadimplência" },
+      { acao: "export", label: "Exportar as faturas (CSV)" },
+    ],
+  },
+  {
+    grupo: "ImobMatch Gestão",
+    modulo: "imobmatch.planos",
+    label: "ImobMatch — Planos e preços",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Alterar preços, venda e limites dos planos e produtos das lojas" },
+    ],
+  },
+  {
+    grupo: "ImobMatch Gestão",
+    modulo: "imobmatch.config",
+    label: "ImobMatch — Configurações",
+    acoes: [
+      { acao: "view", label: "Ver" },
+      { acao: "edit", label: "Alterar os limites do ImobMatch e dos banners" },
+    ],
+  },
+  // Permissão anterior da moderação (migração 0283 do Corretor): continua valendo para quem já
+  // tinha; o módulo novo é "ImobMatch — Anúncios, moderação, profissionais e anunciantes".
+  {
+    grupo: "ImobMatch Gestão",
     modulo: "saas.imobmatch",
-    label: "Gestão de Parceiros e Anúncios (ImobMatch)",
+    label: "Gestão de Parceiros e Anúncios (ImobMatch, permissão anterior)",
     acoes: [
       { acao: "view", label: "Ver" },
       { acao: "edit", label: "Moderar anúncios, julgar denúncias e verificar CRECI" },
@@ -433,7 +477,7 @@ export const CATALOGO_MODULOS: ModuloCatalogo[] = [
   },
   // Banners patrocinados do ImobMatch (frente F3 do Corretor): criativos, campanhas e pacotes.
   {
-    grupo: "Gestão de sistemas",
+    grupo: "ImobMatch Gestão",
     modulo: "saas.patrocinados",
     label: "Banners patrocinados (ImobMatch)",
     acoes: [

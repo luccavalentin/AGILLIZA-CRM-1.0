@@ -29,7 +29,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatData } from "@/lib/financeiro/format";
 import { RodapePaginas, useValorAssentado } from "@/components/plataforma/paginacao";
@@ -41,6 +40,7 @@ import {
 } from "@/lib/plataforma/imobmatch.functions";
 import { CHAVE_IMOBMATCH } from "./aba-revisao";
 import { dataHora, SeloCreci, TIPO_CONTA, Vazio } from "./comum";
+import { useModeraImobMatch } from "@/hooks/use-permissao-imobmatch";
 
 type Filtro = (typeof FILTROS_PROFISSIONAIS)[number];
 const ROTULO: Record<Filtro, string> = {
@@ -183,7 +183,7 @@ export function AbaProfissionais() {
 }
 
 function DetalheProfissional({ p, onFechar }: { p: Profissional | null; onFechar: () => void }) {
-  const podeVerificar = usePermissao("saas.imobmatch", "edit");
+  const podeVerificar = useModeraImobMatch("edit");
   const creci = p ? (p.creci_rede ?? p.creci) : null;
   const uf = p ? (p.creci_uf_rede ?? p.creci_uf) : null;
   return (

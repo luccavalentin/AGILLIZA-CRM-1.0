@@ -21,7 +21,6 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { RodapePaginas } from "@/components/plataforma/paginacao";
 import { cn } from "@/lib/utils";
@@ -32,6 +31,7 @@ import {
   type ItemRevisao,
 } from "@/lib/plataforma/imobmatch.functions";
 import { CampoMotivo, Carregando, FichaDoAnuncio, Vazio } from "./comum";
+import { useModeraImobMatch } from "@/hooks/use-permissao-imobmatch";
 
 export const CHAVE_IMOBMATCH = ["plataforma-imobmatch"];
 
@@ -121,7 +121,7 @@ export function AbaRevisao() {
 }
 
 function Revisao({ item }: { item: ItemRevisao }) {
-  const podeDecidir = usePermissao("saas.imobmatch", "edit");
+  const podeDecidir = useModeraImobMatch("edit");
   const qc = useQueryClient();
   const resolverFn = useServerFn(resolverRevisao);
   const moderarFn = useServerFn(moderarAnuncio);

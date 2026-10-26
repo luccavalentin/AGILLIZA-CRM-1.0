@@ -60,7 +60,7 @@ async function ponte() {
 }
 
 export const lerDenunciasChat = createServerFn({ method: "GET" })
-  .middleware([exigirPermissao(["saas.imobmatch", "view"])])
+  .middleware([exigirPermissao(["saas.imobmatch", "view"], ["imobmatch.moderacao", "view"])])
   .inputValidator((d: unknown) => z.object({ situacao: z.enum(SITUACOES_CHAT).default("aberta") }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
@@ -71,7 +71,7 @@ export const lerDenunciasChat = createServerFn({ method: "GET" })
   });
 
 export const decidirDenunciaChat = createServerFn({ method: "POST" })
-  .middleware([exigirPermissao(["saas.imobmatch", "edit"])])
+  .middleware([exigirPermissao(["saas.imobmatch", "edit"], ["imobmatch.moderacao", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -90,7 +90,7 @@ export const decidirDenunciaChat = createServerFn({ method: "POST" })
   });
 
 export const lerSuspensosChat = createServerFn({ method: "GET" })
-  .middleware([exigirPermissao(["saas.imobmatch", "view"])])
+  .middleware([exigirPermissao(["saas.imobmatch", "view"], ["imobmatch.moderacao", "view"])])
   .handler(async ({ context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -100,7 +100,7 @@ export const lerSuspensosChat = createServerFn({ method: "GET" })
   });
 
 export const reativarNoChat = createServerFn({ method: "POST" })
-  .middleware([exigirPermissao(["saas.imobmatch", "edit"])])
+  .middleware([exigirPermissao(["saas.imobmatch", "edit"], ["imobmatch.moderacao", "edit"])])
   .inputValidator((d: unknown) => z.object({ usuarioId: z.string().uuid("Pessoa inválida."), motivo: MOTIVO }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();

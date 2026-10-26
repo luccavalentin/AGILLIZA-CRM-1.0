@@ -14,7 +14,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, ChipsFiltro, EstadoErro, EstadoVazio, ListaCarregando, Selo, type Tom } from "@/components/plataforma/kit";
-import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import {
   decidirDenunciaChat,
@@ -28,6 +27,7 @@ import {
   type SuspensoChat,
 } from "@/lib/plataforma/chat-moderacao.functions";
 import { CHAVE_IMOBMATCH } from "./aba-revisao";
+import { useModeraImobMatch } from "@/hooks/use-permissao-imobmatch";
 
 const CHAVE = [...CHAVE_IMOBMATCH, "chat"];
 
@@ -80,7 +80,7 @@ const quando = (iso: string | null | undefined) =>
 
 export function AbaChat() {
   const lerFn = useServerFn(lerDenunciasChat);
-  const podeDecidir = usePermissao("saas.imobmatch", "edit");
+  const podeDecidir = useModeraImobMatch("edit");
   const [situacao, setSituacao] = useState<SituacaoDenunciaChat>("aberta");
   const [decidindo, setDecidindo] = useState<{ d: DenunciaChat; decisao: DecisaoChat } | null>(null);
   const q = useQuery({

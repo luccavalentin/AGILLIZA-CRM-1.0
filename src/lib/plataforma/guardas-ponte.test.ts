@@ -77,10 +77,15 @@ describe("guardas das server functions da ponte", () => {
     expect(todas.filter((f) => f.usaPonte).length).toBeGreaterThan(80);
   });
 
-  it("toda server function da ponte tem exigirPermissao com módulo saas.*, marketing.automacoes ou financeiro.repasses", () => {
+  it("toda server function da ponte tem exigirPermissao com módulo saas.*, imobmatch.*, marketing.automacoes ou financeiro.repasses", () => {
     const sem = todas
       .filter((f) => f.usaPonte)
-      .filter((f) => !f.guardas.some((g) => /"(saas\.[a-z_]+|marketing\.automacoes|financeiro\.repasses)"/.test(g)))
+      .filter(
+        (f) =>
+          !f.guardas.some((g) =>
+            /"(saas\.[a-z_]+|imobmatch\.(visao|moderacao|financeiro|planos|config)|marketing\.automacoes|financeiro\.repasses)"/.test(g),
+          ),
+      )
       .map((f) => `${f.arquivo} › ${f.nome}`);
     expect(sem).toEqual([]);
   });
@@ -124,6 +129,45 @@ describe("guardas das server functions da ponte", () => {
     for (const nome of posts) {
       const f = im.find((x) => x.nome === nome)!;
       expect(f.guardas.join(), nome).toContain('"edit"');
+    }
+  });
+
+  it("ImobMatch Gestão (0460 do Corretor): cada tela com o seu módulo; escrever exige edit; dinheiro só com o Financeiro", () => {
+    const ig = todas.filter((f) => f.arquivo === "plataforma/imobmatch-gestao.functions.ts");
+    expect(ig.length).toBeGreaterThanOrEqual(9);
+    const g = (nome: string) => ig.find((f) => f.nome === nome)!.guardas.join();
+    // Dinheiro: só o módulo Financeiro do ImobMatch (nem a visão geral, nem a moderação).
+    for (const nome of ["lerFinanceiroImobMatch", "lerFaturasImobMatch"]) {
+      expect(g(nome), nome).toBe('["imobmatch.financeiro","view"]');
+    }
+    expect(g("lerPlanosImobMatch")).toContain('"imobmatch.planos","view"');
+    expect(g("lerParametrosImobMatch")).toContain('"imobmatch.config","view"');
+    for (const nome of postsDe("plataforma/imobmatch-gestao.functions.ts")) {
+      expect(g(nome), nome).toContain('"edit"');
+      expect(g(nome), nome).not.toContain('"view"');
+    }
+    expect(g("salvarPlanoImobMatch")).toContain('"imobmatch.planos","edit"');
+    expect(g("salvarProdutoLojaImobMatch")).toContain('"imobmatch.planos","edit"');
+    expect(g("salvarParametroImobMatch")).toContain('"imobmatch.config","edit"');
+    // Toda escrita passa por função do banco com a regra (nada de UPDATE direto daqui).
+    const fonte = readFileSync(join(RAIZ, "plataforma/imobmatch-gestao.functions.ts"), "utf8");
+    expect(fonte).toContain("plataforma.imobmatch_salvar_plano($1, $2::jsonb)");
+    expect(fonte).toContain("plataforma.imobmatch_salvar_parametro($1, $2::jsonb)");
+    expect(fonte).toContain("imobmatch.configurar_produto_loja($1, $2, $3, $4, $5)");
+    expect(fonte).not.toMatch(/(update|insert into|delete from)\s+(nucleo|plataforma|imobmatch)\./i);
+  });
+
+  it("moderação do ImobMatch: aceita o módulo novo (imobmatch.moderacao) e o antigo, com a mesma ação", () => {
+    for (const arquivo of [
+      "plataforma/imobmatch.functions.ts",
+      "plataforma/comunidade.functions.ts",
+      "plataforma/chat-moderacao.functions.ts",
+    ]) {
+      for (const f of todas.filter((x) => x.arquivo === arquivo)) {
+        const gs = f.guardas.join();
+        expect(gs, f.nome).toContain('"imobmatch.moderacao"');
+        if (f.metodo === "POST") expect(gs, f.nome).not.toContain('"view"');
+      }
     }
   });
 

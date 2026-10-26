@@ -1,26 +1,40 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { assertModuloPermitido } from "@/lib/route-guards";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { abaValida, type AbaGestao } from "@/components/plataforma/imobmatch/pagina";
 import {
-  abaValida,
-  GestaoParceirosAnuncios,
-  type AbaGestao,
-} from "@/components/plataforma/imobmatch/pagina";
+  ABAS_PATROCINADOS,
+  type AbaPatrocinados,
+} from "@/components/plataforma/imobmatch/patrocinados";
 
-/** Gestão de Parceiros e Anúncios do ImobMatch (ver `components/plataforma/imobmatch`). */
+/**
+ * Endereço antigo da "Gestão de Parceiros e Anúncios" (Gestão de sistemas). Desde 28/10/2026
+ * a gestão do ImobMatch é o menu próprio ImobMatch Gestão: favorito, notificação ou link
+ * antigo leva à tela nova, na mesma aba. Cada tela nova confere a própria permissão.
+ */
+const MODERACAO = ["revisao", "denuncias", "comunidade", "chat", "moderados"] as const;
+type AbaModeracao = (typeof MODERACAO)[number];
+
 export const Route = createFileRoute("/_authenticated/plataforma/parceiros-anuncios")({
-  head: () => ({ meta: [{ title: "Gestão de Parceiros e Anúncios — Gestão de sistemas — Agilliza" }] }),
   validateSearch: (s: Record<string, unknown>): { aba?: AbaGestao } => ({ aba: abaValida(s.aba) }),
-  beforeLoad: () => assertModuloPermitido("saas.imobmatch", ["saas.patrocinados"]),
-  component: Pagina,
+  beforeLoad: ({ search }) => {
+    const aba = search.aba;
+    if (aba && (ABAS_PATROCINADOS as readonly string[]).includes(aba)) {
+      throw redirect({
+        to: "/imobmatch/patrocinados",
+        search: { aba: aba as AbaPatrocinados },
+        replace: true,
+      });
+    }
+    if (aba === "profissionais" || aba === "anunciantes") {
+      throw redirect({ to: "/imobmatch/profissionais", search: { aba }, replace: true });
+    }
+    if (aba === "numeros") throw redirect({ to: "/imobmatch", replace: true });
+    throw redirect({
+      to: "/imobmatch/moderacao",
+      search: {
+        aba:
+          aba && (MODERACAO as readonly string[]).includes(aba) ? (aba as AbaModeracao) : undefined,
+      },
+      replace: true,
+    });
+  },
 });
-
-function Pagina() {
-  const busca = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
-  return (
-    <GestaoParceirosAnuncios
-      abaPedida={busca.aba}
-      onAba={(aba) => void navigate({ search: { aba }, replace: true })}
-    />
-  );
-}

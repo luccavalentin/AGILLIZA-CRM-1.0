@@ -2958,6 +2958,148 @@ export const ROTEIROS: Record<string, RoteiroTour> = {
     ],
   },
 
+  // ---- ImobMatch Gestão (28/10/2026)
+  imobmatch: {
+    versao: 1,
+    titulo: "ImobMatch Gestão — Visão geral",
+    passos: [
+      {
+        alvo: "titulo",
+        titulo: "O ImobMatch numa tela",
+        texto:
+          "Compradores, anunciantes, profissionais Pro, anúncios no ar e pedidos de contato. A receita do mês aparece para quem tem o Financeiro do ImobMatch.",
+      },
+      {
+        alvo: "indicadores",
+        titulo: "Os números de hoje",
+        texto: "Cada cartão traz o total e o que mudou no mês ou nos últimos 30 dias.",
+      },
+      {
+        titulo: "O que espera decisão",
+        texto:
+          "Revisões, denúncias e CRECI a conferir levam direto à fila certa. Use o trilho de cima para ir às outras telas do ImobMatch.",
+      },
+    ],
+  },
+  "imobmatch.moderacao": {
+    versao: 1,
+    titulo: "Anúncios e moderação",
+    passos: [
+      {
+        alvo: "titulo",
+        titulo: "Moderação do ImobMatch",
+        texto:
+          "Revise endereços repetidos, julgue denúncias, modere a Comunidade e o chat. Toda decisão pede motivo, fica registrada e avisa quem publicou.",
+      },
+      {
+        alvo: "indicadores",
+        titulo: "O que espera decisão",
+        texto: "Toque em um cartão para abrir a aba correspondente.",
+      },
+      {
+        alvo: "imobmatch-moderacao-abas",
+        titulo: "Abas de trabalho",
+        texto:
+          "Em revisão compara fichas do mesmo endereço; em Moderados dá para desfazer a decisão.",
+      },
+    ],
+  },
+  "imobmatch.profissionais": {
+    versao: 1,
+    titulo: "Profissionais e anunciantes",
+    passos: [
+      {
+        alvo: "titulo",
+        titulo: "Quem anuncia no ImobMatch",
+        texto:
+          "As assinaturas do Pro avulso e dos particulares, a conferência do CRECI e a lista de anunciantes e compradores.",
+      },
+      {
+        alvo: "filtros",
+        titulo: "Filtre as assinaturas",
+        texto: "Por produto, situação (vencendo, cancelamento pedido) e nome da conta.",
+      },
+    ],
+  },
+  "imobmatch.patrocinados": {
+    versao: 1,
+    titulo: "Patrocinados e banners",
+    passos: [
+      {
+        alvo: "titulo",
+        titulo: "Banners do ImobMatch",
+        texto:
+          "Patrocinadores, a fila de criativos com a prévia, pacotes e preços, campanhas no ar e métricas.",
+      },
+      {
+        alvo: "imobmatch-patrocinados-abas",
+        titulo: "Uma aba para cada etapa",
+        texto:
+          "Aprovar um criativo pede conferir a versão que está na prévia; pausar campanha pede motivo.",
+      },
+    ],
+  },
+  "imobmatch.financeiro": {
+    versao: 1,
+    titulo: "Financeiro do ImobMatch",
+    passos: [
+      {
+        alvo: "filtros",
+        titulo: "Escolha o período",
+        texto: "Este mês, mês passado, 90 dias, o ano ou datas suas. Tudo abaixo segue o período.",
+      },
+      {
+        alvo: "indicadores",
+        titulo: "Recebido, a receber e atraso",
+        texto: "A inadimplência é a de hoje, independente do período escolhido.",
+      },
+      {
+        titulo: "Produto, canal, lojas e Pix",
+        texto:
+          "Receita por mês e por produto (Pro, anunciante, banners), por canal de pagamento, vendas nas lojas, cobranças Pix e patrocínios.",
+      },
+      {
+        titulo: "Faturas e CSV",
+        texto:
+          "No fim, a lista de faturas com filtros. Quem tem permissão exporta o CSV. Cobrar e dar baixa continua em Receita e cobrança.",
+      },
+    ],
+  },
+  "imobmatch.planos": {
+    versao: 1,
+    titulo: "Planos e preços do ImobMatch",
+    passos: [
+      {
+        alvo: "titulo",
+        titulo: "Planos, lojas e banners",
+        texto:
+          "Os planos do Pro e do anunciante, os produtos da App Store e do Google Play e, para consulta, os pacotes de banner.",
+      },
+      {
+        titulo: "Preço novo, próximas faturas",
+        texto:
+          "Mudar o preço não altera fatura já emitida. Editar pede a permissão de edição deste módulo.",
+      },
+    ],
+  },
+  "imobmatch.configuracoes": {
+    versao: 1,
+    titulo: "Configurações do ImobMatch",
+    passos: [
+      {
+        alvo: "titulo",
+        titulo: "Limites do portal e dos banners",
+        texto:
+          "Denúncias por dia, vídeos do Reels, frequência e limites dos banners. Cada mudança fica registrada.",
+      },
+      {
+        titulo: "O que não muda aqui",
+        texto:
+          "O que mexe em cobrança e a compra de teste das lojas ficam travados (cadeado) e só mudam nas Configurações do Agilliza Tech.",
+      },
+    ],
+  },
+
   // ---- Gestão de sistemas: Auditoria e LGPD
   "plataforma.auditoria": {
     versao: 1,

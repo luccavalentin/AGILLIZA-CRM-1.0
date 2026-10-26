@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { Flag, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { RodapePaginas } from "@/components/plataforma/paginacao";
 import { cn } from "@/lib/utils";
@@ -24,6 +23,7 @@ import {
 } from "@/lib/plataforma/imobmatch.functions";
 import { CHAVE_IMOBMATCH } from "./aba-revisao";
 import { CampoMotivo, Carregando, dataHora, FichaDoAnuncio, MOTIVO_DENUNCIA, Vazio } from "./comum";
+import { useModeraImobMatch } from "@/hooks/use-permissao-imobmatch";
 
 type Situacao = (typeof SITUACOES_DENUNCIA)[number];
 const ROTULO: Record<Situacao, string> = {
@@ -103,7 +103,7 @@ export function AbaDenuncias() {
 }
 
 function Grupo({ g }: { g: GrupoDenuncias }) {
-  const podeJulgar = usePermissao("saas.imobmatch", "edit");
+  const podeJulgar = useModeraImobMatch("edit");
   const qc = useQueryClient();
   const decidirFn = useServerFn(decidirDenuncias);
   const [decisao, setDecisao] = useState<"procedente" | "improcedente" | null>(null);

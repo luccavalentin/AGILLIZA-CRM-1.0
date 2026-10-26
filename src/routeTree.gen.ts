@@ -22,6 +22,7 @@ import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/cr
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
+import { Route as AuthenticatedImobmatchRouteImport } from './routes/_authenticated/imobmatch'
 import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/links'
 import { Route as AuthenticatedMatriculasRouteImport } from './routes/_authenticated/matriculas'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
@@ -83,6 +84,13 @@ import { Route as AuthenticatedFinanceiroRelatoriosRouteImport } from './routes/
 import { Route as AuthenticatedFinanceiroRepassesRouteImport } from './routes/_authenticated/financeiro.repasses'
 import { Route as AuthenticatedFormulariosIndexRouteImport } from './routes/_authenticated/formularios.index'
 import { Route as AuthenticatedFormulariosBancoRouteImport } from './routes/_authenticated/formularios.$banco'
+import { Route as AuthenticatedImobmatchIndexRouteImport } from './routes/_authenticated/imobmatch.index'
+import { Route as AuthenticatedImobmatchConfiguracoesRouteImport } from './routes/_authenticated/imobmatch.configuracoes'
+import { Route as AuthenticatedImobmatchFinanceiroRouteImport } from './routes/_authenticated/imobmatch.financeiro'
+import { Route as AuthenticatedImobmatchModeracaoRouteImport } from './routes/_authenticated/imobmatch.moderacao'
+import { Route as AuthenticatedImobmatchPatrocinadosRouteImport } from './routes/_authenticated/imobmatch.patrocinados'
+import { Route as AuthenticatedImobmatchPlanosRouteImport } from './routes/_authenticated/imobmatch.planos'
+import { Route as AuthenticatedImobmatchProfissionaisRouteImport } from './routes/_authenticated/imobmatch.profissionais'
 import { Route as AuthenticatedOperacionalChatsRouteImport } from './routes/_authenticated/operacional.chats'
 import { Route as AuthenticatedOperacionalCodigosRouteImport } from './routes/_authenticated/operacional.codigos'
 import { Route as AuthenticatedOperacionalDemandasRouteImport } from './routes/_authenticated/operacional.demandas'
@@ -243,6 +251,11 @@ const AuthenticatedFormulariosRoute =
     path: '/formularios',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedImobmatchRoute = AuthenticatedImobmatchRouteImport.update({
+  id: '/imobmatch',
+  path: '/imobmatch',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLinksRoute = AuthenticatedLinksRouteImport.update({
   id: '/links',
   path: '/links',
@@ -585,6 +598,48 @@ const AuthenticatedFormulariosBancoRoute =
     id: '/$banco',
     path: '/$banco',
     getParentRoute: () => AuthenticatedFormulariosRoute,
+  } as any)
+const AuthenticatedImobmatchIndexRoute =
+  AuthenticatedImobmatchIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedImobmatchRoute,
+  } as any)
+const AuthenticatedImobmatchConfiguracoesRoute =
+  AuthenticatedImobmatchConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedImobmatchRoute,
+  } as any)
+const AuthenticatedImobmatchFinanceiroRoute =
+  AuthenticatedImobmatchFinanceiroRouteImport.update({
+    id: '/financeiro',
+    path: '/financeiro',
+    getParentRoute: () => AuthenticatedImobmatchRoute,
+  } as any)
+const AuthenticatedImobmatchModeracaoRoute =
+  AuthenticatedImobmatchModeracaoRouteImport.update({
+    id: '/moderacao',
+    path: '/moderacao',
+    getParentRoute: () => AuthenticatedImobmatchRoute,
+  } as any)
+const AuthenticatedImobmatchPatrocinadosRoute =
+  AuthenticatedImobmatchPatrocinadosRouteImport.update({
+    id: '/patrocinados',
+    path: '/patrocinados',
+    getParentRoute: () => AuthenticatedImobmatchRoute,
+  } as any)
+const AuthenticatedImobmatchPlanosRoute =
+  AuthenticatedImobmatchPlanosRouteImport.update({
+    id: '/planos',
+    path: '/planos',
+    getParentRoute: () => AuthenticatedImobmatchRoute,
+  } as any)
+const AuthenticatedImobmatchProfissionaisRoute =
+  AuthenticatedImobmatchProfissionaisRouteImport.update({
+    id: '/profissionais',
+    path: '/profissionais',
+    getParentRoute: () => AuthenticatedImobmatchRoute,
   } as any)
 const AuthenticatedOperacionalChatsRoute =
   AuthenticatedOperacionalChatsRouteImport.update({
@@ -1157,6 +1212,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/formularios': typeof AuthenticatedFormulariosRouteWithChildren
+  '/imobmatch': typeof AuthenticatedImobmatchRouteWithChildren
   '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
   '/news': typeof AuthenticatedNewsRoute
@@ -1215,6 +1271,12 @@ export interface FileRoutesByFullPath {
   '/financeiro/relatorios': typeof AuthenticatedFinanceiroRelatoriosRoute
   '/financeiro/repasses': typeof AuthenticatedFinanceiroRepassesRoute
   '/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
+  '/imobmatch/configuracoes': typeof AuthenticatedImobmatchConfiguracoesRoute
+  '/imobmatch/financeiro': typeof AuthenticatedImobmatchFinanceiroRoute
+  '/imobmatch/moderacao': typeof AuthenticatedImobmatchModeracaoRoute
+  '/imobmatch/patrocinados': typeof AuthenticatedImobmatchPatrocinadosRoute
+  '/imobmatch/planos': typeof AuthenticatedImobmatchPlanosRoute
+  '/imobmatch/profissionais': typeof AuthenticatedImobmatchProfissionaisRoute
   '/operacional/chats': typeof AuthenticatedOperacionalChatsRoute
   '/operacional/codigos': typeof AuthenticatedOperacionalCodigosRoute
   '/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
@@ -1286,6 +1348,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
+  '/imobmatch/': typeof AuthenticatedImobmatchIndexRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/rh/': typeof AuthenticatedRhIndexRoute
   '/tecnologia/': typeof AuthenticatedTecnologiaIndexRoute
@@ -1381,6 +1444,12 @@ export interface FileRoutesByTo {
   '/financeiro/relatorios': typeof AuthenticatedFinanceiroRelatoriosRoute
   '/financeiro/repasses': typeof AuthenticatedFinanceiroRepassesRoute
   '/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
+  '/imobmatch/configuracoes': typeof AuthenticatedImobmatchConfiguracoesRoute
+  '/imobmatch/financeiro': typeof AuthenticatedImobmatchFinanceiroRoute
+  '/imobmatch/moderacao': typeof AuthenticatedImobmatchModeracaoRoute
+  '/imobmatch/patrocinados': typeof AuthenticatedImobmatchPatrocinadosRoute
+  '/imobmatch/planos': typeof AuthenticatedImobmatchPlanosRoute
+  '/imobmatch/profissionais': typeof AuthenticatedImobmatchProfissionaisRoute
   '/operacional/chats': typeof AuthenticatedOperacionalChatsRoute
   '/operacional/codigos': typeof AuthenticatedOperacionalCodigosRoute
   '/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
@@ -1452,6 +1521,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/checklists': typeof AuthenticatedChecklistsIndexRoute
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
+  '/imobmatch': typeof AuthenticatedImobmatchIndexRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
   '/rh': typeof AuthenticatedRhIndexRoute
   '/tecnologia': typeof AuthenticatedTecnologiaIndexRoute
@@ -1494,6 +1564,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/formularios': typeof AuthenticatedFormulariosRouteWithChildren
+  '/_authenticated/imobmatch': typeof AuthenticatedImobmatchRouteWithChildren
   '/_authenticated/links': typeof AuthenticatedLinksRoute
   '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
   '/_authenticated/news': typeof AuthenticatedNewsRoute
@@ -1552,6 +1623,12 @@ export interface FileRoutesById {
   '/_authenticated/financeiro/relatorios': typeof AuthenticatedFinanceiroRelatoriosRoute
   '/_authenticated/financeiro/repasses': typeof AuthenticatedFinanceiroRepassesRoute
   '/_authenticated/formularios/$banco': typeof AuthenticatedFormulariosBancoRoute
+  '/_authenticated/imobmatch/configuracoes': typeof AuthenticatedImobmatchConfiguracoesRoute
+  '/_authenticated/imobmatch/financeiro': typeof AuthenticatedImobmatchFinanceiroRoute
+  '/_authenticated/imobmatch/moderacao': typeof AuthenticatedImobmatchModeracaoRoute
+  '/_authenticated/imobmatch/patrocinados': typeof AuthenticatedImobmatchPatrocinadosRoute
+  '/_authenticated/imobmatch/planos': typeof AuthenticatedImobmatchPlanosRoute
+  '/_authenticated/imobmatch/profissionais': typeof AuthenticatedImobmatchProfissionaisRoute
   '/_authenticated/operacional/chats': typeof AuthenticatedOperacionalChatsRoute
   '/_authenticated/operacional/codigos': typeof AuthenticatedOperacionalCodigosRoute
   '/_authenticated/operacional/demandas': typeof AuthenticatedOperacionalDemandasRoute
@@ -1623,6 +1700,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
+  '/_authenticated/imobmatch/': typeof AuthenticatedImobmatchIndexRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
   '/_authenticated/rh/': typeof AuthenticatedRhIndexRoute
   '/_authenticated/tecnologia/': typeof AuthenticatedTecnologiaIndexRoute
@@ -1665,6 +1743,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentos'
     | '/formularios'
+    | '/imobmatch'
     | '/links'
     | '/matriculas'
     | '/news'
@@ -1723,6 +1802,12 @@ export interface FileRouteTypes {
     | '/financeiro/relatorios'
     | '/financeiro/repasses'
     | '/formularios/$banco'
+    | '/imobmatch/configuracoes'
+    | '/imobmatch/financeiro'
+    | '/imobmatch/moderacao'
+    | '/imobmatch/patrocinados'
+    | '/imobmatch/planos'
+    | '/imobmatch/profissionais'
     | '/operacional/chats'
     | '/operacional/codigos'
     | '/operacional/demandas'
@@ -1794,6 +1879,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/checklists/'
     | '/formularios/'
+    | '/imobmatch/'
     | '/relatorios/'
     | '/rh/'
     | '/tecnologia/'
@@ -1889,6 +1975,12 @@ export interface FileRouteTypes {
     | '/financeiro/relatorios'
     | '/financeiro/repasses'
     | '/formularios/$banco'
+    | '/imobmatch/configuracoes'
+    | '/imobmatch/financeiro'
+    | '/imobmatch/moderacao'
+    | '/imobmatch/patrocinados'
+    | '/imobmatch/planos'
+    | '/imobmatch/profissionais'
     | '/operacional/chats'
     | '/operacional/codigos'
     | '/operacional/demandas'
@@ -1960,6 +2052,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/checklists'
     | '/formularios'
+    | '/imobmatch'
     | '/relatorios'
     | '/rh'
     | '/tecnologia'
@@ -2001,6 +2094,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
     | '/_authenticated/formularios'
+    | '/_authenticated/imobmatch'
     | '/_authenticated/links'
     | '/_authenticated/matriculas'
     | '/_authenticated/news'
@@ -2059,6 +2153,12 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro/relatorios'
     | '/_authenticated/financeiro/repasses'
     | '/_authenticated/formularios/$banco'
+    | '/_authenticated/imobmatch/configuracoes'
+    | '/_authenticated/imobmatch/financeiro'
+    | '/_authenticated/imobmatch/moderacao'
+    | '/_authenticated/imobmatch/patrocinados'
+    | '/_authenticated/imobmatch/planos'
+    | '/_authenticated/imobmatch/profissionais'
     | '/_authenticated/operacional/chats'
     | '/_authenticated/operacional/codigos'
     | '/_authenticated/operacional/demandas'
@@ -2130,6 +2230,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/checklists/'
     | '/_authenticated/formularios/'
+    | '/_authenticated/imobmatch/'
     | '/_authenticated/relatorios/'
     | '/_authenticated/rh/'
     | '/_authenticated/tecnologia/'
@@ -2267,6 +2368,13 @@ declare module '@tanstack/react-router' {
       path: '/formularios'
       fullPath: '/formularios'
       preLoaderRoute: typeof AuthenticatedFormulariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/imobmatch': {
+      id: '/_authenticated/imobmatch'
+      path: '/imobmatch'
+      fullPath: '/imobmatch'
+      preLoaderRoute: typeof AuthenticatedImobmatchRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/links': {
@@ -2695,6 +2803,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/formularios/$banco'
       preLoaderRoute: typeof AuthenticatedFormulariosBancoRouteImport
       parentRoute: typeof AuthenticatedFormulariosRoute
+    }
+    '/_authenticated/imobmatch/': {
+      id: '/_authenticated/imobmatch/'
+      path: '/'
+      fullPath: '/imobmatch/'
+      preLoaderRoute: typeof AuthenticatedImobmatchIndexRouteImport
+      parentRoute: typeof AuthenticatedImobmatchRoute
+    }
+    '/_authenticated/imobmatch/configuracoes': {
+      id: '/_authenticated/imobmatch/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/imobmatch/configuracoes'
+      preLoaderRoute: typeof AuthenticatedImobmatchConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedImobmatchRoute
+    }
+    '/_authenticated/imobmatch/financeiro': {
+      id: '/_authenticated/imobmatch/financeiro'
+      path: '/financeiro'
+      fullPath: '/imobmatch/financeiro'
+      preLoaderRoute: typeof AuthenticatedImobmatchFinanceiroRouteImport
+      parentRoute: typeof AuthenticatedImobmatchRoute
+    }
+    '/_authenticated/imobmatch/moderacao': {
+      id: '/_authenticated/imobmatch/moderacao'
+      path: '/moderacao'
+      fullPath: '/imobmatch/moderacao'
+      preLoaderRoute: typeof AuthenticatedImobmatchModeracaoRouteImport
+      parentRoute: typeof AuthenticatedImobmatchRoute
+    }
+    '/_authenticated/imobmatch/patrocinados': {
+      id: '/_authenticated/imobmatch/patrocinados'
+      path: '/patrocinados'
+      fullPath: '/imobmatch/patrocinados'
+      preLoaderRoute: typeof AuthenticatedImobmatchPatrocinadosRouteImport
+      parentRoute: typeof AuthenticatedImobmatchRoute
+    }
+    '/_authenticated/imobmatch/planos': {
+      id: '/_authenticated/imobmatch/planos'
+      path: '/planos'
+      fullPath: '/imobmatch/planos'
+      preLoaderRoute: typeof AuthenticatedImobmatchPlanosRouteImport
+      parentRoute: typeof AuthenticatedImobmatchRoute
+    }
+    '/_authenticated/imobmatch/profissionais': {
+      id: '/_authenticated/imobmatch/profissionais'
+      path: '/profissionais'
+      fullPath: '/imobmatch/profissionais'
+      preLoaderRoute: typeof AuthenticatedImobmatchProfissionaisRouteImport
+      parentRoute: typeof AuthenticatedImobmatchRoute
     }
     '/_authenticated/operacional/chats': {
       id: '/_authenticated/operacional/chats'
@@ -3406,6 +3563,36 @@ const AuthenticatedFormulariosRouteWithChildren =
     AuthenticatedFormulariosRouteChildren,
   )
 
+interface AuthenticatedImobmatchRouteChildren {
+  AuthenticatedImobmatchConfiguracoesRoute: typeof AuthenticatedImobmatchConfiguracoesRoute
+  AuthenticatedImobmatchFinanceiroRoute: typeof AuthenticatedImobmatchFinanceiroRoute
+  AuthenticatedImobmatchModeracaoRoute: typeof AuthenticatedImobmatchModeracaoRoute
+  AuthenticatedImobmatchPatrocinadosRoute: typeof AuthenticatedImobmatchPatrocinadosRoute
+  AuthenticatedImobmatchPlanosRoute: typeof AuthenticatedImobmatchPlanosRoute
+  AuthenticatedImobmatchProfissionaisRoute: typeof AuthenticatedImobmatchProfissionaisRoute
+  AuthenticatedImobmatchIndexRoute: typeof AuthenticatedImobmatchIndexRoute
+}
+
+const AuthenticatedImobmatchRouteChildren: AuthenticatedImobmatchRouteChildren =
+  {
+    AuthenticatedImobmatchConfiguracoesRoute:
+      AuthenticatedImobmatchConfiguracoesRoute,
+    AuthenticatedImobmatchFinanceiroRoute:
+      AuthenticatedImobmatchFinanceiroRoute,
+    AuthenticatedImobmatchModeracaoRoute: AuthenticatedImobmatchModeracaoRoute,
+    AuthenticatedImobmatchPatrocinadosRoute:
+      AuthenticatedImobmatchPatrocinadosRoute,
+    AuthenticatedImobmatchPlanosRoute: AuthenticatedImobmatchPlanosRoute,
+    AuthenticatedImobmatchProfissionaisRoute:
+      AuthenticatedImobmatchProfissionaisRoute,
+    AuthenticatedImobmatchIndexRoute: AuthenticatedImobmatchIndexRoute,
+  }
+
+const AuthenticatedImobmatchRouteWithChildren =
+  AuthenticatedImobmatchRoute._addFileChildren(
+    AuthenticatedImobmatchRouteChildren,
+  )
+
 interface AuthenticatedRelatoriosRouteChildren {
   AuthenticatedRelatoriosAppClienteRoute: typeof AuthenticatedRelatoriosAppClienteRoute
   AuthenticatedRelatoriosClientesRoute: typeof AuthenticatedRelatoriosClientesRoute
@@ -3499,6 +3686,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRouteWithChildren
+  AuthenticatedImobmatchRoute: typeof AuthenticatedImobmatchRouteWithChildren
   AuthenticatedLinksRoute: typeof AuthenticatedLinksRoute
   AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
@@ -3603,6 +3791,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedFormulariosRoute: AuthenticatedFormulariosRouteWithChildren,
+  AuthenticatedImobmatchRoute: AuthenticatedImobmatchRouteWithChildren,
   AuthenticatedLinksRoute: AuthenticatedLinksRoute,
   AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,

@@ -21,7 +21,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { RodapePaginas, useValorAssentado } from "@/components/plataforma/paginacao";
 import {
@@ -33,6 +32,7 @@ import {
 } from "@/lib/plataforma/imobmatch.functions";
 import { CHAVE_IMOBMATCH } from "./aba-revisao";
 import { CampoMotivo, Carregando, FichaDoAnuncio, HistoricoDecisoes, Vazio } from "./comum";
+import { useModeraImobMatch } from "@/hooks/use-permissao-imobmatch";
 
 export function AbaModerados() {
   const lerFn = useServerFn(lerModerados);
@@ -167,7 +167,7 @@ function ModerarPorCodigo({ onAbrir }: { onAbrir: (f: FichaAnuncio) => void }) {
 
 /** Gaveta do anúncio: histórico de decisões, moderar (se no ar) ou desfazer (se moderado). */
 function DetalheModeracao({ f, onFechar }: { f: FichaAnuncio | null; onFechar: () => void }) {
-  const podeModerar = usePermissao("saas.imobmatch", "edit");
+  const podeModerar = useModeraImobMatch("edit");
   return (
     <Sheet open={!!f} onOpenChange={(v) => !v && onFechar()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
