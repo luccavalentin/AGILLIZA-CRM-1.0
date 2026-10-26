@@ -79,6 +79,7 @@ import { Route as AuthenticatedOperacionalPropostasRouteImport } from './routes/
 import { Route as AuthenticatedOperacionalSimulacoesRouteImport } from './routes/_authenticated/operacional.simulacoes'
 import { Route as AuthenticatedOperacionalTarefasRouteImport } from './routes/_authenticated/operacional.tarefas'
 import { Route as AuthenticatedPlataformaAuditoriaRouteImport } from './routes/_authenticated/plataforma.auditoria'
+import { Route as AuthenticatedPlataformaCarteirasRouteImport } from './routes/_authenticated/plataforma.carteiras'
 import { Route as AuthenticatedPlataformaComissoesRouteImport } from './routes/_authenticated/plataforma.comissoes'
 import { Route as AuthenticatedPlataformaConfiguracoesRouteImport } from './routes/_authenticated/plataforma.configuracoes'
 import { Route as AuthenticatedPlataformaConsultasRouteImport } from './routes/_authenticated/plataforma.consultas'
@@ -548,6 +549,12 @@ const AuthenticatedPlataformaAuditoriaRoute =
   AuthenticatedPlataformaAuditoriaRouteImport.update({
     id: '/plataforma/auditoria',
     path: '/plataforma/auditoria',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlataformaCarteirasRoute =
+  AuthenticatedPlataformaCarteirasRouteImport.update({
+    id: '/plataforma/carteiras',
+    path: '/plataforma/carteiras',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPlataformaComissoesRoute =
@@ -1105,6 +1112,7 @@ export interface FileRoutesByFullPath {
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/plataforma/auditoria': typeof AuthenticatedPlataformaAuditoriaRoute
+  '/plataforma/carteiras': typeof AuthenticatedPlataformaCarteirasRoute
   '/plataforma/comissoes': typeof AuthenticatedPlataformaComissoesRoute
   '/plataforma/configuracoes': typeof AuthenticatedPlataformaConfiguracoesRoute
   '/plataforma/consultas': typeof AuthenticatedPlataformaConsultasRoute
@@ -1255,6 +1263,7 @@ export interface FileRoutesByTo {
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/plataforma/auditoria': typeof AuthenticatedPlataformaAuditoriaRoute
+  '/plataforma/carteiras': typeof AuthenticatedPlataformaCarteirasRoute
   '/plataforma/comissoes': typeof AuthenticatedPlataformaComissoesRoute
   '/plataforma/configuracoes': typeof AuthenticatedPlataformaConfiguracoesRoute
   '/plataforma/consultas': typeof AuthenticatedPlataformaConsultasRoute
@@ -1410,6 +1419,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/_authenticated/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/_authenticated/plataforma/auditoria': typeof AuthenticatedPlataformaAuditoriaRoute
+  '/_authenticated/plataforma/carteiras': typeof AuthenticatedPlataformaCarteirasRoute
   '/_authenticated/plataforma/comissoes': typeof AuthenticatedPlataformaComissoesRoute
   '/_authenticated/plataforma/configuracoes': typeof AuthenticatedPlataformaConfiguracoesRoute
   '/_authenticated/plataforma/consultas': typeof AuthenticatedPlataformaConsultasRoute
@@ -1565,6 +1575,7 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes'
     | '/operacional/tarefas'
     | '/plataforma/auditoria'
+    | '/plataforma/carteiras'
     | '/plataforma/comissoes'
     | '/plataforma/configuracoes'
     | '/plataforma/consultas'
@@ -1715,6 +1726,7 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes'
     | '/operacional/tarefas'
     | '/plataforma/auditoria'
+    | '/plataforma/carteiras'
     | '/plataforma/comissoes'
     | '/plataforma/configuracoes'
     | '/plataforma/consultas'
@@ -1869,6 +1881,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/simulacoes'
     | '/_authenticated/operacional/tarefas'
     | '/_authenticated/plataforma/auditoria'
+    | '/_authenticated/plataforma/carteiras'
     | '/_authenticated/plataforma/comissoes'
     | '/_authenticated/plataforma/configuracoes'
     | '/_authenticated/plataforma/consultas'
@@ -2464,6 +2477,13 @@ declare module '@tanstack/react-router' {
       path: '/plataforma/auditoria'
       fullPath: '/plataforma/auditoria'
       preLoaderRoute: typeof AuthenticatedPlataformaAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/plataforma/carteiras': {
+      id: '/_authenticated/plataforma/carteiras'
+      path: '/plataforma/carteiras'
+      fullPath: '/plataforma/carteiras'
+      preLoaderRoute: typeof AuthenticatedPlataformaCarteirasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/plataforma/comissoes': {
@@ -3216,6 +3236,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalSimulacoesRoute: typeof AuthenticatedOperacionalSimulacoesRoute
   AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
   AuthenticatedPlataformaAuditoriaRoute: typeof AuthenticatedPlataformaAuditoriaRoute
+  AuthenticatedPlataformaCarteirasRoute: typeof AuthenticatedPlataformaCarteirasRoute
   AuthenticatedPlataformaComissoesRoute: typeof AuthenticatedPlataformaComissoesRoute
   AuthenticatedPlataformaConfiguracoesRoute: typeof AuthenticatedPlataformaConfiguracoesRoute
   AuthenticatedPlataformaConsultasRoute: typeof AuthenticatedPlataformaConsultasRoute
@@ -3316,6 +3337,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOperacionalSimulacoesRoute,
   AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
   AuthenticatedPlataformaAuditoriaRoute: AuthenticatedPlataformaAuditoriaRoute,
+  AuthenticatedPlataformaCarteirasRoute: AuthenticatedPlataformaCarteirasRoute,
   AuthenticatedPlataformaComissoesRoute: AuthenticatedPlataformaComissoesRoute,
   AuthenticatedPlataformaConfiguracoesRoute:
     AuthenticatedPlataformaConfiguracoesRoute,
