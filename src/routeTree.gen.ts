@@ -159,6 +159,7 @@ import { Route as AuthenticatedOperacionalTarefasCalendarioRouteImport } from '.
 import { Route as AuthenticatedOperacionalTarefasKanbanRouteImport } from './routes/_authenticated/operacional.tarefas_.kanban'
 import { Route as AuthenticatedRhFuncionariosIdRouteImport } from './routes/_authenticated/rh.funcionarios_.$id'
 import { Route as AuthenticatedRhFuncionariosNovoRouteImport } from './routes/_authenticated/rh.funcionarios_.novo'
+import { Route as AuthenticatedCrmScanIaLoteIdRouteImport } from './routes/_authenticated/crm.scan-ia_.lote.$id'
 import { Route as AuthenticatedOperacionalPropostasIdContinuarRouteImport } from './routes/_authenticated/operacional.propostas_.$id_.continuar'
 
 const IndexRoute = IndexRouteImport.update({
@@ -1025,6 +1026,12 @@ const AuthenticatedRhFuncionariosNovoRoute =
     path: '/rh/funcionarios/novo',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCrmScanIaLoteIdRoute =
+  AuthenticatedCrmScanIaLoteIdRouteImport.update({
+    id: '/scan-ia_/lote/$id',
+    path: '/scan-ia/lote/$id',
+    getParentRoute: () => AuthenticatedCrmRoute,
+  } as any)
 const AuthenticatedOperacionalPropostasIdContinuarRoute =
   AuthenticatedOperacionalPropostasIdContinuarRouteImport.update({
     id: '/operacional/propostas_/$id_/continuar',
@@ -1182,6 +1189,7 @@ export interface FileRoutesByFullPath {
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
   '/admin/auditoria/': typeof AuthenticatedAdminAuditoriaIndexRoute
   '/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
+  '/crm/scan-ia/lote/$id': typeof AuthenticatedCrmScanIaLoteIdRoute
   '/operacional/propostas/$id/continuar': typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
 export interface FileRoutesByTo {
@@ -1331,6 +1339,7 @@ export interface FileRoutesByTo {
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaIndexRoute
   '/admin/compras': typeof AuthenticatedAdminComprasIndexRoute
+  '/crm/scan-ia/lote/$id': typeof AuthenticatedCrmScanIaLoteIdRoute
   '/operacional/propostas/$id/continuar': typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
 export interface FileRoutesById {
@@ -1485,6 +1494,7 @@ export interface FileRoutesById {
   '/_authenticated/rh/funcionarios_/novo': typeof AuthenticatedRhFuncionariosNovoRoute
   '/_authenticated/admin/auditoria/': typeof AuthenticatedAdminAuditoriaIndexRoute
   '/_authenticated/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
+  '/_authenticated/crm/scan-ia_/lote/$id': typeof AuthenticatedCrmScanIaLoteIdRoute
   '/_authenticated/operacional/propostas_/$id_/continuar': typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
 export interface FileRouteTypes {
@@ -1639,6 +1649,7 @@ export interface FileRouteTypes {
     | '/rh/funcionarios/novo'
     | '/admin/auditoria/'
     | '/admin/compras/'
+    | '/crm/scan-ia/lote/$id'
     | '/operacional/propostas/$id/continuar'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1788,6 +1799,7 @@ export interface FileRouteTypes {
     | '/rh/funcionarios/novo'
     | '/admin/auditoria'
     | '/admin/compras'
+    | '/crm/scan-ia/lote/$id'
     | '/operacional/propostas/$id/continuar'
   id:
     | '__root__'
@@ -1941,6 +1953,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rh/funcionarios_/novo'
     | '/_authenticated/admin/auditoria/'
     | '/_authenticated/admin/compras/'
+    | '/_authenticated/crm/scan-ia_/lote/$id'
     | '/_authenticated/operacional/propostas_/$id_/continuar'
   fileRoutesById: FileRoutesById
 }
@@ -3014,6 +3027,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRhFuncionariosNovoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/crm/scan-ia_/lote/$id': {
+      id: '/_authenticated/crm/scan-ia_/lote/$id'
+      path: '/scan-ia/lote/$id'
+      fullPath: '/crm/scan-ia/lote/$id'
+      preLoaderRoute: typeof AuthenticatedCrmScanIaLoteIdRouteImport
+      parentRoute: typeof AuthenticatedCrmRoute
+    }
     '/_authenticated/operacional/propostas_/$id_/continuar': {
       id: '/_authenticated/operacional/propostas_/$id_/continuar'
       path: '/operacional/propostas/$id/continuar'
@@ -3036,6 +3056,7 @@ interface AuthenticatedCrmRouteChildren {
   AuthenticatedCrmClientesIdRoute: typeof AuthenticatedCrmClientesIdRoute
   AuthenticatedCrmClientesNovoRoute: typeof AuthenticatedCrmClientesNovoRoute
   AuthenticatedCrmScanIaIdRoute: typeof AuthenticatedCrmScanIaIdRoute
+  AuthenticatedCrmScanIaLoteIdRoute: typeof AuthenticatedCrmScanIaLoteIdRoute
 }
 
 const AuthenticatedCrmRouteChildren: AuthenticatedCrmRouteChildren = {
@@ -3050,6 +3071,7 @@ const AuthenticatedCrmRouteChildren: AuthenticatedCrmRouteChildren = {
   AuthenticatedCrmClientesIdRoute: AuthenticatedCrmClientesIdRoute,
   AuthenticatedCrmClientesNovoRoute: AuthenticatedCrmClientesNovoRoute,
   AuthenticatedCrmScanIaIdRoute: AuthenticatedCrmScanIaIdRoute,
+  AuthenticatedCrmScanIaLoteIdRoute: AuthenticatedCrmScanIaLoteIdRoute,
 }
 
 const AuthenticatedCrmRouteWithChildren =

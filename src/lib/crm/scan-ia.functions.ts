@@ -7,20 +7,18 @@ import { mascararDocumento } from "@/lib/crm/documento";
 import { temPiiCliente } from "@/lib/crm/pii";
 import {
   valoresEquivalentes,
-  CAMPOS_ESPERADOS,
-  CAMPOS_POR_TIPO,
-  TODOS_CAMPOS_EXTRAIVEIS,
   TIPOS_DOCUMENTO,
-  camposEsperadosDoTipo,
   converterValor,
   destinoDoCampo,
-  ehTipoConhecido,
   faixaConfianca,
   rotuloCampo,
 } from "./scan-ia-tipos";
+import { consolidarCampos, montarPatchCliente, type CampoConsolidado } from "./scan-ia-consolidar";
+import { cnpjValido, cpfValido } from "./scan-ia-validacao";
 
 export interface LeituraLista {
   id: string;
+  lote_id: string | null;
   tipo_documento: string | null;
   tipo_documento_sugerido: string | null;
   tipo_confirmado: boolean;
@@ -40,6 +38,9 @@ export interface CampoExtraido {
   campo: string;
   valor: string | null;
   confianca: number | null;
+  /** Regras determinísticas (CPF, datas, UF, órgão emissor…): null = leitura antiga. */
+  valido?: boolean | null;
+  motivo_validacao?: string | null;
 }
 
 export interface LeituraDetalhe {
@@ -59,62 +60,6 @@ export interface LeituraDetalhe {
   criador_id: string | null;
   criador_nome: string | null;
 }
-
-/**
- * Detecta o MIME real pelos bytes ("magic numbers"). O `blob.type` vindo do
- * Storage costuma chegar vazio ou como octet-stream no runtime do servidor —
- * usar o fallback fixo "application/pdf" fazia o provedor de IA responder
- * "The document has no pages" ao receber uma imagem rotulada como PDF.
- */
-function detectarMime(bytes: Buffer, arquivoUrl: string, tipoBlob?: string): string {
-  const b = bytes;
-  const hex = (n: number) => b.subarray(0, n).toString("hex").toUpperCase();
-  const ascii = (i: number, n: number) => b.subarray(i, i + n).toString("latin1");
-
-  if (ascii(0, 4) === "%PDF") return "application/pdf";
-  if (hex(3) === "FFD8FF") return "image/jpeg";
-  if (hex(8) === "89504E470D0A1A0A") return "image/png";
-  if (ascii(0, 4) === "RIFF" && ascii(8, 4) === "WEBP") return "image/webp";
-  if (ascii(0, 3) === "GIF") return "image/gif";
-  if (hex(4) === "49492A00" || hex(4) === "4D4D002A") return "image/tiff";
-  if (hex(2) === "424D") return "image/bmp";
-  if (ascii(4, 4) === "ftyp") {
-    const marca = ascii(8, 4).toLowerCase();
-    if (marca.startsWith("heic") || marca.startsWith("heix")) return "image/heic";
-    if (marca.startsWith("mif1") || marca.startsWith("msf1") || marca.startsWith("heif"))
-      return "image/heif";
-  }
-
-  // Sem assinatura reconhecida: tenta o tipo declarado, depois a extensão.
-  const declarado = (tipoBlob ?? "").toLowerCase();
-  if (declarado && declarado !== "application/octet-stream") return declarado;
-
-  const ext = (arquivoUrl.split("?")[0].split(".").pop() ?? "").toLowerCase();
-  const porExt: Record<string, string> = {
-    pdf: "application/pdf",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    webp: "image/webp",
-    gif: "image/gif",
-    heic: "image/heic",
-    heif: "image/heif",
-    tif: "image/tiff",
-    tiff: "image/tiff",
-    bmp: "image/bmp",
-  };
-  return porExt[ext] ?? "application/octet-stream";
-}
-
-/** Formatos que os provedores de IA conseguem interpretar diretamente. */
-const MIMES_SUPORTADOS = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-]);
 
 /**
  * Permissões do Scan IA (módulo `crm.scan_ia`). Até aqui nada era conferido e a tela
@@ -164,7 +109,7 @@ export const listarLeituras = createServerFn({ method: "GET" })
     const { data, error } = await supabase
       .from("scan_ia_leituras")
       .select(
-        "id, tipo_documento, tipo_documento_sugerido, tipo_confirmado, status, erro, cliente_id, proposta_id, created_at, criador_id, scan_ia_campos_extraidos(count)",
+        "id, lote_id, tipo_documento, tipo_documento_sugerido, tipo_confirmado, status, erro, cliente_id, proposta_id, created_at, criador_id, scan_ia_campos_extraidos(count)",
       )
       .eq("correspondente_id", corr)
       .order("created_at", { ascending: false })
@@ -191,6 +136,7 @@ export const listarLeituras = createServerFn({ method: "GET" })
 
     return linhas.map((r: any) => ({
       id: r.id,
+      lote_id: r.lote_id ?? null,
       tipo_documento: r.tipo_documento,
       tipo_documento_sugerido: r.tipo_documento_sugerido ?? null,
       tipo_confirmado: !!r.tipo_confirmado,
@@ -224,9 +170,9 @@ export const obterLeitura = createServerFn({ method: "GET" })
     if (error) throw error;
     if (!leitura || leitura.correspondente_id !== corr) throw new Error("Leitura não encontrada.");
 
-    const { data: campos } = await supabase
+    const { data: campos } = await (supabase as any)
       .from("scan_ia_campos_extraidos")
-      .select("id, campo, valor, confianca")
+      .select("id, campo, valor, confianca, valido, motivo_validacao")
       .eq("leitura_id", data.id)
       .order("campo", { ascending: true });
 
@@ -282,11 +228,12 @@ export const obterLeitura = createServerFn({ method: "GET" })
 /** Registra a leitura após o upload do arquivo no bucket. O tipo é OPCIONAL — em branco, a IA identifica. */
 export const criarLeitura = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator((d: { arquivo_url: string; tipo_documento?: string | null }) =>
+  .inputValidator((d: { arquivo_url: string; tipo_documento?: string | null; lote_id?: string | null }) =>
     z
       .object({
-        arquivo_url: z.string().min(1),
+        arquivo_url: z.string().min(1).max(500),
         tipo_documento: z.string().max(120).nullable().optional(),
+        lote_id: z.string().uuid().nullable().optional(),
       })
       .parse(d),
   )
@@ -296,8 +243,12 @@ export const criarLeitura = createServerFn({ method: "POST" })
     if (!corr) throw new Error("Sem correspondente.");
 
     const tipoInformado = (data.tipo_documento ?? "").trim() || null;
+    // O arquivo precisa estar na pasta da própria conta (o bucket já barra; aqui a mensagem é clara).
+    if (!data.arquivo_url.startsWith(`${corr}/`) || data.arquivo_url.includes("..")) {
+      throw new Error("Arquivo inválido.");
+    }
 
-    const { data: inserida, error } = await supabase
+    const { data: inserida, error } = await (supabase as any)
       .from("scan_ia_leituras")
       .insert({
         correspondente_id: corr,
@@ -306,6 +257,7 @@ export const criarLeitura = createServerFn({ method: "POST" })
         tipo_confirmado: false,
         status: "pendente",
         criador_id: userId,
+        lote_id: data.lote_id ?? null,
       })
       .select("id")
       .single();
@@ -313,7 +265,12 @@ export const criarLeitura = createServerFn({ method: "POST" })
     return { id: inserida.id };
   });
 
-/** Processa a leitura com IA (OCR + extração estruturada de campos). */
+/**
+ * Lê o documento com a IA da conta (camada única de provedor) e grava os campos com o
+ * resultado das regras determinísticas (CPF, datas, UF, órgão emissor…). Sem chave
+ * configurada, a mensagem diz onde configurar. O tipo sugerido nunca vira o efetivo
+ * sozinho: só um humano confirma (ou o pré-seleciona quando a IA tem alta confiança).
+ */
 export const processarLeitura = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
@@ -329,266 +286,62 @@ export const processarLeitura = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!leitura || leitura.correspondente_id !== corr) throw new Error("Leitura não encontrada.");
 
-    // Carrega a configuração salva pelo usuário em Admin › APIs de IA.
-    const { data: cfgRow } = await supabase
-      .from("admin_api_integrations")
-      .select("api_key, base_url, config, ativo")
-      .eq("correspondente_id", corr)
-      .eq("chave", "ia")
-      .maybeSingle();
+    const marcarErro = async (msg: string) => {
+      await supabase.from("scan_ia_leituras").update({ status: "erro", erro: msg }).eq("id", data.id);
+      return { ok: false as const, erro: msg };
+    };
 
-    const cfg = (cfgRow?.config ?? {}) as Record<string, unknown>;
-    const provedor: "gemini" | "openai" = cfg.provedor === "openai" ? "openai" : "gemini";
-    const modeloCfg =
-      typeof cfg.modelo === "string" && cfg.modelo.trim().length > 0
-        ? cfg.modelo.trim()
-        : provedor === "openai"
-          ? "gpt-4o"
-          : "gemini-2.0-flash-exp";
-    const temperatura = typeof cfg.temperatura === "number" ? cfg.temperatura : 0;
-    const promptSistema =
-      typeof cfg.prompt_scan === "string" && cfg.prompt_scan.trim().length > 0
-        ? cfg.prompt_scan.trim()
-        : "";
-
-    // Prioriza a chave salva no sistema; só cai para o env se o usuário não configurou.
-    const apiKeySalva = typeof cfgRow?.api_key === "string" ? cfgRow.api_key.trim() : "";
-    const apiKey =
-      apiKeySalva ||
-      (provedor === "openai" ? process.env.OPENAI_API_KEY : process.env.GEMINI_API_KEY) ||
-      "";
-
-    if (cfgRow && cfgRow.ativo === false) {
-      const msg = "Integração de IA desativada. Ative-a em Admin › APIs de IA.";
-      await supabase
-        .from("scan_ia_leituras")
-        .update({ status: "erro", erro: msg })
-        .eq("id", data.id);
-      return { ok: false, erro: msg };
+    const { configIaDaContaLinha } = await import("@/lib/ia/config-conta.server");
+    const { ErroIA } = await import("@/lib/ia/provedor.server");
+    let cfg;
+    let promptConta = "";
+    try {
+      const r = await configIaDaContaLinha(corr);
+      cfg = r.cfg;
+      promptConta = r.promptScan;
+    } catch (e) {
+      if (e instanceof ErroIA) return marcarErro(e.message);
+      throw e;
     }
 
-    if (!apiKey) {
-      const msg = "Chave da API não cadastrada. Configure-a em Admin › APIs de IA.";
-      await supabase
-        .from("scan_ia_leituras")
-        .update({ status: "erro", erro: msg })
-        .eq("id", data.id);
-      return { ok: false, erro: msg };
-    }
-
-    await supabase
-      .from("scan_ia_leituras")
-      .update({ status: "processando", erro: null })
-      .eq("id", data.id);
+    await supabase.from("scan_ia_leituras").update({ status: "processando", erro: null }).eq("id", data.id);
 
     try {
-      // Baixa o arquivo do armazenamento (server-side, respeitando RLS do usuário)
-      const { data: blob, error: dlErr } = await supabase.storage
-        .from("scan-ia")
-        .download(leitura.arquivo_url);
+      const { data: blob, error: dlErr } = await supabase.storage.from("scan-ia").download(leitura.arquivo_url);
       if (dlErr || !blob) throw new Error("Falha ao baixar o arquivo.");
-
-      const bytes = Buffer.from(await blob.arrayBuffer());
-      const base64 = bytes.toString("base64");
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const { detectarMime, extrairDocumento, MIMES_SUPORTADOS } = await import("./scan-ia-extracao.server");
       const mime = detectarMime(bytes, leitura.arquivo_url, (blob as Blob).type);
       if (!MIMES_SUPORTADOS.has(mime)) {
-        throw new Error(
-          `Formato do arquivo (${mime}) não é suportado pela leitura automática. ` +
-            `Envie o documento em PDF, JPG, PNG ou WEBP.`,
+        return marcarErro(
+          `Formato do arquivo (${mime}) não é suportado pela leitura automática. Envie em PDF, JPG, PNG ou WEBP.`,
         );
       }
-      const ehPdf = mime === "application/pdf";
+      const tipoInformado = (leitura.tipo_documento ?? "").trim() || null;
+      const r = await extrairDocumento({
+        cfg,
+        bytes,
+        mime,
+        nomeArquivo: leitura.arquivo_url.split("/").pop() ?? "documento",
+        tipoInformado,
+        promptConta,
+      });
 
-      const mapaTipos = Object.entries(CAMPOS_POR_TIPO)
-        .map(([t, cs]) => `- ${t}: ${cs.join(", ")}`)
-        .join("\n");
-      const tipoInformado = (leitura.tipo_documento ?? "").trim();
-
-      const instrucaoBase =
-        `Você é um Especialista de Crédito Imobiliário Sênior da Agilliza. Sua missão é fornecer análises técnicas, profissionais e altamente sofisticadas.\n` +
-        `PASSO 1 — Identifique e classifique o documento com precisão absoluta em um destes tipos: ${TIPOS_DOCUMENTO.join(", ")}.\n` +
-        `PASSO 2 — Realize OCR de alta fidelidade e extração estruturada dos campos previstos:\n${mapaTipos}\n` +
-        `DIRETRIZES DE QUALIDADE:\n` +
-        `- Mantenha um tom executivo, formal e consultivo em qualquer campo de observação ou texto livre.\n` +
-        `- Para documentos de residência e renda, extraia todos os detalhes com rigor (logradouros completos, centavos, datas de emissão).\n` +
-        `- Em certidões, capture averbações e regimes de bens com terminologia jurídica correta.\n` +
-        `- Em matrículas (matricula_imovel), forneça um parecer técnico sobre a cadeia dominial e gravames vigentes. Identifique proprietários atuais e descrições detalhadas do imóvel (áreas, confrontações, registros de IPTU).\n` +
-        `- Se o documento for ilegível ou suspeito, aponte a inconformidade de forma profissional no campo erro ou observação.\n` +
-        `OBJETIVO: Transformar imagens e PDFs em dados estruturados prontos para análise bancária de alto nível.\n\n` +
-        `Responda EXCLUSIVAMENTE em formato JSON:\n` +
-        `{"tipo_documento":"<tipo>","confianca_tipo":<0-1>,"campos":[{"campo":"<nome>","valor":"<texto>","confianca":<0-1>}]}. ` +
-        `Todo "valor" deve ser uma STRING simples (nunca objeto ou lista). ` +
-        `Use exatamente os nomes de campo listados acima. Para valores monetários, mantenha o formato numérico. ` +
-        `Datas em dd/mm/aaaa. A confiança deve refletir a legibilidade e a certeza da extração. ` +
-        `Não invente valores: se um campo não existir no documento, não o inclua.`;
-      const prompt = promptSistema ? `${promptSistema}\n\n${instrucaoBase}` : instrucaoBase;
-
-      let resp: Response;
-      if (provedor === "openai") {
-        const baseUrl = (
-          (typeof cfgRow?.base_url === "string" && cfgRow.base_url) ||
-          "https://api.openai.com/v1"
-        ).replace(/\/+$/, "");
-        resp = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: modeloCfg,
-            temperature: temperatura,
-            response_format: { type: "json_object" },
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: prompt },
-                  // PDFs vão como arquivo; imagens como image_url (o endpoint rejeita
-                  // um PDF enviado dentro de image_url).
-                  ehPdf
-                    ? {
-                        type: "file",
-                        file: {
-                          filename: leitura.arquivo_url.split("/").pop() ?? "documento.pdf",
-                          file_data: `data:${mime};base64,${base64}`,
-                        },
-                      }
-                    : { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
-                ],
-              },
-            ],
-          }),
-        });
-      } else {
-        const baseUrl = (
-          (typeof cfgRow?.base_url === "string" && cfgRow.base_url) ||
-          "https://generativelanguage.googleapis.com"
-        ).replace(/\/+$/, "");
-        resp = await fetch(
-          `${baseUrl}/v1beta/models/${encodeURIComponent(modeloCfg)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: "user",
-                  parts: [{ text: prompt }, { inline_data: { mime_type: mime, data: base64 } }],
-                },
-              ],
-              generationConfig: {
-                temperature: temperatura,
-                responseMimeType: "application/json",
-                maxOutputTokens: 16384,
-              },
-            }),
-          },
-        );
-      }
-
-      if (!resp.ok) {
-        const body = await resp.text();
-        if (resp.status === 429) {
-          throw new Error(
-            "Cota da API esgotada. Verifique o plano/billing da sua chave ou tente novamente mais tarde.",
-          );
-        }
-        if (resp.status === 401 || resp.status === 403) {
-          throw new Error(
-            "Chave da API inválida ou sem permissão. Revise a chave em Admin › APIs de IA.",
-          );
-        }
-        if (/has no pages|Unsupported MIME|invalid image|unsupported image/i.test(body)) {
-          throw new Error(
-            "Não foi possível abrir este arquivo. Confira se o PDF não está corrompido ou " +
-              "protegido por senha, ou envie como JPG ou PNG.",
-          );
-        }
-        console.error("[processarLeitura] provedor de IA", resp.status, body.slice(0, 500));
-        throw new Error(MSG_FALHA_IA);
-      }
-
-      const json = await resp.json();
-      const texto: string =
-        provedor === "openai"
-          ? (json?.choices?.[0]?.message?.content ?? "")
-          : (json?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "");
-
-      let parsed: {
-        tipo_documento?: string;
-        confianca_tipo?: number;
-        campos?: Array<{ campo: string; valor: string; confianca: number }>;
-      };
-      try {
-        parsed = JSON.parse(texto);
-      } catch (parseError: any) {
-        // Tenta recuperar se for apenas um problema de markdown ou caracteres extras
-        const m = texto.match(/\{[\s\S]*\}/);
-        try {
-          if (!m) throw parseError;
-          parsed = JSON.parse(m[0]);
-        } catch {
-          console.error(
-            "[processarLeitura] resposta da IA fora do formato:",
-            parseError?.message,
-            texto.slice(0, 500),
-          );
-          throw new Error(MSG_FALHA_IA);
-        }
-      }
-
-      // Identificação automática do tipo
-      const confiancaTipo = Number(parsed.confianca_tipo) || 0;
-      const tipoSugerido = ehTipoConhecido(parsed.tipo_documento) ? parsed.tipo_documento : "outro";
-
-      // O tipo informado pelo usuário tem precedência para o processamento de campos se existir
-      const tipoParaFiltro =
-        tipoInformado && ehTipoConhecido(tipoInformado) ? tipoInformado : tipoSugerido;
-
-      // Só aceita campos previstos para o tipo sugerido (evita ruído do modelo).
-      const permitidos = new Set([
-        ...camposEsperadosDoTipo(tipoParaFiltro),
-        ...TODOS_CAMPOS_EXTRAIVEIS,
-        ...CAMPOS_ESPERADOS,
-      ]);
-
-      // O modelo às vezes devolve objeto/lista (ex.: ônus com vários atos) — achata em texto.
-      const comoTexto = (v: unknown): string => {
-        if (v == null) return "";
-        if (typeof v === "string") return v.trim();
-        if (typeof v === "number" || typeof v === "boolean") return String(v);
-        if (Array.isArray(v)) return v.map(comoTexto).filter(Boolean).join(" | ");
-        return Object.entries(v as Record<string, unknown>)
-          .filter(([, val]) => val != null && val !== "")
-          .map(([k, val]) => `${k.replace(/_/g, " ")}: ${comoTexto(val)}`)
-          .join("; ");
-      };
-
-      const campos = (parsed.campos ?? [])
-        .flatMap((c) =>
-          normalizarCampoExtraido(String(c?.campo ?? ""), comoTexto(c?.valor)).map((n) => ({
-            bruto: c,
-            ...n,
-          })),
-        )
-        .filter((c) => c.campo && c.valor && permitidos.has(c.campo))
-        .map((c) => ({
-          leitura_id: data.id,
-          campo: c.campo.slice(0, 120),
-          valor: c.valor.slice(0, 2000),
-          confianca: Math.max(0, Math.min(1, Number(c.bruto?.confianca) || 0)),
-        }))
-        .filter((c) => c.valor.length > 0);
-
-      // Substitui campos anteriores
+      const campos = r.campos.map((c) => ({
+        leitura_id: data.id,
+        campo: c.campo,
+        valor: c.valor,
+        confianca: c.confianca,
+        valido: c.valido,
+        motivo_validacao: c.motivo_validacao,
+      }));
       await supabase.from("scan_ia_campos_extraidos").delete().eq("leitura_id", data.id);
       if (campos.length > 0) {
-        const { error: insErr } = await supabase.from("scan_ia_campos_extraidos").insert(campos);
+        const { error: insErr } = await (supabase as any).from("scan_ia_campos_extraidos").insert(campos);
         if (insErr) throw insErr;
       }
 
-      // O tipo sugerido NUNCA sobrescreve o tipo efetivo — só um humano confirma.
+      const altaConfianca = !tipoInformado && r.confiancaTipo >= 0.8;
       await supabase
         .from("scan_ia_leituras")
         .update({
@@ -597,12 +350,9 @@ export const processarLeitura = createServerFn({ method: "POST" })
             campos.length === 0
               ? "A IA não conseguiu extrair campos deste documento. Verifique a qualidade da digitalização ou tente reprocessar."
               : null,
-          tipo_documento_sugerido: tipoSugerido,
-          // Se não houver tipo informado e a confiança for alta, podemos pré-selecionar
-          tipo_documento:
-            !tipoInformado && confiancaTipo >= 0.8 ? tipoSugerido : leitura.tipo_documento,
-          tipo_confirmado:
-            !tipoInformado && confiancaTipo >= 0.8 ? false : !!leitura.tipo_confirmado,
+          tipo_documento_sugerido: r.tipoSugerido,
+          tipo_documento: altaConfianca ? r.tipoSugerido : leitura.tipo_documento,
+          tipo_confirmado: altaConfianca ? false : !!leitura.tipo_confirmado,
         })
         .eq("id", data.id);
 
@@ -613,33 +363,25 @@ export const processarLeitura = createServerFn({ method: "POST" })
         acao: "processada",
         dados: {
           total_campos: campos.length,
-          tipo_informado: tipoInformado || null,
-          tipo_sugerido: tipoSugerido,
-          confianca_tipo: confiancaTipo,
-          divergencia_tipo: !!tipoInformado && tipoInformado !== tipoSugerido,
-          prompt_utilizado: prompt.slice(0, 1000),
+          campos_reprovados: r.campos.filter((c) => !c.valido).map((c) => c.campo),
+          tipo_informado: tipoInformado,
+          tipo_sugerido: r.tipoSugerido,
+          confianca_tipo: r.confiancaTipo,
+          divergencia_tipo: !!tipoInformado && tipoInformado !== r.tipoSugerido,
+          provedor: cfg.provedor,
+          modelo: cfg.modelo,
         },
       });
-
       return { ok: true };
     } catch (e: any) {
-      console.error("[processarLeitura] Erro:", e);
-      // Erro do banco/Storage (sem frase pronta para o usuário) vira a mensagem padrão.
       const msg =
-        e instanceof Error && !(e instanceof TypeError) && e.message
-          ? String(e.message).slice(0, 1000)
-          : MSG_FALHA_IA;
-
-      // Garante que o erro seja persistido para diagnóstico
-      await supabase
-        .from("scan_ia_leituras")
-        .update({
-          status: "erro",
-          erro: msg,
-        })
-        .eq("id", data.id);
-
-      return { ok: false, erro: msg };
+        e instanceof ErroIA
+          ? e.message
+          : e instanceof Error && !(e instanceof TypeError) && e.message && e.message.length < 300
+            ? e.message
+            : MSG_FALHA_IA;
+      if (!(e instanceof ErroIA)) console.error("[processarLeitura] Erro:", e);
+      return marcarErro(msg);
     }
   });
 
@@ -666,10 +408,20 @@ export const salvarCampos = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!leitura || leitura.correspondente_id !== corr) throw new Error("Leitura não encontrada.");
 
+    // O valor revisado passa de novo pelas regras (CPF, datas, UF…): a marca acompanha o valor.
+    const { data: atuais } = await supabase
+      .from("scan_ia_campos_extraidos")
+      .select("id, campo")
+      .eq("leitura_id", data.leitura_id);
+    const campoDe = new Map((atuais ?? []).map((c: any) => [c.id as string, c.campo as string]));
+    const { validarCampo } = await import("./scan-ia-validacao");
     for (const c of data.campos) {
-      await supabase
+      const nome = campoDe.get(c.id);
+      if (!nome) continue;
+      const v = validarCampo(nome, c.valor);
+      await (supabase as any)
         .from("scan_ia_campos_extraidos")
-        .update({ valor: c.valor, confianca: 1 })
+        .update({ valor: c.valor, confianca: 1, valido: v.valido, motivo_validacao: v.motivo })
         .eq("id", c.id)
         .eq("leitura_id", data.leitura_id);
     }
@@ -831,6 +583,91 @@ export const vincularClienteLeitura = createServerFn({ method: "POST" })
   });
 
 /**
+ * Cliente pelo CPF/CNPJ na conta: reaproveita o existente (restaurando se estava excluído,
+ * o que exige "Editar") ou cria com os padrões do cadastro (`aplicarPadroesCliente`, a mesma
+ * regra do formulário). Usado pela leitura avulsa e pelo lote.
+ */
+async function garantirClientePorDocumento(
+  supabase: any,
+  userId: string,
+  corr: string,
+  nomeBruto: string,
+  documentoBruto: string,
+): Promise<{ clienteId: string; reaproveitado: boolean; documento: string }> {
+  const documento = documentoBruto.replace(/\D/g, "");
+  if (documento.length !== 11 && documento.length !== 14) {
+    throw new Error("Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.");
+  }
+  const nome = nomeBruto.trim();
+
+  const { data: existente } = await supabase
+    .from("clientes")
+    .select("id, deleted_at")
+    .eq("correspondente_id", corr)
+    .eq("documento", documento)
+    .maybeSingle();
+
+  let clienteId: string | null = existente?.id ?? null;
+  let reaproveitado = !!existente;
+
+  // Se o cadastro com esse documento estava excluído (soft delete), ele é
+  // restaurado — caso contrário o "cliente criado" pela IA ficaria invisível
+  // no CRM, que filtra registros excluídos.
+  if (existente?.id && existente.deleted_at) {
+    // Restaurar regrava um cadastro existente: como em criarCliente, exige também "Editar".
+    await exigirAcao(
+      supabase,
+      userId,
+      "crm.clientes",
+      "edit",
+      "Este documento é de um cliente excluído. Peça a quem pode editar clientes para restaurá-lo.",
+    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("clientes")
+      .update({
+        deleted_at: null,
+        deleted_by: null,
+        deleted_motivo: null,
+        ativo: true,
+        nome,
+        responsavel_id: userId,
+      })
+      .eq("id", existente.id);
+  }
+
+  if (!clienteId) {
+    const { data: novo, error } = await supabase
+      .from("clientes")
+      .insert(
+        aplicarPadroesCliente({
+          correspondente_id: corr,
+          numero_cliente: "",
+          nome,
+          documento,
+          tipo_pessoa: (documento.length === 14 ? "PJ" : "PF") as "PJ" | "PF",
+          criador_id: userId,
+          responsavel_id: userId,
+        }),
+      )
+      .select("id")
+      .single();
+    if (error) {
+      // Cliente com o mesmo documento fora do seu escopo de visão (a busca acima não o vê).
+      if ((error as { code?: string }).code === "23505") {
+        throw new Error(
+          "Já existe um cliente com este documento fora da sua carteira. Peça ao responsável para vinculá-lo.",
+        );
+      }
+      throw error;
+    }
+    clienteId = novo.id as string;
+    reaproveitado = false;
+  }
+  return { clienteId: clienteId!, reaproveitado, documento };
+}
+
+/**
  * Cria um cliente novo a partir da leitura. Nome e documento vêm do formulário
  * revisado pelo operador (não direto da IA) — os demais campos só entram depois,
  * pelo modal de "Aplicar ao cadastro".
@@ -866,75 +703,13 @@ export const criarClienteParaLeitura = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!leitura || leitura.correspondente_id !== corr) throw new Error("Leitura não encontrada.");
 
-    const documento = data.documento.replace(/\D/g, "");
-    if (documento.length !== 11 && documento.length !== 14) {
-      throw new Error("Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.");
-    }
-
-    const { data: existente } = await supabase
-      .from("clientes")
-      .select("id, deleted_at")
-      .eq("correspondente_id", corr)
-      .eq("documento", documento)
-      .maybeSingle();
-
-    let clienteId = existente?.id ?? null;
-    let reaproveitado = !!existente;
-
-    // Se o cadastro com esse documento estava excluído (soft delete), ele é
-    // restaurado — caso contrário o "cliente criado" pela IA ficaria invisível
-    // no CRM, que filtra registros excluídos.
-    if (existente?.id && existente.deleted_at) {
-      // Restaurar regrava um cadastro existente: como em criarCliente, exige também "Editar".
-      await exigirAcao(
-        supabase,
-        userId,
-        "crm.clientes",
-        "edit",
-        "Este documento é de um cliente excluído. Peça a quem pode editar clientes para restaurá-lo.",
-      );
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin
-        .from("clientes")
-        .update({
-          deleted_at: null,
-          deleted_by: null,
-          deleted_motivo: null,
-          ativo: true,
-          nome: data.nome.trim(),
-          responsavel_id: userId,
-        })
-        .eq("id", existente.id);
-    }
-
-    if (!clienteId) {
-      const { data: novo, error } = await supabase
-        .from("clientes")
-        .insert(
-          aplicarPadroesCliente({
-            correspondente_id: corr,
-            numero_cliente: "",
-            nome: data.nome.trim(),
-            documento,
-            tipo_pessoa: (documento.length === 14 ? "PJ" : "PF") as "PJ" | "PF",
-            criador_id: userId,
-            responsavel_id: userId,
-          }),
-        )
-        .select("id")
-        .single();
-      if (error) {
-        // Cliente com o mesmo documento fora do seu escopo de visão (a busca acima não o vê).
-        if ((error as { code?: string }).code === "23505") {
-          throw new Error(
-            "Já existe um cliente com este documento fora da sua carteira. Peça ao responsável para vinculá-lo.",
-          );
-        }
-        throw error;
-      }
-      clienteId = novo.id;
-      reaproveitado = false;
-    }
+    const { clienteId, reaproveitado, documento } = await garantirClientePorDocumento(
+      supabase,
+      userId,
+      corr,
+      data.nome,
+      data.documento,
+    );
 
     await supabase
       .from("scan_ia_leituras")
@@ -979,34 +754,6 @@ function textoValorAtual(v: unknown): string | null {
   if (typeof v === "number") return String(v);
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
-}
-
-function normalizarCampoExtraido(
-  campo: string,
-  valor: string,
-): Array<{ campo: string; valor: string }> {
-  const c = campo.trim();
-  const v = valor.trim();
-  if (c === "endereco_completo" || c === "endereco") {
-    const cep = v.match(/\b\d{5}[-\s]?\d{3}\b/);
-    const linha = cep
-      ? v
-          .replace(cep[0], "")
-          .trim()
-          .replace(/[,-]\s*$/, "")
-      : v;
-    return cep
-      ? [
-          { campo: c, valor: linha },
-          { campo: "endereco_cep", valor: cep[0] },
-        ]
-      : [{ campo: c, valor: v }];
-  }
-  if (c === "cep") return [{ campo: "endereco_cep", valor: v }];
-  if (c === "bairro") return [{ campo: "endereco_bairro", valor: v }];
-  if (c === "cidade") return [{ campo: "endereco_cidade", valor: v }];
-  if (c === "uf") return [{ campo: "endereco_uf", valor: v }];
-  return [{ campo: c, valor: v }];
 }
 
 /** Monta a prévia do modal de aplicação: valor da IA x valor atual do cadastro. */
@@ -1180,67 +927,27 @@ export const aplicarAoCadastro = createServerFn({ method: "POST" })
         .maybeSingle();
 
       const porId = new Map((campos ?? []).map((c: any) => [c.id, c]));
-      const patch: Record<string, any> = {};
-      const matriculaPatch: Record<string, unknown> = {};
-      const enderecoPatch: Record<string, unknown> = {};
-      const aplicados: any[] = [];
-      const descartados: any[] = [];
-
-      for (const dec of data.decisoes) {
-        const campo = porId.get(dec.campo_id);
-        if (!campo) continue;
-
-        const valor = String(campo.valor ?? "");
-        const destino = destinoDoCampo(campo.campo);
-        const conv = converterValor(campo.campo, valor);
-
-        let valorAtual: unknown = null;
-        if (destino.tipo === "coluna") valorAtual = (clienteAtual as any)[destino.coluna];
-        else if (destino.tipo === "endereco") valorAtual = (enderecoAtual as any)?.[destino.coluna];
-        else if (destino.tipo === "matricula") {
-          const m = ((clienteAtual as any).imovel_matricula ?? {}) as Record<string, unknown>;
-          valorAtual = m?.[destino.chave];
-        }
-        const temAtual = valorAtual !== null && valorAtual !== undefined && valorAtual !== "";
-        const novoTexto = conv.ok ? textoValorAtual(conv.valor) : null;
-        const conflito =
-          temAtual && !!novoTexto && !valoresEquivalentes(textoValorAtual(valorAtual), novoTexto);
-
-        const registro = {
-          campo: campo.campo,
-          rotulo: rotuloCampo(campo.campo),
-          valor_documento: valor,
-          valor_anterior: textoValorAtual(valorAtual),
-          confianca: Number(campo.confianca ?? 0),
-          conflito,
-          escolha: dec.escolha ?? null,
-        };
-
-        if (!dec.aplicar || !conv.ok) {
-          descartados.push({ ...registro, motivo: conv.ok ? "nao_marcado" : conv.motivo });
-          continue;
-        }
-        if (conflito && dec.escolha !== "substituir") {
-          // Sem escolha explícita de substituição, o valor atual prevalece.
-          descartados.push({ ...registro, motivo: "conflito_mantido" });
-          continue;
-        }
-
-        if (destino.tipo === "coluna") patch[destino.coluna] = conv.valor;
-        else if (destino.tipo === "endereco") enderecoPatch[destino.coluna] = conv.valor;
-        else if (destino.tipo === "matricula") matriculaPatch[destino.chave] = conv.valor;
-        else {
-          descartados.push({ ...registro, motivo: "sem_destino" });
-          continue;
-        }
-        aplicados.push(registro);
-      }
-
-      if (Object.keys(matriculaPatch).length > 0) {
-        const atual = ((clienteAtual as any).imovel_matricula ?? {}) as Record<string, unknown>;
-        // Mescla — nunca sobrescreve o jsonb inteiro.
-        patch.imovel_matricula = { ...atual, ...matriculaPatch };
-      }
+      // Mesma regra do lote (montarPatchCliente): destino/conversão de scan-ia-tipos,
+      // conflito só substitui com escolha explícita, matrícula mesclada.
+      const decisoesCampos = data.decisoes
+        .map((dec) => {
+          const campo = porId.get(dec.campo_id);
+          return campo
+            ? {
+                campo: String(campo.campo),
+                valor: String(campo.valor ?? ""),
+                confianca: Number(campo.confianca ?? 0),
+                aplicar: dec.aplicar,
+                escolha: dec.escolha,
+              }
+            : null;
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null);
+      const { patch, enderecoPatch, aplicados, descartados } = montarPatchCliente(
+        decisoesCampos,
+        clienteAtual as Record<string, unknown>,
+        (enderecoAtual as Record<string, unknown> | null) ?? null,
+      );
 
       if (Object.keys(patch).length > 0) {
         const { error: upErr } = await supabase
@@ -1292,8 +999,8 @@ export const aplicarAoCadastro = createServerFn({ method: "POST" })
           cliente_id: leitura.cliente_id,
           tipo_documento: leitura.tipo_documento,
           validado_por_humano: true,
-          campos_aplicados: aplicados,
-          campos_descartados: descartados,
+          campos_aplicados: aplicados as any[],
+          campos_descartados: descartados as any[],
           colunas_atualizadas: Object.keys(patch),
           endereco_atualizado: Object.keys(enderecoPatch),
           documento_arquivado: arq.arquivado,
@@ -1367,5 +1074,397 @@ export const arquivarDocumentoDaLeitura = createServerFn({ method: "POST" })
       });
 
       return { ok: true, ja_existia: arq.ja_existia, erro: null };
+    },
+  );
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * LOTE: vários documentos do mesmo cliente de uma vez (C17)
+ * Enviar RG, renda, residência, certidão… → a IA lê cada um → conferência lado a lado
+ * com os campos consolidados → "Criar cliente" ou "Completar cliente existente".
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Abre um lote (os arquivos sobem em seguida com criarLeitura({ lote_id })). */
+export const criarLoteScan = createServerFn({ method: "POST" })
+  .middleware([processarScanIa])
+  .handler(async ({ context }): Promise<{ id: string; correspondenteId: string }> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Sem correspondente.");
+    const { data, error } = await (supabase as any)
+      .from("scan_ia_lotes")
+      .insert({ correspondente_id: corr, criador_id: userId })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return { id: data.id as string, correspondenteId: corr };
+  });
+
+export interface DocumentoDoLote {
+  id: string;
+  tipo_documento: string | null;
+  tipo_documento_sugerido: string | null;
+  tipo_confirmado: boolean;
+  status: string;
+  erro: string | null;
+  arquivo_nome: string;
+  arquivo_assinado: string | null;
+  campos: Array<{
+    id: string;
+    campo: string;
+    valor: string;
+    confianca: number;
+    valido: boolean | null;
+    motivo_validacao: string | null;
+  }>;
+}
+
+export type ConsolidadoComAtual = CampoConsolidado & {
+  valor_atual: string | null;
+  conflito: boolean;
+  aplicavel: boolean;
+  motivo: string | null;
+};
+
+export interface LoteScan {
+  id: string;
+  status: string;
+  cliente_id: string | null;
+  cliente_nome: string | null;
+  documentos: DocumentoDoLote[];
+  consolidados: ConsolidadoComAtual[];
+  /** Para "Criar cliente": nome e CPF/CNPJ sugeridos (os melhores valores do lote). */
+  sugestao: { nome: string; documento: string };
+}
+
+/**
+ * O lote para a conferência: documentos (com o arquivo assinado por 10 min), campos lidos
+ * de cada um e os consolidados. Com `cliente_id`, compara com o cadastro daquele cliente
+ * (o que já está lá e o que mudaria).
+ */
+export const obterLoteScan = createServerFn({ method: "GET" })
+  .middleware([verScanIa])
+  .inputValidator((d: { id: string; cliente_id?: string | null }) =>
+    z.object({ id: z.string().uuid(), cliente_id: z.string().uuid().nullable().optional() }).parse(d),
+  )
+  .handler(async ({ data, context }): Promise<LoteScan> => {
+    const { supabase, userId } = context;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Sem correspondente.");
+    const db = supabase as any;
+    const { data: lote } = await db
+      .from("scan_ia_lotes")
+      .select("id, status, cliente_id, correspondente_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!lote || lote.correspondente_id !== corr) throw new Error("Lote não encontrado.");
+
+    const { data: leituras } = await db
+      .from("scan_ia_leituras")
+      .select("id, arquivo_url, tipo_documento, tipo_documento_sugerido, tipo_confirmado, status, erro, created_at")
+      .eq("lote_id", data.id)
+      .eq("correspondente_id", corr)
+      .order("created_at", { ascending: true });
+    const ids = (leituras ?? []).map((l: any) => l.id as string);
+    const { data: campos } = ids.length
+      ? await db
+          .from("scan_ia_campos_extraidos")
+          .select("id, leitura_id, campo, valor, confianca, valido, motivo_validacao")
+          .in("leitura_id", ids)
+      : { data: [] as any[] };
+
+    const documentos: DocumentoDoLote[] = [];
+    for (const l of leituras ?? []) {
+      const { data: signed } = await supabase.storage.from("scan-ia").createSignedUrl(l.arquivo_url, 600);
+      documentos.push({
+        id: l.id,
+        tipo_documento: l.tipo_documento,
+        tipo_documento_sugerido: l.tipo_documento_sugerido ?? null,
+        tipo_confirmado: !!l.tipo_confirmado,
+        status: l.status,
+        erro: l.erro,
+        arquivo_nome:
+          String(l.arquivo_url)
+            .split("/")
+            .pop()
+            ?.replace(/^[0-9a-f-]{36}-/, "") ?? "documento",
+        arquivo_assinado: signed?.signedUrl ?? null,
+        campos: (campos ?? [])
+          .filter((c: any) => c.leitura_id === l.id)
+          .map((c: any) => ({
+            id: c.id,
+            campo: c.campo,
+            valor: c.valor ?? "",
+            confianca: Number(c.confianca ?? 0),
+            valido: c.valido ?? null,
+            motivo_validacao: c.motivo_validacao ?? null,
+          })),
+      });
+    }
+
+    const tipoDe = new Map(documentos.map((d) => [d.id, d.tipo_documento ?? d.tipo_documento_sugerido]));
+    const consolidados = consolidarCampos(
+      (campos ?? []).map((c: any) => ({
+        campo_id: c.id,
+        leitura_id: c.leitura_id,
+        tipo_documento: tipoDe.get(c.leitura_id) ?? null,
+        campo: c.campo,
+        valor: c.valor ?? "",
+        confianca: Number(c.confianca ?? 0),
+        valido: c.valido ?? null,
+        motivo_validacao: c.motivo_validacao ?? null,
+      })),
+    );
+
+    const clienteId = data.cliente_id ?? lote.cliente_id ?? null;
+    let cliente: Record<string, any> | null = null;
+    let endereco: Record<string, any> | null = null;
+    if (clienteId) {
+      const { data: c } = await supabase.from("clientes").select("*").eq("id", clienteId).maybeSingle();
+      cliente = (c as any) ?? null;
+      if (cliente) {
+        const { data: e } = await supabase
+          .from("cliente_enderecos")
+          .select("*")
+          .eq("cliente_id", clienteId)
+          .eq("principal", true)
+          .maybeSingle();
+        endereco = (e as any) ?? null;
+      }
+    }
+    const comAtual: ConsolidadoComAtual[] = consolidados.map((c) => {
+      const destino = destinoDoCampo(c.campo);
+      const conv = converterValor(c.campo, c.escolhido.valor);
+      let atual: unknown = null;
+      if (cliente) {
+        if (destino.tipo === "coluna") atual = cliente[destino.coluna];
+        else if (destino.tipo === "endereco") atual = endereco?.[destino.coluna];
+        else if (destino.tipo === "matricula") atual = (cliente.imovel_matricula ?? {})[destino.chave];
+      }
+      const atualTexto = textoValorAtual(atual);
+      const novo = conv.ok ? textoValorAtual(conv.valor) : null;
+      return {
+        ...c,
+        valor_atual: atualTexto,
+        conflito: !!atualTexto && !!novo && !valoresEquivalentes(atualTexto, novo),
+        aplicavel: conv.ok,
+        motivo: conv.ok ? null : conv.motivo,
+      };
+    });
+
+    const melhor = (campo: string) => consolidados.find((c) => c.campo === campo)?.escolhido.valor ?? "";
+    return {
+      id: lote.id,
+      status: lote.status,
+      cliente_id: cliente ? clienteId : null,
+      cliente_nome: cliente?.nome ?? null,
+      documentos,
+      consolidados: comAtual,
+      sugestao: { nome: melhor("nome_completo"), documento: melhor("cpf_cnpj") },
+    };
+  });
+
+/**
+ * Aplica o lote: cria o cliente (ou usa o existente), confirma o tipo de cada documento,
+ * grava os campos escolhidos com a mesma regra do "Aplicar ao cadastro" e arquiva todos os
+ * documentos nas pastas do cliente. Tudo com trilha em scan_ia_auditoria.
+ */
+export const aplicarLoteScan = createServerFn({ method: "POST" })
+  .middleware([processarScanIa])
+  .inputValidator(
+    (d: {
+      lote_id: string;
+      cliente_id?: string | null;
+      novo?: { nome: string; documento: string } | null;
+      tipos: Array<{ leitura_id: string; tipo: string }>;
+      campos: Array<{
+        campo: string;
+        valor: string;
+        confianca?: number;
+        aplicar: boolean;
+        escolha?: "manter" | "substituir";
+      }>;
+    }) =>
+      z
+        .object({
+          lote_id: z.string().uuid(),
+          cliente_id: z.string().uuid().nullable().optional(),
+          novo: z
+            .object({ nome: z.string().trim().min(3).max(200), documento: z.string().trim().min(11).max(20) })
+            .nullable()
+            .optional(),
+          tipos: z.array(z.object({ leitura_id: z.string().uuid(), tipo: z.enum(TIPOS_DOCUMENTO) })).max(50),
+          campos: z
+            .array(
+              z.object({
+                campo: z.string().min(1).max(120),
+                valor: z.string().max(2000),
+                confianca: z.number().min(0).max(1).optional(),
+                aplicar: z.boolean(),
+                escolha: z.enum(["manter", "substituir"]).optional(),
+              }),
+            )
+            .max(300),
+        })
+        .refine((x) => !!x.cliente_id !== !!x.novo, "Escolha criar um cliente OU completar um existente.")
+        .parse(d),
+  )
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{
+      cliente_id: string;
+      criado: boolean;
+      aplicados: number;
+      descartados: number;
+      arquivados: number;
+      erros_arquivo: string[];
+    }> => {
+      const { supabase, userId } = context;
+      const corr = await correspondenteDoUsuario(supabase, userId);
+      if (!corr) throw new Error("Sem correspondente.");
+      const db = supabase as any;
+      // Gravar no cadastro exige "Editar" em Clientes; criar exige também "Criar".
+      await exigirAcao(supabase, userId, "crm.clientes", "edit", "Você não tem permissão para editar o cadastro do cliente.");
+      if (data.novo) {
+        await exigirAcao(supabase, userId, "crm.clientes", "create", "Você não tem permissão para cadastrar clientes.");
+      }
+
+      const { data: lote } = await db
+        .from("scan_ia_lotes")
+        .select("id, status, correspondente_id")
+        .eq("id", data.lote_id)
+        .maybeSingle();
+      if (!lote || lote.correspondente_id !== corr) throw new Error("Lote não encontrado.");
+      if (lote.status === "aplicado") throw new Error("Este lote já foi aplicado a um cliente.");
+
+      const { data: leituras } = await db
+        .from("scan_ia_leituras")
+        .select("id, tipo_documento, arquivo_url, status")
+        .eq("lote_id", data.lote_id)
+        .eq("correspondente_id", corr);
+      const doLote = new Map<string, any>((leituras ?? []).map((l: any) => [l.id as string, l]));
+      if (doLote.size === 0) throw new Error("O lote não tem documentos.");
+      if ((leituras ?? []).some((l: any) => l.status === "processando" || l.status === "pendente")) {
+        throw new Error("Ainda há documento sendo lido. Espere terminar para aplicar.");
+      }
+      for (const t of data.tipos) {
+        if (!doLote.has(t.leitura_id)) throw new Error("Documento fora deste lote.");
+      }
+
+      // Cliente: novo (CPF/CNPJ com dígito verificador conferido) ou existente visível.
+      let clienteId: string;
+      let criado = false;
+      if (data.novo) {
+        const doc = data.novo.documento.replace(/\D/g, "");
+        if (!(doc.length === 11 ? cpfValido(doc) : doc.length === 14 ? cnpjValido(doc) : false)) {
+          throw new Error("O CPF/CNPJ do novo cliente não confere (dígito verificador). Corrija antes de criar.");
+        }
+        const r = await garantirClientePorDocumento(supabase, userId, corr, data.novo.nome, doc);
+        clienteId = r.clienteId;
+        criado = !r.reaproveitado;
+      } else {
+        const { data: cli } = await supabase
+          .from("clientes")
+          .select("id")
+          .eq("id", data.cliente_id!)
+          .eq("correspondente_id", corr)
+          .maybeSingle();
+        if (!cli) throw new Error("Cliente não encontrado.");
+        clienteId = cli.id;
+      }
+
+      // Tipo confirmado por humano, documento a documento.
+      for (const t of data.tipos) {
+        await db
+          .from("scan_ia_leituras")
+          .update({ tipo_documento: t.tipo, tipo_confirmado: true })
+          .eq("id", t.leitura_id)
+          .eq("lote_id", data.lote_id);
+      }
+      await db.from("scan_ia_leituras").update({ cliente_id: clienteId }).eq("lote_id", data.lote_id).eq("correspondente_id", corr);
+
+      const { data: clienteAtual } = await supabase.from("clientes").select("*").eq("id", clienteId).maybeSingle();
+      if (!clienteAtual) throw new Error("Cliente não encontrado.");
+      const { data: enderecoAtual } = await supabase
+        .from("cliente_enderecos")
+        .select("*")
+        .eq("cliente_id", clienteId)
+        .eq("principal", true)
+        .maybeSingle();
+
+      // Cliente recém-criado: nome e documento já entraram; o resto segue a mesma regra.
+      const decisoes = data.campos.map((c) => ({
+        campo: c.campo,
+        valor: c.valor,
+        confianca: c.confianca ?? 0,
+        aplicar: c.aplicar && !(criado && (c.campo === "nome_completo" || c.campo === "cpf_cnpj")),
+        escolha: c.escolha,
+      }));
+      const { patch, enderecoPatch, aplicados, descartados } = montarPatchCliente(
+        decisoes,
+        clienteAtual as Record<string, unknown>,
+        (enderecoAtual as Record<string, unknown> | null) ?? null,
+      );
+      if (Object.keys(patch).length > 0) {
+        const { error } = await supabase.from("clientes").update(patch as never).eq("id", clienteId);
+        if (error) throw error;
+      }
+      if (Object.keys(enderecoPatch).length > 0) {
+        const payload = { ...enderecoPatch, principal: true };
+        const enderecoId = (enderecoAtual as any)?.id;
+        const { error } = enderecoId
+          ? await supabase.from("cliente_enderecos").update(payload).eq("id", enderecoId)
+          : await supabase.from("cliente_enderecos").insert({ cliente_id: clienteId, ...payload } as never);
+        if (error) throw error;
+      }
+
+      // Documentos para as pastas do cliente.
+      const { arquivarLeituraNaDocumentacao } = await import("./scan-ia-arquivar.server");
+      const tipoFinal = new Map(data.tipos.map((t) => [t.leitura_id, t.tipo as string]));
+      let arquivados = 0;
+      const errosArquivo: string[] = [];
+      for (const l of leituras ?? []) {
+        const arq = await arquivarLeituraNaDocumentacao({
+          supabase,
+          userId,
+          leituraId: l.id,
+          clienteId,
+          tipoDocumento: tipoFinal.get(l.id) ?? l.tipo_documento,
+          arquivoUrl: l.arquivo_url,
+        });
+        if (arq.arquivado) arquivados++;
+        else if (arq.erro) errosArquivo.push(arq.erro);
+        await db.from("scan_ia_leituras").update({ status: "aplicada" }).eq("id", l.id);
+      }
+      await db.from("scan_ia_lotes").update({ status: "aplicado", cliente_id: clienteId }).eq("id", data.lote_id);
+
+      await supabase.from("scan_ia_auditoria").insert({
+        correspondente_id: corr,
+        leitura_id: null,
+        ator_id: userId,
+        acao: "lote_aplicado",
+        dados: {
+          lote_id: data.lote_id,
+          cliente_id: clienteId,
+          cliente_criado: criado,
+          validado_por_humano: true,
+          tipos_confirmados: data.tipos,
+          campos_aplicados: aplicados as any[],
+          campos_descartados: descartados as any[],
+          colunas_atualizadas: Object.keys(patch),
+          endereco_atualizado: Object.keys(enderecoPatch),
+          documentos_arquivados: arquivados,
+          erros_arquivo: errosArquivo,
+        } as never,
+      });
+      return {
+        cliente_id: clienteId,
+        criado,
+        aplicados: aplicados.length,
+        descartados: descartados.length,
+        arquivados,
+        erros_arquivo: errosArquivo,
+      };
     },
   );

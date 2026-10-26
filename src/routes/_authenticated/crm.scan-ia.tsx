@@ -2,7 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ScanLine, UploadCloud, FileText, RefreshCw, ChevronRight, Bot } from "lucide-react";
+import {
+  ScanLine,
+  UploadCloud,
+  FileText,
+  RefreshCw,
+  ChevronRight,
+  Bot,
+  CheckCircle2,
+  Loader2,
+  AlertTriangle,
+  Layers,
+  ShieldCheck,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,7 +45,7 @@ import {
 } from "@/lib/crm/scan-ia-tipos";
 import { usePermissao } from "@/hooks/use-permissao";
 import {
-  contextoScanIa,
+  criarLoteScan,
   listarLeituras,
   criarLeitura,
   processarLeitura,
@@ -48,6 +60,17 @@ export const Route = createFileRoute("/_authenticated/crm/scan-ia")({
   beforeLoad: () => assertModuloPermitido("crm.scan_ia", ["crm.clientes"]),
   component: Pagina,
 });
+
+/** Documentos por envio (um cliente raramente tem mais que isso; protege a cota da IA). */
+const MAX_ARQUIVOS_LOTE = 12;
+
+type ItemFila = {
+  chave: string;
+  nome: string;
+  situacao: "enviando" | "lendo" | "pronto" | "erro";
+  erro?: string;
+  leituraId?: string;
+};
 
 const STATUS_TONE: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   pendente: "secondary",
@@ -68,6 +91,8 @@ function Pagina() {
   const [tipo, setTipo] = useState("");
   const [dragging, setDragging] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [fila, setFila] = useState<ItemFila[]>([]);
+  const [loteAtual, setLoteAtual] = useState<string | null>(null);
 
   // Enviar, reprocessar e excluir: "Processar" no Scan IA (ou criar/editar clientes), como no servidor.
   const podeProcessarScan = usePermissao("crm.scan_ia", "create");
@@ -97,33 +122,72 @@ function Pagina() {
     onError: (e: any) => toast.error(mensagemDeErro(e, "Falha ao excluir.")),
   });
 
-  async function enviarArquivo(file: File) {
-    if (!file) return;
-    // Mesma regra do Storage: só PDF, JPG ou PNG de até 10 MB (antes aceitava .exe).
-    const recusa = problemaNoDocumento(file);
-    if (recusa) {
-      toast.error(`${recusa} Envie PDF, JPG ou PNG de até 10 MB.`);
-      return;
+  /**
+   * Vários documentos de uma vez (RG, renda, residência, certidão, matrícula…): abre um
+   * lote, envia cada arquivo, a IA lê dois por vez e, no fim, a conferência junta tudo
+   * num cadastro só (criar cliente ou completar um existente).
+   */
+  async function enviarArquivos(lista: File[]) {
+    const arquivos = lista.slice(0, MAX_ARQUIVOS_LOTE);
+    if (!arquivos.length) return;
+    if (lista.length > MAX_ARQUIVOS_LOTE) {
+      toast.warning(`Até ${MAX_ARQUIVOS_LOTE} documentos por vez. Os primeiros ${MAX_ARQUIVOS_LOTE} foram enviados.`);
     }
+    // Mesma regra do Storage: só PDF, JPG ou PNG de até 10 MB (antes aceitava .exe).
+    const validos: File[] = [];
+    for (const f of arquivos) {
+      const recusa = problemaNoDocumento(f);
+      if (recusa) toast.error(`${recusa} Envie PDF, JPG ou PNG de até 10 MB.`);
+      else validos.push(f);
+    }
+    if (!validos.length) return;
     setEnviando(true);
+    const itens: ItemFila[] = validos.map((f) => ({ chave: crypto.randomUUID(), nome: f.name, situacao: "enviando" }));
+    setFila(itens);
+    const atualizar = (chave: string, p: Partial<ItemFila>) =>
+      setFila((atual) => atual.map((i) => (i.chave === chave ? { ...i, ...p } : i)));
     try {
-      const { correspondenteId } = await contextoScanIa();
-      if (!correspondenteId) throw new Error("Sem correspondente.");
-      const safe = file.name.replace(/[^\w.\-]/g, "_");
-      const path = `${correspondenteId}/${crypto.randomUUID()}-${safe}`;
-      const { error: upErr } = await supabase.storage.from("scan-ia").upload(path, file, {
-        contentType: file.type || "application/octet-stream",
-        upsert: false,
-      });
-      if (upErr) throw upErr;
-
-      const { id } = await criarLeitura({
-        data: { arquivo_url: path, tipo_documento: tipo.trim() || null },
-      });
-      toast.success("Arquivo enviado. Processando com IA…");
+      const { id: loteId, correspondenteId } = await criarLoteScan();
+      setLoteAtual(loteId);
+      const enviados: Array<{ chave: string; leituraId: string }> = [];
+      for (let k = 0; k < validos.length; k++) {
+        const file = validos[k]!;
+        const item = itens[k]!;
+        try {
+          const safe = file.name.replace(/[^\w.\-]/g, "_").slice(-80);
+          const path = `${correspondenteId}/${crypto.randomUUID()}-${safe}`;
+          const { error: upErr } = await supabase.storage.from("scan-ia").upload(path, file, {
+            contentType: file.type || "application/octet-stream",
+            upsert: false,
+          });
+          if (upErr) throw upErr;
+          const { id } = await criarLeitura({
+            data: { arquivo_url: path, tipo_documento: tipo.trim() || null, lote_id: loteId },
+          });
+          enviados.push({ chave: item.chave, leituraId: id });
+          atualizar(item.chave, { situacao: "lendo", leituraId: id });
+        } catch (e) {
+          atualizar(item.chave, { situacao: "erro", erro: mensagemDeErro(e, "Falha no envio.") });
+        }
+      }
       setTipo("");
       qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
-      processar.mutate(id);
+      // A IA lê dois por vez: rápido sem estourar o limite por minuto do provedor.
+      let proximo = 0;
+      const trabalhador = async () => {
+        while (proximo < enviados.length) {
+          const atual = enviados[proximo++]!;
+          try {
+            const r = await processarLeitura({ data: { id: atual.leituraId } });
+            atualizar(atual.chave, r.ok ? { situacao: "pronto" } : { situacao: "erro", erro: r.erro ?? "Falha na leitura." });
+          } catch (e) {
+            atualizar(atual.chave, { situacao: "erro", erro: mensagemDeErro(e, "Falha na leitura.") });
+          }
+        }
+      };
+      await Promise.all([trabalhador(), trabalhador()]);
+      qc.invalidateQueries({ queryKey: ["scan-ia-leituras"] });
+      toast.success("Leitura concluída. Confira os dados e crie ou complete o cadastro.");
     } catch (e: any) {
       toast.error(mensagemDeErro(e, "Falha no envio."));
     } finally {
@@ -138,7 +202,8 @@ function Pagina() {
         <div className="min-w-0 sm:flex-1">
           <h1 className="truncate text-xl font-semibold">Scan IA</h1>
           <p className="text-sm text-muted-foreground">
-            Leitura automática de documentos com extração de campos por IA.
+            Envie os documentos do cliente: a IA lê, o sistema confere (CPF, datas, UF, órgão emissor)
+            e você cria ou completa o cadastro.
           </p>
         </div>
         {/* O Consultor IA exige "Ver" em Clientes; sem ela o link só voltava ao início. */}
@@ -186,30 +251,88 @@ function Pagina() {
             onDrop={(e) => {
               e.preventDefault();
               setDragging(false);
-              const f = e.dataTransfer.files?.[0];
-              if (f) enviarArquivo(f);
+              const fs = Array.from(e.dataTransfer.files ?? []);
+              if (fs.length) void enviarArquivos(fs);
             }}
             className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center transition-colors ${
               dragging ? "border-primary bg-accent" : "border-border hover:border-primary"
             } ${enviando ? "opacity-60" : ""}`}
           >
-            <UploadCloud className="h-8 w-8 text-muted-foreground" />
-            <span className="text-sm font-medium">
-              {enviando ? "Enviando…" : "Arraste um arquivo ou clique para selecionar"}
+            <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15">
+              <UploadCloud className="h-6 w-6" />
             </span>
-            <span className="text-xs text-muted-foreground">PDF, JPG ou PNG de até 10 MB</span>
+            <span className="text-sm font-semibold">
+              {enviando ? "Enviando e lendo…" : "Arraste os documentos do cliente ou clique para selecionar"}
+            </span>
+            <span className="max-w-md text-xs text-muted-foreground">
+              RG/CNH, CPF, comprovante de renda e de residência, certidão de casamento, matrícula… vários de uma
+              vez (até {MAX_ARQUIVOS_LOTE}). PDF, JPG ou PNG de até 10 MB cada.
+            </span>
           </button>
           <input
             ref={inputRef}
             type="file"
             accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            multiple
             className="hidden"
             onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) enviarArquivo(f);
+              const fs = Array.from(e.target.files ?? []);
+              if (fs.length) void enviarArquivos(fs);
               e.target.value = "";
             }}
           />
+
+          {fila.length > 0 && (
+            <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <Layers className="h-4 w-4 text-primary" />
+                  {fila.length} documento(s) deste envio
+                </p>
+                <span className="text-xs text-muted-foreground">
+                  {fila.filter((i) => i.situacao === "pronto").length} lido(s) ·{" "}
+                  {fila.filter((i) => i.situacao === "erro").length} com erro
+                </span>
+              </div>
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {fila.map((i) => (
+                  <li
+                    key={i.chave}
+                    className="flex min-w-0 items-start gap-2 rounded-lg border border-border bg-card p-2.5"
+                  >
+                    {i.situacao === "pronto" ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                    ) : i.situacao === "erro" ? (
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                    ) : (
+                      <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-primary" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{i.nome}</p>
+                      <p className={i.situacao === "erro" ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
+                        {i.situacao === "enviando"
+                          ? "Enviando…"
+                          : i.situacao === "lendo"
+                            ? "A IA está lendo…"
+                            : i.situacao === "pronto"
+                              ? "Lido e validado"
+                              : i.erro}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {loteAtual && !enviando && fila.some((i) => i.situacao === "pronto") && (
+                <Button asChild className="w-full sm:w-auto">
+                  <Link to="/crm/scan-ia/lote/$id" params={{ id: loteAtual }}>
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    Conferir e cadastrar o cliente
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -289,6 +412,13 @@ function Pagina() {
                         Reprocessar
                       </Button>
                     )}
+                    {l.lote_id && (
+                      <Button asChild variant="outline" size="sm">
+                        <Link to="/crm/scan-ia/lote/$id" params={{ id: l.lote_id }}>
+                          <Layers className="mr-1 h-4 w-4" /> Lote
+                        </Link>
+                      </Button>
+                    )}
                     <Button asChild variant="ghost" size="sm">
                       <Link to="/crm/scan-ia/$id" params={{ id: l.id }}>
                         Revisar <ChevronRight className="ml-1 h-4 w-4" />
@@ -358,6 +488,13 @@ function Pagina() {
                               onClick={() => processar.mutate(l.id)}
                             >
                               Reprocessar
+                            </Button>
+                          )}
+                          {l.lote_id && (
+                            <Button asChild variant="outline" size="sm">
+                              <Link to="/crm/scan-ia/lote/$id" params={{ id: l.lote_id }}>
+                                <Layers className="mr-1 h-4 w-4" /> Lote
+                              </Link>
                             </Button>
                           )}
                           <Button asChild variant="ghost" size="sm">
