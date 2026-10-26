@@ -1,466 +1,268 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { AlertTriangle, BarChart3, CheckCircle2, FileSearch, RotateCcw } from "lucide-react";
+import { PageHeader } from "@/components/shared/page-header";
 import {
-  AlertTriangle,
-  ArrowRight,
-  Database,
-  FileSearch,
-  HardHat,
-  Keyboard,
-  Loader2,
-  Search,
-  ShieldCheck,
-  X,
-} from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AdminHero } from "@/components/admin/admin-hero";
-import { FichaBureauView } from "@/components/bureau/ficha-bureau-view";
-import {
+  clienteParaFichaBureau,
   consultarFichaBureau,
   listarConsultasBureau,
   obterConfigBureau,
+  resumoConsultasBureau,
 } from "@/lib/bureau/bureau.functions";
-import { buscarClientesCRM } from "@/lib/crm/clientes.functions";
 import type { FichaBureau } from "@/lib/bureau/tipos";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
+import { NovaConsulta, type PedidoConsulta } from "@/components/crm/ficha-bureau/nova-consulta";
+import { Andamento, CartaoBureau } from "@/components/crm/ficha-bureau/painel-lateral";
+import { HistoricoConsultas } from "@/components/crm/ficha-bureau/historico-consultas";
+import { RelatorioConsulta } from "@/components/crm/ficha-bureau/relatorio-consulta";
+import { Ladrilho, ResultadoFicha } from "@/components/crm/ficha-bureau/resultado-ficha";
+import { disponibilidade, type Tom } from "@/components/crm/ficha-bureau/logica";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const Route = createFileRoute("/_authenticated/crm/ficha-bureau")({
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
-  head: () => ({ meta: [{ title: "Consulta Ficha Cliente — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Consulta Ficha — Agilliza" }] }),
+  // `?cliente=<id>`: abre com o cliente escolhido e o histórico só dele (como nos assinantes).
+  validateSearch: (s: Record<string, unknown>): { cliente?: string } =>
+    typeof s.cliente === "string" && UUID.test(s.cliente) ? { cliente: s.cliente } : {},
   component: Pagina,
 });
 
-/** 000.000.000-00 / 00.000.000/0000-00, conforme o tamanho. */
-function mascararDocumento(v: string): string {
-  const d = v.replace(/\D/g, "").slice(0, 14);
-  if (d.length <= 11) {
-    return d
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-  }
-  return d
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
-}
+type Fase =
+  | { tipo: "preenchendo" }
+  | { tipo: "consultando" }
+  | { tipo: "pronto"; ficha: FichaBureau; nome: string | null; clienteId: string | null }
+  | { tipo: "falhou"; mensagem: string };
 
 /**
- * Documento pronto para a tela.
- *
- * Quem não tem permissão de PII recebe o documento já mascarado pelo servidor
- * ("***.***.123-**"). `mascararDocumento` só olha dígitos e transformaria isso
- * em "123" — pior do que não mostrar. Nesse caso exibimos o que veio.
+ * Consulta Ficha (C16, 26/10/2026): o mesmo fluxo e desenho da Consulta Ficha dos assinantes
+ * no Agilliza Tech — formulário em três passos à esquerda, cartão da marca e resultado à
+ * direita, números do mês e histórico com relatório completo. A consulta usa o contrato de
+ * bureau do correspondente (Administração › Integrações), sem créditos.
  */
-function exibirDocumento(doc: string): string {
-  if (!doc) return "—";
-  return doc.includes("*") ? doc : mascararDocumento(doc);
-}
-
-/** Motivo gravado no histórico (código do servidor) em texto para a tela. */
-function motivoFalha(erro: string | null): string {
-  if (!erro) return "falhou";
-  if (erro === "sem_provedor") return "sem bureau configurado";
-  if (erro.startsWith("sem_credenciais")) return "chaves incompletas";
-  if (erro === "adaptador_ausente") return "fornecedor ainda não integrado";
-  if (erro === "sem_retorno") return "sem retorno do fornecedor";
-  return erro;
-}
-
-const FINALIDADES = [
-  "Análise de crédito imobiliário",
-  "Cadastro de cliente",
-  "Revisão de proposta em andamento",
-];
-
-/** De onde vêm os dados da consulta. */
-type Origem = "crm" | "manual";
-
-interface ClienteSelecionado {
-  id: string;
-  nome: string;
-  documento: string;
-}
-
 function Pagina() {
-  const [origem, setOrigem] = useState<Origem>("crm");
-  const [documento, setDocumento] = useState("");
-  const [finalidade, setFinalidade] = useState(FINALIDADES[0]);
-  const [cliente, setCliente] = useState<ClienteSelecionado | null>(null);
-  const [ficha, setFicha] = useState<FichaBureau | null>(null);
-
-  const config = useQuery({ queryKey: ["bureau-config"], queryFn: () => obterConfigBureau() });
+  const { cliente: clienteBusca } = Route.useSearch();
+  const navigate = useNavigate({ from: "/crm/ficha-bureau" });
   const podeConfigurar = usePermissao("admin.integracoes", "edit");
+
+  const configFn = useServerFn(obterConfigBureau);
+  const historicoFn = useServerFn(listarConsultasBureau);
+  const resumoFn = useServerFn(resumoConsultasBureau);
+  const consultarFn = useServerFn(consultarFichaBureau);
+  const clienteFn = useServerFn(clienteParaFichaBureau);
+
+  const [fase, setFase] = useState<Fase>({ tipo: "preenchendo" });
+  const [versao, setVersao] = useState(0);
+  const [relatorio, setRelatorio] = useState<string | null>(null);
+
+  const config = useQuery({ queryKey: ["bureau-config"], queryFn: () => configFn() });
   const historico = useQuery({
-    queryKey: ["bureau-historico"],
-    queryFn: () => listarConsultasBureau(),
+    queryKey: ["bureau-historico", clienteBusca ?? null],
+    queryFn: () => historicoFn({ data: { cliente_id: clienteBusca ?? null } }),
   });
+  const resumo = useQuery({ queryKey: ["bureau-resumo"], queryFn: () => resumoFn() });
+  const clienteInicial = useQuery({
+    queryKey: ["bureau-cliente-inicial", clienteBusca],
+    queryFn: () => clienteFn({ data: { id: clienteBusca as string } }),
+    enabled: Boolean(clienteBusca),
+    staleTime: 5 * 60_000,
+  });
+
+  const disp = disponibilidade(config.data);
 
   const consulta = useMutation({
-    mutationFn: () =>
-      consultarFichaBureau({
-        data: {
-          documento: documento.replace(/\D/g, ""),
-          finalidade,
-          // Amarra a consulta ao cadastro quando ela nasceu do CRM: é o que
-          // permite reencontrar a ficha pelo cliente depois.
-          cliente_id: origem === "crm" ? (cliente?.id ?? null) : null,
-        },
+    mutationFn: (p: PedidoConsulta) =>
+      consultarFn({
+        data: { documento: p.documento, finalidade: p.finalidade, cliente_id: p.cliente_id },
       }),
-    onSuccess: (f) => {
-      setFicha(f);
+    onMutate: () => setFase({ tipo: "consultando" }),
+    onSuccess: (ficha, p) =>
+      setFase({ tipo: "pronto", ficha, nome: p.nome, clienteId: p.cliente_id }),
+    onError: (e) =>
+      setFase({ tipo: "falhou", mensagem: mensagemDeErro(e, "Não foi possível consultar a ficha.") }),
+    onSettled: () => {
       void historico.refetch();
-    },
-    onError: (e) => {
-      setFicha(null);
-      toast.error(mensagemDeErro(e, "Não foi possível consultar a ficha."));
-      void historico.refetch();
+      void resumo.refetch();
     },
   });
 
-  const digitos = documento.replace(/\D/g, "");
-  const podeConsultar = digitos.length === 11 || digitos.length === 14;
-  const configurado = Boolean(config.data?.provedor && config.data?.ativo);
-
-  /** Troca de origem sem carregar o documento da origem anterior. */
-  function trocarOrigem(nova: Origem) {
-    if (nova === origem) return;
-    setOrigem(nova);
-    setDocumento("");
-    setCliente(null);
-    setFicha(null);
+  function novaConsulta() {
+    setFase({ tipo: "preenchendo" });
+    setVersao((v) => v + 1);
+    if (clienteBusca) void navigate({ search: {} });
   }
 
+  const metricas: { icone: typeof FileSearch; tom: Tom | "info"; rotulo: string; valor: string; detalhe: string }[] = [
+    {
+      icone: FileSearch,
+      tom: "info",
+      rotulo: "Consultas no mês",
+      valor: resumo.data ? resumo.data.mes.toLocaleString("pt-BR") : "—",
+      detalhe: resumo.data
+        ? `${resumo.data.total.toLocaleString("pt-BR")} concluídas no total`
+        : resumo.isError
+          ? "Não foi possível carregar"
+          : "Carregando…",
+    },
+    {
+      icone: BarChart3,
+      tom: "sucesso",
+      rotulo: "Score médio",
+      valor: resumo.data?.scoreMedio != null ? String(resumo.data.scoreMedio) : "—",
+      detalhe: "dos titulares consultados (0 a 1.000)",
+    },
+    {
+      icone: disp.disponivel ? CheckCircle2 : AlertTriangle,
+      tom: disp.disponivel ? "sucesso" : "alerta",
+      rotulo: "Bureau",
+      valor: config.isLoading ? "…" : disp.disponivel ? "Ativo" : "Indisponível",
+      detalhe: disp.fornecedor ?? "Nenhum fornecedor contratado",
+    },
+  ];
+
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
-      <AdminHero
+    <div className="mx-auto w-full max-w-[1400px] space-y-5 p-3 sm:space-y-6 sm:p-6">
+      <PageHeader
         secao="CRM"
-        icon={<FileSearch className="h-5 w-5" />}
-        titulo="Consulta Ficha Cliente"
-        descricao="Ficha única do cliente nos bureaus de crédito: score, restrições, protestos, participações e histórico de consultas."
+        icone={<FileSearch className="size-5" />}
+        titulo="Consulta Ficha"
+        descricao="Score, restrições e protestos do titular no bureau de crédito, com registro LGPD de cada consulta."
       />
 
-      {/* Faixa de implantação: o módulo está no ar, mas a integração com o
-          bureau ainda está em homologação. Fica no topo, antes de qualquer
-          resultado, para ninguém tomar decisão de crédito achando que a
-          ficha já é definitiva. */}
-      <div className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-400/15 p-4">
-        <HardHat className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-        <div>
-          <p className="text-sm font-bold tracking-wide text-foreground">EM IMPLANTAÇÃO</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            A integração com o bureau ainda está em homologação. Use a ficha como apoio, não como
-            decisão final de crédito.
-          </p>
-        </div>
-      </div>
-
       {config.isError && (
-        <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-destructive">
             {mensagemDeErro(config.error, "Não foi possível ler a configuração do bureau.")}
           </p>
-          <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
-            Tentar de novo
-          </Button>
-        </div>
-      )}
-
-      {!config.isLoading && !config.isError && !configurado && (
-        <div className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">Nenhum bureau configurado</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                A consulta precisa de um fornecedor contratado (Serasa, SPC ou um agregador) e das
-                chaves de acesso dele.
-              </p>
-            </div>
-          </div>
-          {podeConfigurar && (
-            <Button asChild variant="outline" size="sm" className="shrink-0">
-              <Link to={"/admin/integracoes" as string}>
-                Configurar em Integrações <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          )}
-        </div>
-      )}
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Search className="h-4 w-4 text-primary" />
-            Consultar
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Duas portas de entrada: o cliente que já existe no CRM e o que
-              ainda não existe (primeiro contato, indicação, terceiro na
-              operação). Antes só havia a segunda, e o operador tinha de sair
-              da tela para copiar o CPF do cadastro. */}
-          <div className="inline-flex rounded-lg border border-border bg-muted/40 p-1">
-            <button
-              type="button"
-              onClick={() => trocarOrigem("crm")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                origem === "crm"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Database className="h-3.5 w-3.5" />
-              Puxar do CRM
-            </button>
-            <button
-              type="button"
-              onClick={() => trocarOrigem("manual")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                origem === "manual"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Keyboard className="h-3.5 w-3.5" />
-              Digitar os dados
-            </button>
-          </div>
-
-          {origem === "crm" &&
-            (cliente ? (
-              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
-                <Database className="h-4 w-4 shrink-0 text-primary" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{cliente.nome}</p>
-                  <p className="font-mono text-xs text-muted-foreground">
-                    {exibirDocumento(cliente.documento)}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto"
-                  onClick={() => {
-                    setCliente(null);
-                    setDocumento("");
-                  }}
-                >
-                  <X className="mr-1 h-3.5 w-3.5" />
-                  Trocar
-                </Button>
-              </div>
-            ) : (
-              <ClientePicker
-                onSelecionar={(c) => {
-                  setCliente(c);
-                  setDocumento(c.documento.includes("*") ? "" : mascararDocumento(c.documento));
-                }}
-              />
-            ))}
-
-          <form
-            className="grid gap-4 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (podeConsultar) consulta.mutate();
-            }}
+          <button
+            type="button"
+            onClick={() => void config.refetch()}
+            className="min-h-10 rounded-lg border border-border bg-background px-3 text-sm font-medium"
           >
-            <div className="space-y-1.5">
-              <Label htmlFor="doc">CPF ou CNPJ</Label>
-              <Input
-                id="doc"
-                inputMode="numeric"
-                placeholder="000.000.000-00"
-                value={documento}
-                // Vindo do CRM o documento é o do cadastro; ainda assim pode
-                // ser ajustado, porque cadastro antigo às vezes tem o CPF do
-                // cônjuge no lugar do titular.
-                onChange={(e) => setDocumento(mascararDocumento(e.target.value))}
-              />
-            </div>
+            Tentar de novo
+          </button>
+        </div>
+      )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="fin">Finalidade da consulta</Label>
-              {/* Exigida pela LGPD e pelos contratos de bureau: fica gravada
-                  no histórico junto de quem consultou. */}
-              <select
-                id="fin"
-                value={finalidade}
-                onChange={(e) => setFinalidade(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                {FINALIDADES.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <Button type="submit" disabled={!podeConsultar || consulta.isPending}>
-              {consulta.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="mr-2 h-4 w-4" />
-              )}
-              Consultar ficha completa
-            </Button>
-          </form>
-
-          {/* Sem permissão de PII o CRM devolve o CPF mascarado. Melhor dizer
-              isso do que deixar o botão desabilitado sem explicação. */}
-          {cliente && !podeConsultar && (
-            <p className="flex items-start gap-2 text-[11px] font-medium text-foreground">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Seu acesso não exibe o documento completo deste cadastro. Digite o CPF/CNPJ para
-              consultar.
-            </p>
-          )}
-
-          <p className="flex items-start gap-2 text-[11px] text-muted-foreground">
-            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Cada consulta fica registrada com o operador, a data e a finalidade. Consulte apenas com
-            base legal — cliente em negociação ou proposta em andamento.
-          </p>
-        </CardContent>
-      </Card>
-
-      {ficha && <FichaBureauView ficha={ficha} />}
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Últimas consultas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {historico.isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
-            </div>
-          ) : historico.isError ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <p className="text-sm text-destructive">
-                {mensagemDeErro(historico.error, "Não foi possível carregar o histórico.")}
-              </p>
-              <Button variant="outline" size="sm" onClick={() => void historico.refetch()}>
-                Tentar de novo
-              </Button>
-            </div>
-          ) : (historico.data ?? []).length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Nenhuma consulta registrada ainda.
-            </p>
-          ) : (
-            <ul className="divide-y">
-              {(historico.data ?? []).map((c) => (
-                <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-                  <span className="font-mono text-sm text-foreground">
-                    {exibirDocumento(c.documento)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{c.finalidade}</span>
-                  <span
-                    className={
-                      c.sucesso
-                        ? "text-[11px] font-medium text-emerald-600"
-                        : "text-[11px] font-medium text-destructive"
-                    }
-                  >
-                    {c.sucesso ? "consultada" : motivoFalha(c.erro)}
-                  </span>
-                  <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
-                    {new Date(c.created_at).toLocaleString("pt-BR", {
-                      timeZone: "America/Sao_Paulo",
-                    })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-/** Busca incremental de clientes do CRM (mesma fonte usada pela DPS). */
-function ClientePicker({ onSelecionar }: { onSelecionar: (c: ClienteSelecionado) => void }) {
-  const [q, setQ] = useState("");
-  const [termo, setTermo] = useState("");
-
-  useEffect(() => {
-    const t = setTimeout(() => setTermo(q.trim()), 300);
-    return () => clearTimeout(t);
-  }, [q]);
-
-  const busca = useQuery({
-    queryKey: ["bureau-buscar-clientes", termo],
-    queryFn: () => buscarClientesCRM({ data: { q: termo } }),
-    enabled: termo.length >= 2,
-  });
-
-  const resultados = (busca.data ?? []) as Array<{
-    id: string;
-    nome: string;
-    documento: string | null;
-    email: string | null;
-  }>;
-
-  return (
-    <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Nome, CPF/CNPJ ou e-mail do cliente…"
-          className="pl-9"
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)] xl:gap-5">
+        <NovaConsulta
+          disp={disp}
+          carregandoConfig={config.isLoading}
+          podeConfigurar={podeConfigurar}
+          clienteInicial={
+            clienteInicial.data
+              ? {
+                  id: clienteInicial.data.id,
+                  nome: clienteInicial.data.nome,
+                  documento: clienteInicial.data.documento,
+                  celular: clienteInicial.data.celular,
+                }
+              : null
+          }
+          ocupado={consulta.isPending}
+          erro={null}
+          onConsultar={(p) => consulta.mutate(p)}
+          versao={versao}
         />
-        {busca.isFetching && (
-          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-        )}
+
+        <div className="space-y-4 xl:sticky xl:top-20">
+          <CartaoBureau
+            disp={disp}
+            carregando={config.isLoading}
+            consultasMes={resumo.data?.mes ?? null}
+          />
+          <div aria-live="polite" className="space-y-4">
+            {fase.tipo === "consultando" && <Andamento />}
+            {fase.tipo === "pronto" && (
+              <ResultadoFicha
+                ficha={fase.ficha}
+                titulo={fase.nome}
+                clienteId={fase.clienteId}
+                fornecedor={disp.fornecedor}
+                acoesExtras={
+                  <button
+                    type="button"
+                    onClick={novaConsulta}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary"
+                  >
+                    <RotateCcw className="size-4" aria-hidden /> Nova consulta
+                  </button>
+                }
+              />
+            )}
+            {fase.tipo === "falhou" && (
+              <section className="space-y-3 rounded-2xl border border-destructive/30 bg-card p-4 shadow-sm sm:p-5">
+                <div className="flex items-start gap-3">
+                  <Ladrilho icone={AlertTriangle} tom="perigo" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">A consulta não foi concluída</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{fase.mensagem}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  A tentativa ficou registrada no histórico (LGPD).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setFase({ tipo: "preenchendo" })}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary"
+                >
+                  <RotateCcw className="size-4" aria-hidden /> Tentar de novo
+                </button>
+              </section>
+            )}
+            {fase.tipo === "preenchendo" && (
+              <div className="hidden rounded-2xl border border-dashed border-border p-6 text-center xl:block">
+                <p className="text-sm font-medium text-foreground">O resultado aparece aqui</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Medidor de score, apontamentos e o detalhe de cada restrição.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {termo.length < 2 && (
-        <p className="py-2 text-center text-xs text-muted-foreground">
-          Digite ao menos 2 caracteres para buscar no CRM.
-        </p>
-      )}
-      {busca.isError && (
-        <p className="py-2 text-center text-xs text-destructive">
-          {busca.error instanceof Error ? busca.error.message : "Falha na busca."}
-        </p>
-      )}
-      {termo.length >= 2 && busca.isSuccess && resultados.length === 0 && (
-        <p className="py-2 text-center text-xs text-muted-foreground">
-          Nenhum cliente encontrado. Use “Digitar os dados” para consultar mesmo assim.
-        </p>
-      )}
-
-      {resultados.map((c) => (
-        <button
-          key={c.id}
-          type="button"
-          onClick={() => onSelecionar({ id: c.id, nome: c.nome, documento: c.documento ?? "" })}
-          className="flex w-full items-center gap-3 rounded-md border border-transparent px-3 py-2 text-left transition hover:border-primary/40 hover:bg-primary/5"
-        >
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-foreground">{c.nome}</p>
-            <p className="truncate text-xs text-muted-foreground">{c.email ?? "sem e-mail"}</p>
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-3">
+        {metricas.map((m, i) => (
+          <div
+            key={m.rotulo}
+            className={`flex min-w-0 items-start gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm sm:p-4 ${i === 2 ? "col-span-2 xl:col-span-1" : ""}`}
+          >
+            <Ladrilho icone={m.icone} tom={m.tom} />
+            <div className="min-w-0">
+              <p className="truncate text-xs text-muted-foreground">{m.rotulo}</p>
+              <p className="truncate text-xl font-semibold tabular-nums text-foreground">{m.valor}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{m.detalhe}</p>
+            </div>
           </div>
-          <span className="shrink-0 font-mono text-xs text-muted-foreground">
-            {exibirDocumento(c.documento ?? "")}
-          </span>
-        </button>
-      ))}
+        ))}
+      </div>
+
+      <HistoricoConsultas
+        linhas={historico.data ?? []}
+        carregando={historico.isLoading}
+        erro={
+          historico.isError
+            ? mensagemDeErro(historico.error, "Não foi possível carregar o histórico.")
+            : null
+        }
+        onTentar={() => void historico.refetch()}
+        onAbrir={setRelatorio}
+        filtradoPorCliente={Boolean(clienteBusca)}
+        onVerTodas={() => void navigate({ search: {} })}
+      />
+
+      <RelatorioConsulta
+        id={relatorio}
+        fornecedor={disp.fornecedor}
+        onFechar={() => setRelatorio(null)}
+      />
     </div>
   );
 }
