@@ -404,6 +404,60 @@ export async function enviarSenhaProvisoriaPorEmail(
   }
 }
 
+/** O que o banco respondeu ao pedido de "Esqueci minha senha" (0560 do Corretor). */
+export type SituacaoRecuperacao =
+  "enviar" | "sem_conta" | "freio_email" | "freio_ip" | "email_invalido" | "sem_ponte" | "falha";
+
+/**
+ * "Esqueci minha senha" (0560 do Corretor): o banco registra o pedido (e-mail só em hash),
+ * aplica os freios (3 por hora por e-mail, 10 por hora por IP) e devolve a pessoa SÓ se houver
+ * perfil ativo, com login habilitado e e-mail. Roda pelo papel da ponte, SEM contexto de pessoa.
+ * Nunca lança e nunca põe o e-mail em log.
+ */
+export async function pedirRecuperacaoNaPlataforma(
+  email: string,
+  ip: string | null,
+): Promise<{ situacao: SituacaoRecuperacao; authUid: string | null }> {
+  if (!process.env.PONTE_DATABASE_URL) return { situacao: "sem_ponte", authUid: null };
+  try {
+    const r = await obterPool().query<{ auth_uid: string | null; situacao: SituacaoRecuperacao }>(
+      "select auth_uid, situacao from plataforma.pedir_recuperacao_senha_agilliza($1, $2)",
+      [email, ip && isIP(ip) ? ip : null],
+    );
+    const linha = r.rows[0];
+    return { situacao: linha?.situacao ?? "falha", authUid: linha?.auth_uid ?? null };
+  } catch (e) {
+    console.error(
+      "[ponte-plataforma] pedido de recuperação de senha",
+      (e as { code?: string }).code ?? "sem código",
+    );
+    return { situacao: "falha", authUid: null };
+  }
+}
+
+/**
+ * Link de recuperação → fila de e-mail da plataforma, para o e-mail da PRÓPRIA pessoa (0560).
+ * O banco confere que o link é do Auth do Agilliza, freia e apaga o link da fila quando a
+ * mensagem termina. Nunca lança e nunca põe o link em log: devolve se entrou na fila.
+ */
+export async function enviarLinkDeRecuperacao(authUid: string, link: string): Promise<boolean> {
+  if (!process.env.PONTE_DATABASE_URL) return false;
+  try {
+    await obterPool().query("select plataforma.enviar_link_recuperacao_agilliza($1, $2)", [
+      authUid,
+      link,
+    ]);
+    return true;
+  } catch (e) {
+    // Só o código (a mensagem do pg pode ecoar parâmetros).
+    console.error(
+      "[ponte-plataforma] link de recuperação não enfileirado",
+      (e as { code?: string }).code ?? "sem código",
+    );
+    return false;
+  }
+}
+
 /** Sonda de saúde da ponte (`/api/saude`): `select 1` com tempo-limite de 2 s. */
 export async function sondarPonte(): Promise<{
   configurada: boolean;
