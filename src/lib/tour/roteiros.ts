@@ -2926,38 +2926,6 @@ export const ROTEIROS: Record<string, RoteiroTour> = {
     ],
   },
 
-  // ---- Gestão de sistemas: Gestão de Parceiros e Anúncios
-  "plataforma.parceiros-anuncios": {
-    versao: 1,
-    titulo: "Gestão de Parceiros e Anúncios",
-    passos: [
-      {
-        alvo: "titulo",
-        titulo: "ImobMatch gerido pela equipe",
-        texto:
-          "Revise endereços repetidos, julgue denúncias, modere a Comunidade e o chat e confira CRECI. Toda decisão fica registrada e quem publicou é avisado.",
-      },
-      {
-        alvo: "plataforma-parceiros-area",
-        titulo: "Duas áreas",
-        texto:
-          "Alterne entre Anúncios e parceiros e Banners patrocinados: patrocinadores, fila de criativos, pacotes e preços, campanhas no ar e métricas.",
-      },
-      {
-        alvo: "plataforma-parceiros-resumo",
-        titulo: "O que espera decisão",
-        texto:
-          "Em revisão, denúncias a julgar, CRECI a conferir e anúncios no ar. Toque em um para abrir a aba correspondente.",
-      },
-      {
-        alvo: "plataforma-parceiros-abas",
-        titulo: "Abas de trabalho",
-        texto:
-          "Em revisão compara fichas do mesmo endereço; Denúncias, Comunidade e Chat pedem decisão com motivo; em Moderados dá para desfazer.",
-      },
-    ],
-  },
-
   // ---- ImobMatch Gestão (28/10/2026)
   imobmatch: {
     versao: 1,
