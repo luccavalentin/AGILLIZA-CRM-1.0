@@ -227,7 +227,7 @@ function CartaoDenuncia({
                 ) : m.url && m.mime.startsWith("video/") ? (
                   <video key={m.id} src={m.url} controls preload="none" className="aspect-square w-full rounded-md border border-border object-cover" />
                 ) : (
-                  <span key={m.id} className="grid aspect-square place-items-center rounded-md border border-dashed border-border text-muted-foreground">
+                  <span key={m.id} className="grid h-16 place-items-center rounded-md border border-dashed border-border text-muted-foreground" title="Arquivo indisponível agora">
                     <ImageIcon className="size-4" />
                   </span>
                 ),

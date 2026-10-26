@@ -5,9 +5,8 @@
  * cabeçalho com ícone, faixa de indicadores, barra de filtros com chips, selos de
  * situação, seções e os estados vazio, carregando e erro.
  *
- * Ícone do cabeçalho e dos indicadores: `IconeGestao` é o PONTO ÚNICO de troca. Quando o
- * componente 3D da frente a1 (`src/components/ui/icone-3d.tsx`) chegar à base, basta
- * trocar o corpo de `IconeGestao` por ele — todas as telas acompanham.
+ * Ícone do cabeçalho, dos indicadores e dos estados: `IconeGestao`, o ponto único que desenha
+ * a peça 3D do sistema (`Icone3D` da frente a1). O cabeçalho usa o `AdminHero`, que já a desenha.
  */
 import type { ReactNode } from "react";
 import { AlertTriangle, Inbox, RefreshCw, Search, X } from "lucide-react";
@@ -15,22 +14,16 @@ import { AdminHero } from "@/components/admin/admin-hero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Icone3D, type TamanhoIcone3D } from "@/components/ui/icone-3d";
 import { cn } from "@/lib/utils";
 
 export type Tom = "neutro" | "marca" | "sucesso" | "alerta" | "perigo" | "info";
 
-const TOM_CHIP: Record<Tom, string> = {
-  neutro: "bg-secondary text-muted-foreground ring-border",
-  marca: "bg-primary/[0.07] text-primary ring-primary/15",
-  sucesso: "bg-success/10 text-success-texto ring-success/20",
-  alerta: "bg-warning/15 text-warning-foreground ring-warning/30",
-  perigo: "bg-destructive/[0.08] text-destructive ring-destructive/20",
-  info: "bg-sky-500/10 text-sky-700 ring-sky-500/20",
-};
+const TAMANHO_3D: Record<"sm" | "md" | "lg", TamanhoIcone3D> = { sm: "sm", md: "md", lg: "xl" };
 
 /**
- * Ícone em chip, com volume sutil (luz em cima, sombra curta embaixo). Ponto único de troca
- * pelo ícone 3D da frente a1.
+ * Ícone da gestão: a peça 3D do sistema (`Icone3D`, frente a1 — `docs/visual-3d.md`).
+ * Ponto único: todas as telas de Gestão de sistemas e Configurações gerais passam por aqui.
  */
 export function IconeGestao({
   icone,
@@ -44,20 +37,9 @@ export function IconeGestao({
   className?: string;
 }) {
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "relative inline-grid shrink-0 place-items-center rounded-[10px] ring-1 ring-inset",
-        "shadow-[inset_0_1px_0_rgb(255_255_255/0.65),0_1px_2px_rgb(0_10_112/0.08),0_4px_10px_-6px_rgb(0_10_112/0.25)]",
-        tamanho === "sm" && "size-7 [&_svg]:size-3.5",
-        tamanho === "md" && "size-9 [&_svg]:size-4",
-        tamanho === "lg" && "size-11 [&_svg]:size-5",
-        TOM_CHIP[tom],
-        className,
-      )}
-    >
+    <Icone3D tom={tom} tamanho={TAMANHO_3D[tamanho]} className={cn("shrink-0", className)}>
       {icone}
-    </span>
+    </Icone3D>
   );
 }
 
@@ -80,7 +62,7 @@ export function CabecalhoGestao({
       secao={secao}
       titulo={titulo}
       descricao={descricao}
-      icon={<IconeGestao icone={icone} />}
+      icon={icone}
       acoes={acoes}
     />
   );
@@ -139,7 +121,7 @@ export function Indicador({
       onClick={onClick}
       aria-pressed={onClick ? !!ativo : undefined}
       className={cn(
-        "group flex min-h-[92px] min-w-0 flex-col justify-start rounded-[14px] border border-border/80 bg-card p-3.5 text-left shadow-[0_1px_2px_rgb(16_24_40/0.04)] sm:p-4",
+        "i3d-grupo group flex min-h-[92px] min-w-0 flex-col justify-start rounded-[14px] border border-border/80 bg-card p-3.5 text-left shadow-[0_1px_2px_rgb(16_24_40/0.04)] sm:p-4",
         onClick &&
           "transition-shadow hover:shadow-[0_6px_16px_-10px_rgb(0_10_112/0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
         ativo && "border-primary/40 ring-1 ring-primary/20",
