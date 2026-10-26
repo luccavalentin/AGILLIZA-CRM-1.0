@@ -33,6 +33,8 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 // Mesmos rótulos da matriz: a lista local só tinha "todos" e "próprios" e
 // mostrava "equipe"/"personalizado" crus.
 import { ESCOPOS } from "./regras-modulos/constants";
+// Grupos e nomes do menu (os mesmos da matriz de permissões).
+import { GRUPOS_DO_MENU } from "./regras-modulos/grupos-menu";
 
 type MatrizEstado = Record<string, { permitido: boolean; escopo: EscopoDados }>;
 
@@ -53,7 +55,6 @@ function estadoInicial(nivel: NivelAcesso | undefined): MatrizEstado {
   return estado;
 }
 
-const grupos = Array.from(new Set(CATALOGO_MODULOS.map((m) => m.grupo)));
 
 /**
  * Cadastro de pessoa. As permissões do nível aparecem só para leitura: elas
@@ -352,10 +353,10 @@ export function NovaPessoaInline({
 
             <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
               {(() => {
-                const porGrupo = grupos
-                  .map((grupo) => ({
+                const porGrupo = GRUPOS_DO_MENU
+                  .map(({ grupo, modulos: doGrupo }) => ({
                     grupo,
-                    modulos: CATALOGO_MODULOS.filter((m) => m.grupo === grupo)
+                    modulos: doGrupo
                       .map((mod) => ({
                         mod,
                         acoes: mod.acoes.filter(
@@ -381,7 +382,7 @@ export function NovaPessoaInline({
                           estado[chave(mod.modulo, acoes[0].acao)]?.escopo ?? "proprios";
                         return (
                           <li key={mod.modulo} className="flex flex-wrap gap-x-1.5">
-                            <span className="font-medium">{mod.label}:</span>
+                            <span className="font-medium">{mod.rotuloMenu}:</span>
                             <span className="text-muted-foreground">
                               {acoes.map((a) => a.label).join(", ")} ·{" "}
                               {ESCOPOS.find((e) => e.value === escopo)?.label ?? escopo}

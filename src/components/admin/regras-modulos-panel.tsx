@@ -30,6 +30,7 @@ import {
   DialogNovoNivel,
 } from "./regras-modulos/dialogs-nivel";
 import { DialogAlvos } from "./regras-modulos/dialog-alvos";
+import { GRUPOS_DO_MENU } from "./regras-modulos/grupos-menu";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { usePermissao } from "@/hooks/use-permissao";
 
@@ -247,30 +248,28 @@ export function RegrasModulosPanel() {
     return opcoes.includes(papel) ? papel : opcoes[0];
   }
 
-  const grupos = useMemo(() => {
-    const map = new Map<string, typeof CATALOGO_MODULOS>();
-    for (const m of CATALOGO_MODULOS) {
-      const arr = map.get(m.grupo) ?? [];
-      arr.push(m);
-      map.set(m.grupo, arr);
-    }
-    return Array.from(map.entries());
-  }, []);
+  // Grupos e nomes do menu novo (CRM, Operacional, … Configurações gerais); chaves intactas.
+  const grupos = GRUPOS_DO_MENU;
 
   return (
     <div>
       <Tabs value={subaba} onValueChange={(v) => setSubaba(v as typeof subaba)}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="papeis">Papéis & Funções</TabsTrigger>
-          <TabsTrigger value="permissoes">Regras & Módulos</TabsTrigger>
+        <TabsList className="mb-5 h-auto w-full justify-start sm:w-auto">
+          <TabsTrigger value="papeis" className="min-h-11 flex-1 sm:min-h-8 sm:flex-none">
+            Papéis e funções
+          </TabsTrigger>
+          <TabsTrigger value="permissoes" className="min-h-11 flex-1 sm:min-h-8 sm:flex-none">
+            Matriz de permissões
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="papeis">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-medium text-foreground">Papéis & Funções</h2>
+              <h2 className="text-[15px] font-semibold text-foreground">Papéis e funções</h2>
               <p className="text-sm text-muted-foreground">
-                Cadastre e configure os papéis/funções (níveis de acesso) do seu ecossistema.
+                Cada papel é um nível de acesso: as permissões dele valem para todas as pessoas que
+                o recebem.
               </p>
             </div>
             {/* Criar nível exige "Regras & Módulos: editar" no servidor. */}
@@ -302,7 +301,7 @@ export function RegrasModulosPanel() {
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-[240px_1fr]">
+            <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)]">
               <ListaNiveis
                 niveis={niveis ?? []}
                 selecionadoId={selecionado?.id ?? null}
@@ -326,7 +325,7 @@ export function RegrasModulosPanel() {
                   onExcluir={() => setExcluirOpen(true)}
                 />
               ) : (
-                <p className="text-sm text-muted-foreground">Nenhum nível de acesso encontrado.</p>
+                <p className="rounded-[14px] border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Nenhum papel encontrado.</p>
               )}
             </div>
           )}

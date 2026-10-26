@@ -185,28 +185,39 @@ export const lerModeracaoMarketplace = createServerFn({ method: "GET" })
     });
   });
 
+export type DecisaoEspecialista = "aprovar" | "nao_aprovar" | "suspender";
+
+export interface DecisaoRegistrada {
+  id: string;
+  especialista_id: string;
+  especialista: string;
+  decisao: DecisaoEspecialista;
+  status_antes: string | null;
+  motivo: string | null;
+  moderador: string | null;
+  criado_em: string;
+}
+
 /**
- * Aprovar, recusar, suspender ou devolver um perfil. Aprovar grava quem e quando
- * (`aprovado_por`, `aprovado_em`); recusar ou suspender exige motivo — ele vai para o parceiro.
+ * Aprovar ou Não aprovar (e Suspender quem já está no ar), pela função da moderação
+ * (0310 do Agilliza Tech): motivo obrigatório ao não aprovar ou suspender — ele vai para o
+ * especialista —, histórico de cada decisão e aviso ao dono da conta.
  */
-export const moderarEspecialista = createServerFn({ method: "POST" })
+export const decidirEspecialista = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.marketplace", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
         id: z.string().regex(UUID, "Especialista inválido."),
-        status: z.enum(["rascunho", "em_analise", "aprovado", "recusado", "suspenso"], {
-          message: "Situação inválida.",
-        }),
-        motivo: z.string().max(1000, "Motivo longo demais.").default(""),
+        decisao: z.enum(["aprovar", "nao_aprovar", "suspender"], { message: "Decisão inválida." }),
+        motivo: z.string().trim().max(1000, "O motivo vai até 1000 letras.").default(""),
       })
       .superRefine((v, ctx) => {
-        if ((v.status === "recusado" || v.status === "suspenso") && v.motivo.trim().length < 10) {
+        if (v.decisao !== "aprovar" && v.motivo.length < 10) {
           ctx.addIssue({
             code: "custom",
             path: ["motivo"],
-            message:
-              "Recusar ou suspender exige motivo (mínimo 10 caracteres) — ele vai para o parceiro.",
+            message: "Escreva o motivo (pelo menos 10 letras): ele vai para o especialista.",
           });
         }
       })
@@ -215,19 +226,29 @@ export const moderarEspecialista = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
-      tx.uma<{ nome: string }>(
-        `update ecossistema.especialistas
-            set status = $2,
-                motivo_status = nullif($3, ''),
-                publicado = ($2 = 'aprovado'),
-                aprovado_por = case when $2 = 'aprovado' then seguranca.auth_usuario_id() else aprovado_por end,
-                aprovado_em = case when $2 = 'aprovado' then now() else aprovado_em end
-          where id = $1 returning nome`,
-        [data.id, data.status, data.motivo.trim()],
+      tx.uma<{ r: { nome: string; status: string } }>(
+        "select ecossistema.decidir_especialista($1, $2, $3) as r",
+        [data.id, data.decisao, data.motivo || null],
       ),
     );
-    if (!r) throw new Error("Especialista não encontrado.");
-    return { nome: r.nome };
+    if (!r?.r) throw new Error("Especialista não encontrado.");
+    return r.r;
+  });
+
+/** Histórico das decisões (de um especialista, ou as últimas de todos). */
+export const lerDecisoesMarketplace = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.marketplace", "view"])])
+  .inputValidator((d: unknown) =>
+    z.object({ especialista: z.string().regex(UUID).optional().nullable() }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ j: DecisaoRegistrada[] }>("select ecossistema.decisoes_especialistas($1, 200) as j", [
+        data.especialista ?? null,
+      ]),
+    );
+    return r?.j ?? [];
   });
 
 /** Publica de novo ou tira da vitrine uma avaliação (sem apagar; a nota é recalculada). */

@@ -1,17 +1,15 @@
 /**
  * Base de conhecimento do suporte da plataforma — o que evita o próximo chamado igual.
- * Artigo publicado aparece para as contas na ajuda dentro do Corretor.
+ * Artigo publicado aparece para as contas na ajuda dentro do Agilliza Tech.
  */
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { BookOpen, Pencil, Plus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -28,6 +26,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  BarraFiltros,
+  CampoBusca,
+  ChipsFiltro,
+  EstadoErro,
+  EstadoVazio,
+  ListaCarregando,
+  Secao,
+  Selo,
+} from "@/components/plataforma/kit";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatData } from "@/lib/financeiro/format";
 import {
@@ -43,61 +51,81 @@ type Categoria = (typeof CATEGORIAS_ARTIGO)[number];
 export function BaseConhecimento({ podeEditar }: { podeEditar: boolean }) {
   const listarFn = useServerFn(listarArtigosSuporte);
   const [editando, setEditando] = useState<ArtigoSuporte | "novo" | null>(null);
+  const [busca, setBusca] = useState("");
+  const [categoria, setCategoria] = useState<"todas" | Categoria>("todas");
   const q = useQuery({
     queryKey: ["plataforma-suporte", "artigos"],
     queryFn: () => listarFn(),
     staleTime: 60_000,
   });
   const artigos = q.data?.artigos ?? [];
+  const termo = busca.trim().toLowerCase();
+  const visiveis = artigos.filter(
+    (a) =>
+      (categoria === "todas" || a.categoria === categoria) &&
+      (!termo || a.titulo.toLowerCase().includes(termo) || a.corpo.toLowerCase().includes(termo)),
+  );
+  const leituras = artigos.reduce((s, a) => s + Number(a.visualizacoes ?? 0), 0);
 
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold">Base de conhecimento</h2>
-          <p className="text-xs text-muted-foreground">
-            Artigo publicado aparece para o cliente dentro do produto e reduz chamado repetido.
-          </p>
-        </div>
+    <div className="space-y-4">
+      <BarraFiltros>
+        <CampoBusca valor={busca} onChange={setBusca} rotulo="Buscar artigo" placeholder="Título ou conteúdo" />
+        <ChipsFiltro<"todas" | Categoria>
+          rotulo="Categoria"
+          valor={categoria}
+          onChange={setCategoria}
+          opcoes={[
+            { valor: "todas", rotulo: "Todas", contagem: artigos.length },
+            ...CATEGORIAS_ARTIGO.filter((c) => artigos.some((a) => a.categoria === c)).map((c) => ({
+              valor: c,
+              rotulo: CATEGORIA_ROTULO[c] ?? c,
+              contagem: artigos.filter((a) => a.categoria === c).length,
+            })),
+          ]}
+        />
         {podeEditar && (
-          <Button size="sm" variant="outline" onClick={() => setEditando("novo")}>
+          <Button size="sm" className="min-h-11 sm:min-h-9 md:ml-auto" onClick={() => setEditando("novo")}>
             <Plus className="mr-1.5 size-4" /> Novo artigo
           </Button>
         )}
-      </div>
-      {q.isLoading ? (
-        <div className="p-4">
-          <Skeleton className="h-16" />
-        </div>
-      ) : q.isError ? (
-        <p className="p-4 text-sm text-destructive">
-          {mensagemDeErro(q.error, "Não foi possível carregar os artigos.")}
-        </p>
-      ) : artigos.length === 0 ? (
-        <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-          <BookOpen className="size-4" /> A base está vazia. O primeiro artigo costuma ser o chamado
-          que mais se repete.
-        </p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {artigos.map((a) => (
-            <li key={a.id} className="flex items-center justify-between gap-3 p-4">
+      </BarraFiltros>
+      <Secao
+        semRespiro
+        titulo="Base de conhecimento"
+        descricao={`Artigo publicado aparece na ajuda das contas e evita o próximo chamado igual · ${leituras} leitura(s)`}
+      >
+        {q.isLoading && <ListaCarregando linhas={3} />}
+        {q.isError && (
+          <EstadoErro mensagem={mensagemDeErro(q.error, "Não foi possível carregar os artigos.")} onTentar={() => q.refetch()} />
+        )}
+        {!q.isLoading && !q.isError && visiveis.length === 0 && (
+          <EstadoVazio
+            icone={<BookOpen />}
+            titulo={artigos.length ? "Nenhum artigo nesta busca" : "A base está vazia"}
+            descricao={artigos.length ? undefined : "O primeiro artigo costuma ser o chamado que mais se repete."}
+          />
+        )}
+        <ul className="divide-y divide-border/60">
+          {visiveis.map((a) => (
+            <li key={a.id} className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
-                <p className="flex flex-wrap items-center gap-2 font-medium">
-                  <span className="break-words">{a.titulo}</span>
-                  <Badge variant={a.publicado ? "default" : "outline"}>
+                <p className="flex flex-wrap items-center gap-2">
+                  <span className="break-words text-sm font-medium">{a.titulo}</span>
+                  <Selo tom={a.publicado ? "sucesso" : "neutro"} ponto={a.publicado}>
                     {a.publicado ? "Publicado" : "Rascunho"}
-                  </Badge>
+                  </Selo>
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {CATEGORIA_ROTULO[a.categoria] ?? a.categoria} · {a.visualizacoes} leitura(s) ·
-                  atualizado em {formatData(a.atualizado_em)}
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {CATEGORIA_ROTULO[a.categoria] ?? a.categoria} · {a.visualizacoes} leitura(s) · atualizado em{" "}
+                  {formatData(a.atualizado_em)}
                 </p>
               </div>
               {podeEditar && (
                 <Button
-                  size="sm"
+                  size="icon"
                   variant="ghost"
+                  className="size-11 shrink-0 sm:size-8"
                   onClick={() => setEditando(a)}
                   aria-label={`Editar artigo ${a.titulo}`}
                 >
@@ -107,7 +135,7 @@ export function BaseConhecimento({ podeEditar }: { podeEditar: boolean }) {
             </li>
           ))}
         </ul>
-      )}
+      </Secao>
 
       <Sheet open={!!editando} onOpenChange={(v) => !v && setEditando(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
@@ -120,7 +148,7 @@ export function BaseConhecimento({ podeEditar }: { podeEditar: boolean }) {
           )}
         </SheetContent>
       </Sheet>
-    </section>
+    </div>
   );
 }
 

@@ -1,311 +1,579 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   BarChart3,
-  ChevronRight,
+  BadgeCheck,
+  Check,
+  CircleDollarSign,
   Eye,
   EyeOff,
+  History,
   Inbox,
-  Loader2,
+  MapPin,
+  MessageSquareWarning,
   RefreshCw,
   Star,
   Store,
+  X,
 } from "lucide-react";
-import { AdminHero } from "@/components/admin/admin-hero";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Avatar,
+  CabecalhoGestao,
+  ChipsFiltro,
+  Dado,
+  EstadoErro,
+  EstadoVazio,
+  FaixaIndicadores,
+  Indicador,
+  ListaCarregando,
+  PaginaGestao,
+  Secao,
+  Selo,
+} from "@/components/plataforma/kit";
 import { MetricasMarketplace } from "@/components/plataforma/marketplace-metricas";
+import {
+  BotaoAprovar,
+  CHAVE_MARKETPLACE,
+  DialogoMotivo,
+  NIVEL_PLANO,
+  ROTULO_DECISAO,
+  conferencia,
+  statusEspecialista,
+  textosDasRegioes,
+} from "@/components/plataforma/marketplace/comum";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL, formatData } from "@/lib/financeiro/format";
+import { cn } from "@/lib/utils";
 import {
+  lerDecisoesMarketplace,
   lerModeracaoMarketplace,
   moderarAvaliacao,
-  moderarEspecialista,
   type Anunciante,
   type AvaliacaoMarketplace,
   type ModeracaoAvaliacao,
   type PerfilEspecialista,
-  type StatusEspecialista,
 } from "@/lib/plataforma/marketplace.functions";
 
+type Aba = "moderacao" | "avaliacoes" | "anunciantes" | "historico" | "metricas";
+const ABAS: Aba[] = ["moderacao", "avaliacoes", "anunciantes", "historico", "metricas"];
+
 export const Route = createFileRoute("/_authenticated/plataforma/marketplace")({
-  head: () => ({ meta: [{ title: "Marketplace — Plataforma — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Marketplace de especialistas — Gestão de sistemas — Agilliza" }] }),
+  validateSearch: (s: Record<string, unknown>): { aba?: Aba } => ({
+    aba: typeof s.aba === "string" && (ABAS as string[]).includes(s.aba) ? (s.aba as Aba) : undefined,
+  }),
   beforeLoad: () => assertModuloPermitido("saas.marketplace"),
   component: Pagina,
 });
 
-const CHAVE = ["plataforma-marketplace"];
+type Grupo = "analise" | "aprovado" | "recusado" | "suspenso" | "rascunho" | "todos";
 
-type Tom = "default" | "secondary" | "destructive" | "outline";
-const VERDE = "text-emerald-700";
-
-const STATUS: Record<StatusEspecialista, { rotulo: string; tom: Tom; verde?: boolean }> = {
-  rascunho: { rotulo: "Rascunho", tom: "outline" },
-  em_analise: { rotulo: "Em análise", tom: "secondary" },
-  aprovado: { rotulo: "Aprovado", tom: "outline", verde: true },
-  recusado: { rotulo: "Recusado", tom: "destructive" },
-  suspenso: { rotulo: "Suspenso", tom: "destructive" },
-};
-const MODERACAO: Record<ModeracaoAvaliacao, { rotulo: string; tom: Tom; verde?: boolean }> = {
-  publicada: { rotulo: "Publicada", tom: "outline", verde: true },
-  em_revisao: { rotulo: "Em revisão", tom: "secondary" },
-  removida: { rotulo: "Removida", tom: "destructive" },
-};
-const NIVEL: Record<string, string> = {
-  destaque: "Destaque",
-  desempenho: "Por contato",
-  basico: "Básico",
-};
-
-type GrupoPerfil = "todos" | "analise" | "vitrine" | "fora";
-type GrupoAvaliacao = "todas" | ModeracaoAvaliacao;
-
-/** Esperando (em análise), no ar (aprovado) e fora (recusado, suspenso, rascunho). */
-const grupoPerfil = (p: PerfilEspecialista): Exclude<GrupoPerfil, "todos"> =>
-  p.status === "em_analise" ? "analise" : p.status === "aprovado" ? "vitrine" : "fora";
-
-function SeloStatus({ status }: { status: string }) {
-  const s = STATUS[status as StatusEspecialista] ?? { rotulo: status, tom: "outline" as Tom };
-  return (
-    <Badge variant={s.tom} className={s.verde ? VERDE : undefined}>
-      {s.rotulo}
-    </Badge>
-  );
-}
-
-/** `regioes` vem como `[{ uf, cidades[] }]` (jsonb) ou, em perfis antigos, texto. */
-function textosDasRegioes(regioes: PerfilEspecialista["regioes"]): string[] {
-  if (!Array.isArray(regioes)) return [];
-  return regioes.flatMap((r) => {
-    if (typeof r === "string") return [r];
-    if (r && typeof r === "object" && !Array.isArray(r)) {
-      const uf = typeof r.uf === "string" ? r.uf : "";
-      const cidades = Array.isArray(r.cidades)
-        ? r.cidades.filter((c) => typeof c === "string")
-        : [];
-      const texto = [cidades.join(", "), uf].filter(Boolean).join(" - ");
-      return texto ? [texto] : [];
-    }
-    return [];
-  });
-}
-
-/** Taxa com o denominador honesto: sem base, não há taxa — há travessão. */
 const taxa = (parte: number, todo: number) =>
   todo > 0 ? `${((Number(parte) / Number(todo)) * 100).toFixed(1).replace(".", ",")}%` : "—";
 
+/**
+ * Marketplace de especialistas (C61): a moderação ficou clara — cada pedido é um cartão
+ * com tudo o que é preciso para decidir e dois botões, Aprovar e Não aprovar (motivo
+ * obrigatório, enviado ao especialista). Quem já está no ar pode ser suspenso, com motivo.
+ * Toda decisão vai para o Histórico.
+ */
 function Pagina() {
+  const { aba = "moderacao" } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const irPara = (a: Aba) => void navigate({ search: { aba: a }, replace: true });
   const lerFn = useServerFn(lerModeracaoMarketplace);
-  const q = useQuery({ queryKey: CHAVE, queryFn: () => lerFn(), staleTime: 30_000 });
-  const [aba, setAba] = useState<"moderacao" | "metricas">("moderacao");
+  const q = useQuery({ queryKey: CHAVE_MARKETPLACE, queryFn: () => lerFn(), staleTime: 30_000 });
   const [anunciante, setAnunciante] = useState<string | null>(null);
-  const [filtroPerfis, setFiltroPerfis] = useState<GrupoPerfil>("todos");
-  const [filtroAval, setFiltroAval] = useState<GrupoAvaliacao>("todas");
 
   const perfis = q.data?.perfis ?? [];
   const avaliacoes = q.data?.avaliacoes ?? [];
   const carteira = q.data?.carteira ?? [];
-  const emAnalise = perfis.filter((p) => p.status === "em_analise");
-  const aprovados = perfis.filter((p) => p.status === "aprovado");
-  const emRevisao = avaliacoes.filter((a) => a.moderacao === "em_revisao");
+  const emAnalise = perfis.filter((p) => p.status === "em_analise").length;
+  const noAr = perfis.filter((p) => p.status === "aprovado" && p.publicado && !p.oculto_inadimplencia).length;
+  const emRevisao = avaliacoes.filter((a) => a.moderacao === "em_revisao").length;
   const receita = carteira.reduce((s, a) => s + Number(a.mensalidade ?? 0), 0);
 
-  const verMetricas = (id: string | null) => {
-    setAnunciante(id);
-    setAba("metricas");
-  };
-  const irPara = (ancora: string) =>
-    requestAnimationFrame(() =>
-      document.getElementById(ancora)?.scrollIntoView({ behavior: "smooth", block: "start" }),
-    );
-
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <AdminHero
-        secao="Gestão de sistemas"
-        icon={<Store className="h-5 w-5" />}
+    <PaginaGestao>
+      <CabecalhoGestao
         titulo="Marketplace de especialistas"
-        descricao="Quem pediu para entrar na vitrine, o registro profissional de cada um, as avaliações contestadas e o que cada anunciante entrega."
+        icone={<Store />}
+        descricao="Aprove ou não aprove quem pediu para entrar na vitrine, cuide das avaliações e acompanhe o que cada anunciante entrega."
         acoes={
-          <>
-            {emAnalise.length > 0 && aba === "moderacao" && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  setFiltroPerfis("analise");
-                  irPara("mkt-perfis");
-                }}
-              >
-                <Inbox className="mr-2 size-4" /> Conferir {emAnalise.length}{" "}
-                {emAnalise.length === 1 ? "pedido" : "pedidos"}
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={() => q.refetch()} disabled={q.isFetching}>
-              <RefreshCw className={`mr-2 size-4 ${q.isFetching ? "animate-spin" : ""}`} />{" "}
-              Atualizar
-            </Button>
-          </>
+          <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9" onClick={() => q.refetch()} disabled={q.isFetching}>
+            <RefreshCw className={cn("mr-1.5 size-4", q.isFetching && "animate-spin")} /> Atualizar
+          </Button>
         }
       />
 
-      <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
-        <TabsList>
-          <TabsTrigger value="moderacao">Moderação</TabsTrigger>
-          <TabsTrigger value="metricas">Métricas</TabsTrigger>
+      <FaixaIndicadores>
+        <Indicador
+          rotulo="Aguardando decisão"
+          valor={emAnalise}
+          icone={<Inbox />}
+          tom={emAnalise > 0 ? "alerta" : "sucesso"}
+          carregando={q.isLoading}
+          onClick={() => irPara("moderacao")}
+        />
+        <Indicador rotulo="No ar agora" valor={noAr} icone={<BadgeCheck />} tom="sucesso" carregando={q.isLoading} />
+        <Indicador
+          rotulo="Avaliações em revisão"
+          valor={emRevisao}
+          icone={<MessageSquareWarning />}
+          tom={emRevisao > 0 ? "alerta" : "neutro"}
+          carregando={q.isLoading}
+          onClick={() => irPara("avaliacoes")}
+        />
+        <Indicador
+          rotulo="Receita mensal"
+          valor={formatBRL(receita)}
+          detalhe="Assinaturas ativas dos anunciantes"
+          icone={<CircleDollarSign />}
+          carregando={q.isLoading}
+        />
+      </FaixaIndicadores>
+
+      {q.isError && <EstadoErro mensagem={mensagemDeErro(q.error, "Não foi possível ler o marketplace.")} onTentar={() => q.refetch()} />}
+
+      <Tabs value={aba} onValueChange={(v) => irPara(v as Aba)}>
+        <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-auto">
+          <TabsTrigger value="moderacao" className="min-h-11 sm:min-h-9">
+            Moderação{emAnalise > 0 ? ` (${emAnalise})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="avaliacoes" className="min-h-11 sm:min-h-9">
+            Avaliações{emRevisao > 0 ? ` (${emRevisao})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="anunciantes" className="min-h-11 sm:min-h-9">
+            Anunciantes
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="min-h-11 sm:min-h-9">
+            Histórico
+          </TabsTrigger>
+          <TabsTrigger value="metricas" className="min-h-11 sm:min-h-9">
+            Métricas
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="moderacao" className="space-y-6">
-          {q.isError && (
-            <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-              {mensagemDeErro(q.error, "Não foi possível ler o marketplace.")}
-            </p>
-          )}
-
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Resumo
-              rotulo="Esperando análise"
-              valor={String(emAnalise.length)}
-              detalhe="registro a conferir"
-              alerta={emAnalise.length > 0}
-              carregando={q.isLoading}
-              onClick={() => {
-                setFiltroPerfis("analise");
-                irPara("mkt-perfis");
-              }}
-            />
-            <Resumo
-              rotulo="Na vitrine"
-              valor={String(aprovados.length)}
-              detalhe={`${aprovados.filter((p) => p.publicado && !p.oculto_inadimplencia).length} no ar agora`}
-              carregando={q.isLoading}
-              onClick={() => {
-                setFiltroPerfis("vitrine");
-                irPara("mkt-perfis");
-              }}
-            />
-            <Resumo
-              rotulo="Avaliações em revisão"
-              valor={String(emRevisao.length)}
-              detalhe="contestadas pelo anunciante"
-              alerta={emRevisao.length > 0}
-              carregando={q.isLoading}
-              onClick={() => {
-                setFiltroAval("em_revisao");
-                irPara("mkt-avaliacoes");
-              }}
-            />
-            <Resumo
-              rotulo="Receita do marketplace"
-              valor={formatBRL(receita)}
-              detalhe="por mês, assinaturas ativas"
-              carregando={q.isLoading}
-            />
-          </div>
-
-          <Carteira
+        <TabsContent value="moderacao" className="mt-4">
+          <Moderacao perfis={perfis} carregando={q.isLoading} />
+        </TabsContent>
+        <TabsContent value="avaliacoes" className="mt-4">
+          <Avaliacoes avaliacoes={avaliacoes} carregando={q.isLoading} />
+        </TabsContent>
+        <TabsContent value="anunciantes" className="mt-4">
+          <Anunciantes
             linhas={carteira}
             dias={q.data?.dias ?? 30}
             carregando={q.isLoading}
-            onMetricas={verMetricas}
+            onMetricas={(id) => {
+              setAnunciante(id);
+              irPara("metricas");
+            }}
           />
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <Perfis
-              perfis={perfis}
-              filtro={filtroPerfis}
-              onFiltro={setFiltroPerfis}
-              carregando={q.isLoading}
-              onMetricas={verMetricas}
-            />
-            <Avaliacoes
-              avaliacoes={avaliacoes}
-              filtro={filtroAval}
-              onFiltro={setFiltroAval}
-              carregando={q.isLoading}
-            />
-          </div>
         </TabsContent>
-
-        <TabsContent value="metricas">
+        <TabsContent value="historico" className="mt-4">
+          <Historico />
+        </TabsContent>
+        <TabsContent value="metricas" className="mt-4">
           <MetricasMarketplace anunciante={anunciante} onAnunciante={setAnunciante} />
         </TabsContent>
       </Tabs>
+    </PaginaGestao>
+  );
+}
+
+const grupoDe = (p: PerfilEspecialista): Exclude<Grupo, "todos"> =>
+  p.status === "em_analise" ? "analise" : (p.status as Exclude<Grupo, "todos" | "analise">);
+
+function Moderacao({ perfis, carregando }: { perfis: PerfilEspecialista[]; carregando: boolean }) {
+  const podeModerar = usePermissao("saas.marketplace", "edit");
+  const [grupo, setGrupo] = useState<Grupo>("analise");
+  const [aberto, setAberto] = useState<PerfilEspecialista | null>(null);
+  const [motivo, setMotivo] = useState<{ perfil: PerfilEspecialista; decisao: "nao_aprovar" | "suspender" } | null>(null);
+  const conta = (g: Exclude<Grupo, "todos">) => perfis.filter((p) => grupoDe(p) === g).length;
+  const visiveis = grupo === "todos" ? perfis : perfis.filter((p) => grupoDe(p) === grupo);
+  const atual = aberto ? (perfis.find((p) => p.id === aberto.id) ?? aberto) : null;
+
+  return (
+    <div className="space-y-4">
+      <ChipsFiltro<Grupo>
+        rotulo="Situação dos anúncios"
+        valor={grupo}
+        onChange={setGrupo}
+        opcoes={[
+          { valor: "analise", rotulo: "Aguardando decisão", contagem: conta("analise"), tom: "perigo" },
+          { valor: "aprovado", rotulo: "Aprovados", contagem: conta("aprovado") },
+          { valor: "recusado", rotulo: "Não aprovados", contagem: conta("recusado") },
+          { valor: "suspenso", rotulo: "Suspensos", contagem: conta("suspenso") },
+          { valor: "rascunho", rotulo: "Rascunhos", contagem: conta("rascunho") },
+          { valor: "todos", rotulo: "Todos", contagem: perfis.length },
+        ]}
+      />
+      {!podeModerar && (
+        <p className="rounded-lg border border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+          Você pode ver o marketplace, mas não decidir sobre os anúncios.
+        </p>
+      )}
+      {carregando && <ListaCarregando linhas={3} />}
+      {!carregando && visiveis.length === 0 && (
+        <Secao>
+          <EstadoVazio
+            icone={<Store />}
+            titulo={grupo === "analise" ? "Nenhum pedido esperando decisão" : "Nenhum anúncio nesta situação"}
+            descricao={
+              grupo === "analise"
+                ? "Quando um especialista enviar o anúncio para análise, ele aparece aqui com tudo para você decidir."
+                : undefined
+            }
+          />
+        </Secao>
+      )}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {visiveis.map((p) => (
+          <CartaoEspecialista
+            key={p.id}
+            perfil={p}
+            podeModerar={podeModerar}
+            onAbrir={() => setAberto(p)}
+            onMotivo={(decisao) => setMotivo({ perfil: p, decisao })}
+          />
+        ))}
+      </div>
+
+      <DetalheEspecialista
+        perfil={atual}
+        podeModerar={podeModerar}
+        onFechar={() => setAberto(null)}
+        onMotivo={(decisao) => atual && setMotivo({ perfil: atual, decisao })}
+      />
+      <DialogoMotivo
+        perfil={motivo?.perfil ?? null}
+        decisao={motivo?.decisao ?? "nao_aprovar"}
+        aoFechar={() => setMotivo(null)}
+      />
     </div>
   );
 }
 
-function Resumo({
-  rotulo,
-  valor,
-  detalhe,
-  alerta,
-  carregando,
-  onClick,
+function CartaoEspecialista({
+  perfil: p,
+  podeModerar,
+  onAbrir,
+  onMotivo,
 }: {
-  rotulo: string;
-  valor: string;
-  detalhe: string;
-  alerta?: boolean;
-  carregando: boolean;
-  onClick?: () => void;
+  perfil: PerfilEspecialista;
+  podeModerar: boolean;
+  onAbrir: () => void;
+  onMotivo: (d: "nao_aprovar" | "suspender") => void;
 }) {
-  const corpo = (
-    <>
-      <p className="text-xs text-muted-foreground">{rotulo}</p>
-      {carregando ? (
-        <Skeleton className="mt-1 h-7 w-16" />
-      ) : (
-        <p className="truncate text-xl font-semibold tabular-nums">{valor}</p>
-      )}
-      <p className="truncate text-[11px] text-muted-foreground">{detalhe}</p>
-    </>
-  );
-  const classe = `min-w-0 rounded-lg border bg-card p-3 text-left ${alerta ? "border-amber-400/70" : "border-border"}`;
-  return onClick ? (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`${classe} transition-colors hover:bg-muted/40`}
-    >
-      {corpo}
-    </button>
-  ) : (
-    <div className={classe}>{corpo}</div>
+  const s = statusEspecialista(p.status);
+  const itens = conferencia(p);
+  const pendentes = itens.filter((i) => !i.ok).length;
+  return (
+    <article className="flex min-w-0 flex-col overflow-hidden rounded-[14px] border border-border/80 bg-card shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
+      <button type="button" onClick={onAbrir} className="relative block text-left" aria-label={`Ver o anúncio de ${p.nome}`}>
+        {p.capa_url ? (
+          <img src={p.capa_url} alt="" className="h-28 w-full object-cover" loading="lazy" />
+        ) : (
+          <div className="flex h-28 w-full items-center justify-center gap-1.5 bg-secondary text-xs text-muted-foreground">
+            sem capa
+          </div>
+        )}
+        <span className="absolute right-2 top-2">
+          <Selo tom={s.tom} ponto={p.status === "aprovado"} className="bg-card/95">
+            {s.rotulo}
+          </Selo>
+        </span>
+      </button>
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        <div className="relative z-10 -mt-9 flex items-end gap-3">
+          {p.foto_url ? (
+            <img src={p.foto_url} alt="" className="size-14 shrink-0 rounded-full border-2 border-card object-cover shadow-sm" />
+          ) : (
+            <span className="grid size-14 shrink-0 place-items-center rounded-full border-2 border-card bg-secondary text-lg font-medium text-muted-foreground shadow-sm">
+              {p.nome.slice(0, 1).toUpperCase()}
+            </span>
+          )}
+        </div>
+        <div className="-mt-1 min-w-0">
+          <h3 className="line-clamp-2 break-words text-[15px] font-semibold leading-snug">{p.nome}</h3>
+          <p className="truncate text-xs text-muted-foreground">{p.conta ?? "Conta sem nome"}</p>
+        </div>
+        {p.chamada && <p className="line-clamp-2 text-sm text-muted-foreground">{p.chamada}</p>}
+        <dl className="grid grid-cols-2 gap-2">
+          <Dado rotulo="Registro">
+            {p.registro_tipo ? `${p.registro_tipo} ${p.registro_numero ?? ""}${p.registro_uf ? `/${p.registro_uf}` : ""}` : "não informado"}
+          </Dado>
+          <Dado rotulo="Validade">{p.registro_validade ? formatData(p.registro_validade) : "—"}</Dado>
+          <Dado rotulo="Plano">{NIVEL_PLANO[p.plano_codigo ?? ""] ?? p.plano_codigo ?? "—"}</Dado>
+          <Dado rotulo="Pedido em">{formatData(p.criado_em)}</Dado>
+        </dl>
+        <div className="flex flex-wrap gap-1">
+          {(p.categorias ?? []).slice(0, 3).map((c) => (
+            <Selo key={c} tom="marca">
+              {c.replace(/_/g, " ")}
+            </Selo>
+          ))}
+          {textosDasRegioes(p.regioes)
+            .slice(0, 2)
+            .map((r) => (
+              <Selo key={r}>
+                <MapPin className="mr-0.5 inline size-3" />
+                {r}
+              </Selo>
+            ))}
+        </div>
+        <ul className="grid gap-1 rounded-lg bg-secondary/40 p-2.5 text-xs">
+          {itens.map((i) => (
+            <li key={i.rotulo} className={cn("flex items-center gap-1.5", i.ok ? "text-foreground" : "text-destructive")}>
+              {i.ok ? <Check className="size-3.5 text-success-texto" /> : <X className="size-3.5" />}
+              {i.rotulo}
+            </li>
+          ))}
+        </ul>
+        {p.motivo_status && (p.status === "recusado" || p.status === "suspenso") && (
+          <p className="rounded-lg border border-destructive/20 bg-destructive/[0.04] px-2.5 py-1.5 text-xs text-destructive">
+            Motivo enviado: {p.motivo_status}
+          </p>
+        )}
+        <div className="mt-auto space-y-2 pt-1">
+          {podeModerar && (
+            <div className="grid grid-cols-2 gap-2">
+              {p.status !== "aprovado" && <BotaoAprovar perfil={p} className="min-h-11 w-full sm:min-h-9" />}
+              {(p.status === "em_analise" || p.status === "rascunho") && (
+                <Button
+                  variant="outline"
+                  className="min-h-11 w-full border-destructive/40 text-destructive hover:bg-destructive/5 sm:min-h-9"
+                  onClick={() => onMotivo("nao_aprovar")}
+                >
+                  <X className="mr-1.5 size-4" /> Não aprovar
+                </Button>
+              )}
+              {p.status === "aprovado" && (
+                <Button variant="outline" className="col-span-2 min-h-11 w-full sm:min-h-9" onClick={() => onMotivo("suspender")}>
+                  Suspender
+                </Button>
+              )}
+            </div>
+          )}
+          <Button variant="ghost" size="sm" className="min-h-11 w-full text-muted-foreground sm:min-h-8" onClick={onAbrir}>
+            Ver o anúncio completo{pendentes > 0 ? ` · ${pendentes} pendência(s)` : ""}
+          </Button>
+        </div>
+      </div>
+    </article>
   );
 }
 
-function Carteira({
+function DetalheEspecialista({
+  perfil: p,
+  podeModerar,
+  onFechar,
+  onMotivo,
+}: {
+  perfil: PerfilEspecialista | null;
+  podeModerar: boolean;
+  onFechar: () => void;
+  onMotivo: (d: "nao_aprovar" | "suspender") => void;
+}) {
+  const historicoFn = useServerFn(lerDecisoesMarketplace);
+  const h = useQuery({
+    queryKey: [...CHAVE_MARKETPLACE, "historico", p?.id],
+    queryFn: () => historicoFn({ data: { especialista: p!.id } }),
+    enabled: !!p,
+  });
+  const s = p ? statusEspecialista(p.status) : null;
+  return (
+    <Sheet open={!!p} onOpenChange={(v) => !v && onFechar()}>
+      <SheetContent className="w-full gap-0 overflow-y-auto p-0 sm:max-w-xl">
+        {p && s && (
+          <>
+            <SheetHeader className="border-b border-border px-5 py-4 text-left">
+              <SheetTitle className="pr-8">{p.nome}</SheetTitle>
+              <SheetDescription>
+                {p.conta ?? "Conta sem nome"} · pediu entrada em {formatData(p.criado_em)}
+              </SheetDescription>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <Selo tom={s.tom}>{s.rotulo}</Selo>
+                {p.oculto_inadimplencia && <Selo tom="perigo">Oculto por falta de pagamento</Selo>}
+                {p.total_avaliacoes > 0 && (
+                  <Selo tom="info">
+                    <Star className="mr-0.5 inline size-3" /> {Number(p.nota_media ?? 0).toFixed(1)} ({p.total_avaliacoes})
+                  </Selo>
+                )}
+              </div>
+            </SheetHeader>
+            <div className="space-y-4 px-5 py-4">
+              <div className="overflow-hidden rounded-xl border border-border">
+                {p.capa_url ? (
+                  <img src={p.capa_url} alt={`Capa do anúncio de ${p.nome}`} className="aspect-[16/7] w-full object-cover" />
+                ) : (
+                  <div className="flex aspect-[16/7] items-center justify-center bg-secondary text-xs text-muted-foreground">sem capa</div>
+                )}
+                <div className="flex items-center gap-3 p-3">
+                  <Avatar nome={p.nome} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{p.nome}</p>
+                    <p className="text-sm text-muted-foreground">{p.chamada ?? "sem chamada"}</p>
+                  </div>
+                </div>
+              </div>
+              <dl className="grid grid-cols-2 gap-3 rounded-xl border border-border p-4">
+                <Dado rotulo="Tipo de registro">{p.registro_tipo ?? "—"}</Dado>
+                <Dado rotulo="Número">{p.registro_numero ?? "—"}</Dado>
+                <Dado rotulo="UF">{p.registro_uf ?? "—"}</Dado>
+                <Dado rotulo="Validade">{p.registro_validade ? formatData(p.registro_validade) : "—"}</Dado>
+                <Dado rotulo="Plano">{NIVEL_PLANO[p.plano_codigo ?? ""] ?? p.plano_codigo ?? "—"}</Dado>
+                <Dado rotulo="Perfil público">{p.publicado ? `/${p.slug}` : "não publicado"}</Dado>
+              </dl>
+              <section className="rounded-xl border border-border p-4">
+                <h3 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Apresentação</h3>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                  {p.apresentacao || "Sem apresentação escrita."}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {(p.categorias ?? []).map((c) => (
+                    <Selo key={`c-${c}`} tom="marca">
+                      {c.replace(/_/g, " ")}
+                    </Selo>
+                  ))}
+                  {(p.especialidades ?? []).map((e) => (
+                    <Selo key={`e-${e}`}>{e}</Selo>
+                  ))}
+                  {textosDasRegioes(p.regioes).map((r) => (
+                    <Selo key={`r-${r}`}>{r}</Selo>
+                  ))}
+                </div>
+              </section>
+              <section className="rounded-xl border border-border">
+                <h3 className="flex items-center gap-1.5 border-b border-border px-4 py-2.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  <History className="size-3.5" /> Decisões deste anúncio
+                </h3>
+                {h.isLoading && <ListaCarregando linhas={2} />}
+                {h.data && h.data.length === 0 && <p className="px-4 py-3 text-sm text-muted-foreground">Nenhuma decisão registrada ainda.</p>}
+                <ul className="divide-y divide-border/70">
+                  {(h.data ?? []).map((d) => (
+                    <li key={d.id} className="px-4 py-2.5 text-sm">
+                      <p>
+                        <span className="font-medium">{ROTULO_DECISAO[d.decisao]}</span> por {d.moderador ?? "—"} ·{" "}
+                        <span className="text-muted-foreground">{new Date(d.criado_em).toLocaleString("pt-BR")}</span>
+                      </p>
+                      {d.motivo && <p className="text-xs text-muted-foreground">Motivo: {d.motivo}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </div>
+            {podeModerar && (
+              <footer className="sticky bottom-0 flex flex-col gap-2 border-t border-border bg-card px-5 py-3 sm:flex-row">
+                {p.status !== "aprovado" && <BotaoAprovar perfil={p} className="min-h-11 flex-1 sm:min-h-9" onFeito={onFechar} />}
+                {(p.status === "em_analise" || p.status === "rascunho") && (
+                  <Button variant="outline" className="min-h-11 flex-1 border-destructive/40 text-destructive sm:min-h-9" onClick={() => onMotivo("nao_aprovar")}>
+                    <X className="mr-1.5 size-4" /> Não aprovar
+                  </Button>
+                )}
+                {p.status === "aprovado" && (
+                  <Button variant="outline" className="min-h-11 flex-1 sm:min-h-9" onClick={() => onMotivo("suspender")}>
+                    Suspender
+                  </Button>
+                )}
+              </footer>
+            )}
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+type GrupoAvaliacao = "em_revisao" | "publicada" | "removida" | "todas";
+
+function Avaliacoes({ avaliacoes, carregando }: { avaliacoes: AvaliacaoMarketplace[]; carregando: boolean }) {
+  const podeModerar = usePermissao("saas.marketplace", "edit");
+  const [filtro, setFiltro] = useState<GrupoAvaliacao>("em_revisao");
+  const visiveis = filtro === "todas" ? avaliacoes : avaliacoes.filter((a) => a.moderacao === filtro);
+  const conta = (m: ModeracaoAvaliacao) => avaliacoes.filter((a) => a.moderacao === m).length;
+  return (
+    <div className="space-y-4">
+      <ChipsFiltro<GrupoAvaliacao>
+        rotulo="Situação das avaliações"
+        valor={filtro}
+        onChange={setFiltro}
+        opcoes={[
+          { valor: "em_revisao", rotulo: "Em revisão", contagem: conta("em_revisao"), tom: "perigo" },
+          { valor: "publicada", rotulo: "Publicadas", contagem: conta("publicada") },
+          { valor: "removida", rotulo: "Removidas", contagem: conta("removida") },
+          { valor: "todas", rotulo: "Todas", contagem: avaliacoes.length },
+        ]}
+      />
+      <Secao semRespiro descricao="Remover tira da vitrine sem apagar o registro; a nota do especialista é recalculada." titulo="Avaliações dos corretores">
+        {carregando && <ListaCarregando linhas={3} />}
+        {!carregando && visiveis.length === 0 && <EstadoVazio icone={<Star />} titulo="Nenhuma avaliação neste recorte" />}
+        <ul className="divide-y divide-border/60">
+          {visiveis.map((a) => (
+            <LinhaAvaliacao key={a.id} a={a} podeModerar={podeModerar} />
+          ))}
+        </ul>
+      </Secao>
+    </div>
+  );
+}
+
+function LinhaAvaliacao({ a, podeModerar }: { a: AvaliacaoMarketplace; podeModerar: boolean }) {
+  const qc = useQueryClient();
+  const moderarFn = useServerFn(moderarAvaliacao);
+  const mudar = useMutation({
+    mutationFn: (moderacao: ModeracaoAvaliacao) => moderarFn({ data: { id: a.id, moderacao } }),
+    onSuccess: (_r, moderacao) => {
+      toast.success(moderacao === "removida" ? "Avaliação removida da vitrine." : "Avaliação publicada.");
+      qc.invalidateQueries({ queryKey: CHAVE_MARKETPLACE });
+    },
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível moderar a avaliação.")),
+  });
+  const tom = a.moderacao === "publicada" ? "sucesso" : a.moderacao === "removida" ? "neutro" : "alerta";
+  const rotulo = a.moderacao === "publicada" ? "Publicada" : a.moderacao === "removida" ? "Removida" : "Em revisão";
+  return (
+    <li className="space-y-1.5 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-sm font-medium tabular-nums text-amber-700">
+          <Star className="size-3.5" aria-hidden /> {a.nota}
+        </span>
+        <span className="min-w-0 truncate text-sm font-medium">{a.especialista ?? "—"}</span>
+        <Selo tom={tom}>{rotulo}</Selo>
+        <span className="text-xs tabular-nums text-muted-foreground">{formatData(a.criado_em)}</span>
+      </div>
+      {a.comentario && <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{a.comentario}</p>}
+      {a.resposta && (
+        <p className="whitespace-pre-wrap break-words border-l-2 border-primary/30 pl-2 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Resposta do especialista:</span> {a.resposta}
+        </p>
+      )}
+      {podeModerar && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {a.moderacao !== "publicada" && (
+            <Button size="sm" variant="outline" className="min-h-11 sm:min-h-8" disabled={mudar.isPending} onClick={() => mudar.mutate("publicada")}>
+              <Eye className="mr-1.5 size-4" /> Publicar
+            </Button>
+          )}
+          {a.moderacao !== "removida" && (
+            <Button size="sm" variant="ghost" className="min-h-11 sm:min-h-8" disabled={mudar.isPending} onClick={() => mudar.mutate("removida")}>
+              <EyeOff className="mr-1.5 size-4" /> Remover da vitrine
+            </Button>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+function Anunciantes({
   linhas,
   dias,
   carregando,
@@ -316,614 +584,105 @@ function Carteira({
   carregando: boolean;
   onMetricas: (id: string | null) => void;
 }) {
-  const total = (k: "impressoes" | "conversoes" | "mensalidade") =>
-    linhas.reduce((s, a) => s + Number(a[k] ?? 0), 0);
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border p-4">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold">Carteira de anunciantes</h2>
-          <p className="text-xs text-muted-foreground">
-            O que cada um entrega e o que paga, nos últimos {dias} dias.
-            {linhas.length > 0 &&
-              ` No total: ${total("impressoes").toLocaleString("pt-BR")} aparições, ${total("conversoes").toLocaleString("pt-BR")} contatos, ${formatBRL(total("mensalidade"))} por mês.`}
-          </p>
-        </div>
-        <Button size="sm" variant="ghost" onClick={() => onMetricas(null)}>
-          <BarChart3 className="mr-2 size-4" /> Métricas por período
+    <Secao
+      titulo="Carteira de anunciantes"
+      descricao={`O que cada um entrega e o que paga, nos últimos ${dias} dias.`}
+      acoes={
+        <Button size="sm" variant="outline" className="min-h-11 sm:min-h-8" onClick={() => onMetricas(null)}>
+          <BarChart3 className="mr-1.5 size-4" /> Métricas por período
         </Button>
-      </div>
-      {carregando ? (
-        <div className="p-4">
-          <Skeleton className="h-16" />
-        </div>
-      ) : linhas.length === 0 ? (
-        <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-          <Store className="size-4" aria-hidden /> Nenhum anunciante ainda. Quando um parceiro
-          montar o anúncio e for aprovado, ele aparece aqui com o que entrega e o que paga.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Anunciante</TableHead>
-                <TableHead>Na vitrine</TableHead>
-                <TableHead className="hidden text-right sm:table-cell">Apareceu</TableHead>
-                <TableHead className="hidden text-right md:table-cell">Clicaram</TableHead>
-                <TableHead className="text-right">Contatos</TableHead>
-                <TableHead className="hidden text-right md:table-cell">Paga</TableHead>
-                <TableHead className="text-right">
-                  <span className="sr-only">Ações</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {linhas.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="min-w-[9rem]">
-                    <p className="font-medium">{a.nome}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {a.conta ?? "—"}
-                      {a.categorias?.length ? ` · ${a.categorias.length} categoria(s)` : ""}
-                    </p>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {a.status !== "aprovado" ? (
-                        <SeloStatus status={a.status} />
-                      ) : a.oculto_inadimplencia ? (
-                        <Badge variant="destructive">fora por pagamento</Badge>
-                      ) : a.publicado ? (
-                        <Badge variant="outline" className={VERDE}>
-                          no ar
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">desligado por ele</Badge>
-                      )}
-                      <Badge variant="outline">
-                        {NIVEL[a.plano_codigo ?? ""] ?? a.plano_codigo ?? "—"}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden text-right sm:table-cell">
-                    <span className="block tabular-nums">
-                      {Number(a.impressoes).toLocaleString("pt-BR")}
-                    </span>
-                    <span className="block text-[11px] text-muted-foreground">
-                      {Number(a.pessoas).toLocaleString("pt-BR")} pessoas
-                    </span>
-                  </TableCell>
-                  <TableCell className="hidden text-right md:table-cell">
-                    <span className="block tabular-nums">
-                      {Number(a.cliques).toLocaleString("pt-BR")}
-                    </span>
-                    <span className="block text-[11px] text-muted-foreground">
-                      {taxa(a.cliques, a.impressoes)} de quem viu
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span
-                      className={`block font-semibold tabular-nums ${a.conversoes > 0 ? VERDE : ""}`}
-                    >
-                      {Number(a.conversoes).toLocaleString("pt-BR")}
-                    </span>
-                    <span className="block text-[11px] text-muted-foreground">
-                      {taxa(a.conversoes, a.cliques)} de quem clicou
-                    </span>
-                  </TableCell>
-                  <TableCell className="hidden text-right tabular-nums md:table-cell">
-                    {a.mensalidade != null && Number(a.mensalidade) > 0
-                      ? formatBRL(Number(a.mensalidade))
-                      : "—"}
-                    {a.assinatura_status && a.assinatura_status !== "ativa" && (
-                      <span className="ml-1 text-[11px] text-destructive">
-                        {a.assinatura_status}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label={`Métricas de ${a.nome}`}
-                      onClick={() => onMetricas(a.id)}
-                    >
-                      <BarChart3 className="size-4" />
-                      <span className="hidden lg:inline">Métricas</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function Filtro<T extends string>({
-  rotulo,
-  valor,
-  opcoes,
-  onValor,
-}: {
-  rotulo: string;
-  valor: T;
-  opcoes: { id: T; rotulo: string; total?: number }[];
-  onValor: (v: T) => void;
-}) {
-  return (
-    <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="group" aria-label={rotulo}>
-      {opcoes.map((o) => (
-        <Button
-          key={o.id}
-          type="button"
-          size="sm"
-          variant={valor === o.id ? "default" : "outline"}
-          aria-pressed={valor === o.id}
-          className="shrink-0 rounded-full"
-          onClick={() => onValor(o.id)}
-        >
-          {o.rotulo}
-          {o.total != null && <span className="ml-1 tabular-nums opacity-70">{o.total}</span>}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
-function Perfis({
-  perfis,
-  filtro,
-  onFiltro,
-  carregando,
-  onMetricas,
-}: {
-  perfis: PerfilEspecialista[];
-  filtro: GrupoPerfil;
-  onFiltro: (f: GrupoPerfil) => void;
-  carregando: boolean;
-  onMetricas: (id: string) => void;
-}) {
-  const [aberto, setAberto] = useState<PerfilEspecialista | null>(null);
-  const conta = (g: Exclude<GrupoPerfil, "todos">) =>
-    perfis.filter((p) => grupoPerfil(p) === g).length;
-  const visiveis = filtro === "todos" ? perfis : perfis.filter((p) => grupoPerfil(p) === filtro);
-
-  return (
-    <section
-      id="mkt-perfis"
-      className="min-w-0 scroll-mt-20 rounded-lg border border-border bg-card"
+      }
+      semRespiro
     >
-      <div className="space-y-2 border-b border-border p-4">
-        <div>
-          <h2 className="text-sm font-semibold">Perfis</h2>
-          <p className="text-xs text-muted-foreground">
-            Aprovar é dizer ao mercado que o registro profissional foi conferido. Fica gravado quem
-            aprovou e quando.
-          </p>
-        </div>
-        <Filtro
-          rotulo="Recorte dos perfis"
-          valor={filtro}
-          onValor={onFiltro}
-          opcoes={[
-            { id: "todos", rotulo: "Todos", total: perfis.length },
-            { id: "analise", rotulo: "Em análise", total: conta("analise") },
-            { id: "vitrine", rotulo: "Na vitrine", total: conta("vitrine") },
-            { id: "fora", rotulo: "Fora", total: conta("fora") },
-          ]}
+      {carregando && <ListaCarregando linhas={3} />}
+      {!carregando && linhas.length === 0 && (
+        <EstadoVazio
+          icone={<Store />}
+          titulo="Nenhum anunciante ainda"
+          descricao="Quando um especialista for aprovado, ele aparece aqui com o que entrega e o que paga."
         />
-      </div>
-      {carregando ? (
-        <div className="p-4">
-          <Skeleton className="h-16" />
-        </div>
-      ) : visiveis.length === 0 ? (
-        <p className="p-6 text-sm text-muted-foreground">
-          {perfis.length
-            ? "Nenhum perfil neste recorte. Os outros continuam na lista inteira."
-            : "Nenhum especialista cadastrado. Quando um parceiro montar o perfil e enviar para análise, ele aparece aqui com o registro para conferência."}
-        </p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {visiveis.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                onClick={() => setAberto(p)}
-                className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-muted/40"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-1.5">
-                    <span className="break-words font-medium">{p.nome}</span>
-                    <SeloStatus status={p.status} />
-                    {p.oculto_inadimplencia && (
-                      <Badge variant="destructive">oculto por inadimplência</Badge>
-                    )}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {p.registro_tipo
-                      ? `${p.registro_tipo} ${p.registro_numero ?? ""}${p.registro_uf ? `/${p.registro_uf}` : ""}`
-                      : "sem registro informado"}
-                    {p.conta ? ` · ${p.conta}` : ""}
-                  </span>
-                  <span className="block text-xs tabular-nums text-muted-foreground">
-                    {p.total_avaliacoes > 0 && (
-                      <>
-                        <Star className="mr-0.5 inline size-3 text-amber-500" aria-hidden />
-                        {Number(p.nota_media ?? 0).toFixed(1)} ({p.total_avaliacoes}) ·{" "}
-                      </>
-                    )}
-                    desde {formatData(p.criado_em)}
-                  </span>
-                </span>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              </button>
-            </li>
-          ))}
-        </ul>
       )}
-
-      <DetalhePerfil
-        perfil={aberto}
-        onFechar={() => setAberto(null)}
-        onMetricas={(id) => {
-          setAberto(null);
-          onMetricas(id);
-        }}
-      />
-    </section>
-  );
-}
-
-function DetalhePerfil({
-  perfil: p,
-  onFechar,
-  onMetricas,
-}: {
-  perfil: PerfilEspecialista | null;
-  onFechar: () => void;
-  onMetricas: (id: string) => void;
-}) {
-  const podeModerar = usePermissao("saas.marketplace", "edit");
-  return (
-    <Sheet open={!!p} onOpenChange={(v) => !v && onFechar()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-        {p && (
-          <>
-            <SheetHeader>
-              <SheetTitle className="break-words pr-6">{p.nome}</SheetTitle>
-              <SheetDescription>
-                {p.conta ?? "Conta sem nome"} · pediu entrada em {formatData(p.criado_em)}
-              </SheetDescription>
-            </SheetHeader>
-
-            <div className="mt-4 space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <SeloStatus status={p.status} />
-                {p.oculto_inadimplencia && (
-                  <Badge variant="destructive">oculto por inadimplência</Badge>
-                )}
-                <Button size="sm" variant="outline" onClick={() => onMetricas(p.id)}>
-                  <BarChart3 className="mr-2 size-4" /> Métricas
-                </Button>
-              </div>
-
-              <section className="rounded-lg border border-border p-3">
-                <h3 className="mb-2 text-sm font-semibold">Registro profissional</h3>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <Dado rotulo="Tipo" valor={p.registro_tipo} />
-                  <Dado rotulo="Número" valor={p.registro_numero} />
-                  <Dado rotulo="UF" valor={p.registro_uf} />
-                  <Dado
-                    rotulo="Validade"
-                    valor={p.registro_validade ? formatData(p.registro_validade) : null}
-                  />
-                  <Dado rotulo="Plano" valor={NIVEL[p.plano_codigo ?? ""] ?? p.plano_codigo} />
-                  <Dado
-                    rotulo="Perfil público"
-                    valor={p.publicado ? `/${p.slug}` : "não publicado"}
-                  />
-                </dl>
-                {p.aprovado_em && (
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Aprovado por {p.aprovador ?? "—"} em{" "}
-                    {new Date(p.aprovado_em).toLocaleString("pt-BR")}.
-                  </p>
-                )}
-              </section>
-
-              <section className="rounded-lg border border-border p-3">
-                <h3 className="mb-2 text-sm font-semibold">Como aparece na grade</h3>
-                <div className="overflow-hidden rounded-md border border-border">
-                  {p.capa_url ? (
-                    <img
-                      src={p.capa_url}
-                      alt={`Capa do anúncio de ${p.nome}`}
-                      className="aspect-[16/7] w-full object-cover"
-                    />
+      <ul className="divide-y divide-border/60">
+        {linhas.map((a) => {
+          const noAr = a.status === "aprovado" && a.publicado && !a.oculto_inadimplencia;
+          return (
+            <li key={a.id} className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto] sm:items-center">
+              <div className="min-w-0">
+                <p className="flex items-center gap-2">
+                  <span className="truncate text-sm font-medium">{a.nome}</span>
+                  {noAr ? (
+                    <Selo tom="sucesso" ponto>
+                      no ar
+                    </Selo>
+                  ) : a.oculto_inadimplencia ? (
+                    <Selo tom="perigo">fora por pagamento</Selo>
                   ) : (
-                    <div className="flex aspect-[16/7] w-full items-center justify-center bg-muted text-xs text-muted-foreground">
-                      sem capa
-                    </div>
+                    <Selo>{statusEspecialista(a.status).rotulo}</Selo>
                   )}
-                  <div className="flex items-center gap-3 p-3">
-                    {p.foto_url ? (
-                      <img
-                        src={p.foto_url}
-                        alt={`Foto de ${p.nome}`}
-                        className="size-12 shrink-0 rounded-full border border-border object-cover"
-                      />
-                    ) : (
-                      <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
-                        {p.nome.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{p.nome}</p>
-                      <p className="text-sm text-muted-foreground">{p.chamada ?? "sem chamada"}</p>
-                    </div>
-                  </div>
-                </div>
-                {(!p.foto_url || !p.capa_url) && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Confira se o anúncio precisa de{" "}
-                    {!p.foto_url && !p.capa_url ? "foto e capa" : !p.foto_url ? "foto" : "capa"}{" "}
-                    antes de aprovar.
-                  </p>
-                )}
-              </section>
-
-              <section className="rounded-lg border border-border p-3">
-                <h3 className="mb-2 text-sm font-semibold">Apresentação</h3>
-                {p.apresentacao ? (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                    {p.apresentacao}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Sem apresentação escrita.</p>
-                )}
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {(p.categorias ?? []).map((c) => (
-                    <Badge key={`c-${c}`}>{c}</Badge>
-                  ))}
-                  {(p.especialidades ?? []).map((e) => (
-                    <Badge key={`e-${e}`} variant="secondary">
-                      {e}
-                    </Badge>
-                  ))}
-                  {textosDasRegioes(p.regioes).map((r) => (
-                    <Badge key={`r-${r}`} variant="outline">
-                      {r}
-                    </Badge>
-                  ))}
-                </div>
-              </section>
-
-              {podeModerar ? (
-                <DecisaoPerfil key={p.id} perfil={p} onFeito={onFechar} />
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Você pode ver o marketplace, mas não moderar perfis.
                 </p>
-              )}
-            </div>
-          </>
-        )}
-      </SheetContent>
-    </Sheet>
+                <p className="truncate text-xs text-muted-foreground">
+                  {a.conta ?? "—"} · {NIVEL_PLANO[a.plano_codigo ?? ""] ?? a.plano_codigo ?? "—"}
+                  {a.mensalidade ? ` · ${formatBRL(Number(a.mensalidade))}/mês` : ""}
+                </p>
+              </div>
+              <Metrica rotulo="Apareceu" valor={Number(a.impressoes)} sub={`${Number(a.pessoas).toLocaleString("pt-BR")} pessoas`} />
+              <Metrica rotulo="Clicaram" valor={Number(a.cliques)} sub={`${taxa(a.cliques, a.impressoes)} de quem viu`} />
+              <Metrica rotulo="Contatos" valor={Number(a.conversoes)} sub={`${taxa(a.conversoes, a.cliques)} de quem clicou`} destaque />
+              <Button size="sm" variant="ghost" className="min-h-11 justify-self-start sm:min-h-8" onClick={() => onMetricas(a.id)}>
+                <BarChart3 className="mr-1.5 size-4" /> Métricas
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    </Secao>
   );
 }
 
-function Dado({ rotulo, valor }: { rotulo: string; valor: string | null | undefined }) {
+function Metrica({ rotulo, valor, sub, destaque }: { rotulo: string; valor: number; sub: string; destaque?: boolean }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs text-muted-foreground">{rotulo}</dt>
-      <dd className="break-words">{valor || "—"}</dd>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{rotulo}</p>
+      <p className={cn("text-sm font-medium tabular-nums", destaque && valor > 0 && "text-success-texto")}>
+        {valor.toLocaleString("pt-BR")}
+      </p>
+      <p className="truncate text-[11px] text-muted-foreground">{sub}</p>
     </div>
   );
 }
 
-function DecisaoPerfil({
-  perfil: p,
-  onFeito,
-}: {
-  perfil: PerfilEspecialista;
-  onFeito: () => void;
-}) {
-  const qc = useQueryClient();
-  const moderarFn = useServerFn(moderarEspecialista);
-  const [status, setStatus] = useState<StatusEspecialista>(
-    p.status === "em_analise" ? "aprovado" : (p.status as StatusEspecialista),
-  );
-  const [motivo, setMotivo] = useState(p.motivo_status ?? "");
-  const exigeMotivo = status === "recusado" || status === "suspenso";
-  const motivoOk = !exigeMotivo || motivo.trim().length >= 10;
-
-  const aplicar = useMutation({
-    mutationFn: () => moderarFn({ data: { id: p.id, status, motivo } }),
-    onSuccess: (r) => {
-      toast.success(`${r.nome}: situação alterada para ${STATUS[status].rotulo.toLowerCase()}.`);
-      qc.invalidateQueries({ queryKey: CHAVE });
-      qc.invalidateQueries({ queryKey: ["plataforma-marketplace-metricas"] });
-      onFeito();
-    },
-    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível moderar o perfil.")),
+function Historico() {
+  const historicoFn = useServerFn(lerDecisoesMarketplace);
+  const q = useQuery({
+    queryKey: [...CHAVE_MARKETPLACE, "historico", "todos"],
+    queryFn: () => historicoFn({ data: {} }),
+    staleTime: 30_000,
   });
-
   return (
-    <section className="space-y-3 rounded-lg border border-border p-3">
-      <h3 className="text-sm font-semibold">Decisão</h3>
-      <div className="space-y-1">
-        <Label htmlFor="mkt-situacao">Situação</Label>
-        <Select value={status} onValueChange={(v) => setStatus(v as StatusEspecialista)}>
-          <SelectTrigger id="mkt-situacao" aria-label="Situação do perfil">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(STATUS) as StatusEspecialista[]).map((s) => (
-              <SelectItem key={s} value={s}>
-                {STATUS[s].rotulo}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="mkt-motivo">Motivo{exigeMotivo ? " (obrigatório)" : ""}</Label>
-        <Textarea
-          id="mkt-motivo"
-          rows={3}
-          value={motivo}
-          onChange={(e) => setMotivo(e.target.value)}
-          placeholder="Obrigatório ao recusar ou suspender (mínimo 10 caracteres). Este texto vai para o parceiro."
-        />
-      </div>
-      <Button disabled={aplicar.isPending || !motivoOk} onClick={() => aplicar.mutate()}>
-        {aplicar.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-        Aplicar decisão
-      </Button>
-    </section>
-  );
-}
-
-function Avaliacoes({
-  avaliacoes,
-  filtro,
-  onFiltro,
-  carregando,
-}: {
-  avaliacoes: AvaliacaoMarketplace[];
-  filtro: GrupoAvaliacao;
-  onFiltro: (f: GrupoAvaliacao) => void;
-  carregando: boolean;
-}) {
-  const podeModerar = usePermissao("saas.marketplace", "edit");
-  const visiveis =
-    filtro === "todas" ? avaliacoes : avaliacoes.filter((a) => a.moderacao === filtro);
-  return (
-    <section
-      id="mkt-avaliacoes"
-      className="min-w-0 scroll-mt-20 rounded-lg border border-border bg-card"
-    >
-      <div className="space-y-2 border-b border-border p-4">
-        <div>
-          <h2 className="text-sm font-semibold">Avaliações</h2>
-          <p className="text-xs text-muted-foreground">
-            Remover tira da vitrine sem apagar o registro — a nota do especialista é recalculada.
-          </p>
-        </div>
-        <Filtro
-          rotulo="Recorte das avaliações"
-          valor={filtro}
-          onValor={onFiltro}
-          opcoes={[
-            { id: "todas", rotulo: "Todas", total: avaliacoes.length },
-            {
-              id: "em_revisao",
-              rotulo: "Em revisão",
-              total: avaliacoes.filter((a) => a.moderacao === "em_revisao").length,
-            },
-            { id: "publicada", rotulo: "Publicadas" },
-            { id: "removida", rotulo: "Removidas" },
-          ]}
-        />
-      </div>
-      {carregando ? (
-        <div className="p-4">
-          <Skeleton className="h-16" />
-        </div>
-      ) : visiveis.length === 0 ? (
-        <p className="p-6 text-sm text-muted-foreground">
-          {avaliacoes.length
-            ? "Nenhuma avaliação neste recorte. As outras continuam na lista inteira."
-            : "Nenhum corretor avaliou um especialista até agora."}
-        </p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {visiveis.map((a) => (
-            <LinhaAvaliacao key={a.id} a={a} podeModerar={podeModerar} />
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-function LinhaAvaliacao({ a, podeModerar }: { a: AvaliacaoMarketplace; podeModerar: boolean }) {
-  const qc = useQueryClient();
-  const moderarFn = useServerFn(moderarAvaliacao);
-  const mudar = useMutation({
-    mutationFn: (moderacao: ModeracaoAvaliacao) => moderarFn({ data: { id: a.id, moderacao } }),
-    onSuccess: (_r, moderacao) => {
-      toast.success(
-        moderacao === "removida" ? "Avaliação removida da vitrine." : "Avaliação publicada.",
-      );
-      qc.invalidateQueries({ queryKey: CHAVE });
-    },
-    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível moderar a avaliação.")),
-  });
-  const mod = MODERACAO[a.moderacao as ModeracaoAvaliacao] ?? {
-    rotulo: a.moderacao,
-    tom: "secondary" as Tom,
-  };
-
-  return (
-    <li className="space-y-1.5 p-4">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="inline-flex items-center gap-0.5 font-semibold tabular-nums">
-          <Star className="size-3.5 text-amber-500" aria-hidden /> {a.nota}
-        </span>
-        <span className="break-words font-medium">{a.especialista ?? "—"}</span>
-        <Badge variant={mod.tom} className={mod.verde ? VERDE : undefined}>
-          {mod.rotulo}
-        </Badge>
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {formatData(a.criado_em)}
-        </span>
-      </div>
-      {a.comentario && (
-        <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
-          {a.comentario}
-        </p>
-      )}
-      {a.resposta && (
-        <p className="whitespace-pre-wrap break-words border-l-2 border-border pl-2 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">Resposta:</span> {a.resposta}
-        </p>
-      )}
-      {podeModerar && (
-        <div className="flex flex-wrap gap-2 pt-1">
-          {a.moderacao !== "publicada" && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={mudar.isPending}
-              onClick={() => mudar.mutate("publicada")}
-            >
-              {mudar.isPending ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              ) : (
-                <Eye className="mr-2 size-4" />
-              )}
-              Publicar
-            </Button>
-          )}
-          {a.moderacao !== "removida" && (
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={mudar.isPending}
-              onClick={() => mudar.mutate("removida")}
-            >
-              <EyeOff className="mr-2 size-4" /> Remover da vitrine
-            </Button>
-          )}
-        </div>
-      )}
-    </li>
+    <Secao titulo="Histórico de decisões" descricao="Cada Aprovar, Não aprovar e Suspender, com quem decidiu e o motivo enviado." semRespiro>
+      {q.isLoading && <ListaCarregando linhas={4} />}
+      {q.isError && <EstadoErro mensagem={mensagemDeErro(q.error, "Não foi possível ler o histórico.")} onTentar={() => q.refetch()} />}
+      {q.data && q.data.length === 0 && <EstadoVazio icone={<History />} titulo="Nenhuma decisão registrada ainda" />}
+      <ul className="divide-y divide-border/60">
+        {(q.data ?? []).map((d) => (
+          <li key={d.id} className="flex items-start gap-3 px-4 py-3">
+            <Avatar nome={d.moderador} tamanho="sm" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm">
+                <span className="font-medium">{d.especialista}</span>{" "}
+                <Selo tom={d.decisao === "aprovar" ? "sucesso" : d.decisao === "nao_aprovar" ? "perigo" : "alerta"}>
+                  {ROTULO_DECISAO[d.decisao]}
+                </Selo>
+              </p>
+              {d.motivo && <p className="mt-0.5 text-xs text-muted-foreground">Motivo: {d.motivo}</p>}
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                {d.moderador ?? "—"} · {new Date(d.criado_em).toLocaleString("pt-BR")}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Secao>
   );
 }

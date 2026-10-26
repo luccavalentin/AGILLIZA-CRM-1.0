@@ -100,6 +100,23 @@ const ICONE_BANCO = {
 };
 
 /**
+ * Módulos das áreas de Configurações gerais: o hub `/admin` abre para quem vê qualquer um
+ * deles (cada cartão do hub confere o seu). Mesma lista da rota `admin.index.tsx`.
+ */
+export const MODULOS_CONFIGURACOES_GERAIS = [
+  "admin.pessoas",
+  "admin.parametros",
+  "admin.integracoes",
+  "admin.notificacoes",
+  "admin.auditoria",
+  "admin.backup",
+  "saas.provedores",
+  "saas.integracoes",
+  "saas.configuracoes",
+  "relatorios.geral",
+];
+
+/**
  * Navegação do shell interno (usuários do correspondente).
  *
  * Ordem pedida pelo dono (26/10/2026): Visão geral › CRM › Operacional, depois
@@ -805,9 +822,16 @@ export const navInterno: NavGroup[] = [
       {
         label: "Configurações gerais",
         icon: SlidersHorizontal,
-        to: "/admin/pessoas",
-        perm: { modulo: "admin.pessoas" },
+        to: "/admin",
+        // O hub abre para quem vê qualquer uma das áreas dele.
+        perm: { modulo: "admin.pessoas", equivalentes: MODULOS_CONFIGURACOES_GERAIS },
         children: [
+          {
+            label: "Visão geral",
+            icon: LayoutDashboard,
+            to: "/admin",
+            perm: { modulo: "admin.pessoas", equivalentes: MODULOS_CONFIGURACOES_GERAIS },
+          },
           {
             label: "Pessoas e permissões",
             icon: UserCog,

@@ -1,18 +1,23 @@
 /**
- * Gaveta de um chamado do suporte da plataforma: contexto, atendimento (situação,
- * prioridade, assumir, encerrar) e a conversa com a conta.
+ * Um chamado da Central de atendimento aos assinantes: cabeçalho, contexto com o prazo,
+ * atendimento (situação, prioridade, atendente) e a conversa com a conta (anexos pela ponte
+ * de mídias, notas internas, respostas, reações).
  *
- * A conversa é lida por `comunicacao.fio_do_chamado` e atualizada a cada 20 s enquanto
- * a gaveta está aberta (sem tempo real). Quem decide o que cada um pode fazer é o banco.
+ * `PainelChamado` é o espaço de trabalho (coluna da direita no monitor); no celular ele abre
+ * dentro de `GavetaChamado`. A conversa é lida por `comunicacao.fio_do_chamado` e atualizada a
+ * cada 20 s enquanto o chamado está aberto. Quem decide o que cada um pode fazer é o banco.
  */
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
+  AlarmClock,
   CheckCheck,
+  CheckCircle2,
   CornerUpLeft,
   FileText,
+  Hand,
   Loader2,
   Lock,
   Paperclip,
@@ -23,7 +28,6 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,21 +40,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
+import { Dado, Selo, type Tom } from "@/components/plataforma/kit";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { cn } from "@/lib/utils";
 import {
   PRIORIDADES_CHAMADO,
-  STATUS_CHAMADO,
+  atribuirChamado,
   editarMensagemChamado,
   enviarMensagemChamado,
   lerFioChamado,
+  listarAtendentes,
   marcarChamadoLido,
   mudarChamado,
   reagirMensagemChamado,
@@ -63,25 +64,32 @@ import {
 } from "@/lib/plataforma/suporte.functions";
 import { enviarAnexoSuporte } from "@/lib/plataforma/midias.functions";
 
+/** Situações como o dono pediu: novo, em atendimento, aguardando assinante, resolvido. */
 export const STATUS_ROTULO: Record<StatusChamado, string> = {
-  aberto: "Aberto",
+  aberto: "Novo",
   em_atendimento: "Em atendimento",
-  aguardando_cliente: "Aguardando o cliente",
+  aguardando_cliente: "Aguardando assinante",
   resolvido: "Resolvido",
-  fechado: "Fechado",
+  fechado: "Encerrado",
 };
-export const STATUS_TOM: Record<StatusChamado, "default" | "secondary" | "outline"> = {
-  aberto: "default",
-  em_atendimento: "secondary",
-  aguardando_cliente: "outline",
-  resolvido: "outline",
-  fechado: "outline",
+export const STATUS_TOM: Record<StatusChamado, Tom> = {
+  aberto: "marca",
+  em_atendimento: "info",
+  aguardando_cliente: "alerta",
+  resolvido: "sucesso",
+  fechado: "neutro",
 };
 export const PRIORIDADE_ROTULO: Record<PrioridadeChamado, string> = {
   baixa: "Baixa",
   normal: "Normal",
   alta: "Alta",
   urgente: "Urgente",
+};
+export const PRIORIDADE_TOM: Record<PrioridadeChamado, Tom> = {
+  baixa: "neutro",
+  normal: "neutro",
+  alta: "alerta",
+  urgente: "perigo",
 };
 export const CATEGORIA_ROTULO: Record<string, string> = {
   duvida: "Dúvida",
@@ -101,6 +109,7 @@ export const PERFIL_ROTULO: Record<string, string> = {
 };
 
 const EMOJIS = ["👍", "✅", "👀", "🙏", "❗"];
+const NINGUEM = "__fila__";
 
 /** "20/10/2026 14:30" a partir de um instante ISO. */
 export function dataHora(iso: string | null | undefined): string {
@@ -129,6 +138,15 @@ export function relativo(iso: string | null | undefined): string {
   return min > 0 ? `em ${txt}` : `há ${txt}`;
 }
 
+/** Prazo do chamado em uma frase e um tom (para a fila e o cabeçalho). */
+export function prazoDoChamado(c: Chamado, agora = Date.now()): { texto: string; tom: Tom } {
+  if (c.resolvido_em) return { texto: `Resolvido ${relativo(c.resolvido_em)}`, tom: "sucesso" };
+  if (!c.sla_ate) return { texto: "Sem prazo", tom: "neutro" };
+  if (c.atrasado) return { texto: `Prazo venceu ${relativo(c.sla_ate)}`, tom: "perigo" };
+  const faltaMin = (new Date(c.sla_ate).getTime() - agora) / 60000;
+  return { texto: `Prazo ${relativo(c.sla_ate)}`, tom: faltaMin < 120 ? "alerta" : "neutro" };
+}
+
 function tamanhoLegivel(bytes: number): string {
   if (!Number.isFinite(bytes)) return "";
   if (bytes < 1024) return `${bytes} B`;
@@ -144,6 +162,7 @@ function novaChave(): string | null {
   }
 }
 
+/** O chamado no celular: o mesmo painel dentro de uma gaveta. */
 export function GavetaChamado({
   chamado,
   podeAtender,
@@ -155,80 +174,82 @@ export function GavetaChamado({
 }) {
   return (
     <Sheet open={!!chamado} onOpenChange={(v) => !v && onFechar()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-        {chamado && (
-          <>
-            <SheetHeader>
-              <SheetTitle className="pr-6 break-words">{chamado.assunto}</SheetTitle>
-              <SheetDescription>
-                {chamado.codigo} · {chamado.conta ?? "sem conta"} ·{" "}
-                {CATEGORIA_ROTULO[chamado.categoria] ?? chamado.categoria}
-              </SheetDescription>
-            </SheetHeader>
-            <div className="mt-4 space-y-4">
-              <Contexto c={chamado} />
-              {podeAtender && <Atendimento key={chamado.id + chamado.status} c={chamado} />}
-              <Conversa c={chamado} podeAtender={podeAtender} />
-            </div>
-          </>
-        )}
+      <SheetContent className="w-full gap-0 overflow-y-auto p-0 sm:max-w-2xl">
+        <SheetHeader className="sr-only">
+          <SheetTitle>{chamado?.assunto ?? "Chamado"}</SheetTitle>
+          <SheetDescription>Conversa e atendimento do chamado</SheetDescription>
+        </SheetHeader>
+        {chamado && <PainelChamado chamado={chamado} podeAtender={podeAtender} />}
       </SheetContent>
     </Sheet>
   );
 }
 
-function Contexto({ c }: { c: Chamado }) {
+/** Espaço de trabalho de um chamado. */
+export function PainelChamado({ chamado: c, podeAtender }: { chamado: Chamado; podeAtender: boolean }) {
+  const prazo = prazoDoChamado(c);
   return (
-    <section className="rounded-lg border border-border bg-card p-3">
-      <div className="mb-2 flex flex-wrap gap-1.5">
-        <Badge variant={STATUS_TOM[c.status] ?? "secondary"}>
-          {STATUS_ROTULO[c.status] ?? c.status}
-        </Badge>
-        <Badge variant={c.prioridade === "urgente" ? "destructive" : "outline"}>
-          Prioridade {PRIORIDADE_ROTULO[c.prioridade]?.toLowerCase() ?? c.prioridade}
-        </Badge>
-        {c.atrasado && <Badge variant="destructive">Fora do SLA</Badge>}
-        {c.avaliacao != null && <Badge variant="secondary">Nota {c.avaliacao} de 5</Badge>}
+    <div className="flex min-w-0 flex-col">
+      <header className="space-y-2 border-b border-border/70 px-4 py-3.5 pr-12 sm:pr-4">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-mono text-[11px] text-muted-foreground">{c.codigo}</span>
+          <Selo tom={STATUS_TOM[c.status]} ponto={c.status === "em_atendimento"}>
+            {STATUS_ROTULO[c.status] ?? c.status}
+          </Selo>
+          <Selo tom={PRIORIDADE_TOM[c.prioridade]}>{PRIORIDADE_ROTULO[c.prioridade] ?? c.prioridade}</Selo>
+          <Selo tom={prazo.tom}>
+            <AlarmClock className="mr-0.5 inline size-3" /> {prazo.texto}
+          </Selo>
+        </div>
+        <h2 className="break-words text-base font-semibold leading-snug text-foreground">{c.assunto}</h2>
+        <p className="text-xs text-muted-foreground">
+          {c.conta ?? "Sem conta"} · {c.autor ?? "—"} ({PERFIL_ROTULO[c.perfil] ?? c.perfil}) ·{" "}
+          {CATEGORIA_ROTULO[c.categoria] ?? c.categoria}
+        </p>
+      </header>
+      <div className="space-y-4 p-4">
+        <Contexto c={c} />
+        {podeAtender && <Atendimento key={c.id + c.status + c.prioridade + (c.atribuido_a ?? "")} c={c} />}
+        <Conversa c={c} podeAtender={podeAtender} />
       </div>
-      <dl className="grid gap-2 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-xs text-muted-foreground">Aberto por</dt>
-          <dd className="break-words">
-            {c.autor ?? "—"} ({PERFIL_ROTULO[c.perfil] ?? c.perfil})
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted-foreground">Responsável</dt>
-          <dd>{c.responsavel ?? "ninguém ainda"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted-foreground">Recebido</dt>
-          <dd>{dataHora(c.criado_em)}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted-foreground">
-            {c.resolvido_em ? "Resolvido" : "Prazo (SLA do plano)"}
-          </dt>
-          <dd className={c.atrasado ? "font-medium text-destructive" : undefined}>
-            {c.resolvido_em
-              ? dataHora(c.resolvido_em)
-              : c.sla_ate
-                ? `${dataHora(c.sla_ate)} (${relativo(c.sla_ate)})`
-                : "—"}
-          </dd>
-        </div>
+    </div>
+  );
+}
+
+function Contexto({ c }: { c: Chamado }) {
+  const primeira = c.primeira_resposta_em
+    ? Math.round((new Date(c.primeira_resposta_em).getTime() - new Date(c.criado_em).getTime()) / 60000)
+    : null;
+  return (
+    <section className="space-y-3 rounded-xl border border-border/80 p-3.5">
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Dado rotulo="Recebido">{dataHora(c.criado_em)}</Dado>
+        <Dado rotulo={c.resolvido_em ? "Resolvido" : "Prazo do plano"}>
+          <span className={c.atrasado ? "font-medium text-destructive" : undefined}>
+            {c.resolvido_em ? dataHora(c.resolvido_em) : c.sla_ate ? dataHora(c.sla_ate) : "—"}
+          </span>
+        </Dado>
+        <Dado rotulo="1ª resposta">
+          {primeira == null ? (
+            <span className="text-muted-foreground">ainda não</span>
+          ) : primeira < 60 ? (
+            `${Math.max(0, primeira)} min`
+          ) : (
+            `${Math.round(primeira / 60)} h`
+          )}
+        </Dado>
+        <Dado rotulo="Responsável">{c.responsavel ?? <span className="text-muted-foreground">na fila</span>}</Dado>
       </dl>
       {c.descricao && (
-        <p className="mt-3 whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 p-3 text-sm">
-          {c.descricao}
-        </p>
+        <p className="whitespace-pre-wrap break-words rounded-lg bg-secondary/50 p-3 text-sm">{c.descricao}</p>
       )}
-      {c.url && <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{c.url}</p>}
+      {c.url && <p className="break-all font-mono text-[11px] text-muted-foreground">{c.url}</p>}
       {c.ultimo_erro && (
-        <p className="mt-2 break-all rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 font-mono text-xs text-destructive">
+        <p className="break-all rounded-lg border border-destructive/25 bg-destructive/[0.05] px-2.5 py-1.5 font-mono text-[11px] text-destructive">
           {c.ultimo_erro}
         </p>
       )}
+      {c.avaliacao != null && <Selo tom="info">Avaliação da conta: {c.avaliacao} de 5</Selo>}
     </section>
   );
 }
@@ -236,54 +257,92 @@ function Contexto({ c }: { c: Chamado }) {
 function Atendimento({ c }: { c: Chamado }) {
   const qc = useQueryClient();
   const mudarFn = useServerFn(mudarChamado);
-  const [status, setStatus] = useState<StatusChamado>(c.status);
-  const [prioridade, setPrioridade] = useState<PrioridadeChamado>(c.prioridade);
+  const atribuirFn = useServerFn(atribuirChamado);
+  const atendentesFn = useServerFn(listarAtendentes);
+  const atendentes = useQuery({
+    queryKey: ["plataforma-suporte", "atendentes"],
+    queryFn: () => atendentesFn(),
+    staleTime: 60_000,
+  });
+  const recarregar = () => qc.invalidateQueries({ queryKey: ["plataforma-suporte"] });
 
   const mudar = useMutation({
-    mutationFn: (dados: {
-      status?: StatusChamado;
-      prioridade?: PrioridadeChamado;
-      assumir?: boolean;
-      aviso: string;
-    }) =>
-      mudarFn({
-        data: {
-          id: c.id,
-          status: dados.status ?? null,
-          prioridade: dados.prioridade ?? null,
-          assumir: dados.assumir,
-        },
-      }),
+    mutationFn: (dados: { status?: StatusChamado; prioridade?: PrioridadeChamado; aviso: string }) =>
+      mudarFn({ data: { id: c.id, status: dados.status ?? null, prioridade: dados.prioridade ?? null } }),
     onSuccess: (_r, dados) => {
       toast.success(dados.aviso);
-      qc.invalidateQueries({ queryKey: ["plataforma-suporte"] });
+      recarregar();
     },
     onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível atualizar o chamado.")),
   });
+  const atribuir = useMutation({
+    mutationFn: (atendente: string | null) => atribuirFn({ data: { id: c.id, atendente } }),
+    onSuccess: (_r, atendente) => {
+      toast.success(atendente ? "Chamado atribuído." : "Chamado devolvido à fila.");
+      recarregar();
+    },
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível atribuir o chamado.")),
+  });
+  const eu = atendentes.data?.find((a) => a.eu);
   const encerrado = c.status === "resolvido" || c.status === "fechado";
+  const ocupado = mudar.isPending || atribuir.isPending;
 
   return (
-    <section className="space-y-3 rounded-lg border border-border bg-card p-3">
-      <h3 className="text-sm font-semibold">Atendimento</h3>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <section className="space-y-3 rounded-xl border border-border/80 p-3.5">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,180px)]">
         <div className="space-y-1">
-          <Label htmlFor={`sup-status-${c.id}`}>Situação</Label>
-          <Select value={status} onValueChange={(v) => setStatus(v as StatusChamado)}>
-            <SelectTrigger id={`sup-status-${c.id}`} aria-label="Situação do chamado">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_CHAMADO.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {STATUS_ROTULO[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor={`sup-atend-${c.id}`} className="text-xs text-muted-foreground">
+            Atendente
+          </Label>
+          <div className="flex gap-2">
+            <Select
+              value={c.atribuido_a ?? NINGUEM}
+              onValueChange={(v) => atribuir.mutate(v === NINGUEM ? null : v)}
+              disabled={ocupado}
+            >
+              <SelectTrigger id={`sup-atend-${c.id}`} aria-label="Atendente do chamado" className="min-w-0 flex-1">
+                <SelectValue placeholder="Na fila" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NINGUEM}>Na fila (sem atendente)</SelectItem>
+                {c.atribuido_a && !(atendentes.data ?? []).some((a) => a.id === c.atribuido_a) && (
+                  <SelectItem value={c.atribuido_a}>{c.responsavel ?? "Responsável atual"}</SelectItem>
+                )}
+                {(atendentes.data ?? []).map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.nome}
+                    {a.eu ? " (você)" : ""} · {a.abertos} aberto(s)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {eu && c.atribuido_a !== eu.id && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-11 shrink-0 sm:min-h-9"
+                disabled={ocupado}
+                onClick={() => atribuir.mutate(eu.id)}
+              >
+                <Hand className="mr-1.5 size-4" /> Assumir
+              </Button>
+            )}
+          </div>
         </div>
         <div className="space-y-1">
-          <Label htmlFor={`sup-prio-${c.id}`}>Prioridade</Label>
-          <Select value={prioridade} onValueChange={(v) => setPrioridade(v as PrioridadeChamado)}>
+          <Label htmlFor={`sup-prio-${c.id}`} className="text-xs text-muted-foreground">
+            Prioridade
+          </Label>
+          <Select
+            value={c.prioridade}
+            onValueChange={(v) =>
+              mudar.mutate({
+                prioridade: v as PrioridadeChamado,
+                aviso: `Prioridade ${PRIORIDADE_ROTULO[v as PrioridadeChamado].toLowerCase()}.`,
+              })
+            }
+            disabled={ocupado}
+          >
             <SelectTrigger id={`sup-prio-${c.id}`} aria-label="Prioridade do chamado">
               <SelectValue />
             </SelectTrigger>
@@ -297,47 +356,50 @@ function Atendimento({ c }: { c: Chamado }) {
           </Select>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          disabled={mudar.isPending || (status === c.status && prioridade === c.prioridade)}
-          onClick={() => mudar.mutate({ status, prioridade, aviso: "Chamado atualizado." })}
-        >
-          Salvar
-        </Button>
-        {!c.responsavel && (
+      <div>
+        <p className="mb-1.5 text-xs text-muted-foreground">Situação</p>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Situação do chamado">
+          {(["aberto", "em_atendimento", "aguardando_cliente", "resolvido"] as StatusChamado[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              role="radio"
+              aria-checked={c.status === s}
+              disabled={ocupado || c.status === s}
+              onClick={() => mudar.mutate({ status: s, aviso: `Situação: ${STATUS_ROTULO[s].toLowerCase()}.` })}
+              className={cn(
+                "min-h-11 rounded-full border px-3 text-sm transition-colors sm:min-h-8",
+                c.status === s
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border hover:bg-secondary/60 disabled:opacity-60",
+              )}
+            >
+              {STATUS_ROTULO[s]}
+            </button>
+          ))}
+        </div>
+      </div>
+      {!encerrado && (
+        <div className="flex flex-wrap gap-2 border-t border-border/70 pt-3">
           <Button
             size="sm"
-            variant="outline"
-            disabled={mudar.isPending}
-            onClick={() => mudar.mutate({ assumir: true, aviso: "Você assumiu o chamado." })}
+            className="min-h-11 sm:min-h-9"
+            disabled={ocupado}
+            onClick={() => mudar.mutate({ status: "resolvido", aviso: "Chamado resolvido." })}
           >
-            Assumir o chamado
+            <CheckCircle2 className="mr-1.5 size-4" /> Marcar como resolvido
           </Button>
-        )}
-        {!encerrado && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={mudar.isPending}
-            onClick={() =>
-              mudar.mutate({ status: "resolvido", aviso: "Chamado marcado como resolvido." })
-            }
-          >
-            Marcar como resolvido
-          </Button>
-        )}
-        {c.status !== "fechado" && (
           <Button
             size="sm"
             variant="ghost"
-            disabled={mudar.isPending}
+            className="min-h-11 sm:min-h-9"
+            disabled={ocupado}
             onClick={() => mudar.mutate({ status: "fechado", aviso: "Chamado encerrado." })}
           >
-            Encerrar
+            Encerrar sem resolver
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -425,9 +487,9 @@ function Conversa({ c, podeAtender }: { c: Chamado; podeAtender: boolean }) {
   });
 
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between gap-2 border-b border-border p-3">
-        <h3 className="text-sm font-semibold">Conversa</h3>
+    <section className="rounded-xl border border-border/80 bg-card">
+      <div className="flex items-center justify-between gap-2 border-b border-border/70 px-3.5 py-2.5">
+        <h3 className="text-sm font-semibold">Conversa com a conta</h3>
         <Button
           size="sm"
           variant="ghost"
@@ -448,7 +510,7 @@ function Conversa({ c, podeAtender }: { c: Chamado; podeAtender: boolean }) {
         )}
         {!q.isLoading && !q.isError && mensagens.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Nenhuma mensagem ainda. A descrição do chamado está acima.
+            Nenhuma mensagem ainda. O pedido da conta está acima.
           </p>
         )}
         {mensagens.map((m) => (
@@ -564,8 +626,8 @@ function Conversa({ c, podeAtender }: { c: Chamado; podeAtender: boolean }) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Responder ao cliente muda a situação para “Aguardando o cliente” e, se o chamado não
-            tiver responsável, atribui a você. Anexos: imagem, PDF ou áudio, até 25 MB cada.
+            Responder à conta muda a situação para “Aguardando assinante” e, se o chamado estiver
+            na fila, atribui a você. Anexos: imagem, PDF ou áudio, até 25 MB cada. Ctrl+Enter envia.
           </p>
         </div>
       )}
@@ -633,7 +695,7 @@ function Mensagem({
               <Lock className="size-3" /> nota interna
             </span>
           )}
-          <span>{m.criado_em}</span>
+          <span>{dataHora(m.criado_em)}</span>
           {m.editado && !m.removido && <span>(editada)</span>}
           {m.meu && m.lida && (
             <span className="inline-flex items-center gap-0.5" title="Lida">
