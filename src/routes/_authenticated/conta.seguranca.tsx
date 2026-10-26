@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ContaCabecalho } from "@/components/conta/conta-cabecalho";
 import { Icone3D } from "@/components/ui/icone-3d";
 import { BiometriaCard } from "@/components/pwa/biometria-card";
+import { TrocaEmailCard } from "@/components/conta/troca-email-card";
 import { concluirSenhaProvisoria } from "@/lib/conta/senha-provisoria.functions";
 
 export const Route = createFileRoute("/_authenticated/conta/seguranca")({
@@ -256,6 +257,9 @@ function Pagina() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Trocar o e-mail de login (02/11/2026). Com senha provisória, primeiro a senha. */}
+        {!provisoria && meuEmail && <TrocaEmailCard emailAtual={meuEmail} />}
 
         <div data-tour="seguranca-biometria" className="lg:col-span-2">
           <BiometriaCard />

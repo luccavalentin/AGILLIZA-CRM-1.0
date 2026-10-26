@@ -458,6 +458,107 @@ export async function enviarLinkDeRecuperacao(authUid: string, link: string): Pr
   }
 }
 
+/** O que o banco respondeu ao pedido de troca do e-mail de acesso (0601 do Corretor). */
+export type SituacaoTrocaEmail =
+  | "enviado"
+  | "senha_errada"
+  | "email_invalido"
+  | "mesmo_email"
+  | "email_em_uso"
+  | "freio_usuario"
+  | "freio_ip";
+
+/**
+ * Pedido de troca do e-mail de acesso pela própria pessoa (0601 do Corretor). A senha já foi
+ * conferida no Auth; o banco freia (3/h por pessoa, 10/h por IP), recusa e-mail em uso, gera o
+ * token (só hash) e enfileira o link (ao novo) e o aviso (ao antigo). Lança a frase do banco
+ * (pessoa sem acesso, endereço inválido) ou uma frase genérica — nunca com o e-mail no log.
+ */
+export async function pedirTrocaDeEmailNaPlataforma(p: {
+  authUid: string;
+  novo: string;
+  senhaConfere: boolean;
+  ip: string | null;
+  endereco: string;
+}): Promise<SituacaoTrocaEmail> {
+  if (!process.env.PONTE_DATABASE_URL) {
+    throw new Error("O envio de e-mail não está configurado neste servidor. Nada foi alterado.");
+  }
+  try {
+    const r = await obterPool().query<{ s: SituacaoTrocaEmail }>(
+      "select plataforma.pedir_troca_email_agilliza($1, $2, $3, $4, $5) as s",
+      [p.authUid, p.novo, p.senhaConfere, p.ip && isIP(p.ip) ? p.ip : null, p.endereco],
+    );
+    return r.rows[0]?.s ?? "email_invalido";
+  } catch (e) {
+    const err = e as { code?: string; message?: string };
+    console.error("[ponte-plataforma] pedido de troca de e-mail", err?.code ?? "sem código");
+    if (err?.code === "22023" && err.message) throw new Error(err.message);
+    throw new Error("A plataforma não respondeu agora. Nada foi alterado; tente de novo.");
+  }
+}
+
+/** A troca reservada pelo link (0601): `situacao` 'ok' traz a pessoa e o e-mail novo. */
+export async function abrirTrocaDeEmailNaPlataforma(token: string): Promise<{
+  situacao: "ok" | "invalido" | "vencido" | "email_em_uso" | "concorrente";
+  trocaId: string | null;
+  authUid: string | null;
+  emailNovo: string | null;
+}> {
+  const r = await obterPool().query<{
+    situacao: "ok" | "invalido" | "vencido" | "email_em_uso" | "concorrente";
+    troca_id: string | null;
+    auth_uid: string | null;
+    email_novo: string | null;
+  }>("select * from plataforma.abrir_troca_email_agilliza($1)", [token]);
+  const l = r.rows[0];
+  return {
+    situacao: l?.situacao ?? "invalido",
+    trocaId: l?.troca_id ?? null,
+    authUid: l?.auth_uid ?? null,
+    emailNovo: l?.email_novo ?? null,
+  };
+}
+
+/** Fecha a troca reservada: `ok` = o Auth aceitou o e-mail novo (0601). */
+export async function concluirTrocaDeEmailNaPlataforma(
+  trocaId: string,
+  ok: boolean,
+  motivo: string | null = null,
+): Promise<{ situacao: "confirmada" | "recusada"; emailMascarado: string | null }> {
+  const r = await obterPool().query<{
+    situacao: "confirmada" | "recusada";
+    email_mascarado: string | null;
+  }>("select * from plataforma.concluir_troca_email_agilliza($1, $2, $3)", [trocaId, ok, motivo]);
+  return {
+    situacao: r.rows[0]?.situacao ?? "recusada",
+    emailMascarado: r.rows[0]?.email_mascarado ?? null,
+  };
+}
+
+/** O pedido de troca ainda pendente da pessoa (e-mail novo mascarado), para a tela. */
+export async function minhaTrocaDeEmailNaPlataforma(
+  authUid: string,
+): Promise<{ pendentePara: string; expiraEm: string } | null> {
+  if (!process.env.PONTE_DATABASE_URL) return null;
+  try {
+    const r = await obterPool().query<{ pendente_para: string | null; expira_em: Date | null }>(
+      "select pendente_para, expira_em from plataforma.minha_troca_email_agilliza($1)",
+      [authUid],
+    );
+    const l = r.rows[0];
+    return l?.pendente_para && l.expira_em
+      ? { pendentePara: l.pendente_para, expiraEm: new Date(l.expira_em).toISOString() }
+      : null;
+  } catch (e) {
+    console.error(
+      "[ponte-plataforma] troca de e-mail pendente",
+      (e as { code?: string }).code ?? "sem código",
+    );
+    return null;
+  }
+}
+
 /** Sonda de saúde da ponte (`/api/saude`): `select 1` com tempo-limite de 2 s. */
 export async function sondarPonte(): Promise<{
   configurada: boolean;

@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as ClienteConsentimentoRouteImport } from './routes/cliente-consentimento'
+import { Route as ConfirmarEmailRouteImport } from './routes/confirmar-email'
 import { Route as ParceiroRouteImport } from './routes/parceiro'
 import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
 import { Route as PortalRouteImport } from './routes/portal'
@@ -216,6 +217,11 @@ const ClienteRoute = ClienteRouteImport.update({
 const ClienteConsentimentoRoute = ClienteConsentimentoRouteImport.update({
   id: '/cliente-consentimento',
   path: '/cliente-consentimento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmarEmailRoute = ConfirmarEmailRouteImport.update({
+  id: '/confirmar-email',
+  path: '/confirmar-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParceiroRoute = ParceiroRouteImport.update({
@@ -1260,6 +1266,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
+  '/confirmar-email': typeof ConfirmarEmailRoute
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
@@ -1445,6 +1452,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
+  '/confirmar-email': typeof ConfirmarEmailRoute
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
@@ -1627,6 +1635,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
+  '/confirmar-email': typeof ConfirmarEmailRoute
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
@@ -1814,6 +1823,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cliente'
     | '/cliente-consentimento'
+    | '/confirmar-email'
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
@@ -1999,6 +2009,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cliente'
     | '/cliente-consentimento'
+    | '/confirmar-email'
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
@@ -2180,6 +2191,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cliente'
     | '/cliente-consentimento'
+    | '/confirmar-email'
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
@@ -2367,6 +2379,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ClienteRoute: typeof ClienteRouteWithChildren
   ClienteConsentimentoRoute: typeof ClienteConsentimentoRoute
+  ConfirmarEmailRoute: typeof ConfirmarEmailRoute
   ParceiroRoute: typeof ParceiroRouteWithChildren
   PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
   PortalRoute: typeof PortalRoute
@@ -2414,6 +2427,13 @@ declare module '@tanstack/react-router' {
       path: '/cliente-consentimento'
       fullPath: '/cliente-consentimento'
       preLoaderRoute: typeof ClienteConsentimentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmar-email': {
+      id: '/confirmar-email'
+      path: '/confirmar-email'
+      fullPath: '/confirmar-email'
+      preLoaderRoute: typeof ConfirmarEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/parceiro': {
@@ -4167,6 +4187,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ClienteRoute: ClienteRouteWithChildren,
   ClienteConsentimentoRoute: ClienteConsentimentoRoute,
+  ConfirmarEmailRoute: ConfirmarEmailRoute,
   ParceiroRoute: ParceiroRouteWithChildren,
   PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
   PortalRoute: PortalRoute,
