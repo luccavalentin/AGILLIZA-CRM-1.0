@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
- * Encerra a senha provisória (o próprio e-mail) depois que a pessoa definiu a dela.
+ * Encerra a senha provisória (sorteada e enviada por e-mail) depois que a pessoa definiu a dela.
  *
  * A marca mora no `app_metadata`, que o usuário não consegue escrever: só o servidor
  * a liga (cadastro, reset, habilitar login) e só aqui ela desliga. A tela de

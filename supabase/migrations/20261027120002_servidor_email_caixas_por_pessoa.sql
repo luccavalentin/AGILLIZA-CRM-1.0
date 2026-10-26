@@ -60,6 +60,32 @@ alter table public.codigos_caixas_pessoas enable row level security;
 revoke all on public.codigos_caixas_pessoas from anon, authenticated;
 grant all on public.codigos_caixas_pessoas to service_role;
 
+-- Reconciliação com o main (20261026150000_codigos_caixas_por_pessoa, publicada em 26/10/2026):
+-- a mesma decisão 16 foi feita lá sobre a tela antiga ("Códigos de acesso"), com a tabela
+-- codigos_caixas_liberadas e funções próprias. O Servidor de e-mail (C26) substitui aquela tela,
+-- então fica um modelo só (o daqui, que também separa por correspondente):
+--   · as liberações já feitas lá passam para codigos_caixas_pessoas (ninguém perde o que tinha);
+--   · as funções de lá saem — codigos_caixas_visiveis volta abaixo com outro retorno (o Postgres
+--     não troca o retorno com "create or replace") — e a tabela de lá é apagada depois da cópia.
+-- Diferença consciente: lá quem tinha "editar" via e geria TODAS as caixas; aqui gere quem
+-- cadastrou e a administração (admin/correspondente), e os demais veem só as liberadas (teste 762).
+do $$
+begin
+  if to_regclass('public.codigos_caixas_liberadas') is not null then
+    insert into public.codigos_caixas_pessoas (caixa_id, user_id, liberado_por, created_at)
+    select l.caixa_id, l.user_id, l.liberado_por, l.created_at
+      from public.codigos_caixas_liberadas l
+    on conflict (caixa_id, user_id) do nothing;
+  end if;
+end $$;
+drop function if exists public.codigos_recebidos_visiveis(uuid, timestamptz, int);
+drop function if exists public.codigos_definir_liberados(uuid, uuid[], uuid);
+drop function if exists public.codigos_pessoas_para_liberar(uuid);
+drop function if exists public.codigos_caixas_visiveis(uuid);
+drop function if exists public.codigos_ve_todas_caixas(uuid);
+drop function if exists public.codigos_equipe_interna(uuid);
+drop table if exists public.codigos_caixas_liberadas;
+
 /** Equipe interna ativa com "Servidor de e-mail › ver" (o portal do parceiro nunca). */
 create or replace function public.codigos_pessoa_ok(p_user uuid)
 returns boolean language sql stable security definer set search_path = public as $$

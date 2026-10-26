@@ -1,3 +1,4 @@
+import { SenhasProvisoriasAntigas } from "@/components/admin/senhas-provisorias-antigas";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -5,7 +6,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   Plus,
-  Copy,
+  MailCheck,
+  TriangleAlert,
   MoreHorizontal,
   Pencil,
   KeyRound,
@@ -126,7 +128,9 @@ function PessoasPage() {
   const [filtro, setFiltro] = useState<"todos" | "sistema" | "portal_parceiro">("todos");
   const [busca, setBusca] = useState("");
   const [criando, setCriando] = useState(false);
-  const [credenciais, setCredenciais] = useState<ResultadoCriarPessoa | null>(null);
+  // Resultado de criar / redefinir senha / habilitar login: a senha provisória vai só
+  // para o e-mail da pessoa e nunca aparece aqui (decisão 15 do backtest de 23/10/2026).
+  const [envio, setEnvio] = useState<{ titulo: string; res: ResultadoCriarPessoa } | null>(null);
   const [editando, setEditando] = useState<PessoaLista | null>(null);
   const [excluindo, setExcluindo] = useState<PessoaLista | null>(null);
   const [habilitando, setHabilitando] = useState<PessoaLista | null>(null);
@@ -166,7 +170,7 @@ function PessoasPage() {
 
   const resetMut = useMutation({
     mutationFn: (id: string) => resetarSenhaFn({ data: { id } }),
-    onSuccess: (res) => setCredenciais(res),
+    onSuccess: (res) => setEnvio({ titulo: "Senha redefinida", res }),
     onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
 
@@ -186,7 +190,7 @@ function PessoasPage() {
       await qc.invalidateQueries({ queryKey: ["pessoas"] });
       setHabilitando(null);
       setHabilitarEmail("");
-      setCredenciais(res);
+      setEnvio({ titulo: "Login habilitado", res });
       toast.success("Login habilitado.");
     },
     onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
@@ -222,9 +226,15 @@ function PessoasPage() {
           descricao="Equipe interna e parceiros, os papéis de acesso e a matriz de permissões organizada como o menu."
           acoes={
             aba === "pessoas" && podeGerenciar && !criando ? (
-              <Button className="min-h-11 sm:min-h-9" onClick={() => setCriando(true)}>
-                <Plus className="mr-1.5 size-4" /> Nova pessoa
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {/* Só administrador e correspondente (o servidor confere de novo). */}
+                {(sessaoQuery.data?.roles ?? []).some(
+                  (r) => r === "admin" || r === "correspondente",
+                ) && <SenhasProvisoriasAntigas />}
+                <Button className="min-h-11 sm:min-h-9" onClick={() => setCriando(true)}>
+                  <Plus className="mr-1.5 size-4" /> Nova pessoa
+                </Button>
+              </div>
             ) : undefined
           }
         />
@@ -288,9 +298,9 @@ function PessoasPage() {
                 }}
                 onCreated={(res) => {
                   setCriando(false);
-                  // Sem login não há senha: o modal abria com o campo vazio.
-                  if (res.senha_temporaria) {
-                    setCredenciais(res);
+                  // Sem login não há senha nem e-mail para avisar.
+                  if (res.email) {
+                    setEnvio({ titulo: "Acesso criado", res });
                     toast.success("Pessoa criada com sucesso.");
                   } else {
                     toast.success("Pessoa cadastrada sem acesso ao sistema.");
@@ -457,44 +467,41 @@ function PessoasPage() {
         </Tabs>
       </PaginaGestao>
 
-      {/* Modal: senha temporária */}
-      <Dialog open={!!credenciais} onOpenChange={(o) => !o && setCredenciais(null)}>
+      {/* Modal: senha provisória enviada por e-mail (a senha não aparece aqui) */}
+      <Dialog open={!!envio} onOpenChange={(o) => !o && setEnvio(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Acesso criado</DialogTitle>
+            <DialogTitle>{envio?.titulo ?? "Acesso"}</DialogTitle>
             <DialogDescription>
-              A senha provisória é o próprio e-mail. No primeiro acesso a pessoa define a senha
-              dela antes de usar o sistema.
+              A senha provisória é sorteada pelo sistema e vai só para o e-mail da pessoa: ninguém
+              mais a vê. No primeiro acesso ela define uma senha própria.
             </DialogDescription>
           </DialogHeader>
-          {credenciais && (
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label>E-mail</Label>
-                <Input readOnly value={credenciais.email} />
+          {envio &&
+            (envio.res.senha_enviada ? (
+              <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/40">
+                <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <p className="min-w-0 text-foreground">
+                  Senha provisória enviada para{" "}
+                  <span className="break-all font-medium">{envio.res.email}</span>. Se não chegar em
+                  alguns minutos, peça para conferir o spam ou use “Redefinir senha” para enviar
+                  outra.
+                </p>
               </div>
-              <div className="space-y-1">
-                <Label>Senha provisória</Label>
-                <div className="flex gap-2">
-                  <Input readOnly value={credenciais.senha_temporaria} className="font-mono" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    aria-label="Copiar senha provisória"
-                    onClick={() => {
-                      navigator.clipboard.writeText(credenciais.senha_temporaria);
-                      toast.success("Senha copiada.");
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
+            ) : (
+              <div
+                role="alert"
+                className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950/40"
+              >
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <p className="min-w-0 text-foreground">
+                  {envio.res.aviso_envio ??
+                    "Não foi possível enviar a senha por e-mail. Use “Redefinir senha” para enviar outra."}
+                </p>
               </div>
-            </div>
-          )}
+            ))}
           <DialogFooter>
-            <Button onClick={() => setCredenciais(null)}>Concluído</Button>
+            <Button onClick={() => setEnvio(null)}>Concluído</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -513,8 +520,9 @@ function PessoasPage() {
           <DialogHeader>
             <DialogTitle>Habilitar login</DialogTitle>
             <DialogDescription>
-              Informe o e-mail de acesso de {habilitando?.nome ?? "esta pessoa"}. A senha
-              provisória será o próprio e-mail, trocada no primeiro acesso.
+              Informe o e-mail de acesso de {habilitando?.nome ?? "esta pessoa"}. O sistema sorteia
+              uma senha provisória e a envia só para este e-mail; no primeiro acesso a pessoa define
+              a dela.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

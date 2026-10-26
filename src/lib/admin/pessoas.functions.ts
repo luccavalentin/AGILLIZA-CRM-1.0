@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AppRole } from "@/lib/session.functions";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import { soDigitos, validarTelefone } from "@/lib/crm/documento";
+import { gerarSenhaProvisoria } from "@/lib/admin/senha-provisoria";
 
 /** Telefone opcional: vazio passa; preenchido precisa ser um número BR válido. */
 const telefoneOpcional = z
@@ -86,7 +87,12 @@ async function chavesDoNivel(admin: any, nivelId: string): Promise<Map<string, s
  * Alcance do escopo de dados. Sem escopo gravado vale "todos" (o mais amplo), para a
  * comparação nunca favorecer quem está dando o nível.
  */
-const ALCANCE_ESCOPO: Record<string, number> = { proprios: 1, equipe: 2, personalizado: 3, todos: 4 };
+const ALCANCE_ESCOPO: Record<string, number> = {
+  proprios: 1,
+  equipe: 2,
+  personalizado: 3,
+  todos: 4,
+};
 function alcance(escopo: string | null | undefined): number {
   return ALCANCE_ESCOPO[escopo ?? "todos"] ?? 4;
 }
@@ -96,7 +102,8 @@ function alcance(escopo: string | null | undefined): number {
  * outra pessoa (ou mexe em quem tem) um nível cujas permissões ele mesmo tem.
  * Sem isso, quem cadastra pessoas criava alguém com um nível "maior" (a senha
  * provisória é o e-mail, que ele digitou), entrava com essa conta e ganhava o
- * acesso; e "Redefinir senha" de um superior dava a mesma porta.
+ * acesso; e "Redefinir senha" de um superior dava a mesma porta. (Desde 26/10/2026 a
+ * senha provisória é sorteada e vai só para o e-mail da pessoa — esta trava continua.)
  */
 async function garantirNivelAoAlcance(
   supabase: any,
@@ -139,14 +146,55 @@ function garantirNivelDoEcossistema(
   }
 }
 
-function gerarSenhaTemporaria(): string {
-  const alfa = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
-  const num = "23456789";
-  const especial = "!@#$%&*";
-  const pick = (s: string) => s[Math.floor(Math.random() * s.length)];
-  let base = "";
-  for (let i = 0; i < 8; i++) base += pick(alfa);
-  return `${pick(alfa).toUpperCase()}${base}${pick(num)}${pick(num)}${pick(especial)}`;
+/**
+ * Sem o envio de e-mail ninguém recebe a senha sorteada: a pessoa ficaria com um acesso
+ * que não abre. Confere ANTES de mexer no Auth (auditoria de 26/10/2026): a ponte com a
+ * plataforma, a credencial do e-mail com remetente e — quando a pessoa já existe — o
+ * freio de envios e o perfil (`authUid`; `perfilAtivo` só na redefinição).
+ */
+async function exigirEnvioDeEmail(alvo?: { authUid: string; perfilAtivo: boolean }): Promise<void> {
+  const { ponteConfigurada, emailConfiguradoNaPlataforma, conferirEnvioDeSenha } =
+    await import("@/lib/plataforma/ponte.server");
+  if (!ponteConfigurada()) {
+    throw new Error(
+      "O envio da senha por e-mail não está configurado neste servidor. Nada foi alterado.",
+    );
+  }
+  if (!(await emailConfiguradoNaPlataforma())) {
+    throw new Error(
+      "O e-mail da plataforma não está configurado (Chaves dos provedores › E-mail transacional, com remetente). Sem ele a senha não chega à pessoa. Nada foi alterado.",
+    );
+  }
+  if (alvo) await conferirEnvioDeSenha(alvo.authUid, alvo.perfilAtivo);
+}
+
+/** Manda a senha provisória só para o e-mail da pessoa (nunca volta para a tela). */
+async function enviarSenha(
+  authUid: string,
+  senha: string,
+): Promise<{ senha_enviada: boolean; aviso_envio: string | null }> {
+  const { enviarSenhaProvisoriaPorEmail } = await import("@/lib/plataforma/ponte.server");
+  const r = await enviarSenhaProvisoriaPorEmail(authUid, senha);
+  return r.ok
+    ? { senha_enviada: true, aviso_envio: null }
+    : {
+        senha_enviada: false,
+        aviso_envio: `${r.motivo} A senha não chegou à pessoa: use “Redefinir senha” para enviar outra.`,
+      };
+}
+
+/**
+ * A pessoa ainda está na senha provisória (troca obrigatória no primeiro acesso pendente)
+ * e tem login de verdade (não a conta banida de quem foi cadastrado sem login).
+ */
+export function senhaProvisoriaPendente(
+  u:
+    | { app_metadata?: Record<string, unknown> | null; banned_until?: string | null }
+    | null
+    | undefined,
+): boolean {
+  if (!u || u.app_metadata?.senha_provisoria !== true) return false;
+  return !(u.banned_until && new Date(u.banned_until).getTime() > Date.now());
 }
 
 /** Lista todas as pessoas do ecossistema do usuário logado (equipe + parceiros). */
@@ -219,13 +267,19 @@ export const listarPessoas = createServerFn({ method: "GET" })
 export interface ResultadoCriarPessoa {
   id: string;
   email: string;
-  senha_temporaria: string;
+  /**
+   * A senha provisória entrou na fila de e-mail da PRÓPRIA pessoa. Ela nunca volta para
+   * a tela de quem cadastrou (decisão 15 do backtest de 23/10/2026).
+   */
+  senha_enviada: boolean;
+  /** Quando não deu para enfileirar: o que aconteceu e o que fazer. */
+  aviso_envio: string | null;
 }
 
 /**
  * Cria uma nova pessoa no ecossistema (equipe interna ou parceiro).
- * Exige pode_gerenciar_pessoas. Gera senha temporária exibida uma única vez.
- * NÃO envia e-mail — o correspondente repassa a senha manualmente.
+ * Exige pode_gerenciar_pessoas. Com login, sorteia a senha provisória e a envia por
+ * e-mail só para a pessoa; no primeiro acesso ela define a dela (troca obrigatória).
  */
 export const criarPessoaComAcesso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -284,13 +338,15 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       data.tipos_pessoa && data.tipos_pessoa.length > 0 ? data.tipos_pessoa : [data.tipo_pessoa]
     ).filter(Boolean);
     const tipoPrimario = tiposList[0] ?? "usuario";
-    // Senha provisória = o próprio e-mail (regra do dono, 21/10/2026). Ela só
+    // Senha provisória sorteada (decisão 15 do backtest de 23/10/2026; antes era o
+    // próprio e-mail e quem cadastrava a conhecia). Vai só para o e-mail da pessoa e só
     // serve para a primeira entrada: `senha_provisoria` no app_metadata (que só o
     // servidor escreve) prende a pessoa na troca de senha até ela definir a dela.
-    // Sem login: e-mail sintético + senha aleatória; a conta fica banida no Auth.
+    // Sem login: e-mail sintético + senha sorteada; a conta fica banida no Auth.
+    if (comLogin) await exigirEnvioDeEmail();
     const emailReal = comLogin ? (data.email ?? "").trim().toLowerCase() : "";
     const emailAuth = comLogin ? emailReal : `semlogin+${crypto.randomUUID()}@parceiro.local`;
-    const senha = comLogin ? emailReal : gerarSenhaTemporaria();
+    const senha = gerarSenhaProvisoria();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -401,11 +457,10 @@ export const criarPessoaComAcesso = createServerFn({ method: "POST" })
       );
     }
 
-    return {
-      id: created.user.id,
-      email: comLogin ? emailReal : "",
-      senha_temporaria: comLogin ? senha : "",
-    };
+    const envio = comLogin
+      ? await enviarSenha(created.user.id, senha)
+      : { senha_enviada: false, aviso_envio: null };
+    return { id: created.user.id, email: comLogin ? emailReal : "", ...envio };
   });
 
 /** Carrega o perfil alvo garantindo que pertence ao mesmo ecossistema do solicitante. */
@@ -542,7 +597,8 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
 
 /**
  * Habilita o login de uma pessoa que foi cadastrada sem acesso (imobiliária/corretor).
- * Define o e-mail real, gera senha provisória, desbane no Auth e marca login_habilitado.
+ * Define o e-mail real, sorteia a senha provisória (enviada só para esse e-mail), desbane
+ * no Auth e marca login_habilitado.
  */
 export const habilitarLoginPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
@@ -554,7 +610,8 @@ export const habilitarLoginPessoa = createServerFn({ method: "POST" })
     const { correspondenteId } = await carregarAlvo(supabase, userId, data.id);
 
     const email = data.email.trim().toLowerCase();
-    const senha = email;
+    await exigirEnvioDeEmail({ authUid: data.id, perfilAtivo: false });
+    const senha = gerarSenhaProvisoria();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
@@ -585,7 +642,7 @@ export const habilitarLoginPessoa = createServerFn({ method: "POST" })
       payloadNovo: { email },
     });
 
-    return { id: data.id, email, senha_temporaria: senha };
+    return { id: data.id, email, ...(await enviarSenha(data.id, senha)) };
   });
 
 /** Ativa ou desativa (bloqueia) o acesso de uma pessoa. */
@@ -630,7 +687,10 @@ export const alternarStatusPessoa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Gera uma nova senha temporária para a pessoa (exibida uma única vez). */
+/**
+ * Sorteia uma nova senha provisória e a envia só para o e-mail da pessoa (quem
+ * redefine não a vê). No próximo acesso ela define a dela.
+ */
 export const resetarSenhaPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
@@ -638,9 +698,12 @@ export const resetarSenhaPessoa = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
 
-    // Volta à senha provisória = o próprio e-mail, com troca obrigatória na entrada.
-    const senha = (alvo.email ?? "").trim().toLowerCase();
-    if (!senha) throw new Error("Esta pessoa não tem e-mail de acesso.");
+    // Senha provisória sorteada, só por e-mail, com troca obrigatória na entrada.
+    if (!(alvo.email ?? "").trim()) throw new Error("Esta pessoa não tem e-mail de acesso.");
+    // O freio e o perfil são conferidos ANTES da troca: senão a senha mudava e o e-mail
+    // era recusado depois, e a pessoa ficava sem senha válida.
+    await exigirEnvioDeEmail({ authUid: data.id, perfilAtivo: true });
+    const senha = gerarSenhaProvisoria();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
       password: senha,
@@ -658,7 +721,118 @@ export const resetarSenhaPessoa = createServerFn({ method: "POST" })
       entidadeId: data.id,
     });
 
-    return { id: data.id, email: alvo.email ?? "", senha_temporaria: senha };
+    return { id: data.id, email: alvo.email ?? "", ...(await enviarSenha(data.id, senha)) };
+  });
+
+export interface ResultadoSenhasAntigas {
+  /** Pessoas com acesso ainda na senha provisória (troca obrigatória pendente). */
+  pendentes: number;
+  /** Até 20 nomes, para quem vai confirmar saber de quem se trata. */
+  nomes: string[];
+  /** Só quando `confirmar`: quantas senhas novas entraram na fila de e-mail. */
+  enviadas: number;
+  falhas: { nome: string; motivo: string }[];
+}
+
+/**
+ * Contas criadas antes de 26/10/2026 ainda podem estar com a senha provisória igual ao
+ * próprio e-mail (auditoria de 26/10/2026). Esta ação do administrador sorteia senha nova
+ * e manda por e-mail a quem AINDA está com a troca obrigatória pendente — quem já definiu
+ * a própria senha não é tocado. Sem `confirmar`, só conta (nada muda). Cada pessoa passa
+ * pelas mesmas travas da redefinição (perfil ativo, freio de envios), conferidas ANTES de
+ * trocar a senha no Auth. Só administrador ou correspondente.
+ */
+export const redefinirSenhasProvisoriasAntigas = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["admin.pessoas", "edit"])])
+  .inputValidator((d: unknown) => z.object({ confirmar: z.boolean() }).parse(d))
+  .handler(async ({ data, context }): Promise<ResultadoSenhasAntigas> => {
+    const { supabase, userId } = context;
+    const { data: topo } = await supabase.rpc("has_any_role", {
+      _user_id: userId,
+      _roles: ["admin", "correspondente"],
+    });
+    if (topo !== true) {
+      throw new Error(
+        "Só o administrador ou o correspondente redefine as senhas provisórias antigas.",
+      );
+    }
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("correspondente_id")
+      .eq("id", userId)
+      .maybeSingle();
+    const correspondenteId = me?.correspondente_id;
+    if (!correspondenteId) throw new Error("Ecossistema não identificado.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: perfis, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id, nome, email")
+      .eq("correspondente_id", correspondenteId)
+      .eq("login_habilitado", true)
+      .eq("ativo", true)
+      .is("bloqueado_em", null)
+      .is("deleted_at", null)
+      .in("acesso_tipo", ["sistema", "portal_parceiro"])
+      .not("email", "is", null)
+      .neq("id", userId)
+      .limit(1000);
+    if (error) throw new Error("Não foi possível listar as pessoas.");
+
+    const pendentes: { id: string; nome: string }[] = [];
+    for (const p of (perfis ?? []) as { id: string; nome: string | null; email: string | null }[]) {
+      const { data: u } = await supabaseAdmin.auth.admin.getUserById(p.id);
+      if (senhaProvisoriaPendente(u?.user))
+        pendentes.push({ id: p.id, nome: p.nome ?? p.email ?? p.id });
+    }
+    const resultado: ResultadoSenhasAntigas = {
+      pendentes: pendentes.length,
+      nomes: pendentes.slice(0, 20).map((p) => p.nome),
+      enviadas: 0,
+      falhas: [],
+    };
+    if (!data.confirmar || pendentes.length === 0) return resultado;
+
+    await exigirEnvioDeEmail();
+    const { conferirEnvioDeSenha } = await import("@/lib/plataforma/ponte.server");
+    for (const p of pendentes) {
+      try {
+        await conferirEnvioDeSenha(p.id, true);
+        const senha = gerarSenhaProvisoria();
+        const { error: e } = await supabaseAdmin.auth.admin.updateUserById(p.id, {
+          password: senha,
+          app_metadata: { senha_provisoria: true },
+        });
+        if (e) throw new Error("Não foi possível trocar a senha no Auth.");
+        const envio = await enviarSenha(p.id, senha);
+        if (envio.senha_enviada) resultado.enviadas += 1;
+        else
+          resultado.falhas.push({
+            nome: p.nome,
+            motivo: envio.aviso_envio ?? "E-mail não enfileirado.",
+          });
+      } catch (e) {
+        resultado.falhas.push({
+          nome: p.nome,
+          motivo: e instanceof Error && e.message ? e.message : "Falhou.",
+        });
+      }
+    }
+
+    const { registrarAuditoria } = await import("@/lib/admin/audit.server");
+    await registrarAuditoria({
+      supabase,
+      userId,
+      correspondenteId,
+      acao: "pessoa.redefinir_senhas_provisorias_antigas",
+      entidade: "profiles",
+      payloadNovo: {
+        pendentes: resultado.pendentes,
+        enviadas: resultado.enviadas,
+        falhas: resultado.falhas.length,
+      },
+    });
+    return resultado;
   });
 
 /**
@@ -675,10 +849,22 @@ export const alterarEmailPessoa = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+  .handler(async ({ data, context }): Promise<{ ok: true; aviso: string | null }> => {
     const { supabase, userId } = context;
     const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
-    if ((alvo.email ?? "").toLowerCase() === data.email) return { ok: true };
+    const antigo = (alvo.email ?? "").trim().toLowerCase();
+    if (antigo === data.email) return { ok: true, aviso: null };
+
+    // Auditoria de 26/10/2026: trocar o e-mail por um seu e depois "Redefinir senha" dava a
+    // senha da pessoa a quem trocou. Agora o e-mail antigo é avisado na hora e recebe cópia
+    // das senhas provisórias por 72 h — por isso a troca exige a ponte com a plataforma.
+    const { ponteConfigurada, registrarTrocaDeEmail } =
+      await import("@/lib/plataforma/ponte.server");
+    if (antigo && !ponteConfigurada()) {
+      throw new Error(
+        "O aviso por e-mail não está configurado neste servidor; o e-mail de acesso não foi trocado.",
+      );
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
@@ -702,9 +888,16 @@ export const alterarEmailPessoa = createServerFn({ method: "POST" })
       acao: "pessoa.alterar_email",
       entidade: "profiles",
       entidadeId: data.id,
+      payloadAnterior: { email: antigo || null },
       payloadNovo: { email: data.email },
     });
-    return { ok: true };
+    const avisado = antigo ? await registrarTrocaDeEmail(data.id, antigo, data.email) : true;
+    return {
+      ok: true,
+      aviso: avisado
+        ? null
+        : "O e-mail foi trocado, mas o aviso ao e-mail antigo não entrou na fila. Avise a pessoa por outro canal.",
+    };
   });
 
 /** Exclui definitivamente uma pessoa (remove o acesso ao sistema). */

@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.session?.user) {
       throw redirect({ to: "/auth" });
     }
-    // Senha provisória (o próprio e-mail): nada abre antes de a pessoa definir a dela.
+    // Senha provisória (sorteada, enviada por e-mail): nada abre antes de a pessoa definir a dela.
     if (
       data.session.user.app_metadata?.senha_provisoria === true &&
       location.pathname !== "/conta/seguranca"
