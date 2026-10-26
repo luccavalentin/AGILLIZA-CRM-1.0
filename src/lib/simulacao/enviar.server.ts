@@ -1,5 +1,6 @@
 import { EnviarArgs, EnviarResultado, IntegracaoBancariaError } from "./enviar.types";
 import { chamarIntegracao } from "./homefin.server";
+import { camposRetornoBanco } from "./campos-retorno-banco";
 import {
   num,
   sanitizarMensagemErro,
@@ -1039,6 +1040,7 @@ async function processarBancoIndividual(
           valor_parcela: valorParcela,
           taxa_juros_ano: taxaJuros != null && num(taxaJuros) > 0 ? num(taxaJuros) : undefined,
           taxa_cet_ano: taxaCet != null && num(taxaCet) > 0 ? num(taxaCet) : undefined,
+          ...camposRetornoBanco(fonte),
           mensagem_banco: avisoDespesas,
           raw_response: fonte,
           simulado_em: new Date().toISOString(),

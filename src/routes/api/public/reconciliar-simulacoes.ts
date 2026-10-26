@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { camposRetornoBanco } from "@/lib/simulacao/campos-retorno-banco";
 
 /**
  * Reconciliação de simulações em estado "aguardando" (polling pós-envio).
@@ -357,9 +358,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                     valor_parcela: valorParcela,
                     taxa_juros_ano: taxaJuros ? Number(taxaJuros) : null,
                     taxa_cet_ano: taxaCet ? Number(taxaCet) : null,
-                    valor_financiamento_max: apiSim.valorFinanciamento
-                      ? Number(apiSim.valorFinanciamento)
-                      : null,
+                    ...camposRetornoBanco(apiSim),
                     mensagem_banco: aviso,
                     raw_response: apiSim,
                     simulado_em: new Date().toISOString(),
@@ -571,6 +570,7 @@ export const Route = createFileRoute("/api/public/reconciliar-simulacoes")({
                           taxa_cet_ano: reenvio.taxaCetAnoBanco
                             ? Number(reenvio.taxaCetAnoBanco)
                             : null,
+                          ...camposRetornoBanco(reenvio),
                           mensagem_banco: null,
                           raw_response: reenvio,
                           simulado_em: new Date().toISOString(),
