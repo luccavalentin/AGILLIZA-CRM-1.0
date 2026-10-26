@@ -208,8 +208,13 @@ export function EditarPessoaDialog({
                   onClick={async () => {
                     setTrocandoEmail(true);
                     try {
-                      await alterarEmail({ data: { id: pessoa!.id, email: novoEmail } });
-                      toast.success("E-mail de acesso atualizado.");
+                      const r = await alterarEmail({ data: { id: pessoa!.id, email: novoEmail } });
+                      if (r.aviso) toast.warning(r.aviso, { duration: 12_000 });
+                      else
+                        toast.success("E-mail de acesso atualizado.", {
+                          description:
+                            "O e-mail anterior (se havia) foi avisado e, por 72 horas, também recebe as senhas provisórias novas.",
+                        });
                       setNovoEmail(null);
                       qc.invalidateQueries({ queryKey: ["pessoas"] });
                       onClose();

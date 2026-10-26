@@ -13,7 +13,8 @@ const uuid = z.string().uuid();
 const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida.");
 const motivo = z.string().trim().min(5, "Escreva o motivo (5 letras ou mais).").max(500);
 
-export type StatusRepasse = "a_pagar" | "aguardando_base" | "aprovada" | "parcial" | "paga" | "cancelada";
+/** "a_conferir" (0481): a base veio só do que a conta informou; o Agilliza confere antes (0495/0500). */
+export type StatusRepasse = "a_pagar" | "a_conferir" | "aguardando_base" | "aprovada" | "parcial" | "paga" | "cancelada";
 export type BaseRepasse = "valor_financiado" | "valor_contrato" | "comissao_recebida";
 
 export interface Repasse {
@@ -46,7 +47,17 @@ export interface Repasse {
 
 export interface ListaRepasses {
   itens: Repasse[];
-  totais: { previsto: number; aprovado: number; pago: number; cancelado: number; quantidade: number; aguardando_base: number };
+  totais: {
+    previsto: number;
+    aprovado: number;
+    pago: number;
+    cancelado: number;
+    quantidade: number;
+    aguardando_base: number;
+    /** Em conferência (0481/0500): fora do previsto. Banco anterior à 0500 não traz. */
+    a_conferir?: number;
+    em_conferencia?: number;
+  };
 }
 
 export interface RegraRepasse {

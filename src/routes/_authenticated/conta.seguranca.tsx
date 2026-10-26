@@ -24,7 +24,8 @@ function Pagina() {
   const [nova, setNova] = useState("");
   const [confirma, setConfirma] = useState("");
   const [salvando, setSalvando] = useState(false);
-  // Senha provisória = o próprio e-mail: a pessoa só sai desta tela depois de definir a dela.
+  // Senha provisória (sorteada e enviada por e-mail): a pessoa só sai desta tela depois de
+  // definir a dela.
   const [provisoria, setProvisoria] = useState(false);
   const [meuEmail, setMeuEmail] = useState("");
   const [senhaJaTrocada, setSenhaJaTrocada] = useState(false);
@@ -142,8 +143,8 @@ function Pagina() {
           <div className="space-y-1">
             <p className="font-medium text-foreground">Defina a sua senha para continuar</p>
             <p className="text-muted-foreground">
-              Você entrou com a senha provisória (o seu e-mail). Em “Senha atual”, digite o seu
-              e-mail; depois escolha uma senha só sua. O sistema libera em seguida.
+              Você entrou com a senha provisória que chegou no seu e-mail. Em “Senha atual”, digite
+              essa senha; depois escolha uma senha só sua. O sistema libera em seguida.
             </p>
           </div>
         </div>
