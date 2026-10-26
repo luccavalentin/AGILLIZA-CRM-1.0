@@ -148,6 +148,8 @@ export const listarLicencas = createServerFn({ method: "GET" })
         plano: z.string().uuid().optional().nullable(),
         /** Carteira nomeada (id) ou "sem" (contas fora de carteira). */
         carteira: z.union([z.string().uuid(), z.literal("sem")]).optional().nullable(),
+        /** Uma conta só (link `?conta=` do financeiro da matriz, que abre a gaveta). */
+        conta: z.string().uuid().optional().nullable(),
         pagina: z.number().int().min(1).max(10_000).default(1),
       })
       .parse(d ?? {}),
@@ -163,6 +165,7 @@ export const listarLicencas = createServerFn({ method: "GET" })
       data.plano ?? null,
       data.carteira && data.carteira !== "sem" ? data.carteira : null,
       data.carteira === "sem",
+      data.conta ?? null,
     ];
     // Assinatura vigente: no máximo uma por conta (índice assinaturas_uma_vigente). A antiga
     // junção por `cancelada_em is null` também pegava assinatura encerrada e duplicava a conta.
@@ -187,7 +190,8 @@ export const listarLicencas = createServerFn({ method: "GET" })
             and ($5::uuid is null or exists (select 1 from plataforma.carteira c
                                               where c.tenant_id = t.id and c.grupo_id = $5))
             and (not $6::boolean or not exists (select 1 from plataforma.carteira c
-                                                 where c.tenant_id = t.id and c.grupo_id is not null))`;
+                                                 where c.tenant_id = t.id and c.grupo_id is not null))
+            and ($7::uuid is null or t.id = $7)`;
     return comPlataforma(context.userId, async (tx) => {
       const licencas = await tx.consultar<Licenca>(
         `select t.id, t.tipo::text as tipo, t.nome, t.slug::text as slug, t.status::text as status,
@@ -201,7 +205,7 @@ export const listarLicencas = createServerFn({ method: "GET" })
                 sa.score::int as score, sa.faixa::text as faixa
            ${origem}
           order by t.criado_em desc, t.id
-          limit ${POR_PAGINA_LICENCAS} offset $7`,
+          limit ${POR_PAGINA_LICENCAS} offset $8`,
         [...filtros, (data.pagina - 1) * POR_PAGINA_LICENCAS],
       );
       const resumo = await tx.uma<ResumoLicencas>(

@@ -23,6 +23,7 @@ const ROTULO: Record<Natureza, string> = {
   conta_pagar: "Despesas",
   comissao_participante: "Corretores e parceiros",
   repasse_assinante: "Repasses aos assinantes",
+  matricula: "Matrículas pedidas por terceiros",
 };
 const ENTRADA: Record<Natureza, boolean> = {
   comissao_banco: true,
@@ -30,6 +31,7 @@ const ENTRADA: Record<Natureza, boolean> = {
   conta_pagar: false,
   comissao_participante: false,
   repasse_assinante: false,
+  matricula: true,
 };
 
 function Pagina() {

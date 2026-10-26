@@ -27,11 +27,14 @@ const jsonLivre = z.record(z.string(), z.unknown());
 const valor = z.number().finite().positive().max(999_999_999);
 
 const NATUREZA = z.enum(["comissao_banco", "comissao_participante", "conta_pagar", "conta_receber"]);
-const PERM_NATUREZA: Record<z.infer<typeof NATUREZA>, string> = {
+/** O livro de baixas aceita também a matrícula pedida por terceiro (c1, natureza `matricula`). */
+const NATUREZA_BAIXA = z.enum(["comissao_banco", "comissao_participante", "conta_pagar", "conta_receber", "matricula"]);
+const PERM_NATUREZA: Record<z.infer<typeof NATUREZA_BAIXA>, string> = {
   comissao_banco: "financeiro.comissoes_bancos",
   comissao_participante: "financeiro.comissoes",
   conta_pagar: "financeiro.contas_pagar",
   conta_receber: "financeiro.contas_receber",
+  matricula: "financeiro.contas_receber",
 };
 
 interface Acao {
@@ -178,7 +181,7 @@ const EXECUCOES = {
   baixa: {
     fn: "fin_registrar_baixa",
     args: z.object({
-      _natureza: NATUREZA,
+      _natureza: NATUREZA_BAIXA,
       _alvo: uuid,
       _valor: valor,
       _data: data,
@@ -250,7 +253,7 @@ const EXECUCOES = {
     fn: "fin_conciliar",
     args: z.object({
       _linha: uuid,
-      _tipo: z.enum(["baixa", "comissao_banco", "conta_receber", "conta_pagar", "comissao_participante"]),
+      _tipo: z.enum(["baixa", "comissao_banco", "conta_receber", "conta_pagar", "comissao_participante", "matricula"]),
       _alvo: uuid,
       _permitir_excedente: z.boolean().default(false),
     }),

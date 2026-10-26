@@ -54,6 +54,17 @@ describe("porta única do financeiro", () => {
     expect(baixa.corpo).toContain('"baixar"');
   });
 
+  it("matrícula paga entra no livro com a permissão das contas a receber (c1)", () => {
+    const baixa = acoes(blocoDe("EXECUCOES")).find((a) => a.nome === "baixa")!;
+    expect(baixa.corpo).toContain("_natureza: NATUREZA_BAIXA");
+    expect(fonte).toMatch(/matricula: "financeiro\.contas_receber"/);
+    const conciliar = acoes(blocoDe("EXECUCOES")).find((a) => a.nome === "conciliar")!;
+    expect(conciliar.corpo).toContain('"matricula"');
+    // O detalhe do lançamento não conhece matrícula: continua só com as naturezas antigas.
+    const detalhe = acoes(blocoDe("CONSULTAS")).find((a) => a.nome === "detalhe")!;
+    expect(detalhe.corpo).toContain("_natureza: NATUREZA,");
+  });
+
   it("nenhum provedor, webhook ou cobrança no módulo (C45j)", () => {
     const codigo = fonte.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     expect(codigo).not.toMatch(/asaas|webhook|fetch\(|https?:\/\//i);

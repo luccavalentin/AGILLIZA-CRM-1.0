@@ -28,3 +28,22 @@ export function propostaComIdH(p: ComIdH | string | number): string {
   const n = numeroIdH(p);
   return n ? `Proposta ID H. ${n}` : "Proposta";
 }
+
+/**
+ * Números do cartão de proposta de ASSINANTE no kanban (consolidação c1): o nº do banco quando
+ * houver; senão o "ID H." (id da oportunidade, `id_h` da fila); o código PRO-… só enquanto a
+ * proposta ainda não tem nenhum dos dois. O secundário mostra o ID H. ao lado do nº do banco.
+ */
+export function numerosDoCartaoAssinante(p: {
+  codigo: string;
+  numero_proposta_banco?: string | null;
+  id_h?: string | number | null;
+  numero_agilliza?: string | null;
+}): { numero: string; numeroSecundario: string | null } {
+  const nb = p.numero_proposta_banco?.trim() || null;
+  const idh = p.id_h === null || p.id_h === undefined ? null : numeroIdH(p.id_h);
+  const agilliza = p.numero_agilliza ? `No Agilliza #${p.numero_agilliza}` : null;
+  if (nb) return { numero: `Nº banco ${nb}`, numeroSecundario: idh ? `ID H. ${idh}` : agilliza };
+  if (idh) return { numero: `ID H. ${idh}`, numeroSecundario: agilliza };
+  return { numero: p.codigo, numeroSecundario: agilliza };
+}

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { lerBuscaLicencas } from "@/lib/plataforma/licencas-busca";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // a8 (C70): aba isolada dos vinculados ao correspondente.
 import { VinculadosAba } from "@/components/plataforma/vinculados/vinculados-aba";
@@ -76,6 +78,8 @@ import {
 export const Route = createFileRoute("/_authenticated/plataforma/licencas")({
   head: () => ({ meta: [{ title: "Licenças e assinaturas — Gestão de sistemas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("saas.licencas"),
+  // `?conta=<id>` (link do financeiro da matriz): abre direto a gaveta da licença.
+  validateSearch: lerBuscaLicencas,
   component: Pagina,
 });
 
@@ -108,6 +112,25 @@ function Pagina() {
   // a8 (C70): "Assinantes" (licenças pagas) | "Vinculados ao correspondente" (Sua base).
   const [aba, setAba] = useState<"assinantes" | "vinculados">("assinantes");
   const termo = useValorAssentado(busca.trim());
+  const { conta: contaDoLink } = Route.useSearch();
+  const navegar = Route.useNavigate();
+  const contaAberta = useRef<string | null>(null);
+  // O link do financeiro (`?conta=`) abre a gaveta daquela licença uma vez; fechar limpa o link.
+  useEffect(() => {
+    if (!contaDoLink || contaAberta.current === contaDoLink) return;
+    contaAberta.current = contaDoLink;
+    listarFn({ data: { conta: contaDoLink, pagina: 1 } })
+      .then((r) => {
+        const l = r.licencas[0];
+        if (l) setAberta({ licenca: l, aba: "resumo" });
+        else toast.error("Esta conta não está entre os assinantes (pode ser da Sua base).");
+      })
+      .catch((e) => toast.error(mensagemDeErro(e, "Não foi possível abrir a licença.")));
+  }, [contaDoLink, listarFn]);
+  const fecharGaveta = () => {
+    setAberta(null);
+    if (contaDoLink) void navegar({ search: {}, replace: true });
+  };
 
   const q = useQuery({
     queryKey: ["plataforma-licencas", tipo, situacao, termo, plano, carteira, pagina],
@@ -471,7 +494,7 @@ function Pagina() {
         carteiras={carteiras}
         abaInicial={aberta?.aba}
         secaoInicial={aberta?.secao}
-        onFechar={() => setAberta(null)}
+        onFechar={fecharGaveta}
       />
       {podeCriar && (
         <NovaLicenca

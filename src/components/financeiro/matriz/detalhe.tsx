@@ -103,7 +103,7 @@ export function GavetaLancamento({
   resumo,
   podeEstornar,
 }: {
-  natureza: Exclude<Natureza, "repasse_assinante">;
+  natureza: Exclude<Natureza, "repasse_assinante" | "matricula">;
   id: string | null;
   titulo: string;
   onFechar: () => void;

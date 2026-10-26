@@ -183,8 +183,11 @@ function useAbrir() {
   return { m, lendo, setLendo, abrir };
 }
 
-/** Bloco para o Painel geral: as 5 mais recentes (destaques primeiro). */
-export function NewsEquipeWidget() {
+/**
+ * Bloco para o Painel geral: as 5 mais recentes (destaques primeiro). `embutido`: só a lista,
+ * para entrar num cartão do próprio painel (cabeçalho e moldura 3D são de quem embute).
+ */
+export function NewsEquipeWidget({ embutido = false }: { embutido?: boolean } = {}) {
   const fn = useServerFn(lerNewsDaEquipe);
   const q = useQuery({
     queryKey: ["news-equipe", 5],
@@ -195,6 +198,39 @@ export function NewsEquipeWidget() {
   useEffect(() => {
     if (q.data?.length) m.impressoes(q.data);
   }, [q.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  const corpo = (
+    <>
+      {q.isLoading ? (
+        <Skeleton className="h-40" />
+      ) : q.isError ? (
+        <Estado3D
+          compacto
+          tipo="erro"
+          descricao="Não foi possível carregar a News."
+          acao={
+            <Button variant="outline" size="sm" onClick={() => q.refetch()}>
+              Tentar de novo
+            </Button>
+          }
+        />
+      ) : !(q.data ?? []).length ? (
+        <Estado3D
+          compacto
+          icone={Newspaper}
+          titulo="Nada publicado para a equipe agora"
+          descricao="Quando a curadoria publicar para todos ou para a equipe, aparece aqui."
+        />
+      ) : (
+        <ListaNews itens={q.data!} onAbrir={abrir} />
+      )}
+      <LeitorPost
+        item={lendo}
+        onFechar={() => setLendo(null)}
+        onTempo={(item, s) => s >= 3 && m.evento({ tipo: "tempo", item, segundos: s })}
+      />
+    </>
+  );
+  if (embutido) return corpo;
   return (
     <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <div className="mb-1 flex items-center justify-between gap-2">
@@ -207,20 +243,7 @@ export function NewsEquipeWidget() {
           </Link>
         </Button>
       </div>
-      {q.isLoading ? (
-        <Skeleton className="h-40" />
-      ) : !(q.data ?? []).length ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">
-          Nada publicado para a equipe agora.
-        </p>
-      ) : (
-        <ListaNews itens={q.data!} onAbrir={abrir} />
-      )}
-      <LeitorPost
-        item={lendo}
-        onFechar={() => setLendo(null)}
-        onTempo={(item, s) => s >= 3 && m.evento({ tipo: "tempo", item, segundos: s })}
-      />
+      {corpo}
     </section>
   );
 }

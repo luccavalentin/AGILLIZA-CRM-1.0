@@ -20,6 +20,7 @@ import {
   Gauge,
   Info,
   Landmark,
+  Newspaper,
   RefreshCw,
   RotateCcw,
   Send,
@@ -44,6 +45,7 @@ import { Icone3D, type TomIcone3D } from "@/components/ui/icone-3d";
 import { Indicador3D } from "@/components/ui/indicador-3d";
 import { Estado3D } from "@/components/ui/estado-3d";
 import { SeletorBusca } from "./seletor-busca";
+import { NewsEquipeWidget } from "@/components/news/news-equipe";
 import {
   BLOCO_VAZIO,
   FILTROS_PADRAO,
@@ -943,6 +945,24 @@ export function PainelGeral({ search }: { search: Record<string, unknown> }) {
               </div>
             </>
           )}
+
+          {/* Agilliza News da equipe (C60, a7): o que a curadoria publicou, no mesmo cartão 3D. */}
+          <div className="pg-grade-2">
+            <Cartao
+              titulo="Agilliza News"
+              subtitulo="Mercado, crédito e comunicados da Agilliza para a equipe"
+              icone={Newspaper}
+              tom="info"
+              className="pg-col-12"
+              acao={
+                <Link to="/news" className="pg-link">
+                  Ver tudo
+                </Link>
+              }
+            >
+              <NewsEquipeWidget embutido />
+            </Cartao>
+          </div>
 
           {r && (
             <footer className="pg-fonte">
