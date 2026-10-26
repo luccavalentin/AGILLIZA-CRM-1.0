@@ -121,10 +121,13 @@ export async function liberarMidias(tx: Tx, ids: Array<string | null | undefined
   return saida;
 }
 
-/** Bytes de um arquivo, pedidos ao Corretor pela rota interna. */
-export async function lerDoCorretor(chave: string): Promise<Response> {
+/**
+ * Bytes de um arquivo, pedidos ao Corretor pela rota interna. `range` (uma faixa só, já
+ * conferida por quem chama) vai adiante: o Corretor lê só o pedaço, em fluxo (auditoria rodada 2).
+ */
+export async function lerDoCorretor(chave: string, range: string | null = null): Promise<Response> {
   return fetch(`${baseCorretor()}/api/interno/midias?chave=${encodeURIComponent(chave)}`, {
-    headers: { "x-ponte-assinatura": assinatura("GET", chave) },
+    headers: { "x-ponte-assinatura": assinatura("GET", chave), ...(range ? { range } : {}) },
     signal: AbortSignal.timeout(30_000),
   });
 }

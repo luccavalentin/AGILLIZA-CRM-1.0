@@ -150,3 +150,85 @@ export function extrairPrevia(
     descricao: descricao ? descricao.slice(0, 240) : null,
   };
 }
+
+/* ------------------------------------------------------------------------------------------
+ * Auditoria rodada 2 (26/10/2026): prazo TOTAL e limite por pessoa.
+ *
+ * O `timeout` do http é de OCIOSIDADE: um site que pinga 1 byte a cada 3 s ("slowloris")
+ * prendia a busca por minutos, e 3 redirecionamentos somavam 4 prazos. E qualquer pessoa
+ * disparava buscas sem limite (o servidor visita o site em nome dela). Agora a busca inteira
+ * (DNS, redirecionamentos, corpo) tem UM prazo, e a busca que não está no cache passa antes
+ * pelo limite da pessoa (`antesDeBuscar`: no banco, `chat.limite_previa_link()`).
+ * ---------------------------------------------------------------------------------------- */
+
+export type PreviaDaPagina = ReturnType<typeof extrairPrevia>;
+export type Baixado = { status: number; local?: string; tipo: string; corpo: string };
+/** Baixa UMA URL e tem que desistir sozinho em `prazo` (epoch ms). */
+export type Baixador = (u: URL, prazo: number) => Promise<Baixado>;
+
+/** Prazo da busca inteira (todos os saltos e o corpo). */
+export const PRAZO_TOTAL_MS = 6000;
+
+/** Arma o prazo total numa requisição: no prazo ela é destruída, esteja onde estiver. */
+export function armarPrazo(
+  req: { destroy(e?: Error): unknown; once(ev: "close", f: () => void): unknown },
+  prazo: number,
+): void {
+  const restante = prazo - Date.now();
+  if (restante <= 0) {
+    req.destroy(new Error("Tempo total esgotado."));
+    return;
+  }
+  const relogio = setTimeout(() => req.destroy(new Error("Tempo total esgotado.")), restante);
+  req.once("close", () => clearTimeout(relogio));
+}
+
+export function criarBuscadorDePrevia(opcoes: {
+  baixar: Baixador;
+  prazoTotalMs?: number;
+  validadeMs?: number;
+  maxCache?: number;
+}) {
+  const cache = new Map<string, { em: number; valor: PreviaDaPagina | null }>();
+  const prazoTotal = opcoes.prazoTotalMs ?? PRAZO_TOTAL_MS;
+  const validade = opcoes.validadeMs ?? 6 * 3600_000;
+  const maxCache = opcoes.maxCache ?? 300;
+  /** `antesDeBuscar` (limite por pessoa) só roda quando a página não está no cache; se lançar, não busca. */
+  return async function buscar(
+    bruta: string,
+    antesDeBuscar?: () => Promise<unknown>,
+  ): Promise<PreviaDaPagina | null> {
+    const inicial = urlPermitida(bruta);
+    if (!inicial) return null;
+    const chave = inicial.toString();
+    const em = cache.get(chave);
+    if (em && Date.now() - em.em < validade) return em.valor;
+    if (antesDeBuscar) await antesDeBuscar();
+    const prazo = Date.now() + prazoTotal;
+    let relogio: ReturnType<typeof setTimeout> | undefined;
+    const esgotou = new Promise<never>((_, rejeitar) => {
+      relogio = setTimeout(() => rejeitar(new Error("Tempo total esgotado.")), prazoTotal);
+    });
+    let valor: PreviaDaPagina | null = null;
+    try {
+      let u: URL | null = inicial;
+      for (let i = 0; i < 4 && u; i++) {
+        // O próprio baixador desiste no prazo; a corrida garante mesmo se ele não desistir.
+        const r: Baixado = await Promise.race([opcoes.baixar(u, prazo), esgotou]);
+        if (r.local) {
+          u = urlPermitida(new URL(r.local, u).toString());
+          continue;
+        }
+        if (r.status >= 200 && r.status < 300 && r.corpo) valor = extrairPrevia(r.corpo, u);
+        break;
+      }
+    } catch {
+      valor = null;
+    } finally {
+      clearTimeout(relogio);
+    }
+    if (cache.size >= maxCache) cache.delete(cache.keys().next().value!);
+    cache.set(chave, { em: Date.now(), valor });
+    return valor;
+  };
+}

@@ -188,6 +188,8 @@ export interface Parametros {
   dias_previsao_recebimento: number;
   dias_vencimento_comissao: number;
   tolerancia_divergencia: number;
+  /** Teto da tolerância (padrão R$ 1,00): só a administração do correspondente muda. */
+  teto_tolerancia_divergencia?: number;
   dias_janela_conciliacao: number;
 }
 export interface Pessoa {

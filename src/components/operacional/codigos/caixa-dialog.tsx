@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQueryClient } from "@tanstack/react-query";
-import { Filter, Plus, ShieldAlert, Trash2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Filter, Plus, ShieldAlert, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +15,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { cn } from "@/lib/utils";
 import {
+  listarPessoasLiberaveis,
   salvarCaixa,
   type CaixaVigiada,
   type FiltroCaixa,
@@ -59,6 +61,10 @@ export function CaixaDialog({
 }) {
   const qc = useQueryClient();
   const salvarFn = useServerFn(salvarCaixa);
+  const pessoasFn = useServerFn(listarPessoasLiberaveis);
+  const equipe = useQuery({ queryKey: ["codigos-pessoas"], queryFn: () => pessoasFn(), enabled: aberto, staleTime: 60_000 });
+  const [pessoas, setPessoas] = useState<string[]>([]);
+  const [buscaPessoa, setBuscaPessoa] = useState("");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [usuario, setUsuario] = useState("");
@@ -87,6 +93,8 @@ export function CaixaDialog({
     setProvedor(provedorDe(caixa?.imap_host ?? "imap.uhserver.com"));
     setAtivo(caixa?.ativo ?? true);
     setFiltros(caixa?.filtros ?? []);
+    setPessoas(caixa?.pessoas ?? []);
+    setBuscaPessoa("");
   }, [aberto, caixa]);
 
   function escolher(id: Provedor) {
@@ -132,6 +140,7 @@ export function CaixaDialog({
           usar_palavras_padrao: palavrasPadrao,
           ativo,
           filtros: validos.map((f) => ({ ...f, termo: f.termo.trim() })),
+          pessoas,
         },
       });
       await qc.invalidateQueries({ queryKey: ["codigos-caixas"] });
@@ -372,6 +381,59 @@ export function CaixaDialog({
                 Do jeito que está, nada será capturado: ligue os e-mails de código ou crie uma regra
                 "Contém".
               </p>
+            )}
+          </section>
+
+          <section className="space-y-2 rounded-xl border bg-muted/30 p-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold text-foreground">Quem vê esta caixa</p>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Só as pessoas marcadas veem as mensagens e os códigos desta caixa. Quem cadastrou e a
+              administração do correspondente veem sempre.
+            </p>
+            {(equipe.data?.length ?? 0) > 8 && (
+              <Input
+                aria-label="Buscar pessoa"
+                className="h-9"
+                value={buscaPessoa}
+                onChange={(e) => setBuscaPessoa(e.target.value)}
+                placeholder="Buscar pela pessoa"
+              />
+            )}
+            {equipe.isLoading ? (
+              <p className="text-xs text-muted-foreground">Carregando a equipe…</p>
+            ) : equipe.isError ? (
+              <p className="text-xs text-amber-700 dark:text-amber-400">Não foi possível carregar a equipe agora.</p>
+            ) : !equipe.data?.length ? (
+              <p className="text-xs text-muted-foreground">Ninguém mais da equipe para liberar.</p>
+            ) : (
+              <ul className="grid max-h-56 gap-1 overflow-y-auto sm:grid-cols-2">
+                {equipe.data
+                  .filter((p) => !buscaPessoa.trim() || p.nome.toLowerCase().includes(buscaPessoa.trim().toLowerCase()))
+                  .map((p) => {
+                    const marcada = pessoas.includes(p.id);
+                    return (
+                      <li key={p.id}>
+                        <label
+                          className={cn(
+                            "flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm",
+                            marcada && "border-primary bg-primary/5",
+                          )}
+                        >
+                          <Checkbox
+                            checked={marcada}
+                            onCheckedChange={(v) =>
+                              setPessoas((l) => (v ? [...new Set([...l, p.id])] : l.filter((x) => x !== p.id)))
+                            }
+                          />
+                          <span className="min-w-0 truncate">{p.nome}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+              </ul>
             )}
           </section>
 
