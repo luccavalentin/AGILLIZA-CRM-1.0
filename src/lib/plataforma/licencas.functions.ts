@@ -375,6 +375,119 @@ export const mudarPlanoLicenca = createServerFn({ method: "POST" })
     return { plano: r.nome };
   });
 
+/* ------------------------------------------------ mudar o tipo da conta (0590) --- */
+
+/** Tipos que trocam entre si (parceiro fica de fora: papéis, portal e dados são outros). */
+export type TipoConversivel = "corretor" | "imobiliaria";
+
+/** O que muda (e o que impede) se a conta passar ao tipo novo. */
+export interface PreviaConversaoTipo {
+  tipo_atual: TipoLicenca;
+  tipo_novo: TipoConversivel;
+  plano_atual: string | null;
+  pessoas_ativas: number;
+  convites_pendentes: number;
+  contratos_locacao_abertos: number;
+  modulos_ganhos: string[];
+  modulos_perdidos: string[];
+  /** Vazio = pode converter. */
+  impedimentos: string[];
+}
+
+export const previaConverterTipoLicenca = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z.object({ id: UUID, tipo: z.enum(["corretor", "imobiliaria"]) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ j: PreviaConversaoTipo }>(
+        "select plataforma.previa_converter_tipo_conta($1, $2) as j",
+        [data.id, data.tipo],
+      ),
+    );
+    if (!r) throw new Error("A conta não foi encontrada.");
+    return r.j;
+  });
+
+/**
+ * Corretor ↔ imobiliária mantendo clientes, imóveis, propostas, faturas, créditos e a
+ * situação da licença. Tipo e plano mudam juntos; o motivo vai para a auditoria.
+ */
+export const converterTipoLicenca = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: UUID,
+        tipo: z.enum(["corretor", "imobiliaria"]),
+        planoId: z.string().uuid("Escolha o plano do novo tipo."),
+        motivo: MOTIVO,
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ j: { tipo: TipoConversivel; plano: string } }>(
+        "select plataforma.converter_tipo_conta($1, $2, $3, $4) as j",
+        [data.id, data.tipo, data.planoId, data.motivo],
+      ),
+    );
+    if (!r) throw new Error("A conta não foi encontrada.");
+    return r.j;
+  });
+
+/* --------------------------------------- redefinir a senha do assinante (0591) --- */
+
+/**
+ * Argon2id com os mesmos parâmetros do Corretor (`packages/db/src/autenticacao.ts`:
+ * m=65536, t=3, p=1) — o login de lá confere este hash. `hash-wasm` (WASM, sem binário
+ * nativo) roda igual no Node da VPS e no Worker.
+ */
+async function hashArgon2id(senha: string): Promise<string> {
+  const { argon2id } = await import("hash-wasm");
+  const salt = new Uint8Array(16);
+  crypto.getRandomValues(salt);
+  return argon2id({
+    password: senha,
+    salt,
+    parallelism: 1,
+    iterations: 3,
+    memorySize: 65536,
+    hashLength: 32,
+    outputType: "encoded",
+  });
+}
+
+/**
+ * A senha da pessoa volta a ser o próprio e-mail, com troca obrigatória no primeiro acesso
+ * (decisão do dono: login e senha do assinante são sempre o e-mail). O banco confere a conta
+ * e a pessoa, encerra as sessões dela e audita; o e-mail não volta para a tela.
+ */
+export const redefinirSenhaLicenca = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.licencas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z.object({ id: UUID, usuarioId: z.string().uuid("Pessoa inválida.") }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, async (tx) => {
+      const e = await tx.uma<{ email: string }>(
+        "select plataforma.email_para_redefinir_senha($1, $2) as email",
+        [data.id, data.usuarioId],
+      );
+      if (!e?.email) throw new Error("Esta pessoa não tem e-mail de acesso.");
+      const hash = await hashArgon2id(e.email);
+      return tx.uma<{ j: { sessoes_encerradas: number } }>(
+        "select plataforma.redefinir_senha_assinante($1, $2, $3, $4) as j",
+        [data.id, data.usuarioId, e.email, hash],
+      );
+    });
+    return { sessoesEncerradas: r?.j.sessoes_encerradas ?? 0 };
+  });
+
 /** Crédito de cortesia ou estorno, com entrada no extrato da conta. */
 export const concederCreditosLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])

@@ -11,6 +11,7 @@ import {
   Globe,
   Home,
   KeyRound,
+  Repeat,
   ShieldCheck,
   UserRoundPlus,
   Users,
@@ -46,6 +47,8 @@ import {
 import { CarteiraLicenca } from "./carteira-licenca";
 import { IndicacaoDaLicenca } from "./indicacao-licenca";
 import { DescontoDaLicenca } from "./desconto-licenca";
+import { TipoDaLicenca } from "./tipo-licenca";
+import { RedefinirSenhaPessoa } from "./senha-licenca";
 import {
   ROTULO_ASSINATURA,
   ROTULO_CICLO,
@@ -53,6 +56,7 @@ import {
   ROTULO_PAPEL,
   ROTULO_TIPO,
   SITUACAO_LICENCA,
+  conversivel,
   rotuloDe,
   situacaoLicenca,
   ehCortesia,
@@ -60,7 +64,8 @@ import {
 
 export type AbaLicenca = "resumo" | "cobranca" | "pessoas" | "acoes";
 /** Bloco das ações para onde a gaveta rola ao abrir por uma ação da lista. */
-export type SecaoAcao = "situacao" | "teste" | "plano" | "desconto" | "creditos" | "carteira" | "indicacao";
+export type SecaoAcao =
+  "situacao" | "teste" | "plano" | "tipo" | "desconto" | "creditos" | "carteira" | "indicacao";
 
 const TOM_FATURA: Record<string, "sucesso" | "alerta" | "perigo" | "neutro"> = {
   paga: "sucesso",
@@ -274,8 +279,9 @@ export function GavetaLicenca({
                             {p.equipe ? ` · ${p.equipe}` : ""}
                           </p>
                         </div>
-                        <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
                           <Selo tom={p.ativo ? "sucesso" : "neutro"}>{p.ativo ? "Ativo" : "Desligado"}</Selo>
+                          {podeAlterar && p.ativo && <RedefinirSenhaPessoa licencaId={licenca.id} pessoa={p} />}
                         </div>
                       </li>
                     ))}
@@ -517,6 +523,17 @@ function AcoesLicenca({
           </Button>
         </div>
       </BlocoAcao>
+
+      {conversivel(licenca.tipo) && (
+        <BlocoAcao
+          id="tipo"
+          titulo="Mudar tipo da conta"
+          descricao="Corretor ↔ imobiliária, com o plano do tipo novo. Os dados e a situação da licença ficam."
+          icone={<Repeat />}
+        >
+          <TipoDaLicenca key={`${licenca.id}-${licenca.tipo}`} licenca={licenca} planos={planos} />
+        </BlocoAcao>
+      )}
 
       <BlocoAcao id="desconto" titulo="Desconto" icone={<Coins />}>
         <DescontoDaLicenca licenca={licenca} />

@@ -57,6 +57,7 @@
     "embla-carousel-react": "^8.6.0",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
+    "hash-wasm": "4.12.0",
     "html-to-docx": "^1.8.0",
     "imapflow": "^1.7.8",
     "input-otp": "^1.4.2",

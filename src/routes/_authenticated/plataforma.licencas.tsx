@@ -584,6 +584,11 @@ function AcoesEmLinha({
             <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "plano")}>
               Trocar plano
             </DropdownMenuItem>
+            {(licenca.tipo === "corretor" || licenca.tipo === "imobiliaria") && (
+              <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "tipo")}>
+                Mudar tipo da conta
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "desconto")}>
               Desconto
             </DropdownMenuItem>

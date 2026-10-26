@@ -57,3 +57,8 @@ export const rotuloDe = (mapa: Record<string, string>, v: string | null | undefi
 export function ehCortesia(l: Pick<Licenca, "status" | "status_motivo">): boolean {
   return l.status === "ativo" && (l.status_motivo ?? "").startsWith("cortesia:");
 }
+
+/** Tipos que trocam entre si em "Mudar tipo da conta" (0590): parceiro não troca. */
+export function conversivel(tipo: string): tipo is "corretor" | "imobiliaria" {
+  return tipo === "corretor" || tipo === "imobiliaria";
+}
