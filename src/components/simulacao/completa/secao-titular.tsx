@@ -18,6 +18,7 @@ import { DicaRendaMinima } from "@/components/simulacao/dica-renda-minima";
 import { Campo, Ast, Erro } from "@/components/simulacao/completa/campo";
 import { maskCpfCnpj, maskCelular, formatBRL } from "@/lib/simulacao/format";
 import { avaliarRendaMinima } from "@/lib/simulacao/renda";
+import { travaRendaDoFormulario } from "@/lib/simulacao/trava-renda";
 import { ESTADOS_CIVIS } from "@/lib/simulacao/schemas";
 import { REGIMES } from "@/components/crm/cliente-form/constants";
 import type { SimulacaoCompletaCtx } from "@/lib/simulacao/use-simulacao-completa";
@@ -220,6 +221,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                 )}
               </div>
               <Erro erros={erros} campo="renda_total" />
+              {!isPJ && <AvisoTravaRenda f={f} erros={erros} />}
               {!isPJ && <AvisoRendaCrm ctx={ctx} />}
 
               {f.valor_financiamento > 0 &&
@@ -496,5 +498,24 @@ function AvisoRendaCrm({ ctx }: { ctx: SimulacaoCompletaCtx }) {
         Usar a renda do CRM mesmo assim
       </Button>
     </div>
+  );
+}
+
+/**
+ * Trava de renda (pedido do dono, 26/10/2026): avisa na hora que a renda que
+ * vai ao banco está abaixo da mínima de SAC/PRICE. O envio fica travado até
+ * corrigir (ou tirar os bancos do sistema que não cabe).
+ */
+function AvisoTravaRenda({ f, erros }: { f: any; erros: Record<string, string> }) {
+  const { mensagem } = travaRendaDoFormulario(f);
+  // Depois de tentar enviar, a mesma mensagem já aparece no erro do campo.
+  if (!mensagem || erros.renda_total === mensagem || erros.renda_price === mensagem) return null;
+  return (
+    <p
+      role="alert"
+      className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-medium leading-snug text-destructive"
+    >
+      {mensagem}
+    </p>
   );
 }

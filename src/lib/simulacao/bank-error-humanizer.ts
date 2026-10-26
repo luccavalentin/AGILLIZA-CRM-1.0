@@ -5,7 +5,8 @@
  */
 
 const MAPA: Record<string, string> = {
-  RENDA_INSUFICIENTE: "Renda declarada insuficiente para o valor solicitado.",
+  RENDA_INSUFICIENTE:
+    "Renda insuficiente para o valor solicitado: a parcela passa do limite de comprometimento da renda. Aumente a renda (some a de um segundo proponente), aumente a entrada ou o prazo e reenvie.",
   DOC_INVALIDO: "Documento do cliente inválido ou não reconhecido pelo banco.",
   LIMITE_EXCEDIDO:
     "O valor informado não foi aceito pela regra de crédito do banco. Consulte os detalhes do retorno e revise os dados da operação.",
@@ -18,7 +19,8 @@ const MAPA: Record<string, string> = {
 
 /** Códigos de recusa devolvidos pelo Bradesco dentro de INT-006. */
 const BRADESCO: Record<string, string> = {
-  "119": "Renda informada abaixo da renda mínima exigida pelo banco.",
+  "119":
+    "Renda informada abaixo da renda mínima exigida pelo banco. Aumente a renda (some a de um segundo proponente), aumente a entrada ou o prazo e reenvie.",
   /**
    * O Bradesco devolve 121-L com mensagem VAZIA. A comparação de payloads
    * idênticos mostrou o que muda entre passar e falhar: o percentual
@@ -54,6 +56,27 @@ function moeda(v: unknown): string {
     currency: "BRL",
     maximumFractionDigits: 0,
   });
+}
+
+/**
+ * Recusa por renda/capacidade de pagamento, em qualquer formato de texto que o banco devolva
+ * ("renda insuficiente", "capacidade de pagamento", "comprometimento de renda", "parcela
+ * superior a 30% da renda", "income"...). O operador recebe o que fazer, não o texto cru.
+ */
+const RE_RENDA =
+  /renda\s+(insuficiente|inferior|abaixo|m[ií]nima|n[aã]o\s+(comporta|compat[ií]vel|suficiente))|capacidade\s+de\s+pagamento|comprometimento\s+(de|da)\s+renda|comprometimento\s+m[aá]ximo|parcela\s+(excede|ultrapassa|superior|acima|maior)[^.]{0,40}renda|insufficient\s+income|income\s+(too\s+low|insufficient)/i;
+
+export const MSG_RENDA_INSUFICIENTE =
+  "O banco recusou por renda: a renda informada não comporta a parcela deste financiamento. Aumente a renda (some a de um segundo proponente), aumente a entrada ou o prazo e reenvie.";
+
+/** O texto do banco fala de renda insuficiente? */
+export function ehRecusaPorRenda(texto: string | null | undefined): boolean {
+  return RE_RENDA.test(String(texto ?? ""));
+}
+
+function comMotivo(texto: string): string {
+  const t = texto.trim().replace(/\s+/g, " ");
+  return t && t.length <= 160 ? `${MSG_RENDA_INSUFICIENTE} (Motivo do banco: ${t.replace(/\.$/, "")}.)` : MSG_RENDA_INSUFICIENTE;
 }
 
 /**
@@ -114,10 +137,9 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
         return `Prazo informado abaixo do mínimo aceito pelo Bradesco nesta operação: ${minVal} meses. Aumente o prazo e reenvie.`;
       }
 
+      if (cod !== "119" && ehRecusaPorRenda(msgInternaBruta)) return comMotivo(msgInternaBruta);
+
       if (BRADESCO[cod]) {
-        if (cod === "119") {
-          return "Renda informada abaixo da renda mínima exigida pelo banco.";
-        }
         return BRADESCO[cod];
       }
 
@@ -156,6 +178,10 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
     const meses = Number(prazoMax[1]);
     return `Prazo acima do máximo aceito por este banco nesta operação: ${meses} meses (${(meses / 12).toFixed(0)} anos). Reduza o prazo para ${meses} meses ou menos e reenvie.`;
   }
+
+  // Recusa por renda/capacidade de pagamento (qualquer banco, qualquer formato).
+  if (code === "RENDA_INSUFICIENTE") return MAPA.RENDA_INSUFICIENTE!;
+  if (ehRecusaPorRenda(bruta)) return comMotivo(bruta.replace(/^Simula[cç][aã]o\s+\S+\s+falhou:\s*/i, ""));
 
   // Sessão com o banco expirada — não é erro de preenchimento.
   if (status === 401 || /token\s*jwt\s*expirado|unauthorized/i.test(bruta)) {
@@ -198,6 +224,7 @@ export function humanizarRespostaErro(json: unknown, status: number, endpoint = 
 export function humanizarErroBanco(codigo?: string | null, mensagem?: string | null): string {
   if (codigo && MAPA[codigo]) return MAPA[codigo];
   if (codigo && BRADESCO[codigo]) return BRADESCO[codigo];
+  if (ehRecusaPorRenda(mensagem)) return comMotivo(String(mensagem));
   if (mensagem && mensagem.trim().length > 0) return mensagem.trim();
   return "Não foi possível concluir a simulação neste banco.";
 }

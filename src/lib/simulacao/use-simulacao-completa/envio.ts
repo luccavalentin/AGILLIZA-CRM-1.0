@@ -23,6 +23,7 @@ import { criarProposta } from "@/lib/propostas/propostas.functions";
 import { comContaDestino } from "@/lib/simulacao/destino-conta";
 import { listarTitularesAlternativos, type TitularAlternativo } from "./titulares-alternativos";
 import type { Form } from "./state";
+import { travaRendaDoFormulario } from "@/lib/simulacao/trava-renda";
 import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 
 type Router = { navigate: (opts: any) => void };
@@ -208,6 +209,28 @@ function bloquearSemCepHomeEquity(f: Form, setErros: (v: Record<string, string>)
 }
 
 /**
+ * Trava de renda (pedido do dono, 26/10/2026): renda que vai ao banco abaixo
+ * da mínima do sistema não é enviada — voltava erro da integração. Destaca o
+ * campo, explica o que fazer e não abre o envio. O servidor confere de novo.
+ */
+export function bloquearRendaInsuficiente(
+  f: Form,
+  setErros: (v: Record<string, string>) => void,
+): boolean {
+  const trava = travaRendaDoFormulario(f as any);
+  if (!trava.mensagem || !trava.campo) return false;
+  setErros({ [trava.campo]: trava.mensagem });
+  toast.error(trava.mensagem, { duration: 12_000 });
+  if (typeof document !== "undefined") {
+    const el = document.getElementById(
+      trava.campo === "renda_price" ? "campo-renda-price" : "campo-renda-sac",
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  return true;
+}
+
+/**
  * Envio no modo "Ambos": cria uma simulação SAC (com renda_total) e uma
  * simulação PRICE (com renda_price). Cada simulação usa somente os bancos
  * selecionados no seu grupo. Se a renda PRICE não foi preenchida, o envio
@@ -248,6 +271,7 @@ export async function executarEnvioAmbos(ctx: CtxBase): Promise<void> {
     }
     return;
   }
+  if (bloquearRendaInsuficiente(f, setErros)) return;
   setErros({});
 
   setConcluidos(0);
@@ -652,6 +676,7 @@ export async function executarEnvioSimples(ctx: CtxBase): Promise<void> {
     setListaSimulacoes,
   } = ctx;
   if (bloquearSemCepHomeEquity(f, setErros)) return;
+  if (bloquearRendaInsuficiente(f, setErros)) return;
   // 1. Validação final e normalização de prazos (Rede de segurança final)
   const { prazoMaximo, set } = ctx;
 

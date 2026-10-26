@@ -1715,6 +1715,25 @@ export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
     for (const sid of idsParaEnviar) {
       try {
         console.info(`[enviarSimulacaoBanco] Processando simulação ${sid}...`);
+        // Trava de renda (pedido do dono, 26/10/2026): a mesma conta da tela,
+        // conferida de novo aqui antes de chamar a integração — renda abaixo
+        // da mínima do sistema voltava erro do banco.
+        const { travaRendaDaSimulacao } = await import("./trava-renda");
+        const { data: simRenda } = await supabase
+          .from("simulacoes")
+          .select(
+            "tipo_pessoa, sistema_amortizacao, renda_total, estado_civil, nome_conjuge, cpf_conjuge, compoe_renda_conjuge, renda_conjuge, valor_financiamento, valor_imovel, prazo",
+          )
+          .eq("id", sid)
+          .maybeSingle();
+        const { data: partsRenda } = await supabase
+          .from("simulacao_participantes")
+          .select("compoe_renda, renda")
+          .eq("simulacao_id", sid);
+        const msgRenda = simRenda
+          ? travaRendaDaSimulacao({ ...(simRenda as any), participantes: partsRenda ?? [] })
+          : null;
+        if (msgRenda) throw new Error(msgRenda);
         const res = await enviarSimulacaoImpl({
           simulacaoId: sid,
           userId,
