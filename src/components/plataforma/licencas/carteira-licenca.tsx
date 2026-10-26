@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,34 +13,43 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
-import {
-  definirCarteira,
-  pessoasParaCarteira,
-  reenviarAcessoLicenca,
-  type Licenca,
-} from "@/lib/plataforma/licencas.functions";
+import { reenviarAcessoLicenca, type Licenca } from "@/lib/plataforma/licencas.functions";
+import { adicionarContasCarteira, removerContaCarteira } from "@/lib/plataforma/carteiras.functions";
 
 const SEM = "__nenhuma__";
 
-/** Ações de carteira e de acesso dentro da gaveta da licença. */
-export function CarteiraLicenca({ licenca }: { licenca: Licenca }) {
+/**
+ * Carteira e acesso dentro da gaveta da licença: escolhe a carteira nomeada da conta (uma
+ * por vez; o responsável dela passa a atender a conta) e reenvia o e-mail de criar senha.
+ */
+export function CarteiraLicenca({
+  licenca,
+  carteiras,
+}: {
+  licenca: Licenca;
+  carteiras: { id: string; nome: string }[];
+}) {
   const qc = useQueryClient();
-  const pessoasFn = useServerFn(pessoasParaCarteira);
-  const definirFn = useServerFn(definirCarteira);
+  const adicionarFn = useServerFn(adicionarContasCarteira);
+  const removerFn = useServerFn(removerContaCarteira);
   const reenviarFn = useServerFn(reenviarAcessoLicenca);
-  const [escolha, setEscolha] = useState(licenca.carteira_uid ?? SEM);
-  const pessoas = useQuery({
-    queryKey: ["plataforma-pessoas-carteira"],
-    queryFn: () => pessoasFn(),
-    staleTime: 60_000,
-  });
+  const atual = licenca.carteira_grupo_id ?? SEM;
+  const [escolha, setEscolha] = useState(atual);
 
   const salvar = useMutation({
-    mutationFn: () => definirFn({ data: { id: licenca.id, carteira: escolha === SEM ? null : escolha } }),
+    mutationFn: async () => {
+      if (escolha === SEM) {
+        if (licenca.carteira_grupo_id) {
+          await removerFn({ data: { id: licenca.carteira_grupo_id, conta: licenca.id } });
+        }
+        return;
+      }
+      await adicionarFn({ data: { id: escolha, contas: [licenca.id] } });
+    },
     onSuccess: () => {
       toast.success(escolha === SEM ? "Conta tirada da carteira." : "Carteira atualizada.");
       qc.invalidateQueries({ queryKey: ["plataforma-licencas"] });
-      qc.invalidateQueries({ queryKey: ["plataforma-pessoas-carteira"] });
+      qc.invalidateQueries({ queryKey: ["plataforma-carteiras"] });
     },
     onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível mudar a carteira.")),
   });
@@ -52,39 +63,43 @@ export function CarteiraLicenca({ licenca }: { licenca: Licenca }) {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row">
         <Select value={escolha} onValueChange={setEscolha}>
-          <SelectTrigger aria-label="Carteira de" className="flex-1">
-            <SelectValue placeholder="Escolha quem cuida da conta" />
+          <SelectTrigger aria-label="Carteira da conta" className="flex-1">
+            <SelectValue placeholder="Escolha a carteira" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={SEM}>Sem carteira</SelectItem>
-            {(pessoas.data ?? []).map((p) => (
-              <SelectItem key={p.auth_uid} value={p.auth_uid}>
-                {p.nome}
-                {p.contas ? ` · ${p.contas} conta(s)` : ""}
+            {carteiras.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.nome}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Button
           size="sm"
-          className="w-full sm:w-auto"
+          className="min-h-11 w-full sm:min-h-9 sm:w-auto"
           onClick={() => salvar.mutate()}
-          disabled={salvar.isPending || escolha === (licenca.carteira_uid ?? SEM)}
+          disabled={salvar.isPending || escolha === atual}
         >
           Salvar carteira
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        As propostas novas desta conta chegam para a pessoa da carteira.
+        {licenca.carteira_nome
+          ? `Hoje quem atende é ${licenca.carteira_nome}.`
+          : "Hoje ninguém responde por esta conta."}{" "}
+        <Link to="/plataforma/carteiras" className="text-primary underline-offset-2 hover:underline">
+          Gerir carteiras
+        </Link>
       </p>
       <Button
         size="sm"
         variant="outline"
-        className="w-full sm:w-auto"
+        className="min-h-11 w-full sm:min-h-9 sm:w-auto"
         onClick={() => reenviar.mutate()}
         disabled={reenviar.isPending}
       >
-        Reenviar e-mail de criar senha
+        <Mail className="mr-1.5 size-4" /> Reenviar e-mail de criar senha
       </Button>
     </div>
   );

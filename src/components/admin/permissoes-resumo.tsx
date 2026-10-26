@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
+import { Selo } from "@/components/plataforma/kit";
+import { GRUPOS_DO_MENU } from "./regras-modulos/grupos-menu";
 import {
   CATALOGO_MODULOS,
   type EscopoDados,
@@ -43,21 +44,19 @@ export function PermissoesResumo({ nivel }: { nivel: NivelAcesso | undefined }) 
   if (porModulo.size === 0) {
     return (
       <p className="text-xs text-muted-foreground">
-        Este nível ainda não tem permissões liberadas. Ajuste em “Papéis &amp; Permissões”.
+        Este nível ainda não tem permissões liberadas. Ajuste em “Regras e módulos”.
       </p>
     );
   }
 
-  const grupos = Array.from(new Set(CATALOGO_MODULOS.map((m) => m.grupo)));
-
   return (
     <div className="space-y-3">
-      {grupos.map((grupo) => {
-        const mods = CATALOGO_MODULOS.filter((m) => m.grupo === grupo && porModulo.has(m.modulo));
+      {GRUPOS_DO_MENU.map(({ grupo, modulos }) => {
+        const mods = modulos.filter((m) => porModulo.has(m.modulo));
         if (mods.length === 0) return null;
         return (
           <div key={grupo} className="space-y-1.5">
-            <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {grupo}
             </p>
             <div className="space-y-1.5">
@@ -68,11 +67,11 @@ export function PermissoesResumo({ nivel }: { nivel: NivelAcesso | undefined }) 
                     key={mod.modulo}
                     className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
                   >
-                    <span className="font-medium text-foreground">{mod.label}:</span>
+                    <span className="font-medium text-foreground">{mod.rotuloMenu}:</span>
                     {info.acoes.map((a) => (
-                      <Badge key={a} variant="secondary" className="font-normal">
+                      <Selo key={a} tom="marca">
                         {a}
-                      </Badge>
+                      </Selo>
                     ))}
                     <span className="text-xs text-muted-foreground">
                       ({ROTULO_ESCOPO[info.escopo]})

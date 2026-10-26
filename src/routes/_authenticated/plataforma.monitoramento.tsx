@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -7,77 +7,63 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle2,
+  Clock,
+  Cpu,
   Database,
-  Inbox,
+  Radio,
   RefreshCw,
   Server,
+  ShieldAlert,
+  Timer,
   Webhook,
+  Workflow,
 } from "lucide-react";
-import { AdminHero } from "@/components/admin/admin-hero";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  CabecalhoGestao,
+  ChipsFiltro,
+  EstadoErro,
+  EstadoVazio,
+  IconeGestao,
+  ListaCarregando,
+  PaginaGestao,
+  Secao,
+  Selo,
+  type Tom,
+} from "@/components/plataforma/kit";
+import { MarcaProvedor, nomeDoProvedor } from "@/components/plataforma/provedores/marca-provedor";
+import { Skeleton } from "@/components/ui/skeleton";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { cn } from "@/lib/utils";
 import { RodapePaginas } from "@/components/plataforma/paginacao";
 import {
   POR_PAGINA_INCIDENTES,
   agirIncidente,
   lerMonitoramento,
   type Incidente,
+  type PainelTecnico,
   type RotinaPlataforma,
 } from "@/lib/plataforma/monitoramento.functions";
 
 export const Route = createFileRoute("/_authenticated/plataforma/monitoramento")({
-  head: () => ({ meta: [{ title: "Monitoramento — Plataforma — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Monitoramento e incidentes — Gestão de sistemas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("saas.monitoramento"),
   component: Pagina,
 });
 
-/** Nome de exibição dos provedores (o banco grava o código em minúsculas). */
-const PROVEDOR: Record<string, string> = {
-  asaas: "Asaas",
-  homefin: "Integração bancária",
-  sendpulse: "SendPulse",
-  openai: "OpenAI",
-  gemini: "Gemini",
-  serpro: "Serpro",
-  bigdatacorp: "BigDataCorp",
-  viacep: "ViaCEP",
+const SEVERIDADE: Record<Incidente["severidade"], { rotulo: string; tom: Tom }> = {
+  critica: { rotulo: "Crítica", tom: "perigo" },
+  alta: { rotulo: "Alta", tom: "perigo" },
+  aviso: { rotulo: "Aviso", tom: "alerta" },
+  info: { rotulo: "Informação", tom: "info" },
 };
-const nomeProvedor = (p: string) =>
-  PROVEDOR[p] ?? (p ? p.charAt(0).toUpperCase() + p.slice(1).replace(/_/g, " ") : "—");
-
-const SEVERIDADE: Record<
-  Incidente["severidade"],
-  { rotulo: string; tom: "default" | "secondary" | "destructive" | "outline" }
-> = {
-  critica: { rotulo: "Crítica", tom: "destructive" },
-  alta: { rotulo: "Alta", tom: "destructive" },
-  aviso: { rotulo: "Aviso", tom: "secondary" },
-  info: { rotulo: "Informação", tom: "outline" },
-};
-const STATUS_INC: Record<Incidente["status"], string> = {
-  aberto: "Aberto",
-  reconhecido: "Em tratamento",
-  resolvido: "Resolvido",
+const STATUS_INC: Record<Incidente["status"], { rotulo: string; tom: Tom }> = {
+  aberto: { rotulo: "Aberto", tom: "perigo" },
+  reconhecido: { rotulo: "Em tratamento", tom: "alerta" },
+  resolvido: { rotulo: "Resolvido", tom: "sucesso" },
 };
 
 /** "há 3 min" a partir de um instante ISO (relógio do navegador). */
@@ -89,6 +75,34 @@ function ha(iso: string | null | undefined): string {
   if (min < 60) return `há ${min} min`;
   if (min < 1440) return `há ${Math.round(min / 60)} h`;
   return `há ${Math.round(min / 1440)} dia(s)`;
+}
+
+type Saude = "ok" | "atencao" | "critico" | "carregando";
+
+const SAUDE: Record<Saude, { rotulo: string; tom: Tom; ponto: string }> = {
+  ok: { rotulo: "Operando", tom: "sucesso", ponto: "bg-success" },
+  atencao: { rotulo: "Atenção", tom: "alerta", ponto: "bg-warning" },
+  critico: { rotulo: "Crítico", tom: "perigo", ponto: "bg-destructive" },
+  carregando: { rotulo: "Lendo…", tom: "neutro", ponto: "bg-muted-foreground/40" },
+};
+
+/** Ponto vivo (pulsa quando não é "ok"; parado com movimento reduzido). */
+function PontoVivo({ saude, className }: { saude: Saude; className?: string }) {
+  const cor = SAUDE[saude].ponto;
+  return (
+    <span className={cn("relative inline-flex size-2.5 shrink-0", className)} aria-hidden>
+      {saude !== "carregando" && (
+        <span
+          className={cn(
+            "absolute inline-flex size-full rounded-full opacity-60 motion-safe:animate-ping",
+            cor,
+            saude === "ok" && "motion-safe:[animation-duration:2.4s]",
+          )}
+        />
+      )}
+      <span className={cn("relative inline-flex size-2.5 rounded-full", cor)} />
+    </span>
+  );
 }
 
 function Pagina() {
@@ -107,40 +121,118 @@ function Pagina() {
   const rotinasComErro = rotinas.filter((r) => r.ultimo_status === "erro");
   const banco = p?.banco;
   const worker = p?.coletas?.worker;
+  const carregando = q.isLoading;
+
+  const workerParado =
+    !worker?.coletado_em || Date.now() - new Date(worker.coletado_em).getTime() > 10 * 60_000;
+  const saudeBanco: Saude = carregando
+    ? "carregando"
+    : (banco?.uso_pct ?? 0) >= 90
+      ? "critico"
+      : (banco?.uso_pct ?? 0) >= 80 || (banco?.aguardando_bloqueio ?? 0) > 0
+        ? "atencao"
+        : "ok";
+  const saudeWorker: Saude = carregando ? "carregando" : workerParado ? "critico" : "ok";
+  const saudeIntegracoes: Saude = carregando
+    ? "carregando"
+    : (p?.webhooks_24h?.com_erro ?? 0) > 0 ||
+        (p?.propostas_erro_envio_1h ?? 0) > 0 ||
+        (p?.fila?.mortas_24h ?? 0) > 0
+      ? "atencao"
+      : "ok";
+  const saudeIncidentes: Saude = carregando
+    ? "carregando"
+    : (lista?.criticos ?? 0) > 0
+      ? "critico"
+      : (lista?.abertos ?? 0) > 0 || rotinasComErro.length > 0
+        ? "atencao"
+        : "ok";
+  const saudes = [saudeBanco, saudeWorker, saudeIntegracoes, saudeIncidentes];
+  const geral: Saude = carregando
+    ? "carregando"
+    : saudes.includes("critico")
+      ? "critico"
+      : saudes.includes("atencao")
+        ? "atencao"
+        : "ok";
+  const pedemAtencao = saudes.filter((s) => s === "atencao" || s === "critico").length;
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <AdminHero
-        secao="Gestão de sistemas"
-        icon={<Activity className="h-5 w-5" />}
+    <PaginaGestao>
+      <CabecalhoGestao
+        icone={<Activity />}
         titulo="Monitoramento e incidentes"
-        descricao="Saúde do banco de dados, do processador de tarefas, das rotinas automáticas e das integrações. Atualiza a cada 30 segundos."
+        descricao="Central de operação do ecossistema: banco de dados, processador de tarefas, rotinas automáticas, provedores e incidentes, ao vivo."
         acoes={
-          <Button variant="outline" size="sm" onClick={() => q.refetch()} disabled={q.isFetching}>
-            <RefreshCw className={`mr-2 size-4 ${q.isFetching ? "animate-spin" : ""}`} /> Atualizar
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-8"
+            onClick={() => q.refetch()}
+            disabled={q.isFetching}
+          >
+            <RefreshCw className={cn("mr-2 size-4", q.isFetching && "animate-spin")} /> Atualizar
           </Button>
         }
       />
 
       {q.isError && (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-          {mensagemDeErro(q.error, "Não foi possível ler o monitoramento.")}
-        </p>
+        <Secao>
+          <EstadoErro
+            mensagem={mensagemDeErro(q.error, "Não foi possível ler o monitoramento.")}
+            onTentar={() => q.refetch()}
+          />
+        </Secao>
       )}
 
+      {/* Faixa de situação geral */}
+      <section
+        aria-live="polite"
+        className={cn(
+          "flex flex-col gap-3 rounded-[14px] border bg-card p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)] sm:flex-row sm:items-center sm:justify-between",
+          geral === "critico" && "border-destructive/30",
+          geral === "atencao" && "border-warning/50",
+          (geral === "ok" || geral === "carregando") && "border-border/80",
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <IconeGestao
+            tamanho="lg"
+            tom={SAUDE[geral].tom}
+            icone={geral === "ok" ? <CheckCircle2 /> : geral === "carregando" ? <Radio /> : <ShieldAlert />}
+          />
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-foreground">
+              {geral === "carregando"
+                ? "Lendo a situação do ecossistema…"
+                : geral === "ok"
+                  ? "Todos os sistemas operando normalmente"
+                  : `${pedemAtencao} ${pedemAtencao === 1 ? "área pede" : "áreas pedem"} atenção`}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {lista?.abertos ?? 0} incidente(s) aberto(s) · {lista?.criticos ?? 0} crítico(s) ·{" "}
+              {rotinasComErro.length} rotina(s) com erro
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+          <PontoVivo saude={q.isError ? "critico" : carregando ? "carregando" : "ok"} />
+          AO VIVO · {ha(p?.gerado_em)} · a cada 30 s
+        </div>
+      </section>
+
+      {/* Serviços */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Cartao
+        <PainelServico
           titulo="Banco de dados"
-          icone={<Database className="size-4" />}
-          alerta={(banco?.uso_pct ?? 0) >= 80 || (banco?.aguardando_bloqueio ?? 0) > 0}
-          carregando={q.isLoading}
+          icone={<Database />}
+          saude={saudeBanco}
+          medidor={
+            banco?.uso_pct != null
+              ? { pct: banco.uso_pct, rotulo: `${banco.conexoes ?? "—"}/${banco.max_conexoes ?? "—"} conexões` }
+              : undefined
+          }
           linhas={[
-            [
-              "Conexões",
-              banco
-                ? `${banco.conexoes ?? "—"} de ${banco.max_conexoes ?? "—"} (${banco.uso_pct ?? "—"}%)`
-                : "—",
-            ],
             ["Cache", banco?.cache_hit_pct != null ? `${banco.cache_hit_pct}%` : "—"],
             ["Esperando bloqueio", String(banco?.aguardando_bloqueio ?? "—")],
             [
@@ -149,14 +241,10 @@ function Pagina() {
             ],
           ]}
         />
-        <Cartao
+        <PainelServico
           titulo="Processador de tarefas"
-          icone={<Server className="size-4" />}
-          alerta={
-            !worker?.coletado_em ||
-            Date.now() - new Date(worker.coletado_em).getTime() > 10 * 60_000
-          }
-          carregando={q.isLoading}
+          icone={<Server />}
+          saude={saudeWorker}
           linhas={[
             ["Último sinal", ha(worker?.coletado_em)],
             ["Memória", worker?.dados?.memoria_mb != null ? `${worker.dados.memoria_mb} MB` : "—"],
@@ -164,64 +252,44 @@ function Pagina() {
             ["Fila pendente", String(p?.fila?.pendentes ?? "—")],
           ]}
         />
-        <Cartao
+        <PainelServico
           titulo="Integrações"
-          icone={<Webhook className="size-4" />}
-          alerta={
-            (p?.webhooks_24h?.com_erro ?? 0) > 0 ||
-            (p?.propostas_erro_envio_1h ?? 0) > 0 ||
-            (p?.fila?.mortas_24h ?? 0) > 0
-          }
-          carregando={q.isLoading}
+          icone={<Webhook />}
+          saude={saudeIntegracoes}
           linhas={[
             [
               "Webhooks 24 h",
-              `${p?.webhooks_24h?.recebidos ?? 0} recebidos · ${p?.webhooks_24h?.com_erro ?? 0} com erro`,
+              `${p?.webhooks_24h?.recebidos ?? 0} · ${p?.webhooks_24h?.com_erro ?? 0} erro`,
             ],
-            ["Propostas com erro de envio (1 h)", String(p?.propostas_erro_envio_1h ?? 0)],
-            ["Mensagens descartadas (24 h)", String(p?.fila?.mortas_24h ?? 0)],
-            ["Consultas pagas a conferir", String(p?.consultas_pagas?.reconciliar ?? 0)],
+            ["Propostas com erro (1 h)", String(p?.propostas_erro_envio_1h ?? 0)],
+            ["Descartadas (24 h)", String(p?.fila?.mortas_24h ?? 0)],
+            ["Consultas a conferir", String(p?.consultas_pagas?.reconciliar ?? 0)],
           ]}
         />
-        <Cartao
+        <PainelServico
           titulo="Incidentes"
-          icone={<AlertTriangle className="size-4" />}
-          alerta={(lista?.abertos ?? 0) > 0 || rotinasComErro.length > 0}
-          carregando={q.isLoading}
+          icone={<AlertTriangle />}
+          saude={saudeIncidentes}
           linhas={[
             ["Abertos", String(lista?.abertos ?? 0)],
             ["Críticos", String(lista?.criticos ?? 0)],
             ["Rotinas com erro", String(rotinasComErro.length)],
-            ["Atualizado", ha(p?.gerado_em)],
+            ["Fila mais antiga", ha(p?.fila?.mais_antiga)],
           ]}
         />
       </div>
 
-      {(p?.provedores_1h?.length ?? 0) > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
-          <h2 className="mb-2 text-sm font-semibold">Provedores na última hora</h2>
-          <ul className="divide-y divide-border text-sm">
-            {p!.provedores_1h!.map((x) => (
-              <li key={x.provedor} className="flex flex-wrap justify-between gap-2 py-1.5">
-                <span className="font-medium">{nomeProvedor(x.provedor)}</span>
-                <span className="tabular-nums text-muted-foreground">
-                  {x.chamadas} chamadas · {x.falhas_fornecedor} falha(s) · {x.recusas} recusa(s) ·
-                  p95 {x.p95_ms ?? "—"} ms
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {(p?.provedores_1h?.length ?? 0) > 0 && <Provedores linhas={p!.provedores_1h!} />}
 
       <Incidentes
         lista={lista?.incidentes ?? []}
+        abertos={lista?.abertos}
         status={status}
         onStatus={(s) => {
           setStatus(s);
           setPagina(1);
         }}
-        carregando={q.isLoading}
+        carregando={carregando}
         rodape={
           <RodapePaginas
             pagina={pagina}
@@ -234,115 +302,185 @@ function Pagina() {
         }
       />
 
-      <Rotinas rotinas={rotinas} carregando={q.isLoading} />
-    </div>
+      <Rotinas rotinas={rotinas} carregando={carregando} />
+    </PaginaGestao>
   );
 }
 
-function Cartao({
+function PainelServico({
   titulo,
   icone,
+  saude,
   linhas,
-  alerta,
-  carregando,
+  medidor,
 }: {
   titulo: string;
-  icone: React.ReactNode;
+  icone: ReactNode;
+  saude: Saude;
   linhas: [string, string][];
-  alerta: boolean;
-  carregando: boolean;
+  medidor?: { pct: number; rotulo: string };
 }) {
+  const s = SAUDE[saude];
   return (
     <section
-      className={`rounded-lg border bg-card p-4 ${alerta ? "border-amber-400/70" : "border-border"}`}
+      className={cn(
+        "min-w-0 rounded-[14px] border bg-card p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]",
+        saude === "critico" ? "border-destructive/30" : saude === "atencao" ? "border-warning/50" : "border-border/80",
+      )}
     >
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          {icone} {titulo}
-        </h2>
-        {carregando ? null : alerta ? (
-          <Badge variant="secondary" className="bg-amber-100 text-amber-900">
-            Atenção
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="text-emerald-700">
-            <CheckCircle2 className="mr-1 size-3" /> Normal
-          </Badge>
-        )}
-      </div>
-      {carregando ? (
-        <Skeleton className="h-20" />
+      <header className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <IconeGestao icone={icone} tamanho="sm" tom={saude === "ok" ? "marca" : s.tom} />
+          <h2 className="truncate text-sm font-semibold text-foreground">{titulo}</h2>
+        </div>
+        <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <PontoVivo saude={saude} />
+          {s.rotulo}
+        </span>
+      </header>
+      {saude === "carregando" ? (
+        <Skeleton className="mt-3 h-24" />
       ) : (
-        <dl className="space-y-1 text-sm">
-          {linhas.map(([r, v]) => (
-            <div key={r} className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">{r}</dt>
-              <dd className="text-right tabular-nums">{v}</dd>
+        <>
+          {medidor && (
+            <div className="mt-3">
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-muted-foreground">{medidor.rotulo}</span>
+                <span className="font-mono tabular-nums text-foreground">{medidor.pct}%</span>
+              </div>
+              <div
+                className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary"
+                role="meter"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={medidor.pct}
+                aria-label="Uso das conexões"
+              >
+                <div
+                  className={cn(
+                    "h-full rounded-full",
+                    medidor.pct >= 90 ? "bg-destructive" : medidor.pct >= 80 ? "bg-warning" : "bg-primary",
+                  )}
+                  style={{ width: `${Math.min(100, Math.max(0, medidor.pct))}%` }}
+                />
+              </div>
             </div>
-          ))}
-        </dl>
+          )}
+          <dl className="mt-3 space-y-1.5 text-xs">
+            {linhas.map(([r, v]) => (
+              <div key={r} className="flex min-w-0 items-center justify-between gap-3">
+                <dt className="truncate text-muted-foreground">{r}</dt>
+                <dd className="shrink-0 font-mono tabular-nums text-foreground">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </>
       )}
     </section>
   );
 }
 
+function Provedores({
+  linhas,
+}: {
+  linhas: NonNullable<PainelTecnico["provedores_1h"]>;
+}) {
+  return (
+    <Secao titulo="Provedores na última hora" descricao="Chamadas, falhas do fornecedor, recusas e tempo de resposta (p95)." semRespiro>
+      <ul className="divide-y divide-border/70">
+        {linhas.map((x) => {
+          const falhas = x.falhas_fornecedor + x.recusas;
+          const sucesso = x.chamadas > 0 ? Math.round(((x.chamadas - falhas) / x.chamadas) * 100) : 100;
+          const saude: Saude = x.falhas_fornecedor > 0 && sucesso < 90 ? "critico" : falhas > 0 ? "atencao" : "ok";
+          return (
+            <li key={x.provedor} className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 px-4 py-3 md:grid-cols-[auto_minmax(0,1fr)_minmax(0,2fr)]">
+              <MarcaProvedor codigo={x.provedor} tamanho="sm" />
+              <div className="min-w-0">
+                <p className="flex items-center gap-2 truncate text-sm font-medium text-foreground">
+                  <PontoVivo saude={saude} /> {nomeDoProvedor(x.provedor)}
+                </p>
+                <p className="font-mono text-[11px] text-muted-foreground">{x.chamadas} chamadas</p>
+              </div>
+              <div className="col-span-2 grid grid-cols-3 gap-2 text-xs md:col-span-1">
+                <Metrica rotulo="Sucesso" valor={`${sucesso}%`} />
+                <Metrica rotulo="Falhas / recusas" valor={`${x.falhas_fornecedor} / ${x.recusas}`} />
+                <Metrica rotulo="p95" valor={x.p95_ms != null ? `${x.p95_ms} ms` : "—"} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </Secao>
+  );
+}
+
+function Metrica({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <div className="min-w-0 rounded-md bg-secondary/60 px-2 py-1.5">
+      <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{rotulo}</p>
+      <p className="font-mono tabular-nums text-foreground">{valor}</p>
+    </div>
+  );
+}
+
 function Incidentes({
   lista,
+  abertos,
   status,
   onStatus,
   carregando,
   rodape,
 }: {
   lista: Incidente[];
+  abertos?: number;
   status: "todos" | Incidente["status"];
   onStatus: (s: "todos" | Incidente["status"]) => void;
   carregando: boolean;
-  rodape?: React.ReactNode;
+  rodape?: ReactNode;
 }) {
   const podeTratar = usePermissao("saas.monitoramento", "edit");
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
-        <h2 className="text-sm font-semibold">Incidentes</h2>
-        <Select value={status} onValueChange={(v) => onStatus(v as typeof status)}>
-          <SelectTrigger className="w-44" aria-label="Situação dos incidentes">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="aberto">Abertos</SelectItem>
-            <SelectItem value="reconhecido">Em tratamento</SelectItem>
-            <SelectItem value="resolvido">Resolvidos</SelectItem>
-            <SelectItem value="todos">Todos</SelectItem>
-          </SelectContent>
-        </Select>
+    <Secao
+      titulo="Linha do tempo dos incidentes"
+      descricao="Agrupados pela chave do problema: cada ocorrência repetida soma no mesmo incidente."
+      icone={<Clock />}
+      semRespiro
+    >
+      <div className="border-b border-border/70 px-4 py-3">
+        <ChipsFiltro
+          rotulo="Situação dos incidentes"
+          valor={status}
+          onChange={onStatus}
+          opcoes={[
+            { valor: "aberto", rotulo: "Abertos", contagem: abertos ?? null, tom: "perigo" },
+            { valor: "reconhecido", rotulo: "Em tratamento" },
+            { valor: "resolvido", rotulo: "Resolvidos" },
+            { valor: "todos", rotulo: "Todos" },
+          ]}
+        />
       </div>
       {carregando ? (
-        <div className="p-4">
-          <Skeleton className="h-16" />
-        </div>
+        <ListaCarregando linhas={3} />
       ) : lista.length === 0 ? (
-        <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-          <Inbox className="size-4" /> Nenhum incidente nesta situação.
-        </p>
+        <EstadoVazio
+          icone={<CheckCircle2 />}
+          titulo="Nenhum incidente nesta situação"
+          descricao={status === "aberto" ? "Nada aberto agora. O painel avisa assim que algo acontecer." : undefined}
+        />
       ) : (
-        <ul className="divide-y divide-border">
+        <ol className="relative px-4 py-2">
+          <span aria-hidden className="absolute bottom-4 left-[27px] top-4 w-px bg-border" />
           {lista.map((i) => (
             <LinhaIncidente key={i.id} incidente={i} podeTratar={podeTratar} />
           ))}
-        </ul>
+        </ol>
       )}
       {rodape}
-    </section>
+    </Secao>
   );
 }
 
-function LinhaIncidente({
-  incidente: i,
-  podeTratar,
-}: {
-  incidente: Incidente;
-  podeTratar: boolean;
-}) {
+function LinhaIncidente({ incidente: i, podeTratar }: { incidente: Incidente; podeTratar: boolean }) {
   const qc = useQueryClient();
   const agirFn = useServerFn(agirIncidente);
   const [texto, setTexto] = useState("");
@@ -358,74 +496,106 @@ function LinhaIncidente({
     },
     onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível atualizar o incidente.")),
   });
+  const sev = SEVERIDADE[i.severidade] ?? { rotulo: i.severidade, tom: "neutro" as Tom };
+  const st = STATUS_INC[i.status];
+  const corPonto =
+    i.status === "resolvido"
+      ? "bg-success"
+      : sev.tom === "perigo"
+        ? "bg-destructive"
+        : sev.tom === "alerta"
+          ? "bg-warning"
+          : "bg-sky-500";
 
   return (
-    <li className="space-y-2 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-medium">{i.titulo}</p>
-          <p className="text-xs text-muted-foreground">
-            {i.origem} · {i.categoria}
-            {i.conta ? ` · conta ${i.conta}` : ""} · {i.ocorrencias} ocorrência(s) · última{" "}
-            {ha(i.ultima_em)}
-            {i.responsavel ? ` · com ${i.responsavel}` : ""}
-          </p>
-          {i.resolucao && <p className="mt-1 text-xs">Resolução: {i.resolucao}</p>}
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <Badge variant={SEVERIDADE[i.severidade]?.tom ?? "secondary"}>
-            {SEVERIDADE[i.severidade]?.rotulo ?? i.severidade}
-          </Badge>
-          <Badge variant="outline">{STATUS_INC[i.status]}</Badge>
-          {podeTratar && (
-            <Button size="sm" variant="ghost" onClick={() => setAberto((v) => !v)}>
-              Tratar
-            </Button>
-          )}
-        </div>
-      </div>
-      {aberto && podeTratar && (
-        <div className="space-y-2 rounded-md border border-border p-3">
-          <Textarea
-            aria-label="Anotação do tratamento"
-            rows={2}
-            placeholder="O que foi verificado ou feito (obrigatório para resolver)"
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-          />
-          <div className="flex flex-wrap gap-2">
-            {i.status === "aberto" && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={agir.isPending}
-                onClick={() => agir.mutate("reconhecer")}
-              >
-                Assumir
-              </Button>
+    <li className="relative flex gap-3 py-3">
+      <span className="relative z-10 mt-1 grid size-6 shrink-0 place-items-center rounded-full bg-card ring-1 ring-border">
+        <span className={cn("size-2.5 rounded-full", corPonto)} aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="break-words text-sm font-medium text-foreground">{i.titulo}</p>
+            <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+              <span className="font-mono">{i.origem}</span>
+              <span>· {i.categoria}</span>
+              {i.conta && <span>· conta {i.conta}</span>}
+              <span>
+                · <Timer className="inline size-3" /> {i.ocorrencias} ocorrência(s), última {ha(i.ultima_em)}
+              </span>
+              {i.responsavel && <span>· com {i.responsavel}</span>}
+            </p>
+            {i.resolucao && (
+              <p className="mt-1 rounded-md bg-success/[0.07] px-2 py-1 text-xs text-success-texto">
+                Resolução: {i.resolucao}
+              </p>
             )}
-            {i.status !== "resolvido" && (
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+            <Selo tom={sev.tom}>{sev.rotulo}</Selo>
+            <Selo tom={st.tom} ponto={i.status !== "resolvido"}>
+              {st.rotulo}
+            </Selo>
+            {podeTratar && (
               <Button
                 size="sm"
-                disabled={agir.isPending || texto.trim().length < 5}
-                onClick={() => agir.mutate("resolver")}
+                variant={aberto ? "secondary" : "ghost"}
+                className="min-h-11 sm:min-h-8"
+                onClick={() => setAberto((v) => !v)}
+                aria-expanded={aberto}
               >
-                Resolver
-              </Button>
-            )}
-            {i.status === "resolvido" && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={agir.isPending}
-                onClick={() => agir.mutate("reabrir")}
-              >
-                Reabrir
+                <Workflow className="mr-1.5 size-3.5" /> Tratar
               </Button>
             )}
           </div>
         </div>
-      )}
+        {aberto && podeTratar && (
+          <div className="space-y-2 rounded-lg border border-border bg-background p-3">
+            <Textarea
+              aria-label="Anotação do tratamento"
+              rows={2}
+              className="text-base sm:text-sm"
+              placeholder="O que foi verificado ou feito (obrigatório para resolver)"
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+            />
+            <div className="flex flex-wrap gap-2">
+              {i.status === "aberto" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="min-h-11 sm:min-h-8"
+                  disabled={agir.isPending}
+                  onClick={() => agir.mutate("reconhecer")}
+                >
+                  Assumir
+                </Button>
+              )}
+              {i.status !== "resolvido" && (
+                <Button
+                  size="sm"
+                  className="min-h-11 sm:min-h-8"
+                  disabled={agir.isPending || texto.trim().length < 5}
+                  onClick={() => agir.mutate("resolver")}
+                >
+                  Resolver
+                </Button>
+              )}
+              {i.status === "resolvido" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="min-h-11 sm:min-h-8"
+                  disabled={agir.isPending}
+                  onClick={() => agir.mutate("reabrir")}
+                >
+                  Reabrir
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </li>
   );
 }
@@ -434,54 +604,53 @@ function Rotinas({ rotinas, carregando }: { rotinas: RotinaPlataforma[]; carrega
   const ordenadas = [...rotinas].sort(
     (a, b) => Number(b.ultimo_status === "erro") - Number(a.ultimo_status === "erro"),
   );
+  const comErro = rotinas.filter((r) => r.ultimo_status === "erro").length;
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <h2 className="border-b border-border p-4 text-sm font-semibold">
-        Rotinas automáticas ({rotinas.length})
-      </h2>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Rotina</TableHead>
-              <TableHead>Última execução</TableHead>
-              <TableHead>Resultado</TableHead>
-              <TableHead className="hidden md:table-cell">Erro</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {carregando && (
-              <TableRow>
-                <TableCell colSpan={4}>
-                  <Skeleton className="h-10" />
-                </TableCell>
-              </TableRow>
-            )}
-            {ordenadas.map((r) => (
-              <TableRow key={r.nome}>
-                <TableCell className="font-mono text-xs">{r.nome}</TableCell>
-                <TableCell className="text-xs">
-                  {r.ultimo_fim ? ha(r.ultimo_fim) : "ainda não rodou"}
-                </TableCell>
-                <TableCell>
+    <Secao
+      titulo={`Rotinas automáticas (${rotinas.length})`}
+      descricao={comErro > 0 ? `${comErro} com erro na última execução` : "Todas rodaram sem erro na última execução"}
+      icone={<Cpu />}
+      semRespiro
+    >
+      {carregando ? (
+        <ListaCarregando linhas={3} />
+      ) : ordenadas.length === 0 ? (
+        <EstadoVazio titulo="Nenhuma rotina registrada" />
+      ) : (
+        <ul className="grid gap-px bg-border/70 sm:grid-cols-2 xl:grid-cols-3">
+          {ordenadas.map((r) => {
+            const saude: Saude =
+              r.ultimo_status === "erro" ? "critico" : r.ultimo_status === "sucesso" ? "ok" : "carregando";
+            return (
+              <li key={r.nome} className="min-w-0 bg-card px-4 py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex min-w-0 items-center gap-2">
+                    <PontoVivo saude={saude} />
+                    <span className="truncate font-mono text-xs text-foreground" title={r.nome}>
+                      {r.nome}
+                    </span>
+                  </p>
                   {r.ultimo_status === "erro" ? (
-                    <Badge variant="destructive">Erro</Badge>
+                    <Selo tom="perigo">Erro</Selo>
                   ) : r.ultimo_status === "sucesso" ? (
-                    <Badge variant="outline" className="text-emerald-700">
-                      OK
-                    </Badge>
+                    <Selo tom="sucesso">OK</Selo>
                   ) : (
-                    <Badge variant="secondary">{r.ativo ? "Aguardando" : "Desligada"}</Badge>
+                    <Selo tom="neutro">{r.ativo ? "Aguardando" : "Desligada"}</Selo>
                   )}
-                </TableCell>
-                <TableCell className="hidden max-w-[28rem] truncate text-xs text-muted-foreground md:table-cell">
-                  {r.ultimo_erro ?? ""}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </section>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {r.ultimo_fim ? `Última execução ${ha(r.ultimo_fim)}` : "Ainda não rodou"}
+                </p>
+                {r.ultimo_erro && (
+                  <p className="mt-1 line-clamp-2 break-all font-mono text-[11px] text-destructive" title={r.ultimo_erro}>
+                    {r.ultimo_erro}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Secao>
   );
 }

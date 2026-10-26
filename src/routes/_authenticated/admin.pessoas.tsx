@@ -1,4 +1,3 @@
-import { AdminHero } from "@/components/admin/admin-hero";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -7,22 +6,37 @@ import { toast } from "sonner";
 import {
   Plus,
   Copy,
-  Search,
   MoreHorizontal,
   Pencil,
   KeyRound,
   Ban,
   CheckCircle2,
+  Handshake,
   Trash2,
   LogIn,
   Users,
-  Loader2,
   ShieldAlert,
+  ShieldCheck,
+  Tags,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import {
+  Avatar,
+  BarraFiltros,
+  CabecalhoGestao,
+  CampoBusca,
+  ChipsFiltro,
+  EstadoErro,
+  EstadoVazio,
+  FaixaIndicadores,
+  Indicador,
+  ListaCarregando,
+  PaginaGestao,
+  Secao,
+  Selo,
+} from "@/components/plataforma/kit";
 import {
   Dialog,
   DialogContent,
@@ -48,14 +62,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RegrasModulosPanel } from "@/components/admin/regras-modulos-panel";
 import { TiposPessoaPanel } from "@/components/admin/tipos-pessoa-panel";
@@ -77,7 +83,7 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { usePermissao } from "@/hooks/use-permissao";
 
 export const Route = createFileRoute("/_authenticated/admin/pessoas")({
-  head: () => ({ meta: [{ title: "Pessoas do meu ecossistema — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Pessoas e permissões — Configurações gerais — Agilliza" }] }),
   validateSearch: (search: Record<string, unknown>): { tab?: "pessoas" | "regras" | "tipos" } => ({
     tab: search.tab === "regras" ? "regras" : search.tab === "tipos" ? "tipos" : undefined,
   }),
@@ -101,6 +107,18 @@ const ROTULO_TIPO: Record<string, string> = {
   imobiliaria: "Imobiliária",
   corretor: "Corretor",
 };
+
+/** Situação de acesso da pessoa: sem login, ativa ou bloqueada. */
+function StatusPessoa({ p, ativo }: { p: PessoaLista; ativo: boolean }) {
+  if (!p.login_habilitado) return <Selo>Sem login</Selo>;
+  return ativo ? (
+    <Selo tom="sucesso" ponto>
+      Ativo
+    </Selo>
+  ) : (
+    <Selo tom="perigo">Bloqueado</Selo>
+  );
+}
 
 function PessoasPage() {
   const { tab } = Route.useSearch();
@@ -188,268 +206,256 @@ function PessoasPage() {
         : true,
     );
 
+  const todas = pessoasQuery.data ?? [];
+  const totalAtivos = todas.filter((p) => p.login_habilitado && p.ativo && !p.bloqueado_em).length;
+  const totalSemLogin = todas.filter((p) => !p.login_habilitado).length;
+  const totalParceiros = todas.filter((p) => p.acesso_tipo === "portal_parceiro").length;
+  const totalInternos = todas.filter((p) => p.acesso_tipo === "sistema").length;
+
   return (
     <>
-      <div className="mx-auto max-w-none space-y-6">
-        <AdminHero
-          icon={<Users className="h-5 w-5" />}
-          titulo="Pessoas & Permissões de Acessos"
-          descricao="Gerenciamento de equipe interna, parceiros, níveis de acesso e foto de perfil."
+      <PaginaGestao>
+        <CabecalhoGestao
+          secao="Configurações gerais"
+          icone={<Users />}
+          titulo="Pessoas e permissões"
+          descricao="Equipe interna e parceiros, os papéis de acesso e a matriz de permissões organizada como o menu."
+          acoes={
+            aba === "pessoas" && podeGerenciar && !criando ? (
+              <Button className="min-h-11 sm:min-h-9" onClick={() => setCriando(true)}>
+                <Plus className="mr-1.5 size-4" /> Nova pessoa
+              </Button>
+            ) : undefined
+          }
         />
         <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
-          <TabsList className="mb-6 h-auto max-w-full flex-wrap justify-start">
-            <TabsTrigger value="pessoas">Pessoas</TabsTrigger>
-            <TabsTrigger value="regras">Papéis & Permissões</TabsTrigger>
-            <TabsTrigger value="tipos">Tipos de Pessoa</TabsTrigger>
+          <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-auto">
+            <TabsTrigger value="pessoas" className="min-h-11 flex-1 gap-1.5 sm:min-h-8 sm:flex-none">
+              <Users className="size-4" /> Pessoas
+            </TabsTrigger>
+            <TabsTrigger value="regras" className="min-h-11 flex-1 gap-1.5 sm:min-h-8 sm:flex-none">
+              <ShieldCheck className="size-4" /> Papéis e permissões
+            </TabsTrigger>
+            <TabsTrigger value="tipos" className="min-h-11 flex-1 gap-1.5 sm:min-h-8 sm:flex-none">
+              <Tags className="size-4" /> Tipos de pessoa
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pessoas">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">
-                  Pessoas do meu ecossistema
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Equipe interna e parceiros em uma única lista.
-                </p>
-              </div>
-              {podeGerenciar && !criando && (
-                <Button onClick={() => setCriando(true)}>
-                  <Plus className="mr-2 h-4 w-4" /> Nova pessoa
-                </Button>
-              )}
-            </div>
+          <TabsContent value="pessoas" className="mt-5 space-y-5">
+            <FaixaIndicadores>
+              <Indicador
+                icone={<Users />}
+                rotulo="Pessoas"
+                valor={todas.length}
+                detalhe={`${totalInternos} da equipe interna`}
+                carregando={pessoasQuery.isLoading}
+                onClick={() => setFiltro("todos")}
+                ativo={filtro === "todos"}
+              />
+              <Indicador
+                icone={<CheckCircle2 />}
+                tom="sucesso"
+                rotulo="Com acesso ativo"
+                valor={totalAtivos}
+                detalhe="entram no sistema"
+                carregando={pessoasQuery.isLoading}
+              />
+              <Indicador
+                icone={<Handshake />}
+                rotulo="Parceiros"
+                valor={totalParceiros}
+                detalhe="Portal do Parceiro"
+                carregando={pessoasQuery.isLoading}
+                onClick={() => setFiltro("portal_parceiro")}
+                ativo={filtro === "portal_parceiro"}
+              />
+              <Indicador
+                icone={<Ban />}
+                tom="neutro"
+                rotulo="Sem login"
+                valor={totalSemLogin}
+                detalhe="cadastro sem acesso"
+                carregando={pessoasQuery.isLoading}
+              />
+            </FaixaIndicadores>
 
             {criando && (
-              <div className="mt-6">
-                <NovaPessoaInline
-                  onCancel={() => setCriando(false)}
-                  onAbrirPermissoes={() => {
-                    setCriando(false);
-                    setAba("regras");
-                  }}
-                  onCreated={(res) => {
-                    setCriando(false);
-                    // Sem login não há senha: o modal abria com o campo vazio.
-                    if (res.senha_temporaria) {
-                      setCredenciais(res);
-                      toast.success("Pessoa criada com sucesso.");
-                    } else {
-                      toast.success("Pessoa cadastrada sem acesso ao sistema.");
-                    }
-                  }}
-                />
-              </div>
+              <NovaPessoaInline
+                onCancel={() => setCriando(false)}
+                onAbrirPermissoes={() => {
+                  setCriando(false);
+                  setAba("regras");
+                }}
+                onCreated={(res) => {
+                  setCriando(false);
+                  // Sem login não há senha: o modal abria com o campo vazio.
+                  if (res.senha_temporaria) {
+                    setCredenciais(res);
+                    toast.success("Pessoa criada com sucesso.");
+                  } else {
+                    toast.success("Pessoa cadastrada sem acesso ao sistema.");
+                  }
+                }}
+              />
             )}
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <Tabs value={filtro} onValueChange={(v) => setFiltro(v as typeof filtro)}>
-                <TabsList className="h-auto max-w-full flex-wrap justify-start">
-                  <TabsTrigger value="todos">Todos</TabsTrigger>
-                  <TabsTrigger value="sistema">Equipe interna</TabsTrigger>
-                  <TabsTrigger value="portal_parceiro">Parceiros</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <div className="relative sm:w-64">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome ou e-mail"
-                  className="pl-9"
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                />
-              </div>
-            </div>
+            <BarraFiltros className="md:justify-between">
+              <ChipsFiltro<"todos" | "sistema" | "portal_parceiro">
+                rotulo="Quem mostrar"
+                valor={filtro}
+                onChange={setFiltro}
+                opcoes={[
+                  { valor: "todos", rotulo: "Todos", contagem: todas.length },
+                  { valor: "sistema", rotulo: "Equipe interna", contagem: totalInternos },
+                  { valor: "portal_parceiro", rotulo: "Parceiros", contagem: totalParceiros },
+                ]}
+              />
+              <CampoBusca
+                valor={busca}
+                onChange={setBusca}
+                rotulo="Buscar pessoa"
+                placeholder="Buscar por nome ou e-mail"
+              />
+            </BarraFiltros>
 
-            <div className="mt-4 overflow-x-auto rounded-lg border bg-background">
-              <Table className="min-w-[760px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Pessoa</TableHead>
-                    <TableHead>Tipo / Nível</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead>Status</TableHead>
-                    {podeGerenciar && <TableHead className="text-right">Ações</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pessoasQuery.isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={podeGerenciar ? 5 : 4}
-                        className="py-10 text-center text-muted-foreground"
+            <Secao semRespiro>
+              {pessoasQuery.isError ? (
+                <EstadoErro
+                  mensagem={mensagemDeErro(pessoasQuery.error, "Não foi possível carregar as pessoas.")}
+                  onTentar={() => pessoasQuery.refetch()}
+                />
+              ) : pessoasQuery.isLoading ? (
+                <ListaCarregando linhas={5} />
+              ) : pessoas.length === 0 ? (
+                <EstadoVazio
+                  icone={<Users />}
+                  titulo={busca || filtro !== "todos" ? "Ninguém com estes filtros" : "Nenhuma pessoa cadastrada"}
+                  descricao={
+                    busca || filtro !== "todos"
+                      ? "Limpe a busca ou escolha outro grupo."
+                      : "Cadastre a equipe interna e os parceiros para dar acesso ao sistema."
+                  }
+                />
+              ) : (
+                <ul className="divide-y divide-border/70">
+                  {pessoas.map((p: any) => {
+                    const ativo = p.ativo && !p.bloqueado_em;
+                    // O próprio cadastro não se altera por aqui (o servidor recusa).
+                    const gerenciavel =
+                      podeEditarPessoas &&
+                      p.id !== meuId &&
+                      !p.roles.includes("correspondente") &&
+                      !p.roles.includes("admin");
+                    return (
+                      <li
+                        key={p.id}
+                        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 md:grid-cols-[auto_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.7fr)_auto]"
                       >
-                        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                        <span className="mt-2 block text-xs">Carregando…</span>
-                      </TableCell>
-                    </TableRow>
-                  ) : pessoas.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={podeGerenciar ? 5 : 4}
-                        className="py-10 text-center text-muted-foreground"
-                      >
-                        Nenhuma pessoa encontrada.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    pessoas.map((p: any) => {
-                      const ativo = p.ativo && !p.bloqueado_em;
-                      // O próprio cadastro não se altera por aqui (o servidor recusa).
-                      const gerenciavel =
-                        podeEditarPessoas &&
-                        p.id !== meuId &&
-                        !p.roles.includes("correspondente") &&
-                        !p.roles.includes("admin");
-                      return (
-                        <TableRow key={p.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-muted shadow-inner ring-1 ring-border">
-                                {p.avatar_url ? (
-                                  <img
-                                    src={p.avatar_url}
-                                    alt={p.nome ?? ""}
-                                    loading="lazy"
-                                    decoding="async"
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary">
-                                    <Users className="h-5 w-5" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-sm font-semibold">{p.nome ?? "—"}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {p.email ?? "Sem e-mail"}
-                                </span>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <div className="flex flex-wrap gap-1">
-                                {(p.tipos_pessoa?.length ? p.tipos_pessoa : [p.tipo_pessoa]).map(
-                                  (slug: string) => (
-                                    <Badge
-                                      key={slug}
-                                      variant="secondary"
-                                      className="px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider"
-                                    >
-                                      {rotuloTipo(slug)}
-                                    </Badge>
-                                  ),
-                                )}
-                              </div>
-                              <span className="text-xs font-medium text-muted-foreground">
-                                {p.nivel_acesso_nome ??
-                                  (p.roles.map((r: string) => ROTULO_PAPEL[r] ?? r).join(", ") ||
-                                    "—")}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs text-muted-foreground">
-                              {p.telefone ?? "—"}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {!p.login_habilitado ? (
-                              <Badge
-                                variant="outline"
-                                className="h-5 border-dashed px-2 font-normal opacity-60"
-                              >
-                                Sem login
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant={ativo ? "success" : "destructive"}
-                                className={
-                                  ativo
-                                    ? "h-5 gap-1 bg-emerald-500/10 px-2 font-normal text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-                                    : "h-5 px-2 font-normal"
-                                }
-                              >
-                                {ativo && (
-                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                )}
-                                {ativo ? "Ativo" : "Bloqueado"}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          {podeGerenciar && (
-                            <TableCell className="text-right">
-                              {gerenciavel && (
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                      <span className="sr-only">Ações</span>
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => setEditando(p)}>
-                                      <Pencil className="mr-2 h-4 w-4" /> Editar e-mail / dados
-                                    </DropdownMenuItem>
-                                    {p.login_habilitado ? (
-                                      <>
-                                        <DropdownMenuItem onClick={() => resetMut.mutate(p.id)}>
-                                          <KeyRound className="mr-2 h-4 w-4" /> Redefinir senha
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          className={
-                                            ativo ? "text-destructive" : "text-emerald-600"
-                                          }
-                                          onClick={() =>
-                                            statusMut.mutate({ id: p.id, ativar: !ativo })
-                                          }
-                                        >
-                                          <ShieldAlert className="mr-2 h-4 w-4" />
-                                          {ativo ? "Bloquear acesso" : "Desbloquear acesso"}
-                                        </DropdownMenuItem>
-                                      </>
-                                    ) : (
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setHabilitando(p);
-                                          setHabilitarEmail(p.email ?? "");
-                                        }}
-                                      >
-                                        <LogIn className="mr-2 h-4 w-4" /> Habilitar login
-                                      </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive"
-                                      onClick={() => setExcluindo(p)}
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              )}
-                            </TableCell>
+                        <div className="size-10 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border">
+                          {p.avatar_url ? (
+                            <img
+                              src={p.avatar_url}
+                              alt={p.nome ?? ""}
+                              loading="lazy"
+                              decoding="async"
+                              className="size-full object-cover"
+                            />
+                          ) : (
+                            <Avatar nome={p.nome} />
                           )}
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">{p.nome ?? "—"}</p>
+                          <p className="truncate text-xs text-muted-foreground">{p.email ?? "Sem e-mail"}</p>
+                          <div className="mt-1 flex flex-wrap gap-1 md:hidden">
+                            <StatusPessoa p={p} ativo={ativo} />
+                            <span className="truncate text-xs text-muted-foreground">
+                              {p.nivel_acesso_nome ??
+                                (p.roles.map((r: string) => ROTULO_PAPEL[r] ?? r).join(", ") || "—")}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="hidden min-w-0 md:block">
+                          <div className="flex flex-wrap gap-1">
+                            {(p.tipos_pessoa?.length ? p.tipos_pessoa : [p.tipo_pessoa]).map(
+                              (slug: string) => (
+                                <Selo key={slug}>{rotuloTipo(slug)}</Selo>
+                              ),
+                            )}
+                          </div>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {p.nivel_acesso_nome ??
+                              (p.roles.map((r: string) => ROTULO_PAPEL[r] ?? r).join(", ") || "—")}
+                            {p.telefone ? ` · ${p.telefone}` : ""}
+                          </p>
+                        </div>
+                        <div className="hidden md:block">
+                          <StatusPessoa p={p} ativo={ativo} />
+                        </div>
+                        <div className="flex justify-end">
+                          {podeGerenciar && gerenciavel && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="size-11 sm:size-8">
+                                  <MoreHorizontal className="size-4" />
+                                  <span className="sr-only">Ações de {p.nome ?? "pessoa"}</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setEditando(p)}>
+                                  <Pencil className="mr-2 size-4" /> Editar e-mail / dados
+                                </DropdownMenuItem>
+                                {p.login_habilitado ? (
+                                  <>
+                                    <DropdownMenuItem onClick={() => resetMut.mutate(p.id)}>
+                                      <KeyRound className="mr-2 size-4" /> Redefinir senha
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className={ativo ? "text-destructive" : "text-success-texto"}
+                                      onClick={() => statusMut.mutate({ id: p.id, ativar: !ativo })}
+                                    >
+                                      <ShieldAlert className="mr-2 size-4" />
+                                      {ativo ? "Bloquear acesso" : "Desbloquear acesso"}
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setHabilitando(p);
+                                      setHabilitarEmail(p.email ?? "");
+                                    }}
+                                  >
+                                    <LogIn className="mr-2 size-4" /> Habilitar login
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => setExcluindo(p)}
+                                >
+                                  <Trash2 className="mr-2 size-4" /> Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </Secao>
           </TabsContent>
 
-          <TabsContent value="regras">
+          <TabsContent value="regras" className="mt-5">
             <RegrasModulosPanel />
           </TabsContent>
 
-          <TabsContent value="tipos">
+          <TabsContent value="tipos" className="mt-5">
             <TiposPessoaPanel podeGerenciar={podeGerenciar} />
           </TabsContent>
         </Tabs>
-      </div>
+      </PaginaGestao>
 
       {/* Modal: senha temporária */}
       <Dialog open={!!credenciais} onOpenChange={(o) => !o && setCredenciais(null)}>

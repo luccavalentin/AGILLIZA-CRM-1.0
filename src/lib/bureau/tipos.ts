@@ -124,9 +124,9 @@ export class ErroBureau extends Error {
 export function mensagemErroBureau(codigo: CodigoErroBureau): string {
   switch (codigo) {
     case "sem_provedor":
-      return "Nenhum bureau configurado. Cadastre o fornecedor em Administração · Integrações.";
+      return "Nenhum bureau configurado. Cadastre o fornecedor em Configurações gerais · Integrações.";
     case "sem_credenciais":
-      return "O bureau está cadastrado mas sem credenciais. Informe as chaves em Administração · Integrações.";
+      return "O bureau está cadastrado mas sem credenciais. Informe as chaves em Configurações gerais · Integrações.";
     case "documento_invalido":
       return "CPF ou CNPJ inválido.";
     case "nao_encontrado":

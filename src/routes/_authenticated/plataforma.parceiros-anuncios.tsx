@@ -8,7 +8,7 @@ import {
 
 /** Gestão de Parceiros e Anúncios do ImobMatch (ver `components/plataforma/imobmatch`). */
 export const Route = createFileRoute("/_authenticated/plataforma/parceiros-anuncios")({
-  head: () => ({ meta: [{ title: "Gestão de Parceiros e Anúncios — Plataforma — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Gestão de Parceiros e Anúncios — Gestão de sistemas — Agilliza" }] }),
   validateSearch: (s: Record<string, unknown>): { aba?: AbaGestao } => ({ aba: abaValida(s.aba) }),
   beforeLoad: () => assertModuloPermitido("saas.imobmatch", ["saas.patrocinados"]),
   component: Pagina,
