@@ -46,18 +46,6 @@ export interface ClienteDaConta {
 
 const UUID = z.string().uuid();
 
-/** Contas (corretores e imobiliárias) que o Agilliza atende. */
-export const listarContasAssinantes = createServerFn({ method: "GET" })
-  .middleware([exigirPermissao(["saas.contas", "view"])])
-  .handler(async ({ context }) => {
-    const { comPlataforma } = await import("./ponte.server");
-    return comPlataforma(context.userId, (tx) =>
-      tx.consultar<ContaAssinante>(
-        "select id, nome, tipo::text as tipo from plataforma.licencas_do_correspondente() order by nome",
-      ),
-    );
-  });
-
 export const listarClientesDaConta = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
   .inputValidator((d: unknown) =>

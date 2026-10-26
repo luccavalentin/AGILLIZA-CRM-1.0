@@ -58,11 +58,3 @@ export function StatusBadge({ status }: { status: string }) {
   const cfg = statusMap[status] ?? { tone: "muted" as Tone, label: status };
   return <ToneBadge tone={cfg.tone}>{cfg.label}</ToneBadge>;
 }
-
-export function PortalBadge({ ativo }: { ativo: boolean }) {
-  return (
-    <ToneBadge tone={ativo ? "success" : "muted"}>
-      {ativo ? "Portal ativo" : "Sem portal"}
-    </ToneBadge>
-  );
-}
