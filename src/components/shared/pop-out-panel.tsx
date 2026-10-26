@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useChatFlash, stopFlash } from "@/components/shared/chat-alert-store";
+import { useChatFlash, stopFlash } from "@/components/chat/chat-alerta";
 
 interface PopOutPanelProps {
   /** Título exibido na barra da janela flutuante. */

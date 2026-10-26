@@ -275,3 +275,59 @@ export async function sondarPonte(): Promise<{
     return { configurada: true, ok: false, ms: null };
   }
 }
+
+/**
+ * Chat universal (t1, 26/10/2026): a mesma ponte, abrindo o contexto do CHAT
+ * (`chat.abrir_contexto_chat_agilliza`) em vez do de gestão. Serve a qualquer pessoa ativa
+ * do Agilliza — equipe, parceiro (por `authUid`) e cliente do portal (por `clienteId`, que
+ * vem SÓ da sessão do portal) — e não dá poder nenhum de plataforma: o banco confere a
+ * pessoa, mantém o espelho dela no Agilliza Tech e valem as regras do chat (migração 0351).
+ */
+export async function comChatAgilliza<R>(
+  pessoa: { authUid: string } | { clienteId: string },
+  fn: (tx: TxPlataforma) => Promise<R>,
+): Promise<R> {
+  const banco = obterPool();
+  let c: pg.PoolClient;
+  try {
+    c = await banco.connect();
+  } catch (e) {
+    console.error("[ponte-chat] sem conexão", (e as Error)?.message);
+    throw new Error("O chat não respondeu agora. Tente de novo em instantes.");
+  }
+  const q = (sql: string, params?: unknown[]) =>
+    c.query(sql, params as unknown[]).catch(marcarDoBanco);
+  let descartar = false;
+  try {
+    await q("begin");
+    let ip: string | null = null;
+    let ua: string | null = null;
+    try {
+      ip = ipDoCliente(getRequestHeader);
+      ua = getRequestHeader("user-agent") ?? null;
+    } catch {
+      /* fora de requisição (teste): sem IP */
+    }
+    if (ip && !isIP(ip)) ip = null;
+    await q("select chat.abrir_contexto_chat_agilliza($1, $2, $3, $4)", [
+      "authUid" in pessoa ? pessoa.authUid : null,
+      "clienteId" in pessoa ? pessoa.clienteId : null,
+      ip,
+      ua,
+    ]);
+    const tx: TxPlataforma = {
+      consultar: async (sql, params) => (await q(sql, params)).rows,
+      uma: async (sql, params) => (await q(sql, params)).rows[0] ?? null,
+    };
+    const r = await fn(tx);
+    await q("commit");
+    return r;
+  } catch (e) {
+    await c.query("rollback").catch(() => {
+      descartar = true;
+    });
+    throw traduzir(e);
+  } finally {
+    c.release(descartar);
+  }
+}

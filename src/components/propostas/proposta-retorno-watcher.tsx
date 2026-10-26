@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePropostaNotificacaoStore } from "@/hooks/use-proposta-notificacao-store";
-import { signalIncomingChat } from "@/components/shared/chat-alert-store";
+import { signalIncomingChat } from "@/components/chat/chat-alerta";
 import { tipoAtivo, tipoComSom } from "@/lib/notification-prefs";
 import { playChatSound, previewChatSound } from "@/lib/chat-sound";
 
