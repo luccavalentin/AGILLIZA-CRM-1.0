@@ -21,13 +21,10 @@ import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { decifrarSenha } from "./cripto.server";
-import {
-  bancoDoRemetente,
-  extrairCodigo,
-  htmlParaTexto,
-  palavraDeCodigo,
-  trechoDoCorpo,
-} from "./detectar";
+import { bancoDoRemetente, extrairCodigo, htmlParaTexto, trechoDoCorpo } from "./detectar";
+import { avaliarCaptura, type RegraFiltro } from "./filtros";
+import { ehRecusaDeLogin } from "./teste-conexao";
+import { hostPermitido } from "./rede.server";
 
 const LEITOR = `${hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
 const ALUGUEL_S = 90;
@@ -40,8 +37,12 @@ const GUARDAR_DIAS = 7;
 interface Caixa {
   id: string;
   email: string;
+  usuario: string | null;
   imap_host: string;
   imap_port: number;
+  imap_ssl: boolean;
+  pasta: string;
+  usar_palavras_padrao: boolean;
   senha_cifrada: string;
   ativo: boolean;
   desde: string;
@@ -80,15 +81,22 @@ async function assumir(id: string): Promise<boolean> {
   return data === true;
 }
 
-function ehRecusaDeLogin(e: unknown): boolean {
-  const err = e as { authenticationFailed?: boolean; responseText?: string; message?: string };
-  if (err?.authenticationFailed) return true;
-  return /authenticat|login|credenc|senha|password|AUTHENTICATIONFAILED/i.test(
-    `${err?.responseText ?? ""} ${err?.message ?? ""}`,
-  );
+
+/** Regras de filtro da caixa, relidas a cada lote (quem edita na tela vê valer na hora). */
+async function regrasDa(caixaId: string): Promise<RegraFiltro[]> {
+  const { data, error } = await db()
+    .from("codigos_filtros")
+    .select("operador, campo, termo, ativo")
+    .eq("caixa_id", caixaId)
+    .eq("ativo", true);
+  if (error) {
+    log(`não consegui ler os filtros da caixa ${caixaId}: ${error.message}`);
+    return [];
+  }
+  return (data ?? []) as RegraFiltro[];
 }
 
-/** Lê os e-mails novos da caixa (UID acima do último visto) e grava os de código. */
+/** Lê os e-mails novos da caixa (UID acima do último visto) e grava os capturados. */
 async function processarNovos(cliente: ImapFlow, caixa: Caixa, estado: { ultima: number }) {
   const desde = new Date(caixa.desde);
   const intervalo = `${estado.ultima + 1}:*`;
@@ -107,9 +115,10 @@ async function processarNovos(cliente: ImapFlow, caixa: Caixa, estado: { ultima:
     if ((msg.size ?? 0) > TAMANHO_MAX) continue;
     novos.push({ uid: msg.uid, quando });
   }
+  const regras = novos.length ? await regrasDa(caixa.id) : [];
   for (const n of novos) {
     try {
-      await registrarSeForCodigo(cliente, caixa, n.uid, n.quando);
+      await registrarSeCapturado(cliente, caixa, regras, n.uid, n.quando);
     } catch (e) {
       log(`e-mail UID ${n.uid} não pôde ser lido`, (e as Error).message);
     }
@@ -120,19 +129,30 @@ async function processarNovos(cliente: ImapFlow, caixa: Caixa, estado: { ultima:
   }
 }
 
-async function registrarSeForCodigo(cliente: ImapFlow, caixa: Caixa, uid: number, quando: Date) {
+async function registrarSeCapturado(
+  cliente: ImapFlow,
+  caixa: Caixa,
+  regras: RegraFiltro[],
+  uid: number,
+  quando: Date,
+) {
   // `source` vem com BODY.PEEK[]: o e-mail continua NÃO LIDO na caixa.
   const m = await cliente.fetchOne(String(uid), { source: true }, { uid: true });
   if (!m || !m.source) return;
   const email = await simpleParser(m.source);
   const assunto = (email.subject ?? "").trim();
   const corpo = (email.text?.trim() || (email.html ? htmlParaTexto(String(email.html)) : "")).slice(0, 20_000);
-  if (!palavraDeCodigo(assunto, corpo)) return;
-
   const de = email.from?.value?.[0];
   const remetenteEmail = de?.address?.toLowerCase() ?? null;
   const remetenteNome = de?.name?.trim() || null;
-  const codigo = extrairCodigo(assunto, corpo);
+  const captura = avaliarCaptura(
+    { assunto, corpo, remetenteEmail, remetenteNome },
+    regras,
+    caixa.usar_palavras_padrao,
+  );
+  if (!captura.capturar) return;
+  // Número só em e-mail que fala de código: no aviso de boleto, "12345678" é outra coisa.
+  const codigo = captura.ehCodigo ? extrairCodigo(assunto, corpo) : null;
   const messageId = email.messageId ?? `uid:${caixa.uid_validity ?? 0}:${uid}`;
 
   const { error } = await db()
@@ -148,20 +168,25 @@ async function registrarSeForCodigo(cliente: ImapFlow, caixa: Caixa, uid: number
         assunto: assunto.slice(0, 300) || null,
         trecho: trechoDoCorpo(corpo, codigo) || null,
         codigo,
+        motivo: captura.motivo?.slice(0, 200) ?? null,
       },
       { onConflict: "caixa_id,message_id", ignoreDuplicates: true },
     );
   if (error) log(`não gravei o código de ${remetenteEmail}: ${error.message}`);
-  else log(`código recebido de ${remetenteEmail ?? "?"} (${codigo ? "com número" : "sem número"})`);
+  else log(`mensagem capturada de ${remetenteEmail ?? "?"} (${codigo ? "com código" : "sem código"})`);
 }
 
 /** Uma caixa: conecta, lê o que chegou e fica em IDLE até cair, perder o aluguel ou parar. */
 async function vigiar(caixa: Caixa, sinal: { parado: boolean }) {
+  // A senha guardada nunca vai para um servidor de rede interna (ver rede.server.ts).
+  if (!(await hostPermitido(caixa.imap_host))) {
+    throw new Error("servidor não permitido (endereço de rede interna)");
+  }
   const cliente = new ImapFlow({
     host: caixa.imap_host,
     port: caixa.imap_port,
-    secure: true,
-    auth: { user: caixa.email, pass: decifrarSenha(caixa.senha_cifrada) },
+    secure: caixa.imap_ssl,
+    auth: { user: caixa.usuario || caixa.email, pass: decifrarSenha(caixa.senha_cifrada) },
     logger: false,
     emitLogs: false,
     socketTimeout: 5 * 60_000,
@@ -171,7 +196,7 @@ async function vigiar(caixa: Caixa, sinal: { parado: boolean }) {
   let renovar: ReturnType<typeof setInterval> | undefined;
   try {
     await cliente.connect();
-    const lock = await cliente.getMailboxLock("INBOX");
+    const lock = await cliente.getMailboxLock(caixa.pasta || "INBOX");
     try {
       const mb = cliente.mailbox && typeof cliente.mailbox === "object" ? cliente.mailbox : null;
       const validade = mb ? Number(mb.uidValidity) : null;
@@ -272,7 +297,7 @@ async function varrer() {
   const { data, error } = await db()
     .from("codigos_caixas")
     .select(
-      "id, email, imap_host, imap_port, senha_cifrada, ativo, desde, ultima_uid, uid_validity, espera_ate, falhas",
+      "id, email, usuario, imap_host, imap_port, imap_ssl, pasta, usar_palavras_padrao, senha_cifrada, ativo, desde, ultima_uid, uid_validity, espera_ate, falhas",
     );
   if (error) {
     log(`não consegui listar as caixas: ${error.message}`);
