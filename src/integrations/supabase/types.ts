@@ -4565,6 +4565,7 @@ export type Database = {
           contato_avaliacao_nome: string | null
           contato_avaliacao_telefone: string | null
           contrato_emitido_em: string | null
+          contrato_registrado_em: string | null
           correspondente_id: string
           cpf_cnpj: string | null
           created_at: string
@@ -4649,6 +4650,7 @@ export type Database = {
           contato_avaliacao_nome?: string | null
           contato_avaliacao_telefone?: string | null
           contrato_emitido_em?: string | null
+          contrato_registrado_em?: string | null
           correspondente_id: string
           cpf_cnpj?: string | null
           created_at?: string
@@ -4733,6 +4735,7 @@ export type Database = {
           contato_avaliacao_nome?: string | null
           contato_avaliacao_telefone?: string | null
           contrato_emitido_em?: string | null
+          contrato_registrado_em?: string | null
           correspondente_id?: string
           cpf_cnpj?: string | null
           created_at?: string
@@ -6552,6 +6555,9 @@ export type Database = {
           comercial_id: string | null
           compoe_renda: boolean
           compoe_renda_conjuge: boolean | null
+          conta_assinante_id: string | null
+          conta_assinante_nome: string | null
+          conta_assinante_simulacao_id: string | null
           consentimento_em: string | null
           consentimento_ip: string | null
           consentimento_lgpd: boolean
@@ -6622,6 +6628,9 @@ export type Database = {
           comercial_id?: string | null
           compoe_renda?: boolean
           compoe_renda_conjuge?: boolean | null
+          conta_assinante_id?: string | null
+          conta_assinante_nome?: string | null
+          conta_assinante_simulacao_id?: string | null
           consentimento_em?: string | null
           consentimento_ip?: string | null
           consentimento_lgpd?: boolean
@@ -6692,6 +6701,9 @@ export type Database = {
           comercial_id?: string | null
           compoe_renda?: boolean
           compoe_renda_conjuge?: boolean | null
+          conta_assinante_id?: string | null
+          conta_assinante_nome?: string | null
+          conta_assinante_simulacao_id?: string | null
           consentimento_em?: string | null
           consentimento_ip?: string | null
           consentimento_lgpd?: boolean
