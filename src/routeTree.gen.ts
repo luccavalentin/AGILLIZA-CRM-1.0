@@ -24,6 +24,7 @@ import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authentic
 import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
 import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/links'
 import { Route as AuthenticatedMatriculasRouteImport } from './routes/_authenticated/matriculas'
+import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
 import { Route as AuthenticatedParceiroInicioRouteImport } from './routes/_authenticated/parceiro-inicio'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedTecnologiaRouteImport } from './routes/_authenticated/tecnologia'
@@ -235,6 +236,11 @@ const AuthenticatedLinksRoute = AuthenticatedLinksRouteImport.update({
 const AuthenticatedMatriculasRoute = AuthenticatedMatriculasRouteImport.update({
   id: '/matriculas',
   path: '/matriculas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNewsRoute = AuthenticatedNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedParceiroInicioRoute =
@@ -1054,6 +1060,7 @@ export interface FileRoutesByFullPath {
   '/formularios': typeof AuthenticatedFormulariosRouteWithChildren
   '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
+  '/news': typeof AuthenticatedNewsRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/tecnologia': typeof AuthenticatedTecnologiaRouteWithChildren
@@ -1206,6 +1213,7 @@ export interface FileRoutesByTo {
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/links': typeof AuthenticatedLinksRoute
   '/matriculas': typeof AuthenticatedMatriculasRoute
+  '/news': typeof AuthenticatedNewsRoute
   '/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/api/erros': typeof ApiErrosRoute
   '/api/saude': typeof ApiSaudeRoute
@@ -1359,6 +1367,7 @@ export interface FileRoutesById {
   '/_authenticated/formularios': typeof AuthenticatedFormulariosRouteWithChildren
   '/_authenticated/links': typeof AuthenticatedLinksRoute
   '/_authenticated/matriculas': typeof AuthenticatedMatriculasRoute
+  '/_authenticated/news': typeof AuthenticatedNewsRoute
   '/_authenticated/parceiro-inicio': typeof AuthenticatedParceiroInicioRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRouteWithChildren
   '/_authenticated/tecnologia': typeof AuthenticatedTecnologiaRouteWithChildren
@@ -1514,6 +1523,7 @@ export interface FileRouteTypes {
     | '/formularios'
     | '/links'
     | '/matriculas'
+    | '/news'
     | '/parceiro-inicio'
     | '/relatorios'
     | '/tecnologia'
@@ -1666,6 +1676,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/links'
     | '/matriculas'
+    | '/news'
     | '/parceiro-inicio'
     | '/api/erros'
     | '/api/saude'
@@ -1818,6 +1829,7 @@ export interface FileRouteTypes {
     | '/_authenticated/formularios'
     | '/_authenticated/links'
     | '/_authenticated/matriculas'
+    | '/_authenticated/news'
     | '/_authenticated/parceiro-inicio'
     | '/_authenticated/relatorios'
     | '/_authenticated/tecnologia'
@@ -2080,6 +2092,13 @@ declare module '@tanstack/react-router' {
       path: '/matriculas'
       fullPath: '/matriculas'
       preLoaderRoute: typeof AuthenticatedMatriculasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/news': {
+      id: '/_authenticated/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof AuthenticatedNewsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/parceiro-inicio': {
@@ -3188,6 +3207,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRouteWithChildren
   AuthenticatedLinksRoute: typeof AuthenticatedLinksRoute
   AuthenticatedMatriculasRoute: typeof AuthenticatedMatriculasRoute
+  AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
   AuthenticatedParceiroInicioRoute: typeof AuthenticatedParceiroInicioRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRouteWithChildren
   AuthenticatedTecnologiaRoute: typeof AuthenticatedTecnologiaRouteWithChildren
@@ -3279,6 +3299,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFormulariosRoute: AuthenticatedFormulariosRouteWithChildren,
   AuthenticatedLinksRoute: AuthenticatedLinksRoute,
   AuthenticatedMatriculasRoute: AuthenticatedMatriculasRoute,
+  AuthenticatedNewsRoute: AuthenticatedNewsRoute,
   AuthenticatedParceiroInicioRoute: AuthenticatedParceiroInicioRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRouteWithChildren,
   AuthenticatedTecnologiaRoute: AuthenticatedTecnologiaRouteWithChildren,

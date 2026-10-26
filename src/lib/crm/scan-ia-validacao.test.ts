@@ -19,7 +19,11 @@ describe("Scan IA — regras determinísticas", () => {
     expect(cpfValido("111.111.111-11")).toBe(false);
     expect(cnpjValido("11.222.333/0001-81")).toBe(true);
     expect(cnpjValido("11.222.333/0001-80")).toBe(false);
-    expect(validarCampo("cpf_cnpj", "529.982.247-25")).toEqual({ valido: true, motivo: null, normalizado: "52998224725" });
+    expect(validarCampo("cpf_cnpj", "529.982.247-25")).toEqual({
+      valido: true,
+      motivo: null,
+      normalizado: "52998224725",
+    });
     expect(validarCampo("cpf_conjuge", "123.456.789-00").valido).toBe(false);
     expect(validarCampo("cpf_cnpj", "12345").motivo).toMatch(/11 ou 14/);
   });
@@ -65,7 +69,9 @@ describe("Scan IA — regras determinísticas", () => {
   it("valor reprovado nunca passa de 'revisar'", () => {
     expect(confiancaAjustada(0.99, { valido: false, motivo: "x", normalizado: null })).toBe(0.3);
     expect(confiancaAjustada(0.95, { valido: true, motivo: null, normalizado: null })).toBe(0.95);
-    expect(confiancaAjustada(Number.NaN, { valido: true, motivo: null, normalizado: null })).toBe(0);
+    expect(confiancaAjustada(Number.NaN, { valido: true, motivo: null, normalizado: null })).toBe(
+      0,
+    );
   });
 });
 
@@ -84,12 +90,32 @@ describe("Scan IA — vários documentos num cadastro", () => {
 
   it("escolhe o válido, depois o documento mais indicado, depois a confiança; marca divergência", () => {
     const r = consolidarCampos([
-      campo({ campo: "cpf_cnpj", valor: "529.982.247-24", valido: false, confianca: 0.99, tipo_documento: "cnh" }),
+      campo({
+        campo: "cpf_cnpj",
+        valor: "529.982.247-24",
+        valido: false,
+        confianca: 0.99,
+        tipo_documento: "cnh",
+      }),
       campo({ campo: "cpf_cnpj", valor: "529.982.247-25", confianca: 0.7, tipo_documento: "rg" }),
-      campo({ campo: "endereco_logradouro", valor: "Rua A, 10", tipo_documento: "comprovante_renda", confianca: 0.99 }),
-      campo({ campo: "endereco_logradouro", valor: "Rua B, 20", tipo_documento: "comprovante_residencia", confianca: 0.8 }),
+      campo({
+        campo: "endereco_logradouro",
+        valor: "Rua A, 10",
+        tipo_documento: "comprovante_renda",
+        confianca: 0.99,
+      }),
+      campo({
+        campo: "endereco_logradouro",
+        valor: "Rua B, 20",
+        tipo_documento: "comprovante_residencia",
+        confianca: 0.8,
+      }),
       campo({ campo: "nome_completo", valor: "MARIA DA SILVA", tipo_documento: "rg" }),
-      campo({ campo: "nome_completo", valor: "Maria da Silva", tipo_documento: "comprovante_renda" }),
+      campo({
+        campo: "nome_completo",
+        valor: "Maria da Silva",
+        tipo_documento: "comprovante_renda",
+      }),
     ]);
     const por = Object.fromEntries(r.map((c) => [c.campo, c]));
     expect(por.cpf_cnpj!.escolhido.valor).toBe("529.982.247-25");
@@ -99,11 +125,21 @@ describe("Scan IA — vários documentos num cadastro", () => {
   });
 
   it("montarPatchCliente: conflito só substitui com escolha, matrícula mesclada, sem destino descartado", () => {
-    const cliente = { nome: "Maria da Silva", estado_civil: "solteiro", imovel_matricula: { cartorio_nome: "1º RI" } };
+    const cliente = {
+      nome: "Maria da Silva",
+      estado_civil: "solteiro",
+      imovel_matricula: { cartorio_nome: "1º RI" },
+    };
     const r = montarPatchCliente(
       [
         { campo: "nome_completo", valor: "Maria Souza", confianca: 0.9, aplicar: true },
-        { campo: "estado_civil", valor: "Casada", confianca: 0.9, aplicar: true, escolha: "substituir" },
+        {
+          campo: "estado_civil",
+          valor: "Casada",
+          confianca: 0.9,
+          aplicar: true,
+          escolha: "substituir",
+        },
         { campo: "numero_matricula", valor: "12.345", confianca: 0.9, aplicar: true },
         { campo: "endereco_cep", valor: "01310-100", confianca: 0.9, aplicar: true },
         { campo: "data_casamento", valor: "01/01/2020", confianca: 0.9, aplicar: true },

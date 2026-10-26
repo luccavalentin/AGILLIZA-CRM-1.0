@@ -206,7 +206,12 @@ export function analisarMarkdown(texto: string, profundidade = 0): Bloco[] {
     if (titulo) {
       fecharParagrafo();
       const nivel = titulo[1]!.length as 1 | 2 | 3 | 4;
-      blocos.push({ t: "titulo", nivel, c: analisarInline(titulo[2]!), ancora: ancoraDe(titulo[2]!) });
+      blocos.push({
+        t: "titulo",
+        nivel,
+        c: analisarInline(titulo[2]!),
+        ancora: ancoraDe(titulo[2]!),
+      });
       continue;
     }
     if (RE_SEPARADOR.test(l) && !paragrafo.length) {
@@ -225,11 +230,19 @@ export function analisarMarkdown(texto: string, profundidade = 0): Bloco[] {
       if (profundidade < 2) {
         if (aviso) {
           const k = aviso[1]!.toUpperCase();
-          const tipo = k === "DICA" ? "dica" : k.startsWith("ATEN") || k === "AVISO" ? "atencao" : "info";
+          const tipo =
+            k === "DICA" ? "dica" : k.startsWith("ATEN") || k === "AVISO" ? "atencao" : "info";
           dentro[0] = aviso[2]!;
-          blocos.push({ t: "aviso", tipo, blocos: analisarMarkdown(dentro.join("\n"), profundidade + 1) });
+          blocos.push({
+            t: "aviso",
+            tipo,
+            blocos: analisarMarkdown(dentro.join("\n"), profundidade + 1),
+          });
         } else {
-          blocos.push({ t: "citacao", blocos: analisarMarkdown(dentro.join("\n"), profundidade + 1) });
+          blocos.push({
+            t: "citacao",
+            blocos: analisarMarkdown(dentro.join("\n"), profundidade + 1),
+          });
         }
       } else {
         blocos.push({ t: "paragrafo", c: analisarInline(dentro.join(" ")) });
@@ -331,8 +344,15 @@ export function minutosDeLeitura(md: string): number {
 /** Sumário: os títulos de nível 2 e 3, com âncora. */
 export function sumario(md: string): { nivel: 2 | 3; texto: string; ancora: string }[] {
   const plano = (c: Inline[]): string =>
-    c.map((x) => (x.t === "texto" || x.t === "codigo" ? x.v : x.t === "imagem" ? x.alt : plano(x.c))).join("");
+    c
+      .map((x) =>
+        x.t === "texto" || x.t === "codigo" ? x.v : x.t === "imagem" ? x.alt : plano(x.c),
+      )
+      .join("");
   return analisarMarkdown(md)
-    .filter((b): b is Extract<Bloco, { t: "titulo" }> => b.t === "titulo" && (b.nivel === 2 || b.nivel === 3))
+    .filter(
+      (b): b is Extract<Bloco, { t: "titulo" }> =>
+        b.t === "titulo" && (b.nivel === 2 || b.nivel === 3),
+    )
     .map((b) => ({ nivel: b.nivel as 2 | 3, texto: plano(b.c), ancora: b.ancora }));
 }

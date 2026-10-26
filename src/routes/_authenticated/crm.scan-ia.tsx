@@ -131,7 +131,9 @@ function Pagina() {
     const arquivos = lista.slice(0, MAX_ARQUIVOS_LOTE);
     if (!arquivos.length) return;
     if (lista.length > MAX_ARQUIVOS_LOTE) {
-      toast.warning(`Até ${MAX_ARQUIVOS_LOTE} documentos por vez. Os primeiros ${MAX_ARQUIVOS_LOTE} foram enviados.`);
+      toast.warning(
+        `Até ${MAX_ARQUIVOS_LOTE} documentos por vez. Os primeiros ${MAX_ARQUIVOS_LOTE} foram enviados.`,
+      );
     }
     // Mesma regra do Storage: só PDF, JPG ou PNG de até 10 MB (antes aceitava .exe).
     const validos: File[] = [];
@@ -142,7 +144,11 @@ function Pagina() {
     }
     if (!validos.length) return;
     setEnviando(true);
-    const itens: ItemFila[] = validos.map((f) => ({ chave: crypto.randomUUID(), nome: f.name, situacao: "enviando" }));
+    const itens: ItemFila[] = validos.map((f) => ({
+      chave: crypto.randomUUID(),
+      nome: f.name,
+      situacao: "enviando",
+    }));
     setFila(itens);
     const atualizar = (chave: string, p: Partial<ItemFila>) =>
       setFila((atual) => atual.map((i) => (i.chave === chave ? { ...i, ...p } : i)));
@@ -179,9 +185,17 @@ function Pagina() {
           const atual = enviados[proximo++]!;
           try {
             const r = await processarLeitura({ data: { id: atual.leituraId } });
-            atualizar(atual.chave, r.ok ? { situacao: "pronto" } : { situacao: "erro", erro: r.erro ?? "Falha na leitura." });
+            atualizar(
+              atual.chave,
+              r.ok
+                ? { situacao: "pronto" }
+                : { situacao: "erro", erro: r.erro ?? "Falha na leitura." },
+            );
           } catch (e) {
-            atualizar(atual.chave, { situacao: "erro", erro: mensagemDeErro(e, "Falha na leitura.") });
+            atualizar(atual.chave, {
+              situacao: "erro",
+              erro: mensagemDeErro(e, "Falha na leitura."),
+            });
           }
         }
       };
@@ -202,8 +216,8 @@ function Pagina() {
         <div className="min-w-0 sm:flex-1">
           <h1 className="truncate text-xl font-semibold">Scan IA</h1>
           <p className="text-sm text-muted-foreground">
-            Envie os documentos do cliente: a IA lê, o sistema confere (CPF, datas, UF, órgão emissor)
-            e você cria ou completa o cadastro.
+            Envie os documentos do cliente: a IA lê, o sistema confere (CPF, datas, UF, órgão
+            emissor) e você cria ou completa o cadastro.
           </p>
         </div>
         {/* O Consultor IA exige "Ver" em Clientes; sem ela o link só voltava ao início. */}
@@ -262,11 +276,13 @@ function Pagina() {
               <UploadCloud className="h-6 w-6" />
             </span>
             <span className="text-sm font-semibold">
-              {enviando ? "Enviando e lendo…" : "Arraste os documentos do cliente ou clique para selecionar"}
+              {enviando
+                ? "Enviando e lendo…"
+                : "Arraste os documentos do cliente ou clique para selecionar"}
             </span>
             <span className="max-w-md text-xs text-muted-foreground">
-              RG/CNH, CPF, comprovante de renda e de residência, certidão de casamento, matrícula… vários de uma
-              vez (até {MAX_ARQUIVOS_LOTE}). PDF, JPG ou PNG de até 10 MB cada.
+              RG/CNH, CPF, comprovante de renda e de residência, certidão de casamento, matrícula…
+              vários de uma vez (até {MAX_ARQUIVOS_LOTE}). PDF, JPG ou PNG de até 10 MB cada.
             </span>
           </button>
           <input
@@ -309,7 +325,13 @@ function Pagina() {
                     )}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{i.nome}</p>
-                      <p className={i.situacao === "erro" ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
+                      <p
+                        className={
+                          i.situacao === "erro"
+                            ? "text-xs text-destructive"
+                            : "text-xs text-muted-foreground"
+                        }
+                      >
                         {i.situacao === "enviando"
                           ? "Enviando…"
                           : i.situacao === "lendo"

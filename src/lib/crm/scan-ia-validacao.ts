@@ -12,21 +12,95 @@
 import { normalizarData, normalizarNumero } from "./scan-ia-tipos";
 
 export const UFS = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA",
-  "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
 ] as const;
 
 /** Órgãos emissores de identidade mais comuns (siglas). */
 const ORGAOS = [
-  "SSP", "SDS", "SESP", "SEJUSP", "SESDEC", "SEPC", "SPTC", "SSPDC", "SESEG", "SEDS", "PC", "PCMG",
-  "DETRAN", "IFP", "IIPC", "IGP", "IPF", "DGPC", "DIC", "PM", "PMERJ", "EB", "MAER", "MB", "DPF",
-  "PF", "CREA", "CRM", "OAB", "CRC", "CRO", "CRP", "CFM", "MTE", "MT", "SJS", "SJTC", "CNT",
-  "POLITEC", "SECC", "SSPCE", "IN", "GOV", "SENAPPEN", "MD", "COREN", "CRF", "CRMV", "CRN",
+  "SSP",
+  "SDS",
+  "SESP",
+  "SEJUSP",
+  "SESDEC",
+  "SEPC",
+  "SPTC",
+  "SSPDC",
+  "SESEG",
+  "SEDS",
+  "PC",
+  "PCMG",
+  "DETRAN",
+  "IFP",
+  "IIPC",
+  "IGP",
+  "IPF",
+  "DGPC",
+  "DIC",
+  "PM",
+  "PMERJ",
+  "EB",
+  "MAER",
+  "MB",
+  "DPF",
+  "PF",
+  "CREA",
+  "CRM",
+  "OAB",
+  "CRC",
+  "CRO",
+  "CRP",
+  "CFM",
+  "MTE",
+  "MT",
+  "SJS",
+  "SJTC",
+  "CNT",
+  "POLITEC",
+  "SECC",
+  "SSPCE",
+  "IN",
+  "GOV",
+  "SENAPPEN",
+  "MD",
+  "COREN",
+  "CRF",
+  "CRMV",
+  "CRN",
 ];
 
 export type Validacao = { valido: boolean; motivo: string | null; normalizado: string | null };
 
-const OK = (normalizado: string | null = null): Validacao => ({ valido: true, motivo: null, normalizado });
+const OK = (normalizado: string | null = null): Validacao => ({
+  valido: true,
+  motivo: null,
+  normalizado,
+});
 const ERRO = (motivo: string): Validacao => ({ valido: false, motivo, normalizado: null });
 
 function digitos(v: string): string {
@@ -49,7 +123,8 @@ export function cnpjValido(v: string): boolean {
   const d = digitos(v);
   if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
   const calc = (n: number) => {
-    const pesos = n === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const pesos =
+      n === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
     const s = pesos.reduce((acc, p, i) => acc + Number(d[i]) * p, 0);
     const r = s % 11;
     return r < 2 ? 0 : 11 - r;
@@ -70,35 +145,49 @@ export function dataReal(v: string): string | null {
 function idadeEm(iso: string, hoje: Date): number {
   const [a, m, d] = iso.split("-").map(Number) as [number, number, number];
   let idade = hoje.getUTCFullYear() - a;
-  if (hoje.getUTCMonth() + 1 < m || (hoje.getUTCMonth() + 1 === m && hoje.getUTCDate() < d)) idade--;
+  if (hoje.getUTCMonth() + 1 < m || (hoje.getUTCMonth() + 1 === m && hoje.getUTCDate() < d))
+    idade--;
   return idade;
 }
 
 export function normalizarUf(v: string): string | null {
-  const s = v
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim()
-    .toUpperCase();
+  const s = v.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toUpperCase();
   if ((UFS as readonly string[]).includes(s)) return s;
   const porNome: Record<string, string> = {
-    ACRE: "AC", ALAGOAS: "AL", AMAPA: "AP", AMAZONAS: "AM", BAHIA: "BA", CEARA: "CE",
-    "DISTRITO FEDERAL": "DF", "ESPIRITO SANTO": "ES", GOIAS: "GO", MARANHAO: "MA",
-    "MATO GROSSO": "MT", "MATO GROSSO DO SUL": "MS", "MINAS GERAIS": "MG", PARA: "PA",
-    PARAIBA: "PB", PARANA: "PR", PERNAMBUCO: "PE", PIAUI: "PI", "RIO DE JANEIRO": "RJ",
-    "RIO GRANDE DO NORTE": "RN", "RIO GRANDE DO SUL": "RS", RONDONIA: "RO", RORAIMA: "RR",
-    "SANTA CATARINA": "SC", "SAO PAULO": "SP", SERGIPE: "SE", TOCANTINS: "TO",
+    ACRE: "AC",
+    ALAGOAS: "AL",
+    AMAPA: "AP",
+    AMAZONAS: "AM",
+    BAHIA: "BA",
+    CEARA: "CE",
+    "DISTRITO FEDERAL": "DF",
+    "ESPIRITO SANTO": "ES",
+    GOIAS: "GO",
+    MARANHAO: "MA",
+    "MATO GROSSO": "MT",
+    "MATO GROSSO DO SUL": "MS",
+    "MINAS GERAIS": "MG",
+    PARA: "PA",
+    PARAIBA: "PB",
+    PARANA: "PR",
+    PERNAMBUCO: "PE",
+    PIAUI: "PI",
+    "RIO DE JANEIRO": "RJ",
+    "RIO GRANDE DO NORTE": "RN",
+    "RIO GRANDE DO SUL": "RS",
+    RONDONIA: "RO",
+    RORAIMA: "RR",
+    "SANTA CATARINA": "SC",
+    "SAO PAULO": "SP",
+    SERGIPE: "SE",
+    TOCANTINS: "TO",
   };
   return porNome[s] ?? null;
 }
 
 /** "SSP/SP", "ssp-sp", "Secretaria de Segurança Pública" → "SSP/SP" | "SSP"; desconhecido → null. */
 export function normalizarOrgaoEmissor(v: string): string | null {
-  const s = v
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toUpperCase()
-    .trim();
+  const s = v.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().trim();
   if (/SECRETARIA (DE |DA )?SEGURANCA PUBLICA/.test(s)) return "SSP";
   if (/DEPARTAMENTO (ESTADUAL )?DE TRANSITO|^DETRAN/.test(s)) {
     const uf = /\b([A-Z]{2})$/.exec(s)?.[1];
@@ -112,7 +201,8 @@ export function normalizarOrgaoEmissor(v: string): string | null {
   if (!ORGAOS.includes(org!)) {
     // "SSPSP" (sigla colada com a UF)
     const colada = /^([A-Z]{2,7})([A-Z]{2})$/.exec(org!);
-    if (colada && ORGAOS.includes(colada[1]!) && normalizarUf(colada[2]!)) return `${colada[1]}/${colada[2]}`;
+    if (colada && ORGAOS.includes(colada[1]!) && normalizarUf(colada[2]!))
+      return `${colada[1]}/${colada[2]}`;
     return null;
   }
   if (uf) return normalizarUf(uf) ? `${org}/${uf}` : null;
@@ -120,17 +210,31 @@ export function normalizarOrgaoEmissor(v: string): string | null {
 }
 
 const CAMPOS_CPF_CNPJ = new Set([
-  "cpf_cnpj", "cpf_conjuge", "cpf_proprietario", "vendedor_cpf", "comprador_cpf",
+  "cpf_cnpj",
+  "cpf_conjuge",
+  "cpf_proprietario",
+  "vendedor_cpf",
+  "comprador_cpf",
 ]);
 const CAMPOS_DATA_PASSADA = new Set([
-  "data_expedicao", "data_casamento", "data_registro", "data_abertura_matricula",
-  "data_atualizacao_matricula", "data_aquisicao", "data_transacao", "alienacao_data",
+  "data_expedicao",
+  "data_casamento",
+  "data_registro",
+  "data_abertura_matricula",
+  "data_atualizacao_matricula",
+  "data_aquisicao",
+  "data_transacao",
+  "alienacao_data",
 ]);
 const CAMPOS_NASCIMENTO = new Set(["data_nascimento", "data_nascimento_conjuge"]);
 const CAMPOS_UF = new Set(["uf_expedicao", "endereco_uf", "uf", "uf_imovel"]);
 const CAMPOS_CEP = new Set(["endereco_cep", "cep", "cep_imovel"]);
 const CAMPOS_VALOR = new Set([
-  "renda_mensal", "valor_imovel", "valor_venal", "valor_transacao", "alienacao_valor",
+  "renda_mensal",
+  "valor_imovel",
+  "valor_venal",
+  "valor_transacao",
+  "alienacao_valor",
 ]);
 
 /**
@@ -144,7 +248,8 @@ export function validarCampo(campo: string, valor: string, hoje: Date = new Date
   if (CAMPOS_CPF_CNPJ.has(campo)) {
     const d = digitos(v);
     if (d.length === 11) return cpfValido(d) ? OK(d) : ERRO("CPF com dígito verificador inválido.");
-    if (d.length === 14) return cnpjValido(d) ? OK(d) : ERRO("CNPJ com dígito verificador inválido.");
+    if (d.length === 14)
+      return cnpjValido(d) ? OK(d) : ERRO("CNPJ com dígito verificador inválido.");
     return ERRO("CPF/CNPJ precisa de 11 ou 14 dígitos.");
   }
   if (CAMPOS_NASCIMENTO.has(campo)) {
@@ -158,7 +263,8 @@ export function validarCampo(campo: string, valor: string, hoje: Date = new Date
   if (CAMPOS_DATA_PASSADA.has(campo)) {
     const iso = dataReal(v);
     if (!iso) return ERRO("Data inexistente ou fora do formato dd/mm/aaaa.");
-    if (new Date(`${iso}T00:00:00Z`).getTime() > hoje.getTime() + 86_400_000) return ERRO("Data no futuro.");
+    if (new Date(`${iso}T00:00:00Z`).getTime() > hoje.getTime() + 86_400_000)
+      return ERRO("Data no futuro.");
     if (Number(iso.slice(0, 4)) < 1890) return ERRO("Data implausível.");
     return OK(iso);
   }
@@ -175,7 +281,9 @@ export function validarCampo(campo: string, valor: string, hoje: Date = new Date
     return d.length === 8 && !/^0{8}$/.test(d) ? OK(d) : ERRO("CEP precisa de 8 dígitos.");
   }
   if (campo === "email") {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) ? OK(v.toLowerCase()) : ERRO("E-mail fora do formato.");
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)
+      ? OK(v.toLowerCase())
+      : ERRO("E-mail fora do formato.");
   }
   if (campo === "telefone") {
     const d = digitos(v).replace(/^55(?=\d{10,11}$)/, "");
@@ -188,9 +296,15 @@ export function validarCampo(campo: string, valor: string, hoje: Date = new Date
     if (n > 1e9) return ERRO("Valor implausível.");
     return OK(n.toFixed(2));
   }
-  if (campo === "nome_completo" || campo === "nome_conjuge" || campo === "nome_mae" || campo === "nome_pai") {
+  if (
+    campo === "nome_completo" ||
+    campo === "nome_conjuge" ||
+    campo === "nome_mae" ||
+    campo === "nome_pai"
+  ) {
     if (/\d/.test(v)) return ERRO("Nome com números.");
-    if (v.split(/\s+/).filter(Boolean).length < 2) return ERRO("Nome incompleto (precisa de nome e sobrenome).");
+    if (v.split(/\s+/).filter(Boolean).length < 2)
+      return ERRO("Nome incompleto (precisa de nome e sobrenome).");
     return OK(v.replace(/\s+/g, " "));
   }
   return OK();

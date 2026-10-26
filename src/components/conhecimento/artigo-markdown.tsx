@@ -1,7 +1,12 @@
 import { Fragment, type ReactNode } from "react";
 import { AlertTriangle, Info, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { analisarMarkdown, type Alinhamento, type Bloco, type Inline } from "@/lib/conhecimento/markdown";
+import {
+  analisarMarkdown,
+  type Alinhamento,
+  type Bloco,
+  type Inline,
+} from "@/lib/conhecimento/markdown";
 
 /**
  * Desenha markdown de artigo (Base de conhecimento, Agilliza News, Consultor IA) com
@@ -91,24 +96,49 @@ function bloco(b: Bloco, k: string, artigo: boolean): ReactNode {
       const c = inline(b.c, k);
       if (b.nivel === 1)
         return (
-          <h2 key={k} id={b.ancora} className={cn("scroll-mt-20 font-semibold tracking-tight text-foreground", artigo ? "pt-2 text-2xl" : "text-base")}>
+          <h2
+            key={k}
+            id={b.ancora}
+            className={cn(
+              "scroll-mt-20 font-semibold tracking-tight text-foreground",
+              artigo ? "pt-2 text-2xl" : "text-base",
+            )}
+          >
             {c}
           </h2>
         );
       if (b.nivel === 2)
         return (
-          <h2 key={k} id={b.ancora} className={cn("scroll-mt-20 font-semibold tracking-tight text-foreground", artigo ? "pt-3 text-xl" : "pt-1 text-[15px]")}>
+          <h2
+            key={k}
+            id={b.ancora}
+            className={cn(
+              "scroll-mt-20 font-semibold tracking-tight text-foreground",
+              artigo ? "pt-3 text-xl" : "pt-1 text-[15px]",
+            )}
+          >
             {c}
           </h2>
         );
       if (b.nivel === 3)
         return (
-          <h3 key={k} id={b.ancora} className={cn("scroll-mt-20 font-semibold text-foreground", artigo ? "pt-2 text-lg" : "text-sm")}>
+          <h3
+            key={k}
+            id={b.ancora}
+            className={cn(
+              "scroll-mt-20 font-semibold text-foreground",
+              artigo ? "pt-2 text-lg" : "text-sm",
+            )}
+          >
             {c}
           </h3>
         );
       return (
-        <h4 key={k} id={b.ancora} className="scroll-mt-20 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h4
+          key={k}
+          id={b.ancora}
+          className="scroll-mt-20 text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           {c}
         </h4>
       );
@@ -117,7 +147,11 @@ function bloco(b: Bloco, k: string, artigo: boolean): ReactNode {
       return <p key={k}>{inline(b.c, k)}</p>;
     case "lista":
       return b.ordenada ? (
-        <ol key={k} start={b.inicio} className="list-decimal space-y-1.5 pl-6 marker:font-semibold marker:text-primary">
+        <ol
+          key={k}
+          start={b.inicio}
+          className="list-decimal space-y-1.5 pl-6 marker:font-semibold marker:text-primary"
+        >
           {b.itens.map((it, i) => (
             <li key={i} className="pl-1">
               {inline(it, `${k}-${i}`)}
@@ -135,7 +169,10 @@ function bloco(b: Bloco, k: string, artigo: boolean): ReactNode {
       );
     case "citacao":
       return (
-        <blockquote key={k} className="space-y-2 border-l-[3px] border-primary/60 py-1 pl-4 italic text-muted-foreground">
+        <blockquote
+          key={k}
+          className="space-y-2 border-l-[3px] border-primary/60 py-1 pl-4 italic text-muted-foreground"
+        >
           {b.blocos.map((x, i) => bloco(x, `${k}-${i}`, artigo))}
         </blockquote>
       );
@@ -166,7 +203,13 @@ function bloco(b: Bloco, k: string, artigo: boolean): ReactNode {
             <thead className="bg-muted/60">
               <tr>
                 {b.cabecalho.map((c, i) => (
-                  <th key={i} className={cn("whitespace-nowrap border-b border-border px-3 py-2 font-semibold", alinhar(b.alinhamentos[i] ?? null))}>
+                  <th
+                    key={i}
+                    className={cn(
+                      "whitespace-nowrap border-b border-border px-3 py-2 font-semibold",
+                      alinhar(b.alinhamentos[i] ?? null),
+                    )}
+                  >
                     {inline(c, `${k}-h${i}`)}
                   </th>
                 ))}
@@ -176,7 +219,13 @@ function bloco(b: Bloco, k: string, artigo: boolean): ReactNode {
               {b.linhas.map((l, r) => (
                 <tr key={r} className="even:bg-muted/20">
                   {l.map((c, i) => (
-                    <td key={i} className={cn("border-b border-border/60 px-3 py-2 tabular-nums", alinhar(b.alinhamentos[i] ?? null))}>
+                    <td
+                      key={i}
+                      className={cn(
+                        "border-b border-border/60 px-3 py-2 tabular-nums",
+                        alinhar(b.alinhamentos[i] ?? null),
+                      )}
+                    >
                       {inline(c, `${k}-${r}-${i}`)}
                     </td>
                   ))}
@@ -190,15 +239,26 @@ function bloco(b: Bloco, k: string, artigo: boolean): ReactNode {
       return <hr key={k} className="my-2 border-border/70" />;
     case "codigo":
       return (
-        <pre key={k} className="max-w-full overflow-x-auto rounded-xl bg-muted p-3 font-mono text-[13px]">
+        <pre
+          key={k}
+          className="max-w-full overflow-x-auto rounded-xl bg-muted p-3 font-mono text-[13px]"
+        >
           <code>{b.v}</code>
         </pre>
       );
     case "figura":
       return (
         <figure key={k} className="space-y-2">
-          <img src={b.src} alt={b.alt} loading="lazy" referrerPolicy="no-referrer" className="w-full rounded-xl border border-border/60 object-cover shadow-sm" />
-          {b.alt && <figcaption className="text-center text-xs text-muted-foreground">{b.alt}</figcaption>}
+          <img
+            src={b.src}
+            alt={b.alt}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="w-full rounded-xl border border-border/60 object-cover shadow-sm"
+          />
+          {b.alt && (
+            <figcaption className="text-center text-xs text-muted-foreground">{b.alt}</figcaption>
+          )}
         </figure>
       );
   }

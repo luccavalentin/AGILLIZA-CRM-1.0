@@ -10,7 +10,12 @@ import { configDaLinha, type ConfigProvedor } from "./provedor.server";
 export async function configIaDaContaLinha(
   correspondenteId: string | null,
 ): Promise<{ cfg: ConfigProvedor; promptScan: string }> {
-  let linha: { api_key: string | null; base_url: string | null; config: unknown; ativo: boolean } | null = null;
+  let linha: {
+    api_key: string | null;
+    base_url: string | null;
+    config: unknown;
+    ativo: boolean;
+  } | null = null;
   if (correspondenteId) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await (supabaseAdmin as any)

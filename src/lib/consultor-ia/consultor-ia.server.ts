@@ -25,8 +25,19 @@ import {
   type Mensagem,
 } from "@/lib/ia/provedor.server";
 import type { ParametrosCalculo } from "./calculos";
-import { blocoParaPrompt, executarFerramentas, precisaDadoAtual, type ResultadoFerramenta } from "./ferramentas";
-import { limparResposta, mensagemComContexto, promptDeSistema, MARCADOR_SEM_INFO, type FonteCitada } from "./prompt";
+import {
+  blocoParaPrompt,
+  executarFerramentas,
+  precisaDadoAtual,
+  type ResultadoFerramenta,
+} from "./ferramentas";
+import {
+  limparResposta,
+  mensagemComContexto,
+  promptDeSistema,
+  MARCADOR_SEM_INFO,
+  type FonteCitada,
+} from "./prompt";
 
 export { MARCADOR_SEM_INFO };
 export type { FonteCitada };
@@ -40,9 +51,43 @@ export interface TrechoBase {
 }
 
 const STOPWORDS = new Set([
-  "a", "o", "as", "os", "de", "da", "do", "das", "dos", "e", "em", "um", "uma", "para", "por", "com",
-  "que", "qual", "quais", "como", "quando", "onde", "é", "sao", "são", "no", "na", "nos", "nas", "ao",
-  "aos", "se", "sobre", "meu", "minha", "the", "of",
+  "a",
+  "o",
+  "as",
+  "os",
+  "de",
+  "da",
+  "do",
+  "das",
+  "dos",
+  "e",
+  "em",
+  "um",
+  "uma",
+  "para",
+  "por",
+  "com",
+  "que",
+  "qual",
+  "quais",
+  "como",
+  "quando",
+  "onde",
+  "é",
+  "sao",
+  "são",
+  "no",
+  "na",
+  "nos",
+  "nas",
+  "ao",
+  "aos",
+  "se",
+  "sobre",
+  "meu",
+  "minha",
+  "the",
+  "of",
 ]);
 
 function tokens(texto: string): string[] {
@@ -63,7 +108,10 @@ export function selecionarTrechos(itens: TrechoBase[], pergunta: string, limite 
     let score = 0;
     for (const t of termos) {
       if (alvoTitulo.some((x) => x.startsWith(t) || t.startsWith(x))) score += 3;
-      score += Math.min(alvoConteudo.filter((x) => x === t || x.startsWith(t) || t.startsWith(x)).length, 4);
+      score += Math.min(
+        alvoConteudo.filter((x) => x === t || x.startsWith(t) || t.startsWith(x)).length,
+        4,
+      );
     }
     return { it, score };
   });
@@ -110,13 +158,21 @@ export interface ConfigIa {
  * consulta é qualquer pessoa da conta). A chave não sai do servidor. O segundo parâmetro é
  * mantido por compatibilidade: o modelo padrão agora é o da camada única de provedor.
  */
-export async function configIaDaConta(corr: string | null, _modeloPadraoAntigo?: string): Promise<ConfigIa> {
+export async function configIaDaConta(
+  corr: string | null,
+  _modeloPadraoAntigo?: string,
+): Promise<ConfigIa> {
   const cfg = await configProvedorDaConta(corr);
   return { provedor: cfg.provedor, modelo: cfg.modelo, apiKey: cfg.apiKey, baseUrl: cfg.baseUrl };
 }
 
 async function configProvedorDaConta(corr: string | null): Promise<ConfigProvedor> {
-  let linha: { api_key: string | null; base_url: string | null; config: unknown; ativo: boolean } | null = null;
+  let linha: {
+    api_key: string | null;
+    base_url: string | null;
+    config: unknown;
+    ativo: boolean;
+  } | null = null;
   if (corr) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await (supabaseAdmin as any)
@@ -135,8 +191,15 @@ async function configProvedorDaConta(corr: string | null): Promise<ConfigProvedo
 }
 
 /** Os artigos mais relevantes para a pergunta (só publicados, regra de leitura no banco). */
-export async function buscarTrechosBase(supabase: any, pergunta: string, limite: number): Promise<TrechoBase[]> {
-  const { data, error } = await supabase.rpc("consultor_ia_trechos", { _pergunta: pergunta, _limite: 20 });
+export async function buscarTrechosBase(
+  supabase: any,
+  pergunta: string,
+  limite: number,
+): Promise<TrechoBase[]> {
+  const { data, error } = await supabase.rpc("consultor_ia_trechos", {
+    _pergunta: pergunta,
+    _limite: 20,
+  });
   if (error) throw new Error("Não foi possível consultar a base de conhecimento.");
   return selecionarTrechos((data ?? []) as TrechoBase[], pergunta, limite);
 }
@@ -229,7 +292,13 @@ export async function prepararConsulta(
 
   const historico = ((historicoRes.data ?? []) as Array<{ papel: string; conteudo: string }>)
     .reverse()
-    .map((m) => ({ papel: m.papel === "usuario" ? "usuario" : "assistente", texto: m.conteudo.slice(0, 1500) }) as Mensagem);
+    .map(
+      (m) =>
+        ({
+          papel: m.papel === "usuario" ? "usuario" : "assistente",
+          texto: m.conteudo.slice(0, 1500),
+        }) as Mensagem,
+    );
   // O Gemini exige que a conversa comece pelo usuário.
   while (historico.length && historico[0]!.papel !== "usuario") historico.shift();
 
@@ -264,7 +333,11 @@ export async function mensagemErroIa(resp: Response): Promise<string> {
 
 /** Streaming da resposta pelo provedor da conta. */
 export function gerarTextoStream(p: Preparo, f?: typeof fetch): AsyncGenerator<string> {
-  return gerarStreamProvedor(p.cfg, { sistema: p.sistema, mensagens: p.mensagens, maxTokens: 2048 }, f);
+  return gerarStreamProvedor(
+    p.cfg,
+    { sistema: p.sistema, mensagens: p.mensagens, maxTokens: 2048 },
+    f,
+  );
 }
 
 export interface Finalizacao {
@@ -277,7 +350,11 @@ export interface Finalizacao {
 }
 
 /** Limpa marcadores, extrai fontes e grava a resposta (com cálculos e aviso). */
-export async function finalizarResposta(supabase: any, p: Preparo, bruto: string): Promise<Finalizacao> {
+export async function finalizarResposta(
+  supabase: any,
+  p: Preparo,
+  bruto: string,
+): Promise<Finalizacao> {
   const { texto, fontes, semInfo } = limparResposta(bruto, p.trechos);
   const aviso = semInfo || (p.avisoDadoAtual && fontes.length === 0);
   const { data: msg, error } = await supabase
@@ -294,7 +371,10 @@ export async function finalizarResposta(supabase: any, p: Preparo, bruto: string
     .select("id")
     .single();
   if (error) throw new Error("Não foi possível gravar a resposta.");
-  await supabase.from("consultor_ia_conversas").update({ updated_at: new Date().toISOString() }).eq("id", p.conversaId);
+  await supabase
+    .from("consultor_ia_conversas")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", p.conversaId);
   return {
     mensagem_id: msg.id as string,
     resposta: texto,

@@ -5,7 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArtigoMarkdown } from "@/components/conhecimento/artigo-markdown";
@@ -37,9 +43,15 @@ export function CartoesCalculo({ calculos }: { calculos: ResultadoFerramenta[] }
         >
           <div className="mb-2 flex items-center gap-2">
             <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              {c.tipo === "faltando" ? <CircleAlert className="size-4 text-warning" /> : <Calculator className="size-4" />}
+              {c.tipo === "faltando" ? (
+                <CircleAlert className="size-4 text-warning" />
+              ) : (
+                <Calculator className="size-4" />
+              )}
             </span>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">{c.titulo}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+              {c.titulo}
+            </p>
             {c.tipo !== "faltando" && (
               <Badge variant="outline" className="ml-auto h-5 text-[10px]">
                 Calculado pelo sistema
@@ -64,7 +76,9 @@ export function CartoesCalculo({ calculos }: { calculos: ResultadoFerramenta[] }
 function Kpi({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
     <div className="rounded-xl border border-border/60 bg-card px-3 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{rotulo}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {rotulo}
+      </p>
       <p className="truncate text-sm font-semibold tabular-nums">{valor}</p>
     </div>
   );
@@ -73,7 +87,11 @@ function Kpi({ rotulo, valor }: { rotulo: string; valor: string }) {
 const num = (s: string) => {
   const t = s.trim();
   if (!t) return NaN;
-  return Number(/,\d{1,2}$/.test(t) || /\.\d{3}/.test(t) ? t.replace(/\./g, "").replace(",", ".") : t.replace(",", "."));
+  return Number(
+    /,\d{1,2}$/.test(t) || /\.\d{3}/.test(t)
+      ? t.replace(/\./g, "").replace(",", ".")
+      : t.replace(",", "."),
+  );
 };
 
 /**
@@ -116,7 +134,13 @@ export function CalculadoraConsultor({
   const cap = useMemo(() => {
     if (!params.data) return null;
     try {
-      return financiamentoMaximo(num(renda), taxaEfetiva, Math.round(num(anos) * 12), sistema, params.data.comprometimento_max_percentual);
+      return financiamentoMaximo(
+        num(renda),
+        taxaEfetiva,
+        Math.round(num(anos) * 12),
+        sistema,
+        params.data.comprometimento_max_percentual,
+      );
     } catch (e) {
       return e instanceof Error ? e.message : "Dados inválidos.";
     }
@@ -139,7 +163,8 @@ export function CalculadoraConsultor({
             <Calculator className="size-5 text-primary" /> Calculadora do Consultor
           </SheetTitle>
           <SheetDescription>
-            Contas exatas com os parâmetros da sua conta. Sem seguros (MIP/DFI) e tarifas, que variam por banco.
+            Contas exatas com os parâmetros da sua conta. Sem seguros (MIP/DFI) e tarifas, que
+            variam por banco.
           </SheetDescription>
         </SheetHeader>
         {params.isLoading ? (
@@ -159,12 +184,26 @@ export function CalculadoraConsultor({
             </TabsList>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <Campo rotulo="Taxa efetiva (% a.a.)" valor={taxa} onChange={setTaxa}
-                dica={params.data?.taxa_referencia_anual != null && !taxa ? `Referência da conta: ${pct(params.data.taxa_referencia_anual)}` : "Informe a taxa do banco"} />
+              <Campo
+                rotulo="Taxa efetiva (% a.a.)"
+                valor={taxa}
+                onChange={setTaxa}
+                dica={
+                  params.data?.taxa_referencia_anual != null && !taxa
+                    ? `Referência da conta: ${pct(params.data.taxa_referencia_anual)}`
+                    : "Informe a taxa do banco"
+                }
+              />
               <Campo rotulo="Prazo (anos)" valor={anos} onChange={setAnos} />
               <div className="col-span-2 flex gap-2">
                 {(["SAC", "PRICE"] as const).map((s) => (
-                  <Button key={s} type="button" size="sm" variant={sistema === s ? "default" : "outline"} onClick={() => setSistema(s)}>
+                  <Button
+                    key={s}
+                    type="button"
+                    size="sm"
+                    variant={sistema === s ? "default" : "outline"}
+                    onClick={() => setSistema(s)}
+                  >
                     {s}
                   </Button>
                 ))}
@@ -184,7 +223,8 @@ export function CalculadoraConsultor({
                     <Kpi rotulo="Total pago" valor={brl(sim.total_pago)} />
                   </div>
                   <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="size-3" /> {sim.meses} meses · {pct(sim.taxa_mensal, 4)} ao mês
+                    <Clock className="size-3" /> {sim.meses} meses · {pct(sim.taxa_mensal, 4)} ao
+                    mês
                   </p>
                   <Button
                     variant="outline"
@@ -207,14 +247,18 @@ export function CalculadoraConsultor({
                 <p className="text-sm text-muted-foreground">{cap}</p>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
-                  <Kpi rotulo={`Parcela máx. (${pct(params.data!.comprometimento_max_percentual)})`} valor={brl(cap.parcela_maxima)} />
+                  <Kpi
+                    rotulo={`Parcela máx. (${pct(params.data!.comprometimento_max_percentual)})`}
+                    valor={brl(cap.parcela_maxima)}
+                  />
                   <Kpi rotulo="Financiamento máx." valor={brl(cap.valor_maximo)} />
                 </div>
               )}
               {typeof sim !== "string" && num(renda) > 0 && (
                 <p className="text-sm">
                   A 1ª parcela da simulação ({brl(sim.primeira_parcela)}) compromete{" "}
-                  <strong>{pct(comprometimento(sim.primeira_parcela, num(renda)))}</strong> da renda.
+                  <strong>{pct(comprometimento(sim.primeira_parcela, num(renda)))}</strong> da
+                  renda.
                 </p>
               )}
             </TabsContent>
@@ -233,7 +277,8 @@ export function CalculadoraConsultor({
                 />
               )}
               <p className="text-xs text-muted-foreground">
-                Alíquotas e valores vêm dos parâmetros da conta (Base de conhecimento › Parâmetros de cálculo).
+                Alíquotas e valores vêm dos parâmetros da conta (Base de conhecimento › Parâmetros
+                de cálculo).
               </p>
             </TabsContent>
           </Tabs>
@@ -243,7 +288,17 @@ export function CalculadoraConsultor({
   );
 }
 
-function Campo({ rotulo, valor, onChange, dica }: { rotulo: string; valor: string; onChange: (v: string) => void; dica?: string }) {
+function Campo({
+  rotulo,
+  valor,
+  onChange,
+  dica,
+}: {
+  rotulo: string;
+  valor: string;
+  onChange: (v: string) => void;
+  dica?: string;
+}) {
   return (
     <div className="space-y-1">
       <Label className="text-xs">{rotulo}</Label>

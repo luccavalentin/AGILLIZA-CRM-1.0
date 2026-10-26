@@ -76,9 +76,12 @@ export function EditorMarkdown({
     if (!el) return;
     const iniLinha = valor.lastIndexOf("\n", el.selectionStart - 1) + 1;
     const fimSel = el.selectionEnd;
-    const fimLinha = valor.indexOf("\n", fimSel) === -1 ? valor.length : valor.indexOf("\n", fimSel);
+    const fimLinha =
+      valor.indexOf("\n", fimSel) === -1 ? valor.length : valor.indexOf("\n", fimSel);
     const trecho = valor.slice(iniLinha, fimLinha) || exemplo;
-    const linhas = trecho.split("\n").map((l, i) => gerar(i) + l.replace(/^(#{1,4}\s+|[-*]\s+|\d+\.\s+|>\s?)/, ""));
+    const linhas = trecho
+      .split("\n")
+      .map((l, i) => gerar(i) + l.replace(/^(#{1,4}\s+|[-*]\s+|\d+\.\s+|>\s?)/, ""));
     const bloco = linhas.join("\n");
     onChange(valor.slice(0, iniLinha) + bloco + valor.slice(fimLinha));
     requestAnimationFrame(() => {
@@ -163,12 +166,19 @@ export function EditorMarkdown({
         <Ferramenta rotulo="Citação" onClick={() => prefixar(() => "> ", "citação")}>
           <Quote className="size-4" />
         </Ferramenta>
-        <Ferramenta rotulo="Aviso (destaque)" onClick={() => inserirBloco("> [!INFO] Escreva aqui a informação em destaque.")}>
+        <Ferramenta
+          rotulo="Aviso (destaque)"
+          onClick={() => inserirBloco("> [!INFO] Escreva aqui a informação em destaque.")}
+        >
           <Info className="size-4" />
         </Ferramenta>
         <Ferramenta
           rotulo="Tabela"
-          onClick={() => inserirBloco("| Coluna 1 | Coluna 2 | Coluna 3 |\n|:--|:--|--:|\n| texto | texto | 0,00 |\n| texto | texto | 0,00 |")}
+          onClick={() =>
+            inserirBloco(
+              "| Coluna 1 | Coluna 2 | Coluna 3 |\n|:--|:--|--:|\n| texto | texto | 0,00 |\n| texto | texto | 0,00 |",
+            )
+          }
         >
           <Table2 className="size-4" />
         </Ferramenta>
@@ -177,12 +187,24 @@ export function EditorMarkdown({
         </Ferramenta>
         {(onEnviarImagem || onEnviarAnexo) && <Separador />}
         {onEnviarImagem && (
-          <Ferramenta rotulo="Imagem" onClick={() => seletorImagem.current?.click()} desativada={enviando}>
-            {enviando ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+          <Ferramenta
+            rotulo="Imagem"
+            onClick={() => seletorImagem.current?.click()}
+            desativada={enviando}
+          >
+            {enviando ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <ImagePlus className="size-4" />
+            )}
           </Ferramenta>
         )}
         {onEnviarAnexo && (
-          <Ferramenta rotulo="Anexo (PDF, planilha…)" onClick={() => seletorAnexo.current?.click()} desativada={enviando}>
+          <Ferramenta
+            rotulo="Anexo (PDF, planilha…)"
+            onClick={() => seletorAnexo.current?.click()}
+            desativada={enviando}
+          >
             <Paperclip className="size-4" />
           </Ferramenta>
         )}
@@ -223,17 +245,27 @@ export function EditorMarkdown({
           value={valor}
           onChange={(e) => onChange(e.target.value)}
           rows={minLinhas}
-          placeholder={placeholder ?? "Escreva o artigo. Use a barra acima para títulos, listas, tabelas, imagens e links."}
+          placeholder={
+            placeholder ??
+            "Escreva o artigo. Use a barra acima para títulos, listas, tabelas, imagens e links."
+          }
           className={cn(
             "min-h-[320px] resize-y rounded-none border-0 font-mono text-[13px] leading-relaxed shadow-none focus-visible:ring-0 lg:border-r lg:border-border",
             aba === "previa" && "hidden lg:block",
           )}
         />
-        <div className={cn("max-h-[640px] min-h-[320px] overflow-y-auto bg-background/60 p-4", aba === "escrever" && "hidden lg:block")}>
+        <div
+          className={cn(
+            "max-h-[640px] min-h-[320px] overflow-y-auto bg-background/60 p-4",
+            aba === "escrever" && "hidden lg:block",
+          )}
+        >
           {valor.trim() ? (
             <ArtigoMarkdown conteudo={valor} />
           ) : (
-            <p className="text-sm text-muted-foreground">A prévia aparece aqui, com a tipografia de leitura.</p>
+            <p className="text-sm text-muted-foreground">
+              A prévia aparece aqui, com a tipografia de leitura.
+            </p>
           )}
         </div>
       </div>

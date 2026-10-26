@@ -42,13 +42,22 @@ export interface Simulacao {
   total_juros: number;
   total_pago: number;
   /** Parcelas de amostra: 1ª, 2ª, 3ª, 12ª, 60ª, 120ª… e a última (as que existirem). */
-  amostra: Array<{ mes: number; parcela: number; juros: number; amortizacao: number; saldo: number }>;
+  amostra: Array<{
+    mes: number;
+    parcela: number;
+    juros: number;
+    amortizacao: number;
+    saldo: number;
+  }>;
 }
 
 function validar(valor: number, taxaAnual: number, meses: number) {
-  if (!Number.isFinite(valor) || valor <= 0) throw new Error("Valor financiado precisa ser maior que zero.");
-  if (!Number.isFinite(taxaAnual) || taxaAnual < 0 || taxaAnual > 60) throw new Error("Taxa anual fora da faixa (0% a 60%).");
-  if (!Number.isInteger(meses) || meses < 1 || meses > 600) throw new Error("Prazo fora da faixa (1 a 600 meses).");
+  if (!Number.isFinite(valor) || valor <= 0)
+    throw new Error("Valor financiado precisa ser maior que zero.");
+  if (!Number.isFinite(taxaAnual) || taxaAnual < 0 || taxaAnual > 60)
+    throw new Error("Taxa anual fora da faixa (0% a 60%).");
+  if (!Number.isInteger(meses) || meses < 1 || meses > 600)
+    throw new Error("Prazo fora da faixa (1 a 600 meses).");
 }
 
 const MESES_AMOSTRA = new Set([1, 2, 3, 12, 24, 60, 120, 180, 240, 300, 360, 420]);
@@ -81,7 +90,13 @@ export function simular(
     if (m === 1) primeira = parcela;
     if (m === meses) ultima = parcela;
     if (MESES_AMOSTRA.has(m) || m === meses) {
-      amostra.push({ mes: m, parcela: arred(parcela), juros: arred(juros), amortizacao: arred(amort), saldo: arred(saldo) });
+      amostra.push({
+        mes: m,
+        parcela: arred(parcela),
+        juros: arred(juros),
+        amortizacao: arred(amort),
+        saldo: arred(saldo),
+      });
     }
   }
   return {
@@ -139,15 +154,15 @@ export interface Custos {
 }
 
 function semAcento(s: string) {
-  return s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .trim();
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
 /** Custos de aquisição com os parâmetros da conta (ITBI por município quando cadastrado). */
-export function custosAquisicao(valorImovel: number, p: ParametrosCalculo, municipio?: string | null): Custos {
+export function custosAquisicao(
+  valorImovel: number,
+  p: ParametrosCalculo,
+  municipio?: string | null,
+): Custos {
   if (!(valorImovel > 0)) throw new Error("Valor do imóvel precisa ser maior que zero.");
   const mun = municipio
     ? p.itbi_municipios.find((m) => semAcento(m.municipio) === semAcento(municipio))
@@ -171,12 +186,16 @@ export function custosAquisicao(valorImovel: number, p: ParametrosCalculo, munic
 
 export const brl = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
-export const pct = (n: number, casas = 2) => `${n.toLocaleString("pt-BR", { maximumFractionDigits: casas })}%`;
+export const pct = (n: number, casas = 2) =>
+  `${n.toLocaleString("pt-BR", { maximumFractionDigits: casas })}%`;
 
 /** Tabela markdown da simulação (vai para o modelo e para a tela). */
 export function simulacaoEmMarkdown(s: Simulacao): string {
   const linhas = s.amostra
-    .map((a) => `| ${a.mes} | ${brl(a.parcela)} | ${brl(a.juros)} | ${brl(a.amortizacao)} | ${brl(a.saldo)} |`)
+    .map(
+      (a) =>
+        `| ${a.mes} | ${brl(a.parcela)} | ${brl(a.juros)} | ${brl(a.amortizacao)} | ${brl(a.saldo)} |`,
+    )
     .join("\n");
   return (
     `**${s.sistema}** · ${brl(s.valor_financiado)} · ${pct(s.taxa_anual)} a.a. (${pct(s.taxa_mensal, 4)} a.m.) · ${s.meses} meses\n\n` +

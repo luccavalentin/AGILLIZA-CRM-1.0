@@ -2,8 +2,18 @@ import { describe, expect, it } from "vitest";
 import { limparResposta, mensagemComContexto, promptDeSistema, MARCADOR_SEM_INFO } from "./prompt";
 
 const T = [
-  { id: "11111111-1111-4111-8111-111111111111", categoria: "FGTS", titulo: "Uso do FGTS", conteudo: "Regra A" },
-  { id: "22222222-2222-4222-8222-222222222222", categoria: "Bradesco", titulo: "Fluxo Bradesco", conteudo: "Regra B" },
+  {
+    id: "11111111-1111-4111-8111-111111111111",
+    categoria: "FGTS",
+    titulo: "Uso do FGTS",
+    conteudo: "Regra A",
+  },
+  {
+    id: "22222222-2222-4222-8222-222222222222",
+    categoria: "Bradesco",
+    titulo: "Fluxo Bradesco",
+    conteudo: "Regra B",
+  },
 ];
 
 describe("prompt do Consultor IA", () => {
@@ -18,7 +28,12 @@ describe("prompt do Consultor IA", () => {
   });
 
   it("monta a mensagem com os trechos numerados, os cálculos e o alerta", () => {
-    const m = mensagemComContexto({ pergunta: "Qual a taxa hoje?", trechos: T, calculos: "(nenhum)", dadoAtual: true });
+    const m = mensagemComContexto({
+      pergunta: "Qual a taxa hoje?",
+      trechos: T,
+      calculos: "(nenhum)",
+      dadoAtual: true,
+    });
     expect(m).toContain("[1] id=11111111");
     expect(m).toContain("[2] id=22222222");
     expect(m).toContain("ATENÇÃO");

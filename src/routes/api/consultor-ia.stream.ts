@@ -61,7 +61,11 @@ export const Route = createFileRoute("/api/consultor-ia/stream")({
               enviar({ tipo: "conversa", conversa_id: preparo.conversaId });
               // Os cálculos do sistema aparecem antes do texto: o número não depende da IA.
               if (preparo.calculos.length || preparo.avisoDadoAtual) {
-                enviar({ tipo: "calculos", calculos: preparo.calculos, aviso_dado_atual: preparo.avisoDadoAtual });
+                enviar({
+                  tipo: "calculos",
+                  calculos: preparo.calculos,
+                  aviso_dado_atual: preparo.avisoDadoAtual,
+                });
               }
 
               let bruto = "";

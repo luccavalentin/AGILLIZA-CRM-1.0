@@ -144,7 +144,9 @@ export const listarMensagensConsultor = createServerFn({ method: "GET" })
     const { supabase } = context as any;
     const { data: msgs, error } = await supabase
       .from("consultor_ia_mensagens")
-      .select("id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at, calculos, aviso_dado_atual")
+      .select(
+        "id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at, calculos, aviso_dado_atual",
+      )
       .eq("conversa_id", data.conversa_id)
       .order("created_at", { ascending: true });
     if (error) throw new Error("Não foi possível carregar a conversa.");
@@ -191,7 +193,10 @@ export const sugerirConteudoBase = createServerFn({ method: "POST" })
   .middleware([usaConsultor])
   .inputValidator((d: { pergunta: string; observacao?: string }) =>
     z
-      .object({ pergunta: z.string().min(3).max(4000), observacao: z.string().max(2000).optional() })
+      .object({
+        pergunta: z.string().min(3).max(4000),
+        observacao: z.string().max(2000).optional(),
+      })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -300,7 +305,11 @@ export const salvarItemBase = createServerFn({ method: "POST" })
               z.object({
                 nome: z.string().min(1).max(200),
                 caminho: z.string().min(3).max(400),
-                tamanho: z.number().int().min(0).max(30 * 1024 * 1024),
+                tamanho: z
+                  .number()
+                  .int()
+                  .min(0)
+                  .max(30 * 1024 * 1024),
                 tipo: z.string().max(120),
               }),
             )
@@ -336,7 +345,11 @@ export const salvarItemBase = createServerFn({ method: "POST" })
     }
     if (!data.global && !corr) throw new Error("Conta não identificada.");
     // Anexo só da pasta da própria conta (o bucket já barra a leitura de outra).
-    if (data.anexos.some((a) => !corr || !a.caminho.startsWith(`${corr}/`) || a.caminho.includes(".."))) {
+    if (
+      data.anexos.some(
+        (a) => !corr || !a.caminho.startsWith(`${corr}/`) || a.caminho.includes(".."),
+      )
+    ) {
       throw new Error("Anexo inválido.");
     }
 
@@ -449,7 +462,8 @@ export const obterParametrosConsultor = createServerFn({ method: "GET" })
       avaliacao_banco: Number(r.avaliacao_banco),
       certidoes_valor: Number(r.certidoes_valor),
       comprometimento_max_percentual: Number(r.comprometimento_max_percentual),
-      taxa_referencia_anual: r.taxa_referencia_anual == null ? null : Number(r.taxa_referencia_anual),
+      taxa_referencia_anual:
+        r.taxa_referencia_anual == null ? null : Number(r.taxa_referencia_anual),
       atualizado_em: r.atualizado_em ?? null,
     };
   });
@@ -480,7 +494,12 @@ export const salvarParametrosConsultor = createServerFn({ method: "POST" })
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Conta não identificada.");
     const { error } = await supabase.from("consultor_ia_parametros").upsert(
-      { correspondente_id: corr, ...data, atualizado_por: userId, atualizado_em: new Date().toISOString() },
+      {
+        correspondente_id: corr,
+        ...data,
+        atualizado_por: userId,
+        atualizado_em: new Date().toISOString(),
+      },
       { onConflict: "correspondente_id" },
     );
     if (error) throw new Error("Não foi possível salvar os parâmetros.");

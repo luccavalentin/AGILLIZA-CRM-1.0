@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { comprometimento, custosAquisicao, financiamentoMaximo, simular, taxaMensal, type ParametrosCalculo } from "./calculos";
+import {
+  comprometimento,
+  custosAquisicao,
+  financiamentoMaximo,
+  simular,
+  taxaMensal,
+  type ParametrosCalculo,
+} from "./calculos";
 import {
   executarFerramentas,
   extrairPrazoMeses,
@@ -10,7 +17,10 @@ import {
 
 const P: ParametrosCalculo = {
   itbi_percentual: 3,
-  itbi_municipios: [{ municipio: "São Paulo", uf: "SP", percentual: 3 }, { municipio: "Curitiba", uf: "PR", percentual: 2.7 }],
+  itbi_municipios: [
+    { municipio: "São Paulo", uf: "SP", percentual: 3 },
+    { municipio: "Curitiba", uf: "PR", percentual: 2.7 },
+  ],
   cartorio_percentual: 1.5,
   avaliacao_banco: 3000,
   certidoes_valor: 400,
@@ -67,7 +77,9 @@ describe("cálculos determinísticos", () => {
 
 describe("leitura da pergunta em português", () => {
   it("valores, taxa e prazo", () => {
-    expect(valoresMonetarios("imóvel de R$ 500 mil com entrada de 100.000").map((v) => v.valor)).toEqual([500_000, 100_000]);
+    expect(
+      valoresMonetarios("imóvel de R$ 500 mil com entrada de 100.000").map((v) => v.valor),
+    ).toEqual([500_000, 100_000]);
     expect(valoresMonetarios("apartamento de 1,2 milhão").map((v) => v.valor)).toEqual([1_200_000]);
     expect(valoresMonetarios("2 quartos e 30 anos a 10%").length).toBe(0);
     expect(extrairTaxa("taxa de 10,5% a.a.")).toEqual({ anual: 10.5, tipo: "efetiva" });
@@ -79,7 +91,10 @@ describe("leitura da pergunta em português", () => {
   });
 
   it("simulação completa: calcula SAC e PRICE com os números da pergunta", () => {
-    const r = executarFerramentas("Qual a parcela de um imóvel de R$ 500 mil com entrada de R$ 100 mil, taxa de 11% a.a. em 30 anos?", P);
+    const r = executarFerramentas(
+      "Qual a parcela de um imóvel de R$ 500 mil com entrada de R$ 100 mil, taxa de 11% a.a. em 30 anos?",
+      P,
+    );
     expect(r.map((x) => x.tipo)).toEqual(["simulacao", "simulacao"]);
     const sac = r[0]!;
     if (sac.tipo !== "simulacao") throw new Error();
@@ -93,18 +108,36 @@ describe("leitura da pergunta em português", () => {
     expect(r).toHaveLength(1);
     expect(r[0]!.tipo).toBe("faltando");
     expect(r[0]!.markdown).toMatch(/taxa/);
-    const r2 = executarFerramentas("Simule a parcela de R$ 300 mil em 35 anos no SAC", { ...P, taxa_referencia_anual: 10 });
+    const r2 = executarFerramentas("Simule a parcela de R$ 300 mil em 35 anos no SAC", {
+      ...P,
+      taxa_referencia_anual: 10,
+    });
     expect(r2[0]!.tipo).toBe("simulacao");
     expect(r2[0]!.markdown).toMatch(/Taxa de referência cadastrada/);
   });
 
   it("comprometimento, capacidade e custos", () => {
-    const c = executarFerramentas("Uma parcela de R$ 4.500 compromete quanto de uma renda de R$ 12 mil?", P);
-    expect(c[0]).toMatchObject({ tipo: "comprometimento", dados: { percentual: 37.5, dentro: false } });
-    const cap = executarFerramentas("Quanto posso financiar com renda de R$ 15 mil, taxa de 10% em 30 anos no PRICE?", P);
+    const c = executarFerramentas(
+      "Uma parcela de R$ 4.500 compromete quanto de uma renda de R$ 12 mil?",
+      P,
+    );
+    expect(c[0]).toMatchObject({
+      tipo: "comprometimento",
+      dados: { percentual: 37.5, dentro: false },
+    });
+    const cap = executarFerramentas(
+      "Quanto posso financiar com renda de R$ 15 mil, taxa de 10% em 30 anos no PRICE?",
+      P,
+    );
     expect(cap[0]!.tipo).toBe("capacidade");
-    const custos = executarFerramentas("Quanto fica o ITBI e o cartório de um imóvel de R$ 600 mil em Curitiba?", P);
-    expect(custos[0]).toMatchObject({ tipo: "custos", dados: { itbi: 16_200, itbi_origem: "Curitiba/PR" } });
+    const custos = executarFerramentas(
+      "Quanto fica o ITBI e o cartório de um imóvel de R$ 600 mil em Curitiba?",
+      P,
+    );
+    expect(custos[0]).toMatchObject({
+      tipo: "custos",
+      dados: { itbi: 16_200, itbi_origem: "Curitiba/PR" },
+    });
   });
 
   it("pergunta conceitual não dispara conta; dado atual é detectado", () => {

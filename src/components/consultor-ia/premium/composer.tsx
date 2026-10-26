@@ -80,7 +80,8 @@ export const SUGESTOES = [
   {
     icone: Cpu,
     titulo: "Simular SAC x PRICE",
-    prompt: "Simule um financiamento de R$ 400 mil em 30 anos a 11% a.a. no SAC e no PRICE e compare.",
+    prompt:
+      "Simule um financiamento de R$ 400 mil em 30 anos a 11% a.a. no SAC e no PRICE e compare.",
   },
   {
     icone: Sparkles,

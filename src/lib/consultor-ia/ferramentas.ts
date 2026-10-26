@@ -32,39 +32,61 @@ export type ResultadoFerramenta =
   | {
       tipo: "comprometimento";
       titulo: string;
-      dados: { parcela: number; renda: number; percentual: number; limite: number; dentro: boolean };
+      dados: {
+        parcela: number;
+        renda: number;
+        percentual: number;
+        limite: number;
+        dentro: boolean;
+      };
       markdown: string;
     }
   | {
       tipo: "capacidade";
       titulo: string;
-      dados: { renda: number; limite: number; sistema: SistemaAmortizacao; taxa_anual: number; meses: number; parcela_maxima: number; valor_maximo: number };
+      dados: {
+        renda: number;
+        limite: number;
+        sistema: SistemaAmortizacao;
+        taxa_anual: number;
+        meses: number;
+        parcela_maxima: number;
+        valor_maximo: number;
+      };
       markdown: string;
     }
   | { tipo: "custos"; titulo: string; dados: Custos; markdown: string }
   | { tipo: "faltando"; titulo: string; dados: { faltam: string[] }; markdown: string };
 
 function normalizar(t: string) {
-  return t
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
+  return t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
 /** "1.234,56" / "1234.56" / "500" → número. */
 function numeroBr(s: string): number {
   const limpo = s.trim();
-  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(limpo)) return Number(limpo.replace(/\./g, "").replace(",", "."));
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(limpo))
+    return Number(limpo.replace(/\./g, "").replace(",", "."));
   if (/^\d+,\d+$/.test(limpo)) return Number(limpo.replace(",", "."));
   return Number(limpo.replace(/,/g, ""));
 }
 
-const MULT: Record<string, number> = { mil: 1e3, k: 1e3, milhao: 1e6, milhoes: 1e6, mi: 1e6, mm: 1e6 };
+const MULT: Record<string, number> = {
+  mil: 1e3,
+  k: 1e3,
+  milhao: 1e6,
+  milhoes: 1e6,
+  mi: 1e6,
+  mm: 1e6,
+};
 
 /** Valores em dinheiro com a posição no texto e as palavras que vêm logo antes. */
-export function valoresMonetarios(texto: string): Array<{ valor: number; antes: string; pos: number }> {
+export function valoresMonetarios(
+  texto: string,
+): Array<{ valor: number; antes: string; pos: number }> {
   const t = normalizar(texto);
-  const re = /(r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)\s*(mil|k|milhao|milhoes|mi|mm)?\b/g;
+  const re =
+    /(r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)\s*(mil|k|milhao|milhoes|mi|mm)?\b/g;
   const out: Array<{ valor: number; antes: string; pos: number }> = [];
   let m: RegExpExecArray | null;
   // O rótulo de um valor é o texto entre o número anterior e ele (no máximo 40 caracteres):
@@ -96,19 +118,34 @@ export function extrairTaxa(texto: string): { anual: number; tipo: "efetiva" | "
   if (!Number.isFinite(valor)) return null;
   const contexto = t.slice(Math.max(0, m.index - 30), m.index + m[0].length + 20);
   // Percentual de entrada / comprometimento não é taxa.
-  if (/entrada|compromet|renda|itbi|cartorio|desconto/.test(t.slice(Math.max(0, m.index - 25), m.index))) {
-    const outro = /(?:taxa|juros)[^%\d]{0,20}(\d+(?:[.,]\d+)?)\s*%\s*(a\.?\s?a\.?|ao ano|a\.?\s?m\.?|ao mes)?/.exec(t);
+  if (
+    /entrada|compromet|renda|itbi|cartorio|desconto/.test(
+      t.slice(Math.max(0, m.index - 25), m.index),
+    )
+  ) {
+    const outro =
+      /(?:taxa|juros)[^%\d]{0,20}(\d+(?:[.,]\d+)?)\s*%\s*(a\.?\s?a\.?|ao ano|a\.?\s?m\.?|ao mes)?/.exec(
+        t,
+      );
     if (!outro) return null;
     return taxaDe(Number(outro[1]!.replace(",", ".")), outro[2] ?? "", t);
   }
   return taxaDe(valor, m[2] ?? "", contexto);
 }
 
-function taxaDe(valor: number, sufixo: string, contexto: string): { anual: number; tipo: "efetiva" | "nominal" } | null {
+function taxaDe(
+  valor: number,
+  sufixo: string,
+  contexto: string,
+): { anual: number; tipo: "efetiva" | "nominal" } | null {
   if (!Number.isFinite(valor) || valor <= 0) return null;
   const mensal = /a\.?\s?m|ao mes/.test(sufixo);
   const tipo = /nominal/.test(contexto) ? "nominal" : "efetiva";
-  if (mensal) return { anual: Math.round((Math.pow(1 + valor / 100, 12) - 1) * 10000) / 100, tipo: "efetiva" };
+  if (mensal)
+    return {
+      anual: Math.round((Math.pow(1 + valor / 100, 12) - 1) * 10000) / 100,
+      tipo: "efetiva",
+    };
   return valor <= 60 ? { anual: valor, tipo } : null;
 }
 
@@ -124,22 +161,30 @@ export function extrairPrazoMeses(texto: string): number | null {
 function extrairEntrada(texto: string, valorImovel: number | null): number | null {
   const t = normalizar(texto);
   const pctEntrada = /entrada[^%\d]{0,15}(\d+(?:[.,]\d+)?)\s*%/.exec(t);
-  if (pctEntrada && valorImovel) return (valorImovel * Number(pctEntrada[1]!.replace(",", "."))) / 100;
+  if (pctEntrada && valorImovel)
+    return (valorImovel * Number(pctEntrada[1]!.replace(",", "."))) / 100;
   return null;
 }
 
-const RE_SIMULACAO = /parcel|presta|simul|\bsac\b|\bprice\b|amortiza|financ|quanto (fica|vou pagar|pago)/;
+const RE_SIMULACAO =
+  /parcel|presta|simul|\bsac\b|\bprice\b|amortiza|financ|quanto (fica|vou pagar|pago)/;
 const RE_COMPROMETIMENTO = /compromet|cabe na renda|cabe no orcamento|percentual da renda/;
-const RE_CAPACIDADE = /quanto (posso|consigo|da para|da pra|ele pode|ela pode) financ|valor maximo|capacidade|financiamento maximo/;
-const RE_CUSTOS = /\bitbi\b|cartorio|escritura|registro do imovel|custos? (de|da|do) (compra|aquisicao|cartorio)|despesas? (de|da) compra/;
+const RE_CAPACIDADE =
+  /quanto (posso|consigo|da para|da pra|ele pode|ela pode) financ|valor maximo|capacidade|financiamento maximo/;
+const RE_CUSTOS =
+  /\bitbi\b|cartorio|escritura|registro do imovel|custos? (de|da|do) (compra|aquisicao|cartorio)|despesas? (de|da) compra/;
 
 /** Pergunta que depende de dado atual (taxa de hoje, Selic, teto vigente, regra nova). */
 export function precisaDadoAtual(pergunta: string): boolean {
   const t = normalizar(pergunta);
   return (
-    /\b(hoje|atual|atualmente|vigente|agora|neste mes|este mes|esta semana|ultim[ao]s?)\b/.test(t) ||
+    /\b(hoje|atual|atualmente|vigente|agora|neste mes|este mes|esta semana|ultim[ao]s?)\b/.test(
+      t,
+    ) ||
     /\b(selic|ipca|incc|igp-?m|\btr\b|cdi)\b/.test(t) ||
-    /taxa[s]? (de juros )?(da|do|na|no) (caixa|itau|bradesco|santander|banco do brasil|\bbb\b|inter|nubank)/.test(t) ||
+    /taxa[s]? (de juros )?(da|do|na|no) (caixa|itau|bradesco|santander|banco do brasil|\bbb\b|inter|nubank)/.test(
+      t,
+    ) ||
     /\b(teto|limite) (do |de )?(mcmv|minha casa|sfh|fgts)/.test(t) ||
     /\b20(2[5-9]|3\d)\b/.test(t)
   );
@@ -150,33 +195,66 @@ export function executarFerramentas(pergunta: string, p: ParametrosCalculo): Res
   const t = normalizar(pergunta);
   const out: ResultadoFerramenta[] = [];
   const valores = valoresMonetarios(pergunta);
-  const renda = valores.find((v) => /renda|ganha|salario|recebe|familiar/.test(v.antes))?.valor ?? null;
+  const renda =
+    valores.find((v) => /renda|ganha|salario|recebe|familiar/.test(v.antes))?.valor ?? null;
   // "parcela de R$ 300 mil" num pedido de simulação é o valor a financiar, não a parcela.
   const parcelaInformada =
     valores.find((v) => /parcela|prestacao/.test(v.antes) && v.valor <= 50_000)?.valor ?? null;
   const imovel =
-    valores.find((v) => /imovel|apartamento|casa|vale|valor de compra|avaliad|preco|custa/.test(v.antes))?.valor ?? null;
-  const financiadoExplicito = valores.find((v) => /financ|emprest|credito|financiar/.test(v.antes))?.valor ?? null;
+    valores.find((v) =>
+      /imovel|apartamento|casa|vale|valor de compra|avaliad|preco|custa/.test(v.antes),
+    )?.valor ?? null;
+  const financiadoExplicito =
+    valores.find((v) => /financ|emprest|credito|financiar/.test(v.antes))?.valor ?? null;
   const entradaValor =
-    valores.find((v) => /entrada|sinal|recursos proprios|fgts/.test(v.antes))?.valor ?? extrairEntrada(pergunta, imovel);
-  const semRotulo = valores.filter((v) => ![renda, parcelaInformada, imovel, financiadoExplicito, entradaValor].includes(v.valor));
+    valores.find((v) => /entrada|sinal|recursos proprios|fgts/.test(v.antes))?.valor ??
+    extrairEntrada(pergunta, imovel);
+  const semRotulo = valores.filter(
+    (v) => ![renda, parcelaInformada, imovel, financiadoExplicito, entradaValor].includes(v.valor),
+  );
   const taxaPergunta = extrairTaxa(pergunta);
-  const taxa = taxaPergunta ?? (p.taxa_referencia_anual != null ? { anual: p.taxa_referencia_anual, tipo: "efetiva" as const } : null);
+  const taxa =
+    taxaPergunta ??
+    (p.taxa_referencia_anual != null
+      ? { anual: p.taxa_referencia_anual, tipo: "efetiva" as const }
+      : null);
   const meses = extrairPrazoMeses(pergunta);
-  const sistemas: SistemaAmortizacao[] = /\bsac\b/.test(t) && !/\bprice\b/.test(t) ? ["SAC"] : /\bprice\b/.test(t) && !/\bsac\b/.test(t) ? ["PRICE"] : ["SAC", "PRICE"];
-  const notaSeguros = "\n\n_Sem os seguros obrigatórios (MIP/DFI) e a tarifa de administração, que variam por banco e pela idade do proponente._";
+  const sistemas: SistemaAmortizacao[] =
+    /\bsac\b/.test(t) && !/\bprice\b/.test(t)
+      ? ["SAC"]
+      : /\bprice\b/.test(t) && !/\bsac\b/.test(t)
+        ? ["PRICE"]
+        : ["SAC", "PRICE"];
+  const notaSeguros =
+    "\n\n_Sem os seguros obrigatórios (MIP/DFI) e a tarifa de administração, que variam por banco e pela idade do proponente._";
 
   // Financiamento máximo pela renda.
   if (RE_CAPACIDADE.test(t)) {
-    const faltam = [!renda && "renda", !taxa && "taxa de juros anual", !meses && "prazo"].filter(Boolean) as string[];
+    const faltam = [!renda && "renda", !taxa && "taxa de juros anual", !meses && "prazo"].filter(
+      Boolean,
+    ) as string[];
     if (faltam.length) out.push(faltando(faltam, "Quanto dá para financiar"));
     else {
       for (const s of sistemas) {
-        const r = financiamentoMaximo(renda!, taxa!.anual, meses!, s, p.comprometimento_max_percentual, taxa!.tipo);
+        const r = financiamentoMaximo(
+          renda!,
+          taxa!.anual,
+          meses!,
+          s,
+          p.comprometimento_max_percentual,
+          taxa!.tipo,
+        );
         out.push({
           tipo: "capacidade",
           titulo: `Financiamento máximo pela renda (${s})`,
-          dados: { renda: renda!, limite: p.comprometimento_max_percentual, sistema: s, taxa_anual: taxa!.anual, meses: meses!, ...r },
+          dados: {
+            renda: renda!,
+            limite: p.comprometimento_max_percentual,
+            sistema: s,
+            taxa_anual: taxa!.anual,
+            meses: meses!,
+            ...r,
+          },
           markdown:
             `Renda ${brl(renda!)} × limite de ${pct(p.comprometimento_max_percentual)} = parcela máxima **${brl(r.parcela_maxima)}**. ` +
             `Com ${pct(taxa!.anual)} a.a. em ${meses} meses (${s}${s === "SAC" ? ", pela 1ª parcela" : ""}): financiamento máximo **${brl(r.valor_maximo)}**.` +
@@ -213,7 +291,9 @@ export function executarFerramentas(pergunta: string, p: ParametrosCalculo): Res
           dados: sim,
           markdown:
             simulacaoEmMarkdown(sim) +
-            (taxaPergunta ? "" : `\n\n_Taxa de referência cadastrada pela conta (${pct(taxa!.anual)} a.a.), não a taxa de hoje de um banco._`) +
+            (taxaPergunta
+              ? ""
+              : `\n\n_Taxa de referência cadastrada pela conta (${pct(taxa!.anual)} a.a.), não a taxa de hoje de um banco._`) +
             notaSeguros,
         });
       }
@@ -221,16 +301,31 @@ export function executarFerramentas(pergunta: string, p: ParametrosCalculo): Res
   }
 
   // Comprometimento de renda.
-  if (RE_COMPROMETIMENTO.test(t) || (renda && (parcelaInformada || simulacaoBase) && /renda/.test(t))) {
+  if (
+    RE_COMPROMETIMENTO.test(t) ||
+    (renda && (parcelaInformada || simulacaoBase) && /renda/.test(t))
+  ) {
     const parcela = parcelaInformada ?? simulacaoBase?.primeira_parcela ?? null;
-    if (!renda || !parcela) out.push(faltando([!renda && "renda mensal", !parcela && "valor da parcela"].filter(Boolean) as string[], "Comprometimento de renda"));
+    if (!renda || !parcela)
+      out.push(
+        faltando(
+          [!renda && "renda mensal", !parcela && "valor da parcela"].filter(Boolean) as string[],
+          "Comprometimento de renda",
+        ),
+      );
     else {
       const perc = comprometimento(parcela, renda);
       const dentro = perc <= p.comprometimento_max_percentual;
       out.push({
         tipo: "comprometimento",
         titulo: "Comprometimento de renda",
-        dados: { parcela, renda, percentual: perc, limite: p.comprometimento_max_percentual, dentro },
+        dados: {
+          parcela,
+          renda,
+          percentual: perc,
+          limite: p.comprometimento_max_percentual,
+          dentro,
+        },
         markdown: `Parcela ${brl(parcela)} sobre renda ${brl(renda)} = **${pct(perc)}** da renda (limite da conta: ${pct(p.comprometimento_max_percentual)}) → **${dentro ? "dentro" : "acima"} do limite**.`,
       });
     }
@@ -241,7 +336,10 @@ export function executarFerramentas(pergunta: string, p: ParametrosCalculo): Res
     const valorImovel = imovel ?? (semRotulo.length === 1 ? semRotulo[0]!.valor : null);
     if (!valorImovel) out.push(faltando(["valor do imóvel"], "Custos de aquisição"));
     else {
-      const municipio = /em ([a-z\s]{3,40}?)(?:[,.?/-]|\s(?:sp|rj|mg|pr|sc|rs|ba|pe|ce|go|df)\b|$)/.exec(t)?.[1]?.trim() ?? null;
+      const municipio =
+        /em ([a-z\s]{3,40}?)(?:[,.?/-]|\s(?:sp|rj|mg|pr|sc|rs|ba|pe|ce|go|df)\b|$)/
+          .exec(t)?.[1]
+          ?.trim() ?? null;
       const c = custosAquisicao(valorImovel, p, municipio);
       out.push({
         tipo: "custos",

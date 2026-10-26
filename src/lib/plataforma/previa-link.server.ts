@@ -34,9 +34,21 @@ function v4Num(ip: string) {
   return ip.split(".").reduce((n, p) => (n << 8) + Number(p), 0) >>> 0;
 }
 const FAIXAS_V4: [string, number][] = [
-  ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16],
-  ["172.16.0.0", 12], ["192.0.0.0", 24], ["192.0.2.0", 24], ["192.88.99.0", 24], ["192.168.0.0", 16],
-  ["198.18.0.0", 15], ["198.51.100.0", 24], ["203.0.113.0", 24], ["224.0.0.0", 4], ["240.0.0.0", 4],
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.88.99.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4],
 ];
 function v4Proibido(ip: string) {
   const n = v4Num(ip);
@@ -99,10 +111,16 @@ export function conferirUrl(texto: string): URL {
   } catch {
     throw new RecusaLink("Endereço inválido.");
   }
-  if (u.protocol !== "https:" && u.protocol !== "http:") throw new RecusaLink("Só endereços http:// ou https:// são aceitos.");
-  if (u.username || u.password) throw new RecusaLink("Usuário e senha no endereço não são aceitos.");
-  if (u.port && u.port !== "80" && u.port !== "443") throw new RecusaLink("Só as portas 80 e 443 são aceitas.");
-  const host = u.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, "").toLowerCase();
+  if (u.protocol !== "https:" && u.protocol !== "http:")
+    throw new RecusaLink("Só endereços http:// ou https:// são aceitos.");
+  if (u.username || u.password)
+    throw new RecusaLink("Usuário e senha no endereço não são aceitos.");
+  if (u.port && u.port !== "80" && u.port !== "443")
+    throw new RecusaLink("Só as portas 80 e 443 são aceitas.");
+  const host = u.hostname
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.$/, "")
+    .toLowerCase();
   if (isIP(host)) throw new RecusaLink("Use o nome do site, não um IP.");
   if (!host.includes(".") || SUFIXOS_LOCAIS.test(host) || !/\.[a-z]{2,63}$/.test(host))
     throw new RecusaLink("O endereço não é público.");
@@ -120,7 +138,8 @@ export async function resolverPublico(host: string, resolver: Resolvedor = resol
     throw new RecusaLink("O site não foi encontrado.");
   }
   if (!lista.length) throw new RecusaLink("O site não foi encontrado.");
-  if (lista.some((a) => !enderecoPublico(a.address))) throw new RecusaLink("O endereço aponta para a rede interna: recusado.");
+  if (lista.some((a) => !enderecoPublico(a.address)))
+    throw new RecusaLink("O endereço aponta para a rede interna: recusado.");
   return lista[0]!;
 }
 
@@ -128,7 +147,11 @@ export async function resolverPublico(host: string, resolver: Resolvedor = resol
 
 export type Resposta = { status: number; location: string | null; tipo: string; corpo: string };
 /** Faz UM pedido para a URL já conferida, conectando no IP já conferido. */
-export type Requisitar = (u: URL, ip: { address: string; family: number }, o: { tempoMs: number; maxBytes: number }) => Promise<Resposta>;
+export type Requisitar = (
+  u: URL,
+  ip: { address: string; family: number },
+  o: { tempoMs: number; maxBytes: number },
+) => Promise<Resposta>;
 
 const requisitarPadrao: Requisitar = (u, ip, o) =>
   new Promise((ok, falha) => {
@@ -151,7 +174,10 @@ const requisitarPadrao: Requisitar = (u, ip, o) =>
         timeout: o.tempoMs,
       },
       (r) => {
-        const tipo = String(r.headers["content-type"] ?? "").split(";")[0]!.trim().toLowerCase();
+        const tipo = String(r.headers["content-type"] ?? "")
+          .split(";")[0]!
+          .trim()
+          .toLowerCase();
         const st = r.statusCode ?? 0;
         if (st >= 300 && st < 400) {
           r.destroy();
@@ -164,18 +190,33 @@ const requisitarPadrao: Requisitar = (u, ip, o) =>
           partes.push(b);
           if (total >= o.maxBytes) r.destroy();
         });
-        const fim = () => ok({ status: st, location: null, tipo, corpo: Buffer.concat(partes).subarray(0, o.maxBytes).toString("utf8") });
+        const fim = () =>
+          ok({
+            status: st,
+            location: null,
+            tipo,
+            corpo: Buffer.concat(partes).subarray(0, o.maxBytes).toString("utf8"),
+          });
         r.on("end", fim);
         r.on("close", fim);
         r.on("error", () => falha(new RecusaLink("Não foi possível ler a página.")));
       },
     );
     req.on("timeout", () => req.destroy(new RecusaLink("O site demorou demais para responder.")));
-    req.on("error", (e) => falha(e instanceof RecusaLink ? e : new RecusaLink("Não foi possível conectar ao site.")));
+    req.on("error", (e) =>
+      falha(e instanceof RecusaLink ? e : new RecusaLink("Não foi possível conectar ao site.")),
+    );
     req.end();
   });
 
-const ENTIDADES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+const ENTIDADES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
 function decodificar(s: string): string {
   return s
     .replace(/&#(\d{1,6});/g, (_, n) => {
@@ -202,10 +243,18 @@ export function extrairPrevia(html: string, urlFinal: string): Previa {
     if (chave && valor && !metas.has(chave)) metas.set(chave, decodificar(valor));
   }
   const titulo =
-    metas.get("og:title") || metas.get("twitter:title") || decodificar(/<title[^>]*>([^<]{1,500})<\/title>/i.exec(cabeca)?.[1] ?? "") || null;
-  const descricao = metas.get("og:description") || metas.get("twitter:description") || metas.get("description") || null;
+    metas.get("og:title") ||
+    metas.get("twitter:title") ||
+    decodificar(/<title[^>]*>([^<]{1,500})<\/title>/i.exec(cabeca)?.[1] ?? "") ||
+    null;
+  const descricao =
+    metas.get("og:description") ||
+    metas.get("twitter:description") ||
+    metas.get("description") ||
+    null;
   let imagem: string | null = null;
-  const bruto = metas.get("og:image:secure_url") || metas.get("og:image") || metas.get("twitter:image") || null;
+  const bruto =
+    metas.get("og:image:secure_url") || metas.get("og:image") || metas.get("twitter:image") || null;
   if (bruto) {
     try {
       const u = new URL(bruto, urlFinal);
@@ -236,7 +285,10 @@ export async function buscarPrevia(
   for (let saltos = 0; ; saltos++) {
     const restante = prazo - Date.now();
     if (restante <= 0) throw new RecusaLink("O site demorou demais para responder.");
-    const ip = await resolverPublico(atual.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, ""), o.resolver);
+    const ip = await resolverPublico(
+      atual.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, ""),
+      o.resolver,
+    );
     const r = await (o.requisitar ?? requisitarPadrao)(atual, ip, { tempoMs: restante, maxBytes });
     if (r.status >= 300 && r.status < 400 && r.location) {
       if (saltos >= 3) throw new RecusaLink("Redirecionamentos demais.");
@@ -244,7 +296,8 @@ export async function buscarPrevia(
       continue;
     }
     if (r.status !== 200) throw new RecusaLink(`O site respondeu ${r.status}.`);
-    if (r.tipo && !/html|xml/.test(r.tipo)) throw new RecusaLink("O endereço não é uma página (é um arquivo).");
+    if (r.tipo && !/html|xml/.test(r.tipo))
+      throw new RecusaLink("O endereço não é uma página (é um arquivo).");
     return extrairPrevia(r.corpo, atual.toString());
   }
 }

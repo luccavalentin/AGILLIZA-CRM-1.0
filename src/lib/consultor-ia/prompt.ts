@@ -45,7 +45,10 @@ export function mensagemComContexto(o: {
   const max = o.maxCharsTrecho ?? 2500;
   const base = o.trechos.length
     ? o.trechos
-        .map((t, i) => `[${i + 1}] id=${t.id} | ${t.categoria} | "${t.titulo}"\n${t.conteudo.slice(0, max)}`)
+        .map(
+          (t, i) =>
+            `[${i + 1}] id=${t.id} | ${t.categoria} | "${t.titulo}"\n${t.conteudo.slice(0, max)}`,
+        )
         .join("\n\n")
     : "(nenhum trecho da base de conhecimento corresponde a esta pergunta)";
   return (

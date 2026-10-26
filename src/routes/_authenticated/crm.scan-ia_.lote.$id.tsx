@@ -93,7 +93,11 @@ function Pagina() {
   // Hidrata o formulário uma vez por lote (não a cada troca de cliente comparado).
   useEffect(() => {
     if (!d || hidratado === d.id) return;
-    setTipos(Object.fromEntries(d.documentos.map((x) => [x.id, x.tipo_documento ?? x.tipo_documento_sugerido ?? "outro"])));
+    setTipos(
+      Object.fromEntries(
+        d.documentos.map((x) => [x.id, x.tipo_documento ?? x.tipo_documento_sugerido ?? "outro"]),
+      ),
+    );
     setLinhas(
       d.consolidados.map((c) => ({
         campo: c.campo,
@@ -116,8 +120,15 @@ function Pagina() {
 
   const porCampo = useMemo(() => new Map((d?.consolidados ?? []).map((c) => [c.campo, c])), [d]);
   const docNovo = novoDoc.replace(/\D/g, "");
-  const docNovoOk = docNovo.length === 11 ? cpfValido(docNovo) : docNovo.length === 14 ? cnpjValido(docNovo) : false;
-  const emLeitura = (d?.documentos ?? []).some((x) => x.status === "processando" || x.status === "pendente");
+  const docNovoOk =
+    docNovo.length === 11
+      ? cpfValido(docNovo)
+      : docNovo.length === 14
+        ? cnpjValido(docNovo)
+        : false;
+  const emLeitura = (d?.documentos ?? []).some(
+    (x) => x.status === "processando" || x.status === "pendente",
+  );
   const aplicado = d?.status === "aplicado";
 
   const aplicar = useMutation({
@@ -168,7 +179,9 @@ function Pagina() {
   if (lote.isError || !d) {
     return (
       <div className="space-y-3 p-4 md:p-6">
-        <p className="text-sm text-destructive">{mensagemDeErro(lote.error, "Não foi possível carregar o lote.")}</p>
+        <p className="text-sm text-destructive">
+          {mensagemDeErro(lote.error, "Não foi possível carregar o lote.")}
+        </p>
         <Button size="sm" variant="outline" onClick={() => lote.refetch()}>
           Tentar de novo
         </Button>
@@ -199,7 +212,8 @@ function Pagina() {
         </div>
         {aplicado && (
           <Badge className="gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5" /> Aplicado {d.cliente_nome ? `a ${d.cliente_nome}` : ""}
+            <CheckCircle2 className="h-3.5 w-3.5" /> Aplicado{" "}
+            {d.cliente_nome ? `a ${d.cliente_nome}` : ""}
           </Badge>
         )}
       </div>
@@ -208,7 +222,12 @@ function Pagina() {
         <div className="flex gap-2 rounded-xl border border-warning/50 bg-warning/10 p-3 text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
           Ainda há documento sendo lido pela IA. Atualize em instantes.
-          <Button size="sm" variant="outline" className="ml-auto h-7" onClick={() => lote.refetch()}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto h-7"
+            onClick={() => lote.refetch()}
+          >
             Atualizar
           </Button>
         </div>
@@ -225,10 +244,14 @@ function Pagina() {
                 onClick={() => setDocAberto(i)}
                 className={cn(
                   "flex min-w-[150px] max-w-[200px] shrink-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2 text-left text-xs transition-colors",
-                  i === docAberto ? "border-primary bg-primary/5 text-primary" : "border-border bg-card hover:border-primary/40",
+                  i === docAberto
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border bg-card hover:border-primary/40",
                 )}
               >
-                <span className="font-semibold">{rotuloTipo(tipos[x.id] ?? x.tipo_documento_sugerido)}</span>
+                <span className="font-semibold">
+                  {rotuloTipo(tipos[x.id] ?? x.tipo_documento_sugerido)}
+                </span>
                 <span className="w-full truncate text-muted-foreground">{x.arquivo_nome}</span>
                 {x.status === "erro" && <span className="text-destructive">Erro na leitura</span>}
               </button>
@@ -238,9 +261,17 @@ function Pagina() {
             <div className="overflow-hidden rounded-2xl border border-border bg-muted shadow-sm">
               {doc.arquivo_assinado ? (
                 /\.(png|jpe?g|webp)$/i.test(doc.arquivo_nome) ? (
-                  <img src={doc.arquivo_assinado} alt={doc.arquivo_nome} className="max-h-[70vh] w-full object-contain" />
+                  <img
+                    src={doc.arquivo_assinado}
+                    alt={doc.arquivo_nome}
+                    className="max-h-[70vh] w-full object-contain"
+                  />
                 ) : (
-                  <iframe title="Documento" src={doc.arquivo_assinado} className="h-[60vh] w-full lg:h-[70vh]" />
+                  <iframe
+                    title="Documento"
+                    src={doc.arquivo_assinado}
+                    className="h-[60vh] w-full lg:h-[70vh]"
+                  />
                 )
               ) : (
                 <div className="flex h-64 items-center justify-center text-muted-foreground">
@@ -291,7 +322,9 @@ function Pagina() {
                 onClick={() => setModo("novo")}
                 className={cn(
                   "flex items-center gap-2 rounded-xl border p-3 text-left text-sm transition-colors",
-                  modo === "novo" ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/40",
+                  modo === "novo"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border hover:border-primary/40",
                 )}
               >
                 <UserPlus className="h-4 w-4 shrink-0" /> Criar cliente
@@ -302,7 +335,9 @@ function Pagina() {
                 onClick={() => setModo("existente")}
                 className={cn(
                   "flex items-center gap-2 rounded-xl border p-3 text-left text-sm transition-colors",
-                  modo === "existente" ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/40",
+                  modo === "existente"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border hover:border-primary/40",
                 )}
               >
                 <UserCheck className="h-4 w-4 shrink-0" /> Completar existente
@@ -314,7 +349,12 @@ function Pagina() {
                   <Label htmlFor="lote-nome" className="text-xs">
                     Nome completo *
                   </Label>
-                  <Input id="lote-nome" value={novoNome} onChange={(e) => setNovoNome(e.target.value)} disabled={aplicado} />
+                  <Input
+                    id="lote-nome"
+                    value={novoNome}
+                    onChange={(e) => setNovoNome(e.target.value)}
+                    disabled={aplicado}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="lote-doc" className="text-xs">
@@ -330,12 +370,16 @@ function Pagina() {
                   />
                   {novoDoc && (
                     <p className={cn("text-xs", docNovoOk ? "text-success" : "text-destructive")}>
-                      {docNovoOk ? "Dígito verificador confere." : "CPF/CNPJ não confere — corrija antes de criar."}
+                      {docNovoOk
+                        ? "Dígito verificador confere."
+                        : "CPF/CNPJ não confere — corrija antes de criar."}
                     </p>
                   )}
                 </div>
                 {!podeCriar && (
-                  <p className="text-xs text-warning sm:col-span-2">Você não tem permissão para cadastrar clientes.</p>
+                  <p className="text-xs text-warning sm:col-span-2">
+                    Você não tem permissão para cadastrar clientes.
+                  </p>
                 )}
               </div>
             ) : (
@@ -345,7 +389,8 @@ function Pagina() {
                   onSelect={(c) => setClienteSel({ id: c.id, nome: c.nome ?? "Cliente" })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  O que já está no cadastro aparece ao lado; divergência só é substituída se você escolher.
+                  O que já está no cadastro aparece ao lado; divergência só é substituída se você
+                  escolher.
                 </p>
               </div>
             )}
@@ -354,11 +399,14 @@ function Pagina() {
           <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-sm font-semibold">3. Dados lidos (de todos os documentos)</h2>
-              <span className="text-xs text-muted-foreground">{marcados} marcado(s) para preencher</span>
+              <span className="text-xs text-muted-foreground">
+                {marcados} marcado(s) para preencher
+              </span>
             </div>
             {linhas.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                Nenhum campo lido. Reprocesse os documentos no Scan IA ou envie digitalizações mais nítidas.
+                Nenhum campo lido. Reprocesse os documentos no Scan IA ou envie digitalizações mais
+                nítidas.
               </p>
             ) : (
               <ul className="space-y-2">
@@ -367,7 +415,10 @@ function Pagina() {
                   const v = validarCampo(l.campo, l.valor);
                   const faixa = v.valido ? faixaConfianca(l.confianca) : "revisar";
                   return (
-                    <li key={l.campo} className={cn("space-y-2 rounded-xl border p-3", TOM_FAIXA[faixa])}>
+                    <li
+                      key={l.campo}
+                      className={cn("space-y-2 rounded-xl border p-3", TOM_FAIXA[faixa])}
+                    >
                       <div className="flex flex-wrap items-center gap-2">
                         <Checkbox
                           id={`ap-${l.campo}`}
@@ -376,7 +427,10 @@ function Pagina() {
                           onCheckedChange={(x) => atualizar(l.campo, { aplicar: !!x })}
                           aria-label={`Preencher ${l.rotulo}`}
                         />
-                        <Label htmlFor={`ap-${l.campo}`} className="text-xs font-semibold uppercase tracking-wide">
+                        <Label
+                          htmlFor={`ap-${l.campo}`}
+                          className="text-xs font-semibold uppercase tracking-wide"
+                        >
                           {l.rotulo}
                         </Label>
                         <span className="ml-auto flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
@@ -387,14 +441,20 @@ function Pagina() {
                       <Input
                         value={l.valor}
                         disabled={aplicado}
-                        onChange={(e) => atualizar(l.campo, { valor: e.target.value, confianca: 1 })}
+                        onChange={(e) =>
+                          atualizar(l.campo, { valor: e.target.value, confianca: 1 })
+                        }
                         aria-label={l.rotulo}
                       />
                       {!v.valido && <p className="text-xs text-destructive">{v.motivo}</p>}
-                      {c?.aplicavel === false && <p className="text-xs text-muted-foreground">{c.motivo}</p>}
+                      {c?.aplicavel === false && (
+                        <p className="text-xs text-muted-foreground">{c.motivo}</p>
+                      )}
                       {c && c.alternativas.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                          <span className={cn(c.divergente ? "text-warning" : "text-muted-foreground")}>
+                          <span
+                            className={cn(c.divergente ? "text-warning" : "text-muted-foreground")}
+                          >
                             {c.divergente ? "Outros documentos dizem:" : "Confirmado também em:"}
                           </span>
                           {c.alternativas.map((a) => (
@@ -403,12 +463,17 @@ function Pagina() {
                               type="button"
                               disabled={aplicado}
                               onClick={() =>
-                                atualizar(l.campo, { valor: a.valor, confianca: a.confianca, origem: a.tipo_documento })
+                                atualizar(l.campo, {
+                                  valor: a.valor,
+                                  confianca: a.confianca,
+                                  origem: a.tipo_documento,
+                                })
                               }
                               className="max-w-full truncate rounded-full border border-border bg-background px-2 py-0.5 hover:border-primary hover:text-primary"
                               title="Usar este valor"
                             >
-                              {a.valor} <span className="opacity-60">({rotuloTipo(a.tipo_documento)})</span>
+                              {a.valor}{" "}
+                              <span className="opacity-60">({rotuloTipo(a.tipo_documento)})</span>
                             </button>
                           ))}
                         </div>
@@ -416,12 +481,15 @@ function Pagina() {
                       {c?.valor_atual && (
                         <div className="flex flex-wrap items-center gap-2 text-xs">
                           <span className="text-muted-foreground">
-                            No cadastro: <strong className="text-foreground">{c.valor_atual}</strong>
+                            No cadastro:{" "}
+                            <strong className="text-foreground">{c.valor_atual}</strong>
                           </span>
                           {c.conflito && (
                             <Select
                               value={l.escolha}
-                              onValueChange={(x) => atualizar(l.campo, { escolha: x as Linha["escolha"] })}
+                              onValueChange={(x) =>
+                                atualizar(l.campo, { escolha: x as Linha["escolha"] })
+                              }
                               disabled={aplicado}
                             >
                               <SelectTrigger className="h-7 w-[190px] text-xs">
@@ -429,7 +497,9 @@ function Pagina() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="manter">Manter o do cadastro</SelectItem>
-                                <SelectItem value="substituir">Substituir pelo documento</SelectItem>
+                                <SelectItem value="substituir">
+                                  Substituir pelo documento
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           )}
@@ -444,9 +514,14 @@ function Pagina() {
 
           <div className="sticky bottom-3 z-10 flex flex-col gap-2 rounded-2xl border border-primary/20 bg-card/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
-              Ao confirmar, os documentos vão para as pastas do cliente e tudo fica registrado na auditoria.
+              Ao confirmar, os documentos vão para as pastas do cliente e tudo fica registrado na
+              auditoria.
             </p>
-            <Button disabled={!podeAplicar || aplicar.isPending} onClick={() => aplicar.mutate()} className="shrink-0">
+            <Button
+              disabled={!podeAplicar || aplicar.isPending}
+              onClick={() => aplicar.mutate()}
+              className="shrink-0"
+            >
               <ShieldCheck className="mr-2 h-4 w-4" />
               {aplicar.isPending
                 ? "Aplicando…"

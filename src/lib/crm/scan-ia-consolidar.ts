@@ -85,7 +85,13 @@ export function consolidarCampos(campos: CampoDeDocumento[]): CampoConsolidado[]
       const ordenada = [...lista].sort(melhor);
       const escolhido = ordenada[0]!;
       const divergente = ordenada.some((x) => !valoresEquivalentes(x.valor, escolhido.valor));
-      return { campo, rotulo: rotuloCampo(campo), escolhido, alternativas: ordenada.slice(1), divergente };
+      return {
+        campo,
+        rotulo: rotuloCampo(campo),
+        escolhido,
+        alternativas: ordenada.slice(1),
+        divergente,
+      };
     })
     .sort((a, b) => a.rotulo.localeCompare(b.rotulo, "pt-BR"));
 }
@@ -147,7 +153,8 @@ export function montarPatchCliente(
     else if (destino.tipo === "matricula") valorAtual = matriculaAtual[destino.chave];
     const temAtual = valorAtual !== null && valorAtual !== undefined && valorAtual !== "";
     const novoTexto = conv.ok ? textoValor(conv.valor) : null;
-    const conflito = temAtual && !!novoTexto && !valoresEquivalentes(textoValor(valorAtual), novoTexto);
+    const conflito =
+      temAtual && !!novoTexto && !valoresEquivalentes(textoValor(valorAtual), novoTexto);
     const registro: RegistroAplicacao = {
       campo: dec.campo,
       rotulo: rotuloCampo(dec.campo),

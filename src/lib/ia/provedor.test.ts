@@ -39,7 +39,9 @@ function simulado(resposta: { status?: number; json?: unknown; texto?: string; s
       });
       return new Response(corpo, { status: 200 });
     }
-    return new Response(resposta.texto ?? JSON.stringify(resposta.json ?? {}), { status: resposta.status ?? 200 });
+    return new Response(resposta.texto ?? JSON.stringify(resposta.json ?? {}), {
+      status: resposta.status ?? 200,
+    });
   }) as unknown as typeof fetch;
   return { f, chamadas };
 }
@@ -50,8 +52,16 @@ describe("provedor de IA", () => {
   it("sem chave: mensagem clara dizendo onde configurar; desativada também", () => {
     expect(() => configDaLinha(null, {})).toThrow(MENSAGEM_SEM_CHAVE);
     expect(() => configDaLinha({ api_key: "x", ativo: false }, {})).toThrow(/desativada/);
-    const c = configDaLinha({ api_key: " k ", base_url: "https://x.y/", config: { provedor: "openai" } }, {});
-    expect(c).toMatchObject({ provedor: "openai", modelo: "gpt-4o-mini", apiKey: "k", baseUrl: "https://x.y" });
+    const c = configDaLinha(
+      { api_key: " k ", base_url: "https://x.y/", config: { provedor: "openai" } },
+      {},
+    );
+    expect(c).toMatchObject({
+      provedor: "openai",
+      modelo: "gpt-4o-mini",
+      apiKey: "k",
+      baseUrl: "https://x.y",
+    });
     expect(configDaLinha({ api_key: "k", config: {} }, {}).modelo).toBe("gemini-2.5-flash");
   });
 
@@ -64,7 +74,9 @@ describe("provedor de IA", () => {
       [500, "boom", /não respondeu/i],
     ] as const) {
       const { f } = simulado({ status, texto });
-      await expect(gerarTexto(GEMINI, { sistema: "s", mensagens: [{ papel: "usuario", texto: "oi" }] }, f)).rejects.toThrow(re);
+      await expect(
+        gerarTexto(GEMINI, { sistema: "s", mensagens: [{ papel: "usuario", texto: "oi" }] }, f),
+      ).rejects.toThrow(re);
     }
   });
 
@@ -85,14 +97,22 @@ describe("provedor de IA", () => {
     );
     expect(g.chamadas[0]!.url).toContain(":generateContent?key=chave-de-teste");
     expect(g.chamadas[0]!.corpo.systemInstruction.parts[0].text).toBe("Você é o consultor.");
-    expect(g.chamadas[0]!.corpo.contents.map((c: any) => c.role)).toEqual(["user", "model", "user"]);
+    expect(g.chamadas[0]!.corpo.contents.map((c: any) => c.role)).toEqual([
+      "user",
+      "model",
+      "user",
+    ]);
     expect(g.chamadas[0]!.corpo.contents[2].parts[1].inline_data.mime_type).toBe("image/png");
 
     const o = simulado({ json: { choices: [{ message: { content: "ok" } }] } });
     expect(
       await gerarTexto(
         OPENAI,
-        { sistema: "S", mensagens: [{ papel: "usuario", texto: "x" }], arquivo: { mime: "application/pdf", base64: "QQ==", nome: "a.pdf" } },
+        {
+          sistema: "S",
+          mensagens: [{ papel: "usuario", texto: "x" }],
+          arquivo: { mime: "application/pdf", base64: "QQ==", nome: "a.pdf" },
+        },
         o.f,
       ),
     ).toBe("ok");
@@ -109,12 +129,23 @@ describe("provedor de IA", () => {
       ],
     });
     const pedacos: string[] = [];
-    for await (const p of gerarTextoStream(GEMINI, { sistema: "s", mensagens: [{ papel: "usuario", texto: "oi" }] }, g.f))
+    for await (const p of gerarTextoStream(
+      GEMINI,
+      { sistema: "s", mensagens: [{ papel: "usuario", texto: "oi" }] },
+      g.f,
+    ))
       pedacos.push(p);
     expect(pedacos.join("")).toBe("Olá, mundo");
-    const o = simulado({ sse: ['data: {"choices":[{"delta":{"content":"A"}}]}\n', "data: [DONE]\n"] });
+    const o = simulado({
+      sse: ['data: {"choices":[{"delta":{"content":"A"}}]}\n', "data: [DONE]\n"],
+    });
     const out: string[] = [];
-    for await (const p of gerarTextoStream(OPENAI, { sistema: "s", mensagens: [{ papel: "usuario", texto: "oi" }] }, o.f)) out.push(p);
+    for await (const p of gerarTextoStream(
+      OPENAI,
+      { sistema: "s", mensagens: [{ papel: "usuario", texto: "oi" }] },
+      o.f,
+    ))
+      out.push(p);
     expect(out).toEqual(["A"]);
   });
 
@@ -123,11 +154,25 @@ describe("provedor de IA", () => {
     expect(() => extrairJson("não é json")).toThrow(ErroIA);
     const esquema = z.object({ a: z.number() });
     const ok = simulado({ json: gem('Aqui está: {"a": 2} fim') });
-    expect((await gerarJson(GEMINI, { sistema: "s", mensagens: [{ papel: "usuario", texto: "x" }] }, esquema, ok.f)).dados).toEqual({ a: 2 });
+    expect(
+      (
+        await gerarJson(
+          GEMINI,
+          { sistema: "s", mensagens: [{ papel: "usuario", texto: "x" }] },
+          esquema,
+          ok.f,
+        )
+      ).dados,
+    ).toEqual({ a: 2 });
     const ruim = simulado({ json: gem('{"a":"dois"}') });
-    await expect(gerarJson(GEMINI, { sistema: "s", mensagens: [{ papel: "usuario", texto: "x" }] }, esquema, ruim.f)).rejects.toThrow(
-      /fora do formato/,
-    );
+    await expect(
+      gerarJson(
+        GEMINI,
+        { sistema: "s", mensagens: [{ papel: "usuario", texto: "x" }] },
+        esquema,
+        ruim.f,
+      ),
+    ).rejects.toThrow(/fora do formato/);
   });
 });
 
@@ -172,7 +217,16 @@ describe("Scan IA com provedor simulado", () => {
     expect(r.confiancaTipo).toBe(0.95);
     const por = Object.fromEntries(r.campos.map((c) => [c.campo, c]));
     expect(Object.keys(por).sort()).toEqual(
-      ["cpf_cnpj", "data_nascimento", "endereco_cep", "endereco_completo", "nome_completo", "nome_mae", "orgao_expedidor", "uf_expedicao"].sort(),
+      [
+        "cpf_cnpj",
+        "data_nascimento",
+        "endereco_cep",
+        "endereco_completo",
+        "nome_completo",
+        "nome_mae",
+        "orgao_expedidor",
+        "uf_expedicao",
+      ].sort(),
     );
     expect(por.nome_completo!.valor).toBe("MARIA DA SILVA");
     expect(por.cpf_cnpj!).toMatchObject({ valido: false, confianca: 0.3 });
@@ -186,7 +240,14 @@ describe("Scan IA com provedor simulado", () => {
   it("resposta fora do contrato vira erro claro (não grava lixo)", async () => {
     const { f } = simulado({ json: gem('{"campos": "não é lista"}') });
     await expect(
-      extrairDocumento({ cfg: GEMINI, bytes: PNG, mime: "image/png", nomeArquivo: "a.png", tipoInformado: "rg", fetch: f }),
+      extrairDocumento({
+        cfg: GEMINI,
+        bytes: PNG,
+        mime: "image/png",
+        nomeArquivo: "a.png",
+        tipoInformado: "rg",
+        fetch: f,
+      }),
     ).rejects.toThrow(/fora do formato/);
   });
 });

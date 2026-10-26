@@ -3,7 +3,15 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Bot, PanelRight, PanelLeftOpen, X, ChevronRight, ShieldCheck, Calculator } from "lucide-react";
+import {
+  Bot,
+  PanelRight,
+  PanelLeftOpen,
+  X,
+  ChevronRight,
+  ShieldCheck,
+  Calculator,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

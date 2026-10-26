@@ -228,14 +228,15 @@ export const obterLeitura = createServerFn({ method: "GET" })
 /** Registra a leitura após o upload do arquivo no bucket. O tipo é OPCIONAL — em branco, a IA identifica. */
 export const criarLeitura = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator((d: { arquivo_url: string; tipo_documento?: string | null; lote_id?: string | null }) =>
-    z
-      .object({
-        arquivo_url: z.string().min(1).max(500),
-        tipo_documento: z.string().max(120).nullable().optional(),
-        lote_id: z.string().uuid().nullable().optional(),
-      })
-      .parse(d),
+  .inputValidator(
+    (d: { arquivo_url: string; tipo_documento?: string | null; lote_id?: string | null }) =>
+      z
+        .object({
+          arquivo_url: z.string().min(1).max(500),
+          tipo_documento: z.string().max(120).nullable().optional(),
+          lote_id: z.string().uuid().nullable().optional(),
+        })
+        .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ id: string }> => {
     const { supabase, userId } = context;
@@ -287,7 +288,10 @@ export const processarLeitura = createServerFn({ method: "POST" })
     if (!leitura || leitura.correspondente_id !== corr) throw new Error("Leitura não encontrada.");
 
     const marcarErro = async (msg: string) => {
-      await supabase.from("scan_ia_leituras").update({ status: "erro", erro: msg }).eq("id", data.id);
+      await supabase
+        .from("scan_ia_leituras")
+        .update({ status: "erro", erro: msg })
+        .eq("id", data.id);
       return { ok: false as const, erro: msg };
     };
 
@@ -304,13 +308,19 @@ export const processarLeitura = createServerFn({ method: "POST" })
       throw e;
     }
 
-    await supabase.from("scan_ia_leituras").update({ status: "processando", erro: null }).eq("id", data.id);
+    await supabase
+      .from("scan_ia_leituras")
+      .update({ status: "processando", erro: null })
+      .eq("id", data.id);
 
     try {
-      const { data: blob, error: dlErr } = await supabase.storage.from("scan-ia").download(leitura.arquivo_url);
+      const { data: blob, error: dlErr } = await supabase.storage
+        .from("scan-ia")
+        .download(leitura.arquivo_url);
       if (dlErr || !blob) throw new Error("Falha ao baixar o arquivo.");
       const bytes = new Uint8Array(await blob.arrayBuffer());
-      const { detectarMime, extrairDocumento, MIMES_SUPORTADOS } = await import("./scan-ia-extracao.server");
+      const { detectarMime, extrairDocumento, MIMES_SUPORTADOS } =
+        await import("./scan-ia-extracao.server");
       const mime = detectarMime(bytes, leitura.arquivo_url, (blob as Blob).type);
       if (!MIMES_SUPORTADOS.has(mime)) {
         return marcarErro(
@@ -337,7 +347,9 @@ export const processarLeitura = createServerFn({ method: "POST" })
       }));
       await supabase.from("scan_ia_campos_extraidos").delete().eq("leitura_id", data.id);
       if (campos.length > 0) {
-        const { error: insErr } = await (supabase as any).from("scan_ia_campos_extraidos").insert(campos);
+        const { error: insErr } = await (supabase as any)
+          .from("scan_ia_campos_extraidos")
+          .insert(campos);
         if (insErr) throw insErr;
       }
 
@@ -1144,7 +1156,9 @@ export interface LoteScan {
 export const obterLoteScan = createServerFn({ method: "GET" })
   .middleware([verScanIa])
   .inputValidator((d: { id: string; cliente_id?: string | null }) =>
-    z.object({ id: z.string().uuid(), cliente_id: z.string().uuid().nullable().optional() }).parse(d),
+    z
+      .object({ id: z.string().uuid(), cliente_id: z.string().uuid().nullable().optional() })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<LoteScan> => {
     const { supabase, userId } = context;
@@ -1160,7 +1174,9 @@ export const obterLoteScan = createServerFn({ method: "GET" })
 
     const { data: leituras } = await db
       .from("scan_ia_leituras")
-      .select("id, arquivo_url, tipo_documento, tipo_documento_sugerido, tipo_confirmado, status, erro, created_at")
+      .select(
+        "id, arquivo_url, tipo_documento, tipo_documento_sugerido, tipo_confirmado, status, erro, created_at",
+      )
       .eq("lote_id", data.id)
       .eq("correspondente_id", corr)
       .order("created_at", { ascending: true });
@@ -1174,7 +1190,9 @@ export const obterLoteScan = createServerFn({ method: "GET" })
 
     const documentos: DocumentoDoLote[] = [];
     for (const l of leituras ?? []) {
-      const { data: signed } = await supabase.storage.from("scan-ia").createSignedUrl(l.arquivo_url, 600);
+      const { data: signed } = await supabase.storage
+        .from("scan-ia")
+        .createSignedUrl(l.arquivo_url, 600);
       documentos.push({
         id: l.id,
         tipo_documento: l.tipo_documento,
@@ -1201,7 +1219,9 @@ export const obterLoteScan = createServerFn({ method: "GET" })
       });
     }
 
-    const tipoDe = new Map(documentos.map((d) => [d.id, d.tipo_documento ?? d.tipo_documento_sugerido]));
+    const tipoDe = new Map(
+      documentos.map((d) => [d.id, d.tipo_documento ?? d.tipo_documento_sugerido]),
+    );
     const consolidados = consolidarCampos(
       (campos ?? []).map((c: any) => ({
         campo_id: c.id,
@@ -1219,7 +1239,11 @@ export const obterLoteScan = createServerFn({ method: "GET" })
     let cliente: Record<string, any> | null = null;
     let endereco: Record<string, any> | null = null;
     if (clienteId) {
-      const { data: c } = await supabase.from("clientes").select("*").eq("id", clienteId).maybeSingle();
+      const { data: c } = await supabase
+        .from("clientes")
+        .select("*")
+        .eq("id", clienteId)
+        .maybeSingle();
       cliente = (c as any) ?? null;
       if (cliente) {
         const { data: e } = await supabase
@@ -1238,7 +1262,8 @@ export const obterLoteScan = createServerFn({ method: "GET" })
       if (cliente) {
         if (destino.tipo === "coluna") atual = cliente[destino.coluna];
         else if (destino.tipo === "endereco") atual = endereco?.[destino.coluna];
-        else if (destino.tipo === "matricula") atual = (cliente.imovel_matricula ?? {})[destino.chave];
+        else if (destino.tipo === "matricula")
+          atual = (cliente.imovel_matricula ?? {})[destino.chave];
       }
       const atualTexto = textoValorAtual(atual);
       const novo = conv.ok ? textoValorAtual(conv.valor) : null;
@@ -1251,7 +1276,8 @@ export const obterLoteScan = createServerFn({ method: "GET" })
       };
     });
 
-    const melhor = (campo: string) => consolidados.find((c) => c.campo === campo)?.escolhido.valor ?? "";
+    const melhor = (campo: string) =>
+      consolidados.find((c) => c.campo === campo)?.escolhido.valor ?? "";
     return {
       id: lote.id,
       status: lote.status,
@@ -1289,10 +1315,15 @@ export const aplicarLoteScan = createServerFn({ method: "POST" })
           lote_id: z.string().uuid(),
           cliente_id: z.string().uuid().nullable().optional(),
           novo: z
-            .object({ nome: z.string().trim().min(3).max(200), documento: z.string().trim().min(11).max(20) })
+            .object({
+              nome: z.string().trim().min(3).max(200),
+              documento: z.string().trim().min(11).max(20),
+            })
             .nullable()
             .optional(),
-          tipos: z.array(z.object({ leitura_id: z.string().uuid(), tipo: z.enum(TIPOS_DOCUMENTO) })).max(50),
+          tipos: z
+            .array(z.object({ leitura_id: z.string().uuid(), tipo: z.enum(TIPOS_DOCUMENTO) }))
+            .max(50),
           campos: z
             .array(
               z.object({
@@ -1305,7 +1336,10 @@ export const aplicarLoteScan = createServerFn({ method: "POST" })
             )
             .max(300),
         })
-        .refine((x) => !!x.cliente_id !== !!x.novo, "Escolha criar um cliente OU completar um existente.")
+        .refine(
+          (x) => !!x.cliente_id !== !!x.novo,
+          "Escolha criar um cliente OU completar um existente.",
+        )
         .parse(d),
   )
   .handler(
@@ -1325,9 +1359,21 @@ export const aplicarLoteScan = createServerFn({ method: "POST" })
       if (!corr) throw new Error("Sem correspondente.");
       const db = supabase as any;
       // Gravar no cadastro exige "Editar" em Clientes; criar exige também "Criar".
-      await exigirAcao(supabase, userId, "crm.clientes", "edit", "Você não tem permissão para editar o cadastro do cliente.");
+      await exigirAcao(
+        supabase,
+        userId,
+        "crm.clientes",
+        "edit",
+        "Você não tem permissão para editar o cadastro do cliente.",
+      );
       if (data.novo) {
-        await exigirAcao(supabase, userId, "crm.clientes", "create", "Você não tem permissão para cadastrar clientes.");
+        await exigirAcao(
+          supabase,
+          userId,
+          "crm.clientes",
+          "create",
+          "Você não tem permissão para cadastrar clientes.",
+        );
       }
 
       const { data: lote } = await db
@@ -1345,7 +1391,9 @@ export const aplicarLoteScan = createServerFn({ method: "POST" })
         .eq("correspondente_id", corr);
       const doLote = new Map<string, any>((leituras ?? []).map((l: any) => [l.id as string, l]));
       if (doLote.size === 0) throw new Error("O lote não tem documentos.");
-      if ((leituras ?? []).some((l: any) => l.status === "processando" || l.status === "pendente")) {
+      if (
+        (leituras ?? []).some((l: any) => l.status === "processando" || l.status === "pendente")
+      ) {
         throw new Error("Ainda há documento sendo lido. Espere terminar para aplicar.");
       }
       for (const t of data.tipos) {
@@ -1358,7 +1406,9 @@ export const aplicarLoteScan = createServerFn({ method: "POST" })
       if (data.novo) {
         const doc = data.novo.documento.replace(/\D/g, "");
         if (!(doc.length === 11 ? cpfValido(doc) : doc.length === 14 ? cnpjValido(doc) : false)) {
-          throw new Error("O CPF/CNPJ do novo cliente não confere (dígito verificador). Corrija antes de criar.");
+          throw new Error(
+            "O CPF/CNPJ do novo cliente não confere (dígito verificador). Corrija antes de criar.",
+          );
         }
         const r = await garantirClientePorDocumento(supabase, userId, corr, data.novo.nome, doc);
         clienteId = r.clienteId;
@@ -1382,9 +1432,17 @@ export const aplicarLoteScan = createServerFn({ method: "POST" })
           .eq("id", t.leitura_id)
           .eq("lote_id", data.lote_id);
       }
-      await db.from("scan_ia_leituras").update({ cliente_id: clienteId }).eq("lote_id", data.lote_id).eq("correspondente_id", corr);
+      await db
+        .from("scan_ia_leituras")
+        .update({ cliente_id: clienteId })
+        .eq("lote_id", data.lote_id)
+        .eq("correspondente_id", corr);
 
-      const { data: clienteAtual } = await supabase.from("clientes").select("*").eq("id", clienteId).maybeSingle();
+      const { data: clienteAtual } = await supabase
+        .from("clientes")
+        .select("*")
+        .eq("id", clienteId)
+        .maybeSingle();
       if (!clienteAtual) throw new Error("Cliente não encontrado.");
       const { data: enderecoAtual } = await supabase
         .from("cliente_enderecos")
@@ -1407,7 +1465,10 @@ export const aplicarLoteScan = createServerFn({ method: "POST" })
         (enderecoAtual as Record<string, unknown> | null) ?? null,
       );
       if (Object.keys(patch).length > 0) {
-        const { error } = await supabase.from("clientes").update(patch as never).eq("id", clienteId);
+        const { error } = await supabase
+          .from("clientes")
+          .update(patch as never)
+          .eq("id", clienteId);
         if (error) throw error;
       }
       if (Object.keys(enderecoPatch).length > 0) {
@@ -1415,7 +1476,9 @@ export const aplicarLoteScan = createServerFn({ method: "POST" })
         const enderecoId = (enderecoAtual as any)?.id;
         const { error } = enderecoId
           ? await supabase.from("cliente_enderecos").update(payload).eq("id", enderecoId)
-          : await supabase.from("cliente_enderecos").insert({ cliente_id: clienteId, ...payload } as never);
+          : await supabase
+              .from("cliente_enderecos")
+              .insert({ cliente_id: clienteId, ...payload } as never);
         if (error) throw error;
       }
 
@@ -1437,7 +1500,10 @@ export const aplicarLoteScan = createServerFn({ method: "POST" })
         else if (arq.erro) errosArquivo.push(arq.erro);
         await db.from("scan_ia_leituras").update({ status: "aplicada" }).eq("id", l.id);
       }
-      await db.from("scan_ia_lotes").update({ status: "aplicado", cliente_id: clienteId }).eq("id", data.lote_id);
+      await db
+        .from("scan_ia_lotes")
+        .update({ status: "aplicado", cliente_id: clienteId })
+        .eq("id", data.lote_id);
 
       await supabase.from("scan_ia_auditoria").insert({
         correspondente_id: corr,

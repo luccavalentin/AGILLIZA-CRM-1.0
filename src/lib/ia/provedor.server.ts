@@ -31,13 +31,7 @@ export interface ConfigProvedor {
 }
 
 export type CodigoErroIA =
-  | "sem_chave"
-  | "desativada"
-  | "cota"
-  | "chave_invalida"
-  | "arquivo"
-  | "formato"
-  | "indisponivel";
+  "sem_chave" | "desativada" | "cota" | "chave_invalida" | "arquivo" | "formato" | "indisponivel";
 
 export class ErroIA extends Error {
   constructor(
@@ -54,43 +48,65 @@ export const MENSAGEM_SEM_CHAVE =
 
 /** Linha de `admin_api_integrations` (chave 'ia') → configuração. Sem chave: ErroIA claro. */
 export function configDaLinha(
-  linha: { api_key?: string | null; base_url?: string | null; config?: unknown; ativo?: boolean | null } | null,
+  linha: {
+    api_key?: string | null;
+    base_url?: string | null;
+    config?: unknown;
+    ativo?: boolean | null;
+  } | null,
   env: Record<string, string | undefined> = process.env,
 ): ConfigProvedor {
   if (linha && linha.ativo === false) {
-    throw new ErroIA("desativada", "A integração de IA está desativada. Ative-a em Configurações gerais › APIs de IA.");
+    throw new ErroIA(
+      "desativada",
+      "A integração de IA está desativada. Ative-a em Configurações gerais › APIs de IA.",
+    );
   }
   const cfg = (linha?.config ?? {}) as Record<string, unknown>;
   const provedor: ProvedorIA = cfg.provedor === "openai" ? "openai" : "gemini";
   const modelo =
-    typeof cfg.modelo === "string" && cfg.modelo.trim() ? cfg.modelo.trim() : MODELO_PADRAO[provedor];
+    typeof cfg.modelo === "string" && cfg.modelo.trim()
+      ? cfg.modelo.trim()
+      : MODELO_PADRAO[provedor];
   const salva = typeof linha?.api_key === "string" ? linha.api_key.trim() : "";
   const apiKey = salva || (provedor === "openai" ? env.OPENAI_API_KEY : env.GEMINI_API_KEY) || "";
   if (!apiKey) throw new ErroIA("sem_chave", MENSAGEM_SEM_CHAVE);
-  const baseUrl = ((typeof linha?.base_url === "string" && linha.base_url.trim()) || BASE_PADRAO[provedor]).replace(
-    /\/+$/,
-    "",
-  );
-  const temperatura = typeof cfg.temperatura === "number" ? Math.max(0, Math.min(2, cfg.temperatura)) : 0.2;
+  const baseUrl = (
+    (typeof linha?.base_url === "string" && linha.base_url.trim()) ||
+    BASE_PADRAO[provedor]
+  ).replace(/\/+$/, "");
+  const temperatura =
+    typeof cfg.temperatura === "number" ? Math.max(0, Math.min(2, cfg.temperatura)) : 0.2;
   return { provedor, modelo, apiKey, baseUrl, temperatura };
 }
 
 /** Resposta HTTP de erro do provedor → mensagem para a pessoa (detalhe técnico só no log). */
 export function erroDaResposta(status: number, corpo: string): ErroIA {
   if (status === 429) {
-    return new ErroIA("cota", "A cota da IA acabou ou o limite por minuto foi atingido. Tente de novo em alguns minutos.");
+    return new ErroIA(
+      "cota",
+      "A cota da IA acabou ou o limite por minuto foi atingido. Tente de novo em alguns minutos.",
+    );
   }
   if (status === 401 || status === 403) {
-    return new ErroIA("chave_invalida", "A chave da IA é inválida ou não tem permissão. Revise em Configurações gerais › APIs de IA.");
+    return new ErroIA(
+      "chave_invalida",
+      "A chave da IA é inválida ou não tem permissão. Revise em Configurações gerais › APIs de IA.",
+    );
   }
-  if (/has no pages|Unsupported MIME|invalid image|unsupported image|could not process/i.test(corpo)) {
+  if (
+    /has no pages|Unsupported MIME|invalid image|unsupported image|could not process/i.test(corpo)
+  ) {
     return new ErroIA(
       "arquivo",
       "Não foi possível abrir este arquivo. Confira se o PDF não está corrompido ou protegido por senha, ou envie em JPG/PNG.",
     );
   }
   if (status === 404) {
-    return new ErroIA("indisponivel", "O modelo de IA configurado não existe mais. Escolha outro em Configurações gerais › APIs de IA.");
+    return new ErroIA(
+      "indisponivel",
+      "O modelo de IA configurado não existe mais. Escolha outro em Configurações gerais › APIs de IA.",
+    );
   }
   console.error("[ia] provedor respondeu", status, corpo.slice(0, 300));
   return new ErroIA("indisponivel", "A IA não respondeu agora. Tente de novo em alguns minutos.");
@@ -144,8 +160,17 @@ function corpoOpenai(p: Pedido, cfg: ConfigProvedor, stream: boolean) {
         content: [
           { type: "text", text: m.texto },
           ehPdf
-            ? { type: "file", file: { filename: p.arquivo.nome, file_data: `data:${p.arquivo.mime};base64,${p.arquivo.base64}` } }
-            : { type: "image_url", image_url: { url: `data:${p.arquivo.mime};base64,${p.arquivo.base64}` } },
+            ? {
+                type: "file",
+                file: {
+                  filename: p.arquivo.nome,
+                  file_data: `data:${p.arquivo.mime};base64,${p.arquivo.base64}`,
+                },
+              }
+            : {
+                type: "image_url",
+                image_url: { url: `data:${p.arquivo.mime};base64,${p.arquivo.base64}` },
+              },
         ],
       };
     }
@@ -161,7 +186,10 @@ function corpoOpenai(p: Pedido, cfg: ConfigProvedor, stream: boolean) {
   };
 }
 
-function endereco(cfg: ConfigProvedor, stream: boolean): { url: string; headers: Record<string, string> } {
+function endereco(
+  cfg: ConfigProvedor,
+  stream: boolean,
+): { url: string; headers: Record<string, string> } {
   if (cfg.provedor === "openai") {
     return {
       url: `${cfg.baseUrl}/chat/completions`,
@@ -175,26 +203,42 @@ function endereco(cfg: ConfigProvedor, stream: boolean): { url: string; headers:
   };
 }
 
-async function chamar(cfg: ConfigProvedor, p: Pedido, stream: boolean, f: Fetch, tempoMs: number): Promise<Response> {
+async function chamar(
+  cfg: ConfigProvedor,
+  p: Pedido,
+  stream: boolean,
+  f: Fetch,
+  tempoMs: number,
+): Promise<Response> {
   const { url, headers } = endereco(cfg, stream);
   let resp: Response;
   try {
     resp = await f(url, {
       method: "POST",
       headers,
-      body: JSON.stringify(cfg.provedor === "openai" ? corpoOpenai(p, cfg, stream) : corpoGemini(p, cfg)),
+      body: JSON.stringify(
+        cfg.provedor === "openai" ? corpoOpenai(p, cfg, stream) : corpoGemini(p, cfg),
+      ),
       signal: AbortSignal.timeout(tempoMs),
     });
   } catch (e) {
     console.error("[ia] falha de rede", (e as Error)?.name);
-    throw new ErroIA("indisponivel", "A IA não respondeu a tempo. Tente de novo em alguns minutos.");
+    throw new ErroIA(
+      "indisponivel",
+      "A IA não respondeu a tempo. Tente de novo em alguns minutos.",
+    );
   }
   if (!resp.ok) throw erroDaResposta(resp.status, await resp.text().catch(() => ""));
   return resp;
 }
 
 /** Resposta inteira (sem streaming). */
-export async function gerarTexto(cfg: ConfigProvedor, p: Pedido, f: Fetch = fetch, tempoMs = 90_000): Promise<string> {
+export async function gerarTexto(
+  cfg: ConfigProvedor,
+  p: Pedido,
+  f: Fetch = fetch,
+  tempoMs = 90_000,
+): Promise<string> {
   const resp = await chamar(cfg, p, false, f, tempoMs);
   const json: any = await resp.json().catch(() => null);
   const texto: string =
@@ -212,7 +256,8 @@ export async function* gerarTextoStream(
   tempoMs = 120_000,
 ): AsyncGenerator<string> {
   const resp = await chamar(cfg, p, true, f, tempoMs);
-  if (!resp.body) throw new ErroIA("indisponivel", "A IA não respondeu agora. Tente de novo em alguns minutos.");
+  if (!resp.body)
+    throw new ErroIA("indisponivel", "A IA não respondeu agora. Tente de novo em alguns minutos.");
   const leitor = resp.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -247,12 +292,16 @@ export async function* gerarTextoStream(
 
 /** Tira cercas de markdown e lixo antes/depois do JSON. */
 export function extrairJson(texto: string): unknown {
-  const limpo = texto.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const limpo = texto
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
   try {
     return JSON.parse(limpo);
   } catch {
     const m = limpo.match(/\{[\s\S]*\}/);
-    if (!m) throw new ErroIA("formato", "A IA respondeu fora do formato esperado. Tente reprocessar.");
+    if (!m)
+      throw new ErroIA("formato", "A IA respondeu fora do formato esperado. Tente reprocessar.");
     try {
       return JSON.parse(m[0]);
     } catch {

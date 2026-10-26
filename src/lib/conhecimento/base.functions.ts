@@ -12,12 +12,20 @@ import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 import { minutosDeLeitura, textoPuro } from "./markdown";
 
 async function correspondenteDoUsuario(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase.from("profiles").select("correspondente_id").eq("id", userId).maybeSingle();
+  const { data } = await supabase
+    .from("profiles")
+    .select("correspondente_id")
+    .eq("id", userId)
+    .maybeSingle();
   return data?.correspondente_id ?? null;
 }
 
 async function pode(supabase: any, userId: string, modulo: string, acao: string): Promise<boolean> {
-  const { data } = await supabase.rpc("usuario_tem_permissao", { _user_id: userId, _modulo: modulo, _acao: acao });
+  const { data } = await supabase.rpc("usuario_tem_permissao", {
+    _user_id: userId,
+    _modulo: modulo,
+    _acao: acao,
+  });
   return data === true;
 }
 
@@ -30,9 +38,16 @@ export const contextoBase = createServerFn({ method: "GET" })
       correspondenteDoUsuario(supabase, userId),
       pode(supabase, userId, "admin.parametros", "edit"),
       pode(supabase, userId, "saas.news", "edit"),
-      supabase.rpc("pode_editar_base_global", { _user_id: userId }).then((r: any) => r.data === true),
+      supabase
+        .rpc("pode_editar_base_global", { _user_id: userId })
+        .then((r: any) => r.data === true),
     ]);
-    return { correspondenteId: corr as string | null, podeEditar: editar, podePublicarNews: news, podeGlobal: global };
+    return {
+      correspondenteId: corr as string | null,
+      podeEditar: editar,
+      podePublicarNews: news,
+      podeGlobal: global,
+    };
   });
 
 export interface VersaoArtigo {
@@ -79,7 +94,14 @@ export const restaurarVersaoArtigo = createServerFn({ method: "POST" })
     if (!v) throw new Error("Versão não encontrada.");
     const { data: alterados, error } = await supabase
       .from("consultor_ia_base")
-      .update({ titulo: v.titulo, conteudo: v.conteudo, resumo: v.resumo, categoria: v.categoria, tags: v.tags, atualizado_por: userId })
+      .update({
+        titulo: v.titulo,
+        conteudo: v.conteudo,
+        resumo: v.resumo,
+        categoria: v.categoria,
+        tags: v.tags,
+        atualizado_por: userId,
+      })
       .eq("id", data.id)
       .select("id");
     if (error) throw new Error("Não foi possível restaurar a versão.");
@@ -103,7 +125,11 @@ export const listarCategoriasBase = createServerFn({ method: "GET" })
       .order("ordem", { ascending: true })
       .order("nome", { ascending: true });
     if (error) throw new Error("Não foi possível carregar as categorias.");
-    return (data ?? []).map((c: any) => ({ id: c.id, nome: c.nome, global: c.correspondente_id === null }));
+    return (data ?? []).map((c: any) => ({
+      id: c.id,
+      nome: c.nome,
+      global: c.correspondente_id === null,
+    }));
   });
 
 export const criarCategoriaBase = createServerFn({ method: "POST" })
@@ -124,7 +150,9 @@ export const criarCategoriaBase = createServerFn({ method: "POST" })
     const { supabase, userId } = context as any;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr) throw new Error("Conta não identificada.");
-    const { error } = await supabase.from("consultor_ia_categorias").insert({ correspondente_id: corr, nome: data.nome });
+    const { error } = await supabase
+      .from("consultor_ia_categorias")
+      .insert({ correspondente_id: corr, nome: data.nome });
     if (error) {
       if (error.code === "23505") throw new Error("Já existe uma categoria com esse nome.");
       throw new Error("Não foi possível criar a categoria.");
@@ -135,14 +163,18 @@ export const criarCategoriaBase = createServerFn({ method: "POST" })
 /** Endereço temporário (10 min) de um anexo da base — só da pasta da própria conta. */
 export const urlAnexoBase = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.parametros", "view"], ["crm.clientes", "view"])])
-  .inputValidator((d: { caminho: string }) => z.object({ caminho: z.string().min(3).max(400) }).parse(d))
+  .inputValidator((d: { caminho: string }) =>
+    z.object({ caminho: z.string().min(3).max(400) }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     const corr = await correspondenteDoUsuario(supabase, userId);
     if (!corr || !data.caminho.startsWith(`${corr}/`) || data.caminho.includes("..")) {
       throw new Error("Anexo não encontrado.");
     }
-    const { data: s, error } = await supabase.storage.from("conhecimento-anexos").createSignedUrl(data.caminho, 600);
+    const { data: s, error } = await supabase.storage
+      .from("conhecimento-anexos")
+      .createSignedUrl(data.caminho, 600);
     if (error || !s?.signedUrl) throw new Error("Anexo não encontrado.");
     return { url: s.signedUrl as string };
   });
@@ -152,7 +184,7 @@ export const urlAnexoBase = createServerFn({ method: "POST" })
 const PUBLICO = z.enum(["todos", "assinantes", "equipe"]);
 
 export const publicarArtigoNaNews = createServerFn({ method: "POST" })
-  .middleware([exigirPermissao(["admin.parametros", "view"])])
+  .middleware([exigirPermissao(["saas.news", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
@@ -169,8 +201,9 @@ export const publicarArtigoNaNews = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    if (!(await pode(supabase, userId, "saas.news", "edit"))) {
-      throw new Error("Publicar na Agilliza News é de quem tem edição no módulo Agilliza News.");
+    // O artigo é da Base de conhecimento: precisa também ver a base (admin.parametros).
+    if (!(await pode(supabase, userId, "admin.parametros", "view"))) {
+      throw new Error("Você não tem acesso à Base de conhecimento.");
     }
     const { data: artigo } = await supabase
       .from("consultor_ia_base")
@@ -181,15 +214,22 @@ export const publicarArtigoNaNews = createServerFn({ method: "POST" })
     if (artigo.status !== "publicado" || !artigo.ativo) {
       throw new Error("Publique o artigo na base (e deixe-o ativo) antes de levá-lo à News.");
     }
-    if (artigo.titulo.trim().length < 10) throw new Error("O título precisa de pelo menos 10 caracteres para ir à News.");
-    if (artigo.conteudo.trim().length < 80) throw new Error("O artigo é curto demais para a News (mínimo 80 caracteres).");
+    if (artigo.titulo.trim().length < 10)
+      throw new Error("O título precisa de pelo menos 10 caracteres para ir à News.");
+    if (artigo.conteudo.trim().length < 80)
+      throw new Error("O artigo é curto demais para a News (mínimo 80 caracteres).");
 
     const inicio = data.inicio_em ? new Date(data.inicio_em) : null;
     let fim = data.fim_em ? new Date(data.fim_em) : null;
-    if (!fim && data.dias) fim = new Date((inicio ?? new Date()).getTime() + data.dias * 86_400_000);
-    if (fim && fim.getTime() <= (inicio ?? new Date()).getTime()) throw new Error("A data de fim precisa ser depois do início.");
+    if (!fim && data.dias)
+      fim = new Date((inicio ?? new Date()).getTime() + data.dias * 86_400_000);
+    if (fim && fim.getTime() <= (inicio ?? new Date()).getTime())
+      throw new Error("A data de fim precisa ser depois do início.");
 
-    const resumo = (artigo.resumo?.trim() || textoPuro(artigo.conteudo).slice(0, 240)).slice(0, 400);
+    const resumo = (artigo.resumo?.trim() || textoPuro(artigo.conteudo).slice(0, 240)).slice(
+      0,
+      400,
+    );
     const minutos = Math.min(60, minutosDeLeitura(artigo.conteudo));
     const { comPlataforma } = await import("@/lib/plataforma/ponte.server");
     const post = await comPlataforma(userId, (tx) =>
@@ -236,19 +276,26 @@ export const publicarArtigoNaNews = createServerFn({ method: "POST" })
     return {
       ok: true,
       post_id: post.id,
-      mensagem: inicio && inicio > new Date() ? "Artigo agendado na Agilliza News." : "Artigo publicado na Agilliza News.",
+      mensagem:
+        inicio && inicio > new Date()
+          ? "Artigo agendado na Agilliza News."
+          : "Artigo publicado na Agilliza News.",
     };
   });
 
 export const despublicarArtigoDaNews = createServerFn({ method: "POST" })
-  .middleware([exigirPermissao(["admin.parametros", "view"])])
+  .middleware([exigirPermissao(["saas.news", "edit"])])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    if (!(await pode(supabase, userId, "saas.news", "edit"))) {
-      throw new Error("Tirar da Agilliza News é de quem tem edição no módulo Agilliza News.");
+    if (!(await pode(supabase, userId, "admin.parametros", "view"))) {
+      throw new Error("Você não tem acesso à Base de conhecimento.");
     }
-    const { data: artigo } = await supabase.from("consultor_ia_base").select("id").eq("id", data.id).maybeSingle();
+    const { data: artigo } = await supabase
+      .from("consultor_ia_base")
+      .select("id")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!artigo) throw new Error("Artigo não encontrado.");
     const { comPlataforma } = await import("@/lib/plataforma/ponte.server");
     await comPlataforma(userId, (tx) =>
@@ -260,7 +307,12 @@ export const despublicarArtigoDaNews = createServerFn({ method: "POST" })
     );
     await (supabase as any)
       .from("consultor_ia_base")
-      .update({ news_post_id: null, news_publicado_em: null, news_publico: null, news_fim_em: null })
+      .update({
+        news_post_id: null,
+        news_publicado_em: null,
+        news_publico: null,
+        news_fim_em: null,
+      })
       .eq("id", data.id);
     return { ok: true, mensagem: "Artigo retirado da Agilliza News." };
   });

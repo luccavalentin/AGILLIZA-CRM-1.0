@@ -171,7 +171,8 @@ function janela(d: { inicio_em?: string | null; fim_em?: string | null; dias?: n
   const inicio = d.inicio_em ? new Date(d.inicio_em) : null;
   let fim = d.fim_em ? new Date(d.fim_em) : null;
   if (!fim && d.dias) {
-    if (!Number.isInteger(d.dias) || d.dias < 1 || d.dias > 365) throw new Error("Dias no ar: de 1 a 365.");
+    if (!Number.isInteger(d.dias) || d.dias < 1 || d.dias > 365)
+      throw new Error("Dias no ar: de 1 a 365.");
     fim = new Date((inicio ?? new Date()).getTime() + d.dias * 86_400_000);
   }
   if (fim && fim.getTime() <= (inicio ?? new Date()).getTime()) {
@@ -398,13 +399,16 @@ export const apontarMateria = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const url = data.url.trim();
     if (!/^https?:\/\/[\w.-]+\.[a-z]{2,}(:\d+)?(\/|$|\?)/i.test(url)) {
-      throw new Error("Informe o endereço completo da matéria, começando com https:// (ou http://).");
+      throw new Error(
+        "Informe o endereço completo da matéria, começando com https:// (ou http://).",
+      );
     }
     if (data.titulo.trim().length < 10) {
       throw new Error("O título precisa de pelo menos 10 caracteres.");
     }
     const imagem = data.imagem_url?.trim() || null;
-    if (imagem && !/^https:\/\/[^\s]+$/.test(imagem)) throw new Error("A imagem precisa ser um endereço https://.");
+    if (imagem && !/^https:\/\/[^\s]+$/.test(imagem))
+      throw new Error("A imagem precisa ser um endereço https://.");
     const { inicio, fim } = janela(data);
     const { comPlataforma } = await import("./ponte.server");
     await comPlataforma(context.userId, (tx) =>
@@ -431,7 +435,10 @@ export const apontarMateria = createServerFn({ method: "POST" })
     );
     return {
       ok: true as const,
-      mensagem: inicio && new Date(inicio) > new Date() ? "Matéria agendada." : "Matéria no ar. Ela abre na página do veículo.",
+      mensagem:
+        inicio && new Date(inicio) > new Date()
+          ? "Matéria agendada."
+          : "Matéria no ar. Ela abre na página do veículo.",
     };
   });
 
@@ -600,7 +607,11 @@ export const salvarFonteNews = createServerFn({ method: "POST" })
         nome: z.string().max(120),
         url: z.string().max(500),
         categoria: z.string().min(1, "Escolha a categoria.").max(60),
-        intervalo_min: z.number().int().min(15, "Mínimo de 15 minutos.").max(1440, "Máximo de 24 horas."),
+        intervalo_min: z
+          .number()
+          .int()
+          .min(15, "Mínimo de 15 minutos.")
+          .max(1440, "Máximo de 24 horas."),
         ativa: z.boolean().default(true),
       })
       .parse(d),
@@ -617,7 +628,12 @@ export const salvarFonteNews = createServerFn({ method: "POST" })
         data.ativa,
       ]),
     );
-    return { ok: true as const, mensagem: data.id ? "Fonte atualizada." : "Fonte cadastrada. A primeira coleta sai em instantes." };
+    return {
+      ok: true as const,
+      mensagem: data.id
+        ? "Fonte atualizada."
+        : "Fonte cadastrada. A primeira coleta sai em instantes.",
+    };
   });
 
 export const removerFonteNews = createServerFn({ method: "POST" })
@@ -650,7 +666,10 @@ export const coletarAgoraNews = createServerFn({ method: "POST" })
     if (!n) throw new Error("Nenhuma fonte ativa com RSS para coletar.");
     return {
       ok: true as const,
-      mensagem: n === 1 ? "Coleta pedida. O resultado aparece aqui em instantes." : `Coleta de ${n} fontes pedida.`,
+      mensagem:
+        n === 1
+          ? "Coleta pedida. O resultado aparece aqui em instantes."
+          : `Coleta de ${n} fontes pedida.`,
     };
   });
 
@@ -672,7 +691,13 @@ export interface MetricasNews {
     comentarios: number;
   };
   compartilhamentos_por_canal: Partial<Record<"whatsapp" | "link" | "email" | "nativo", number>>;
-  serie: Array<{ dia: string; impressoes: number; aberturas: number; compartilhamentos: number; alcance: number }>;
+  serie: Array<{
+    dia: string;
+    impressoes: number;
+    aberturas: number;
+    compartilhamentos: number;
+    alcance: number;
+  }>;
   por_portal: Array<{ portal: string; impressoes: number; aberturas: number; alcance: number }>;
   por_perfil: Array<{ perfil: string; impressoes: number; aberturas: number; alcance: number }>;
   ranking: Array<{
@@ -740,7 +765,9 @@ export interface ItemNewsEquipe {
 /** O feed para quem trabalha no Agilliza (o banco confere que a pessoa é da equipe). */
 export const lerNewsDaEquipe = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ limite: z.number().int().min(1).max(60).default(20) }).parse(d ?? {}))
+  .inputValidator((d: unknown) =>
+    z.object({ limite: z.number().int().min(1).max(60).default(20) }).parse(d ?? {}),
+  )
   .handler(async ({ data, context }): Promise<ItemNewsEquipe[]> => {
     const { consultarNewsDaEquipe } = await import("./ponte.server");
     const r = await consultarNewsDaEquipe<ItemNewsEquipe>(
@@ -775,10 +802,10 @@ export const registrarEventosNewsEquipe = createServerFn({ method: "POST" })
     if (!data.eventos.length) return { n: 0 };
     try {
       const { consultarNewsDaEquipe } = await import("./ponte.server");
-      const r = await consultarNewsDaEquipe<{ n: number }>("select radar.registrar_eventos_equipe($1, $2::jsonb) as n", [
-        context.userId,
-        JSON.stringify(data.eventos),
-      ]);
+      const r = await consultarNewsDaEquipe<{ n: number }>(
+        "select radar.registrar_eventos_equipe($1, $2::jsonb) as n",
+        [context.userId, JSON.stringify(data.eventos)],
+      );
       return { n: Number(r?.[0]?.n ?? 0) };
     } catch {
       return { n: 0 }; // medir nunca atrapalha ler
@@ -817,4 +844,16 @@ export const ocultarComentarioNews = createServerFn({ method: "POST" })
       ),
     );
     return { ok: true as const, mensagem: "Comentário oculto. O registro continua guardado." };
+  });
+
+/** Categorias da News (para publicar um artigo da Base de conhecimento). */
+export const listarCategoriasNews = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.news", "edit"])])
+  .handler(async ({ context }): Promise<CategoriaNews[]> => {
+    const { comPlataforma } = await import("./ponte.server");
+    return comPlataforma(context.userId, (tx) =>
+      tx.consultar<CategoriaNews>(
+        "select id, nome from radar.categorias where ativa order by ordem, nome",
+      ),
+    );
   });

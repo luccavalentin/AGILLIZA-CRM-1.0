@@ -65,7 +65,9 @@ describe("markdown dos artigos", () => {
   });
 
   it("link e imagem perigosos não viram link nem imagem (sem HTML, sem javascript:)", () => {
-    const inl = analisarInline("[clique](javascript:alert(1)) ![x](http://inseguro.com/a.png) <script>alert(1)</script>");
+    const inl = analisarInline(
+      "[clique](javascript:alert(1)) ![x](http://inseguro.com/a.png) <script>alert(1)</script>",
+    );
     expect(inl.some((x) => x.t === "link" || x.t === "imagem")).toBe(false);
     expect(JSON.stringify(inl)).toContain("<script>"); // fica como TEXTO, que o React escapa
     expect(hrefSeguro("javascript:alert(1)")).toBeNull();
@@ -78,7 +80,9 @@ describe("markdown dos artigos", () => {
   });
 
   it("marcação sem par vira texto e snake_case não vira itálico", () => {
-    expect(textoPuro("valor_total e taxa_anual **sem fechar")).toBe("valor_total e taxa_anual **sem fechar");
+    expect(textoPuro("valor_total e taxa_anual **sem fechar")).toBe(
+      "valor_total e taxa_anual **sem fechar",
+    );
     expect(analisarInline("a_b_c")).toEqual([{ t: "texto", v: "a_b_c" }]);
   });
 

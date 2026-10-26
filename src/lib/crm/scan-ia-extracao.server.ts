@@ -36,21 +36,36 @@ export function detectarMime(bytes: Uint8Array, arquivoUrl: string, tipoBlob?: s
   if (ascii(4, 4) === "ftyp") {
     const marca = ascii(8, 4).toLowerCase();
     if (marca.startsWith("heic") || marca.startsWith("heix")) return "image/heic";
-    if (marca.startsWith("mif1") || marca.startsWith("msf1") || marca.startsWith("heif")) return "image/heif";
+    if (marca.startsWith("mif1") || marca.startsWith("msf1") || marca.startsWith("heif"))
+      return "image/heif";
   }
   const declarado = (tipoBlob ?? "").toLowerCase();
   if (declarado && declarado !== "application/octet-stream") return declarado;
   const ext = (arquivoUrl.split("?")[0]!.split(".").pop() ?? "").toLowerCase();
   const porExt: Record<string, string> = {
-    pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp",
-    gif: "image/gif", heic: "image/heic", heif: "image/heif", tif: "image/tiff", tiff: "image/tiff", bmp: "image/bmp",
+    pdf: "application/pdf",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    heic: "image/heic",
+    heif: "image/heif",
+    tif: "image/tiff",
+    tiff: "image/tiff",
+    bmp: "image/bmp",
   };
   return porExt[ext] ?? "application/octet-stream";
 }
 
 /** Formatos que os provedores interpretam direto. */
 export const MIMES_SUPORTADOS = new Set([
-  "application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif",
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
 ]);
 
 /** O modelo às vezes devolve objeto/lista num valor (ex.: ônus com vários atos): vira texto. */
@@ -89,12 +104,20 @@ export const EsquemaRespostaScan = z.object({
 });
 
 /** Nomes alternativos que o modelo usa → o nome do nosso cadastro (CEP separado do endereço). */
-export function normalizarCampoExtraido(campo: string, valor: string): Array<{ campo: string; valor: string }> {
+export function normalizarCampoExtraido(
+  campo: string,
+  valor: string,
+): Array<{ campo: string; valor: string }> {
   const c = campo.trim();
   const v = valor.trim();
   if (c === "endereco_completo" || c === "endereco") {
     const cep = v.match(/\b\d{5}[-\s]?\d{3}\b/);
-    const linha = cep ? v.replace(cep[0], "").trim().replace(/[,-]\s*$/, "") : v;
+    const linha = cep
+      ? v
+          .replace(cep[0], "")
+          .trim()
+          .replace(/[,-]\s*$/, "")
+      : v;
     return cep
       ? [
           { campo: c, valor: linha },
@@ -161,16 +184,27 @@ export async function extrairDocumento(o: {
     {
       sistema: "Você extrai dados de documentos com precisão e responde apenas JSON.",
       mensagens: [{ papel: "usuario", texto: prompt }],
-      arquivo: { mime: o.mime, base64: Buffer.from(o.bytes).toString("base64"), nome: o.nomeArquivo },
+      arquivo: {
+        mime: o.mime,
+        base64: Buffer.from(o.bytes).toString("base64"),
+        nome: o.nomeArquivo,
+      },
       maxTokens: 16_384,
     },
     EsquemaRespostaScan,
     o.fetch,
   );
 
-  const tipoSugerido: TipoDocumentoScan = ehTipoConhecido(dados.tipo_documento) ? dados.tipo_documento : "outro";
-  const tipoFiltro = o.tipoInformado && ehTipoConhecido(o.tipoInformado) ? o.tipoInformado : tipoSugerido;
-  const permitidos = new Set([...camposEsperadosDoTipo(tipoFiltro), ...TODOS_CAMPOS_EXTRAIVEIS, ...CAMPOS_ESPERADOS]);
+  const tipoSugerido: TipoDocumentoScan = ehTipoConhecido(dados.tipo_documento)
+    ? dados.tipo_documento
+    : "outro";
+  const tipoFiltro =
+    o.tipoInformado && ehTipoConhecido(o.tipoInformado) ? o.tipoInformado : tipoSugerido;
+  const permitidos = new Set([
+    ...camposEsperadosDoTipo(tipoFiltro),
+    ...TODOS_CAMPOS_EXTRAIVEIS,
+    ...CAMPOS_ESPERADOS,
+  ]);
 
   const vistos = new Set<string>();
   const campos: CampoLido[] = [];
