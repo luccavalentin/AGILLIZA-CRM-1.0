@@ -1473,27 +1473,110 @@ export const ROTEIROS: Record<string, RoteiroTour> = {
     ],
   },
 
-  // ---- Marketing: Automações (Em breve)
+  // ---- Marketing: Automações (modelo do Postei, 26/10/2026)
   automacoes: {
-    versao: 1,
+    versao: 2,
     titulo: "Automações",
     passos: [
       {
         alvo: "titulo",
         titulo: "Automações de marketing",
         texto:
-          "Divulgação nas redes sociais direto do Agilliza. A função está sendo preparada e aparece no menu como Em breve.",
+          "Agende posts, vídeos e stories nas redes da AgillizaTech, todas de uma vez: no dia e na hora, o sistema publica sozinho.",
       },
       {
-        alvo: "automacoes-redes",
-        titulo: "Redes previstas",
+        titulo: "Calendário, Posts e Novo post",
         texto:
-          "Instagram, Facebook, WhatsApp, TikTok, YouTube, LinkedIn e Google: a ideia é seus conteúdos virarem posts prontos para essas redes.",
+          "No calendário você vê e arrasta os posts entre os dias. Em Posts, filtra por rede e situação. Em Novo post, escreve, escolhe a mídia e vê a prévia de cada rede.",
       },
       {
-        titulo: "Quando for liberada",
+        titulo: "Mídia, Relatórios e Redes",
         texto:
-          "Com a função ativa na sua conta, esta tela passa a mostrar o calendário de posts, os resultados e as redes conectadas.",
+          "A Mídia guarda fotos e vídeos. Os Relatórios mostram seguidores, alcance e o resultado de cada post. Em Redes você conecta as contas pelo site oficial de cada rede.",
+      },
+    ],
+  },
+  "automacoes.posts": {
+    versao: 1,
+    titulo: "Posts",
+    passos: [
+      {
+        alvo: "filtros",
+        titulo: "Ache qualquer post",
+        texto:
+          "Filtre por situação (agendados, publicados, com falha, rascunhos), por rede e por período, ou busque na legenda.",
+      },
+      {
+        titulo: "Ações do post",
+        texto:
+          "No menu de cada linha: publicar agora, tentar de novo as redes que falharam, duplicar ou cancelar. Abra o post para ver cada rede e o histórico.",
+      },
+    ],
+  },
+  "automacoes.novo": {
+    versao: 1,
+    titulo: "Novo post",
+    passos: [
+      {
+        alvo: "titulo",
+        titulo: "Escreva uma vez, publique em todas",
+        texto:
+          "Escolha as redes e o formato em cada uma (feed, carrossel, Reels, Stories, vídeo, Shorts). A legenda pode ser diferente por rede.",
+      },
+      {
+        titulo: "Prévia e regras de cada rede",
+        texto:
+          "A prévia mostra como o post fica em cada rede, e o aviso amarelo diz o que ajustar antes de agendar. Use os horários recomendados ou publique agora.",
+      },
+    ],
+  },
+  "automacoes.midia": {
+    versao: 1,
+    titulo: "Mídia",
+    passos: [
+      {
+        alvo: "filtros",
+        titulo: "Biblioteca de fotos e vídeos",
+        texto:
+          "Envie fotos (até 5 MB) e vídeos (até 60 MB) uma vez e use em quantos posts quiser. As fotos dos imóveis também aparecem aqui.",
+      },
+      {
+        titulo: "Arraste para enviar",
+        texto:
+          "Solte os arquivos sobre a lista para enviar. Arquivo que está num post ainda na fila não pode ser apagado.",
+      },
+    ],
+  },
+  "automacoes.relatorios": {
+    versao: 1,
+    titulo: "Relatórios",
+    passos: [
+      {
+        alvo: "indicadores",
+        titulo: "Resultado das redes",
+        texto:
+          "Alcance, visualizações, curtidas, comentários, compartilhamentos, salvos, cliques e leads, com os números oficiais de cada rede.",
+      },
+      {
+        titulo: "Contas e publicação",
+        texto:
+          "Seguidores e crescimento de cada conta, os dias e horários com mais publicações e o resultado de cada post. Exporte em PDF para enviar.",
+      },
+    ],
+  },
+  "automacoes.redes": {
+    versao: 1,
+    titulo: "Redes",
+    passos: [
+      {
+        titulo: "Conecte as redes da AgillizaTech",
+        texto:
+          "A conexão é feita no site oficial de cada rede e você escolhe quais contas usar. Nenhuma senha passa pelo Agilliza.",
+      },
+      {
+        titulo: "Chaves e endereços de retorno",
+        texto:
+          "As chaves dos apps ficam em Chaves dos provedores; o endereço de retorno de cada rede está nesta tela, pronto para copiar.",
       },
     ],
   },
