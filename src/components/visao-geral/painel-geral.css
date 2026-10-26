@@ -1,0 +1,427 @@
+/*
+ * Painel geral (C03–C06, 26/10/2026). Mesmo acabamento do painel dos assinantes:
+ * papel branco, fio de 1 px, sombra de sussurro, ícones 3D (styles.css, Sistema 3D).
+ */
+.pg-painel {
+  --pg-borda: #eceef2;
+  --pg-borda-forte: #e4e7ec;
+}
+
+/* ---------------------------------------------------------------- filtros --- */
+.pg-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--pg-borda);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+.pg-filtro {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+.pg-filtro-rotulo {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
+.pg-segmentado {
+  display: inline-flex;
+  height: 36px;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--pg-borda-forte);
+  border-radius: 10px;
+  background: var(--secondary);
+}
+.pg-segmentado button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  transition:
+    background-color 0.16s,
+    color 0.16s,
+    box-shadow 0.16s;
+}
+.pg-segmentado button:hover:not(:disabled) {
+  color: var(--foreground);
+}
+.pg-segmentado button[aria-checked="true"] {
+  color: var(--primary);
+  background: var(--card);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.1),
+    0 0 0 1px var(--pg-borda-forte);
+}
+.pg-segmentado button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.pg-segmentado button:focus-visible {
+  outline: 2px solid rgb(0 15 159 / 0.35);
+  outline-offset: 1px;
+}
+@media (max-width: 639px) {
+  /* Celular: um filtro por linha, cada um com a largura toda (nada vaza para o lado). */
+  .pg-filtros {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+  .pg-segmentado {
+    width: 100%;
+  }
+  .pg-segmentado button {
+    flex: 1;
+    justify-content: center;
+    padding: 0 6px;
+  }
+  .pg-limpar {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+/* ------------------------------------------------------- resumo e selo --- */
+.pg-resumo {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.pg-resumo svg {
+  margin-top: 3px;
+  color: var(--primary);
+}
+.pg-atualizado {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--pg-borda-forte);
+  border-radius: 999px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+  background: var(--card);
+}
+.pg-pulso {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--success);
+}
+.pg-pulso::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--success);
+  animation: pg-pulso 2s ease-out infinite;
+}
+@keyframes pg-pulso {
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-pulso::after {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------- indicadores --- */
+.pg-indicadores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 768px) {
+  .pg-indicadores {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+/* Seis numa linha só quando cada cartão tem ~210 px (tela larga, menu aberto). */
+@media (min-width: 1680px) {
+  .pg-indicadores {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* --------------------------------------------------------------- cartões --- */
+.pg-grade-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+@media (min-width: 1024px) {
+  .pg-grade-2 {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .pg-col-8 {
+    grid-column: span 8;
+  }
+  .pg-col-6 {
+    grid-column: span 6;
+  }
+  .pg-col-4 {
+    grid-column: span 4;
+  }
+}
+.pg-cartao {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--pg-borda);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+.pg-cartao-cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.pg-cartao-cab h2 {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+.pg-cartao-cab p {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.pg-link {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--primary);
+}
+.pg-link:hover {
+  text-decoration: underline;
+}
+.pg-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.pg-legenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pg-legenda li::before {
+  content: "";
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c);
+}
+
+/* ----------------------------------------------------------------- funil --- */
+.pg-funil {
+  display: grid;
+  gap: 14px;
+}
+.pg-funil-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.pg-funil-linha b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+.pg-funil-trilho {
+  height: 8px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--secondary);
+}
+.pg-funil-trilho span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3a4dff, #000f9f);
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pg-funil li:nth-child(3) .pg-funil-trilho span {
+  background: linear-gradient(90deg, #8d6bff, #6d3fe0);
+}
+.pg-funil li:nth-child(4) .pg-funil-trilho span {
+  background: linear-gradient(90deg, #3fe0a8, #10a37f);
+}
+.pg-funil small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+/* --------------------------------------------------------------- ranking --- */
+.pg-ranking {
+  display: grid;
+  gap: 2px;
+}
+.pg-ranking li {
+  display: grid;
+  grid-template-columns: 18px 32px minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  transition: background-color 0.16s;
+}
+.pg-ranking li:hover {
+  background: var(--muted);
+}
+.pg-ranking-pos {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+.pg-ranking li:nth-child(-n + 3) .pg-ranking-pos {
+  color: var(--primary);
+}
+.pg-ranking-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--primary);
+  background: linear-gradient(180deg, #f3f4ff, #e4e7ff);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 1px 2px rgb(0 15 159 / 0.15);
+}
+.pg-ranking-avatar-conta {
+  border-radius: 9px;
+  color: #5b34cf;
+  background: linear-gradient(180deg, #f6f2ff, #e9e1ff);
+}
+.pg-ranking-nome {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.pg-ranking-nome b {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+.pg-ranking-nome small {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+.pg-ranking-barra {
+  display: block;
+  height: 4px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--secondary);
+}
+.pg-ranking-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6f7bff, #000f9f);
+}
+.pg-ranking-num {
+  display: flex;
+  min-width: 52px;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.pg-ranking-num b {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+.pg-ranking-num small {
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+}
+.pg-ranking-valor {
+  min-width: 84px;
+}
+.pg-so-celular {
+  display: none;
+}
+/* Celular: posição, contratos e propostas em colunas próprias não cabem com o nome.
+   Fica avatar, nome (com a conta e a barra) e o valor com os contratos embaixo. */
+@media (max-width: 639px) {
+  .pg-ranking li {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 8px 2px;
+  }
+  .pg-ranking-pos,
+  .pg-ranking-sec,
+  .pg-so-computador {
+    display: none;
+  }
+  .pg-so-celular {
+    display: inline;
+  }
+  .pg-ranking-valor {
+    min-width: 0;
+  }
+}
+
+/* ----------------------------------------------------------------- fonte --- */
+.pg-fonte {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+  background: var(--muted);
+}
+.pg-fonte b {
+  font-weight: 600;
+  color: var(--foreground);
+}

@@ -2389,6 +2389,18 @@ html[data-crm-motion="off"] .i3d-grupo:hover .i3d {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Celular (2 colunas de ~160 px): o cartão inteiro já é o link, a seta sai; a natureza
+   do número fica no título (passar o dedo/leitor de tela) para o rótulo caber. */
+@media (max-width: 479px) {
+  .i3d-indicador {
+    min-height: 96px;
+    padding: 12px 12px 10px;
+  }
+  .i3d-indicador-seta,
+  .i3d-indicador-rotulo small {
+    display: none;
+  }
+}
 .i3d-variacao {
   display: inline-flex;
   flex: none;

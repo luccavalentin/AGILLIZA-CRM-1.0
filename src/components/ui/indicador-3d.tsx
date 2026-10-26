@@ -95,7 +95,10 @@ export function Indicador3D({
     <>
       <span className="i3d-indicador-topo">
         {icone && <Icone3D icone={icone} tom={tomIcone3D(tom)} tamanho={destaque ? "lg" : "md"} />}
-        <span className="i3d-indicador-rotulo">
+        <span
+          className="i3d-indicador-rotulo"
+          title={natureza ? `${rotulo} — ${natureza}` : undefined}
+        >
           {rotulo}
           {natureza && <small>{natureza}</small>}
         </span>
