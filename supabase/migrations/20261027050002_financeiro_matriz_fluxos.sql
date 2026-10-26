@@ -74,6 +74,19 @@ begin
   end if;
 end $$;
 
+/**
+ * Data do gatilho de uma etapa da proposta: é nela que se escolhe a regra vigente (e dela
+ * contam os prazos). Registro: `contrato_registrado_em` (frente a3, lida por to_jsonb para não
+ * depender da coluna); contrato emitido: `contrato_emitido_em`; demais etapas (ou sem data): hoje.
+ */
+create or replace function public.fin_data_gatilho(_p public.propostas, _gatilho text)
+returns date language sql stable set search_path = public as $$
+  select coalesce(case _gatilho
+                    when 'registrado' then (to_jsonb(_p) ->> 'contrato_registrado_em')::timestamptz::date
+                    when 'contrato_emitido' then _p.contrato_emitido_em::date
+                  end, current_date)
+$$;
+
 /** Previsão da comissão do banco para a proposta (uma por proposta; regra gravada). */
 create or replace function public.calcular_comissao_proposta(_prop_id uuid)
 returns uuid language plpgsql security definer set search_path = public as $$
@@ -91,11 +104,8 @@ begin
   select * into p from public.propostas where id = _prop_id;
   if not found or p.deleted_at is not null then return null; end if;
   perform pg_advisory_xact_lock(hashtextextended('fin_cb:' || _prop_id::text, 0));
-  -- Data do gatilho: a do registro em cartório escolhida pelo analista (contrato_registrado_em,
-  -- frente a3) quando a proposta já está registrada; senão, hoje. Lida por to_jsonb para não
-  -- depender da coluna existir no banco.
-  v_data := coalesce(case when p.status::text = 'registrado'
-                          then (to_jsonb(p) ->> 'contrato_registrado_em')::timestamptz::date end, current_date);
+  -- Data do gatilho (registro escolhido pelo analista, contrato emitido ou hoje): a regra vigente nela.
+  v_data := public.fin_data_gatilho(p, p.status::text);
   select id into v_id from public.comissoes where proposta_id = _prop_id and situacao <> 'cancelado'
    order by created_at limit 1;
   if v_id is not null then return v_id; end if;
@@ -456,9 +466,12 @@ declare
   v_n integer := 0;
   v_tem_individual boolean;
   v_par public.fin_parametros;
+  v_data date;
 begin
   select * into p from public.propostas where id = _prop_id;
   if not found or p.deleted_at is not null then return 0; end if;
+  -- Vigência e vencimento contam da data do gatilho, não de hoje (igual ao repasse dos assinantes).
+  v_data := public.fin_data_gatilho(p, _gatilho);
   if not exists (select 1 from public.comissao_regras_usuario cr
                   where cr.correspondente_id = p.correspondente_id and cr.ativo and cr.encerrada_em is null
                     and cr.gatilho = _gatilho) then
@@ -474,7 +487,9 @@ begin
       select 1 from public.comissao_regras_usuario cr
        where cr.correspondente_id = p.correspondente_id and cr.ativo and cr.encerrada_em is null
          and cr.gatilho = _gatilho and cr.usuario_id = pp.pessoa_id
-         and (cr.papel is null or cr.papel = pp.papel));
+         and (cr.papel is null or cr.papel = pp.papel)
+         and (cr.vigencia_inicio is null or cr.vigencia_inicio <= v_data)
+         and (cr.vigencia_fim is null or cr.vigencia_fim >= v_data));
     for r in
       select cr.* from public.comissao_regras_usuario cr
        where cr.correspondente_id = p.correspondente_id and cr.ativo and cr.encerrada_em is null
@@ -482,8 +497,8 @@ begin
          and (cr.banco_nome is null or cr.banco_nome = p.nome_banco)
          and (cr.produto is null or cr.produto = p.produto)
          and (cr.operacao is null or cr.operacao = p.produto or cr.operacao = p.tipo_imovel or cr.operacao = p.uso_imovel)
-         and (cr.vigencia_inicio is null or cr.vigencia_inicio <= current_date)
-         and (cr.vigencia_fim is null or cr.vigencia_fim >= current_date)
+         and (cr.vigencia_inicio is null or cr.vigencia_inicio <= v_data)
+         and (cr.vigencia_fim is null or cr.vigencia_fim >= v_data)
          and (cr.papel is null or cr.papel = pp.papel)
          and ((v_tem_individual and cr.usuario_id = pp.pessoa_id)
               or (not v_tem_individual and cr.usuario_id is null and cr.papel = pp.papel))
@@ -508,8 +523,8 @@ begin
         pp.papel,
         (to_jsonb(r) - 'created_at' - 'updated_at')
           || jsonb_build_object('base_valor', b.valor, 'base_fonte', b.fonte, 'data_calculo', current_date,
-                                'regra_individual', r.usuario_id is not null),
-        current_date + v_par.dias_vencimento_comissao, b.comissao_banco_id, 'gatilho');
+                                'data_gatilho', v_data, 'regra_individual', r.usuario_id is not null),
+        v_data + v_par.dias_vencimento_comissao, b.comissao_banco_id, 'gatilho');
       v_n := v_n + 1;
     end loop;
   end loop;
@@ -1498,6 +1513,7 @@ begin
   -- internas: só o próprio banco (gatilhos e outras funções)
   foreach f in array array[
     'public.fin_cb_situacao(public.comissoes, numeric)', 'public.fin_cb_atualizar(uuid)', 'public.calcular_comissao_proposta(uuid)',
+    'public.fin_data_gatilho(public.propostas, text)',
     'public.on_proposta_contrato_emitido()', 'public.fin_participantes_padrao(uuid)', 'public.fin_cu_base(public.propostas, text)',
     'public.calcular_comissoes_usuario_proposta(uuid, text)', 'public.on_proposta_comissao_usuario_insert()',
     'public.fin_cu_apos_recebimento_banco(uuid)', 'public.fin_cu_soma_excede(uuid, numeric, uuid)', 'public.fin_aplicar_baixas(text, uuid)']

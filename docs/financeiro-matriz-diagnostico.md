@@ -145,5 +145,6 @@ pagamento não se apaga.
   `fin_receita_de_origem(origem_tipo, origem_ref, ...)` (idempotente por origem).
 - **a3 (contrato registrado)**: a data `public.propostas.contrato_registrado_em` (lida por `to_jsonb`, sem depender da
   coluna) é a data do gatilho da previsão do banco (vigência da regra e previsão de recebimento) quando o gatilho é
-  "registrado"; no Agilliza Tech, `operacional.propostas.registrado_em` (gravada pela 0316 antes do gatilho) é a data do
+  "registrado" e a data da vigência das regras de corretores e parceiros (`fin_data_gatilho`: registro →
+  `contrato_registrado_em`, contrato emitido → `contrato_emitido_em`, demais etapas → hoje); no Agilliza Tech, `operacional.propostas.registrado_em` (gravada pela 0316 antes do gatilho) é a data do
   repasse e escolhe a regra vigente naquele dia.
