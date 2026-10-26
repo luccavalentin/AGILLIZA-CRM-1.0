@@ -30,15 +30,21 @@ const EDITAR_PLANOS = exigirPermissao(["imobmatch.planos", "edit"]);
 const VER_CONFIG = exigirPermissao(["imobmatch.config", "view"]);
 const EDITAR_CONFIG = exigirPermissao(["imobmatch.config", "edit"]);
 
-async function ponte() {
-  return import("./ponte.server");
+/**
+ * A ponte em nome da pessoa: `um` roda uma consulta que devolve `r` (jsonb da função do banco).
+ * Chamada como `ponte(context)` — é assim que o teste das telas × 911 acha as funções do banco.
+ */
+async function ponte(context: { userId: string }) {
+  const { comPlataforma } = await import("./ponte.server");
+  return {
+    comPlataforma: <R>(fn: Parameters<typeof comPlataforma<R>>[1]) =>
+      comPlataforma<R>(context.userId, fn),
+    um: async <T>(sql: string, params: unknown[] = []): Promise<T> => {
+      const r = await comPlataforma(context.userId, (tx) => tx.uma<{ r: T }>(sql, params));
+      return r!.r;
+    },
+  };
 }
-
-const chamar = async <T>(userId: string, sql: string, params: unknown[] = []): Promise<T> => {
-  const { comPlataforma } = await ponte();
-  const r = await comPlataforma(userId, (tx) => tx.uma<{ r: T }>(sql, params));
-  return r!.r;
-};
 
 /* ───────────────────────────── tipos (jsonb das funções do banco) ───────────────────────────── */
 
@@ -274,17 +280,18 @@ const dinheiro = z
 /** Números do ImobMatch (a receita só vem para quem vê o dinheiro). */
 export const lerVisaoGeralImobMatch = createServerFn({ method: "GET" })
   .middleware([VER_VISAO])
-  .handler(({ context }) =>
-    chamar<VisaoGeralImobMatch>(context.userId, "select plataforma.imobmatch_visao_geral() as r"),
+  .handler(async ({ context }) =>
+    (await ponte(context)).um<VisaoGeralImobMatch>(
+      "select plataforma.imobmatch_visao_geral() as r",
+    ),
   );
 
 /** Receita por produto, canal e mês; loja, Pix, patrocínio, assinaturas e inadimplência. */
 export const lerFinanceiroImobMatch = createServerFn({ method: "GET" })
   .middleware([VER_FINANCEIRO])
   .inputValidator((d: unknown) => PERIODO.parse(d))
-  .handler(({ data, context }) =>
-    chamar<FinanceiroImobMatch>(
-      context.userId,
+  .handler(async ({ data, context }) =>
+    (await ponte(context)).um<FinanceiroImobMatch>(
       "select plataforma.imobmatch_financeiro($1::date, $2::date) as r",
       [data.de, data.ate],
     ),
@@ -309,9 +316,8 @@ export const lerFaturasImobMatch = createServerFn({ method: "GET" })
       .refine((p) => p.de <= p.ate, { message: "O início do período vem antes do fim." })
       .parse(d),
   )
-  .handler(({ data, context }) =>
-    chamar<ListaFaturasImobMatch>(
-      context.userId,
+  .handler(async ({ data, context }) =>
+    (await ponte(context)).um<ListaFaturasImobMatch>(
       "select plataforma.imobmatch_faturas($1::date, $2::date, $3, $4, $5, $6) as r",
       [data.de, data.ate, data.produto, data.situacao, data.busca || null, data.limite],
     ),
@@ -333,9 +339,8 @@ export const lerAssinaturasImobMatch = createServerFn({ method: "GET" })
       })
       .parse(d ?? {}),
   )
-  .handler(({ data, context }) =>
-    chamar<ListaAssinaturasImobMatch>(
-      context.userId,
+  .handler(async ({ data, context }) =>
+    (await ponte(context)).um<ListaAssinaturasImobMatch>(
       "select plataforma.imobmatch_assinaturas($1, $2, $3, $4) as r",
       [data.produto, data.situacao, data.busca || null, data.pagina],
     ),
@@ -344,15 +349,15 @@ export const lerAssinaturasImobMatch = createServerFn({ method: "GET" })
 /** Planos do ImobMatch, produtos das lojas e pacotes de banner. */
 export const lerPlanosImobMatch = createServerFn({ method: "GET" })
   .middleware([VER_PLANOS])
-  .handler(({ context }) =>
-    chamar<PlanosImobMatch>(context.userId, "select plataforma.imobmatch_planos() as r"),
+  .handler(async ({ context }) =>
+    (await ponte(context)).um<PlanosImobMatch>("select plataforma.imobmatch_planos() as r"),
   );
 
 /** Parâmetros do ImobMatch e dos banners, a recomendação e o feed (só leitura nos dois últimos). */
 export const lerParametrosImobMatch = createServerFn({ method: "GET" })
   .middleware([VER_CONFIG])
-  .handler(({ context }) =>
-    chamar<ParametrosImobMatch>(context.userId, "select plataforma.imobmatch_parametros() as r"),
+  .handler(async ({ context }) =>
+    (await ponte(context)).um<ParametrosImobMatch>("select plataforma.imobmatch_parametros() as r"),
   );
 
 /* ───────────────────────────── edições ───────────────────────────── */
@@ -393,7 +398,9 @@ export const salvarPlanoImobMatch = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { id, ...campos } = data;
-    await chamar(context.userId, "select plataforma.imobmatch_salvar_plano($1, $2::jsonb) as r", [
+    await (
+      await ponte(context)
+    ).um("select plataforma.imobmatch_salvar_plano($1, $2::jsonb) as r", [
       id,
       JSON.stringify(campos),
     ]);
@@ -430,8 +437,8 @@ export const salvarProdutoLojaImobMatch = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { comPlataforma } = await ponte();
-    await comPlataforma(context.userId, (tx) =>
+    const { comPlataforma } = await ponte(context);
+    await comPlataforma((tx) =>
       tx.uma("select imobmatch.configurar_produto_loja($1, $2, $3, $4, $5)", [
         data.id,
         data.produto_id,
@@ -461,10 +468,11 @@ export const salvarParametroImobMatch = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await chamar(
-      context.userId,
-      "select plataforma.imobmatch_salvar_parametro($1, $2::jsonb) as r",
-      [data.chave, JSON.stringify(data.valor)],
-    );
+    await (
+      await ponte(context)
+    ).um("select plataforma.imobmatch_salvar_parametro($1, $2::jsonb) as r", [
+      data.chave,
+      JSON.stringify(data.valor),
+    ]);
     return { ok: true as const };
   });

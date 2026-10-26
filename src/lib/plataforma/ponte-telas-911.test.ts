@@ -70,7 +70,7 @@ const NAO_SAO_FUNCOES = new Set([
 ]);
 
 const ESQUEMAS =
-  "plataforma|nucleo|seguranca|integracao|operacional|crm|social|comunicacao|auditoria|acesso|receita|financeiro|cobranca|rede|radar|portal|imoveis|ia|publico|lgpd";
+  "plataforma|nucleo|seguranca|integracao|operacional|crm|social|comunicacao|auditoria|acesso|receita|financeiro|cobranca|rede|radar|portal|imoveis|ia|publico|lgpd|imobmatch";
 
 function arquivos(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
@@ -109,9 +109,14 @@ function paresDoCodigo(): Set<string> {
       const guardas = [...mw.matchAll(/exigirPermissao\(([\s\S]*?)\)\s*[\],]/g)].map((x) => x[1]);
       for (const [n, g] of nomes) if (mw.split(/[^A-Za-z0-9_]/).includes(n)) guardas.push(g);
       const mods = new Set(
-        (guardas.join(" ").match(/"(saas\.[a-z_]+|marketing\.[a-z_]+)"/g) ?? []).map((x) =>
-          x.slice(1, -1),
-        ),
+        (
+          guardas
+            .join(" ")
+            // ImobMatch Gestão (0460): os módulos `imobmatch.*` também abrem a ponte.
+            .match(
+              /"(saas\.[a-z_]+|marketing\.[a-z_]+|imobmatch\.(?:visao|moderacao|financeiro|planos|config))"/g,
+            ) ?? []
+        ).map((x) => x.slice(1, -1)),
       );
       const fns = new Set(
         [...corpo.matchAll(new RegExp(`\\b(${ESQUEMAS})\\.([a-z_][a-z0-9_]*)\\s*\\(`, "g"))]
