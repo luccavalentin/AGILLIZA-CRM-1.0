@@ -308,7 +308,7 @@ function FormConfig({ config }: { config: ConfigRecargaApifull }) {
       </div>
       <div className="grid gap-3 sm:grid-cols-[14rem_1fr]">
         <div className="space-y-1.5">
-          <Label htmlFor="recarga-cnpj">CNPJ da APIFull (recebedor do Pix)</Label>
+          <Label htmlFor="recarga-cnpj">CNPJ da APIFull (obrigatório para ligar)</Label>
           <Input
             id="recarga-cnpj"
             inputMode="numeric"
@@ -319,7 +319,7 @@ function FormConfig({ config }: { config: ConfigRecargaApifull }) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="recarga-nome">Nome do recebedor (opcional)</Label>
+          <Label htmlFor="recarga-nome">Nome do recebedor (opcional, conferido igual)</Label>
           <Input
             id="recarga-nome"
             maxLength={120}
@@ -332,8 +332,9 @@ function FormConfig({ config }: { config: ConfigRecargaApifull }) {
       </div>
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />O Pix só é pago se o
-        recebedor do QR for este CNPJ e o valor for o da recarga. Antes de ligar, libere o pagamento
-        de QR Code pela API no Asaas.
+        recebedor do QR for este CNPJ (e o nome, se informado, for igual) e o valor for o da
+        recarga. Recebedor ou valor errado DESLIGA a recarga e abre incidente crítico: confira antes
+        de religar. Antes de ligar, libere o pagamento de QR Code pela API no Asaas.
       </p>
       <Button type="submit" size="sm" className="min-h-11 sm:min-h-9" disabled={salvar.isPending}>
         {salvar.isPending ? "Salvando…" : "Salvar recarga"}
