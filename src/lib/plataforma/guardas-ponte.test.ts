@@ -25,6 +25,10 @@ interface ServerFn {
   nome: string;
   guardas: string[];
   usaPonte: boolean;
+  /** Auditoria rodada 2: as outras portas da ponte (chat, ponte direta, News da equipe). */
+  usaPonteDireta: boolean;
+  metodo: "GET" | "POST";
+  corpo: string;
   usaCodigos: boolean;
 }
 
@@ -55,6 +59,9 @@ function varrer(): ServerFn[] {
         nome: m[1],
         guardas,
         usaPonte: /\bcom(Plataforma|Conta)\b/.test(corpo),
+        usaPonteDireta: /\b(comChatAgilliza|comPonteDireta|consultarNewsDaEquipe|dependenciasReaisConsulta)\b/.test(corpo),
+        metodo: /createServerFn\(\{\s*method:\s*"POST"/.test(bloco) ? "POST" : "GET",
+        corpo,
         usaCodigos: /codigos_(caixas|recebidos)/.test(corpo),
       });
     });
@@ -232,5 +239,77 @@ describe("guardas das server functions da ponte", () => {
     const com = todas.filter((f) => f.arquivo === "plataforma/comissoes-assinantes.functions.ts");
     expect(com.length).toBeGreaterThan(0);
     for (const f of com) expect(f.guardas.join()).toContain('"saas.comissoes"');
+  });
+
+  /*
+   * Auditoria rodada 2 (26/10/2026): a varredura só via comPlataforma/comConta. As outras portas
+   * da ponte — o chat (comChatAgilliza), a ponte direta da Consulta Ficha (comPonteDireta, via
+   * dependenciasReaisConsulta) e o News da equipe (consultarNewsDaEquipe) — passavam sem conferência.
+   */
+  it("as outras portas da ponte também são vistas (sanidade)", () => {
+    const nomes = todas.filter((f) => f.usaPonteDireta).map((f) => f.nome);
+    for (const n of ["chatAcao", "chatEnviarArquivo", "lerNewsDaEquipe", "registrarEventosNewsEquipe", "consultarFichaBureau"]) {
+      expect(nomes, n).toContain(n);
+    }
+  });
+
+  it("toda server function das outras portas tem guarda: exigirPermissao, pessoa do chat com a ação, ou sessão + id da pessoa conferido no banco", () => {
+    const sem = todas
+      .filter((f) => f.usaPonteDireta)
+      .filter((f) => {
+        if (f.guardas.length) return false;
+        if (/pessoaDoChat\(data\.canal( as CanalChat)?,\s*(permissaoDaAcao\(|"create"|"view")/.test(f.corpo)) return false;
+        // News da equipe: só com sessão e o id da pessoa (o banco confere que ela é da equipe ativa).
+        if (/consultarNewsDaEquipe/.test(f.corpo) && /context\.userId/.test(f.corpo)) return false;
+        return true;
+      })
+      .map((f) => `${f.arquivo} › ${f.nome}`);
+    expect(sem).toEqual([]);
+  });
+
+  /**
+   * AÇÃO: função que ESCREVE (POST) por qualquer porta da ponte não passa só com "ver". As exceções
+   * são de propósito, uma a uma, com o motivo (lista fechada: função nova cai no teste).
+   */
+  const ESCREVE_COM_VER: Record<string, string> = {
+    // Consulta paga pelo contrato do correspondente: a regra de negócio é "quem vê Clientes consulta";
+    // o abuso (disparo em massa) é barrado no banco pelo limite diário por pessoa e por correspondente.
+    "bureau/bureau.functions.ts › consultarFichaBureau": "limite diário no banco",
+    // Telemetria da própria leitura do News (impressão, clique): não muda dado de ninguém.
+    "plataforma/news.functions.ts › registrarEventosNewsEquipe": "telemetria da própria leitura",
+    // "Abrir no Agilliza": espelho idempotente da simulação/cliente da conta para a tela nativa
+    // (para LER no Agilliza); o que se faz depois na tela nativa segue a permissão do Agilliza.
+    "plataforma/conta-nativa.functions.ts › espelharSimulacaoDaConta": "espelho idempotente para abrir",
+    "plataforma/conta-nativa.functions.ts › espelharClienteDaConta": "espelho idempotente para abrir",
+    // Relatórios: POST só porque os filtros vão no corpo; nada é gravado.
+    "relatorios/ecossistema.functions.ts › getRelatorioContas": "leitura (filtros no corpo)",
+    "relatorios/producao-ecossistema.functions.ts › getProducaoPlataforma": "leitura (filtros no corpo)",
+    "relatorios/producao-ecossistema.functions.ts › getOpcoesPlataforma": "leitura (filtros no corpo)",
+  };
+
+  it("POST pela ponte exige a ação de escrita (ver não basta), salvo as exceções com motivo", () => {
+    const soVer = todas
+      .filter((f) => (f.usaPonte || f.usaPonteDireta) && f.metodo === "POST")
+      .filter((f) => {
+        const g = f.guardas.join();
+        if (f.guardas.length) return !/"(edit|create|delete|aprovar|pagar|regras|baixar|executar|gerir)"/.test(g);
+        // Sem exigirPermissao: o chat decide a ação por permissaoDaAcao (escrita = create).
+        if (/pessoaDoChat\(data\.canal( as CanalChat)?,\s*(permissaoDaAcao\(|"create")/.test(f.corpo)) return false;
+        return true;
+      })
+      .map((f) => `${f.arquivo} › ${f.nome}`)
+      .filter((k) => !(k in ESCREVE_COM_VER));
+    expect(soVer).toEqual([]);
+    // As exceções continuam existindo (exceção morta sai da lista).
+    for (const k of Object.keys(ESCREVE_COM_VER)) {
+      expect(todas.some((f) => `${f.arquivo} › ${f.nome}` === k), k).toBe(true);
+    }
+  });
+
+  it("chat: anexar exige Enviar mensagens; ação de escrita do chat pede create", () => {
+    const anexo = todas.find((f) => f.nome === "chatEnviarArquivo")!;
+    expect(anexo.corpo).toMatch(/pessoaDoChat\(data\.canal,\s*"create"\)/);
+    const acao = todas.find((f) => f.nome === "chatAcao")!;
+    expect(acao.corpo).toMatch(/pessoaDoChat\(data\.canal as CanalChat,\s*permissaoDaAcao\(/);
   });
 });
