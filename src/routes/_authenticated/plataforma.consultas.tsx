@@ -45,6 +45,7 @@ import {
   type Tom,
 } from "@/components/plataforma/kit";
 import { RodapePaginas } from "@/components/plataforma/paginacao";
+import { RecargaApifullSecao } from "@/components/plataforma/consultas/recarga-apifull";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
@@ -416,6 +417,8 @@ function Pagina() {
           ))}
         </div>
       </div>
+
+      <RecargaApifullSecao />
 
       <Pedidos
         pedidos={d?.pedidos ?? []}

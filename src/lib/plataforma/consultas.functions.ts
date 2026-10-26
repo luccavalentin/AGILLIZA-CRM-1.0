@@ -239,3 +239,139 @@ export const registrarCustoConsulta = createServerFn({ method: "POST" })
     }
     return { ok: true as const };
   });
+
+/* ------------------------------------------------------------------------------------------
+ * Recarga automática da APIFull (0552 do Corretor): a parte do custo das vendas repõe o saldo
+ * pré-pago da APIFull por Pix pago pela conta do Asaas; a margem fica no Asaas. Desligada por
+ * padrão. Só a plataforma lê (cobranca.ler) e edita (config.editar + planos.editar).
+ * ---------------------------------------------------------------------------------------- */
+
+export interface ConfigRecargaApifull {
+  ligado: boolean;
+  piso: number;
+  minimo: number;
+  teto_recarga: number;
+  teto_diario: number;
+  recebedor_documento: string | null;
+  recebedor_nome: string | null;
+  atualizado_em: string | null;
+}
+
+export interface RecargaApifull {
+  id: string;
+  estado:
+    | "pendente"
+    | "cobranca_criada"
+    | "pagando"
+    | "paga_no_asaas"
+    | "creditada"
+    | "falhou"
+    | "reconciliar";
+  valor: number;
+  valor_repor: number;
+  motivo: "repor" | "piso" | "repor_e_piso";
+  saldo_apifull_antes: number | null;
+  saldo_apifull_depois: number | null;
+  recebedor_nome: string | null;
+  asaas_status: string | null;
+  erro: string | null;
+  criado_em: string;
+  paga_em: string | null;
+  concluida_em: string | null;
+}
+
+export interface MargemProduto {
+  produto: ProdutoConsulta;
+  creditos: number | null;
+  preco: number | null;
+  custo: number | null;
+  taxa: number | null;
+  margem: number | null;
+}
+
+export interface PainelRecargaApifull {
+  config: ConfigRecargaApifull;
+  a_repor: number;
+  gasto_hoje: number;
+  saldo_apifull: { saldo: number | null; lido_em: string } | null;
+  taxa_por_credito: number | null;
+  margens: MargemProduto[];
+  recargas: RecargaApifull[];
+}
+
+export const lerRecargaApifull = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.consultas", "view"])])
+  .handler(async ({ context }) => {
+    const { comPlataforma } = await import("./ponte.server");
+    return comPlataforma(context.userId, async (tx) => {
+      const pode = await tx.uma<{ editar: boolean }>(
+        `select (seguranca.auth_e_plataforma('config.editar')
+                 and seguranca.auth_e_plataforma('planos.editar')) as editar`,
+      );
+      const r = await tx.uma<{ r: PainelRecargaApifull }>(
+        "select plataforma.recarga_apifull_painel() as r",
+      );
+      return { painel: r?.r ?? null, podeEditar: Boolean(pode?.editar) };
+    });
+  });
+
+export const salvarRecargaApifull = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.consultas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        ligado: z.boolean(),
+        piso: z.string().trim().max(20),
+        tetoRecarga: z.string().trim().max(20),
+        tetoDiario: z.string().trim().max(20),
+        recebedorDocumento: z.string().trim().max(30).default(""),
+        recebedorNome: z.string().trim().max(120).default(""),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const piso = dinheiro(data.piso);
+    const tetoRecarga = dinheiro(data.tetoRecarga);
+    const tetoDiario = dinheiro(data.tetoDiario);
+    if (![piso, tetoRecarga, tetoDiario].every(Number.isFinite)) {
+      throw new Error("Informe piso e tetos em reais.");
+    }
+    const { comPlataforma } = await import("./ponte.server");
+    return comPlataforma(context.userId, async (tx) => {
+      const r = await tx.uma<{ r: ConfigRecargaApifull }>(
+        "select plataforma.configurar_recarga_apifull($1, $2, $3, $4, $5, $6) as r",
+        [
+          data.ligado,
+          piso,
+          tetoRecarga,
+          tetoDiario,
+          data.recebedorDocumento || null,
+          data.recebedorNome || null,
+        ],
+      );
+      return { ok: true as const, config: r?.r ?? null };
+    });
+  });
+
+/** Resolve à mão uma recarga em conferência (depois de olhar o extrato da APIFull e o Asaas). */
+export const resolverRecargaApifull = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.consultas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        desfecho: z.enum(["creditada", "falhou"]),
+        motivo: z.string().trim().min(10, "Descreva o que foi conferido.").max(300),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await import("./ponte.server");
+    return comPlataforma(context.userId, async (tx) => {
+      const r = await tx.uma<{ r: string }>(
+        "select plataforma.resolver_recarga_apifull($1, $2, $3) as r",
+        [data.id, data.desfecho, data.motivo],
+      );
+      return { ok: true as const, estado: r?.r ?? null };
+    });
+  });
