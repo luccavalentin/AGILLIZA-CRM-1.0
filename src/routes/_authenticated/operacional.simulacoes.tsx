@@ -1,7 +1,7 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useReconciliacaoAutomatica } from "@/lib/simulacao/reconciliar";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Calculator, ListChecks, Building2, Clock } from "lucide-react";
@@ -29,7 +29,14 @@ import { DetalheSimulacoes, statusLabel } from "@/components/simulacao/lista-det
 import { EnviarPropostaDialog } from "@/components/simulacao/enviar-proposta-dialog";
 import { EncaminharSimulacaoDialog } from "@/components/simulacao/encaminhar-simulacao-dialog";
 import { KpiDetalheDialog } from "@/components/simulacao/kpi-detalhe-dialog";
-import { FiltrosLista } from "@/components/simulacao/lista-page/filtros-lista";
+import { BuscaSimulacoes, FiltrosLista } from "@/components/simulacao/lista-page/filtros-lista";
+import {
+  CHAVES_FILTROS,
+  lerFiltrosDaUrl,
+  paramsDaConsulta,
+  paramsDosFiltros,
+  type FiltrosSimulacoes,
+} from "@/components/simulacao/lista-page/filtros-estado";
 import { AvisoReenvioAutomatico } from "@/components/simulacao/aviso-reenvio-automatico";
 import { TabelaSimulacoes } from "@/components/simulacao/lista-page/tabela-simulacoes";
 import { CartoesSimulacoes } from "@/components/simulacao/lista-page/cartoes-simulacoes";
@@ -37,9 +44,10 @@ import type { HandlersLinha } from "@/components/simulacao/lista-page/tipos";
 import { BarraSelecao } from "@/components/shared/barra-selecao";
 import { perguntarAgenciaSeBradesco } from "@/components/proposta/dialogs/agencia-bradesco-dialog";
 
-import { SeletorDeConta } from "@/components/crm/clientes-page/seletor-de-conta";
 import { SimulacoesDaContaNativas } from "@/components/plataforma/conta-nativa/simulacoes-da-conta";
-import type { ContaAssinante } from "@/lib/plataforma/contas.functions";
+import { SimulacoesDoGrupo } from "@/components/plataforma/conta-nativa/simulacoes-do-grupo";
+import { FiltroBase } from "@/components/crm/filtro-base/filtro-base";
+import { useFiltroBase } from "@/components/crm/filtro-base/use-filtro-base";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
   head: () => ({ meta: [{ title: "Simulações — Agilliza" }] }),
@@ -53,8 +61,9 @@ export const Route = createFileRoute("/_authenticated/operacional/simulacoes")({
 });
 
 function Pagina() {
-  // Base exibida: a do Agilliza (null) ou a de uma conta assinante do Agilliza Tech.
-  const [conta, setConta] = useState<ContaAssinante | null>(null);
+  // Base exibida (C27): "Sua base" (Agilliza + contas vinculadas) ou "Assinantes" (todos ou um).
+  const filtroBase = useFiltroBase();
+  const { alvo } = filtroBase;
   const router = useRouter();
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirSimulacao);
@@ -68,11 +77,43 @@ function Pagina() {
 
   const obter = useServerFn(obterSimulacao);
   const listarColegasFn = useServerFn(listarColegas);
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("todas");
-  const [q, setQ] = useState("");
-  const [busca, setBusca] = useState("");
+  // Filtros na URL (C28): ?q=, ?de=, ?ate=, ?resp=, ?escopo= (valor torto vira padrão).
+  const searchUrl = useRouterState({ select: (st) => st.location.search }) as Record<string, unknown>;
+  const filtros = useMemo(
+    () =>
+      lerFiltrosDaUrl({
+        q: searchUrl?.q,
+        de: searchUrl?.de,
+        ate: searchUrl?.ate,
+        resp: searchUrl?.resp,
+        escopo: searchUrl?.escopo,
+      }),
+    [searchUrl?.q, searchUrl?.de, searchUrl?.ate, searchUrl?.resp, searchUrl?.escopo],
+  );
+  const { escopo, de: desde, ate, resp: responsavel } = filtros;
+  const [q, setQ] = useState(filtros.q);
+  const [busca, setBusca] = useState(filtros.q);
   const [pagina, setPagina] = useState(1);
   const porPagina = 20;
+
+  const gravarFiltros = useCallback(
+    (f: FiltrosSimulacoes) => {
+      const atual = router.state.location;
+      const limpo: Record<string, unknown> = { ...(atual.search as Record<string, unknown>) };
+      for (const k of CHAVES_FILTROS) delete limpo[k];
+      void router.navigate({
+        to: atual.pathname,
+        search: { ...limpo, ...paramsDosFiltros(f) } as never,
+        replace: true,
+      } as never);
+    },
+    [router],
+  );
+  // Todo filtro volta para a página 1 (na página 3, trocar o filtro podia mostrar a lista vazia).
+  const mudarFiltros = (patch: Partial<FiltrosSimulacoes>) => {
+    gravarFiltros({ ...filtros, q: busca, ...patch });
+    setPagina(1);
+  };
 
   // Debounce para não sobrecarregar o servidor em cada tecla. Era `useMemo`,
   // que não roda a limpeza: cada tecla deixava um timer vivo e a lista (que é
@@ -83,9 +124,21 @@ function Pagina() {
     }, 400);
     return () => clearTimeout(timer);
   }, [q]);
-  const [desde, setDesde] = useState("");
-  const [ate, setAte] = useState("");
-  const [responsavel, setResponsavel] = useState<string>("todos");
+  // A busca (já com debounce) vai para a URL; a URL que muda por fora (voltar) volta para o campo.
+  useEffect(() => {
+    if (busca.trim() !== filtros.q) {
+      gravarFiltros({ ...filtros, q: busca });
+      setPagina(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busca]);
+  useEffect(() => {
+    if (filtros.q !== busca.trim()) {
+      setQ(filtros.q);
+      setBusca(filtros.q);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtros.q]);
   const [kpiAberto, setKpiAberto] = useState<string | null>(null);
   const [verExcluidas, setVerExcluidas] = useState(false);
 
@@ -147,16 +200,13 @@ function Pagina() {
       return emAndamento ? 5000 : 30000;
     },
     staleTime: 0,
-    // Com a Conta numa licença assinante, a lista vem da base dela (SimulacoesDaContaNativas).
-    enabled: !conta,
+    // Fora da base do Agilliza, a lista vem do Agilliza Tech (SimulacoesDoGrupo / DaContaNativas).
+    enabled: alvo.agilliza,
     queryFn: () =>
       listarSimulacoes({
         data: {
-          escopo,
-          q: busca || undefined,
-          desde: desde && desde !== "" ? desde : undefined,
-          ate: ate && ate !== "" ? ate : undefined,
-          responsavel: escopo === "todas" && responsavel !== "todos" ? responsavel : undefined,
+          // Os mesmos parâmetros de antes da barra nova (período em ordem, responsável só em "Todas").
+          ...paramsDaConsulta(filtros, busca),
           pagina: pagina,
           porPagina: porPagina,
 
@@ -635,7 +685,6 @@ function Pagina() {
             </p>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
-            <SeletorDeConta conta={conta} onConta={setConta} />
             <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
               <Link to="/operacional/simulacoes/nova" search={{ modo: "rapida" }}>
                 <Calculator className="h-4 w-4" />
@@ -652,9 +701,32 @@ function Pagina() {
         </div>
       </div>
 
-      {conta ? (
-        // Base de uma conta assinante: mesmos cartões e ações, com o selo da conta.
-        <SimulacoesDaContaNativas conta={conta} handlers={handlersLinha} />
+      <FiltroBase uso={filtroBase} />
+
+      {!alvo.agilliza && alvo.grupo === "assinantes" && alvo.licenca ? (
+        // Um assinante: mesmos cartões e ações, com o selo da conta.
+        <SimulacoesDaContaNativas
+          conta={{
+            id: alvo.licenca,
+            nome: filtroBase.conta?.nome ?? "Assinante",
+            tipo: filtroBase.conta?.tipo ?? "corretor",
+          }}
+          handlers={handlersLinha}
+        />
+      ) : !alvo.agilliza && alvo.grupo ? (
+        // Todos os assinantes, todos os vinculados ou uma vinculada: paginado no servidor.
+        <div className="space-y-2">
+          <div className="rounded-2xl border border-border/60 bg-card p-1.5 shadow-sm">
+            <BuscaSimulacoes q={q} setQ={setQ} />
+          </div>
+          <SimulacoesDoGrupo
+            grupo={alvo.grupo}
+            licenca={alvo.licenca}
+            termo={busca}
+            semNoAgilliza={alvo.semNoAgilliza}
+            handlers={handlersLinha}
+          />
+        </div>
       ) : (
         <>
           {/* KPIs */}
@@ -704,47 +776,21 @@ function Pagina() {
 
           {/* Barra de filtros */}
           <FiltrosLista
-            escopo={escopo}
-            // Todo filtro volta para a página 1 (antes só a busca voltava: na
-            // página 3, trocar o filtro podia mostrar a lista vazia).
-            setEscopo={(v) => {
-              setEscopo(v);
-              setPagina(1);
-            }}
+            filtros={filtros}
             q={q}
-            setQ={(val) => {
-              setQ(val);
-              setPagina(1);
-            }}
-            onBuscar={() => {
-              setBusca(q);
-              setPagina(1);
-            }}
-            responsavel={responsavel}
-            setResponsavel={(v) => {
-              setResponsavel(v);
-              setPagina(1);
-            }}
+            setQ={setQ}
+            onMudar={mudarFiltros}
             colegas={colegas}
-            desde={desde}
-            setDesde={(v) => {
-              setDesde(v);
-              setPagina(1);
-            }}
-            ate={ate}
-            setAte={(v) => {
-              setAte(v);
-              setPagina(1);
-            }}
-            onLimpar={() => {
-              setDesde("");
-              setAte("");
-              setResponsavel("todos");
-              setPagina(1);
-            }}
             verExcluidas={verExcluidas}
             toggleExcluidas={() => {
               setVerExcluidas((v) => !v);
+              setPagina(1);
+            }}
+            onLimparTudo={() => {
+              setQ("");
+              setBusca("");
+              setVerExcluidas(false);
+              gravarFiltros({ q: "", de: "", ate: "", resp: "todos", escopo: "todas" });
               setPagina(1);
             }}
           />
@@ -815,6 +861,24 @@ function Pagina() {
               </Button>
             </div>
           )}
+
+          {/* "Sua base" inclui as simulações dos corretores vinculados (C27). Elas não têm filtro
+              de período/responsável do Agilliza: a seção só aparece sem esses filtros. */}
+          {alvo.grupo === "vinculados" &&
+            filtroBase.totalVinculadas > 0 &&
+            !verExcluidas &&
+            escopo === "todas" &&
+            responsavel === "todos" &&
+            !desde &&
+            !ate && (
+              <SimulacoesDoGrupo
+                grupo="vinculados"
+                termo={busca}
+                semNoAgilliza
+                handlers={handlersLinha}
+                secao
+              />
+            )}
         </>
       )}
 

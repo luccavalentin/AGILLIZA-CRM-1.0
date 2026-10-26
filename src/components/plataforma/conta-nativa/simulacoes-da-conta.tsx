@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
 import { Info, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +9,8 @@ import { TabelaSimulacoes } from "@/components/simulacao/lista-page/tabela-simul
 import { CartoesSimulacoes } from "@/components/simulacao/lista-page/cartoes-simulacoes";
 import type { HandlersLinha } from "@/components/simulacao/lista-page/tipos";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
-import {
-  espelharSimulacaoDaConta,
-  listarSimulacoesDaContaNativas,
-} from "@/lib/plataforma/conta-nativa.functions";
+import { listarSimulacoesDaContaNativas } from "@/lib/plataforma/conta-nativa.functions";
+import { useHandlersDeConta } from "./simulacoes-do-grupo";
 import type { ContaAssinante } from "@/lib/plataforma/contas.functions";
 
 /**
@@ -29,9 +26,7 @@ export function SimulacoesDaContaNativas({
   /** Os handlers da própria tela de Simulações (ver, editar, PDFs, enviar…). */
   handlers: HandlersLinha;
 }) {
-  const qc = useQueryClient();
   const listarFn = useServerFn(listarSimulacoesDaContaNativas);
-  const espelharFn = useServerFn(espelharSimulacaoDaConta);
   const [q, setQ] = useState("");
   const [termo, setTermo] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -55,50 +50,13 @@ export function SimulacoesDaContaNativas({
   const total = consulta.data?.total ?? 0;
   const porPagina = consulta.data?.porPagina ?? 20;
 
-  const handlersConta: HandlersLinha = useMemo(() => {
-    /** Id da simulação no Agilliza (espelha na primeira vez). */
-    async function noAgilliza(id: string): Promise<string | null> {
-      const linha = itens.find((s) => s.id === id);
-      if (linha?._simulacao_agilliza_id) return linha._simulacao_agilliza_id;
-      const aviso = toast.loading("Abrindo a simulação do assinante no Agilliza…");
-      try {
-        const r = await espelharFn({ data: { licenca: conta.id, simulacaoId: id } });
-        qc.invalidateQueries({ queryKey: ["simulacoes-conta", conta.id] });
-        toast.dismiss(aviso);
-        if (r.pendencias_imovel?.length) {
-          toast.info(
-            `Para enviar ao banco, falta no cadastro do imóvel: ${r.pendencias_imovel.join(", ")}.`,
-            { duration: 8_000 },
-          );
-        }
-        return r.simulacao_id;
-      } catch (e) {
-        toast.dismiss(aviso);
-        toast.error(mensagemDeErro(e, "Não foi possível abrir esta simulação no Agilliza."));
-        return null;
-      }
-    }
-    const com =
-      <A extends unknown[]>(fn: (id: string, ...a: A) => unknown) =>
-      async (id: string, ...a: A) => {
-        const alvo = await noAgilliza(id);
-        if (alvo) await fn(alvo, ...a);
-      };
-    return {
-      onVer: (id) => void com(handlers.onVer)(id),
-      onEditar: com(handlers.onEditar),
-      onBaixarComparativo: com(handlers.onBaixarComparativo),
-      onBaixarDetalhada: com(handlers.onBaixarDetalhada),
-      onDuplicar: (id) => void com(handlers.onDuplicar)(id),
-      onEnviarProposta: com(handlers.onEnviarProposta),
-      onEncaminhar: com(handlers.onEncaminhar),
-      onDestravar: com(handlers.onDestravar),
-      onExcluir: async () => {
-        toast.info(`Esta simulação é da conta ${conta.nome}: só o assinante pode excluí-la.`);
-      },
-      onRestaurar: () => undefined,
-    };
-  }, [itens, handlers, espelharFn, conta.id, conta.nome, qc]);
+  // Mesma regra das listas de grupo: espelha pela conta da linha (aqui, a conta da tela).
+  const handlersConta = useHandlersDeConta({
+    itens,
+    handlers,
+    contaDaTela: conta.id,
+    chaveLista: ["simulacoes-conta", conta.id],
+  });
 
   return (
     <div className="space-y-2">
