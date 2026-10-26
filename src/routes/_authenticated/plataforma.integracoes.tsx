@@ -86,7 +86,7 @@ const PROVEDOR: Record<string, { nome: string; desc: string }> = {
     nome: "Birôs de crédito",
     desc: "Consulta Ficha na Serasa, no SPC e na Boa Vista",
   },
-  apifull: { nome: "APIFull", desc: "Consulta Serasa Premium vendida às licenças" },
+  apifull: { nome: "APIFull", desc: "Consultas Serasa Premium e SPC Brasil vendidas às licenças (um token só)" },
   asaas: { nome: "Asaas", desc: "Pix, boleto e cartão da plataforma e do aluguel" },
   portais: { nome: "Portais imobiliários", desc: "Carga de anúncios e retorno de leads" },
   bcb: { nome: "Banco Central", desc: "Selic, IGP-M, IPCA, INCC, INPC e TR" },

@@ -14,7 +14,6 @@ import {
   Minus,
   Receipt,
   RefreshCw,
-  Tag,
   Wallet,
   XCircle,
 } from "lucide-react";
@@ -46,6 +45,7 @@ import {
   type Tom,
 } from "@/components/plataforma/kit";
 import { RodapePaginas } from "@/components/plataforma/paginacao";
+import { RecargaApifullSecao } from "@/components/plataforma/consultas/recarga-apifull";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
@@ -54,12 +54,23 @@ import { cn } from "@/lib/utils";
 import {
   lerConsultasPagas,
   registrarCustoConsulta,
-  salvarPrecoConsulta,
+  salvarProdutoConsulta,
   POR_PAGINA_PEDIDOS,
   type CustoFornecedor,
+  type IndicadoresConsultas,
   type PedidoConsulta,
+  type ProdutoConfigurado,
+  type ProdutoConsulta,
   type SituacaoPedido,
 } from "@/lib/plataforma/consultas.functions";
+
+/** Marca oficial e nome de cada produto (as mesmas imagens do Agilliza Tech). */
+const PRODUTO: Record<ProdutoConsulta, { rotulo: string; marca: string; alt: string }> = {
+  "serasa-premium": { rotulo: "Serasa Premium", marca: "/biros/serasa.svg", alt: "Serasa Experian" },
+  "spc-brasil": { rotulo: "SPC Brasil", marca: "/biros/spc.png", alt: "SPC Brasil" },
+};
+const ehProduto = (v: unknown): v is ProdutoConsulta => v === "serasa-premium" || v === "spc-brasil";
+const rotuloProduto = (v: unknown) => (ehProduto(v) ? PRODUTO[v].rotulo : "Serasa Premium");
 
 export const Route = createFileRoute("/_authenticated/plataforma/consultas")({
   head: () => ({ meta: [{ title: "Consultas pagas — Gestão de sistemas — Agilliza" }] }),
@@ -143,12 +154,13 @@ function Pagina() {
   const [ate, setAte] = useState(hoje);
   const [atalho, setAtalho] = useState<Atalho>("mes");
   const [situacao, setSituacao] = useState<Situacao | null>(null);
+  const [produto, setProduto] = useState<ProdutoConsulta | null>(null);
   const [pagina, setPagina] = useState(1);
   const periodoValido = Boolean(de && ate && de <= ate);
 
   const q = useQuery({
-    queryKey: [QK, de, ate, situacao, pagina],
-    queryFn: () => lerFn({ data: { de, ate, situacao, pagina } }),
+    queryKey: [QK, de, ate, situacao, produto, pagina],
+    queryFn: () => lerFn({ data: { de, ate, situacao, produto, pagina } }),
     enabled: periodoValido,
     placeholderData: (anterior) => anterior,
   });
@@ -179,7 +191,7 @@ function Pagina() {
       <CabecalhoGestao
         icone={<FileSearch />}
         titulo="Consultas pagas"
-        descricao="Serasa Premium vendida por unidade às licenças: receita, custo da APIFull, taxas do Asaas e o que ainda falta entregar."
+        descricao="Serasa Premium e SPC Brasil vendidas às licenças com créditos pré-pagos: preço e custo de cada uma, receita, taxas do Asaas e o que ainda falta entregar."
         acoes={
           <Button
             variant="outline"
@@ -244,6 +256,20 @@ function Pagina() {
             />
           </div>
         </div>
+        <ChipsFiltro
+          rotulo="Produto"
+          className="w-full"
+          valor={produto ?? "todos"}
+          onChange={(v) => {
+            setProduto(v === "todos" ? null : v);
+            setPagina(1);
+          }}
+          opcoes={[
+            { valor: "todos" as const, rotulo: "Serasa e SPC" },
+            { valor: "serasa-premium" as const, rotulo: "Serasa Premium" },
+            { valor: "spc-brasil" as const, rotulo: "SPC Brasil" },
+          ]}
+        />
         {!periodoValido && (
           <p className="w-full text-sm text-destructive" role="alert">
             Escolha um período válido (a data inicial vem antes da final).
@@ -362,19 +388,37 @@ function Pagina() {
         />
       </FaixaIndicadores>
 
-      <div data-tour="plataforma-consultas-preco" className="grid gap-4 lg:grid-cols-2">
-        <CartaoPreco
-          preco={d?.oferta?.preco ?? null}
-          ativo={Boolean(d?.oferta?.ativo)}
-          podeEditarNoBanco={Boolean(d?.podeEditarPreco)}
-          carregando={carregando}
-        />
-        <CartaoCusto
-          custos={d?.custos ?? null}
-          podeVerCustos={Boolean(d?.podeVerCustos)}
-          carregando={carregando}
-        />
+      <div data-tour="plataforma-consultas-preco" className="space-y-3">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+          <Wallet className="size-4 shrink-0" aria-hidden />
+          <span>
+            Preço do crédito:{" "}
+            <b className="font-medium tabular-nums text-foreground">
+              {d?.precoCredito != null ? formatBRL(d.precoCredito) : "—"}
+            </b>
+            , o mesmo para os dois produtos (a carteira das licenças é uma só). Cada produto
+            define quantos créditos uma consulta custa.
+          </span>
+        </p>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {(["serasa-premium", "spc-brasil"] as const).map((id) => (
+            <CartaoProduto
+              key={id}
+              id={id}
+              configurado={d?.produtos?.find((p) => p.produto === id) ?? null}
+              precoCredito={d?.precoCredito ?? null}
+              custos={d?.custos ? d.custos.filter((c) => c.produto === id) : null}
+              periodo={i?.por_produto?.[id] ?? null}
+              filtrado={produto != null && produto !== id}
+              podeVerCustos={Boolean(d?.podeVerCustos)}
+              podeEditarNoBanco={Boolean(d?.podeEditarProdutos)}
+              carregando={carregando}
+            />
+          ))}
+        </div>
       </div>
+
+      <RecargaApifullSecao />
 
       <Pedidos
         pedidos={d?.pedidos ?? []}
@@ -454,107 +498,229 @@ function Operador({ simbolo }: { simbolo: ReactNode }) {
   );
 }
 
-function CartaoPreco({
-  preco,
-  ativo,
+type ContaProduto = NonNullable<IndicadoresConsultas["por_produto"]>[ProdutoConsulta];
+
+/**
+ * Um produto (Serasa Premium ou SPC Brasil): ligado/desligado, preço em créditos por consulta,
+ * custo do fornecedor com vigência e a conta do período. A regra mora no banco
+ * (`plataforma.configurar_produto_consulta`): créditos de 1 a 100 e acima do custo vigente.
+ */
+function CartaoProduto({
+  id,
+  configurado,
+  precoCredito,
+  custos,
+  periodo,
+  filtrado,
+  podeVerCustos,
   podeEditarNoBanco,
   carregando,
 }: {
-  preco: number | null;
-  ativo: boolean;
+  id: ProdutoConsulta;
+  configurado: ProdutoConfigurado | null;
+  precoCredito: number | null;
+  custos: CustoFornecedor[] | null;
+  periodo: ContaProduto | null;
+  /** O filtro de produto está em outro: a conta do período não vale para este. */
+  filtrado: boolean;
+  podeVerCustos: boolean;
   podeEditarNoBanco: boolean;
   carregando: boolean;
 }) {
+  const info = PRODUTO[id];
   const podeEditar = usePermissao("saas.consultas", "edit") && podeEditarNoBanco;
   const qc = useQueryClient();
-  const salvarFn = useServerFn(salvarPrecoConsulta);
-  const [valor, setValor] = useState("");
-  const [ligado, setLigado] = useState(ativo);
+  const salvarFn = useServerFn(salvarProdutoConsulta);
+  const [creditos, setCreditos] = useState("");
+  const [ligado, setLigado] = useState(false);
   useEffect(() => {
-    setValor(preco != null ? preco.toFixed(2).replace(".", ",") : "");
-    setLigado(ativo);
-  }, [preco, ativo]);
+    setCreditos(configurado ? String(configurado.creditos) : "");
+    setLigado(Boolean(configurado?.ativo));
+  }, [configurado]);
+
+  const n = Number(creditos);
+  const creditosValidos = Number.isInteger(n) && n >= 1 && n <= 100;
+  const custoVigente = custos?.[0]?.custo ?? null;
+  const precoAtual =
+    configurado && precoCredito != null ? configurado.creditos * precoCredito : null;
+  const margem = precoAtual != null && custoVigente != null ? precoAtual - custoVigente : null;
+  const mudou =
+    configurado != null && (n !== configurado.creditos || ligado !== configurado.ativo);
 
   const salvar = useMutation({
-    mutationFn: () => salvarFn({ data: { preco: valor, ativo: ligado } }),
+    mutationFn: () => salvarFn({ data: { produto: id, creditos: n, ativo: ligado } }),
     onSuccess: () => {
-      toast.success("Preço salvo. Vale para os próximos pedidos.");
+      toast.success(`${info.rotulo} salvo. Vale para as próximas consultas.`);
       qc.invalidateQueries({ queryKey: [QK] });
     },
-    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível salvar o preço.")),
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível salvar o produto.")),
   });
+
+  const situacao: { rotulo: string; tom: Tom } = !configurado
+    ? { rotulo: "Não configurado", tom: "neutro" }
+    : !configurado.ativo
+      ? { rotulo: "Desligado", tom: "neutro" }
+      : configurado.vendavel
+        ? { rotulo: "Ligado", tom: "sucesso" }
+        : { rotulo: "Ligado · sem custo", tom: "alerta" };
 
   return (
     <Secao
-      titulo="Preço de venda"
-      descricao="Vale para pedidos novos; quem já pediu mantém o preço gravado no pedido."
-      icone={<Tag />}
+      titulo={
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-9 w-14 shrink-0 place-items-center rounded-lg bg-white ring-1 ring-inset ring-border">
+            <img src={info.marca} alt={info.alt} className="max-h-6 max-w-12 object-contain" />
+          </span>
+          <span className="truncate">{info.rotulo}</span>
+        </span>
+      }
+      descricao="Pela APIFull, com o mesmo token. Quem já consultou mantém o que pagou."
       acoes={
         !carregando && (
-          <Selo tom={ativo ? "sucesso" : "neutro"} ponto={ativo}>
-            {ativo ? "Venda ligada" : "Venda desligada"}
+          <Selo tom={situacao.tom} ponto={situacao.tom === "sucesso"}>
+            {situacao.rotulo}
           </Selo>
         )
       }
     >
       {carregando ? (
-        <Skeleton className="h-24" />
-      ) : podeEditar ? (
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            salvar.mutate();
-          }}
-        >
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="consulta-preco">Preço por consulta (R$)</Label>
-              <Input
-                id="consulta-preco"
-                inputMode="decimal"
-                className="h-10 w-36 text-base tabular-nums sm:text-sm"
-                value={valor}
-                onChange={(e) => setValor(e.target.value)}
-              />
-            </div>
-            <label htmlFor="consulta-ativa" className="flex min-h-10 items-center gap-2 text-sm">
-              <Switch
-                id="consulta-ativa"
-                checked={ligado}
-                onCheckedChange={setLigado}
-                aria-label="Venda ligada para as licenças"
-              />
-              Venda ligada para as licenças
-            </label>
-          </div>
-          <Button
-            type="submit"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-            disabled={salvar.isPending || !valor.trim()}
-          >
-            {salvar.isPending ? "Salvando…" : "Salvar preço"}
-          </Button>
-        </form>
+        <Skeleton className="h-40" />
       ) : (
-        <p className="text-[clamp(1.2rem,1rem+0.8vw,1.6rem)] font-medium tracking-tight tabular-nums">
-          {preco != null ? formatBRL(preco) : "—"}
-          <span className="ml-1 text-sm font-normal text-muted-foreground">por consulta</span>
-        </p>
+        <div className="space-y-4">
+          <dl className="grid grid-cols-3 gap-2">
+            <ValorProduto rotulo="Preço">
+              {configurado ? (
+                <>
+                  {configurado.creditos} crédito{configurado.creditos === 1 ? "" : "s"}
+                  {precoAtual != null && (
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {formatBRL(precoAtual)}
+                    </span>
+                  )}
+                </>
+              ) : (
+                "—"
+              )}
+            </ValorProduto>
+            <ValorProduto rotulo="Custo">
+              {!podeVerCustos ? "Restrito" : custoVigente != null ? formatBRL(custoVigente) : "—"}
+              <span className="block text-xs font-normal text-muted-foreground">APIFull</span>
+            </ValorProduto>
+            <ValorProduto rotulo="Margem" destaque={podeVerCustos && margem != null && margem > 0}>
+              {podeVerCustos && margem != null ? formatBRL(margem) : "—"}
+              <span className="block text-xs font-normal text-muted-foreground">antes da taxa</span>
+            </ValorProduto>
+          </dl>
+
+          {configurado?.ativo && !configurado.vendavel && (
+            <p className="flex items-start gap-2 rounded-lg bg-warning/10 p-2.5 text-xs text-warning-foreground">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              Ligado, mas sem custo do fornecedor cadastrado: as licenças veem “indisponível” até
+              o custo ser registrado abaixo.
+            </p>
+          )}
+
+          <p className="text-xs tabular-nums text-muted-foreground">
+            {filtrado
+              ? "Período: o filtro está no outro produto."
+              : periodo
+                ? `Período: ${periodo.pedidos} pedido(s) · ${periodo.concluidas} entregue(s) · receita ${formatBRL(periodo.receita_bruta)} · margem ${formatBRL(periodo.margem_contribuicao)}`
+                : "Período: nenhum pedido."}
+          </p>
+
+          {podeEditar && configurado && (
+            <form
+              className="flex flex-wrap items-end gap-x-4 gap-y-3 border-t border-border/70 pt-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (creditosValidos) salvar.mutate();
+              }}
+            >
+              <div className="space-y-1.5">
+                <Label htmlFor={`consulta-creditos-${id}`}>Créditos por consulta</Label>
+                <Input
+                  id={`consulta-creditos-${id}`}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={100}
+                  step={1}
+                  className="h-10 w-28 text-base tabular-nums sm:text-sm"
+                  value={creditos}
+                  onChange={(e) => setCreditos(e.target.value)}
+                  aria-invalid={!creditosValidos}
+                />
+              </div>
+              <label
+                htmlFor={`consulta-ativa-${id}`}
+                className="flex min-h-10 items-center gap-2 text-sm"
+              >
+                <Switch
+                  id={`consulta-ativa-${id}`}
+                  checked={ligado}
+                  onCheckedChange={setLigado}
+                  aria-label={`${info.rotulo} ligado para as licenças`}
+                />
+                Ligado para as licenças
+              </label>
+              <Button
+                type="submit"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                disabled={salvar.isPending || !creditosValidos || !mudou}
+              >
+                {salvar.isPending ? "Salvando…" : "Salvar"}
+              </Button>
+              {!creditosValidos && (
+                <p className="w-full text-xs text-destructive" role="alert">
+                  Use de 1 a 100 créditos por consulta.
+                </p>
+              )}
+            </form>
+          )}
+
+          <ListaCustos id={id} custos={custos} podeVerCustos={podeVerCustos} />
+        </div>
       )}
     </Secao>
   );
 }
 
-function CartaoCusto({
+function ValorProduto({
+  rotulo,
+  children,
+  destaque,
+}: {
+  rotulo: string;
+  children: ReactNode;
+  destaque?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "min-w-0 rounded-lg border p-2.5",
+        destaque ? "border-success/30 bg-success/[0.06]" : "border-border/80 bg-background",
+      )}
+    >
+      <dt className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {rotulo}
+      </dt>
+      <dd className="mt-1 break-words text-sm font-medium tabular-nums text-foreground sm:text-base">
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+/** Custos do fornecedor de um produto: só a plataforma vê; cada mudança tem vigência própria. */
+function ListaCustos({
+  id,
   custos,
   podeVerCustos,
-  carregando,
 }: {
+  id: ProdutoConsulta;
   custos: CustoFornecedor[] | null;
   podeVerCustos: boolean;
-  carregando: boolean;
 }) {
   const podeEditar = usePermissao("saas.consultas", "edit");
   const qc = useQueryClient();
@@ -562,7 +728,7 @@ function CartaoCusto({
   const [valor, setValor] = useState("");
   const [obs, setObs] = useState("");
   const registrar = useMutation({
-    mutationFn: () => registrarFn({ data: { custo: valor, observacao: obs } }),
+    mutationFn: () => registrarFn({ data: { produto: id, custo: valor, observacao: obs } }),
     onSuccess: () => {
       toast.success("Custo registrado com vigência a partir de agora.");
       setValor("");
@@ -572,96 +738,105 @@ function CartaoCusto({
     onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível registrar o custo.")),
   });
 
+  if (!podeVerCustos || !custos) {
+    return (
+      <p className="flex items-center gap-2 border-t border-border/70 pt-3 text-xs text-muted-foreground">
+        <Landmark className="size-3.5" aria-hidden /> Custo do fornecedor restrito ao seu perfil.
+      </p>
+    );
+  }
   return (
-    <Secao
-      titulo="Custo da APIFull"
-      descricao="Só a plataforma vê este valor; licença nenhuma. Cada mudança tem vigência própria."
-      icone={<Landmark />}
-    >
-      {carregando ? (
-        <Skeleton className="h-24" />
-      ) : !podeVerCustos || !custos ? (
-        <EstadoVazio
-          className="py-6"
-          titulo="Custo restrito"
-          descricao="Seu perfil não vê custos de fornecedor."
-        />
+    <div className="space-y-3 border-t border-border/70 pt-4">
+      <p className="flex flex-wrap items-center gap-x-2 text-sm font-medium text-foreground">
+        <Landmark className="size-4 text-muted-foreground" aria-hidden /> Custo da APIFull
+        <span className="text-xs font-normal text-muted-foreground">só a plataforma vê</span>
+      </p>
+      {custos.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhum custo registrado.</p>
       ) : (
-        <div className="space-y-4">
-          {custos.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum custo registrado.</p>
-          ) : (
-            <ol className="space-y-2">
-              {custos.map((c, idx) => (
-                <li
-                  key={c.vigente_desde}
-                  className={cn(
-                    "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-sm",
-                    idx === 0 ? "bg-primary/[0.05] ring-1 ring-inset ring-primary/15" : "bg-secondary/50",
-                  )}
-                >
-                  <span className="font-medium tabular-nums text-foreground">
-                    {formatBRL(c.custo)}
-                    {idx === 0 && (
-                      <Selo tom="marca" className="ml-2 align-middle">
-                        Vigente
-                      </Selo>
-                    )}
-                  </span>
-                  <span className="text-xs text-muted-foreground">desde {dataHora(c.vigente_desde)}</span>
-                  {c.observacao && (
-                    <span className="w-full text-xs text-muted-foreground">{c.observacao}</span>
-                  )}
-                </li>
-              ))}
-            </ol>
-          )}
-          {podeEditar && (
-            <form
-              className="space-y-3 border-t border-border/70 pt-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                registrar.mutate();
-              }}
+        <ol className="space-y-2">
+          {custos.map((c, idx) => (
+            <li
+              key={c.vigente_desde}
+              className={cn(
+                "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-sm",
+                idx === 0 ? "bg-primary/[0.05] ring-1 ring-inset ring-primary/15" : "bg-secondary/50",
+              )}
             >
-              <div className="grid gap-3 sm:grid-cols-[9rem_1fr]">
-                <div className="space-y-1.5">
-                  <Label htmlFor="consulta-custo">Novo custo (R$)</Label>
-                  <Input
-                    id="consulta-custo"
-                    inputMode="decimal"
-                    className="h-10 text-base tabular-nums sm:text-sm"
-                    placeholder="6,72"
-                    value={valor}
-                    onChange={(e) => setValor(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="consulta-custo-origem">Origem do valor</Label>
-                  <Input
-                    id="consulta-custo-origem"
-                    maxLength={300}
-                    className="h-10 text-base sm:text-sm"
-                    placeholder="Ex.: tabela da APIFull de novembro"
-                    value={obs}
-                    onChange={(e) => setObs(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Button
-                type="submit"
-                size="sm"
-                variant="secondary"
-                className="min-h-11 sm:min-h-9"
-                disabled={registrar.isPending || !valor.trim()}
-              >
-                {registrar.isPending ? "Registrando…" : "Registrar custo"}
-              </Button>
-            </form>
-          )}
-        </div>
+              <span className="font-medium tabular-nums text-foreground">
+                {formatBRL(c.custo)}
+                {idx === 0 && (
+                  <Selo tom="marca" className="ml-2 align-middle">
+                    Vigente
+                  </Selo>
+                )}
+              </span>
+              <span className="text-xs text-muted-foreground">desde {dataHora(c.vigente_desde)}</span>
+              {c.observacao && (
+                <span className="w-full text-xs text-muted-foreground">{c.observacao}</span>
+              )}
+            </li>
+          ))}
+        </ol>
       )}
-    </Secao>
+      {podeEditar && (
+        <form
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            registrar.mutate();
+          }}
+        >
+          <div className="grid gap-3 sm:grid-cols-[9rem_1fr]">
+            <div className="space-y-1.5">
+              <Label htmlFor={`consulta-custo-${id}`}>Novo custo (R$)</Label>
+              <Input
+                id={`consulta-custo-${id}`}
+                inputMode="decimal"
+                className="h-10 text-base tabular-nums sm:text-sm"
+                placeholder="6,72"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`consulta-custo-origem-${id}`}>Origem do valor</Label>
+              <Input
+                id={`consulta-custo-origem-${id}`}
+                maxLength={300}
+                className="h-10 text-base sm:text-sm"
+                placeholder="Ex.: tabela da APIFull de novembro"
+                value={obs}
+                onChange={(e) => setObs(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button
+            type="submit"
+            size="sm"
+            variant="secondary"
+            className="min-h-11 sm:min-h-9"
+            disabled={registrar.isPending || !valor.trim()}
+          >
+            {registrar.isPending ? "Registrando…" : "Registrar custo"}
+          </Button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+/** Produto do pedido, com os créditos quando foi pago com a carteira. */
+function SeloProduto({ p }: { p: PedidoConsulta }) {
+  return (
+    <div className="min-w-0">
+      <Selo tom={p.produto === "spc-brasil" ? "info" : "marca"}>{rotuloProduto(p.produto)}</Selo>
+      {p.pago_com === "credito" && p.creditos != null && (
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {p.creditos} crédito{p.creditos === 1 ? "" : "s"}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -774,6 +949,7 @@ function Pedidos({
                 <tr className="border-b border-border/70 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-4 py-2.5 font-medium">Pedido</th>
                   <th className="px-3 py-2.5 font-medium">Licença</th>
+                  <th className="px-3 py-2.5 font-medium">Produto</th>
                   <th className="px-3 py-2.5 text-right font-medium">Preço</th>
                   <th className="px-3 py-2.5 text-right font-medium">Custo</th>
                   <th className="px-3 py-2.5 text-right font-medium">Taxa</th>
@@ -792,6 +968,9 @@ function Pedidos({
                       <p className="font-mono text-xs tabular-nums text-muted-foreground">
                         {p.documento_mascarado ?? "—"}
                       </p>
+                    </td>
+                    <td className="px-3 py-3">
+                      <SeloProduto p={p} />
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">{formatBRL(p.preco)}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
@@ -825,6 +1004,7 @@ function Pedidos({
                   <p className="shrink-0 text-sm font-medium tabular-nums">{formatBRL(p.preco)}</p>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
+                  <SeloProduto p={p} />
                   <SeloPagamento p={p} />
                   <SeloConsulta p={p} />
                 </div>

@@ -197,9 +197,9 @@ export const CATALOGO: Record<ProvedorConhecido, Provedor> = {
     baseExemplo: "https://api.boavistaservicos.com.br",
   },
   apifull: {
-    rotulo: "APIFull (Serasa Premium)",
+    rotulo: "APIFull (Serasa Premium e SPC Brasil)",
     descricao:
-      "Consulta Serasa Premium vendida por unidade às licenças. O saldo é pré-pago na conta da APIFull; sem o token, os pedidos pagos esperam na fila e um incidente é aberto.",
+      "Consultas Serasa Premium e SPC Brasil vendidas às licenças com créditos pré-pagos. O MESMO token serve aos dois produtos. O saldo é pré-pago na conta da APIFull; sem o token, os pedidos pagos esperam na fila e um incidente é aberto.",
     campos: [{ chave: "APIFULL_TOKEN", rotulo: "Token da conta (Bearer)", segredo: true }],
     baseExemplo: "https://api.apifull.com.br",
   },

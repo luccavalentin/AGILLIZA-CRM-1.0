@@ -1,37 +1,48 @@
 /**
- * Consultas pagas (Serasa Premium vendida por unidade às licenças do Agilliza Tech), no Agilliza.
+ * Consultas pagas (Serasa Premium e SPC Brasil vendidas às licenças do Agilliza Tech por créditos
+ * pré-pagos), no Agilliza.
  *
- * Mesmas leituras e escritas da Gestão (apps/web/src/app/[portal]/consultas-pagas):
- * `plataforma.indicadores_consultas_pagas`, `plataforma.pedidos_consulta`, a oferta em
- * `plataforma.configuracoes` ('consulta_paga.serasa_premium') e a tabela de custos
- * `plataforma.custos_fornecedor`. O banco decide quem pode o quê:
+ * Os dois produtos usam a MESMA carteira de créditos e o MESMO APIFULL_TOKEN (0550 do Corretor).
+ * Cada um tem o seu preço em créditos por consulta, o seu ligado/desligado e o seu custo de
+ * fornecedor com vigência. O banco decide quem pode o quê:
  *   · ver indicadores e pedidos → `cobranca.ler` (só leitura, 0303 do Corretor) ou
  *     `cobranca.plataforma` (ou `receita.ler`/`integracoes.ver`);
- *   · trocar o preço → `config.editar` (RLS de `plataforma.configuracoes`);
+ *   · ligar/desligar e mudar o preço em créditos → `plataforma.configurar_produto_consulta`
+ *     (config.editar + planos.editar; créditos de 1 a 100 e acima do custo vigente);
  *   · ver o custo do fornecedor → `cobranca.ler` ou `planos.editar`; registrar → `planos.editar`
  *     (RLS de `custos_fornecedor`). Pela ponte, planos.editar só vem com o "editar" de Consultas.
  *
+ * O preço do crédito em reais (o mesmo para os dois) não muda por aqui.
  * Margem de contribuição = receita − custo do fornecedor − taxa do pagamento. Não é lucro líquido.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
-export interface IndicadoresConsultas {
+export const PRODUTOS_CONSULTA = ["serasa-premium", "spc-brasil"] as const;
+export type ProdutoConsulta = (typeof PRODUTOS_CONSULTA)[number];
+
+/** Conta de um período: a mesma para o total e para cada produto. */
+export interface ContaConsultas {
   pedidos: number;
   pagos: number;
   concluidas: number;
   falhas: number;
   reconciliar: number;
-  pagas_sem_entrega: number;
   estornadas: number;
-  canceladas: number;
   receita_bruta: number;
   custo_fornecedor: number;
   taxas_pagamento: number;
+  margem_contribuicao: number;
+}
+
+export interface IndicadoresConsultas extends ContaConsultas {
+  pagas_sem_entrega: number;
+  canceladas: number;
   taxas_desconhecidas: number;
   estornos: number;
-  margem_contribuicao: number;
+  /** Mesma conta separada por produto (0550). Produto sem pedido no período não aparece. */
+  por_produto?: Partial<Record<ProdutoConsulta, ContaConsultas & { creditos: number }>>;
 }
 
 export interface PedidoConsulta {
@@ -50,12 +61,26 @@ export interface PedidoConsulta {
   execucoes: number;
   pago_em: string | null;
   concluida_em: string | null;
+  pago_com?: string | null;
+  creditos?: number | null;
 }
 
 export interface CustoFornecedor {
+  produto: ProdutoConsulta;
   custo: number;
   vigente_desde: string;
   observacao: string | null;
+}
+
+/** O que a plataforma configura em cada produto (sem o custo, que tem permissão própria). */
+export interface ProdutoConfigurado {
+  produto: ProdutoConsulta;
+  rotulo: string;
+  ativo: boolean;
+  /** Créditos que uma consulta debita. */
+  creditos: number;
+  /** Ligado e com custo vigente: as licenças conseguem consultar (falta só o token, se faltar). */
+  vendavel: boolean;
 }
 
 /** Situações aceitas no filtro (financeira ou da consulta), como na Gestão. */
@@ -85,9 +110,6 @@ function dinheiro(v: string): number {
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
 }
 
-const brl = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
-
 export const lerConsultasPagas = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.consultas", "view"])])
   .inputValidator((d: unknown) =>
@@ -96,6 +118,7 @@ export const lerConsultasPagas = createServerFn({ method: "GET" })
         de: DATA,
         ate: DATA,
         situacao: z.enum(SITUACOES_PEDIDO).nullable().optional(),
+        produto: z.enum(PRODUTOS_CONSULTA).nullable().optional(),
         pagina: z.number().int().min(1).max(10_000).default(1),
       })
       .refine((v) => v.de <= v.ate, { message: "A data inicial é depois da final." })
@@ -105,100 +128,89 @@ export const lerConsultasPagas = createServerFn({ method: "GET" })
     const { comPlataforma } = await import("./ponte.server");
     return comPlataforma(context.userId, async (tx) => {
       // O mesmo `pode(s, ...)` da Gestão, mas perguntado ao banco: é ele que aplica.
-      const pode = await tx.uma<{ preco: boolean; custos: boolean }>(
-        `select seguranca.auth_e_plataforma('config.editar') as preco,
+      const pode = await tx.uma<{ produtos: boolean; custos: boolean }>(
+        `select (seguranca.auth_e_plataforma('config.editar')
+                 and seguranca.auth_e_plataforma('planos.editar')) as produtos,
                 (seguranca.auth_e_plataforma('planos.editar')
                  or seguranca.auth_e_plataforma('cobranca.ler')) as custos`,
       );
       const ind = await tx.uma<{ r: IndicadoresConsultas }>(
-        "select plataforma.indicadores_consultas_pagas($1::date, $2::date) as r",
-        [data.de, data.ate],
+        "select plataforma.indicadores_consultas_pagas($1::date, $2::date, $3) as r",
+        [data.de, data.ate, data.produto ?? null],
       );
       const lista = await tx.uma<{ r: { pedidos: PedidoConsulta[]; total: number } }>(
-        "select plataforma.pedidos_consulta($1, $2) as r",
-        [data.situacao ?? null, data.pagina],
+        "select plataforma.pedidos_consulta($1, $2, $3) as r",
+        [data.situacao ?? null, data.pagina, data.produto ?? null],
       );
-      const oferta = await tx.uma<{ preco: number | null; ativo: boolean }>(
-        `select (valor ->> 'preco')::float8 as preco, coalesce((valor ->> 'ativo')::boolean, false) as ativo
+      const produtos = await tx.consultar<ProdutoConfigurado>(
+        "select produto, rotulo, ativo, creditos, vendavel from crm.produtos_consulta()",
+      );
+      // Preço do crédito da carteira (R$), o mesmo para Serasa e SPC.
+      const credito = await tx.uma<{ preco: number | null }>(
+        `select coalesce((valor ->> 'preco_credito')::float8, (valor ->> 'preco')::float8) as preco
            from plataforma.configuracoes where chave = 'consulta_paga.serasa_premium'`,
       );
       const custos = pode?.custos
         ? await tx.consultar<CustoFornecedor>(
-            `select custo::float8 as custo, vigente_desde::text as vigente_desde, observacao
-               from plataforma.custos_fornecedor
-              where produto = 'serasa-premium' order by vigente_desde desc limit 5`,
+            `select produto, custo::float8 as custo, vigente_desde::text as vigente_desde, observacao
+               from (select x.*, row_number() over (partition by x.produto order by x.vigente_desde desc) as n
+                       from plataforma.custos_fornecedor x
+                      where x.produto in ('serasa-premium', 'spc-brasil')) c
+              where n <= 5
+              order by produto, vigente_desde desc`,
           )
         : null;
       return {
         indicadores: ind?.r ?? null,
         pedidos: lista?.r?.pedidos ?? [],
         total: Number(lista?.r?.total ?? 0),
-        oferta: oferta ?? null,
+        produtos,
+        precoCredito: credito?.preco ?? null,
         custos,
-        podeEditarPreco: Boolean(pode?.preco),
+        podeEditarProdutos: Boolean(pode?.produtos),
         podeVerCustos: Boolean(pode?.custos),
       };
     });
   });
 
 /**
- * Novo preço de venda. Vale para os pedidos abertos daqui em diante; quem já pediu
- * mantém o preço gravado no próprio pedido. O antes/depois fica na auditoria de
- * `plataforma.configuracoes`.
+ * Liga/desliga um produto e define o preço dele em créditos por consulta. Vale para as
+ * consultas novas; quem já consultou mantém o que pagou. O banco recusa zero, negativo,
+ * mais de 100 e preço abaixo do custo vigente; o antes/depois fica na auditoria.
  */
-export const salvarPrecoConsulta = createServerFn({ method: "POST" })
+export const salvarProdutoConsulta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.consultas", "edit"])])
   .inputValidator((d: unknown) =>
-    z.object({ preco: z.string().trim().max(20), ativo: z.boolean() }).parse(d),
+    z
+      .object({
+        produto: z.enum(PRODUTOS_CONSULTA),
+        creditos: z
+          .number()
+          .int()
+          .min(1, "Mínimo de 1 crédito.")
+          .max(100, "Máximo de 100 créditos."),
+        ativo: z.boolean(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const preco = dinheiro(data.preco);
-    if (!Number.isFinite(preco) || preco <= 0 || preco > 1000) {
-      throw new Error("Informe um preço entre R$ 0,01 e R$ 1.000,00.");
-    }
     const { comPlataforma } = await import("./ponte.server");
-    const r = await comPlataforma(context.userId, async (tx) => {
-      const pode = await tx.uma<{ ok: boolean }>(
-        "select seguranca.auth_e_plataforma('config.editar') as ok",
+    return comPlataforma(context.userId, async (tx) => {
+      const r = await tx.uma<{ r: { produto: string; ativo: boolean; creditos: number } }>(
+        "select plataforma.configurar_produto_consulta($1, $2, $3) as r",
+        [data.produto, data.creditos, data.ativo],
       );
-      if (!pode?.ok) return { erro: "sem_permissao" as const };
-      const custo = await tx.uma<{ custo: number }>(
-        `select custo::float8 as custo from plataforma.custos_fornecedor
-          where produto = 'serasa-premium' and vigente_desde <= now()
-          order by vigente_desde desc limit 1`,
-      );
-      if (custo && preco <= Number(custo.custo)) {
-        return { erro: "abaixo_do_custo" as const, custo: Number(custo.custo) };
-      }
-      const salvo = await tx.uma<{ chave: string }>(
-        `update plataforma.configuracoes
-            set valor = valor || jsonb_build_object('preco', $1::numeric, 'ativo', $2::boolean),
-                atualizado_por = seguranca.auth_usuario_id(), atualizado_em = now()
-          where chave = 'consulta_paga.serasa_premium'
-          returning chave`,
-        [preco, data.ativo],
-      );
-      if (!salvo) return { erro: "sem_configuracao" as const };
-      return { erro: null };
+      return { ok: true as const, ...(r?.r ?? {}) };
     });
-    if (r.erro === "sem_permissao") {
-      throw new Error("Seu acesso à plataforma não pode alterar o preço da consulta.");
-    }
-    if (r.erro === "abaixo_do_custo") {
-      throw new Error(`O preço precisa ser maior que o custo vigente (${brl(r.custo ?? 0)}).`);
-    }
-    if (r.erro === "sem_configuracao") {
-      throw new Error("A venda de consulta paga ainda não foi configurada na plataforma.");
-    }
-    return { ok: true as const };
   });
 
-/** Novo custo do fornecedor, com vigência a partir de agora. Não altera pedidos já feitos. */
+/** Novo custo do fornecedor de um produto, com vigência a partir de agora. Não altera pedidos já feitos. */
 export const registrarCustoConsulta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.consultas", "edit"])])
   .inputValidator((d: unknown) =>
     z
       .object({
+        produto: z.enum(PRODUTOS_CONSULTA).default("serasa-premium"),
         custo: z.string().trim().max(20),
         observacao: z.string().trim().max(300).default(""),
       })
@@ -217,8 +229,8 @@ export const registrarCustoConsulta = createServerFn({ method: "POST" })
       if (!pode?.ok) return false;
       await tx.consultar(
         `insert into plataforma.custos_fornecedor (produto, custo, observacao, criado_por)
-         values ('serasa-premium', $1, nullif($2, ''), seguranca.auth_usuario_id())`,
-        [custo, data.observacao],
+         values ($1, $2, nullif($3, ''), seguranca.auth_usuario_id())`,
+        [data.produto, custo, data.observacao],
       );
       return true;
     });
@@ -226,4 +238,140 @@ export const registrarCustoConsulta = createServerFn({ method: "POST" })
       throw new Error("Seu acesso à plataforma não pode registrar o custo do fornecedor.");
     }
     return { ok: true as const };
+  });
+
+/* ------------------------------------------------------------------------------------------
+ * Recarga automática da APIFull (0552 do Corretor): a parte do custo das vendas repõe o saldo
+ * pré-pago da APIFull por Pix pago pela conta do Asaas; a margem fica no Asaas. Desligada por
+ * padrão. Só a plataforma lê (cobranca.ler) e edita (config.editar + planos.editar).
+ * ---------------------------------------------------------------------------------------- */
+
+export interface ConfigRecargaApifull {
+  ligado: boolean;
+  piso: number;
+  minimo: number;
+  teto_recarga: number;
+  teto_diario: number;
+  recebedor_documento: string | null;
+  recebedor_nome: string | null;
+  atualizado_em: string | null;
+}
+
+export interface RecargaApifull {
+  id: string;
+  estado:
+    | "pendente"
+    | "cobranca_criada"
+    | "pagando"
+    | "paga_no_asaas"
+    | "creditada"
+    | "falhou"
+    | "reconciliar";
+  valor: number;
+  valor_repor: number;
+  motivo: "repor" | "piso" | "repor_e_piso";
+  saldo_apifull_antes: number | null;
+  saldo_apifull_depois: number | null;
+  recebedor_nome: string | null;
+  asaas_status: string | null;
+  erro: string | null;
+  criado_em: string;
+  paga_em: string | null;
+  concluida_em: string | null;
+}
+
+export interface MargemProduto {
+  produto: ProdutoConsulta;
+  creditos: number | null;
+  preco: number | null;
+  custo: number | null;
+  taxa: number | null;
+  margem: number | null;
+}
+
+export interface PainelRecargaApifull {
+  config: ConfigRecargaApifull;
+  a_repor: number;
+  gasto_hoje: number;
+  saldo_apifull: { saldo: number | null; lido_em: string } | null;
+  taxa_por_credito: number | null;
+  margens: MargemProduto[];
+  recargas: RecargaApifull[];
+}
+
+export const lerRecargaApifull = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.consultas", "view"])])
+  .handler(async ({ context }) => {
+    const { comPlataforma } = await import("./ponte.server");
+    return comPlataforma(context.userId, async (tx) => {
+      const pode = await tx.uma<{ editar: boolean }>(
+        `select (seguranca.auth_e_plataforma('config.editar')
+                 and seguranca.auth_e_plataforma('planos.editar')) as editar`,
+      );
+      const r = await tx.uma<{ r: PainelRecargaApifull }>(
+        "select plataforma.recarga_apifull_painel() as r",
+      );
+      return { painel: r?.r ?? null, podeEditar: Boolean(pode?.editar) };
+    });
+  });
+
+export const salvarRecargaApifull = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.consultas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        ligado: z.boolean(),
+        piso: z.string().trim().max(20),
+        tetoRecarga: z.string().trim().max(20),
+        tetoDiario: z.string().trim().max(20),
+        recebedorDocumento: z.string().trim().max(30).default(""),
+        recebedorNome: z.string().trim().max(120).default(""),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const piso = dinheiro(data.piso);
+    const tetoRecarga = dinheiro(data.tetoRecarga);
+    const tetoDiario = dinheiro(data.tetoDiario);
+    if (![piso, tetoRecarga, tetoDiario].every(Number.isFinite)) {
+      throw new Error("Informe piso e tetos em reais.");
+    }
+    const { comPlataforma } = await import("./ponte.server");
+    return comPlataforma(context.userId, async (tx) => {
+      const r = await tx.uma<{ r: ConfigRecargaApifull }>(
+        "select plataforma.configurar_recarga_apifull($1, $2, $3, $4, $5, $6) as r",
+        [
+          data.ligado,
+          piso,
+          tetoRecarga,
+          tetoDiario,
+          data.recebedorDocumento || null,
+          data.recebedorNome || null,
+        ],
+      );
+      return { ok: true as const, config: r?.r ?? null };
+    });
+  });
+
+/** Resolve à mão uma recarga em conferência (depois de olhar o extrato da APIFull e o Asaas). */
+export const resolverRecargaApifull = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.consultas", "edit"])])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        desfecho: z.enum(["creditada", "falhou"]),
+        motivo: z.string().trim().min(10, "Descreva o que foi conferido.").max(300),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await import("./ponte.server");
+    return comPlataforma(context.userId, async (tx) => {
+      const r = await tx.uma<{ r: string }>(
+        "select plataforma.resolver_recarga_apifull($1, $2, $3) as r",
+        [data.id, data.desfecho, data.motivo],
+      );
+      return { ok: true as const, estado: r?.r ?? null };
+    });
   });
