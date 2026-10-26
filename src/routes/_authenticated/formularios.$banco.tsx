@@ -18,7 +18,16 @@ export const Route = createFileRoute("/_authenticated/formularios/$banco")({
       })
       .parse(search);
   },
-  head: () => ({ meta: [{ title: "Formulários — Agilliza" }] }),
+  head: ({ params }) => ({
+    meta: [
+      {
+        title:
+          params.banco === "checklist"
+            ? "Checklist de documentos por banco — Agilliza"
+            : "Formulários — Agilliza",
+      },
+    ],
+  }),
   component: Pagina,
 });
 

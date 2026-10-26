@@ -189,6 +189,51 @@ export async function comPlataforma<R>(
 }
 
 /**
+ * Transação da ponte SEM abrir o contexto de gestão da pessoa — só para funções da plataforma que
+ * recebem a pessoa do Agilliza por parâmetro e conferem a permissão dela no próprio banco (ex.:
+ * Consulta Ficha do correspondente, 0319: quem tem só Clientes não entra na gestão da plataforma,
+ * mas pode consultar). Concedidas apenas ao papel da ponte.
+ */
+export async function comPonteDireta<R>(
+  fn: (tx: TxPlataforma) => Promise<R>,
+  opcoes: { kek?: boolean } = {},
+): Promise<R> {
+  const banco = obterPool();
+  let c: pg.PoolClient;
+  try {
+    c = await banco.connect();
+  } catch (e) {
+    console.error("[ponte-plataforma] sem conexão", (e as Error)?.message);
+    throw new Error("A plataforma não respondeu agora. Tente de novo em instantes.");
+  }
+  const q = (sql: string, params?: unknown[]) =>
+    c.query(sql, params as unknown[]).catch(marcarDoBanco);
+  let descartar = false;
+  try {
+    await q("begin");
+    if (opcoes.kek) {
+      const kek = process.env.CORRETOR_KEK;
+      if (!kek) throw new Error("A chave de cifragem não está configurada neste servidor.");
+      await q("select set_config('app.kek', $1, true)", [kek]);
+    }
+    const tx: TxPlataforma = {
+      consultar: async (sql, params) => (await q(sql, params)).rows,
+      uma: async (sql, params) => (await q(sql, params)).rows[0] ?? null,
+    };
+    const r = await fn(tx);
+    await q("commit");
+    return r;
+  } catch (e) {
+    await c.query("rollback").catch(() => {
+      descartar = true;
+    });
+    throw traduzir(e);
+  } finally {
+    c.release(descartar);
+  }
+}
+
+/**
  * Credencial de um provedor guardada em "Chaves dos provedores" (cifrada no banco), lida
  * pelo SISTEMA — nunca em nome de uma pessoa: a função do banco recusa se houver contexto
  * de usuário. É assim que o Agilliza e o Corretor usam a MESMA chave da integração bancária,
@@ -273,5 +318,80 @@ export async function sondarPonte(): Promise<{
     return { configurada: true, ok: true, ms: Math.round(performance.now() - t0) };
   } catch {
     return { configurada: true, ok: false, ms: null };
+  }
+}
+
+/**
+ * Chat universal (t1, 26/10/2026): a mesma ponte, abrindo o contexto do CHAT
+ * (`chat.abrir_contexto_chat_agilliza`) em vez do de gestão. Serve a qualquer pessoa ativa
+ * do Agilliza — equipe, parceiro (por `authUid`) e cliente do portal (por `clienteId`, que
+ * vem SÓ da sessão do portal) — e não dá poder nenhum de plataforma: o banco confere a
+ * pessoa, mantém o espelho dela no Agilliza Tech e valem as regras do chat (migração 0351).
+ */
+export async function comChatAgilliza<R>(
+  pessoa: { authUid: string } | { clienteId: string },
+  fn: (tx: TxPlataforma) => Promise<R>,
+): Promise<R> {
+  const banco = obterPool();
+  let c: pg.PoolClient;
+  try {
+    c = await banco.connect();
+  } catch (e) {
+    console.error("[ponte-chat] sem conexão", (e as Error)?.message);
+    throw new Error("O chat não respondeu agora. Tente de novo em instantes.");
+  }
+  const q = (sql: string, params?: unknown[]) =>
+    c.query(sql, params as unknown[]).catch(marcarDoBanco);
+  let descartar = false;
+  try {
+    await q("begin");
+    let ip: string | null = null;
+    let ua: string | null = null;
+    try {
+      ip = ipDoCliente(getRequestHeader);
+      ua = getRequestHeader("user-agent") ?? null;
+    } catch {
+      /* fora de requisição (teste): sem IP */
+    }
+    if (ip && !isIP(ip)) ip = null;
+    await q("select chat.abrir_contexto_chat_agilliza($1, $2, $3, $4)", [
+      "authUid" in pessoa ? pessoa.authUid : null,
+      "clienteId" in pessoa ? pessoa.clienteId : null,
+      ip,
+      ua,
+    ]);
+    const tx: TxPlataforma = {
+      consultar: async (sql, params) => (await q(sql, params)).rows,
+      uma: async (sql, params) => (await q(sql, params)).rows[0] ?? null,
+    };
+    const r = await fn(tx);
+    await q("commit");
+    return r;
+  } catch (e) {
+    await c.query("rollback").catch(() => {
+      descartar = true;
+    });
+    throw traduzir(e);
+  } finally {
+    c.release(descartar);
+  }
+}
+
+/**
+ * Agilliza News para a equipe (frente a7): consulta pela ponte SEM contexto de operador.
+ * Só serve às funções do banco feitas para isso (`radar.feed_da_equipe`,
+ * `radar.registrar_eventos_equipe`), que recebem o id da pessoa e conferem no próprio banco
+ * que ela é da equipe ativa do Agilliza. Sem ponte configurada (desenvolvimento): null.
+ */
+export async function consultarNewsDaEquipe<T = Record<string, unknown>>(
+  sql: string,
+  params: unknown[],
+): Promise<T[] | null> {
+  if (!process.env.PONTE_DATABASE_URL) return null;
+  try {
+    const r = await obterPool().query(sql, params as unknown[]);
+    return r.rows as T[];
+  } catch (e) {
+    throw traduzir(e);
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { signalIncomingChat } from "@/components/shared/chat-alert-store";
+import { signalIncomingChat } from "@/components/chat/chat-alerta";
 
 /**
  * Sinaliza a chegada de novas mensagens RECEBIDAS (não enviadas por mim):

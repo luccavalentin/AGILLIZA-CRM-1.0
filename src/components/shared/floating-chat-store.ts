@@ -1,31 +1,22 @@
 import { useSyncExternalStore } from "react";
-import type { ChatClienteInfo } from "@/components/crm/chat-cliente-tab";
 
-export type FloatingChatState =
-  | {
-      kind: "cliente";
-      clienteId: string;
-      info?: ChatClienteInfo;
-      minimized?: boolean;
-    }
-  | {
-      kind: "demanda";
-      demandaId: string;
-      info?: {
-        numero?: string | null;
-        titulo?: string | null;
-        statusLabel?: string | null;
-        interlocutorNome?: string | null;
-        interlocutorFoto?: string | null;
-      };
-      minimized?: boolean;
-    }
-  | {
-      kind: "dm";
-      conversaId: string;
-      info?: { nome?: string | null };
-      minimized?: boolean;
-    };
+/**
+ * Janela flutuante da conversa de uma DEMANDA. As do chat com o cliente e das mensagens
+ * diretas saíram com o chat antigo (pedido de 26/10/2026, C14): o chat agora é o universal,
+ * com o próprio aviso flutuante.
+ */
+export type FloatingChatState = {
+  kind: "demanda";
+  demandaId: string;
+  info?: {
+    numero?: string | null;
+    titulo?: string | null;
+    statusLabel?: string | null;
+    interlocutorNome?: string | null;
+    interlocutorFoto?: string | null;
+  };
+  minimized?: boolean;
+};
 
 let estado: FloatingChatState[] = [];
 const ouvintes = new Set<() => void>();
@@ -34,32 +25,10 @@ function emitir() {
   for (const l of ouvintes) l();
 }
 
-/** Abre (ou troca) a conversa do cliente em janela flutuante global. */
-export function abrirChatFlutuante(
-  clienteId: string,
-  info?: ChatClienteInfo,
-  opts?: { minimized?: boolean },
-) {
-  const existingIndex = estado.findIndex((c) => c.kind === "cliente" && c.clienteId === clienteId);
-  const newItem: FloatingChatState = {
-    kind: "cliente",
-    clienteId,
-    info,
-    minimized: opts?.minimized,
-  };
-
-  if (existingIndex !== -1) {
-    estado[existingIndex] = newItem;
-  } else {
-    estado = [...estado, newItem];
-  }
-  emitir();
-}
-
 /** Abre (ou troca) a conversa de uma demanda em janela flutuante global. */
 export function abrirDemandaChatFlutuante(
   demandaId: string,
-  info?: Extract<FloatingChatState, { kind: "demanda" }>["info"],
+  info?: FloatingChatState["info"],
   opts?: { minimized?: boolean },
 ) {
   const existingIndex = estado.findIndex((c) => c.kind === "demanda" && c.demandaId === demandaId);
@@ -78,29 +47,10 @@ export function abrirDemandaChatFlutuante(
   emitir();
 }
 
-/** Abre (ou troca) uma mensagem direta (DM) em janela flutuante global. */
-export function abrirDmFlutuante(
-  conversaId: string,
-  info?: Extract<FloatingChatState, { kind: "dm" }>["info"],
-  opts?: { minimized?: boolean },
-) {
-  const existingIndex = estado.findIndex((c) => c.kind === "dm" && c.conversaId === conversaId);
-  const newItem: FloatingChatState = { kind: "dm", conversaId, info, minimized: opts?.minimized };
-
-  if (existingIndex !== -1) {
-    estado[existingIndex] = newItem;
-  } else {
-    estado = [...estado, newItem];
-  }
-  emitir();
-}
-
 /** Fecha a janela flutuante global. */
 export function fecharChatFlutuante(kind: string, id: string) {
   estado = estado.filter((c) => {
-    if (c.kind === "cliente" && kind === "cliente") return c.clienteId !== id;
-    if (c.kind === "demanda" && kind === "demanda") return c.demandaId !== id;
-    if (c.kind === "dm" && kind === "dm") return c.conversaId !== id;
+    if (kind === "demanda") return c.demandaId !== id;
     return true;
   });
   emitir();

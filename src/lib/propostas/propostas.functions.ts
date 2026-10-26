@@ -1762,7 +1762,7 @@ export const listarComentariosProposta = createServerFn({ method: "GET" })
     const [{ data: proposta, error }, { data: followups, error: erroFups }] = await Promise.all([
       supabase
         .from("propostas")
-        .select("id, numero_proposta, nome_cliente, status")
+        .select("id, numero_proposta, homefin_id_oportunidade, nome_cliente, status")
         .eq("id", data.proposta_id)
         .maybeSingle(),
       supabase
@@ -1785,6 +1785,7 @@ export const listarComentariosProposta = createServerFn({ method: "GET" })
     ]);
     return {
       numero_proposta: proposta.numero_proposta as string,
+      homefin_id_oportunidade: ((proposta as any).homefin_id_oportunidade ?? null) as string | null,
       nome_cliente: (proposta.nome_cliente ?? null) as string | null,
       followups: fups,
       recusados,
@@ -1883,6 +1884,10 @@ export const moverStatusProposta = createServerFn({ method: "POST" })
     if (!transicaoPermitida(de, para)) {
       throw new Error(`Transição inválida: ${de} → ${para}.`);
     }
+    // C12: o registro tem data do cartório — vai por "Marcar contrato registrado".
+    if (para === "registrado") {
+      throw new Error('Use "Marcar contrato registrado" e informe a data do registro.');
+    }
     // A etapa de formulários é do Itaú e do Santander; o Bradesco não a tem.
     if (!transicaoPermitidaNoBanco(de, para, prop.nome_banco)) {
       throw new Error(`O ${prop.nome_banco ?? "banco"} não tem a etapa de formulários.`);
@@ -1904,6 +1909,59 @@ export const moverStatusProposta = createServerFn({ method: "POST" })
       ator_id: userId,
     });
     return { ok: true };
+  });
+
+/**
+ * "Marcar contrato registrado" (C12, 26/10/2026): a etapa depois do contrato emitido, com a data
+ * do cartório. Só a partir de `contrato_emitido`; data não futura nem anterior à emissão
+ * (`erroDataRegistro`). A data vai para `contrato_registrado_em` (gatilho da previsão financeira)
+ * e o espelho do Agilliza Tech a leva ao assinante (0316).
+ */
+export const marcarContratoRegistrado = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        proposta_id: z.string().uuid(),
+        data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data do registro inválida."),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const { erroDataRegistro, instanteDoRegistro } = await import("./contrato-registrado");
+    const { data: prop } = await supabase
+      .from("propostas")
+      .select("id, status, contrato_emitido_em")
+      .eq("id", data.proposta_id)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (!prop) throw new Error("Proposta não encontrada.");
+    const de = prop.status as PropostaStatus;
+    if (!transicaoPermitida(de, "registrado")) {
+      throw new Error("Só uma proposta com contrato emitido pode ser marcada como registrada.");
+    }
+    const erro = erroDataRegistro(data.data, (prop as any).contrato_emitido_em ?? null);
+    if (erro) throw new Error(erro);
+    const quando = instanteDoRegistro(data.data);
+    // `eq("status", de)`: dois cliques (ou duas abas) não registram duas vezes.
+    const { data: linhas, error } = await supabase
+      .from("propostas")
+      .update({ status: "registrado", contrato_registrado_em: quando } as any)
+      .eq("id", data.proposta_id)
+      .eq("status", de as any)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if (!linhas?.length) throw new Error("A proposta mudou de etapa enquanto você marcava. Recarregue.");
+    await supabase.from("proposta_historico").insert({
+      proposta_id: data.proposta_id,
+      tipo_evento: "status",
+      descricao: `Contrato registrado em ${data.data.split("-").reverse().join("/")}.`,
+      status_anterior: de as any,
+      status_novo: "registrado" as any,
+      ator_id: userId,
+    });
+    return { ok: true, contrato_registrado_em: quando };
   });
 
 /** ===== Cancelamento ===== */
@@ -2252,11 +2310,11 @@ export const propostasParaEnvioDocumentos = createServerFn({ method: "POST" })
     let q = supabase
       .from("propostas")
       .select(
-        "id, numero_proposta, status, updated_at, proposta_bancos(nome_banco, status_banco, selecionado)",
+        "id, numero_proposta, homefin_id_oportunidade, status, updated_at, proposta_bancos(nome_banco, status_banco, selecionado)",
       )
       .is("deleted_at", null)
       .not("homefin_id_oportunidade", "is", null)
-      .not("status", "in", "(cancelada,credito_recusado,contrato_emitido,rascunho)")
+      .not("status", "in", "(cancelada,credito_recusado,contrato_emitido,registrado,rascunho)")
       .order("updated_at", { ascending: false });
     q =
       ids.length > 0
@@ -2273,6 +2331,7 @@ export const propostasParaEnvioDocumentos = createServerFn({ method: "POST" })
       return {
         id: String(p.id),
         numero_proposta: String(p.numero_proposta),
+        homefin_id_oportunidade: (p.homefin_id_oportunidade as string | null) ?? null,
         status: String(p.status),
         nome_banco: (banco?.nome_banco as string | null) ?? null,
       };

@@ -3,9 +3,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { BadgeCheck, CircleDollarSign, HandCoins, Percent, Search, Trash2, X } from "lucide-react";
-import { AdminHero } from "@/components/admin/admin-hero";
-import { Badge } from "@/components/ui/badge";
+import {
+  BadgeCheck,
+  CircleDollarSign,
+  HandCoins,
+  ListChecks,
+  Percent,
+  RotateCcw,
+  Stamp,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,208 +24,322 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Avatar,
+  BarraFiltros,
+  CabecalhoGestao,
+  CampoBusca,
+  ChipsFiltro,
+  EstadoErro,
+  EstadoVazio,
+  FaixaIndicadores,
+  Indicador,
+  ListaCarregando,
+  PaginaGestao,
+  Selo,
+  type Tom,
+} from "@/components/plataforma/kit";
+import { GavetaPercentuais, pct } from "@/components/plataforma/comissoes/percentuais";
+import { Dinheiro, TIPO_CONTA } from "@/components/plataforma/receita/comum";
+import { useValorAssentado } from "@/components/plataforma/paginacao";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL, formatData } from "@/lib/financeiro/format";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   atualizarComissaoAssinante,
-  contasParaComissao,
-  definirComissaoAssinante,
   listarComissoesAssinantes,
   type ComissaoAssinante,
   type StatusComissaoAssinante,
 } from "@/lib/plataforma/comissoes-assinantes.functions";
 
 export const Route = createFileRoute("/_authenticated/plataforma/comissoes")({
-  head: () => ({ meta: [{ title: "Comissões dos assinantes — Plataforma — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Comissões dos assinantes — Gestão de sistemas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("saas.comissoes"),
   component: Pagina,
 });
 
-const STATUS: Record<StatusComissaoAssinante, { rotulo: string; classe: string }> = {
-  a_pagar: { rotulo: "A pagar", classe: "border-warning/40 bg-warning/15 text-warning-foreground" },
-  paga: { rotulo: "Paga", classe: "border-success/20 bg-success/10 text-success-texto" },
-  cancelada: { rotulo: "Cancelada", classe: "" },
+const STATUS: Record<StatusComissaoAssinante, { rotulo: string; tom: Tom }> = {
+  a_pagar: { rotulo: "A pagar", tom: "alerta" },
+  paga: { rotulo: "Paga", tom: "sucesso" },
+  cancelada: { rotulo: "Cancelada", tom: "neutro" },
 };
-
-const TIPO: Record<string, string> = {
-  corretor: "Corretor",
-  imobiliaria: "Imobiliária",
-  parceiro: "Parceiro",
-};
-
-const pct = (n: number) => `${Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 4 })}%`;
+type FiltroStatus = StatusComissaoAssinante | "todas";
 
 /**
- * Comissão dos assinantes: quem envia proposta ao correspondente recebe um percentual do
- * valor financiado, liberado só quando o contrato é registrado em cartório.
+ * Comissão dos assinantes (C52, 26/10/2026 — só o desenho; a regra é do financeiro): quem
+ * envia a proposta recebe um percentual do valor financiado, liberado só quando o contrato
+ * é registrado em cartório.
  */
 function Pagina() {
   const listarFn = useServerFn(listarComissoesAssinantes);
   const podeEditar = usePermissao("saas.comissoes", "edit");
-  const [status, setStatus] = useState<StatusComissaoAssinante | "todas">("a_pagar");
+  const [status, setStatus] = useState<FiltroStatus>("a_pagar");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const [busca, setBusca] = useState("");
+  const termo = useValorAssentado(busca.trim());
   const [cancelando, setCancelando] = useState<ComissaoAssinante | null>(null);
+  const [percentuais, setPercentuais] = useState(false);
 
   const q = useQuery({
-    queryKey: ["plataforma-comissoes", status, de, ate, busca],
+    queryKey: ["plataforma-comissoes", status, de, ate, termo],
     queryFn: () =>
       listarFn({
         data: {
           status: status === "todas" ? null : status,
           de: de || null,
           ate: ate || null,
-          busca: busca || null,
+          busca: termo || null,
         },
       }),
     placeholderData: (a) => a,
   });
+  const itens = q.data?.itens ?? [];
+  const config = q.data?.config;
+  const filtrando = !!(de || ate || termo);
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <AdminHero
-        secao="Gestão de sistemas"
-        icon={<HandCoins className="h-5 w-5" />}
+    <PaginaGestao>
+      <CabecalhoGestao
+        icone={<HandCoins />}
         titulo="Comissões dos assinantes"
-        descricao="O corretor ou a imobiliária que envia a proposta recebe um percentual do valor financiado, liberado quando o contrato é registrado em cartório."
+        descricao="Quem envia a proposta recebe um percentual do valor financiado, liberado quando o contrato é registrado em cartório."
+        acoes={
+          podeEditar && config ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              onClick={() => setPercentuais(true)}
+            >
+              <Percent className="mr-1.5 size-4" /> Percentuais
+            </Button>
+          ) : undefined
+        }
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <FaixaIndicadores>
         <Indicador
           rotulo="A pagar"
-          valor={formatBRL(Number(q.data?.totais.a_pagar ?? 0))}
-          icone={<CircleDollarSign className="size-4" />}
+          icone={<CircleDollarSign />}
+          tom="alerta"
+          carregando={q.isLoading}
+          valor={<Dinheiro valor={Number(q.data?.totais.a_pagar ?? 0)} />}
+          onClick={() => setStatus("a_pagar")}
+          ativo={status === "a_pagar"}
         />
         <Indicador
           rotulo="Pagas"
-          valor={formatBRL(Number(q.data?.totais.pagas ?? 0))}
-          icone={<BadgeCheck className="size-4" />}
+          icone={<BadgeCheck />}
+          tom="sucesso"
+          carregando={q.isLoading}
+          valor={<Dinheiro valor={Number(q.data?.totais.pagas ?? 0)} />}
+          onClick={() => setStatus("paga")}
+          ativo={status === "paga"}
+        />
+        <Indicador
+          rotulo="Comissões no filtro"
+          icone={<ListChecks />}
+          carregando={q.isLoading}
+          valor={(q.data?.totais.quantidade ?? itens.length).toLocaleString("pt-BR")}
+          detalhe={filtrando ? "com os filtros abaixo" : "na situação escolhida"}
         />
         <Indicador
           rotulo="Percentual padrão"
-          valor={q.data ? pct(q.data.config.padrao) : "—"}
-          icone={<Percent className="size-4" />}
-          className="col-span-2 lg:col-span-1"
+          icone={<Percent />}
+          carregando={q.isLoading}
+          valor={config ? pct(config.padrao) : "—"}
+          detalhe={
+            config?.por_conta.length
+              ? `${config.por_conta.length} conta(s) com percentual próprio`
+              : "do valor financiado"
+          }
+          onClick={podeEditar && config ? () => setPercentuais(true) : undefined}
         />
+      </FaixaIndicadores>
+
+      <div className="flex items-start gap-2.5 rounded-[10px] border border-primary/15 bg-primary/[0.03] px-4 py-3 text-sm text-muted-foreground">
+        <Stamp className="mt-0.5 size-4 shrink-0 text-primary" />
+        <p>
+          A comissão <b className="font-medium text-foreground">nasce no dia do registro em cartório</b>.
+          Antes disso ela não existe: não aparece aqui nem soma em relatório.
+        </p>
       </div>
 
-      {podeEditar && q.data && (
-        <Configuracao padrao={q.data.config.padrao} porConta={q.data.config.por_conta} />
-      )}
-
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 lg:flex-row lg:items-end">
-        <div
-          className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1 lg:w-auto"
-          role="tablist"
-          aria-label="Situação"
-        >
-          {(["a_pagar", "paga", "cancelada", "todas"] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              role="tab"
-              aria-selected={status === s}
-              onClick={() => setStatus(s)}
-              className={
-                "min-h-9 rounded-md px-2 text-xs font-medium sm:text-sm " +
-                (status === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground")
-              }
-            >
-              {s === "todas" ? "Todas" : STATUS[s].rotulo}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-2 lg:w-80">
-          <div className="space-y-1">
-            <Label htmlFor="cm-de" className="text-xs">
-              Registradas de
+      <BarraFiltros>
+        <ChipsFiltro<FiltroStatus>
+          rotulo="Situação da comissão"
+          valor={status}
+          onChange={setStatus}
+          opcoes={[
+            { valor: "a_pagar", rotulo: "A pagar" },
+            { valor: "paga", rotulo: "Pagas" },
+            { valor: "cancelada", rotulo: "Canceladas" },
+            { valor: "todas", rotulo: "Todas" },
+          ]}
+        />
+        <div className="flex flex-wrap items-center gap-2 md:ml-auto">
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="cm-de" className="whitespace-nowrap text-xs text-muted-foreground">
+              Registro de
             </Label>
-            <Input id="cm-de" type="date" value={de} onChange={(e) => setDe(e.target.value)} />
+            <Input id="cm-de" type="date" className="h-10 w-[9.5rem]" value={de} onChange={(e) => setDe(e.target.value)} />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="cm-ate" className="text-xs">
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="cm-ate" className="text-xs text-muted-foreground">
               até
             </Label>
-            <Input id="cm-ate" type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
+            <Input id="cm-ate" type="date" className="h-10 w-[9.5rem]" value={ate} onChange={(e) => setAte(e.target.value)} />
           </div>
+          {(de || ate) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-11 sm:min-h-8"
+              onClick={() => {
+                setDe("");
+                setAte("");
+              }}
+            >
+              Limpar datas
+            </Button>
+          )}
         </div>
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            aria-label="Buscar conta ou proposta"
-            className="pl-9"
-            placeholder="Buscar conta ou proposta"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+        <CampoBusca
+          rotulo="Buscar conta ou proposta"
+          placeholder="Conta ou proposta"
+          valor={busca}
+          onChange={setBusca}
+          className="md:w-64 lg:w-72"
+        />
+      </BarraFiltros>
+
+      <div className="overflow-hidden rounded-[14px] border border-border/80 bg-card shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
+        {q.isLoading ? (
+          <ListaCarregando />
+        ) : q.isError ? (
+          <EstadoErro
+            mensagem={mensagemDeErro(q.error, "Não foi possível carregar as comissões.")}
+            onTentar={() => q.refetch()}
           />
-        </div>
+        ) : itens.length === 0 ? (
+          <EstadoVazio
+            icone={<HandCoins />}
+            titulo={filtrando ? "Nenhuma comissão com estes filtros" : "Nenhuma comissão nesta situação"}
+            descricao="A comissão nasce no dia em que o contrato é registrado em cartório."
+          />
+        ) : (
+          <>
+            <table className="hidden w-full text-sm xl:table">
+              <thead>
+                <tr className="border-b border-border/70 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-4 py-2.5 font-medium">Conta</th>
+                  <th className="px-3 py-2.5 font-medium">Proposta</th>
+                  <th className="px-3 py-2.5 font-medium">Registro</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Cálculo</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Comissão</th>
+                  <th className="px-3 py-2.5 font-medium">Situação</th>
+                  <th className="w-[1%] px-4 py-2.5">
+                    <span className="sr-only">Ações</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {itens.map((c) => (
+                  <tr key={c.id} className="align-top hover:bg-primary/[0.02]">
+                    <td className="max-w-[15rem] px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar nome={c.conta} tamanho="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-foreground">{c.conta}</p>
+                          <p className="text-xs text-muted-foreground">{TIPO_CONTA[c.tipo] ?? c.tipo}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="max-w-[14rem] px-3 py-3">
+                      <p className="truncate tabular-nums">{c.proposta}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {[c.numero_agilliza ? `Agilliza ${c.numero_agilliza}` : null, c.cliente]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
+                      </p>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {formatData(c.registrado_em)}
+                      {c.paga_em && (
+                        <p className="text-xs text-muted-foreground">paga {formatData(c.paga_em)}</p>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3 text-right text-xs text-muted-foreground">
+                      {pct(c.percentual)} de
+                      <span className="block text-sm text-foreground">{formatBRL(Number(c.base))}</span>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3 text-right text-base font-semibold">
+                      <Dinheiro valor={Number(c.valor)} />
+                    </td>
+                    <td className="px-3 py-3">
+                      <Selo tom={STATUS[c.status].tom}>{STATUS[c.status].rotulo}</Selo>
+                      {c.observacao && (
+                        <p className="mt-1 max-w-[12rem] truncate text-xs text-muted-foreground" title={c.observacao}>
+                          {c.observacao}
+                        </p>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      <AcoesComissao c={c} podeEditar={podeEditar} onCancelar={() => setCancelando(c)} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <ul className="divide-y divide-border/60 xl:hidden">
+              {itens.map((c) => (
+                <li key={c.id} className="space-y-2 p-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">{c.conta}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {TIPO_CONTA[c.tipo] ?? c.tipo} · proposta {c.proposta}
+                        {c.cliente ? ` · ${c.cliente}` : ""}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-base font-semibold">
+                      <Dinheiro valor={Number(c.valor)} />
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Registrada em {formatData(c.registrado_em)} · {pct(c.percentual)} de{" "}
+                    {formatBRL(Number(c.base))}
+                    {c.paga_em ? ` · paga em ${formatData(c.paga_em)}` : ""}
+                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Selo tom={STATUS[c.status].tom}>{STATUS[c.status].rotulo}</Selo>
+                    <AcoesComissao c={c} podeEditar={podeEditar} onCancelar={() => setCancelando(c)} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
 
-      {q.isLoading ? (
-        <div className="space-y-2">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-20 rounded-lg" />
-          ))}
-        </div>
-      ) : q.isError ? (
-        <p className="rounded-lg border bg-card p-4 text-sm text-destructive">
-          {mensagemDeErro(q.error, "Não foi possível carregar as comissões.")}
-        </p>
-      ) : (q.data?.itens.length ?? 0) === 0 ? (
-        <div className="rounded-lg border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-          Nenhuma comissão com estes filtros. A comissão nasce no dia em que o contrato é registrado
-          em cartório.
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {q.data!.itens.map((c) => (
-            <LinhaComissao
-              key={c.id}
-              c={c}
-              podeEditar={podeEditar}
-              onCancelar={() => setCancelando(c)}
-            />
-          ))}
-        </ul>
+      {cancelando && <CancelarComissao comissao={cancelando} aoFechar={() => setCancelando(null)} />}
+      {podeEditar && config && (
+        <GavetaPercentuais
+          aberta={percentuais}
+          aoFechar={() => setPercentuais(false)}
+          padrao={config.padrao}
+          porConta={config.por_conta}
+        />
       )}
-
-      {cancelando && (
-        <CancelarComissao comissao={cancelando} aoFechar={() => setCancelando(null)} />
-      )}
-    </div>
+    </PaginaGestao>
   );
 }
 
-function Indicador({
-  rotulo,
-  valor,
-  icone,
-  className = "",
-}: {
-  rotulo: string;
-  valor: string;
-  icone: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={`rounded-lg border border-border bg-card p-4 ${className}`}>
-      <div className="flex items-center justify-between text-muted-foreground">
-        <p className="truncate text-xs uppercase tracking-wide">{rotulo}</p>
-        {icone}
-      </div>
-      <p className="mt-1 break-words text-xl font-semibold tabular-nums text-foreground 2xl:text-2xl">
-        {valor}
-      </p>
-    </div>
-  );
-}
-
-function LinhaComissao({
+function AcoesComissao({
   c,
   podeEditar,
   onCancelar,
@@ -237,64 +358,39 @@ function LinhaComissao({
     },
     onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível atualizar.")),
   });
-
+  if (!podeEditar || c.status === "cancelada") return null;
   return (
-    <li className="rounded-lg border border-border bg-card p-3 sm:p-4">
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-foreground">{c.conta}</p>
-          <p className="text-xs text-muted-foreground">
-            {TIPO[c.tipo] ?? c.tipo} · proposta {c.proposta}
-            {c.numero_agilliza ? ` · Agilliza ${c.numero_agilliza}` : ""}
-            {c.cliente ? ` · ${c.cliente}` : ""}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Registrada em {formatData(c.registrado_em)} · {pct(c.percentual)} de{" "}
-            {formatBRL(Number(c.base))}
-            {c.paga_em ? ` · paga em ${formatData(c.paga_em)}` : ""}
-            {c.observacao ? ` · ${c.observacao}` : ""}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-base font-semibold tabular-nums">{formatBRL(Number(c.valor))}</span>
-          <Badge variant="outline" className={STATUS[c.status].classe}>
-            {STATUS[c.status].rotulo}
-          </Badge>
-        </div>
-      </div>
-      {podeEditar && c.status !== "cancelada" && (
-        <div className="mt-3 flex flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-end">
-          {c.status === "a_pagar" ? (
-            <Button
-              size="sm"
-              className="w-full sm:w-auto"
-              disabled={mudar.isPending}
-              onClick={() => mudar.mutate("paga")}
-            >
-              <BadgeCheck className="mr-1.5 size-4" /> Dar baixa (paga)
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full sm:w-auto"
-              disabled={mudar.isPending}
-              onClick={() => mudar.mutate("a_pagar")}
-            >
-              Voltar para a pagar
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="w-full text-destructive sm:w-auto"
-            onClick={onCancelar}
-          >
-            <X className="mr-1.5 size-4" /> Cancelar
-          </Button>
-        </div>
+    <div className="flex items-center justify-end gap-1">
+      {c.status === "a_pagar" ? (
+        <Button
+          size="sm"
+          className="min-h-11 sm:min-h-8"
+          disabled={mudar.isPending}
+          onClick={() => mudar.mutate("paga")}
+        >
+          <BadgeCheck className="mr-1.5 size-4" /> Dar baixa
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          variant="outline"
+          className="min-h-11 sm:min-h-8"
+          disabled={mudar.isPending}
+          onClick={() => mudar.mutate("a_pagar")}
+        >
+          <RotateCcw className="mr-1.5 size-4" /> Voltar para a pagar
+        </Button>
       )}
-    </li>
+      <Button
+        size="icon"
+        variant="ghost"
+        className="size-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:size-8"
+        aria-label={`Cancelar a comissão de ${c.conta}`}
+        onClick={onCancelar}
+      >
+        <X className="size-4" />
+      </Button>
+    </div>
   );
 }
 
@@ -329,7 +425,8 @@ function CancelarComissao({
         </DialogHeader>
         <Textarea
           rows={3}
-          placeholder="Motivo do cancelamento"
+          aria-label="Motivo do cancelamento"
+          placeholder="Motivo do cancelamento (mínimo 5 letras)"
           value={motivo}
           onChange={(e) => setMotivo(e.target.value)}
         />
@@ -348,162 +445,5 @@ function CancelarComissao({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Configuracao({
-  padrao,
-  porConta,
-}: {
-  padrao: number;
-  porConta: { tenant_id: string; conta: string; tipo: string; percentual: number }[];
-}) {
-  const qc = useQueryClient();
-  const definirFn = useServerFn(definirComissaoAssinante);
-  const contasFn = useServerFn(contasParaComissao);
-  const [valorPadrao, setValorPadrao] = useState(String(padrao).replace(".", ","));
-  const [busca, setBusca] = useState("");
-  const [conta, setConta] = useState<{ id: string; nome: string } | null>(null);
-  const [valorConta, setValorConta] = useState("");
-  const contas = useQuery({
-    queryKey: ["plataforma-comissoes-contas", busca],
-    queryFn: () => contasFn({ data: { busca } }),
-    enabled: busca.trim().length >= 2 && !conta,
-  });
-
-  const numero = (v: string) => Number(v.replace(",", "."));
-  const salvar = useMutation({
-    mutationFn: (p: { tenantId: string | null; percentual: number | null }) =>
-      definirFn({ data: p }),
-    onSuccess: () => {
-      toast.success(
-        "Percentual salvo. Vale para os próximos registros; as comissões já criadas não mudam.",
-      );
-      qc.invalidateQueries({ queryKey: ["plataforma-comissoes"] });
-      setConta(null);
-      setBusca("");
-      setValorConta("");
-    },
-    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível salvar.")),
-  });
-
-  return (
-    <section className="space-y-4 rounded-lg border border-border bg-card p-4">
-      <div>
-        <h2 className="text-sm font-semibold">Percentual da comissão</h2>
-        <p className="text-xs text-muted-foreground">
-          Mudar o percentual vale para os próximos registros. As comissões já criadas guardam o
-          percentual do dia.
-        </p>
-      </div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <div className="space-y-1">
-          <Label htmlFor="cm-padrao">Padrão para todas as contas (%)</Label>
-          <Input
-            id="cm-padrao"
-            inputMode="decimal"
-            className="sm:w-32"
-            value={valorPadrao}
-            onChange={(e) => setValorPadrao(e.target.value)}
-          />
-        </div>
-        <Button
-          className="w-full sm:w-auto"
-          disabled={salvar.isPending || !(numero(valorPadrao) >= 0 && numero(valorPadrao) <= 10)}
-          onClick={() => salvar.mutate({ tenantId: null, percentual: numero(valorPadrao) })}
-        >
-          Salvar padrão
-        </Button>
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-sm font-medium">Percentual próprio de uma conta</p>
-        {porConta.length > 0 && (
-          <ul className="divide-y rounded-lg border">
-            {porConta.map((c) => (
-              <li
-                key={c.tenant_id}
-                className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
-              >
-                <span className="min-w-0 truncate">
-                  {c.conta}{" "}
-                  <span className="text-muted-foreground">· {TIPO[c.tipo] ?? c.tipo}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-2">
-                  <b className="tabular-nums">{pct(c.percentual)}</b>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`Tirar o percentual próprio de ${c.conta}`}
-                    onClick={() => salvar.mutate({ tenantId: c.tenant_id, percentual: null })}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-          <div className="relative flex-1">
-            {conta ? (
-              <div className="flex min-h-10 items-center justify-between gap-2 rounded-md border px-3 text-sm">
-                <span className="truncate">{conta.nome}</span>
-                <button type="button" aria-label="Trocar conta" onClick={() => setConta(null)}>
-                  <X className="size-4" />
-                </button>
-              </div>
-            ) : (
-              <>
-                <Input
-                  aria-label="Buscar conta"
-                  placeholder="Buscar conta pelo nome"
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                />
-                {(contas.data?.length ?? 0) > 0 && (
-                  <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-md border bg-popover shadow-md">
-                    {contas.data!.map((c) => (
-                      <li key={c.id}>
-                        <button
-                          type="button"
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-                          onClick={() => setConta({ id: c.id, nome: c.nome })}
-                        >
-                          {c.nome}{" "}
-                          <span className="text-muted-foreground">· {TIPO[c.tipo] ?? c.tipo}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-          </div>
-          <Input
-            aria-label="Percentual da conta"
-            inputMode="decimal"
-            placeholder="%"
-            className="sm:w-24"
-            value={valorConta}
-            onChange={(e) => setValorConta(e.target.value)}
-          />
-          <Button
-            className="w-full sm:w-auto"
-            disabled={
-              !conta ||
-              salvar.isPending ||
-              !(numero(valorConta) >= 0 && numero(valorConta) <= 10) ||
-              valorConta === ""
-            }
-            onClick={() =>
-              conta && salvar.mutate({ tenantId: conta.id, percentual: numero(valorConta) })
-            }
-          >
-            Definir
-          </Button>
-        </div>
-      </div>
-    </section>
   );
 }

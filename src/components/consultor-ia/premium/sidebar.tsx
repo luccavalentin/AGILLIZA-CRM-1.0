@@ -135,7 +135,12 @@ export function ConsultorSidebar({
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
               <p className="text-[11px] text-destructive">{erro}</p>
               {onTentarDeNovo && (
-                <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={onTentarDeNovo}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[11px]"
+                  onClick={onTentarDeNovo}
+                >
                   Tentar de novo
                 </Button>
               )}

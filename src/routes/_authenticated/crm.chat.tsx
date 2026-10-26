@@ -1,91 +1,29 @@
-import { useEffect, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { PainelChatCliente } from "@/components/crm/chat-cliente/painel-cliente";
-import { MaisAcoesGestao } from "@/components/crm/chat/barra-gestao";
-import { useChatConversas } from "@/components/crm/chat/use-chat-conversas";
-import { ListaConversas } from "@/components/crm/chat/lista-conversas";
-import { PainelChat } from "@/components/crm/chat/painel-chat";
-import { usePermissao } from "@/hooks/use-permissao";
+import { ChatAgilliza } from "@/components/chat/chat-agilliza";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Chat do correspondente (pedido do dono, 26/10/2026 — C14): o fluxo antigo foi apagado e
+ * esta é a MESMA tela do chat dos assinantes do Agilliza Tech, no mesmo backend. Contatos:
+ * a equipe, os clientes, os parceiros/vinculados e os assinantes; fora da base, pelo @.
+ *
+ * `?c=` abre uma conversa; `?cliente=` (vindo da ficha do cliente) abre a conversa com ele;
+ * `?pedidos=1` abre os pedidos de mensagem.
+ */
 export const Route = createFileRoute("/_authenticated/crm/chat")({
-  head: () => ({ meta: [{ title: "Chat e Follow-up Cliente — Agilliza" }] }),
-  // Só crm.chat: a equivalência com crm.clientes abria o chat para quem só vê clientes.
+  head: () => ({ meta: [{ title: "Chat — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.chat"),
-  validateSearch: (s: Record<string, unknown>) => ({
-    c: typeof s.c === "string" ? s.c : undefined,
+  validateSearch: (s: Record<string, unknown>): { c?: string; cliente?: string; pedidos?: "1" } => ({
+    c: typeof s.c === "string" && UUID.test(s.c) ? s.c : undefined,
+    cliente: typeof s.cliente === "string" && UUID.test(s.cliente) ? s.cliente : undefined,
+    pedidos: s.pedidos === "1" || s.pedidos === 1 ? "1" : undefined,
   }),
   component: Pagina,
 });
 
 function Pagina() {
-  const hook = useChatConversas();
-  const {
-    conversas,
-    filtradas,
-    alvoAtual,
-    etiquetas,
-    etiquetasCliente,
-    selecionado,
-    abrirConversa,
-  } = hook;
-
-  const podeGerir = usePermissao("crm.chat", "gerir");
-  const podeMoverEtapa = usePermissao("crm.clientes", "edit");
-
-  const search = Route.useSearch();
-  const autoAbertoRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (search.c) {
-      // Abre uma única vez por cliente vindo da URL — reabrir a cada render
-      // brigava com o fechamento automático de conversas ocultas (laço).
-      if (autoAbertoRef.current !== search.c) {
-        autoAbertoRef.current = search.c;
-        const alvo = (conversas ?? []).find((c) => c.cliente_id === search.c);
-        abrirConversa(search.c, alvo?.atendente_id ?? null);
-      }
-      return;
-    }
-    // Auto-seleciona a primeira conversa apenas no desktop; no mobile o usuário
-    // escolhe na lista (padrão master-detail) para a tela não pular direto ao chat.
-    const ehDesktop =
-      typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
-    // Usa a lista JÁ filtrada (sem conversas ocultas/arquivadas). Selecionar
-    // uma conversa oculta fazia o painel fechar e reabrir em laço.
-    if (ehDesktop && !selecionado && filtradas.length > 0) {
-      abrirConversa(filtradas[0].cliente_id, filtradas[0].atendente_id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversas, filtradas, selecionado, search.c]);
-
-  const somenteLeituraAtual = !!alvoAtual && !alvoAtual.minha && !alvoAtual.participo;
-  const acoesGestao =
-    alvoAtual && !somenteLeituraAtual && (podeGerir || podeMoverEtapa) ? (
-      <MaisAcoesGestao
-        key={alvoAtual.cliente_id}
-        clienteId={alvoAtual.cliente_id}
-        nome={alvoAtual.nome}
-        documento={alvoAtual.documento}
-        contexto={alvoAtual.etapa_nome ?? null}
-        etiquetas={etiquetas ?? []}
-      />
-    ) : null;
-
-  return (
-    <div className="flex h-[calc(100dvh-3.5rem)] w-full min-w-0 flex-col overflow-hidden p-2 sm:p-3 md:p-4">
-      <div className="grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(0,1fr)] gap-3 overflow-hidden md:gap-4 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)_20rem]">
-        <ListaConversas hook={hook} />
-        <PainelChat hook={hook} acoes={acoesGestao} />
-        {alvoAtual && (
-          <div className="hidden min-h-0 xl:block">
-            <PainelChatCliente
-              key={alvoAtual.cliente_id}
-              clienteId={alvoAtual.cliente_id}
-              etiquetas={etiquetasCliente.get(alvoAtual.cliente_id) ?? []}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  const { c, cliente, pedidos } = Route.useSearch();
+  return <ChatAgilliza canal="equipe" inicial={c ?? null} clienteAgillizaId={cliente ?? null} pedidos={pedidos === "1"} />;
 }

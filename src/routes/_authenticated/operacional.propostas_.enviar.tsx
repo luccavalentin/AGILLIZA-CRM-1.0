@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarPropostas, criarProposta } from "@/lib/propostas/propostas.functions";
+import { textoIdH } from "@/lib/propostas/id-h";
 import { listarSimulacoes } from "@/lib/simulacao/simulacoes.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -269,12 +270,12 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
                             Nº banco {nb}
                           </div>
                           <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                            Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                            <span className="tabular-nums">{textoIdH(p)}</span>
                           </div>
                         </>
                       ) : (
                         <span className="font-semibold tabular-nums text-foreground">
-                          {p.numero_proposta}
+                          {textoIdH(p)}
                         </span>
                       );
                     })()}
@@ -356,12 +357,12 @@ function AbaPropostas({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
                               Nº banco {nb}
                             </div>
                             <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                              Interno <span className="tabular-nums">{p.numero_proposta}</span>
+                              <span className="tabular-nums">{textoIdH(p)}</span>
                             </div>
                           </>
                         ) : (
                           <div className="font-medium tabular-nums text-foreground transition-colors group-hover:text-[var(--banco)]">
-                            {p.numero_proposta}
+                            {textoIdH(p)}
                           </div>
                         );
                       })()}
@@ -420,7 +421,7 @@ function AbaSimulacoes({ escopo, busca, dataInicio, dataFim }: FiltroProps) {
     setConvertendo(chave);
     try {
       const res = await criar({ data: { simulacao_id: id, banco_id: bancoId } });
-      toast.success(`Proposta ${res.numero_proposta} criada.`);
+      toast.success("Proposta criada.");
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
       router.navigate({
         to: "/operacional/propostas/$id",

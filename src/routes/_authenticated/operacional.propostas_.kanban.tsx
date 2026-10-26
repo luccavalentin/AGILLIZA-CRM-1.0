@@ -1,40 +1,81 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
+import { textoIdH } from "@/lib/propostas/id-h";
+import { MarcarRegistroDialog } from "@/components/propostas/marcar-registro-dialog";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Search, RotateCcw, KanbanSquare, User, Clock, FolderOpen } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Building2,
+  Eye,
+  EyeOff,
+  FolderOpen,
+  KanbanSquare,
+  Loader2,
+  RotateCcw,
+  Search,
+  Timer,
+  Users,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { createDebouncedInvalidator } from "@/lib/realtime-debounce";
-import { BancoLogo } from "@/components/bancos/banco-logo";
-import { corDoBanco } from "@/lib/bancos/cores";
 import { assertModuloPermitido } from "@/lib/route-guards";
+import { usePermissao } from "@/hooks/use-permissao";
 import {
   listarPropostas,
   moverStatusProposta,
+  cancelarProposta,
   listarResponsaveisEquipe,
 } from "@/lib/propostas/propostas.functions";
 import { listarOpcoesVinculoPropostas } from "@/lib/crm/parceiros.functions";
-import { statusProposta } from "@/components/propostas/status";
 import {
-  transicaoPermitida,
-  transicaoPermitidaNoBanco,
-  STATUS_TERMINAIS,
-  type PropostaStatus,
-} from "@/lib/propostas/state-machine";
+  listarPrazosKanban,
+  listarPropostasAssinantesKanban,
+} from "@/lib/propostas/kanban.functions";
+import { listarContasDaFila, ROTULO_PROPOSTA_ASSINANTE } from "@/lib/plataforma/fila.functions";
+import { statusProposta } from "@/components/propostas/status";
+import { podeContinuarProposta, type PropostaStatus } from "@/lib/propostas/state-machine";
+import {
+  COLUNAS_KANBAN,
+  avaliarSoltura,
+  colunaDoStatus,
+  colunaDoStatusAssinante,
+  diasParado,
+  nivelSla,
+  podeArrastar,
+  proximasEtapasManuais,
+  resumoColuna,
+  type NivelSla,
+} from "@/lib/propostas/kanban-propostas";
+import { CartaoProposta, type AcaoRapida } from "@/components/propostas/kanban/cartao-proposta";
+import { PrazosKanbanDialog } from "@/components/propostas/kanban/prazos-dialog";
+import { BancoLogo } from "@/components/bancos/banco-logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
 
-/** Máximo de cards visíveis antes de "empilhar" o restante numa pasta com busca. */
-const MAX_VISIVEIS_POR_COLUNA = 3;
+/** Cartões visíveis por coluna antes de "ver todas" (o resto abre numa pasta com busca). */
+const MAX_VISIVEIS_POR_COLUNA = 5;
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas_/kanban")({
   head: () => ({ meta: [{ title: "Kanban de Propostas — Agilliza" }] }),
@@ -45,64 +86,6 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas_/kan
   component: Pagina,
 });
 
-/**
- * Colunas do kanban. Cada coluna tem um status "destino" (usado ao soltar um card)
- * e a lista de status que ela agrega (para exibir os cards).
- * "enviada_banco" e "em_analise_credito" compartilham a mesma etapa visual.
- */
-type ColunaKanban = {
-  destino: PropostaStatus;
-  agrega: PropostaStatus[];
-};
-
-const COLUNAS: ColunaKanban[] = [
-  { destino: "rascunho", agrega: ["rascunho"] },
-  { destino: "enviada_banco", agrega: ["enviada_banco", "em_analise_credito"] },
-  // A aprovação condicionada é crédito aprovado com exigências: sem ela aqui,
-  // essas propostas não apareciam em coluna nenhuma do kanban.
-  { destino: "credito_aprovado", agrega: ["credito_aprovado", "credito_condicionado"] },
-  { destino: "credito_recusado", agrega: ["credito_recusado"] },
-  // Itaú e Santander: formulários do banco antes dos documentos.
-  { destino: "formularios", agrega: ["formularios"] },
-  {
-    destino: "aguardando_documentos",
-    agrega: [
-      "aguardando_documentos",
-      "checklist_documentacao",
-      "cadastro_complementar",
-      "dossie_completo",
-      "envio_documentos_banco",
-    ],
-  },
-  {
-    destino: "engenharia_vistoria",
-    agrega: ["engenharia_vistoria", "vistoria_agendamento", "vistoria_concluida"],
-  },
-  { destino: "analise_juridica", agrega: ["analise_juridica", "emissao_contrato"] },
-  { destino: "contrato_emitido", agrega: ["contrato_emitido"] },
-  { destino: "registrado", agrega: ["registrado"] },
-  { destino: "erro_envio", agrega: ["erro_envio"] },
-  { destino: "cancelada", agrega: ["cancelada"] },
-];
-
-/** Status contados como "em andamento": do crédito aprovado à análise jurídica. */
-const STATUS_EM_ANDAMENTO = new Set<PropostaStatus>([
-  "credito_aprovado",
-  "credito_condicionado",
-  "formularios",
-  "aguardando_documentos",
-  "engenharia_vistoria",
-  "analise_juridica",
-  // Legados mapeados para essas etapas.
-  "checklist_documentacao",
-  "cadastro_complementar",
-  "dossie_completo",
-  "envio_documentos_banco",
-  "vistoria_agendamento",
-  "vistoria_concluida",
-  "emissao_contrato",
-]);
-
 const TONE_BAR: Record<string, string> = {
   success: "bg-success",
   info: "bg-primary",
@@ -111,34 +94,35 @@ const TONE_BAR: Record<string, string> = {
   muted: "bg-muted-foreground",
 };
 
-const TONE_BADGE: Record<string, string> = {
-  success: "bg-success/10 text-success",
-  info: "bg-primary/10 text-primary",
-  warning: "bg-warning/10 text-warning",
-  danger: "bg-destructive/10 text-destructive",
-  muted: "bg-muted text-muted-foreground",
-};
+const compacto = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
 
-/** Primeiro e último dia do mês atual como intervalo ISO (para o filtro padrão). */
-function intervaloMesAtual(): { inicio: string; fim: string } {
-  const agora = new Date();
-  const primeiro = new Date(agora.getFullYear(), agora.getMonth(), 1);
-  const ultimo = new Date(agora.getFullYear(), agora.getMonth() + 1, 0);
-  const iso = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  return { inicio: iso(primeiro), fim: iso(ultimo) };
+function rotuloColuna(destino: PropostaStatus): string {
+  return COLUNAS_KANBAN.find((c) => c.destino === destino)?.rotulo ?? statusProposta(destino).label;
 }
 
-/** Há quanto tempo a proposta está na etapa atual (ex.: "hoje", "3d", "2sem"). */
-function tempoNaEtapa(iso: string): string {
-  const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T"));
-  if (isNaN(d.getTime())) return "";
-  const dias = Math.floor((Date.now() - d.getTime()) / 86_400_000);
-  if (dias <= 0) return "hoje";
-  if (dias === 1) return "ontem";
-  if (dias < 14) return `${dias}d`;
-  if (dias < 60) return `${Math.floor(dias / 7)}sem`;
-  return `${Math.floor(dias / 30)}m`;
+/** Cartão já normalizado (Sua base ou assinante) para a coluna. */
+interface Cartao {
+  chave: string;
+  origem: "base" | "assinante";
+  coluna: PropostaStatus;
+  status: string;
+  cliente: string;
+  documento: string | null;
+  numero: string;
+  numeroSecundario: string | null;
+  selo: { rotulo: string; tom: string };
+  banco: string | null;
+  valor: number;
+  dias: number | null;
+  nivel: NivelSla;
+  responsavel: string | null;
+  conta: string | null;
+  bruto: any;
 }
 
 function Pagina() {
@@ -146,31 +130,45 @@ function Pagina() {
   const qc = useQueryClient();
   const { q: qInicial } = Route.useSearch();
   const moverFn = useServerFn(moverStatusProposta);
-  const [arrastando, setArrastando] = useState<{
-    id: string;
-    status: PropostaStatus;
-    banco: string | null;
-  } | null>(null);
+  const cancelarFn = useServerFn(cancelarProposta);
+  const podeVerAssinantes = usePermissao("saas.fila", "view");
+  const podeEditarPropostas = usePermissao("operacional.propostas", "edit");
 
-  const padrao = useMemo(() => intervaloMesAtual(), []);
+  const [base, setBase] = useState<"base" | "assinantes">("base");
   const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
-  const [q, setQ] = useState("");
-  const [busca, setBusca] = useState("");
+  const [q, setQ] = useState(qInicial ?? "");
+  const [busca, setBusca] = useState(qInicial?.trim() ?? "");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
-
   const [respFiltro, setRespFiltro] = useState("todos");
   const [corretorFiltro, setCorretorFiltro] = useState("todos");
   const [imobFiltro, setImobFiltro] = useState("todos");
   const [comercialFiltro, setComercialFiltro] = useState("todos");
+  const [bancoFiltro, setBancoFiltro] = useState("todos");
+  const [contaFiltro, setContaFiltro] = useState("todas");
+  const [ocultarVazias, setOcultarVazias] = useState(false);
+  const [arrastando, setArrastando] = useState<Cartao | null>(null);
+  const [sobre, setSobre] = useState<PropostaStatus | null>(null);
+  const [movendo, setMovendo] = useState<string | null>(null);
+  const [confirmar, setConfirmar] = useState<{ cartao: Cartao; destino: PropostaStatus; aviso: string } | null>(null);
+  const [cancelar, setCancelar] = useState<Cartao | null>(null);
+  const [motivo, setMotivo] = useState("");
+  const [prazosAbertos, setPrazosAbertos] = useState(false);
+  const [pastaAberta, setPastaAberta] = useState<PropostaStatus | null>(null);
+  const [buscaPasta, setBuscaPasta] = useState("");
 
-  // Busca ao vivo: filtra conforme o usuário digita (com debounce).
+  // Busca ao vivo (com espera curta).
   useEffect(() => {
     const t = setTimeout(() => setBusca(q.trim()), 300);
     return () => clearTimeout(t);
   }, [q]);
 
-  const { data } = useQuery({
+  // Sem permissão da fila, "Assinantes" nem aparece; se perder no meio, volta para a base.
+  useEffect(() => {
+    if (!podeVerAssinantes && base === "assinantes") setBase("base");
+  }, [podeVerAssinantes, base]);
+
+  const consultaBase = useQuery({
     queryKey: [
       "propostas",
       "kanban",
@@ -183,6 +181,7 @@ function Pagina() {
       imobFiltro,
       comercialFiltro,
     ],
+    enabled: base === "base",
     queryFn: () =>
       listarPropostas({
         data: {
@@ -200,9 +199,31 @@ function Pagina() {
       }),
   });
 
-  // Comunicação em tempo real com a proposta: qualquer mudança de status/etapa
-  // (via ficha, sincronização com o banco ou outro usuário) atualiza o Kanban.
-  // Coalescemos rajadas (trigger + update em cascata) numa única invalidação.
+  const consultaAssinantes = useQuery({
+    queryKey: ["propostas", "kanban-assinantes", contaFiltro, busca],
+    enabled: base === "assinantes" && podeVerAssinantes,
+    queryFn: () =>
+      listarPropostasAssinantesKanban({
+        data: { licenca: contaFiltro !== "todas" ? contaFiltro : null, termo: busca || null },
+      }),
+    refetchInterval: 60_000,
+  });
+
+  const { data: contas } = useQuery({
+    queryKey: ["fila-assinantes", "contas"],
+    enabled: base === "assinantes" && podeVerAssinantes,
+    queryFn: () => listarContasDaFila(),
+    staleTime: 10 * 60_000,
+  });
+
+  const { data: prazosDados } = useQuery({
+    queryKey: ["propostas", "kanban-prazos"],
+    queryFn: () => listarPrazosKanban(),
+    staleTime: 5 * 60_000,
+  });
+  const prazos = prazosDados?.prazos ?? {};
+
+  // Tempo real: qualquer mudança de situação (ficha, banco, outro usuário) atualiza o quadro.
   useEffect(() => {
     const { schedule, cancel } = createDebouncedInvalidator(() =>
       qc.invalidateQueries({ queryKey: ["propostas"] }),
@@ -217,63 +238,17 @@ function Pagina() {
     };
   }, [qc]);
 
-  function limparFiltros() {
-    setQ("");
-    setBusca("");
-    setDataInicio("");
-    setDataFim("");
-
-    setEscopo("minhas");
-    setRespFiltro("todos");
-    setCorretorFiltro("todos");
-    setImobFiltro("todos");
-    setComercialFiltro("todos");
-  }
-
-  async function soltar(coluna: PropostaStatus) {
-    if (!arrastando) return;
-    const { id, status, banco } = arrastando;
-    setArrastando(null);
-    if (status === coluna) return;
-    if (!transicaoPermitida(status, coluna)) {
-      toast.error(
-        `Transição inválida: ${statusProposta(status, banco).label} → ${statusProposta(coluna, banco).label}.`,
-      );
-      return;
-    }
-    // Formulários é etapa do Itaú e do Santander; o Bradesco não a tem.
-    if (!transicaoPermitidaNoBanco(status, coluna, banco)) {
-      toast.error(`O ${banco ?? "banco"} não tem a etapa de formulários.`);
-      return;
-    }
-    try {
-      await moverFn({ data: { proposta_id: id, novo_status: coluna } });
-      qc.invalidateQueries({ queryKey: ["propostas"] });
-    } catch (e) {
-      toast.error(mensagemDeErro(e, "Falha ao mover."));
-    }
-  }
-
-  // Memorizado: `?? []` criava uma lista nova a cada render e refazia o
-  // agrupamento por coluna e o KPI à toa.
-  const itens = useMemo(() => data?.itens ?? [], [data]);
-
-  // Todos os responsáveis internos do correspondente (mesmo os sem proposta ainda),
-  // combinados com quaisquer nomes que já apareçam nos cards por segurança.
   const { data: equipe } = useQuery({
     queryKey: ["propostas", "responsaveis-equipe"],
     queryFn: () => listarResponsaveisEquipe(),
     staleTime: 5 * 60_000,
   });
-
   const responsaveis = useMemo(() => {
     const s = new Set<string>();
     (equipe ?? []).forEach((m) => m.nome && s.add(m.nome));
     return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [equipe]);
 
-  // Opções vêm dos vínculos reais (cliente_parceiros + profiles). A fonte
-  // anterior, parceiro_detalhes, está vazia e deixava os filtros só com "Todos".
   const { data: opcoesVinculo } = useQuery({
     queryKey: ["opcoes-vinculo-propostas"],
     queryFn: () => listarOpcoesVinculoPropostas(),
@@ -283,239 +258,398 @@ function Pagina() {
   const imobiliarias = opcoesVinculo?.imobiliarias ?? [];
   const comerciais = opcoesVinculo?.comerciais ?? [];
 
-  const itensFiltrados = itens;
-
-  // Agrupa uma única vez por coluna, em vez de refiltrar a lista inteira
-  // (até 500 itens) para cada uma das colunas a cada render.
-  const cardsPorColuna = useMemo(() => {
-    const mapa = new Map<string, typeof itens>();
-    for (const col of COLUNAS) mapa.set(col.destino, []);
-    for (const item of itensFiltrados) {
-      for (const col of COLUNAS) {
-        if (col.agrega.includes(item.status as PropostaStatus)) {
-          mapa.get(col.destino)!.push(item);
-          break;
-        }
-      }
-    }
-    return mapa;
-  }, [itensFiltrados]);
-
-  // KPI "Propostas em andamento": do crédito aprovado até a análise jurídica.
-  // Fica aqui em cima — hook dentro de função no meio do JSX quebra a regra
-  // dos hooks do React.
-  const emAndamento = useMemo(() => {
-    const ativos = itens.filter((i) => STATUS_EM_ANDAMENTO.has(i.status as PropostaStatus));
-    return {
-      count: ativos.length,
-      total: ativos.reduce((acc, i) => acc + (Number(i.valor_financiamento) || 0), 0),
-    };
-  }, [itens]);
-
-  const [pastaAberta, setPastaAberta] = useState<PropostaStatus | null>(null);
-  const [buscaPasta, setBuscaPasta] = useState("");
-
-  function renderCard(c: any, coluna: ReturnType<typeof statusProposta>) {
-    const terminal = STATUS_TERMINAIS.includes(c.status as PropostaStatus);
-    // O selo do card é o status DELE, não o da coluna: numa coluna que agrupa
-    // mais de um status (aprovado + condicionado), a condicionada não pode
-    // aparecer como "Crédito aprovado". Com o banco, a etapa de formulários sai
-    // com o nome do portal.
-    const cfg = c.status ? statusProposta(String(c.status), c.nome_banco) : coluna;
-    return (
-      <div
-        key={c.id}
-        draggable={!terminal}
-        onDragStart={() =>
-          !terminal &&
-          setArrastando({
-            id: c.id,
-            status: c.status as PropostaStatus,
+  // Normaliza os dois mundos para o mesmo cartão.
+  const cartoes: Cartao[] = useMemo(() => {
+    const agora = new Date();
+    if (base === "base") {
+      return (consultaBase.data?.itens ?? []).flatMap((c: any): Cartao[] => {
+        const coluna = colunaDoStatus(c.status);
+        if (!coluna) return [];
+        const nb = numeroBancoParaExibir(c.numero_proposta_banco);
+        const dias = diasParado(c.status_atualizado_em ?? c.created_at, agora);
+        const cfg = statusProposta(String(c.status), c.nome_banco);
+        return [
+          {
+            chave: c.id,
+            origem: "base",
+            coluna,
+            status: c.status,
+            cliente: c.nome_cliente ?? "—",
+            documento: c.cpf_cnpj ? maskCpfCnpj(c.cpf_cnpj) : null,
+            numero: nb ? `Nº banco ${nb}` : textoIdH(c),
+            numeroSecundario: nb ? textoIdH(c) : null,
+            selo: { rotulo: cfg.label, tom: cfg.tone },
             banco: c.nome_banco ?? null,
-          })
+            valor: Number(c.valor_financiamento) || 0,
+            dias,
+            nivel: nivelSla(c.status, dias, prazos),
+            responsavel: c.nome_responsavel ?? null,
+            conta: null,
+            bruto: c,
+          },
+        ];
+      });
+    }
+    return (consultaAssinantes.data?.propostas ?? []).flatMap((p): Cartao[] => {
+      const coluna = colunaDoStatusAssinante(p.status);
+      if (!coluna) return [];
+      const dias = diasParado(p.assumida_em ?? p.criado_em, agora);
+      const encerrada = ["registrado", "cancelada", "recusada"].includes(p.status);
+      return [
+        {
+          chave: p.id,
+          origem: "assinante",
+          coluna,
+          status: p.status,
+          cliente: p.cliente,
+          documento: null,
+          numero: p.numero_proposta_banco ? `Nº banco ${p.numero_proposta_banco}` : p.codigo,
+          numeroSecundario: p.numero_agilliza ? `No Agilliza #${p.numero_agilliza}` : null,
+          selo: {
+            rotulo: ROTULO_PROPOSTA_ASSINANTE[p.status] ?? p.status,
+            tom: encerrada ? (p.status === "registrado" ? "success" : "danger") : p.pendente ? "warning" : "info",
+          },
+          banco: p.banco,
+          valor: Number(p.valor_financiamento) || 0,
+          dias,
+          // Na fila do assinante o prazo é o do banco do Agilliza Tech (sla_ate): atrasada = crítico.
+          nivel: encerrada ? "sem" : p.atrasada ? "critico" : p.pendente ? "alerta" : "ok",
+          responsavel: p.analista,
+          conta: p.conta,
+          bruto: p,
+        },
+      ];
+    });
+  }, [base, consultaBase.data, consultaAssinantes.data, prazos]);
+
+  const bancos = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of cartoes) if (c.banco) s.add(c.banco);
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [cartoes]);
+  const analistas = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of cartoes) if (c.origem === "assinante" && c.responsavel) s.add(c.responsavel);
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [cartoes]);
+
+  const filtrados = useMemo(
+    () =>
+      cartoes.filter((c) => {
+        if (bancoFiltro !== "todos" && (c.banco ?? "") !== bancoFiltro) return false;
+        if (base === "assinantes" && respFiltro !== "todos") {
+          if (respFiltro === "__sem__" ? c.responsavel : c.responsavel !== respFiltro) return false;
         }
-        onDragEnd={() => setArrastando(null)}
-        onClick={() => {
-          setPastaAberta(null);
-          router.navigate({ to: "/operacional/propostas/$id", params: { id: c.id } });
-        }}
-        style={{ "--banco": corDoBanco(c.nome_banco) } as React.CSSProperties}
-        className={cn(
-          "group relative min-w-0 shrink-0 overflow-hidden rounded-xl border border-border bg-card p-3 pl-3.5 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
-          "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--banco)] before:opacity-0 before:transition-opacity hover:before:opacity-100",
-          "hover:border-[color-mix(in_oklab,var(--banco)_45%,transparent)]",
-          terminal ? "cursor-pointer" : "cursor-grab active:cursor-grabbing",
-        )}
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold uppercase text-primary">
-            {(c.nome_cliente ?? "?").trim().charAt(0) || "?"}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold leading-tight text-foreground">
-              {c.nome_cliente ?? "—"}
-            </p>
-            {c.cpf_cnpj && (
-              <p className="truncate text-[11px] tabular-nums text-muted-foreground">
-                {maskCpfCnpj(c.cpf_cnpj)}
-              </p>
-            )}
-          </div>
-        </div>
+        return true;
+      }),
+    [cartoes, bancoFiltro, base, respFiltro],
+  );
 
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span
-            className={cn(
-              "inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
-              TONE_BADGE[cfg.tone],
-            )}
-          >
-            {cfg.label}
-          </span>
-          {!terminal && c.status_atualizado_em && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-              <Clock className="h-2.5 w-2.5" />
-              {tempoNaEtapa(c.status_atualizado_em)}
+  const porColuna = useMemo(() => {
+    const m = new Map<PropostaStatus, Cartao[]>();
+    for (const col of COLUNAS_KANBAN) m.set(col.destino, []);
+    for (const c of filtrados) m.get(c.coluna)?.push(c);
+    // Mais parada primeiro: é ela que precisa de atenção.
+    for (const lista of m.values()) lista.sort((a, b) => (b.dias ?? -1) - (a.dias ?? -1));
+    return m;
+  }, [filtrados]);
+
+  const totais = useMemo(() => {
+    const ativos = filtrados.filter(
+      (c) => !["registrado", "cancelada", "credito_recusado"].includes(c.coluna),
+    );
+    return {
+      ativos: resumoColuna(ativos.map((c) => ({ valor_financiamento: c.valor }))),
+      criticas: filtrados.filter((c) => c.nivel === "critico").length,
+      alertas: filtrados.filter((c) => c.nivel === "alerta").length,
+    };
+  }, [filtrados]);
+
+  const carregando = base === "base" ? consultaBase.isLoading : consultaAssinantes.isLoading;
+  const erro = base === "base" ? consultaBase.error : consultaAssinantes.error;
+  const totalServidor =
+    base === "base" ? (consultaBase.data?.total ?? 0) : (consultaAssinantes.data?.total ?? 0);
+
+  function limparFiltros() {
+    setQ("");
+    setBusca("");
+    setDataInicio("");
+    setDataFim("");
+    setEscopo("minhas");
+    setRespFiltro("todos");
+    setCorretorFiltro("todos");
+    setImobFiltro("todos");
+    setComercialFiltro("todos");
+    setBancoFiltro("todos");
+    setContaFiltro("todas");
+  }
+
+  function abrir(c: Cartao) {
+    setPastaAberta(null);
+    if (c.origem === "base") {
+      router.navigate({ to: "/operacional/propostas/$id", params: { id: c.chave } });
+    } else if (c.bruto?.proposta_agilliza_id) {
+      router.navigate({ to: "/operacional/propostas/$id", params: { id: c.bruto.proposta_agilliza_id } });
+    } else {
+      router.navigate({ to: "/operacional/propostas", search: { aba: "assinantes" } });
+    }
+  }
+
+  const [registrando, setRegistrando] = useState<any | null>(null);
+
+  async function mover(c: Cartao, destino: PropostaStatus) {
+    // C12: "Contrato registrado" pede a data do cartório na ação própria.
+    if (destino === "registrado") {
+      setRegistrando(c.bruto ?? { id: c.chave });
+      return;
+    }
+    setMovendo(c.chave);
+    try {
+      await moverFn({ data: { proposta_id: c.chave, novo_status: destino } });
+      toast.success(`Proposta em "${rotuloColuna(destino)}".`);
+      await qc.invalidateQueries({ queryKey: ["propostas"] });
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Falha ao mover."));
+    } finally {
+      setMovendo(null);
+    }
+  }
+
+  function tentarMover(c: Cartao, coluna: PropostaStatus) {
+    if (c.origem !== "base") return;
+    const r = avaliarSoltura(c.status, coluna, c.banco, (s) =>
+      COLUNAS_KANBAN.some((x) => x.destino === s) ? rotuloColuna(s as PropostaStatus) : statusProposta(s, c.banco).label,
+    );
+    if (r.tipo === "nada") return;
+    if (r.tipo === "recusada") return void toast.error(r.motivo);
+    if (r.tipo === "cancelar") {
+      setMotivo("");
+      setCancelar(c);
+      return;
+    }
+    if (r.tipo === "confirmar") return setConfirmar({ cartao: c, destino: r.destino, aviso: r.aviso });
+    void mover(c, r.destino);
+  }
+
+  function soltar(coluna: PropostaStatus) {
+    setSobre(null);
+    const c = arrastando;
+    setArrastando(null);
+    if (c) tentarMover(c, coluna);
+  }
+
+  async function confirmarCancelamento() {
+    if (!cancelar) return;
+    if (motivo.trim().length < 5) return void toast.error("Informe o motivo (pelo menos 5 letras).");
+    setMovendo(cancelar.chave);
+    try {
+      await cancelarFn({ data: { proposta_id: cancelar.chave, motivo: motivo.trim() } });
+      toast.success("Proposta cancelada.");
+      setCancelar(null);
+      await qc.invalidateQueries({ queryKey: ["propostas"] });
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível cancelar."));
+    } finally {
+      setMovendo(null);
+    }
+  }
+
+  function acoesDo(c: Cartao): AcaoRapida[] {
+    if (c.origem === "assinante") {
+      return [
+        c.bruto?.proposta_agilliza_id
+          ? { rotulo: "Abrir a proposta no Agilliza", icone: "abrir", onSelect: () => abrir(c) }
+          : { rotulo: "Abrir na fila dos assinantes", icone: "abrir", onSelect: () => abrir(c) },
+      ];
+    }
+    const acoes: AcaoRapida[] = [{ rotulo: "Abrir a proposta", icone: "abrir", onSelect: () => abrir(c) }];
+    if (podeContinuarProposta(c.status, c.bruto?.bancos)) {
+      acoes.push({
+        rotulo: "Continuar proposta",
+        icone: "continuar",
+        onSelect: () =>
+          router.navigate({ to: "/operacional/propostas/$id/continuar", params: { id: c.chave } }),
+      });
+    }
+    for (const d of proximasEtapasManuais(c.status, c.banco)) {
+      acoes.push({ rotulo: `Mover para ${rotuloColuna(d)}`, icone: "avancar", onSelect: () => tentarMover(c, d) });
+    }
+    if (avaliarSoltura(c.status, "cancelada", c.banco).tipo === "cancelar") {
+      acoes.push({
+        rotulo: "Cancelar proposta",
+        icone: "cancelar",
+        perigo: true,
+        onSelect: () => tentarMover(c, "cancelada"),
+      });
+    }
+    return acoes;
+  }
+
+  function renderCartao(c: Cartao) {
+    const arrastavel = c.origem === "base" && podeArrastar(c.status) && movendo !== c.chave;
+    return (
+      <CartaoProposta
+        key={`${c.origem}-${c.chave}`}
+        cliente={c.cliente}
+        documento={c.documento}
+        numero={c.numero}
+        numeroSecundario={c.numeroSecundario}
+        selo={c.selo}
+        banco={c.banco}
+        valor={c.valor}
+        dias={c.dias}
+        nivel={c.nivel}
+        responsavel={escopo === "todas" || c.origem === "assinante" ? c.responsavel : null}
+        conta={c.conta}
+        marcador={
+          movendo === c.chave ? (
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          ) : c.origem === "assinante" && c.bruto?.pendente ? (
+            <span className="rounded-full bg-warning/10 px-1.5 py-0.5 text-[10px] font-semibold text-warning">
+              sem analista
             </span>
-          )}
-        </div>
-
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-          {(() => {
-            const nb = numeroBancoParaExibir(c.numero_proposta_banco);
-            return nb ? (
-              <>
-                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[12px] font-bold tabular-nums text-primary">
-                  Nº banco {nb}
-                </span>
-                <span className="tabular-nums text-muted-foreground">
-                  Interno #{c.numero_proposta}
-                </span>
-              </>
-            ) : (
-              <span className="rounded bg-muted px-1.5 py-0.5 font-medium tabular-nums text-foreground">
-                #{c.numero_proposta}
-              </span>
-            );
-          })()}
-        </div>
-
-        {escopo === "todas" && c.nome_responsavel && (
-          <div className="mt-2 max-h-16 overflow-y-auto pr-1 custom-scrollbar">
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <User className="h-3 w-3 shrink-0" />
-              <span className="truncate">{c.nome_responsavel}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-border/60 pt-2.5">
-          <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-foreground">
-            <BancoLogo nome={c.nome_banco} size="xs" className="shrink-0" />
-            <span className="truncate">{c.nome_banco ?? "—"}</span>
-          </span>
-          <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
-            {formatBRL(c.valor_financiamento)}
-          </span>
-        </div>
-      </div>
+          ) : null
+        }
+        arrastavel={arrastavel}
+        arrastando={arrastando?.chave === c.chave}
+        onArrastar={() => setArrastando(c)}
+        onSoltarFim={() => {
+          setArrastando(null);
+          setSobre(null);
+        }}
+        onAbrir={() => abrir(c)}
+        acoes={acoesDo(c)}
+      />
     );
   }
 
-  const cardsDaPasta = useMemo(() => {
+  const cartoesDaPasta = useMemo(() => {
     if (!pastaAberta) return [];
-    const todos = cardsPorColuna.get(pastaAberta) ?? [];
-    const q = buscaPasta.trim().toLowerCase();
-    if (!q) return todos;
-    return todos.filter((c: any) =>
-      [
-        c.nome_cliente,
-        c.cpf_cnpj,
-        c.numero_proposta,
-        c.numero_proposta_banco,
-        c.nome_banco,
-        c.nome_responsavel,
-      ]
+    const todos = porColuna.get(pastaAberta) ?? [];
+    const t = buscaPasta.trim().toLowerCase();
+    if (!t) return todos;
+    return todos.filter((c) =>
+      [c.cliente, c.documento, c.numero, c.numeroSecundario, c.banco, c.responsavel, c.conta]
         .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
+        .some((v) => String(v).toLowerCase().includes(t)),
     );
-  }, [pastaAberta, cardsPorColuna, buscaPasta]);
+  }, [pastaAberta, porColuna, buscaPasta]);
+
+  const colunasVisiveis = COLUNAS_KANBAN.filter(
+    (col) => !ocultarVazias || (porColuna.get(col.destino)?.length ?? 0) > 0,
+  );
+
+  const seletor =
+    "h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-[11.5rem]";
 
   return (
-    <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 p-3 sm:space-y-6 sm:p-4 lg:p-6">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:items-center">
+    <div className="min-h-[calc(100dvh-var(--app-header,4rem))] space-y-4 p-3 sm:space-y-5 sm:p-4 lg:p-6">
+      {/* Cabeçalho */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm ring-1 ring-primary/20">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-border/70 bg-card text-primary shadow-[inset_0_1px_0_color-mix(in_oklab,#fff_60%,transparent),0_10px_24px_-14px_color-mix(in_oklab,var(--primary)_55%,transparent)]">
             <KanbanSquare className="h-5 w-5" />
           </span>
-          <div className="min-w-0 space-y-0.5">
+          <div className="min-w-0">
             <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               Kanban de Propostas
             </h1>
             <p className="truncate text-sm text-muted-foreground">
-              Arraste os cards entre as etapas permitidas.
+              Arraste entre as etapas permitidas. O mais parado aparece primeiro.
             </p>
           </div>
         </div>
-        <Button asChild variant="secondary" size="sm" className="h-11 rounded-xl">
-          <Link to="/operacional/propostas">
-            <ArrowLeft className="mr-1.5 h-4 w-4" /> Lista
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" className="h-10 rounded-xl" onClick={() => setPrazosAbertos(true)}>
+            <Timer className="mr-1.5 h-4 w-4" /> Prazos
+          </Button>
+          <Button asChild variant="secondary" size="sm" className="h-10 rounded-xl">
+            <Link to="/operacional/propostas">
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> Lista
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
-      <Card className="rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
-            <TabsList className="h-11 rounded-xl">
-              <TabsTrigger value="todas" className="rounded-lg">
-                Todas
-              </TabsTrigger>
-              <TabsTrigger value="minhas" className="rounded-lg">
-                Meu kanban
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="relative min-w-[220px] flex-1">
+      <Card className="space-y-3 rounded-2xl border-border/60 p-3 shadow-sm sm:p-4">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {podeVerAssinantes && (
+            <div
+              role="tablist"
+              aria-label="Base"
+              className="inline-flex h-10 items-center gap-0.5 rounded-xl border border-border/70 bg-muted/50 p-1"
+            >
+              {(
+                [
+                  { id: "base", rotulo: "Sua base", Icone: Users },
+                  { id: "assinantes", rotulo: "Assinantes", Icone: Building2 },
+                ] as const
+              ).map(({ id, rotulo, Icone }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={base === id}
+                  onClick={() => {
+                    setBase(id);
+                    setRespFiltro("todos");
+                    setBancoFiltro("todos");
+                  }}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition",
+                    base === id ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icone className="h-3.5 w-3.5" /> {rotulo}
+                </button>
+              ))}
+            </div>
+          )}
+          {base === "base" && (
+            <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
+              <TabsList className="h-10 rounded-xl">
+                <TabsTrigger value="minhas" className="rounded-lg">
+                  Meu kanban
+                </TabsTrigger>
+                <TabsTrigger value="todas" className="rounded-lg">
+                  Todas
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+          <div className="relative min-w-0 flex-[1_1_220px]">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="h-11 rounded-xl pl-9 shadow-sm"
-              placeholder="Cliente, CPF/CNPJ ou nº da proposta"
+              className="h-10 rounded-xl pl-9 shadow-sm"
+              placeholder={base === "base" ? "Cliente, CPF/CNPJ ou nº da proposta" : "Cliente ou nº da proposta"}
               value={q}
+              maxLength={120}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs text-muted-foreground">De</Label>
-            <Input
-              type="date"
-              value={dataInicio}
-              onChange={(e) => setDataInicio(e.target.value)}
-              className="h-11 w-[9.5rem] rounded-xl"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs text-muted-foreground">Até</Label>
-            <Input
-              type="date"
-              value={dataFim}
-              onChange={(e) => setDataFim(e.target.value)}
-              className="h-11 w-[9.5rem] rounded-xl"
-            />
-          </div>
-          {escopo === "todas" && (
-            <div className="flex flex-col gap-1">
-              <Label className="text-xs text-muted-foreground">Responsável</Label>
-              <select
-                value={respFiltro}
-                onChange={(e) => setRespFiltro(e.target.value)}
-                className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+        </div>
+        <div className="flex flex-wrap items-end gap-2.5">
+          {base === "assinantes" && (
+            <div className="flex w-full flex-col gap-1 sm:w-auto">
+              <Label className="text-xs text-muted-foreground">Assinante</Label>
+              <select value={contaFiltro} onChange={(e) => setContaFiltro(e.target.value)} className={seletor}>
+                <option value="todas">Todos os assinantes</option>
+                {(contas ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {(base === "assinantes" || escopo === "todas") && (
+            <div className="flex w-[calc(50%-0.35rem)] flex-col gap-1 sm:w-auto">
+              <Label className="text-xs text-muted-foreground">{base === "base" ? "Responsável" : "Analista"}</Label>
+              <select value={respFiltro} onChange={(e) => setRespFiltro(e.target.value)} className={seletor}>
                 <option value="todos">Todos</option>
-                {responsaveis.map((r) => (
+                {base === "assinantes" && <option value="__sem__">Sem analista</option>}
+                {(base === "base" ? responsaveis : analistas).map((r) => (
                   <option key={r} value={r}>
                     {r}
                   </option>
@@ -523,195 +657,317 @@ function Pagina() {
               </select>
             </div>
           )}
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs text-muted-foreground">Corretor</Label>
-            <select
-              value={corretorFiltro}
-              onChange={(e) => setCorretorFiltro(e.target.value)}
-              className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
+          <div className="flex w-[calc(50%-0.35rem)] flex-col gap-1 sm:w-auto">
+            <Label className="text-xs text-muted-foreground">Banco</Label>
+            <select value={bancoFiltro} onChange={(e) => setBancoFiltro(e.target.value)} className={seletor}>
               <option value="todos">Todos</option>
-              {corretores.map((r) => (
-                <option key={r} value={r}>
-                  {r}
+              {bancos.map((b) => (
+                <option key={b} value={b}>
+                  {b}
                 </option>
               ))}
             </select>
           </div>
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs text-muted-foreground">Comercial</Label>
-            <select
-              value={comercialFiltro}
-              onChange={(e) => setComercialFiltro(e.target.value)}
-              className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option value="todos">Todos</option>
-              {comerciais.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+          {base === "base" && (
+            <>
+              <div className="flex w-[calc(50%-0.35rem)] flex-col gap-1 sm:w-auto">
+                <Label className="text-xs text-muted-foreground">Corretor</Label>
+                <select value={corretorFiltro} onChange={(e) => setCorretorFiltro(e.target.value)} className={seletor}>
+                  <option value="todos">Todos</option>
+                  {corretores.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex w-[calc(50%-0.35rem)] flex-col gap-1 sm:w-auto">
+                <Label className="text-xs text-muted-foreground">Comercial</Label>
+                <select value={comercialFiltro} onChange={(e) => setComercialFiltro(e.target.value)} className={seletor}>
+                  <option value="todos">Todos</option>
+                  {comerciais.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex w-[calc(50%-0.35rem)] flex-col gap-1 sm:w-auto">
+                <Label className="text-xs text-muted-foreground">Imobiliária</Label>
+                <select value={imobFiltro} onChange={(e) => setImobFiltro(e.target.value)} className={seletor}>
+                  <option value="todos">Todos</option>
+                  {imobiliarias.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex w-[calc(50%-0.35rem)] flex-col gap-1 sm:w-auto">
+                <Label className="text-xs text-muted-foreground">De</Label>
+                <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="h-10 rounded-xl sm:w-[9.5rem]" />
+              </div>
+              <div className="flex w-[calc(50%-0.35rem)] flex-col gap-1 sm:w-auto">
+                <Label className="text-xs text-muted-foreground">Até</Label>
+                <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="h-10 rounded-xl sm:w-[9.5rem]" />
+              </div>
+            </>
+          )}
+          <div className="flex flex-wrap gap-1.5 sm:ml-auto">
+            <Button variant="ghost" className="h-10 rounded-xl" onClick={() => setOcultarVazias((v) => !v)}>
+              {ocultarVazias ? <Eye className="mr-1 h-4 w-4" /> : <EyeOff className="mr-1 h-4 w-4" />}
+              {ocultarVazias ? "Mostrar vazias" : "Ocultar vazias"}
+            </Button>
+            <Button variant="ghost" className="h-10 rounded-xl" onClick={limparFiltros}>
+              <RotateCcw className="mr-1 h-4 w-4" /> Limpar
+            </Button>
           </div>
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs text-muted-foreground">Imobiliária</Label>
-            <select
-              value={imobFiltro}
-              onChange={(e) => setImobFiltro(e.target.value)}
-              className="h-11 w-[12rem] rounded-xl border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option value="todos">Todos</option>
-              {imobiliarias.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Button variant="ghost" className="h-11 rounded-xl" onClick={limparFiltros}>
-            <RotateCcw className="mr-1 h-4 w-4" /> Limpar
-          </Button>
         </div>
       </Card>
 
-      {/* KPI - Propostas em Andamento */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="rounded-2xl border-border/60 p-4 bg-gradient-to-br from-primary/5 to-transparent shadow-sm flex items-center gap-4">
-          <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-            <Clock className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Propostas em Andamento
-            </p>
-            <div className="flex items-baseline gap-2">
-              <h3 className="text-2xl font-bold text-foreground">{emAndamento.count}</h3>
-              <span className="text-sm font-medium text-muted-foreground">
-                {formatBRL(emAndamento.total)}
-              </span>
-            </div>
-          </div>
-        </Card>
+      {/* Indicadores */}
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        <div className="op-stat p-3.5">
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Em andamento</p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">{totais.ativos.quantidade}</p>
+        </div>
+        <div className="op-stat p-3.5">
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Volume em andamento</p>
+          <p className="mt-2 truncate text-xl font-semibold tabular-nums text-foreground">{formatBRL(totais.ativos.soma)}</p>
+        </div>
+        <div className={cn("op-stat p-3.5", totais.alertas > 0 && "op-stat--alerta")} style={{ ["--op-accent" as string]: "var(--warning)" }}>
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Perto do prazo</p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums text-warning">{totais.alertas}</p>
+        </div>
+        <div className={cn("op-stat p-3.5", totais.criticas > 0 && "op-stat--alerta")} style={{ ["--op-accent" as string]: "var(--destructive)" }}>
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Paradas além do prazo</p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums text-destructive">{totais.criticas}</p>
+        </div>
       </div>
 
-      {/* O quadro carrega as 500 mais recentes; acima disso, avisa em vez de sumir calado. */}
-      {(data?.total ?? 0) > itens.length && (
+      {totalServidor > cartoes.length && !carregando && (
         <p className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Mostrando as {itens.length} propostas mais recentes de {data?.total}. Use os filtros para
-          ver as demais.
+          Mostrando as {cartoes.length} propostas mais recentes de {totalServidor}. Use os filtros para ver as demais.
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {COLUNAS.map((col, idx) => {
-          const cfg = statusProposta(col.destino);
-          const cards = cardsPorColuna.get(col.destino) ?? [];
-          const visiveis = cards.slice(0, MAX_VISIVEIS_POR_COLUNA);
-          const excedente = cards.length - visiveis.length;
-          return (
-            <div
-              key={col.destino}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => soltar(col.destino)}
-              className="flex min-h-[22rem] max-h-[40rem] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card/95 shadow-sm backdrop-blur-sm transition-[box-shadow,border-color] duration-200 hover:shadow-md"
-            >
-              <div className="shrink-0 overflow-hidden border-b border-border/50">
-                <div className={cn("h-[3px]", TONE_BAR[cfg.tone])} />
-                <div className="flex items-center justify-between gap-2 bg-gradient-to-br from-primary/[0.04] via-card to-card px-3.5 py-3">
-                  <span className="min-w-0 text-xs font-semibold uppercase leading-snug text-foreground">
-                    {cfg.label}
-                  </span>
-                  <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary ring-1 ring-inset ring-primary/20">
-                    {cards.length}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-1 flex-col gap-2 overflow-hidden p-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBuscaPasta("");
-                    setPastaAberta(col.destino);
-                  }}
-                  className="group/vm flex shrink-0 items-center justify-between gap-2 rounded-xl border border-dashed border-border bg-background/60 px-3 py-2.5 text-xs font-medium text-muted-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
-                >
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="h-4 w-4 text-primary" />
-                    {excedente > 0
-                      ? `Ver mais ${excedente} ${excedente === 1 ? "proposta" : "propostas"}`
-                      : cards.length > 0
-                        ? "Abrir e pesquisar"
-                        : "Pesquisar nesta etapa"}
-                  </div>
-                  <Search className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100" />
-                </button>
-
-                <div className="flex-1 overflow-y-auto pr-0.5 custom-scrollbar">
-                  <div className="flex flex-col gap-2">
-                    {visiveis.map((c) => renderCard(c, cfg))}
-                    {cards.length === 0 && (
-                      <p className="py-8 text-center text-xs text-muted-foreground">
-                        Nenhuma proposta nesta etapa
+      {erro ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center">
+          <AlertTriangle className="h-7 w-7 text-destructive" />
+          <p className="text-sm font-medium text-foreground">Não foi possível carregar o quadro</p>
+          <p className="max-w-sm text-xs text-muted-foreground">{mensagemDeErro(erro, "Tente de novo em instantes.")}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => (base === "base" ? consultaBase.refetch() : consultaAssinantes.refetch())}
+          >
+            Tentar de novo
+          </Button>
+        </div>
+      ) : carregando ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-72 animate-pulse rounded-2xl bg-muted/60" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {colunasVisiveis.map((col) => {
+            const cfg = statusProposta(col.destino);
+            const lista = porColuna.get(col.destino) ?? [];
+            const visiveis = lista.slice(0, MAX_VISIVEIS_POR_COLUNA);
+            const excedente = lista.length - visiveis.length;
+            const resumo = resumoColuna(lista.map((c) => ({ valor_financiamento: c.valor })));
+            const criticas = lista.filter((c) => c.nivel === "critico").length;
+            const destinoValido =
+              arrastando !== null &&
+              (() => {
+                const r = avaliarSoltura(arrastando.status, col.destino, arrastando.banco);
+                return r.tipo !== "recusada" && r.tipo !== "nada";
+              })();
+            return (
+              <section
+                key={col.destino}
+                aria-label={rotuloColuna(col.destino)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (destinoValido) setSobre(col.destino);
+                }}
+                onDragLeave={() => setSobre((s) => (s === col.destino ? null : s))}
+                onDrop={() => soltar(col.destino)}
+                className={cn(
+                  "flex max-h-[42rem] min-h-[14rem] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card/95 shadow-sm transition-[box-shadow,border-color,opacity]",
+                  arrastando && !destinoValido && "opacity-55",
+                  destinoValido && "border-dashed border-primary/60",
+                  sobre === col.destino && "ring-2 ring-primary/40",
+                )}
+              >
+                <header className="shrink-0 border-b border-border/50">
+                  <div className={cn("h-[3px]", TONE_BAR[cfg.tone])} />
+                  <div className="flex items-start justify-between gap-2 bg-gradient-to-br from-primary/[0.04] via-card to-card px-3.5 py-2.5">
+                    <div className="min-w-0">
+                      <h2 className="truncate text-xs font-semibold uppercase leading-snug text-foreground">
+                        {rotuloColuna(col.destino)}
+                      </h2>
+                      <p className="mt-0.5 text-[11px] font-medium tabular-nums text-muted-foreground" title={formatBRL(resumo.soma)}>
+                        {resumo.soma > 0 ? compacto.format(resumo.soma) : "—"}
                       </p>
-                    )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      {criticas > 0 && (
+                        <span
+                          className="rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-bold text-destructive"
+                          title="Paradas além do prazo"
+                        >
+                          {criticas}!
+                        </span>
+                      )}
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold tabular-nums text-primary ring-1 ring-inset ring-primary/20">
+                        {resumo.quantidade}
+                      </span>
+                    </div>
                   </div>
+                </header>
+                <div className="custom-scrollbar flex flex-1 flex-col gap-2 overflow-y-auto p-2.5">
+                  {visiveis.map(renderCartao)}
+                  {lista.length === 0 && (
+                    <p className="py-8 text-center text-xs text-muted-foreground">Nenhuma proposta nesta etapa</p>
+                  )}
                 </div>
-              </div>
+                {lista.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBuscaPasta("");
+                      setPastaAberta(col.destino);
+                    }}
+                    className="flex shrink-0 items-center justify-between gap-2 border-t border-border/60 px-3.5 py-2.5 text-xs font-medium text-muted-foreground transition hover:bg-primary/5 hover:text-foreground"
+                  >
+                    <span className="flex items-center gap-2">
+                      <FolderOpen className="h-4 w-4 text-primary" />
+                      {excedente > 0 ? `Ver todas (+${excedente})` : "Abrir e pesquisar"}
+                    </span>
+                    <Search className="h-3.5 w-3.5 opacity-70" />
+                  </button>
+                )}
+              </section>
+            );
+          })}
+          {colunasVisiveis.length === 0 && (
+            <div className="col-span-full flex flex-col items-center gap-2 rounded-2xl border border-border/70 bg-card p-12 text-center">
+              <KanbanSquare className="h-7 w-7 text-primary" />
+              <p className="text-sm font-semibold text-foreground">Nenhuma proposta com esses filtros</p>
+              <p className="text-xs text-muted-foreground">Limpe os filtros ou mostre as etapas vazias.</p>
             </div>
-          );
-        })}
-      </div>
+          )}
+        </div>
+      )}
 
+      {/* Pasta da coluna (todas + busca) */}
       <Dialog open={pastaAberta !== null} onOpenChange={(o) => !o && setPastaAberta(null)}>
-        <DialogContent className="max-w-4xl overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-b from-card to-card/95 p-0 shadow-2xl">
-          <div className="relative border-b border-border/50 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 px-6 py-4">
-            <span
-              aria-hidden
-              className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-60 blur-3xl"
-              style={{ background: "color-mix(in oklab, var(--primary) 18%, transparent)" }}
-            />
-            <DialogHeader className="relative">
-              <DialogTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
-                <span className="inline-block h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]" />
-                {pastaAberta ? statusProposta(pastaAberta).label : ""}
-                <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  {(pastaAberta ? (cardsPorColuna.get(pastaAberta) ?? []) : []).length} propostas
+        <DialogContent className="w-[calc(100%-2rem)] max-w-4xl overflow-hidden rounded-2xl p-0">
+          <div className="border-b border-border/50 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 px-5 py-4">
+            <DialogHeader>
+              <DialogTitle className="flex flex-wrap items-center gap-2 text-base font-semibold tracking-tight">
+                {pastaAberta ? rotuloColuna(pastaAberta) : ""}
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  {(pastaAberta ? (porColuna.get(pastaAberta) ?? []) : []).length} propostas
                 </span>
               </DialogTitle>
             </DialogHeader>
           </div>
-
-          <div className="space-y-4 px-6 pb-6 pt-4">
-            <div className="group relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+          <div className="space-y-3 px-5 pb-5 pt-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 autoFocus
-                placeholder="Buscar por cliente, CPF/CNPJ ou nº da proposta"
+                placeholder="Buscar por cliente, ID H., nº no banco ou responsável"
                 value={buscaPasta}
                 onChange={(e) => setBuscaPasta(e.target.value)}
-                className="h-12 rounded-xl border-border/70 bg-background pl-11 pr-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_2px_8px_-2px_rgba(15,23,42,0.08),0_8px_24px_-12px_rgba(15,23,42,0.15)] transition-all duration-200 placeholder:text-muted-foreground/70 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_4px_14px_-2px_rgba(15,23,42,0.12),0_12px_32px_-12px_rgba(15,23,42,0.2)] focus-visible:border-primary/50 focus-visible:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_0_0_4px_color-mix(in_oklab,var(--primary)_18%,transparent),0_12px_32px_-12px_color-mix(in_oklab,var(--primary)_35%,transparent)] focus-visible:ring-0"
+                className="h-11 rounded-xl pl-10"
               />
             </div>
-
-            <div className="grid max-h-[62vh] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 [scrollbar-gutter:stable]">
-              {pastaAberta &&
-                cardsDaPasta.map((c: any) => (
-                  <div
-                    key={c.id}
-                    className="transition-transform duration-200 hover:-translate-y-1"
-                  >
-                    {renderCard(c, statusProposta(pastaAberta!))}
-                  </div>
-                ))}
-              {pastaAberta && cardsDaPasta.length === 0 && (
-                <p className="col-span-full py-10 text-center text-sm text-muted-foreground">
-                  Nenhuma proposta encontrada.
-                </p>
+            <div className="grid max-h-[62vh] grid-cols-1 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2 [scrollbar-gutter:stable]">
+              {cartoesDaPasta.map(renderCartao)}
+              {pastaAberta && cartoesDaPasta.length === 0 && (
+                <p className="col-span-full py-10 text-center text-sm text-muted-foreground">Nenhuma proposta encontrada.</p>
               )}
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Etapa que costuma vir do banco */}
+      <AlertDialog open={confirmar !== null} onOpenChange={(o) => !o && setConfirmar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mover para "{confirmar ? rotuloColuna(confirmar.destino) : ""}"?</AlertDialogTitle>
+            <AlertDialogDescription>{confirmar?.aviso}</AlertDialogDescription>
+          </AlertDialogHeader>
+          {confirmar && (
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+              <BancoLogo nome={confirmar.cartao.banco} size="xs" />
+              <span className="truncate font-medium">{confirmar.cartao.cliente}</span>
+              <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">{confirmar.cartao.numero}</span>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const c = confirmar;
+                setConfirmar(null);
+                if (c) void mover(c.cartao, c.destino);
+              }}
+            >
+              Mover assim mesmo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancelamento com motivo */}
+      <Dialog open={cancelar !== null} onOpenChange={(o) => !o && movendo === null && setCancelar(null)}>
+        <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancelar proposta</DialogTitle>
+            <DialogDescription>
+              {cancelar?.cliente} · {cancelar?.numero}. O motivo fica no histórico
+              {cancelar?.bruto?.homefin_id_oportunidade ? " e o banco é avisado." : "."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-2">
+            <Label htmlFor="motivo-cancelamento" className="text-xs text-muted-foreground">
+              Motivo
+            </Label>
+            <Textarea
+              id="motivo-cancelamento"
+              rows={3}
+              maxLength={500}
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Ex.: cliente desistiu da compra"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" disabled={movendo !== null} onClick={() => setCancelar(null)}>
+              Voltar
+            </Button>
+            <Button variant="destructive" disabled={movendo !== null || motivo.trim().length < 5} onClick={confirmarCancelamento}>
+              {movendo !== null && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+              Cancelar proposta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <MarcarRegistroDialog proposta={registrando} onClose={() => setRegistrando(null)} />
+
+      <PrazosKanbanDialog
+        aberto={prazosAbertos}
+        onAberto={setPrazosAbertos}
+        dados={prazosDados ? { ...prazosDados, podeEditar: prazosDados.podeEditar && podeEditarPropostas } : undefined}
+      />
     </div>
   );
 }

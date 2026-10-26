@@ -17,9 +17,9 @@ import { useChatTyping } from "@/hooks/use-chat-typing";
 import { useChatPresence } from "@/hooks/use-chat-presence";
 import { supabase } from "@/integrations/supabase/client";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
-import { ChatClienteHeader } from "@/components/crm/chat-cliente/chat-header";
-import { ListaMensagens } from "@/components/crm/chat-cliente/lista-mensagens";
-import { ChatComposer, type ComposerSubmitPayload } from "@/components/crm/chat-cliente/composer";
+import { ChatClienteHeader } from "./pecas/chat-header";
+import { ListaMensagens } from "./pecas/lista-mensagens";
+import { ChatComposer, type ComposerSubmitPayload } from "./pecas/composer";
 import type { ChatAdapter, ChatMensagem } from "./types";
 
 /**

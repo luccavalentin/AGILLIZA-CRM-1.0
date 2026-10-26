@@ -16,6 +16,7 @@ import {
 } from "@/lib/propostas/propostas.functions";
 
 import { Button } from "@/components/ui/button";
+import { Icone3D } from "@/components/ui/icone-3d";
 import { listarColegas } from "@/lib/operacional/shared.functions";
 import { GRUPOS_PROPOSTA, type GrupoProposta } from "@/lib/propostas/status-grupos";
 import { StatusCard, VolumeCard } from "@/components/propostas/lista-page/cards-status";
@@ -27,9 +28,14 @@ import { BarraSelecao } from "@/components/shared/barra-selecao";
 import { listarOpcoesVinculoPropostas } from "@/lib/crm/parceiros.functions";
 import type { Escopo } from "@/components/propostas/lista-page/helpers";
 
-import { SeletorDeConta } from "@/components/crm/clientes-page/seletor-de-conta";
-import { OperacoesDaConta } from "@/components/plataforma/operacoes-da-conta";
-import type { ContaAssinante } from "@/lib/plataforma/contas.functions";
+import { FiltroBase } from "@/components/crm/filtro-base/filtro-base";
+import { useFiltroBase } from "@/components/crm/filtro-base/use-filtro-base";
+import { rotuloDoFiltro } from "@/lib/plataforma/filtro-base";
+import {
+  PainelPropostasGrupo,
+  SecaoPropostasVinculadas,
+} from "@/components/plataforma/propostas-grupo/painel";
+import { validarBuscaPropostas } from "@/components/plataforma/propostas-grupo/filtros";
 import {
   AbasPropostas,
   type AbaPropostas,
@@ -39,10 +45,9 @@ import { usePendentesDaFila } from "@/components/plataforma/fila-assinantes/hook
 
 export const Route = createFileRoute("/_authenticated/operacional/propostas")({
   head: () => ({ meta: [{ title: "Propostas — Agilliza" }] }),
-  // `?aba=assinantes` abre direto a fila das propostas dos assinantes (menu Plataforma).
-  validateSearch: (search: Record<string, unknown>): { aba?: "assinantes" } => ({
-    aba: search.aba === "assinantes" ? "assinantes" : undefined,
-  }),
+  // `?base=assinantes` (ou o antigo `?aba=assinantes`, do menu Plataforma) abre as propostas
+  // dos assinantes; os filtros do painel também ficam no endereço.
+  validateSearch: validarBuscaPropostas,
   beforeLoad: () => assertModuloPermitido("operacional.propostas"),
   component: Pagina,
   errorComponent: () => (
@@ -51,17 +56,21 @@ export const Route = createFileRoute("/_authenticated/operacional/propostas")({
 });
 
 function Pagina() {
-  // Base exibida: a do Agilliza (null) ou a de uma conta assinante do Agilliza Tech.
-  const [conta, setConta] = useState<ContaAssinante | null>(null);
-  const abaPedida = Route.useSearch().aba;
+  // Base exibida (C30): "Sua base" (Agilliza + vinculados) ou "Assinantes" (todos ou um).
+  const filtroBase = useFiltroBase();
+  const { alvo } = filtroBase;
+  const basePedida = Route.useSearch().base;
   const navigate = Route.useNavigate();
-  const aba: AbaPropostas = abaPedida === "assinantes" ? "assinantes" : "agilliza";
   const pendentesAssinantes = usePendentesDaFila();
   // A fila dos assinantes só existe para quem atende (saas.fila). Para parceiro externo e
   // para quem não atende, a aba confundia: mostrava só o aviso de permissão.
   const podeFilaAssinantes = usePermissao("saas.fila", "view");
+  // Sem "Contas" (saas.contas) não há filtro de base: quem só atende a fila usa as abas de antes.
+  const aba: AbaPropostas = basePedida === "assinantes" ? "assinantes" : "agilliza";
   const trocarAba = (a: AbaPropostas) =>
-    navigate({ search: a === "assinantes" ? { aba: "assinantes" } : {}, replace: true });
+    navigate({ search: a === "assinantes" ? { base: "assinantes" } : {}, replace: true });
+  const verEsperando = () =>
+    navigate({ search: { base: "assinantes", aceite: "pendentes" }, replace: true });
   const queryClient = useQueryClient();
   const excluir = useServerFn(excluirProposta);
   const restaurar = useServerFn(restaurarProposta);
@@ -212,6 +221,8 @@ function Pagina() {
           comercial_nome: comercialFiltro !== "todos" ? comercialFiltro : undefined,
         },
       }),
+    // Em "Assinantes" (ou só vinculados) a lista do Agilliza não aparece: não busca à toa.
+    enabled: alvo.agilliza,
   });
 
   const todosItens = useMemo(
@@ -322,28 +333,25 @@ function Pagina() {
       );
   }
 
-  if (conta) return <OperacoesDaConta tipo="propostas" conta={conta} onConta={setConta} />;
-
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-4 p-3 sm:space-y-6 sm:p-6">
       {/* Cabeçalho */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary ring-1 ring-inset ring-primary/12">
-            <FileText className="h-5 w-5" />
-          </span>
+          <Icone3D icone={FileText} tamanho="lg" />
           <div className="min-w-0 space-y-0.5">
             <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               Propostas
             </h1>
             <p className="truncate text-sm text-muted-foreground">
-              Oportunidades enviadas ao banco.
+              {filtroBase.pode
+                ? `${rotuloDoFiltro(filtroBase.filtro, filtroBase.conta)} · oportunidades enviadas ao banco.`
+                : "Oportunidades enviadas ao banco."}
             </p>
           </div>
         </div>
         {/* flex-wrap: no celular (390 px) "Nova proposta" saía da tela. */}
         <div className="col-span-2 flex flex-wrap gap-2 sm:col-auto sm:flex-nowrap">
-          <SeletorDeConta conta={conta} onConta={setConta} />
           <Button
             asChild
             variant="outline"
@@ -366,11 +374,32 @@ function Pagina() {
         </div>
       </div>
 
-      {podeFilaAssinantes && (
-        <AbasPropostas aba={aba} onAba={trocarAba} pendentes={pendentesAssinantes} />
+      {filtroBase.pode ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <FiltroBase uso={filtroBase} />
+          {pendentesAssinantes !== null && pendentesAssinantes > 0 && (
+            <button
+              type="button"
+              onClick={verEsperando}
+              className="inline-flex h-9 items-center gap-2 self-start rounded-full border border-primary/25 bg-primary/5 px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 sm:self-auto"
+            >
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/50 motion-reduce:animate-none" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+              {pendentesAssinantes > 99 ? "99+" : pendentesAssinantes} esperando analista
+            </button>
+          )}
+        </div>
+      ) : (
+        podeFilaAssinantes && (
+          <AbasPropostas aba={aba} onAba={trocarAba} pendentes={pendentesAssinantes} />
+        )
       )}
 
-      {aba === "assinantes" && podeFilaAssinantes ? (
+      {filtroBase.pode && !alvo.agilliza ? (
+        <PainelPropostasGrupo alvo={alvo} conta={filtroBase.conta} />
+      ) : !filtroBase.pode && aba === "assinantes" && podeFilaAssinantes ? (
         <FilaDosAssinantes />
       ) : (
         <>
@@ -488,6 +517,11 @@ function Pagina() {
             excluindo={excluindoLote}
             rotulo="proposta(s) selecionada(s)"
           />
+
+          {/* "Sua base" inclui as propostas dos corretores e parceiros vinculados (C07/C30). */}
+          {alvo.grupo === "vinculados" && filtroBase.totalVinculadas > 0 && (
+            <SecaoPropostasVinculadas termo={busca} />
+          )}
         </>
       )}
     </div>

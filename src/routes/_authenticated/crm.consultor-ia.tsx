@@ -3,7 +3,15 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Bot, PanelRight, PanelLeftOpen, X, ChevronRight, ShieldCheck } from "lucide-react";
+import {
+  Bot,
+  PanelRight,
+  PanelLeftOpen,
+  X,
+  ChevronRight,
+  ShieldCheck,
+  Calculator,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -37,6 +45,8 @@ import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { ConsultorSidebar } from "@/components/consultor-ia/premium/sidebar";
 import { ConsultorMessage } from "@/components/consultor-ia/premium/message";
 import { ConsultorComposer, SUGESTOES } from "@/components/consultor-ia/premium/composer";
+import { CalculadoraConsultor, CartoesCalculo } from "@/components/consultor-ia/calculos-consultor";
+import type { ResultadoFerramenta } from "@/lib/consultor-ia/ferramentas";
 
 export const Route = createFileRoute("/_authenticated/crm/consultor-ia")({
   head: () => ({
@@ -68,6 +78,8 @@ function ConsultorIaPage() {
   const [streaming, setStreaming] = useState(false);
   const [parcial, setParcial] = useState("");
   const [perguntaPendente, setPerguntaPendente] = useState<string | null>(null);
+  const [calculosParciais, setCalculosParciais] = useState<ResultadoFerramenta[]>([]);
+  const [calculadoraAberta, setCalculadoraAberta] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -112,6 +124,7 @@ function ConsultorIaPage() {
   async function perguntarStream(texto: string) {
     setStreaming(true);
     setParcial("");
+    setCalculosParciais([]);
     setPerguntaPendente(texto);
 
     // A pergunta aparece na hora via perguntaPendente; a lista é recarregada no fim.
@@ -153,6 +166,8 @@ function ConsultorIaPage() {
           if (ev.tipo === "conversa") {
             idConversa = ev.conversa_id;
             if (!conversaId) setConversaId(ev.conversa_id);
+          } else if (ev.tipo === "calculos") {
+            setCalculosParciais(Array.isArray(ev.calculos) ? ev.calculos : []);
           } else if (ev.tipo === "texto") {
             // Injeta created_at no objeto de streaming para evitar quebra se a UI formatar data do parcial
             setParcial(ev.texto);
@@ -170,6 +185,7 @@ function ConsultorIaPage() {
     } finally {
       setStreaming(false);
       setParcial("");
+      setCalculosParciais([]);
       setPerguntaPendente(null);
     }
   }
@@ -277,12 +293,22 @@ function ConsultorIaPage() {
                 {conversaAtiva ? conversaAtiva.titulo : "Consultor de IA"}
               </h1>
               <p className="text-[10px] font-medium text-muted-foreground">
-                Inteligência aplicada ao seu negócio
+                Especialista em crédito imobiliário · contas calculadas pelo sistema
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-1.5 rounded-xl"
+              onClick={() => setCalculadoraAberta(true)}
+              title="Calculadora: SAC/PRICE, renda e custos"
+            >
+              <Calculator className="size-4" />
+              <span className="hidden sm:inline">Calculadora</span>
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -379,6 +405,7 @@ function ConsultorIaPage() {
                       <Bot className="size-5 animate-pulse" />
                     </div>
                     <div className="min-w-0 flex-1 space-y-4">
+                      <CartoesCalculo calculos={calculosParciais} />
                       <div className="text-[15px] leading-relaxed text-foreground/90">
                         {parcial ? (
                           <>
@@ -404,6 +431,14 @@ function ConsultorIaPage() {
           setPergunta={setPergunta}
           onEnviar={handleEnviar}
           streaming={streaming}
+        />
+        <CalculadoraConsultor
+          aberta={calculadoraAberta}
+          onAbertaChange={setCalculadoraAberta}
+          onPerguntar={(t) => {
+            setCalculadoraAberta(false);
+            handleEnviar(t);
+          }}
         />
       </main>
 

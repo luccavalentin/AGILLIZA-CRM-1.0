@@ -14,18 +14,25 @@ import { useWizardSimulacao, PRAZO_MIN } from "@/components/simulacao/nova/use-w
 import { ClienteCRMPicker } from "@/components/simulacao/cliente-crm-picker";
 import { FormularioSimulacao } from "@/components/simulacao/nova/formulario-simulacao";
 import { ResultadoRapido } from "@/components/simulacao/nova/resultado-rapido";
+import { GuardarRapidaNaConta } from "@/components/simulacao/nova/guardar-na-conta";
+import { DestinoSimulacao } from "@/components/simulacao/destino-simulacao";
+import { normalizarContaId } from "@/lib/simulacao/destino-conta";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/nova")({
   head: () => ({ meta: [{ title: "Nova simulação — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
-  validateSearch: (search: Record<string, unknown>): { modo?: "rapida" } => ({
+  validateSearch: (search: Record<string, unknown>): { modo?: "rapida"; conta?: string } => ({
     modo: search.modo === "rapida" ? "rapida" : undefined,
+    // C29: conta do assinante onde a simulação rápida pode ser guardada.
+    conta: normalizarContaId(search.conta) ?? undefined,
   }),
   component: Pagina,
 });
 
 function Pagina() {
   const router = useRouter();
+  const { conta: contaDestino } = Route.useSearch();
+  const navegarRota = Route.useNavigate();
   const [mostrarRapida, setMostrarRapida] = useState(false);
   const [baixando, setBaixando] = useState(false);
   const resultadoRef = useRef<HTMLDivElement>(null);
@@ -94,7 +101,10 @@ function Pagina() {
 
   function irParaCompleta() {
     sessionStorage.setItem("simulacao_wizard", JSON.stringify({ ...w, prazo: w.prazo_meses }));
-    router.navigate({ to: "/operacional/simulacoes/completa" });
+    router.navigate({
+      to: "/operacional/simulacoes/completa",
+      search: contaDestino ? { conta: contaDestino } : {},
+    });
   }
 
   async function baixarSimulacao(bancoId?: string) {
@@ -205,6 +215,16 @@ function Pagina() {
         <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
       </Button>
 
+      <DestinoSimulacao
+        contaId={contaDestino ?? null}
+        onConta={(id) =>
+          navegarRota({
+            search: (prev: Record<string, unknown>) => ({ ...prev, conta: id ?? undefined }),
+            replace: true,
+          } as never)
+        }
+      />
+
       <div
         className={cn(
           "grid gap-4 lg:gap-6",
@@ -277,6 +297,34 @@ function Pagina() {
               onBaixar={baixarSimulacao}
               onEnviar={irParaCompleta}
             />
+            {contaDestino && comparativo.length > 0 && (
+              <GuardarRapidaNaConta
+                licenca={contaDestino}
+                dados={{
+                  valor_imovel: Number(w.valor_imovel) || 0,
+                  valor_financiamento: Number(financiamentoTotalExibido) || 0,
+                  prazo: Number(w.prazo_meses) || 0,
+                  produto: w.produto === "home_equity" ? "home_equity" : "financiamento",
+                  sistema: w.sistema_amortizacao === "P" ? "PRICE" : "SAC",
+                  tipo_imovel: w.tipo_imovel || null,
+                  uso_imovel: w.uso_imovel || null,
+                  situacao_imovel: w.situacao_imovel || null,
+                  uf: w.uf || null,
+                  nome: w.nome_cliente || null,
+                  documento: w.cpf_cnpj || null,
+                  nascimento: w.data_nascimento || null,
+                  renda: Number(w.renda_familiar) || null,
+                  resultado: comparativo.slice(0, 20).map((c) => ({
+                    banco: c.nome_banco,
+                    parcela: c.resultado.primeira_parcela,
+                    ultima_parcela: c.resultado.ultima_parcela,
+                    taxa_ano: c.taxa_ano * 100,
+                    cet_ano: c.resultado.cet_ano * 100,
+                    renda_minima: c.resultado.renda_minima,
+                  })),
+                }}
+              />
+            )}
           </div>
         )}
       </div>

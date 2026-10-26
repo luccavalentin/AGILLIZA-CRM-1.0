@@ -298,11 +298,39 @@ export const criarSimulacao = createServerFn({ method: "POST" })
       id: string;
       numero_simulacao: string;
       agrupador_id?: string;
+      /** C29: resultado da cópia na conta do assinante, quando houve destino. */
+      conta?: import("@/lib/plataforma/simulacao-na-conta.server").ResultadoNaConta;
     }> => {
       try {
         const { supabase, userId } = context;
         const dd = data.dados;
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        // C29 (26/10/2026): simular na base de um assinante. Sem destino, nada abaixo muda.
+        const { contaDestinoDosDados, levarSimulacaoParaContaServidor } =
+          await import("@/lib/plataforma/simulacao-na-conta.server");
+        const contaDestino = contaDestinoDosDados(dd);
+        if (contaDestino) {
+          const { data: podeContas } = await supabase.rpc("usuario_tem_permissao", {
+            _user_id: userId,
+            _modulo: "saas.contas",
+            _acao: "view",
+          });
+          if (!podeContas) {
+            throw new Error("Você não tem permissão para simular na base de um assinante.");
+          }
+        }
+        const levarParaConta = async (simulacaoId: string) => {
+          if (!contaDestino) return undefined;
+          const { dependenciasReais } = await import("@/lib/plataforma/simulacao-na-conta.functions");
+          return (
+            (await levarSimulacaoParaContaServidor(await dependenciasReais(), {
+              userId,
+              simulacaoId,
+              licenca: contaDestino,
+            })) ?? undefined
+          );
+        };
 
         const { data: prof } = await supabase
           .from("profiles")
@@ -382,6 +410,9 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           .eq("valor_financiamento", dd.valor_financiamento || 0)
           .eq("prazo", dd.prazo || 0)
           .filter("agrupador_id", dd.agrupador_id ? "eq" : "is", dd.agrupador_id || null)
+          // C29 (auditoria 26/10): simulação feita para outra conta (ou para a sua base) não é
+          // reaproveitada para um destino diferente.
+          .filter("conta_assinante_id", contaDestino ? "eq" : "is", contaDestino || null)
           .in("status", ["rascunho", "erro_banco", "enviando", "parcialmente_simulada", "simulada"])
           .gte("created_at", vinteMinutosAtras)
           .is("deleted_at", null)
@@ -397,6 +428,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
             id: existente.id,
             numero_simulacao: existente.numero_simulacao,
             agrupador_id: existente.agrupador_id || undefined,
+            conta: await levarParaConta(existente.id),
           };
         }
 
@@ -965,6 +997,8 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           id: sim.id,
           numero_simulacao: sim.numero_simulacao,
           agrupador_id: agrupadorDoLote ?? undefined,
+          // Depois dos bancos gravados: a cópia na conta nasce com eles (o retorno chega por gatilho).
+          conta: await levarParaConta(sim.id),
         };
       } catch (e: any) {
         console.error("[criarSimulacao] Erro crítico:", e);

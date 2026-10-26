@@ -11,6 +11,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import type { ResultadoFerramenta } from "./ferramentas";
+import type { ParametrosCalculo } from "./calculos";
 
 export interface FonteCitada {
   id: string;
@@ -26,12 +28,23 @@ export interface MensagemConsultor {
   sem_resposta: boolean;
   avaliacao: "util" | "nao_util" | null;
   created_at: string;
+  /** Contas feitas pelo sistema (SAC/PRICE, comprometimento, custos) para esta resposta. */
+  calculos: ResultadoFerramenta[];
+  /** A pergunta dependia de dado atual que a base não trazia. */
+  aviso_dado_atual: boolean;
 }
 
 export interface ConversaConsultor {
   id: string;
   titulo: string;
   updated_at: string;
+}
+
+export interface AnexoBase {
+  nome: string;
+  caminho: string;
+  tamanho: number;
+  tipo: string;
 }
 
 export interface ItemBase {
@@ -43,6 +56,31 @@ export interface ItemBase {
   ativo: boolean;
   correspondente_id: string | null;
   updated_at: string;
+  /** C19: rascunho não alimenta o Consultor nem aparece fora da administração. */
+  status: "rascunho" | "publicado";
+  resumo: string | null;
+  capa_url: string | null;
+  anexos: AnexoBase[];
+  versao: number;
+  publicado_em: string | null;
+  /** C20: o post da Agilliza News feito a partir deste artigo. */
+  news_post_id: string | null;
+  news_publicado_em: string | null;
+  news_publico: string | null;
+  news_fim_em: string | null;
+}
+
+const COLUNAS_ITEM =
+  "id, categoria, titulo, conteudo, tags, ativo, correspondente_id, updated_at, status, resumo, capa_url, anexos, versao, publicado_em, news_post_id, news_publicado_em, news_publico, news_fim_em";
+
+function comoItem(r: any): ItemBase {
+  return {
+    ...r,
+    tags: Array.isArray(r.tags) ? r.tags : [],
+    status: r.status === "rascunho" ? "rascunho" : "publicado",
+    anexos: Array.isArray(r.anexos) ? r.anexos : [],
+    versao: Number(r.versao ?? 1),
+  };
 }
 
 export const CATEGORIAS_BASE = [
@@ -106,13 +144,17 @@ export const listarMensagensConsultor = createServerFn({ method: "GET" })
     const { supabase } = context as any;
     const { data: msgs, error } = await supabase
       .from("consultor_ia_mensagens")
-      .select("id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at")
+      .select(
+        "id, papel, conteudo, fontes_usadas, sem_resposta, avaliacao, created_at, calculos, aviso_dado_atual",
+      )
       .eq("conversa_id", data.conversa_id)
       .order("created_at", { ascending: true });
     if (error) throw new Error("Não foi possível carregar a conversa.");
     return (msgs ?? []).map((m: any) => ({
       ...m,
       fontes_usadas: Array.isArray(m.fontes_usadas) ? m.fontes_usadas : [],
+      calculos: Array.isArray(m.calculos) ? m.calculos : [],
+      aviso_dado_atual: !!m.aviso_dado_atual,
     })) as MensagemConsultor[];
   });
 
@@ -151,7 +193,10 @@ export const sugerirConteudoBase = createServerFn({ method: "POST" })
   .middleware([usaConsultor])
   .inputValidator((d: { pergunta: string; observacao?: string }) =>
     z
-      .object({ pergunta: z.string().min(3).max(4000), observacao: z.string().max(2000).optional() })
+      .object({
+        pergunta: z.string().min(3).max(4000),
+        observacao: z.string().max(2000).optional(),
+      })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -175,11 +220,11 @@ export const obterItemBase = createServerFn({ method: "GET" })
     const { supabase } = context as any;
     const { data: row, error } = await supabase
       .from("consultor_ia_base")
-      .select("id, categoria, titulo, conteudo, tags, ativo, correspondente_id, updated_at")
+      .select(COLUNAS_ITEM)
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error("Não foi possível abrir o verbete.");
-    return (row as ItemBase) ?? null;
+    return row ? comoItem(row) : null;
   });
 
 /* ─────────────── Administração da base de conhecimento ─────────────── */
@@ -199,7 +244,7 @@ export const listarBaseConhecimento = createServerFn({ method: "GET" })
     const { supabase } = context as any;
     let q = supabase
       .from("consultor_ia_base")
-      .select("id, categoria, titulo, conteudo, tags, ativo, correspondente_id, updated_at")
+      .select(COLUNAS_ITEM)
       .order("categoria", { ascending: true })
       .order("titulo", { ascending: true });
     if (data.categoria && data.categoria !== "todas") q = q.eq("categoria", data.categoria);
@@ -211,7 +256,7 @@ export const listarBaseConhecimento = createServerFn({ method: "GET" })
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return (rows ?? []) as ItemBase[];
+    return (rows ?? []).map(comoItem);
   });
 
 /** O que a tela da base pode oferecer a este usuário. */
@@ -233,16 +278,43 @@ export const salvarItemBase = createServerFn({ method: "POST" })
       tags: string[];
       ativo: boolean;
       global: boolean;
+      status?: "rascunho" | "publicado";
+      resumo?: string | null;
+      capa_url?: string | null;
+      anexos?: AnexoBase[];
     }) =>
       z
         .object({
           id: z.string().uuid().optional(),
-          categoria: z.string().min(1),
-          titulo: z.string().min(3),
-          conteudo: z.string().min(10),
-          tags: z.array(z.string()).default([]),
+          categoria: z.string().min(1).max(60),
+          titulo: z.string().trim().min(3).max(200),
+          conteudo: z.string().min(10).max(200_000),
+          tags: z.array(z.string().trim().min(1).max(40)).max(30).default([]),
           ativo: z.boolean().default(true),
           global: z.boolean().default(false),
+          status: z.enum(["rascunho", "publicado"]).default("publicado"),
+          resumo: z.string().max(400).nullable().optional(),
+          capa_url: z
+            .string()
+            .max(1000)
+            .regex(/^https:\/\//, "A capa precisa ser um endereço https://.")
+            .nullable()
+            .optional(),
+          anexos: z
+            .array(
+              z.object({
+                nome: z.string().min(1).max(200),
+                caminho: z.string().min(3).max(400),
+                tamanho: z
+                  .number()
+                  .int()
+                  .min(0)
+                  .max(30 * 1024 * 1024),
+                tipo: z.string().max(120),
+              }),
+            )
+            .max(20)
+            .default([]),
         })
         .parse(d),
   )
@@ -272,15 +344,27 @@ export const salvarItemBase = createServerFn({ method: "POST" })
       throw new Error(MSG_SO_PLATAFORMA);
     }
     if (!data.global && !corr) throw new Error("Conta não identificada.");
+    // Anexo só da pasta da própria conta (o bucket já barra a leitura de outra).
+    if (
+      data.anexos.some(
+        (a) => !corr || !a.caminho.startsWith(`${corr}/`) || a.caminho.includes(".."),
+      )
+    ) {
+      throw new Error("Anexo inválido.");
+    }
 
     const payload = {
       categoria: data.categoria,
       titulo: data.titulo,
       conteudo: data.conteudo,
-      tags: data.tags,
+      tags: [...new Set(data.tags.map((t) => t.toLowerCase()))],
       ativo: data.ativo,
       correspondente_id: data.global ? null : corr,
       atualizado_por: userId,
+      status: data.status,
+      resumo: data.resumo?.trim() || null,
+      capa_url: data.capa_url || null,
+      anexos: data.anexos,
     };
     if (data.id) {
       const { data: alterados, error } = await supabase
@@ -358,5 +442,66 @@ export const resolverSugestaoBase = createServerFn({ method: "POST" })
       .update({ status: data.status })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/* ─────────────── Parâmetros de cálculo do Consultor (C18) ─────────────── */
+
+/** Os parâmetros da conta (a calculadora da tela e o Consultor usam os mesmos). */
+export const obterParametrosConsultor = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["crm.clientes", "view"], ["admin.parametros", "view"])])
+  .handler(async ({ context }): Promise<ParametrosCalculo & { atualizado_em: string | null }> => {
+    const { supabase } = context as any;
+    const { data, error } = await supabase.rpc("consultor_ia_parametros_da_conta");
+    if (error || !data) throw new Error("Não foi possível ler os parâmetros de cálculo.");
+    const r = Array.isArray(data) ? data[0] : data;
+    return {
+      itbi_percentual: Number(r.itbi_percentual),
+      itbi_municipios: Array.isArray(r.itbi_municipios) ? r.itbi_municipios : [],
+      cartorio_percentual: Number(r.cartorio_percentual),
+      avaliacao_banco: Number(r.avaliacao_banco),
+      certidoes_valor: Number(r.certidoes_valor),
+      comprometimento_max_percentual: Number(r.comprometimento_max_percentual),
+      taxa_referencia_anual:
+        r.taxa_referencia_anual == null ? null : Number(r.taxa_referencia_anual),
+      atualizado_em: r.atualizado_em ?? null,
+    };
+  });
+
+const parametrosSchema = z.object({
+  itbi_percentual: z.number().min(0).max(10),
+  itbi_municipios: z
+    .array(
+      z.object({
+        municipio: z.string().trim().min(2).max(80),
+        uf: z.string().trim().length(2).toUpperCase(),
+        percentual: z.number().min(0).max(10),
+      }),
+    )
+    .max(200),
+  cartorio_percentual: z.number().min(0).max(10),
+  avaliacao_banco: z.number().min(0).max(100000),
+  certidoes_valor: z.number().min(0).max(100000),
+  comprometimento_max_percentual: z.number().min(1).max(100),
+  taxa_referencia_anual: z.number().min(0).max(60).nullable(),
+});
+
+export const salvarParametrosConsultor = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["admin.parametros", "edit"])])
+  .inputValidator((d: unknown) => parametrosSchema.parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { supabase, userId } = context as any;
+    const corr = await correspondenteDoUsuario(supabase, userId);
+    if (!corr) throw new Error("Conta não identificada.");
+    const { error } = await supabase.from("consultor_ia_parametros").upsert(
+      {
+        correspondente_id: corr,
+        ...data,
+        atualizado_por: userId,
+        atualizado_em: new Date().toISOString(),
+      },
+      { onConflict: "correspondente_id" },
+    );
+    if (error) throw new Error("Não foi possível salvar os parâmetros.");
     return { ok: true };
   });

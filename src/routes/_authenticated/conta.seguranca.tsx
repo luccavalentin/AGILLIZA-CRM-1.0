@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminHero } from "@/components/admin/admin-hero";
+import { ContaCabecalho } from "@/components/conta/conta-cabecalho";
+import { Icone3D } from "@/components/ui/icone-3d";
 import { BiometriaCard } from "@/components/pwa/biometria-card";
 import { concluirSenhaProvisoria } from "@/lib/conta/senha-provisoria.functions";
 
@@ -129,13 +130,8 @@ function Pagina() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
-      <AdminHero
-        secao="Minha conta"
-        icon={<Lock className="h-5 w-5" />}
-        titulo="Segurança"
-        descricao="Gerencie a senha de acesso e o desbloqueio por biometria."
-      />
+    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+      <ContaCabecalho pagina="seguranca" />
 
       {provisoria && (
         <div
@@ -156,8 +152,8 @@ function Pagina() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <KeyRound className="h-4 w-4 text-primary" />
+            <CardTitle className="flex items-center gap-3 text-sm">
+              <Icone3D icone={KeyRound} tom="sucesso" tamanho="md" />
               Alterar senha
             </CardTitle>
           </CardHeader>
@@ -233,8 +229,8 @@ function Pagina() {
 
         <Card className="border-primary/20 bg-primary/[0.03]">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <ShieldCheck className="h-4 w-4 text-primary" />
+            <CardTitle className="flex items-center gap-3 text-sm">
+              <Icone3D icone={ShieldCheck} tom="marca" tamanho="md" />
               Boas práticas
             </CardTitle>
           </CardHeader>

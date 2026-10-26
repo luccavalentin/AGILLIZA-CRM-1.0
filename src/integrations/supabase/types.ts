@@ -663,6 +663,7 @@ export type Database = {
           mime_type: string | null
           nome_arquivo: string
           pasta_id: string | null
+          pasta_padrao: string | null
           situacao_integracao: string | null
           status: Database["public"]["Enums"]["doc_status"]
           storage_path: string
@@ -685,6 +686,7 @@ export type Database = {
           mime_type?: string | null
           nome_arquivo: string
           pasta_id?: string | null
+          pasta_padrao?: string | null
           situacao_integracao?: string | null
           status?: Database["public"]["Enums"]["doc_status"]
           storage_path: string
@@ -707,6 +709,7 @@ export type Database = {
           mime_type?: string | null
           nome_arquivo?: string
           pasta_id?: string | null
+          pasta_padrao?: string | null
           situacao_integracao?: string | null
           status?: Database["public"]["Enums"]["doc_status"]
           storage_path?: string
@@ -4562,6 +4565,7 @@ export type Database = {
           contato_avaliacao_nome: string | null
           contato_avaliacao_telefone: string | null
           contrato_emitido_em: string | null
+          contrato_registrado_em: string | null
           correspondente_id: string
           cpf_cnpj: string | null
           created_at: string
@@ -4646,6 +4650,7 @@ export type Database = {
           contato_avaliacao_nome?: string | null
           contato_avaliacao_telefone?: string | null
           contrato_emitido_em?: string | null
+          contrato_registrado_em?: string | null
           correspondente_id: string
           cpf_cnpj?: string | null
           created_at?: string
@@ -4730,6 +4735,7 @@ export type Database = {
           contato_avaliacao_nome?: string | null
           contato_avaliacao_telefone?: string | null
           contrato_emitido_em?: string | null
+          contrato_registrado_em?: string | null
           correspondente_id?: string
           cpf_cnpj?: string | null
           created_at?: string
@@ -6636,6 +6642,9 @@ export type Database = {
           comercial_id: string | null
           compoe_renda: boolean
           compoe_renda_conjuge: boolean | null
+          conta_assinante_id: string | null
+          conta_assinante_nome: string | null
+          conta_assinante_simulacao_id: string | null
           consentimento_em: string | null
           consentimento_ip: string | null
           consentimento_lgpd: boolean
@@ -6706,6 +6715,9 @@ export type Database = {
           comercial_id?: string | null
           compoe_renda?: boolean
           compoe_renda_conjuge?: boolean | null
+          conta_assinante_id?: string | null
+          conta_assinante_nome?: string | null
+          conta_assinante_simulacao_id?: string | null
           consentimento_em?: string | null
           consentimento_ip?: string | null
           consentimento_lgpd?: boolean
@@ -6776,6 +6788,9 @@ export type Database = {
           comercial_id?: string | null
           compoe_renda?: boolean
           compoe_renda_conjuge?: boolean | null
+          conta_assinante_id?: string | null
+          conta_assinante_nome?: string | null
+          conta_assinante_simulacao_id?: string | null
           consentimento_em?: string | null
           consentimento_ip?: string | null
           consentimento_lgpd?: boolean
@@ -7181,13 +7196,19 @@ export type Database = {
           deleted_by: string | null
           deleted_motivo: string | null
           descricao: string | null
+          duracao_min: number | null
+          lembrete_minutos: number | null
+          lembrete_enviado_em: string | null
           id: string
           numero: string | null
           origem: string
           prazo: string | null
           prioridade: Database["public"]["Enums"]["prioridade_op"]
+          recorrencia: string | null
+          recorrencia_gerada_id: string | null
           responsavel_id: string | null
           status: Database["public"]["Enums"]["tarefa_status"]
+          tipo: string
           titulo: string
           updated_at: string
         }
@@ -7201,13 +7222,19 @@ export type Database = {
           deleted_by?: string | null
           deleted_motivo?: string | null
           descricao?: string | null
+          duracao_min?: number | null
+          lembrete_minutos?: number | null
+          lembrete_enviado_em?: string | null
           id?: string
           numero?: string | null
           origem?: string
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          recorrencia?: string | null
+          recorrencia_gerada_id?: string | null
           responsavel_id?: string | null
           status?: Database["public"]["Enums"]["tarefa_status"]
+          tipo?: string
           titulo: string
           updated_at?: string
         }
@@ -7221,13 +7248,19 @@ export type Database = {
           deleted_by?: string | null
           deleted_motivo?: string | null
           descricao?: string | null
+          duracao_min?: number | null
+          lembrete_minutos?: number | null
+          lembrete_enviado_em?: string | null
           id?: string
           numero?: string | null
           origem?: string
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["prioridade_op"]
+          recorrencia?: string | null
+          recorrencia_gerada_id?: string | null
           responsavel_id?: string | null
           status?: Database["public"]["Enums"]["tarefa_status"]
+          tipo?: string
           titulo?: string
           updated_at?: string
         }

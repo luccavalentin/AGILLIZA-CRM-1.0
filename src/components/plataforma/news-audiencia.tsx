@@ -25,6 +25,7 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import {
   lerComentariosNews,
   ocultarComentarioNews,
+  tirarDoArNews,
   type ItemFeedNews,
 } from "@/lib/plataforma/news.functions";
 import { useAcaoNews } from "./news-comum";
@@ -43,6 +44,11 @@ export function AudienciaNews({
   pode: boolean;
 }) {
   const [aberto, setAberto] = useState<ItemFeedNews | null>(null);
+  const tirarFn = useServerFn(tirarDoArNews);
+  const tirar = useAcaoNews(
+    (i: ItemFeedNews) => tirarFn({ data: { tipo: i.tipo, id: i.id } }),
+    "Não foi possível tirar do ar.",
+  );
   const totalCurtidas = feed.reduce((s, i) => s + Number(i.curtidas || 0), 0);
   const totalComentarios = feed.reduce((s, i) => s + Number(i.comentarios || 0), 0);
 
@@ -80,7 +86,13 @@ export function AudienciaNews({
                       {i.categoria_nome ?? ""}
                       {i.fonte ? ` · ${i.fonte}` : ""}
                       {i.publicado_em ? ` · ${formatData(i.publicado_em)}` : ""}
+                      {i.fim_em ? ` · até ${formatData(i.fim_em)}` : ""}
                     </span>
+                    {i.publico !== "todos" && (
+                      <Badge variant="outline">
+                        {i.publico === "equipe" ? "Só equipe" : "Só assinantes"}
+                      </Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-right align-top tabular-nums">{i.curtidas}</TableCell>
@@ -94,6 +106,18 @@ export function AudienciaNews({
                     <MessageSquare className="mr-1 size-4" />
                     <span className="tabular-nums">{i.comentarios}</span>
                   </Button>
+                  {pode && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-muted-foreground"
+                      disabled={tirar.isPending}
+                      onClick={() => tirar.mutate(i)}
+                      aria-label={`Tirar do ar: ${i.titulo ?? "item"}`}
+                    >
+                      Tirar do ar
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

@@ -6,7 +6,7 @@ import { nomeEtapaFormularios, temEtapaFormularios } from "@/lib/bancos/etapas-b
  *
  * São as etapas da integração, com os mesmos nomes e na mesma ordem
  * (Simulação, Crédito, Engenharia, Análise Jurídica, Contrato Emitido,
- * Registro), mais "Documentos", que é só nossa: lá "Envio de Documentos" é
+ * Contrato registrado), mais "Documentos", que é só nossa: lá "Envio de Documentos" é
  * atividade da Engenharia, e a coleta precisa aparecer antes de o provedor
  * abrir aquela etapa. O detalhe do crédito (enviado, aprovado, condicionado,
  * recusado) continua no rótulo do status.
@@ -25,7 +25,7 @@ export const ETAPAS_STEPPER = [
   { codigo: "engenharia", label: "Engenharia", auto: true },
   { codigo: "analise_juridica", label: "Análise Jurídica", auto: true },
   { codigo: "contrato_emitido", label: "Contrato Emitido", auto: true },
-  { codigo: "registro", label: "Registro", auto: true },
+  { codigo: "registro", label: "Contrato registrado", auto: true },
 ] as const;
 
 export type StepperCodigo = (typeof ETAPAS_STEPPER)[number]["codigo"];

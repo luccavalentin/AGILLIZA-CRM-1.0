@@ -70,10 +70,10 @@ describe("guardas das server functions da ponte", () => {
     expect(todas.filter((f) => f.usaPonte).length).toBeGreaterThan(80);
   });
 
-  it("toda server function da ponte tem exigirPermissao com módulo saas.* ou marketing.automacoes", () => {
+  it("toda server function da ponte tem exigirPermissao com módulo saas.*, marketing.automacoes ou financeiro.repasses", () => {
     const sem = todas
       .filter((f) => f.usaPonte)
-      .filter((f) => !f.guardas.some((g) => /"(saas\.[a-z_]+|marketing\.automacoes)"/.test(g)))
+      .filter((f) => !f.guardas.some((g) => /"(saas\.[a-z_]+|marketing\.automacoes|financeiro\.repasses)"/.test(g)))
       .map((f) => `${f.arquivo} › ${f.nome}`);
     expect(sem).toEqual([]);
   });
@@ -84,6 +84,18 @@ describe("guardas das server functions da ponte", () => {
     for (const f of tec) expect(f.guardas.join()).toContain('"saas.tecnologia"');
     const aut = todas.filter((f) => f.arquivo === "social/automacoes.functions.ts" && f.usaPonte);
     for (const f of aut) expect(f.guardas.join()).toContain('"marketing.automacoes"');
+  });
+
+  it("repasses aos assinantes (financeiro da matriz): só com financeiro.repasses e a ação certa", () => {
+    const rp = todas.filter((f) => f.arquivo === "financeiro/repasses.functions.ts");
+    expect(rp.length).toBeGreaterThanOrEqual(10);
+    for (const f of rp) expect(f.guardas.join(), f.nome).toContain('"financeiro.repasses"');
+    const acao = (nome: string) => rp.find((f) => f.nome === nome)!.guardas.join();
+    expect(acao("pagarRepasse")).toContain('"pagar"');
+    expect(acao("estornarPagamentoRepasse")).toContain('"pagar"');
+    expect(acao("aprovarRepasses")).toContain('"aprovar"');
+    expect(acao("definirRegraRepasse")).toContain('"regras"');
+    expect(acao("cancelarRepasse")).toContain('"edit"');
   });
 
   it("códigos de acesso: só com operacional.codigos", () => {
@@ -150,6 +162,70 @@ describe("guardas das server functions da ponte", () => {
     const cs = todas.filter((f) => f.arquivo === "plataforma/consultas.functions.ts");
     const registrar = cs.find((f) => f.nome === "registrarCustoConsulta")!;
     expect(registrar.guardas.join()).toContain('"edit"');
+  });
+
+  /** POSTs de um arquivo: todos exigem "edit" do módulo (ver nunca basta para mudar). */
+  const postsDe = (arquivo: string) => {
+    const fonte = readFileSync(join(RAIZ, arquivo), "utf8");
+    return [...fonte.matchAll(/export const (\w+) = createServerFn\(\{ method: "POST" \}\)/g)].map((m) => m[1]);
+  };
+
+  it("carteiras (C50): ler pede saas.licencas; criar, editar, arquivar e mexer em contas pedem edit", () => {
+    const cs = todas.filter((f) => f.arquivo === "plataforma/carteiras.functions.ts");
+    expect(cs.length).toBeGreaterThanOrEqual(7);
+    for (const f of cs) expect(f.guardas.join()).toContain('"saas.licencas"');
+    const posts = postsDe("plataforma/carteiras.functions.ts");
+    expect(posts.sort()).toEqual(
+      ["adicionarContasCarteira", "arquivarCarteira", "criarCarteira", "editarCarteira", "removerContaCarteira"].sort(),
+    );
+    for (const nome of posts) {
+      const f = cs.find((x) => x.nome === nome)!;
+      expect(f.guardas.join(), nome).toContain('"edit"');
+      expect(f.guardas.join(), nome).not.toContain('"view"');
+    }
+  });
+
+  it("suporte (C59): atribuir chamado pede saas.suporte edit; métricas e equipe, ver", () => {
+    const sp = todas.filter((f) => f.arquivo === "plataforma/suporte.functions.ts");
+    for (const f of sp) expect(f.guardas.join()).toContain('"saas.suporte"');
+    const atribuir = sp.find((f) => f.nome === "atribuirChamado")!;
+    expect(atribuir.guardas.join()).toContain('"edit"');
+    for (const nome of postsDe("plataforma/suporte.functions.ts")) {
+      expect(sp.find((x) => x.nome === nome)!.guardas.join(), nome).toContain('"edit"');
+    }
+  });
+
+  it("marketplace (C61): decidir (Aprovar/Não aprovar) pede saas.marketplace edit, pela função com motivo", () => {
+    const mk = todas.filter((f) => f.arquivo === "plataforma/marketplace.functions.ts");
+    for (const f of mk) expect(f.guardas.join()).toContain('"saas.marketplace"');
+    const decidir = mk.find((f) => f.nome === "decidirEspecialista")!;
+    expect(decidir.guardas.join()).toContain('"edit"');
+    const fonte = readFileSync(join(RAIZ, "plataforma/marketplace.functions.ts"), "utf8");
+    // A decisão passa pela função do banco (motivo, histórico e aviso); nada de UPDATE direto.
+    expect(fonte).toContain("ecossistema.decidir_especialista($1, $2, $3)");
+    expect(fonte).not.toMatch(/update ecossistema\.especialistas/i);
+  });
+
+  it("comunidade: ler pede saas.imobmatch; decidir pede saas.imobmatch edit e a função com motivo", () => {
+    const cm = todas.filter((f) => f.arquivo === "plataforma/comunidade.functions.ts");
+    expect(cm.length).toBe(2);
+    for (const f of cm) expect(f.guardas.join()).toContain('"saas.imobmatch"');
+    const decidir = cm.find((f) => f.nome === "decidirDenunciaComunidade")!;
+    expect(decidir.guardas.join()).toContain('"edit"');
+    const fonte = readFileSync(join(RAIZ, "plataforma/comunidade.functions.ts"), "utf8");
+    expect(fonte).toContain("plataforma.comunidade_decidir($1, $2, $3)");
+    expect(fonte).not.toContain("rede.imobnet_moderar(");
+  });
+
+  it('a tela da comunidade escreve "ImobMatch Comunidade", nunca "ImobNet"', () => {
+    const telas = [
+      ...arquivos(join(RAIZ, "../components/plataforma")),
+      ...arquivos(join(RAIZ, "../routes/_authenticated")).filter((a) => /plataforma\./.test(a)),
+    ];
+    const comImobNet = telas.filter((a) => /ImobNet/.test(readFileSync(a, "utf8")));
+    expect(comImobNet.map((a) => relative(RAIZ, a))).toEqual([]);
+    const aba = readFileSync(join(RAIZ, "../components/plataforma/imobmatch/aba-comunidade.tsx"), "utf8");
+    expect(aba).toContain("ImobMatch Comunidade");
   });
 
   it("comissões dos assinantes pedem saas.comissoes", () => {

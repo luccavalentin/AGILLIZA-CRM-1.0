@@ -1,11 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { listarTarefas } from "@/lib/operacional/tarefas.functions";
 import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
-import { Button } from "@/components/ui/button";
+import { VisoesTarefas } from "@/components/operacional/tarefas/visoes-tarefas";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mapaFeriados } from "@/lib/feriados-br";
 import {
@@ -79,11 +78,7 @@ function Pagina() {
           </h1>
           <p className="text-sm text-muted-foreground">Tarefas organizadas pela data de prazo.</p>
         </div>
-        <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
-          <Link to="/operacional/tarefas">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Lista
-          </Link>
-        </Button>
+        <VisoesTarefas atual="calendario" />
       </div>
 
       <Tabs

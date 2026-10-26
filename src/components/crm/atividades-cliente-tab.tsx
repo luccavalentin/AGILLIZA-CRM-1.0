@@ -7,11 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { listarDemandas } from "@/lib/operacional/demandas.functions";
 import { listarTarefas } from "@/lib/operacional/tarefas.functions";
-import { InteracoesTab } from "@/components/crm/interacoes-tab";
 
 /**
  * Aba do cadastro do cliente que consolida TODAS as atividades vinculadas a ele:
- * demandas, tarefas e interações — servindo como visão 360º do relacionamento.
+ * demandas e tarefas (o registro manual de interações saiu em 26/10/2026, item C11).
  */
 export function AtividadesClienteTab({ clienteId }: { clienteId: string }) {
   const listarDem = useServerFn(listarDemandas);
@@ -129,15 +128,6 @@ export function AtividadesClienteTab({ clienteId }: { clienteId: string }) {
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Registro de interações</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <InteracoesTab clienteId={clienteId} />
         </CardContent>
       </Card>
     </div>

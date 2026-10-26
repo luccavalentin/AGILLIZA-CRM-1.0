@@ -8,6 +8,8 @@ import { usePermissao, usePermissoesCarregadas } from "@/hooks/use-permissao";
 import { cn } from "@/lib/utils";
 import { lerResumoImobMatch } from "@/lib/plataforma/imobmatch.functions";
 import { AbaAnunciantes } from "./aba-anunciantes";
+import { AbaChat } from "./aba-chat";
+import { AbaComunidade } from "./aba-comunidade";
 import { AbaDenuncias } from "./aba-denuncias";
 import { AbaModerados } from "./aba-moderados";
 import { AbaNumeros } from "./aba-numeros";
@@ -33,6 +35,9 @@ import {
 export const ABAS_IMOBMATCH = [
   "revisao",
   "denuncias",
+  "comunidade",
+  // Moderação do chat universal (t1, 0352).
+  "chat",
   "moderados",
   "profissionais",
   "anunciantes",
@@ -44,6 +49,8 @@ export type AbaGestao = AbaImobMatch | AbaPatrocinados;
 const ROTULO_IMOBMATCH: Record<AbaImobMatch, string> = {
   revisao: "Anúncios em revisão",
   denuncias: "Denúncias",
+  comunidade: "Comunidade",
+  chat: "Chat",
   moderados: "Moderados",
   profissionais: "Profissionais (CRECI)",
   anunciantes: "Anunciantes",
@@ -96,10 +103,10 @@ export function GestaoParceirosAnuncios({
   return (
     <div className="space-y-6 p-4 md:p-6">
       <AdminHero
-        secao="Plataforma · ImobMatch"
+        secao="Gestão de sistemas · ImobMatch"
         icon={<Handshake className="h-5 w-5" />}
         titulo="Gestão de Parceiros e Anúncios"
-        descricao="Revisar endereços repetidos, julgar denúncias, moderar anúncios, conferir CRECI e acompanhar o ImobMatch. Toda decisão fica registrada e o anunciante é avisado."
+        descricao="Revisar endereços repetidos, julgar denúncias, moderar o ImobMatch Comunidade, conferir CRECI e acompanhar o ImobMatch. Toda decisão fica registrada e quem publicou é avisado."
         acoes={
           <Button
             variant="outline"
@@ -223,6 +230,12 @@ export function GestaoParceirosAnuncios({
             </TabsContent>
             <TabsContent value="denuncias" className="mt-4">
               <AbaDenuncias />
+            </TabsContent>
+            <TabsContent value="comunidade" className="mt-4">
+              <AbaComunidade />
+            </TabsContent>
+            <TabsContent value="chat" className="mt-4">
+              <AbaChat />
             </TabsContent>
             <TabsContent value="moderados" className="mt-4">
               <AbaModerados />

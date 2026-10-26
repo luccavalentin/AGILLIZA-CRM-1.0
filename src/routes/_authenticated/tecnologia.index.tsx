@@ -102,9 +102,9 @@ function VisaoGeral() {
     <div className="space-y-4 md:space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-foreground">Central de operações</h2>
           <p className="text-xs text-muted-foreground">
-            Agilliza e Agilliza Tech ao vivo — tráfego, usuários, erros e licenças.
+            Fontes: telemetria do portal do Agilliza Tech (requisições e sessões), erros dos dois
+            sistemas, incidentes, licenças e o coletor da VPS. Cada número diz a sua janela.
           </p>
         </div>
         <SeloAoVivo
@@ -131,24 +131,27 @@ function VisaoGeral() {
         <Kpi
           cor="vermelho"
           icone={<Users />}
-          rotulo="Usuários online"
+          rotulo="Usuários online no Agilliza Tech"
+          janela="5 min"
           carregando={carregando}
           valor={fmtNum(r?.online_agora)}
-          rodape={`${fmtNum(online?.ativos_24h)} nas últimas 24 h`}
+          rodape={`sessão usada nos últimos 5 min · ${fmtNum(online?.ativos_24h)} em 24 h`}
         />
         <Kpi
           cor="azul"
           icone={<Zap />}
-          rotulo="Requisições por minuto"
+          rotulo="Requisições por minuto (Agilliza Tech)"
+          janela="média de 5 min"
           carregando={carregando}
           valor={fmtNum1(r?.requisicoes_5min.por_minuto)}
-          rodape={`taxa de falha ${taxa == null ? "—" : `${fmtNum1(taxa)}%`} (15 min)`}
+          rodape={`${fmtNum(r?.requisicoes_5min.total)} em 5 min · falha (5xx) ${taxa == null ? "sem dados" : `${fmtNum1(taxa)}%`} em 15 min`}
           tom={taxa == null ? "neutro" : taxa >= 5 ? "critico" : taxa >= 1 ? "atencao" : "neutro"}
         />
         <Kpi
           cor="amarelo"
           icone={<Bug />}
-          rotulo="Erros novos (1 h)"
+          rotulo="Grupos de erro novos"
+          janela="1 h"
           carregando={carregando}
           valor={fmtNum(r?.erros_cliente.novos_1h)}
           rodape={
@@ -165,6 +168,7 @@ function VisaoGeral() {
           cor="roxo"
           icone={<ShieldAlert />}
           rotulo="Incidentes abertos"
+          janela="agora"
           carregando={carregando}
           valor={fmtNum(r?.incidentes.abertos)}
           rodape={`${fmtNum(r?.incidentes.criticos)} crítico(s)`}
@@ -174,6 +178,7 @@ function VisaoGeral() {
           cor="verde"
           icone={<KeyRound />}
           rotulo="Licenças ativas"
+          janela="agora"
           carregando={carregando}
           valor={fmtNum(painel?.licencas.ativas)}
           rodape={`+${fmtNum(painel?.licencas.novas_7d)} novas em 7 dias · ${fmtNum(painel?.licencas.teste)} em teste`}
@@ -187,7 +192,7 @@ function VisaoGeral() {
               titulo="Tráfego"
               valor={fmtNum1(r?.requisicoes_5min.por_minuto)}
               unidade="req/min"
-              rodape="última hora"
+              rodape="média de 5 min · gráfico da última hora"
               dados={serie as unknown as Record<string, unknown>[]}
               chave="requisicoes"
               cor="#9b7bff"
@@ -206,7 +211,7 @@ function VisaoGeral() {
             <MiniArea
               titulo="Mensagens na fila"
               valor={fmtNum(r?.fila.pendentes)}
-              rodape={`${fmtNum(r?.fila.mortas_24h)} descartada(s) em 24 h`}
+              rodape={`agora (pendentes, em processo ou com erro) · ${fmtNum(r?.fila.mortas_24h)} descartada(s) em 24 h`}
               dados={serie as unknown as Record<string, unknown>[]}
               chave="fila"
               cor="#2fd39a"
@@ -238,7 +243,7 @@ function VisaoGeral() {
                     series={[
                       { rotulo: "Requisições", cor: COR.primaria },
                       { rotulo: "Falhas (5xx)", cor: COR.falha },
-                      { rotulo: "p95 (eixo à direita)", cor: COR.alerta },
+                      { rotulo: "p95 em ms (eixo à direita)", cor: COR.alerta },
                     ]}
                   />
                 </>
@@ -249,7 +254,7 @@ function VisaoGeral() {
 
         <CartaoFerramentas
           titulo="Usuários online"
-          subtitulo="Por perfil e por estado (uso nos últimos 5 min)."
+          subtitulo="Agilliza Tech, por perfil e por estado (sessão usada nos últimos 5 min)."
           icone={<Users className="size-4" />}
           onAtualizar={() => q.refetch()}
           atualizando={q.isFetching}

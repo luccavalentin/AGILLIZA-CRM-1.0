@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useChatFlash, stopFlash } from "@/components/shared/chat-alert-store";
+import { useChatFlash, stopFlash } from "@/components/chat/chat-alerta";
 import type { NavGroup, NavItem } from "./nav-config";
 
 const ROTAS_CHAT = ["/crm/chat"];
@@ -49,6 +49,12 @@ function melhorDestino(nav: NavGroup[], pathname: string): string | null {
 }
 
 function itemAtivo(item: NavItem, melhor: string | null, pasta?: string): boolean {
+  // Grupo com destino próprio (menu novo de 26/10: "Visão geral ao vivo" > Operação,
+  // Servidor...) é ativo quando QUALQUER filho é: antes o `to` do pai decidia sozinho e
+  // o grupo abria fechado em /tecnologia/erros.
+  if (item.children && item.children.length > 0) {
+    return item.children.some((c) => itemAtivo(c, melhor, pasta));
+  }
   if (item.to) {
     if (item.to !== melhor) return false;
     // Itens irmãos que compartilham o mesmo `to` mas apontam para pastas
@@ -60,7 +66,6 @@ function itemAtivo(item: NavItem, melhor: string | null, pasta?: string): boolea
     if (pasta !== undefined) return false;
     return true;
   }
-  if (item.children) return item.children.some((c) => itemAtivo(c, melhor, pasta));
   return false;
 }
 
@@ -110,10 +115,13 @@ function SidebarLink({
   item,
   active,
   onNavigate,
+  filho,
 }: {
   item: NavItem;
   active: boolean;
   onNavigate?: () => void;
+  /** Item dentro de um grupo: insígnia menor (24 px). */
+  filho?: boolean;
 }) {
   const Icon = item.icon;
   const flash = useChatFlash();
@@ -138,7 +146,7 @@ function SidebarLink({
       }}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        "group relative flex min-h-10 items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         active
           ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
           : "text-sidebar-foreground hover:bg-white/15 hover:text-sidebar-foreground",
@@ -148,12 +156,11 @@ function SidebarLink({
       {active && (
         <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-sidebar-primary" />
       )}
-      <Icon
-        className={cn(
-          "h-[18px] w-[18px] shrink-0",
-          active ? "text-sidebar-accent-foreground" : "text-sidebar-primary",
-        )}
-      />
+      {/* Insígnia 3D (C00, 26/10): o glifo mora num quadrado com véu e fio de luz; o
+          ativo vira peça branca em relevo com o glifo azul (CSS em styles.css). */}
+      <span className={cn("menu-insignia", filho && "filho")} aria-hidden>
+        <Icon />
+      </span>
       <span className="truncate">{item.label}</span>
       {piscar && (
         <span className="ml-auto h-2.5 w-2.5 shrink-0 animate-ping rounded-full bg-white shadow-[0_0_8px_white]" />
@@ -184,22 +191,28 @@ function CollapsibleGroup({
   return (
     <Collapsible defaultOpen={algumAtivo}>
       <CollapsibleTrigger
+        // Sem o relevo genérico de botão (styles.css, "3D Depth System"): no menu ele
+        // desenhava uma caixa em volta só dos itens com submenu.
+        data-depth="off"
         className={cn(
-          "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+          "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
           "[&[data-state=open]>svg:last-child]:rotate-90",
         )}
       >
-        <Icon className="h-[18px] w-[18px] shrink-0 text-sidebar-primary" />
+        <span className={cn("menu-insignia", algumAtivo && "contem-ativo")} aria-hidden>
+          <Icon />
+        </span>
         <span className="truncate">{item.label}</span>
         <ChevronRight className="ml-auto h-4 w-4 transition-transform" />
       </CollapsibleTrigger>
-      <CollapsibleContent className="ml-4 mt-1 flex flex-col gap-1 border-l border-sidebar-border pl-2">
+      <CollapsibleContent className="ml-[21px] mt-1 flex flex-col gap-0.5 border-l border-sidebar-border pl-2">
         {item.children!.map((child) => (
           <SidebarLink
             key={child.label}
             item={child}
             active={itemAtivo(child, melhor, pasta)}
             onNavigate={onNavigate}
+            filho
           />
         ))}
       </CollapsibleContent>
@@ -251,7 +264,9 @@ export function SidebarRail({ nav, onNavigate }: SidebarProps) {
                 {active && (
                   <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-sidebar-primary" />
                 )}
-                <Icon className="h-[18px] w-[18px]" />
+                <span className="menu-insignia" aria-hidden>
+                  <Icon />
+                </span>
                 {piscar && (
                   <span className="absolute right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-sidebar-primary" />
                 )}

@@ -1,6 +1,5 @@
-import { AdminHero } from "@/components/admin/admin-hero";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -19,7 +18,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  CabecalhoGestao,
+  EstadoErro,
+  PaginaGestao,
+  Secao,
+  Selo,
+} from "@/components/plataforma/kit";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
 import {
@@ -29,8 +36,13 @@ import {
 } from "@/lib/admin/parametros.functions";
 import { mascararCep, cepValido, consultarCep } from "@/lib/cep";
 
+/**
+ * Parâmetros (Configurações gerais, pedido do dono de 26/10/2026, item C68): os dados da
+ * empresa organizados por assunto (Empresa · Contatos · Políticas), com o quanto falta
+ * preencher ao lado. Mesmos campos e mesma função de salvar de antes.
+ */
 export const Route = createFileRoute("/_authenticated/admin/parametros")({
-  head: () => ({ meta: [{ title: "Cadastro da Empresa — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Parâmetros — Configurações gerais — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("admin.parametros"),
   component: Pagina,
 });
@@ -112,42 +124,6 @@ const VAZIO: Form = {
   email_dpo: "",
 };
 
-function Secao({
-  numero,
-  icon,
-  titulo,
-  descricao,
-  children,
-}: {
-  numero: string;
-  icon: ReactNode;
-  titulo: string;
-  descricao: string;
-  children: ReactNode;
-}) {
-  return (
-    <Card className="overflow-hidden border-border/60 shadow-sm">
-      <div className="flex items-center gap-3 border-b border-border/60 bg-muted/30 px-5 py-4">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
-          {icon}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold tracking-[0.18em] text-primary/70">
-              {numero}
-            </span>
-            <h2 className="truncate text-sm font-semibold tracking-tight text-foreground">
-              {titulo}
-            </h2>
-          </div>
-          <p className="truncate text-xs text-muted-foreground">{descricao}</p>
-        </div>
-      </div>
-      <CardContent className="p-5">{children}</CardContent>
-    </Card>
-  );
-}
-
 function Campo({
   id,
   label,
@@ -160,6 +136,7 @@ function Campo({
   placeholder,
   maxLength,
   inputMode,
+  disabled,
 }: {
   id: string;
   label: string;
@@ -171,10 +148,11 @@ function Campo({
   className?: string;
   placeholder?: string;
   maxLength?: number;
-  inputMode?: "text" | "numeric";
+  inputMode?: "text" | "numeric" | "email" | "tel" | "url";
+  disabled?: boolean;
 }) {
   return (
-    <div className={`space-y-1.5 ${className ?? ""}`}>
+    <div className={`min-w-0 space-y-1.5 ${className ?? ""}`}>
       <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">
         {label}
       </Label>
@@ -186,16 +164,34 @@ function Campo({
           maxLength={maxLength}
           placeholder={placeholder}
           inputMode={inputMode}
+          disabled={disabled}
+          className="h-10 text-base sm:text-sm"
           onChange={(e) => onChange(e.target.value)}
           onBlur={(e) => onBlur?.(e.target.value)}
         />
         {busy && (
-          <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          <Loader2 className="absolute right-2 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         )}
       </div>
     </div>
   );
 }
+
+type Aba = "empresa" | "contatos" | "politicas";
+
+/** Campos que contam para o "cadastro completo", com o nome e a aba onde moram. */
+const ESSENCIAIS: { campo: keyof Form; rotulo: string; aba: Aba }[] = [
+  { campo: "razao_social", rotulo: "Razão social", aba: "empresa" },
+  { campo: "nome_fantasia", rotulo: "Nome fantasia", aba: "empresa" },
+  { campo: "nome_empresa", rotulo: "Nome de exibição", aba: "empresa" },
+  { campo: "cnpj", rotulo: "CNPJ", aba: "empresa" },
+  { campo: "cep", rotulo: "CEP", aba: "empresa" },
+  { campo: "logradouro", rotulo: "Logradouro", aba: "empresa" },
+  { campo: "cidade", rotulo: "Cidade", aba: "empresa" },
+  { campo: "uf", rotulo: "UF", aba: "empresa" },
+  { campo: "email_empresa", rotulo: "E-mail da empresa", aba: "contatos" },
+  { campo: "telefone_empresa", rotulo: "Telefone", aba: "contatos" },
+];
 
 function Pagina() {
   const qc = useQueryClient();
@@ -205,6 +201,7 @@ function Pagina() {
   });
   const [form, setForm] = useState<Form>(VAZIO);
   const [salvo, setSalvo] = useState<Form>(VAZIO);
+  const [aba, setAba] = useState<Aba>("empresa");
 
   useEffect(() => {
     if (q.data) {
@@ -242,7 +239,7 @@ function Pagina() {
   const salvar = useMutation({
     mutationFn: () => salvarParametros({ data: form }),
     onSuccess: () => {
-      toast.success("Cadastro da empresa salvo.");
+      toast.success("Parâmetros salvos.");
       setSalvo(form);
       qc.invalidateQueries({ queryKey: ["admin-parametros"] });
     },
@@ -277,269 +274,329 @@ function Pagina() {
   }
 
   const alterado = useMemo(() => JSON.stringify(form) !== JSON.stringify(salvo), [form, salvo]);
+  const faltando = ESSENCIAIS.filter((e) => (form[e.campo] ?? "").toString().trim() === "");
+  const completude = Math.round(((ESSENCIAIS.length - faltando.length) / ESSENCIAIS.length) * 100);
+  const bloqueado = !podeEditar;
 
-  const completude = useMemo(() => {
-    const essenciais: (keyof Form)[] = [
-      "razao_social",
-      "nome_fantasia",
-      "nome_empresa",
-      "cnpj",
-      "cep",
-      "logradouro",
-      "cidade",
-      "uf",
-      "email_empresa",
-      "telefone_empresa",
-    ];
-    const preenchidos = essenciais.filter((k) => (form[k] ?? "").toString().trim() !== "").length;
-    return Math.round((preenchidos / essenciais.length) * 100);
-  }, [form]);
-
-  if (q.isLoading) {
+  if (q.isError) {
     return (
-      <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-6">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-56 w-full" />
-        <Skeleton className="h-56 w-full" />
-      </div>
+      <PaginaGestao>
+        <EstadoErro
+          mensagem={mensagemDeErro(q.error, "Não foi possível carregar os parâmetros.")}
+          onTentar={() => q.refetch()}
+        />
+      </PaginaGestao>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
-      <AdminHero
-        icon={<Building2 className="h-5 w-5" />}
-        titulo="Cadastro da Empresa"
-        descricao="Dados institucionais do correspondente: identificação, endereço, contatos e políticas."
-        acoes={
-          <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1.5">
-            {completude === 100 ? (
-              <CheckCircle2 className="size-4 text-emerald-500" />
-            ) : (
-              <Circle className="size-4 text-primary/60" />
-            )}
-            <span className="text-xs font-semibold text-foreground">{completude}%</span>
-            <span className="text-[11px] text-muted-foreground">preenchido</span>
-          </div>
-        }
+    <PaginaGestao>
+      <CabecalhoGestao
+        secao="Configurações gerais"
+        icone={<Building2 />}
+        titulo="Parâmetros"
+        descricao="Dados da empresa que aparecem para clientes, parceiros e bancos: identificação, endereço, contatos e as políticas exibidas no portal."
       />
 
-      <form
-        className="space-y-6"
-        onSubmit={(e) => {
-          e.preventDefault();
-          salvar.mutate();
-        }}
-      >
-        <Secao
-          numero="01"
-          icon={<Building2 className="size-5" />}
-          titulo="Identificação"
-          descricao="Razão social, nome fantasia e inscrições fiscais."
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo
-              id="razao_social"
-              label="Razão social"
-              value={form.razao_social ?? ""}
-              onChange={set("razao_social")}
-            />
-            <Campo
-              id="nome_fantasia"
-              label="Nome fantasia"
-              value={form.nome_fantasia ?? ""}
-              onChange={set("nome_fantasia")}
-            />
-            <Campo
-              id="nome_empresa"
-              label="Nome de exibição"
-              value={form.nome_empresa ?? ""}
-              onChange={set("nome_empresa")}
-              placeholder="Nome exibido a clientes e parceiros"
-            />
-            <Campo
-              id="cnpj"
-              label="CNPJ"
-              value={form.cnpj ?? ""}
-              onChange={set("cnpj")}
-              placeholder="00.000.000/0000-00"
-            />
-            <Campo
-              id="inscricao_estadual"
-              label="Inscrição estadual"
-              value={form.inscricao_estadual ?? ""}
-              onChange={set("inscricao_estadual")}
-            />
-            <Campo
-              id="inscricao_municipal"
-              label="Inscrição municipal"
-              value={form.inscricao_municipal ?? ""}
-              onChange={set("inscricao_municipal")}
-            />
-          </div>
-        </Secao>
-
-        <Secao
-          numero="02"
-          icon={<MapPin className="size-5" />}
-          titulo="Endereço"
-          descricao="Localização fiscal e sede do correspondente."
-        >
-          <div className="grid gap-4 sm:grid-cols-6">
-            <Campo
-              id="cep"
-              label="CEP"
-              value={form.cep ?? ""}
-              onChange={(v) => {
-                const m = mascararCep(v);
-                set("cep")(m);
-                if (cepValido(m)) buscarCepEmpresa(m);
-              }}
-              onBlur={buscarCepEmpresa}
-              busy={buscandoCep}
-              inputMode="numeric"
-              className="sm:col-span-2"
-              placeholder="00000-000"
-            />
-            <Campo
-              id="logradouro"
-              label="Logradouro"
-              value={form.logradouro ?? ""}
-              onChange={set("logradouro")}
-              className="sm:col-span-4"
-            />
-            <Campo
-              id="numero"
-              label="Número"
-              value={form.numero ?? ""}
-              onChange={set("numero")}
-              className="sm:col-span-2"
-            />
-            <Campo
-              id="complemento"
-              label="Complemento"
-              value={form.complemento ?? ""}
-              onChange={set("complemento")}
-              className="sm:col-span-4"
-            />
-            <Campo
-              id="bairro"
-              label="Bairro"
-              value={form.bairro ?? ""}
-              onChange={set("bairro")}
-              className="sm:col-span-2"
-            />
-            <Campo
-              id="cidade"
-              label="Cidade"
-              value={form.cidade ?? ""}
-              onChange={set("cidade")}
-              className="sm:col-span-3"
-            />
-            <Campo
-              id="uf"
-              label="UF"
-              value={form.uf ?? ""}
-              onChange={(v) => set("uf")(v.toUpperCase())}
-              className="sm:col-span-1"
-              maxLength={2}
-            />
-          </div>
-        </Secao>
-
-        <Secao
-          numero="03"
-          icon={<Contact className="size-5" />}
-          titulo="Contatos"
-          descricao="Responsável e canais oficiais de atendimento."
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo
-              id="responsavel_nome"
-              label="Responsável"
-              value={form.responsavel_nome ?? ""}
-              onChange={set("responsavel_nome")}
-            />
-            <Campo
-              id="email_empresa"
-              label="E-mail da empresa"
-              type="email"
-              value={form.email_empresa ?? ""}
-              onChange={set("email_empresa")}
-            />
-            <Campo
-              id="telefone_empresa"
-              label="Telefone"
-              value={form.telefone_empresa ?? ""}
-              onChange={set("telefone_empresa")}
-            />
-            <Campo
-              id="site"
-              label="Site"
-              value={form.site ?? ""}
-              onChange={set("site")}
-              placeholder="https://"
-            />
-          </div>
-        </Secao>
-
-        <Secao
-          numero="04"
-          icon={<ShieldCheck className="size-5" />}
-          titulo="Políticas exibidas aos clientes"
-          descricao="Textos legais apresentados no portal do cliente."
-        >
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="politica_lgpd" className="text-xs font-medium text-muted-foreground">
-                Política de LGPD
-              </Label>
-              <Textarea
-                id="politica_lgpd"
-                rows={6}
-                className="font-mono text-xs leading-relaxed"
-                value={form.politica_lgpd ?? ""}
-                onChange={(e) => set("politica_lgpd")(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="politica_privacidade"
-                className="text-xs font-medium text-muted-foreground"
-              >
-                Política de privacidade
-              </Label>
-              <Textarea
-                id="politica_privacidade"
-                rows={6}
-                className="font-mono text-xs leading-relaxed"
-                value={form.politica_privacidade ?? ""}
-                onChange={(e) => set("politica_privacidade")(e.target.value)}
-              />
-            </div>
-          </div>
-        </Secao>
-      </form>
-
-      <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70 md:-mx-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
-          <span className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span
-              className={`size-2 rounded-full ${alterado ? "bg-amber-500" : "bg-emerald-500"}`}
-            />
-            {alterado ? "Alterações não salvas" : "Tudo salvo"}
-          </span>
-          <Button
-            type="button"
-            onClick={() => salvar.mutate()}
-            disabled={!podeEditar || salvar.isPending || !alterado}
-            title={podeEditar ? undefined : "Você não tem permissão para alterar o cadastro."}
-          >
-            <Save className="mr-2 size-4" />
-            {salvar.isPending ? "Salvando…" : "Salvar cadastro"}
-          </Button>
+      {q.isLoading ? (
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <Skeleton className="h-96 rounded-[14px]" />
+          <Skeleton className="h-56 rounded-[14px]" />
         </div>
+      ) : (
+        <form
+          className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (podeEditar && alterado) salvar.mutate();
+          }}
+        >
+          <div className="min-w-0 space-y-4">
+            {bloqueado && (
+              <p className="rounded-[14px] border border-border/80 bg-muted px-4 py-3 text-sm text-muted-foreground">
+                Você pode consultar os parâmetros, mas não alterá-los.
+              </p>
+            )}
+            <Tabs value={aba} onValueChange={(v) => setAba(v as Aba)}>
+              <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-auto">
+                <TabsTrigger value="empresa" className="min-h-11 flex-1 gap-1.5 sm:min-h-8 sm:flex-none">
+                  <Building2 className="size-4" /> Empresa
+                </TabsTrigger>
+                <TabsTrigger value="contatos" className="min-h-11 flex-1 gap-1.5 sm:min-h-8 sm:flex-none">
+                  <Contact className="size-4" /> Contatos
+                </TabsTrigger>
+                <TabsTrigger value="politicas" className="min-h-11 flex-1 gap-1.5 sm:min-h-8 sm:flex-none">
+                  <ShieldCheck className="size-4" /> Políticas
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="empresa" className="mt-4 space-y-4">
+                <Secao
+                  titulo="Identificação"
+                  descricao="Razão social, nome fantasia e inscrições fiscais."
+                  icone={<Building2 />}
+                >
+                  <fieldset disabled={bloqueado} className="grid gap-4 sm:grid-cols-2">
+                    <Campo
+                      id="razao_social"
+                      label="Razão social"
+                      value={form.razao_social ?? ""}
+                      onChange={set("razao_social")}
+                    />
+                    <Campo
+                      id="nome_fantasia"
+                      label="Nome fantasia"
+                      value={form.nome_fantasia ?? ""}
+                      onChange={set("nome_fantasia")}
+                    />
+                    <Campo
+                      id="nome_empresa"
+                      label="Nome de exibição"
+                      value={form.nome_empresa ?? ""}
+                      onChange={set("nome_empresa")}
+                      placeholder="Nome exibido a clientes e parceiros"
+                    />
+                    <Campo
+                      id="cnpj"
+                      label="CNPJ"
+                      value={form.cnpj ?? ""}
+                      onChange={set("cnpj")}
+                      placeholder="00.000.000/0000-00"
+                      inputMode="numeric"
+                    />
+                    <Campo
+                      id="inscricao_estadual"
+                      label="Inscrição estadual"
+                      value={form.inscricao_estadual ?? ""}
+                      onChange={set("inscricao_estadual")}
+                    />
+                    <Campo
+                      id="inscricao_municipal"
+                      label="Inscrição municipal"
+                      value={form.inscricao_municipal ?? ""}
+                      onChange={set("inscricao_municipal")}
+                    />
+                  </fieldset>
+                </Secao>
+
+                <Secao titulo="Endereço" descricao="Sede e endereço fiscal do correspondente." icone={<MapPin />}>
+                  <fieldset disabled={bloqueado} className="grid gap-4 sm:grid-cols-6">
+                    <Campo
+                      id="cep"
+                      label="CEP"
+                      value={form.cep ?? ""}
+                      onChange={(v) => {
+                        const m = mascararCep(v);
+                        set("cep")(m);
+                        if (cepValido(m)) buscarCepEmpresa(m);
+                      }}
+                      onBlur={buscarCepEmpresa}
+                      busy={buscandoCep}
+                      inputMode="numeric"
+                      className="sm:col-span-2"
+                      placeholder="00000-000"
+                    />
+                    <Campo
+                      id="logradouro"
+                      label="Logradouro"
+                      value={form.logradouro ?? ""}
+                      onChange={set("logradouro")}
+                      className="sm:col-span-4"
+                    />
+                    <Campo
+                      id="numero"
+                      label="Número"
+                      value={form.numero ?? ""}
+                      onChange={set("numero")}
+                      className="sm:col-span-2"
+                    />
+                    <Campo
+                      id="complemento"
+                      label="Complemento"
+                      value={form.complemento ?? ""}
+                      onChange={set("complemento")}
+                      className="sm:col-span-4"
+                    />
+                    <Campo
+                      id="bairro"
+                      label="Bairro"
+                      value={form.bairro ?? ""}
+                      onChange={set("bairro")}
+                      className="sm:col-span-2"
+                    />
+                    <Campo
+                      id="cidade"
+                      label="Cidade"
+                      value={form.cidade ?? ""}
+                      onChange={set("cidade")}
+                      className="sm:col-span-3"
+                    />
+                    <Campo
+                      id="uf"
+                      label="UF"
+                      value={form.uf ?? ""}
+                      onChange={(v) => set("uf")(v.toUpperCase())}
+                      className="sm:col-span-1"
+                      maxLength={2}
+                    />
+                  </fieldset>
+                </Secao>
+              </TabsContent>
+
+              <TabsContent value="contatos" className="mt-4 space-y-4">
+                <Secao
+                  titulo="Contatos e atendimento"
+                  descricao="Responsável e canais oficiais exibidos a clientes e parceiros."
+                  icone={<Contact />}
+                >
+                  <fieldset disabled={bloqueado} className="grid gap-4 sm:grid-cols-2">
+                    <Campo
+                      id="responsavel_nome"
+                      label="Responsável"
+                      value={form.responsavel_nome ?? ""}
+                      onChange={set("responsavel_nome")}
+                    />
+                    <Campo
+                      id="email_empresa"
+                      label="E-mail da empresa"
+                      type="email"
+                      inputMode="email"
+                      value={form.email_empresa ?? ""}
+                      onChange={set("email_empresa")}
+                    />
+                    <Campo
+                      id="telefone_empresa"
+                      label="Telefone"
+                      inputMode="tel"
+                      value={form.telefone_empresa ?? ""}
+                      onChange={set("telefone_empresa")}
+                    />
+                    <Campo
+                      id="telefone_sac"
+                      label="Telefone do atendimento (SAC)"
+                      inputMode="tel"
+                      value={form.telefone_sac ?? ""}
+                      onChange={set("telefone_sac")}
+                    />
+                    <Campo
+                      id="site"
+                      label="Site"
+                      inputMode="url"
+                      value={form.site ?? ""}
+                      onChange={set("site")}
+                      placeholder="https://"
+                      className="sm:col-span-2"
+                    />
+                  </fieldset>
+                </Secao>
+              </TabsContent>
+
+              <TabsContent value="politicas" className="mt-4 space-y-4">
+                <Secao
+                  titulo="Políticas exibidas aos clientes"
+                  descricao="Textos legais apresentados no portal do cliente."
+                  icone={<ShieldCheck />}
+                >
+                  <fieldset disabled={bloqueado} className="space-y-4">
+                    <Campo
+                      id="email_dpo"
+                      label="E-mail do encarregado de dados (DPO)"
+                      type="email"
+                      inputMode="email"
+                      value={form.email_dpo ?? ""}
+                      onChange={set("email_dpo")}
+                      className="sm:max-w-md"
+                    />
+                    <div className="space-y-1.5">
+                      <Label htmlFor="politica_lgpd" className="text-xs font-medium text-muted-foreground">
+                        Política de LGPD
+                      </Label>
+                      <Textarea
+                        id="politica_lgpd"
+                        rows={10}
+                        className="font-mono text-xs leading-relaxed"
+                        value={form.politica_lgpd ?? ""}
+                        onChange={(e) => set("politica_lgpd")(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="politica_privacidade"
+                        className="text-xs font-medium text-muted-foreground"
+                      >
+                        Política de privacidade
+                      </Label>
+                      <Textarea
+                        id="politica_privacidade"
+                        rows={10}
+                        className="font-mono text-xs leading-relaxed"
+                        value={form.politica_privacidade ?? ""}
+                        onChange={(e) => set("politica_privacidade")(e.target.value)}
+                      />
+                    </div>
+                  </fieldset>
+                </Secao>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-20">
+            <Secao titulo="Cadastro da empresa" icone={completude === 100 ? <CheckCircle2 /> : <Circle />}>
+              <div className="space-y-3">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[clamp(1.2rem,1rem+0.8vw,1.6rem)] font-medium tabular-nums tracking-tight">
+                    {completude}%
+                  </span>
+                  <Selo tom={completude === 100 ? "sucesso" : "alerta"}>
+                    {completude === 100 ? "Completo" : `${faltando.length} faltando`}
+                  </Selo>
+                </div>
+                <Progress value={completude} className="h-1.5" aria-label="Cadastro preenchido" />
+                {faltando.length > 0 ? (
+                  <ul className="space-y-1">
+                    {faltando.map((f) => (
+                      <li key={f.campo}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAba(f.aba);
+                            setTimeout(() => document.getElementById(String(f.campo))?.focus(), 50);
+                          }}
+                          className="flex min-h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-muted-foreground transition-colors hover:bg-primary/[0.04] hover:text-foreground"
+                        >
+                          <Circle className="size-3.5 shrink-0 text-warning" />
+                          {f.rotulo}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Todos os dados essenciais estão preenchidos.
+                  </p>
+                )}
+              </div>
+            </Secao>
+          </aside>
+        </form>
+      )}
+
+      <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-border/80 bg-card/95 px-4 py-3 shadow-[0_8px_24px_-12px_rgb(0_10_112/0.3)]">
+        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className={`size-2 rounded-full ${alterado ? "bg-warning" : "bg-success"}`} />
+          {alterado ? "Alterações não salvas" : "Tudo salvo"}
+        </span>
+        <Button
+          type="button"
+          className="min-h-11 sm:min-h-9"
+          onClick={() => salvar.mutate()}
+          disabled={!podeEditar || salvar.isPending || !alterado}
+          title={podeEditar ? undefined : "Você não tem permissão para alterar os parâmetros."}
+        >
+          <Save className="mr-2 size-4" />
+          {salvar.isPending ? "Salvando…" : "Salvar parâmetros"}
+        </Button>
       </div>
-    </div>
+    </PaginaGestao>
   );
 }

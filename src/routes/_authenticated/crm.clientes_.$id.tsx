@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -22,10 +22,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PipelineTimeline } from "@/components/crm/pipeline-timeline";
 import { ClienteForm } from "@/components/crm/cliente-form";
 import { DocumentosTab } from "@/components/crm/documentos-tab";
-import { InteracoesTab } from "@/components/crm/interacoes-tab";
 import { AtividadesClienteTab } from "@/components/crm/atividades-cliente-tab";
 import { VinculoTab } from "@/components/crm/vinculo-tab";
-import { ChatClienteInstagram } from "@/components/crm/chat-cliente-instagram";
 import { SimulacaoPreviewDialog } from "@/components/simulacao/simulacao-preview-dialog";
 import { VendedoresTab } from "@/components/crm/vendedores-tab";
 import { ImovelTab, IqTab } from "@/components/crm/imovel-iq-tab";
@@ -50,13 +48,17 @@ import { ResumoTab } from "@/components/crm/cliente-detalhe/resumo-tab";
 import { NegociosTab } from "@/components/crm/cliente-detalhe/negocios-tab";
 import { HistoricoTab } from "@/components/crm/cliente-detalhe/historico-tab";
 import { clienteParaFormInicial } from "@/components/crm/cliente-detalhe/form-mapper";
-import { AppClienteAcesso } from "@/components/crm/cliente-detalhe/app-cliente-acesso";
+import { abaClienteInicial } from "@/components/crm/cliente-detalhe/abas-cliente";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { etapaEhComercial, MSG_ETAPA_SINCRONIZADA } from "@/lib/crm/etapas";
 
 export const Route = createFileRoute("/_authenticated/crm/clientes_/$id")({
   head: () => ({ meta: [{ title: "Cliente — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("crm.clientes"),
+  // A aba aberta fica na URL (?aba=documentos): voltar, recarregar e links levam à mesma seção.
+  validateSearch: (s: Record<string, unknown>): { aba?: string } => ({
+    aba: typeof s.aba === "string" ? s.aba : undefined,
+  }),
   component: Pagina,
   errorComponent: () => (
     <div className="p-6 text-sm text-destructive">Erro ao carregar o cliente.</div>
@@ -80,7 +82,11 @@ function Pagina() {
   const [movendoEtapa, setMovendoEtapa] = useState(false);
   // Mover etapa e ligar o app do cliente exigem "Editar" em Clientes (o servidor recusa).
   const podeEditar = usePermissao("crm.clientes", "edit");
-  const [aba, setAba] = useState("resumo");
+  // Abre em "Vínculo de atendimento" (C09); aba antiga ou desconhecida cai no padrão.
+  const navegar = useNavigate({ from: Route.fullPath });
+  const aba = abaClienteInicial(Route.useSearch().aba);
+  const setAba = (v: string) =>
+    void navegar({ search: (s) => ({ ...s, aba: v }), replace: true, resetScroll: false });
   const [previewSimId, setPreviewSimId] = useState<string | null>(null);
   /** Avanço que pula etapas, aguardando confirmação. */
   const [pulo, setPulo] = useState<{ codigo: string; nome: string; puladas: string[] } | null>(
@@ -189,7 +195,12 @@ function Pagina() {
         <span className="text-sm text-muted-foreground">Voltar aos clientes</span>
       </div>
 
-      <ClienteHeader cliente={c} docExib={docExib} celularExib={celularExib} />
+      <ClienteHeader
+        cliente={c}
+        docExib={docExib}
+        celularExib={celularExib}
+        podeEditar={podeEditar}
+      />
 
       <Card>
         <CardHeader className="pb-2">
@@ -243,15 +254,6 @@ function Pagina() {
       <Tabs value={aba} onValueChange={setAba}>
         <TabsNav aba={aba} setAba={setAba} />
 
-        <TabsContent value="resumo" className="mt-4">
-          <ResumoTab
-            cliente={c}
-            docExib={docExib}
-            responsavelNome={det.responsavel_nome}
-            etapaNome={etapaNome}
-          />
-        </TabsContent>
-
         <TabsContent value="vinculo" className="mt-4">
           <VinculoTab clienteId={id} responsavelNome={det.responsavel_nome} />
         </TabsContent>
@@ -284,41 +286,20 @@ function Pagina() {
           <NegociosTab negocios={negocios} onAbrirSimulacao={setPreviewSimId} />
         </TabsContent>
 
-        <TabsContent value="mensagens" className="mt-4">
-          {podeEditar && (
-            <AppClienteAcesso clienteId={id} ativo={Boolean((c as any)?.portal_acesso_ativo)} />
-          )}
-          <div className="h-[68dvh] max-h-[680px] min-h-[420px]">
-            <ChatClienteInstagram
-              clienteId={id}
-              info={{
-                nome: c.nome,
-                documento: docExib,
-                email: c.email,
-                celular: c.telefone_celular ? formatarCelular(c.telefone_celular) : null,
-                contexto: (() => {
-                  const nSim = negocios?.simulacoes.length ?? 0;
-                  const nProp = negocios?.propostas.length ?? 0;
-                  const partes: string[] = [];
-                  if (nProp > 0) partes.push(`${nProp} proposta${nProp > 1 ? "s" : ""}`);
-                  if (nSim > 0) partes.push(`${nSim} simulação${nSim > 1 ? "ões" : ""}`);
-                  return partes.join(" · ") || null;
-                })(),
-              }}
-            />
-          </div>
-        </TabsContent>
-
         <TabsContent value="atividades" className="mt-4">
           <AtividadesClienteTab clienteId={id} />
         </TabsContent>
 
-        <TabsContent value="interacoes" className="mt-4">
-          <InteracoesTab clienteId={id} />
-        </TabsContent>
-
         <TabsContent value="historico" className="mt-4">
           <HistoricoTab historico={historico} />
+        </TabsContent>
+        <TabsContent value="resumo" className="mt-4">
+          <ResumoTab
+            cliente={c}
+            docExib={docExib}
+            responsavelNome={det.responsavel_nome}
+            etapaNome={etapaNome}
+          />
         </TabsContent>
       </Tabs>
 

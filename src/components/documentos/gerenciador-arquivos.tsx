@@ -1,55 +1,84 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+/**
+ * Gerenciador de Arquivos (Documentos diversos › Arquivos) — pedido do dono de 26/10/2026.
+ *
+ * Navegação à esquerda (Meus arquivos, Favoritos, Compartilhados comigo, Recentes, Lixeira
+ * e o espaço usado), trilha + busca + ações em cima, conteúdo em grade ou lista. Arrastar
+ * arquivos do computador envia para a pasta aberta; arrastar um item sobre uma pasta (ou
+ * sobre a trilha) move. Cada ação aparece conforme o nível da pessoa no item (o banco
+ * confere de novo: ver / editar / gerir).
+ */
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
-  FileText,
-  Folder,
+  AlertTriangle,
+  Clock,
   FolderOpen,
   FolderPlus,
   HardDrive,
   LayoutGrid,
   List,
+  Loader2,
   Search,
+  Share2,
+  Star,
+  Trash2,
   Upload,
   UploadCloud,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
-  listarNos,
+  alternarFavorito,
   caminhoNo,
   criarPasta,
+  definirCota,
+  definirMostrarNoMenu,
+  lerArmazenamento,
+  listarArquivos,
+  listarPastas,
+  moverNo,
+  moverParaLixeira,
   registrarArquivo,
   renomearNo,
-  excluirNo,
-  moverNo,
   urlArquivo,
-  listarPastas,
-  definirMostrarNoMenu,
-  pesquisarArquivos,
   type ArquivoNo,
-  type ResultadoPesquisa,
+  type VisaoArquivos,
 } from "@/lib/documentos/arquivos.functions";
-import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
-import { sanitizePath, formatBytes } from "./gerenciador/arquivo-utils";
-import { NoCard } from "./gerenciador/no-card";
-import { TrilhaNavegacao } from "./gerenciador/trilha-navegacao";
-import { MoverDialog } from "./gerenciador/mover-dialog";
-import { ExcluirDialog, NovaPastaDialog, RenomearDialog } from "./gerenciador/dialogos-arquivo";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+  caminhoNoBucket,
+  formatarBytes,
+  planejarEnvio,
+  situacaoCota,
+  type ResolucaoConflito,
+} from "@/lib/documentos/arquivos-regras";
+import { VisualizadorArquivo } from "@/components/comum/visualizador-arquivo";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { usePermissao } from "@/hooks/use-permissao";
+import { NoCard, type AcoesNo, MIME_NO } from "./gerenciador/no-card";
+import { TrilhaNavegacao } from "./gerenciador/trilha-navegacao";
+import { MoverDialog } from "./gerenciador/mover-dialog";
+import {
+  ConflitoDialog,
+  CotaDialog,
+  LixeiraDialog,
+  NovaPastaDialog,
+  RenomearDialog,
+} from "./gerenciador/dialogos-arquivo";
+import { DetalhesSheet } from "./gerenciador/detalhes-sheet";
+import { CompartilharDialog } from "./gerenciador/compartilhar-dialog";
+import { LixeiraView } from "./gerenciador/lixeira-view";
 
 export interface GerenciadorArquivosProps {
   /** Pasta inicial (id) ao montar. */
@@ -57,11 +86,36 @@ export interface GerenciadorArquivosProps {
   /** Modo controlado: quando definido, sobrepõe o estado interno. */
   pasta?: string | null;
   onPastaChange?: (id: string | null) => void;
-  /** Exibe o cabeçalho com título e ações. Default: true. */
+  /** Exibe o cabeçalho com título. Default: true. */
   mostrarCabecalho?: boolean;
   titulo?: string;
   descricao?: string;
   className?: string;
+}
+
+type Visao = VisaoArquivos | "lixeira";
+
+const VISOES: { id: Exclude<Visao, "busca">; rotulo: string; Icone: typeof Star }[] = [
+  { id: "pasta", rotulo: "Meus arquivos", Icone: FolderOpen },
+  { id: "favoritos", rotulo: "Favoritos", Icone: Star },
+  { id: "compartilhados", rotulo: "Compartilhados comigo", Icone: Share2 },
+  { id: "recentes", rotulo: "Recentes", Icone: Clock },
+  { id: "lixeira", rotulo: "Lixeira", Icone: Trash2 },
+];
+
+const CHAVE_VISTA = "agilliza.arquivos.vista";
+
+function lerVista(): "grade" | "lista" {
+  try {
+    return localStorage.getItem(CHAVE_VISTA) === "lista" ? "lista" : "grade";
+  } catch {
+    return "grade";
+  }
+}
+
+interface EnvioPendente {
+  arquivos: File[];
+  destino: string | null;
 }
 
 export function GerenciadorArquivos({
@@ -70,324 +124,372 @@ export function GerenciadorArquivos({
   onPastaChange,
   mostrarCabecalho = true,
   titulo = "Arquivos",
-  descricao = "Pastas e documentos do seu escritório.",
+  descricao = "Os documentos do escritório, organizados em pastas, com versões e lixeira.",
   className,
 }: GerenciadorArquivosProps) {
+  // Dentro de outra tela (ex.: CRM › Documentos, num painel lateral): navegação em faixa e menos colunas.
+  const embutido = !mostrarCabecalho;
+  const colunas = cn("grid grid-cols-2 gap-3 sm:grid-cols-3", !embutido && "xl:grid-cols-5");
   const qc = useQueryClient();
-  const podeEnviar = usePermissao("documentos.arquivos", "create");
+  const enviarNaRaiz = usePermissao("documentos.arquivos", "create");
   const [pastaInterna, setPastaInterna] = useState<string | null>(pastaInicial ?? null);
   const pasta = pastaControlada !== undefined ? pastaControlada : pastaInterna;
+
+  const [visao, setVisao] = useState<Visao>("pasta");
+  const [termo, setTermo] = useState("");
+  const [termoBusca, setTermoBusca] = useState("");
+  const [etiqueta, setEtiqueta] = useState<string | null>(null);
+  const [vista, setVistaEstado] = useState<"grade" | "lista">("grade");
+  const [arrastandoArquivo, setArrastandoArquivo] = useState(false);
+  const [envio, setEnvio] = useState<{ atual: number; total: number; nome: string } | null>(null);
+  const [conflito, setConflito] = useState<(EnvioPendente & { nomes: string[] }) | null>(null);
+  const [novaPasta, setNovaPasta] = useState(false);
+  const [renomeando, setRenomeando] = useState<ArquivoNo | null>(null);
+  const [movendo, setMovendo] = useState<ArquivoNo | null>(null);
+  const [lixeiraDe, setLixeiraDe] = useState<ArquivoNo | null>(null);
+  const [detalhes, setDetalhes] = useState<ArquivoNo | null>(null);
+  const [compartilhando, setCompartilhando] = useState<ArquivoNo | null>(null);
+  const [cotaAberta, setCotaAberta] = useState(false);
+  const [previa, setPrevia] = useState<{ url: string; nome: string } | null>(null);
+  const inputArquivos = useRef<HTMLInputElement>(null);
+  const inputPasta = useRef<HTMLInputElement>(null);
+
+  useEffect(() => setVistaEstado(lerVista()), []);
+  const setVista = (v: "grade" | "lista") => {
+    setVistaEstado(v);
+    try {
+      localStorage.setItem(CHAVE_VISTA, v);
+    } catch {
+      /* navegação privada: só não lembra */
+    }
+  };
+
+  // Busca: espera a pessoa parar de digitar.
+  useEffect(() => {
+    const t = setTimeout(() => setTermoBusca(termo.trim()), 300);
+    return () => clearTimeout(t);
+  }, [termo]);
+  const buscando = termoBusca.length >= 2 || !!etiqueta;
+  const visaoEfetiva: Visao = buscando && visao !== "lixeira" ? "busca" : visao;
+
   const setPasta = useCallback(
     (id: string | null) => {
+      setVisao("pasta");
+      setTermo("");
+      setEtiqueta(null);
       if (onPastaChange) onPastaChange(id);
       if (pastaControlada === undefined) setPastaInterna(id);
     },
     [onPastaChange, pastaControlada],
   );
 
-  const [busca, setBusca] = useState("");
-  const [enviando, setEnviando] = useState<{ atual: number; total: number } | null>(null);
-  const [novaPastaAberta, setNovaPastaAberta] = useState(false);
-  const [renomeando, setRenomeando] = useState<ArquivoNo | null>(null);
-  const [excluindo, setExcluindo] = useState<ArquivoNo | null>(null);
-  const [movendo, setMovendo] = useState<ArquivoNo | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const [visualizando, setVisualizando] = useState<{
-    url: string;
-    nome: string;
-    id?: string;
-  } | null>(null);
-  const [vista, setVista] = useState<"grade" | "lista">("grade");
-  const [buscaGlobalAberta, setBuscaGlobalAberta] = useState(false);
-  const [termoGlobal, setTermoGlobal] = useState("");
-
-  const inputArquivos = useRef<HTMLInputElement>(null);
-  const inputPasta = useRef<HTMLInputElement>(null);
-
-  const fnListar = useServerFn(listarNos);
+  const fnListar = useServerFn(listarArquivos);
   const fnCaminho = useServerFn(caminhoNo);
   const fnCriarPasta = useServerFn(criarPasta);
   const fnRegistrar = useServerFn(registrarArquivo);
   const fnRenomear = useServerFn(renomearNo);
-  const fnExcluir = useServerFn(excluirNo);
   const fnMover = useServerFn(moverNo);
+  const fnLixeira = useServerFn(moverParaLixeira);
+  const fnFavorito = useServerFn(alternarFavorito);
+  const fnMenu = useServerFn(definirMostrarNoMenu);
   const fnUrl = useServerFn(urlArquivo);
-  const fnListarPastas = useServerFn(listarPastas);
-  const fnDefinirMostrar = useServerFn(definirMostrarNoMenu);
-  const fnPesquisar = useServerFn(pesquisarArquivos);
+  const fnPastas = useServerFn(listarPastas);
+  const fnArmazenamento = useServerFn(lerArmazenamento);
+  const fnCota = useServerFn(definirCota);
 
   const nos = useQuery({
-    queryKey: ["arquivos", pasta],
-    queryFn: () => fnListar({ data: { parent_id: pasta } }),
+    queryKey: ["arquivos", visaoEfetiva, visaoEfetiva === "pasta" ? pasta : null, termoBusca, etiqueta],
+    queryFn: () =>
+      fnListar({
+        data: {
+          visao: visaoEfetiva as VisaoArquivos,
+          parent_id: pasta,
+          termo: buscando ? termoBusca || null : null,
+          etiqueta,
+        },
+      }),
+    enabled: visaoEfetiva !== "lixeira",
   });
   const trilha = useQuery({
     queryKey: ["arquivos-trilha", pasta],
     queryFn: () => fnCaminho({ data: { id: pasta } }),
+    enabled: !!pasta,
+  });
+  const armazenamento = useQuery({
+    queryKey: ["arquivos-armazenamento"],
+    queryFn: () => fnArmazenamento(),
+    staleTime: 60_000,
   });
 
-  const resultadosGlobais = useQuery({
-    queryKey: ["arquivos-busca-global", termoGlobal],
-    queryFn: () => fnPesquisar({ data: { termo: termoGlobal } }),
-    enabled: buscaGlobalAberta && termoGlobal.trim().length >= 2,
-    staleTime: 15_000,
-  });
-
-  const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    const lista = nos.data ?? [];
-    if (!q) return lista;
-    return lista.filter((n) => n.nome.toLowerCase().includes(q));
-  }, [nos.data, busca]);
-
-  const totais = useMemo(() => {
-    const lista = nos.data ?? [];
-    return {
-      pastas: lista.filter((n) => n.tipo === "pasta").length,
-      arquivos: lista.filter((n) => n.tipo === "arquivo").length,
-      tamanho: lista.reduce((s, n) => s + (n.tipo === "arquivo" ? (n.tamanho ?? 0) : 0), 0),
-    };
-  }, [nos.data]);
+  // Nível da pessoa na pasta aberta (raiz: pela matriz de permissões).
+  const nivelPasta = pasta ? (trilha.data?.[trilha.data.length - 1]?.nivel ?? 0) : enviarNaRaiz ? 2 : 1;
+  const podeCriarAqui = visaoEfetiva === "pasta" && nivelPasta >= 2;
 
   const invalidar = useCallback(() => {
     qc.invalidateQueries({ queryKey: ["arquivos"] });
+    qc.invalidateQueries({ queryKey: ["arquivos-trilha"] });
+    qc.invalidateQueries({ queryKey: ["arquivos-armazenamento"] });
     qc.invalidateQueries({ queryKey: ["nav-pastas-documentos"] });
   }, [qc]);
 
-  const garantirPastas = useCallback(
-    async (partes: string[], cache: Map<string, string>): Promise<string | null> => {
-      let paiId = pasta;
-      let chaveAcc = "";
-      for (const parte of partes) {
-        chaveAcc = `${chaveAcc}/${parte}`;
-        const cacheado = cache.get(chaveAcc);
-        if (cacheado) {
-          paiId = cacheado;
-          continue;
-        }
-        const { id } = await fnCriarPasta({ data: { parent_id: paiId, nome: parte } });
-        cache.set(chaveAcc, id);
-        paiId = id;
-      }
-      return paiId;
-    },
-    [pasta, fnCriarPasta],
-  );
+  const lista = useMemo(() => nos.data ?? [], [nos.data]);
+  const pastas = lista.filter((n) => n.tipo === "pasta");
+  const arquivos = lista.filter((n) => n.tipo === "arquivo");
 
-  const enviarArquivos = useCallback(
-    async (files: File[], comCaminho: boolean) => {
-      if (files.length === 0) return;
-      setEnviando({ atual: 0, total: files.length });
-      const cachePastas = new Map<string, string>();
+  // ---------------------------------------------------------------------------
+  // Envio
+  // ---------------------------------------------------------------------------
+  const executarEnvio = useCallback(
+    async (files: File[], destino: string | null, resolucao: ResolucaoConflito, existentes: string[]) => {
+      const prefixo = armazenamento.data?.prefixo ?? (await fnArmazenamento()).prefixo;
+      if (!prefixo) {
+        toast.error("Sua sessão não tem escritório. Entre de novo.");
+        return;
+      }
+      const plano = planejarEnvio(
+        files.map((f) => f.name),
+        existentes,
+        resolucao,
+      );
       let ok = 0;
-      let falhas = 0;
+      const falhas: string[] = [];
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        const f = files[i];
+        const p = plano[i];
+        setEnvio({ atual: i + 1, total: files.length, nome: f.name });
+        if (p.pular) continue;
         try {
-          let destino = pasta;
-          if (comCaminho) {
-            const rel = (file as any).webkitRelativePath as string | undefined;
-            if (rel && rel.includes("/")) {
-              const partes = rel.split("/");
-              partes.pop();
-              destino = await garantirPastas(partes, cachePastas);
-            }
-          }
-          const storagePath = `${crypto.randomUUID()}-${sanitizePath(file.name)}`;
-          const { error } = await supabase.storage.from("arquivos").upload(storagePath, file, {
-            contentType: file.type || undefined,
-          });
-          if (error) throw error;
+          const caminho = caminhoNoBucket(prefixo, p.nome, crypto.randomUUID());
+          const { error } = await supabase.storage
+            .from("arquivos")
+            .upload(caminho, f, { contentType: f.type || undefined, upsert: false });
+          if (error) throw new Error(error.message);
           await fnRegistrar({
             data: {
               parent_id: destino,
-              nome: file.name,
-              storage_path: storagePath,
-              content_type: file.type || null,
-              tamanho: file.size,
+              nome: p.nome,
+              storage_path: caminho,
+              content_type: f.type || null,
+              tamanho: f.size,
+              nova_versao: p.novaVersao,
             },
           });
           ok++;
-        } catch {
-          falhas++;
+        } catch (e) {
+          falhas.push(`${f.name}: ${mensagemDeErro(e, "falhou")}`);
+          // Cota cheia: os próximos também vão falhar.
+          if (/Armazenamento cheio/i.test(String((e as Error)?.message))) break;
         }
-        setEnviando({ atual: i + 1, total: files.length });
       }
-      setEnviando(null);
+      setEnvio(null);
       invalidar();
-      if (falhas > 0) toast.warning(`${ok} enviado(s), ${falhas} com falha.`);
-      else toast.success(`${ok} arquivo(s) enviado(s).`);
+      if (falhas.length) {
+        toast.error(`${ok} enviado(s), ${falhas.length} com falha`, { description: falhas.slice(0, 3).join("\n") });
+      } else if (ok) {
+        toast.success(ok === 1 ? "Arquivo enviado." : `${ok} arquivos enviados.`);
+      }
     },
-    [pasta, garantirPastas, fnRegistrar, invalidar],
+    [armazenamento.data?.prefixo, fnArmazenamento, fnRegistrar, invalidar],
   );
 
-  const abrirNo = useCallback(
-    async (no: ArquivoNo) => {
-      if (no.tipo === "pasta") {
-        setPasta(no.id);
+  const enviar = useCallback(
+    (files: File[]) => {
+      if (!files.length) return;
+      if (!podeCriarAqui) {
+        toast.error("Você não pode enviar arquivos para esta pasta.");
         return;
       }
+      const existentes = arquivos.map((a) => a.nome.toLowerCase());
+      const repetidos = files.filter((f) => existentes.includes(f.name.trim().toLowerCase())).map((f) => f.name);
+      if (repetidos.length) {
+        setConflito({ arquivos: files, destino: pasta, nomes: repetidos });
+        return;
+      }
+      void executarEnvio(files, pasta, "manter", arquivos.map((a) => a.nome));
+    },
+    [arquivos, executarEnvio, pasta, podeCriarAqui],
+  );
+
+  /** Envio de pasta inteira: recria a estrutura; arquivo que já existe vira versão nova. */
+  const enviarPasta = useCallback(
+    async (files: File[]) => {
+      if (!files.length || !podeCriarAqui) return;
+      const cache = new Map<string, string | null>([["", pasta]]);
+      const grupos = new Map<string, File[]>();
+      for (const f of files) {
+        const rel = (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name;
+        const partes = rel.split("/");
+        partes.pop();
+        const chave = partes.join("/");
+        grupos.set(chave, [...(grupos.get(chave) ?? []), f]);
+      }
       try {
-        const { url, nome } = await fnUrl({ data: { id: no.id } });
-        setVisualizando({ url, nome, id: no.id });
-      } catch (e: any) {
+        for (const [chave, grupo] of grupos) {
+          let pai: string | null = pasta;
+          let acc = "";
+          for (const parte of chave ? chave.split("/") : []) {
+            acc = acc ? `${acc}/${parte}` : parte;
+            if (!cache.has(acc)) {
+              const { id } = await fnCriarPasta({ data: { parent_id: pai, nome: parte } });
+              cache.set(acc, id);
+            }
+            pai = cache.get(acc) ?? null;
+          }
+          const atuais = await fnListar({ data: { visao: "pasta", parent_id: pai } });
+          await executarEnvio(
+            grupo,
+            pai,
+            "versao",
+            atuais.filter((a) => a.tipo === "arquivo").map((a) => a.nome),
+          );
+        }
+      } catch (e) {
+        setEnvio(null);
+        toast.error(mensagemDeErro(e, "Não foi possível enviar a pasta."));
+      }
+    },
+    [executarEnvio, fnCriarPasta, fnListar, pasta, podeCriarAqui],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Ações dos cartões
+  // ---------------------------------------------------------------------------
+  const tentar = useCallback(
+    async (acao: () => Promise<unknown>, sucesso: string | null, padrao: string) => {
+      try {
+        await acao();
+        if (sucesso) toast.success(sucesso);
+        invalidar();
+        return true;
+      } catch (e) {
+        toast.error(mensagemDeErro(e, padrao));
+        return false;
+      }
+    },
+    [invalidar],
+  );
+
+  const mover = useCallback(
+    (id: string, destino: string | null) =>
+      tentar(() => fnMover({ data: { id, novo_parent_id: destino } }), "Movido.", "Não foi possível mover."),
+    [fnMover, tentar],
+  );
+
+  const acoes: AcoesNo = {
+    onAbrir: async (no) => {
+      if (no.tipo === "pasta") return setPasta(no.id);
+      try {
+        const r = await fnUrl({ data: { id: no.id } });
+        setPrevia(r);
+      } catch (e) {
         toast.error(mensagemDeErro(e, "Não foi possível abrir o arquivo."));
       }
     },
-    [setPasta, fnUrl],
-  );
-
-  const criarNovaPasta = useCallback(
-    async (nome: string) => {
+    onBaixar: async (no) => {
       try {
-        await fnCriarPasta({ data: { parent_id: pasta, nome } });
-        setNovaPastaAberta(false);
-        invalidar();
-        toast.success("Pasta criada.");
-      } catch (e: any) {
-        toast.error(mensagemDeErro(e, "Falha ao criar pasta."));
+        const r = await fnUrl({ data: { id: no.id, download: true } });
+        window.open(r.url, "_blank", "noopener");
+      } catch (e) {
+        toast.error(mensagemDeErro(e, "Não foi possível baixar."));
       }
     },
-    [pasta, fnCriarPasta, invalidar],
-  );
+    onDetalhes: setDetalhes,
+    onRenomear: setRenomeando,
+    onMover: setMovendo,
+    onLixeira: setLixeiraDe,
+    onCompartilhar: setCompartilhando,
+    onFavoritar: (no) =>
+      void tentar(
+        () => fnFavorito({ data: { id: no.id } }),
+        no.favorito ? "Tirado dos favoritos." : "Adicionado aos favoritos.",
+        "Não foi possível favoritar.",
+      ),
+    onAlternarMenu: (no) =>
+      void tentar(
+        () => fnMenu({ data: { id: no.id, mostrar: !no.mostrar_no_menu } }),
+        no.mostrar_no_menu ? "Pasta tirada do menu lateral." : "Pasta fixada no menu lateral.",
+        "Não foi possível alterar o menu.",
+      ),
+    onSoltarEm: (id, destino) => void mover(id, destino.id),
+  };
 
-  const confirmarRenomear = useCallback(
-    async (nome: string) => {
-      if (!renomeando) return;
-      try {
-        await fnRenomear({ data: { id: renomeando.id, nome } });
-        setRenomeando(null);
-        invalidar();
-        toast.success("Renomeado.");
-      } catch (e: any) {
-        toast.error(mensagemDeErro(e, "Falha ao renomear."));
-      }
-    },
-    [renomeando, fnRenomear, invalidar],
-  );
-
-  const confirmarExcluir = useCallback(async () => {
-    if (!excluindo) return;
-    try {
-      await fnExcluir({ data: { id: excluindo.id } });
-      setExcluindo(null);
-      invalidar();
-      toast.success("Excluído.");
-    } catch (e: any) {
-      toast.error(mensagemDeErro(e, "Falha ao excluir."));
-    }
-  }, [excluindo, fnExcluir, invalidar]);
-
-  const confirmarMover = useCallback(
-    async (destino: string | null) => {
-      if (!movendo) return;
-      try {
-        await fnMover({ data: { id: movendo.id, novo_parent_id: destino } });
-        setMovendo(null);
-        invalidar();
-        toast.success("Movido.");
-      } catch (e: any) {
-        toast.error(mensagemDeErro(e, "Falha ao mover."));
-      }
-    },
-    [movendo, fnMover, invalidar],
-  );
-
-  const alternarMostrarNoMenu = useCallback(
-    async (no: ArquivoNo) => {
-      try {
-        const novo = !no.mostrar_no_menu;
-        await fnDefinirMostrar({ data: { id: no.id, mostrar: novo } });
-        invalidar();
-        toast.success(novo ? "Pasta fixada no menu lateral." : "Pasta removida do menu lateral.");
-      } catch (e: any) {
-        toast.error(mensagemDeErro(e, "Falha ao alternar visibilidade."));
-      }
-    },
-    [fnDefinirMostrar, invalidar],
-  );
-
-  const abrirResultadoGlobal = useCallback(
-    async (r: ResultadoPesquisa) => {
-      setBuscaGlobalAberta(false);
-      if (r.tipo === "pasta") {
-        setPasta(r.id);
-        return;
-      }
-      setPasta(r.parent_id);
-      try {
-        const { url, nome } = await fnUrl({ data: { id: r.id } });
-        setVisualizando({ url, nome, id: r.id });
-      } catch (e: any) {
-        toast.error(mensagemDeErro(e, "Não foi possível abrir o arquivo."));
-      }
-    },
-    [setPasta, fnUrl],
-  );
-
-  function onDrop(e: React.DragEvent) {
+  // ---------------------------------------------------------------------------
+  // Arrastar arquivos do computador
+  // ---------------------------------------------------------------------------
+  const temArquivosDoSistema = (e: React.DragEvent) => e.dataTransfer.types.includes("Files");
+  function onDragOver(e: React.DragEvent) {
+    if (!temArquivosDoSistema(e) || e.dataTransfer.types.includes(MIME_NO)) return;
     e.preventDefault();
-    setDragging(false);
-    // Sem "Arquivos: enviar" o upload subia ao storage e o registro falhava (arquivo órfão).
-    if (!podeEnviar) return;
+    if (podeCriarAqui) setArrastandoArquivo(true);
+  }
+  function onDrop(e: React.DragEvent) {
+    if (!temArquivosDoSistema(e)) return;
+    e.preventDefault();
+    setArrastandoArquivo(false);
     const files = Array.from(e.dataTransfer.files ?? []);
-    if (files.length > 0) enviarArquivos(files, false);
+    if (files.length) enviar(files);
   }
 
-  const acoes = !podeEnviar ? null : (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button
-        size="sm"
-        className="flex-1 bg-gradient-to-r from-primary to-primary/85 text-primary-foreground shadow-sm sm:flex-none"
-        onClick={() => setNovaPastaAberta(true)}
-      >
-        <FolderPlus className="mr-2 h-4 w-4" /> Nova pasta
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="flex-1 sm:flex-none"
-        disabled={!!enviando}
-        onClick={() => inputArquivos.current?.click()}
-      >
-        <Upload className="mr-2 h-4 w-4" /> Enviar arquivos
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="flex-1 sm:flex-none"
-        disabled={!!enviando}
-        onClick={() => inputPasta.current?.click()}
-      >
-        <UploadCloud className="mr-2 h-4 w-4" /> Enviar pasta
-      </Button>
+  const cota = armazenamento.data ? situacaoCota(armazenamento.data.usado, armazenamento.data.limite) : null;
+  const tituloConteudo =
+    visaoEfetiva === "busca"
+      ? etiqueta
+        ? `Etiqueta “${etiqueta}”`
+        : `Resultados para “${termoBusca}”`
+      : (VISOES.find((v) => v.id === visao)?.rotulo ?? "Arquivos");
+
+  const painelCota = (
+    <div className="rounded-xl border border-border/70 bg-card p-3">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
+        <HardDrive className="h-3.5 w-3.5 text-primary" /> Armazenamento
+      </div>
+      {armazenamento.isLoading ? (
+        <Skeleton className="h-8 w-full" />
+      ) : armazenamento.isError || !armazenamento.data || !cota ? (
+        <p className="text-xs text-muted-foreground">Indisponível agora.</p>
+      ) : (
+        <>
+          <div
+            className="h-1.5 overflow-hidden rounded-full bg-muted"
+            role="progressbar"
+            aria-valuenow={Math.round(cota.percentual)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Espaço usado"
+          >
+            <div
+              className={cn(
+                "h-full rounded-full transition-[width]",
+                cota.faixa === "cheio" ? "bg-destructive" : cota.faixa === "atencao" ? "bg-amber-500" : "bg-primary",
+              )}
+              style={{ width: `${Math.max(cota.percentual, 1)}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {formatarBytes(armazenamento.data.usado)} de {formatarBytes(armazenamento.data.limite)}
+            {armazenamento.data.na_lixeira > 0 && ` · ${formatarBytes(armazenamento.data.na_lixeira)} na lixeira`}
+          </p>
+          {armazenamento.data.pode_alterar && (
+            <button
+              type="button"
+              className="mt-1 text-[11px] font-medium text-primary hover:underline"
+              onClick={() => setCotaAberta(true)}
+            >
+              Alterar limite
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 
   return (
     <div className={cn("space-y-4", className)}>
-      {mostrarCabecalho ? (
-        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm sm:p-6">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-inner ring-1 ring-inset ring-primary/20">
-              <FolderOpen className="h-6 w-6" />
-            </span>
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-                {titulo}
-              </h1>
-              <p className="text-sm text-muted-foreground">{descricao}</p>
-            </div>
-            <div className="col-span-2 lg:col-span-1 lg:justify-self-end">{acoes}</div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Organize pastas e arquivos livremente — crie, envie, renomeie e mova.
-          </p>
-          {acoes}
-        </div>
+      {mostrarCabecalho && (
+        <header className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{titulo}</h1>
+          <p className="text-sm text-muted-foreground">{descricao}</p>
+        </header>
       )}
 
       <input
@@ -398,245 +500,379 @@ export function GerenciadorArquivos({
         onChange={(e) => {
           const files = Array.from(e.target.files ?? []);
           e.target.value = "";
-          enviarArquivos(files, false);
+          enviar(files);
         }}
       />
       <input
         ref={inputPasta}
         type="file"
         hidden
-        // @ts-expect-error atributos não-padrão para upload de pasta
+        // @ts-expect-error atributos não-padrão para envio de pasta
         webkitdirectory=""
         directory=""
         multiple
         onChange={(e) => {
           const files = Array.from(e.target.files ?? []);
           e.target.value = "";
-          enviarArquivos(files, true);
+          void enviarPasta(files);
         }}
       />
 
-      <TrilhaNavegacao
-        trilha={trilha.data ?? []}
-        pasta={pasta}
-        onNavegar={setPasta}
-        busca={busca}
-        onBuscaChange={setBusca}
-      />
-
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1">
-            <Folder className="h-3.5 w-3.5 text-primary" /> {totais.pastas} pasta(s)
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1">
-            <FileText className="h-3.5 w-3.5" /> {totais.arquivos} arquivo(s)
-          </span>
-          {totais.tamanho > 0 && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1">
-              <HardDrive className="h-3.5 w-3.5" /> {formatBytes(totais.tamanho)}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setTermoGlobal("");
-              setBuscaGlobalAberta(true);
-            }}
-          >
-            <Search className="mr-2 h-4 w-4" /> Buscar em todos
-          </Button>
-          <div className="inline-flex rounded-lg border border-border/60 bg-card p-0.5 shadow-sm">
-            <button
-              type="button"
-              aria-label="Ver em grade"
-              aria-pressed={vista === "grade"}
-              onClick={() => setVista("grade")}
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-                vista === "grade"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label="Ver em lista"
-              aria-pressed={vista === "lista"}
-              onClick={() => setVista("lista")}
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-                vista === "lista"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <List className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {enviando ? (
-        <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 text-sm text-foreground">
-          <UploadCloud className="h-4 w-4 animate-pulse text-primary" />
-          Enviando… {enviando.atual}/{enviando.total}
-        </div>
-      ) : null}
-
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        className={cn(
-          "min-h-[220px] rounded-xl border-2 border-dashed p-2 transition-colors",
-          dragging ? "border-primary bg-primary/5" : "border-transparent",
-        )}
-      >
-        {nos.isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-[120px] w-full rounded-2xl" />
-            ))}
-          </div>
-        ) : filtrados.length === 0 ? (
-          <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/40 bg-muted/20 p-8 text-center">
-            <div className="mb-4 rounded-full bg-muted p-4">
-              <FolderOpen className="h-10 w-10 text-muted-foreground/60" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">Nenhum item encontrado</h3>
-            <p className="max-w-xs text-sm text-muted-foreground">
-              Esta pasta está vazia ou nenhum item corresponde à sua busca.
-            </p>
-          </div>
-        ) : (
-          <div
+      <div className={cn("grid gap-4", !embutido && "lg:grid-cols-[13.5rem_minmax(0,1fr)]")}>
+        {/* Navegação: coluna no computador, faixa rolável no celular */}
+        <aside className="min-w-0 space-y-3">
+          <nav
+            aria-label="Visões dos arquivos"
             className={cn(
-              vista === "grade"
-                ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                : "flex flex-col gap-2",
+              "-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+              !embutido && "lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0",
             )}
           >
-            {filtrados.map((n) => (
-              <NoCard
-                key={n.id}
-                no={n}
-                variante={vista}
-                onAbrir={abrirNo}
-                onRenomear={setRenomeando}
-                onExcluir={setExcluindo}
-                onMover={setMovendo}
-                onAlternarMenu={
-                  n.tipo === "pasta" && !n.parent_id ? alternarMostrarNoMenu : undefined
-                }
-              />
-            ))}
+            {VISOES.map(({ id, rotulo, Icone }) => {
+              const ativo = visaoEfetiva === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => {
+                    setTermo("");
+                    setEtiqueta(null);
+                    if (id === "pasta") setPasta(null);
+                    else setVisao(id);
+                  }}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                    ativo
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                  aria-current={ativo ? "page" : undefined}
+                >
+                  <Icone className="h-4 w-4" />
+                  <span className="whitespace-nowrap">{rotulo}</span>
+                </button>
+              );
+            })}
+          </nav>
+          {!embutido && <div className="hidden lg:block">{painelCota}</div>}
+        </aside>
+
+        <section className="min-w-0 space-y-3">
+          {/* Barra: trilha/título, busca, vista e ações */}
+          <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-2 sm:flex-row sm:items-center">
+            <div className="min-w-0 flex-1 px-1">
+              {visaoEfetiva === "pasta" ? (
+                <TrilhaNavegacao
+                  trilha={trilha.data ?? []}
+                  pasta={pasta}
+                  onNavegar={setPasta}
+                  onSoltarEm={(id, destino) => void mover(id, destino)}
+                  podeSoltarNaRaiz={enviarNaRaiz}
+                />
+              ) : (
+                <p className="truncate py-1 text-sm font-semibold">{tituloConteudo}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative min-w-0 flex-1 sm:w-60 sm:flex-none">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={termo}
+                  onChange={(e) => setTermo(e.target.value)}
+                  placeholder="Buscar por nome ou etiqueta"
+                  className="h-9 pl-8 pr-8"
+                  aria-label="Buscar arquivos"
+                />
+                {(termo || etiqueta) && (
+                  <button
+                    type="button"
+                    aria-label="Limpar busca"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted"
+                    onClick={() => {
+                      setTermo("");
+                      setEtiqueta(null);
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="inline-flex shrink-0 rounded-lg border border-border/70 p-0.5">
+                {(["grade", "lista"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-label={v === "grade" ? "Ver em grade" : "Ver em lista"}
+                    aria-pressed={vista === v}
+                    onClick={() => setVista(v)}
+                    className={cn(
+                      "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                      vista === v ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {v === "grade" ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
+                  </button>
+                ))}
+              </div>
+              {podeCriarAqui && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" className="h-9 shrink-0" disabled={!!envio}>
+                      {envio ? (
+                        <Loader2 className="h-4 w-4 animate-spin sm:mr-1.5" />
+                      ) : (
+                        <Upload className="h-4 w-4 sm:mr-1.5" />
+                      )}
+                      <span className="hidden sm:inline">Novo</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setNovaPasta(true)}>
+                      <FolderPlus className="mr-2 h-4 w-4" /> Nova pasta
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => inputArquivos.current?.click()}>
+                      <Upload className="mr-2 h-4 w-4" /> Enviar arquivos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => inputPasta.current?.click()}>
+                      <UploadCloud className="mr-2 h-4 w-4" /> Enviar pasta
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
-        )}
+
+          {envio && (
+            <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+              <span className="min-w-0 flex-1 truncate">
+                Enviando {envio.atual} de {envio.total} · {envio.nome}
+              </span>
+            </div>
+          )}
+
+          {visaoEfetiva === "lixeira" ? (
+            <LixeiraView onRestaurado={(p) => setPasta(p)} />
+          ) : (
+            <div
+              onDragOver={onDragOver}
+              onDragLeave={(e) => {
+                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                setArrastandoArquivo(false);
+              }}
+              onDrop={onDrop}
+              className={cn(
+                "relative min-h-[280px] rounded-xl transition-colors",
+                arrastandoArquivo && "bg-primary/5 ring-2 ring-primary",
+              )}
+            >
+              {arrastandoArquivo && (
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/70">
+                  <div className="flex flex-col items-center gap-2 text-primary">
+                    <UploadCloud className="h-8 w-8" />
+                    <p className="text-sm font-semibold">Solte para enviar aqui</p>
+                  </div>
+                </div>
+              )}
+
+              {nos.isLoading ? (
+                <div className={colunas}>
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <Skeleton key={i} className="h-40 w-full rounded-xl" />
+                  ))}
+                </div>
+              ) : nos.isError ? (
+                <div className="flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+                  <AlertTriangle className="mb-2 h-7 w-7 text-destructive" />
+                  <p className="text-sm font-semibold text-destructive">
+                    {mensagemDeErro(nos.error, "Não foi possível abrir esta pasta.")}
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => nos.refetch()}>
+                      Tentar de novo
+                    </Button>
+                    {pasta && (
+                      <Button size="sm" variant="ghost" onClick={() => setPasta(null)}>
+                        Voltar ao início
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : lista.length === 0 ? (
+                <Vazio
+                  visao={visaoEfetiva}
+                  podeCriar={podeCriarAqui}
+                  onEnviar={() => inputArquivos.current?.click()}
+                  onNovaPasta={() => setNovaPasta(true)}
+                />
+              ) : vista === "grade" ? (
+                <div className="space-y-5">
+                  {pastas.length > 0 && (
+                    <Bloco titulo="Pastas" total={pastas.length}>
+                      <div className={colunas}>
+                        {pastas.map((n) => (
+                          <NoCard key={n.id} no={n} variante="grade" acoes={acoes} mostrarCaminho={visaoEfetiva !== "pasta"} />
+                        ))}
+                      </div>
+                    </Bloco>
+                  )}
+                  {arquivos.length > 0 && (
+                    <Bloco titulo="Arquivos" total={arquivos.length}>
+                      <div className={colunas}>
+                        {arquivos.map((n) => (
+                          <NoCard key={n.id} no={n} variante="grade" acoes={acoes} mostrarCaminho={visaoEfetiva !== "pasta"} />
+                        ))}
+                      </div>
+                    </Bloco>
+                  )}
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
+                  <div className="hidden grid-cols-[minmax(0,1fr)_7rem_9rem_2rem] gap-2 border-b border-border/70 bg-muted/40 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:grid">
+                    <span className="pl-12">Nome</span>
+                    <span>Tamanho</span>
+                    <span>Criado por</span>
+                    <span />
+                  </div>
+                  {[...pastas, ...arquivos].map((n) => (
+                    <NoCard key={n.id} no={n} variante="lista" acoes={acoes} mostrarCaminho={visaoEfetiva !== "pasta"} />
+                  ))}
+                </div>
+              )}
+
+              {/* Etiquetas da tela atual: atalho para filtrar */}
+              {!nos.isLoading && !etiqueta && lista.some((n) => n.etiquetas.length) && (
+                <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground">Etiquetas:</span>
+                  {Array.from(new Set(lista.flatMap((n) => n.etiquetas)))
+                    .slice(0, 12)
+                    .map((e) => (
+                      <button
+                        key={e}
+                        type="button"
+                        onClick={() => setEtiqueta(e)}
+                        className="rounded-md border border-border/70 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                      >
+                        {e}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className={embutido ? "" : "lg:hidden"}>{painelCota}</div>
+        </section>
       </div>
 
       <NovaPastaDialog
-        open={novaPastaAberta}
-        onOpenChange={setNovaPastaAberta}
-        onCriar={criarNovaPasta}
+        open={novaPasta}
+        onOpenChange={setNovaPasta}
+        onCriar={async (nome) => {
+          if (await tentar(() => fnCriarPasta({ data: { parent_id: pasta, nome } }), "Pasta criada.", "Não foi possível criar a pasta."))
+            setNovaPasta(false);
+        }}
       />
       <RenomearDialog
         no={renomeando}
         onClose={() => setRenomeando(null)}
-        onConfirmar={confirmarRenomear}
+        onConfirmar={async (nome) => {
+          if (!renomeando) return;
+          if (await tentar(() => fnRenomear({ data: { id: renomeando.id, nome } }), "Renomeado.", "Não foi possível renomear."))
+            setRenomeando(null);
+        }}
       />
       <MoverDialog
         no={movendo}
         onClose={() => setMovendo(null)}
-        carregarPastas={() => fnListarPastas()}
-        onMover={confirmarMover}
+        carregarPastas={() => fnPastas()}
+        onMover={async (destino) => {
+          if (!movendo) return;
+          if (await mover(movendo.id, destino)) setMovendo(null);
+        }}
       />
-      <ExcluirDialog
-        no={excluindo}
-        onClose={() => setExcluindo(null)}
-        onConfirmar={confirmarExcluir}
+      <LixeiraDialog
+        no={lixeiraDe}
+        onClose={() => setLixeiraDe(null)}
+        onConfirmar={async () => {
+          const alvo = lixeiraDe;
+          setLixeiraDe(null);
+          if (!alvo) return;
+          await tentar(() => fnLixeira({ data: { id: alvo.id } }), `“${alvo.nome}” foi para a lixeira.`, "Não foi possível mandar para a lixeira.");
+        }}
       />
+      <ConflitoDialog
+        nomes={conflito?.nomes ?? null}
+        onClose={() => setConflito(null)}
+        onEscolher={(r) => {
+          const c = conflito;
+          setConflito(null);
+          if (c) void executarEnvio(c.arquivos, c.destino, r, arquivos.map((a) => a.nome));
+        }}
+      />
+      <CotaDialog
+        aberto={cotaAberta}
+        limiteAtual={armazenamento.data?.limite ?? 0}
+        onClose={() => setCotaAberta(false)}
+        onSalvar={async (gb) => {
+          if (await tentar(() => fnCota({ data: { gb } }), "Limite atualizado.", "Não foi possível alterar o limite."))
+            setCotaAberta(false);
+        }}
+      />
+      <DetalhesSheet no={detalhes} onClose={() => setDetalhes(null)} />
+      <CompartilharDialog no={compartilhando} onClose={() => setCompartilhando(null)} />
+      <VisualizadorArquivo arquivo={previa} open={!!previa} onOpenChange={(o) => !o && setPrevia(null)} />
+    </div>
+  );
+}
 
-      <VisualizadorArquivo
-        arquivo={visualizando}
-        open={!!visualizando}
-        onOpenChange={(o) => !o && setVisualizando(null)}
-      />
+function Bloco({ titulo, total, children }: { titulo: string; total: number; children: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {titulo} <span className="font-normal">· {total}</span>
+      </h2>
+      {children}
+    </div>
+  );
+}
 
-      <Dialog open={buscaGlobalAberta} onOpenChange={setBuscaGlobalAberta}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Buscar em todos os arquivos</DialogTitle>
-            <DialogDescription>
-              Pesquisa pastas e arquivos em toda a árvore de documentos.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                autoFocus
-                value={termoGlobal}
-                onChange={(e) => setTermoGlobal(e.target.value)}
-                placeholder="Digite pelo menos 2 caracteres…"
-                className="pl-9"
-              />
-            </div>
-            <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-border/60">
-              {termoGlobal.trim().length < 2 ? (
-                <p className="p-6 text-center text-sm text-muted-foreground">
-                  Digite para pesquisar em todo o repositório.
-                </p>
-              ) : resultadosGlobais.isLoading ? (
-                <p className="p-6 text-center text-sm text-muted-foreground">Buscando…</p>
-              ) : (resultadosGlobais.data ?? []).length === 0 ? (
-                <p className="p-6 text-center text-sm text-muted-foreground">
-                  Nenhum resultado encontrado.
-                </p>
-              ) : (
-                <ul className="divide-y divide-border/60">
-                  {(resultadosGlobais.data ?? []).map((r) => (
-                    <li key={r.id}>
-                      <button
-                        type="button"
-                        onClick={() => abrirResultadoGlobal(r)}
-                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50"
-                      >
-                        <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          {r.tipo === "pasta" ? (
-                            <Folder className="h-4 w-4" />
-                          ) : (
-                            <FileText className="h-4 w-4" />
-                          )}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-foreground">
-                            {r.nome}
-                          </span>
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {r.caminho}
-                            {r.tipo === "arquivo" && r.tamanho
-                              ? ` · ${formatBytes(r.tamanho)}`
-                              : ""}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+function Vazio({
+  visao,
+  podeCriar,
+  onEnviar,
+  onNovaPasta,
+}: {
+  visao: Visao;
+  podeCriar: boolean;
+  onEnviar: () => void;
+  onNovaPasta: () => void;
+}) {
+  const textos: Record<string, [string, string]> = {
+    pasta: ["Esta pasta está vazia", podeCriar ? "Arraste arquivos para cá ou use os botões abaixo." : "Ainda não há nada aqui."],
+    favoritos: ["Nenhum favorito", "Marque com a estrela as pastas e arquivos que você usa sempre."],
+    compartilhados: ["Nada compartilhado com você", "Pastas e arquivos restritos que alguém liberar para você aparecem aqui."],
+    recentes: ["Nenhum arquivo ainda", "Os arquivos enviados ou alterados por último aparecem aqui."],
+    busca: ["Nada encontrado", "Tente outro nome ou etiqueta."],
+  };
+  const [t, d] = textos[visao] ?? textos.pasta;
+  return (
+    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-muted/10 p-8 text-center">
+      <span className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <FolderOpen className="h-6 w-6" />
+      </span>
+      <p className="font-semibold text-foreground">{t}</p>
+      <p className="mt-1 max-w-xs text-sm text-muted-foreground">{d}</p>
+      {visao === "pasta" && podeCriar && (
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          <Button size="sm" onClick={onEnviar}>
+            <Upload className="mr-1.5 h-4 w-4" /> Enviar arquivos
+          </Button>
+          <Button size="sm" variant="outline" onClick={onNovaPasta}>
+            <FolderPlus className="mr-1.5 h-4 w-4" /> Nova pasta
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,34 +1,76 @@
-import { Landmark } from "lucide-react";
+import { forwardRef } from "react";
+import { Landmark, type LucideIcon, type LucideProps } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { corDoBanco } from "@/lib/bancos/cores";
 import bradescoLogo from "@/assets/brand/bradesco.svg";
 import itauLogo from "@/assets/brand/itau.svg";
 import santanderLogo from "@/assets/brand/santander.svg";
+import caixaLogo from "@/assets/brand/caixa.svg";
+import caixaSimbolo from "@/assets/brand/caixa-simbolo.svg";
+import interLogo from "@/assets/brand/inter.svg";
+import interSimbolo from "@/assets/brand/inter-simbolo.svg";
 
 /**
- * Marca visual (badge) do banco.
- * Para os bancos com logotipo oficial disponível no projeto (Itaú, Santander,
- * Bradesco) exibe o logo real. Para os demais, gera um monograma na cor
- * institucional. Escalável (SVG), responsivo e adaptável a qualquer tamanho.
+ * Marca visual do banco.
+ *
+ * Arquivos OFICIAIS (src/assets/brand, os mesmos do Agilliza Tech em apps/web/public/bancos):
+ * Itaú, Bradesco, Santander, Caixa e Inter. Caixa e Inter têm marca larga; nos lugares
+ * quadrados (selo, menu lateral, gráfico) entra o símbolo recortado do próprio arquivo
+ * oficial (o X da Caixa, os raios do Inter), sem redesenho. Banco sem arquivo aparece por
+ * um monograma na cor institucional.
  */
 
 /** Normaliza para casar o banco correto. */
 function normalizar(nome: string): string {
   return nome
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .trim();
 }
 
-/** Logotipos oficiais disponíveis no projeto. */
-export function logoUrlDoBanco(nome: string | null | undefined): string | null {
+type IdBanco = "itau" | "bradesco" | "santander" | "caixa" | "inter";
+
+/** Banco com arquivo oficial no projeto, pelo nome (ou texto que contenha o nome). */
+export function idBancoComLogo(nome: string | null | undefined): IdBanco | null {
   if (!nome) return null;
   const n = normalizar(nome);
-  if (n.includes("santander")) return santanderLogo;
-  if (n.includes("itau")) return itauLogo;
-  if (n.includes("bradesco")) return bradescoLogo;
+  if (n.includes("santander")) return "santander";
+  if (n.includes("itau")) return "itau";
+  if (n.includes("bradesco")) return "bradesco";
+  if (/\bcaixa\b|\bcef\b|caixa\.gov/.test(n)) return "caixa";
+  // "inter" solto: "Interno", "Internet" não são o Banco Inter.
+  if (/\binter\b|bancointer/.test(n)) return "inter";
   return null;
+}
+
+/** Arquivo para lugares quadrados (selo, menu, gráfico). */
+const SIMBOLO: Record<IdBanco, string> = {
+  itau: itauLogo,
+  bradesco: bradescoLogo,
+  santander: santanderLogo,
+  caixa: caixaSimbolo,
+  inter: interSimbolo,
+};
+/** Marca completa (cabeçalhos, cartões, PDF). */
+const MARCA: Record<IdBanco, string> = {
+  itau: itauLogo,
+  bradesco: bradescoLogo,
+  santander: santanderLogo,
+  caixa: caixaLogo,
+  inter: interLogo,
+};
+
+/** Logotipo oficial para lugar quadrado. */
+export function logoUrlDoBanco(nome: string | null | undefined): string | null {
+  const id = idBancoComLogo(nome);
+  return id ? SIMBOLO[id] : null;
+}
+
+/** Marca completa oficial (larga, para cabeçalho/cartão). */
+export function marcaUrlDoBanco(nome: string | null | undefined): string | null {
+  const id = idBancoComLogo(nome);
+  return id ? MARCA[id] : null;
 }
 
 /** Alias interno mantido por compatibilidade. */
@@ -147,4 +189,77 @@ export function BancoLogo({
       </svg>
     </span>
   );
+}
+
+/**
+ * Marca completa do banco (logotipo largo, altura fixa, largura proporcional) num selo
+ * branco discreto, para cabeçalhos e cartões. Sem arquivo oficial: selo com o nome.
+ */
+export function BancoMarca({
+  nome,
+  altura = 22,
+  className,
+  semFundo,
+}: {
+  nome: string;
+  /** Altura do logotipo em px. */
+  altura?: number;
+  className?: string;
+  /** Sem o selo branco (fundo já claro). */
+  semFundo?: boolean;
+}) {
+  const marca = marcaUrlDoBanco(nome);
+  if (!marca) {
+    return (
+      <span
+        className={cn("inline-flex items-center gap-1.5 text-sm font-semibold text-foreground", className)}
+      >
+        <BancoLogo nome={nome} size="sm" />
+        {nome}
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 select-none items-center justify-center",
+        !semFundo && "rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-black/5",
+        className,
+      )}
+      title={nome}
+    >
+      <img
+        src={marca}
+        alt={`Logo ${nome}`}
+        draggable={false}
+        className="w-auto max-w-[9rem] object-contain"
+        style={{ height: altura }}
+      />
+    </span>
+  );
+}
+
+/**
+ * Ícone do menu lateral com o símbolo oficial do banco (mesma assinatura de um ícone do
+ * lucide: o menu passa `className` com o tamanho). Quem chama guarda o resultado num valor
+ * de módulo — não crie a cada render.
+ */
+export function iconeDeBanco(nome: string): LucideIcon {
+  const Icone = forwardRef<SVGSVGElement, LucideProps>(function IconeBanco({ className }, _ref) {
+    const logo = logoUrlDoBanco(nome);
+    if (!logo) return <Landmark className={className} />;
+    return (
+      <span
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[4px] bg-white p-px ring-1 ring-black/10",
+          className,
+        )}
+        aria-hidden
+      >
+        <img src={logo} alt="" className="h-full w-full object-contain" draggable={false} />
+      </span>
+    );
+  });
+  Icone.displayName = `IconeBanco(${nome})`;
+  return Icone as unknown as LucideIcon;
 }

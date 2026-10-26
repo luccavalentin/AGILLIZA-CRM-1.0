@@ -12,12 +12,36 @@ import {
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { formatBRL, formatData } from "@/lib/financeiro/format";
 import type { PropostaAssinante } from "@/lib/plataforma/fila.functions";
+import { MiniEsteiraAssinante } from "@/components/plataforma/propostas-grupo/esteira";
+import { rotuloIdH } from "@/components/plataforma/propostas-grupo/filtros";
 import { AcoesLinha, DesignarDialog, DevolverDialog, SeloSituacao } from "./acoes";
 import { DetalhePropostaSheet } from "./detalhe";
 
 const valor = (p: PropostaAssinante) => formatBRL(Number(p.valor_financiamento) || 0);
 const tipoConta = (p: PropostaAssinante) =>
   p.conta_tipo === "imobiliaria" ? "Imobiliária" : "Corretor";
+
+/**
+ * Identificação da proposta (C33): o que aparece é o "ID H." (oportunidade na integração); o
+ * código da conta fica discreto, porque é por ele que o assinante fala da proposta. O número
+ * interno do Agilliza (PRO-…) não aparece mais — no lugar, o selo "No Agilliza".
+ */
+function Identificacao({ p, compacto }: { p: PropostaAssinante; compacto?: boolean }) {
+  return (
+    <span className="min-w-0">
+      <span className="block font-semibold tabular-nums text-foreground">{rotuloIdH(p.id_h)}</span>
+      <span className="block truncate text-xs text-muted-foreground">
+        Cód. na conta {p.codigo}
+        {compacto ? ` · ${formatData(p.criado_em)}` : ""}
+        {p.no_agilliza ? (
+          <span className="ml-1.5 inline-flex items-center rounded-md bg-primary/8 px-1.5 py-px text-[10px] font-semibold text-primary ring-1 ring-inset ring-primary/15">
+            No Agilliza
+          </span>
+        ) : null}
+      </span>
+    </span>
+  );
+}
 
 /**
  * Propostas dos assinantes com as ações da fila: tabela no computador, cartões no
@@ -65,7 +89,7 @@ export function PropostasAssinantesInterativas({
                 type="button"
                 onClick={() => setAberta(p)}
                 className="flex w-full items-start gap-3 p-4 text-left"
-                aria-label={`Ver os dados da proposta ${p.codigo}`}
+                aria-label={`Ver os dados da proposta ${rotuloIdH(p.id_h)} (${p.codigo})`}
               >
                 <BancoLogo nome={p.banco} size="md" className="mt-0.5" />
                 <div className="min-w-0 flex-1 space-y-1">
@@ -73,15 +97,7 @@ export function PropostasAssinantesInterativas({
                     <p className="truncate font-semibold">{p.cliente}</p>
                     <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {p.codigo} · {formatData(p.criado_em)}
-                    {p.numero_agilliza ? (
-                      <span className="font-medium text-primary">
-                        {" "}
-                        · Agilliza {p.numero_agilliza}
-                      </span>
-                    ) : null}
-                  </p>
+                  <Identificacao p={p} compacto />
                   {mostrarConta && (
                     <p className="truncate text-xs text-muted-foreground">
                       {p.conta} · {tipoConta(p)}
@@ -91,6 +107,7 @@ export function PropostasAssinantesInterativas({
                     <span className="text-sm font-semibold tabular-nums">{valor(p)}</span>
                     <SeloSituacao status={p.status} atrasada={p.atrasada} banco={p.banco} />
                   </div>
+                  <MiniEsteiraAssinante status={p.status} className="pt-1" />
                 </div>
               </button>
               <div className="border-t border-border/60 p-3">
@@ -116,6 +133,7 @@ export function PropostasAssinantesInterativas({
               <TableHead className="hidden lg:table-cell">Banco</TableHead>
               <TableHead className="text-right">Financiamento</TableHead>
               <TableHead>Situação</TableHead>
+              <TableHead className="hidden 2xl:table-cell">Etapa</TableHead>
               <TableHead className="hidden xl:table-cell">Analista</TableHead>
               <TableHead className="w-[1%] text-right">Ações</TableHead>
             </TableRow>
@@ -123,7 +141,7 @@ export function PropostasAssinantesInterativas({
           <TableBody>
             {estado && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">
+                <TableCell colSpan={9} className="text-center">
                   {estado}
                 </TableCell>
               </TableRow>
@@ -137,15 +155,7 @@ export function PropostasAssinantesInterativas({
                   title="Ver os dados da proposta"
                 >
                   <TableCell>
-                    <p className="font-medium">{p.codigo}</p>
-                    {p.numero_agilliza && (
-                      <p
-                        className="text-xs font-medium text-primary"
-                        title="Número interno no Agilliza"
-                      >
-                        Agilliza: {p.numero_agilliza}
-                      </p>
-                    )}
+                    <Identificacao p={p} />
                     <p className="text-xs text-muted-foreground">
                       {formatData(p.criado_em)}
                       {p.usuario_origem ? ` · por ${p.usuario_origem}` : ""}
@@ -167,6 +177,9 @@ export function PropostasAssinantesInterativas({
                   <TableCell className="text-right tabular-nums">{valor(p)}</TableCell>
                   <TableCell>
                     <SeloSituacao status={p.status} atrasada={p.atrasada} banco={p.banco} />
+                  </TableCell>
+                  <TableCell className="hidden 2xl:table-cell">
+                    <MiniEsteiraAssinante status={p.status} />
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
                     {p.analista ?? <span className="text-muted-foreground">Sem analista</span>}

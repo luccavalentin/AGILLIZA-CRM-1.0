@@ -1,25 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
+  ArrowRight,
+  CalendarRange,
   CircleDollarSign,
   Clock,
   FileSearch,
-  Inbox,
   Landmark,
+  Minus,
   Receipt,
   RefreshCw,
   Tag,
   Wallet,
   XCircle,
 } from "lucide-react";
-import { AdminHero } from "@/components/admin/admin-hero";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,24 +26,31 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  BarraFiltros,
+  CabecalhoGestao,
+  ChipsFiltro,
+  EstadoErro,
+  EstadoVazio,
+  FaixaIndicadores,
+  IconeGestao,
+  Indicador,
+  ListaCarregando,
+  PaginaGestao,
+  Secao,
+  Selo,
+  type Tom,
+} from "@/components/plataforma/kit";
+import { RodapePaginas } from "@/components/plataforma/paginacao";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL, formatData, hojeISO } from "@/lib/financeiro/format";
+import { cn } from "@/lib/utils";
 import {
   lerConsultasPagas,
   registrarCustoConsulta,
@@ -57,28 +62,28 @@ import {
 } from "@/lib/plataforma/consultas.functions";
 
 export const Route = createFileRoute("/_authenticated/plataforma/consultas")({
-  head: () => ({ meta: [{ title: "Consultas pagas — Plataforma — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Consultas pagas — Gestão de sistemas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("saas.consultas"),
   component: Pagina,
 });
 
 type Situacao = SituacaoPedido;
 
-const FIN: Record<string, string> = {
-  aguardando_pagamento: "Aguardando pagamento",
-  pago: "Pago",
-  cancelado: "Cancelado",
-  estornado: "Estornado",
-  contestado: "Contestado",
+const FIN: Record<string, { rotulo: string; tom: Tom }> = {
+  aguardando_pagamento: { rotulo: "Aguardando pagamento", tom: "alerta" },
+  pago: { rotulo: "Pago", tom: "sucesso" },
+  cancelado: { rotulo: "Cancelado", tom: "neutro" },
+  estornado: { rotulo: "Estornado", tom: "neutro" },
+  contestado: { rotulo: "Contestado", tom: "perigo" },
 };
-const CONS: Record<string, string> = {
-  aguardando_pagamento: "—",
-  na_fila: "Na fila",
-  executando: "Executando",
-  concluida: "Concluída",
-  falhou: "Falhou",
-  reconciliar: "Reconciliar",
-  nao_executada: "Não executada",
+const CONS: Record<string, { rotulo: string; tom: Tom }> = {
+  aguardando_pagamento: { rotulo: "—", tom: "neutro" },
+  na_fila: { rotulo: "Na fila", tom: "info" },
+  executando: { rotulo: "Executando", tom: "info" },
+  concluida: { rotulo: "Concluída", tom: "sucesso" },
+  falhou: { rotulo: "Falhou", tom: "perigo" },
+  reconciliar: { rotulo: "Reconciliar", tom: "perigo" },
+  nao_executada: { rotulo: "Não executada", tom: "neutro" },
 };
 const FALHA: Record<string, string> = {
   interna: "interna",
@@ -88,8 +93,25 @@ const FALHA: Record<string, string> = {
   ambigua: "sem resposta conclusiva",
 };
 
+/** Filtros mais usados em chips; as demais situações ficam em "Outras". */
+const PRINCIPAIS: { valor: "todas" | Situacao; rotulo: string }[] = [
+  { valor: "todas", rotulo: "Todas" },
+  { valor: "aguardando_pagamento", rotulo: "Aguardando pagamento" },
+  { valor: "pago", rotulo: "Pagas" },
+  { valor: "concluida", rotulo: "Entregues" },
+  { valor: "falhou", rotulo: "Falharam" },
+  { valor: "reconciliar", rotulo: "Reconciliar" },
+  { valor: "estornado", rotulo: "Estornadas" },
+];
+const OUTRAS: { valor: Situacao; rotulo: string }[] = [
+  { valor: "na_fila", rotulo: "Consulta na fila" },
+  { valor: "executando", rotulo: "Consulta executando" },
+  { valor: "nao_executada", rotulo: "Consulta não executada" },
+  { valor: "cancelado", rotulo: "Pagamento cancelado" },
+  { valor: "contestado", rotulo: "Pagamento contestado" },
+];
+
 const QK = "plataforma-consultas";
-const TODAS = "todas";
 
 /** Data e hora curtas (dd/mm/aaaa hh:mm) no fuso do navegador. */
 function dataHora(iso: string | null | undefined): string {
@@ -105,11 +127,21 @@ function dataHora(iso: string | null | undefined): string {
   });
 }
 
+/** Dia (AAAA-MM-DD) n dias antes de hoje, no fuso de São Paulo. */
+function diasAtras(hoje: string, n: number): string {
+  const d = new Date(`${hoje}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+type Atalho = "mes" | "30" | "90" | "livre";
+
 function Pagina() {
   const lerFn = useServerFn(lerConsultasPagas);
   const hoje = hojeISO();
   const [de, setDe] = useState(`${hoje.slice(0, 8)}01`);
   const [ate, setAte] = useState(hoje);
+  const [atalho, setAtalho] = useState<Atalho>("mes");
   const [situacao, setSituacao] = useState<Situacao | null>(null);
   const [pagina, setPagina] = useState(1);
   const periodoValido = Boolean(de && ate && de <= ate);
@@ -128,151 +160,209 @@ function Pagina() {
     setSituacao(s);
     setPagina(1);
   };
+  const escolherAtalho = (a: Atalho) => {
+    setAtalho(a);
+    setPagina(1);
+    if (a === "mes") {
+      setDe(`${hoje.slice(0, 8)}01`);
+      setAte(hoje);
+    } else if (a === "30" || a === "90") {
+      setDe(diasAtras(hoje, Number(a) - 1));
+      setAte(hoje);
+    }
+  };
+  const margemPct =
+    i && i.receita_bruta > 0 ? Math.round((i.margem_contribuicao / i.receita_bruta) * 100) : null;
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <AdminHero
-        secao="Gestão de sistemas"
-        icon={<FileSearch className="h-5 w-5" />}
+    <PaginaGestao>
+      <CabecalhoGestao
+        icone={<FileSearch />}
         titulo="Consultas pagas"
         descricao="Serasa Premium vendida por unidade às licenças: receita, custo da APIFull, taxas do Asaas e o que ainda falta entregar."
         acoes={
-          <Button variant="outline" size="sm" onClick={() => q.refetch()} disabled={q.isFetching}>
-            <RefreshCw className={`mr-2 size-4 ${q.isFetching ? "animate-spin" : ""}`} /> Atualizar
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-8"
+            onClick={() => q.refetch()}
+            disabled={q.isFetching || !periodoValido}
+          >
+            <RefreshCw className={cn("mr-2 size-4", q.isFetching && "animate-spin")} /> Atualizar
           </Button>
         }
       />
 
+      <BarraFiltros>
+        <div className="flex min-w-0 items-center gap-2">
+          <CalendarRange className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <ChipsFiltro
+            rotulo="Período"
+            valor={atalho}
+            onChange={escolherAtalho}
+            opcoes={[
+              { valor: "mes", rotulo: "Este mês" },
+              { valor: "30", rotulo: "30 dias" },
+              { valor: "90", rotulo: "90 dias" },
+              { valor: "livre", rotulo: "Escolher datas" },
+            ]}
+          />
+        </div>
+        <div className="flex flex-wrap items-end gap-2 md:ml-auto">
+          <div className="space-y-1">
+            <Label htmlFor="consultas-de" className="text-xs text-muted-foreground">
+              De
+            </Label>
+            <Input
+              id="consultas-de"
+              type="date"
+              className="h-10 w-[9.5rem] text-base sm:text-sm"
+              value={de}
+              max={ate || undefined}
+              onChange={(e) => {
+                setDe(e.target.value);
+                setAtalho("livre");
+                setPagina(1);
+              }}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="consultas-ate" className="text-xs text-muted-foreground">
+              Até
+            </Label>
+            <Input
+              id="consultas-ate"
+              type="date"
+              className="h-10 w-[9.5rem] text-base sm:text-sm"
+              value={ate}
+              min={de || undefined}
+              onChange={(e) => {
+                setAte(e.target.value);
+                setAtalho("livre");
+                setPagina(1);
+              }}
+            />
+          </div>
+        </div>
+        {!periodoValido && (
+          <p className="w-full text-sm text-destructive" role="alert">
+            Escolha um período válido (a data inicial vem antes da final).
+          </p>
+        )}
+      </BarraFiltros>
+
       {q.isError && (
-        <p
-          role="alert"
-          className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
-        >
-          {mensagemDeErro(q.error, "Não foi possível carregar as consultas pagas.")}
-        </p>
+        <Secao>
+          <EstadoErro
+            mensagem={mensagemDeErro(q.error, "Não foi possível carregar as consultas pagas.")}
+            onTentar={() => q.refetch()}
+          />
+        </Secao>
       )}
 
       {(i?.pagas_sem_entrega ?? 0) > 0 && (
         <div
           role="status"
-          className="flex items-start gap-2 rounded-lg border border-amber-400/60 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+          className="flex items-start gap-2.5 rounded-[14px] border border-warning/50 bg-warning/10 p-3 text-sm text-warning-foreground"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <p>
-            {i!.pagas_sem_entrega} consulta(s) paga(s) ainda sem entrega no período. Veja a coluna
-            “Consulta” abaixo e os incidentes em Monitoramento.
+            <b>{i!.pagas_sem_entrega}</b> consulta(s) paga(s) ainda sem entrega no período. Confira
+            os pedidos abaixo e os incidentes em Monitoramento.
           </p>
         </div>
       )}
 
-      <section
-        aria-label="Período"
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-4"
+      {/* Do bruto à margem: a conta da venda, passo a passo */}
+      <Secao
+        titulo="Resultado do período"
+        descricao="Receita dos pedidos pagos e não estornados, menos o custo do fornecedor e as taxas do pagamento."
+        icone={<CircleDollarSign />}
       >
-        <div className="space-y-1">
-          <Label htmlFor="consultas-de">Pedidos de</Label>
-          <Input
-            id="consultas-de"
-            type="date"
-            className="w-40"
-            value={de}
-            max={ate || undefined}
-            onChange={(e) => {
-              setDe(e.target.value);
-              setPagina(1);
-            }}
+        <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr]">
+          <PassoConta
+            rotulo="Receita bruta"
+            valor={i ? formatBRL(i.receita_bruta) : "—"}
+            detalhe={i ? `${i.pagos} venda(s) paga(s)` : undefined}
+            icone={<Receipt />}
+            carregando={carregando}
+          />
+          <Operador simbolo={<Minus />} />
+          <PassoConta
+            rotulo="Custo APIFull"
+            valor={i ? formatBRL(i.custo_fornecedor) : "—"}
+            detalhe={i ? `${i.concluidas} consulta(s) entregue(s)` : undefined}
+            icone={<Landmark />}
+            tom="neutro"
+            carregando={carregando}
+          />
+          <Operador simbolo={<Minus />} />
+          <PassoConta
+            rotulo="Taxas do pagamento"
+            valor={i ? formatBRL(i.taxas_pagamento) : "—"}
+            detalhe={
+              i
+                ? i.taxas_desconhecidas
+                  ? `${i.taxas_desconhecidas} sem taxa informada pelo Asaas`
+                  : "informadas pelo Asaas"
+                : undefined
+            }
+            icone={<Wallet />}
+            tom="neutro"
+            carregando={carregando}
+          />
+          <Operador simbolo={<ArrowRight />} />
+          <PassoConta
+            rotulo="Margem de contribuição"
+            valor={i ? formatBRL(i.margem_contribuicao) : "—"}
+            detalhe={margemPct != null ? `${margemPct}% da receita` : "antes de impostos e despesas fixas"}
+            icone={<CircleDollarSign />}
+            tom="sucesso"
+            destaque
+            carregando={carregando}
           />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="consultas-ate">até</Label>
-          <Input
-            id="consultas-ate"
-            type="date"
-            className="w-40"
-            value={ate}
-            min={de || undefined}
-            onChange={(e) => {
-              setAte(e.target.value);
-              setPagina(1);
-            }}
-          />
-        </div>
-        {!periodoValido && (
-          <p className="pb-2 text-sm text-destructive">Escolha um período válido.</p>
-        )}
-      </section>
+      </Secao>
 
-      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
-        <Metrica
-          icone={<Receipt className="size-4" />}
-          rotulo="Receita bruta"
-          valor={i ? formatBRL(i.receita_bruta) : "—"}
-          detalhe={i ? `${i.pagos} venda(s) paga(s)` : undefined}
-          carregando={carregando}
-        />
-        <Metrica
-          icone={<Landmark className="size-4" />}
-          rotulo="Custo APIFull"
-          valor={i ? formatBRL(i.custo_fornecedor) : "—"}
-          detalhe={i ? `${i.concluidas} consulta(s) entregue(s)` : undefined}
-          carregando={carregando}
-        />
-        <Metrica
-          icone={<Wallet className="size-4" />}
-          rotulo="Taxas do pagamento"
-          valor={i ? formatBRL(i.taxas_pagamento) : "—"}
-          detalhe={
-            i
-              ? i.taxas_desconhecidas
-                ? `${i.taxas_desconhecidas} sem taxa informada pelo Asaas`
-                : "informadas pelo Asaas"
-              : undefined
-          }
-          carregando={carregando}
-        />
-        <Metrica
-          icone={<CircleDollarSign className="size-4" />}
-          rotulo="Margem de contribuição"
-          valor={i ? formatBRL(i.margem_contribuicao) : "—"}
-          detalhe="antes de impostos e despesas fixas"
-          tom="sucesso"
-          carregando={carregando}
-        />
-        <Metrica
-          icone={<FileSearch className="size-4" />}
+      <FaixaIndicadores>
+        <Indicador
           rotulo="Pedidos no período"
-          valor={i ? String(i.pedidos) : "—"}
+          valor={i ? i.pedidos : "—"}
           detalhe={i ? `${i.canceladas} não pago(s) e cancelado(s)` : undefined}
+          icone={<FileSearch />}
           carregando={carregando}
         />
-        <Metrica
-          icone={<AlertTriangle className="size-4" />}
+        <Indicador
           rotulo="Falhas"
-          valor={i ? String(i.falhas) : "—"}
-          detalhe="ver pedidos que falharam"
-          tom={i?.falhas ? "perigo" : undefined}
-          onClick={() => filtrar("falhou")}
+          valor={i ? i.falhas : "—"}
+          detalhe="Toque para ver os pedidos"
+          icone={<AlertTriangle />}
+          tom={i?.falhas ? "perigo" : "neutro"}
+          onClick={() => filtrar(situacao === "falhou" ? null : "falhou")}
+          ativo={situacao === "falhou"}
           carregando={carregando}
         />
-        <Metrica
-          icone={<Clock className="size-4" />}
+        <Indicador
           rotulo="Em reconciliação"
-          valor={i ? String(i.reconciliar) : "—"}
-          detalhe="ver pedidos a reconciliar"
-          tom={i?.reconciliar ? "alerta" : undefined}
-          onClick={() => filtrar("reconciliar")}
+          valor={i ? i.reconciliar : "—"}
+          detalhe="Toque para ver os pedidos"
+          icone={<Clock />}
+          tom={i?.reconciliar ? "alerta" : "neutro"}
+          onClick={() => filtrar(situacao === "reconciliar" ? null : "reconciliar")}
+          ativo={situacao === "reconciliar"}
           carregando={carregando}
         />
-        <Metrica
-          icone={<XCircle className="size-4" />}
+        <Indicador
           rotulo="Estornos"
           valor={i ? formatBRL(i.estornos) : "—"}
           detalhe={i ? `${i.estornadas} pedido(s)` : undefined}
+          icone={<XCircle />}
+          tom="neutro"
           carregando={carregando}
         />
-      </div>
+      </FaixaIndicadores>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <CartaoPreco
           preco={d?.oferta?.preco ?? null}
           ativo={Boolean(d?.oferta?.ativo)}
@@ -294,67 +384,73 @@ function Pagina() {
         situacao={situacao}
         onSituacao={filtrar}
         carregando={carregando}
+        atualizando={q.isFetching}
       />
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs leading-relaxed text-muted-foreground">
         Receita conta pedidos pagos e não estornados; o custo vem da tabela vigente no momento do
         pedido; a taxa é a diferença entre o valor e o líquido informado pelo Asaas. Margem de
         contribuição não é lucro líquido: não desconta impostos, infraestrutura nem atendimento.
       </p>
+    </PaginaGestao>
+  );
+}
+
+function PassoConta({
+  rotulo,
+  valor,
+  detalhe,
+  icone,
+  tom = "marca",
+  destaque,
+  carregando,
+}: {
+  rotulo: string;
+  valor: string;
+  detalhe?: string;
+  icone: ReactNode;
+  tom?: Tom;
+  destaque?: boolean;
+  carregando: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "min-w-0 rounded-xl border p-3.5",
+        destaque ? "border-success/30 bg-success/[0.06]" : "border-border/80 bg-background",
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <IconeGestao icone={icone} tom={tom} tamanho="sm" />
+        <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          {rotulo}
+        </p>
+      </div>
+      {carregando ? (
+        <Skeleton className="mt-2 h-7 w-28" />
+      ) : (
+        <p
+          className={cn(
+            "mt-2 break-words text-[clamp(1.15rem,1rem+0.6vw,1.45rem)] font-medium tracking-tight tabular-nums",
+            destaque ? "text-success-texto" : "text-foreground",
+          )}
+        >
+          {valor}
+        </p>
+      )}
+      {detalhe && <p className="mt-0.5 text-xs text-muted-foreground">{detalhe}</p>}
     </div>
   );
 }
 
-function Metrica({
-  icone,
-  rotulo,
-  valor,
-  detalhe,
-  tom,
-  onClick,
-  carregando,
-}: {
-  icone: React.ReactNode;
-  rotulo: string;
-  valor: string;
-  detalhe?: string;
-  tom?: "sucesso" | "alerta" | "perigo";
-  onClick?: () => void;
-  carregando: boolean;
-}) {
-  const cor =
-    tom === "perigo"
-      ? "border-destructive/50"
-      : tom === "alerta"
-        ? "border-amber-400/70"
-        : tom === "sucesso"
-          ? "border-emerald-400/60"
-          : "border-border";
-  const corpo = (
-    <>
-      <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-        {icone} {rotulo}
-      </span>
-      {carregando ? (
-        <Skeleton className="mt-2 h-7 w-24" />
-      ) : (
-        <span className="mt-1 block text-xl font-semibold tabular-nums">{valor}</span>
-      )}
-      {detalhe && <span className="mt-0.5 block text-xs text-muted-foreground">{detalhe}</span>}
-    </>
-  );
-  const classe = `min-w-0 rounded-lg border bg-card p-4 text-left ${cor}`;
-  return onClick ? (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`${classe} transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
-      aria-label={`${rotulo}: ${valor}. Filtrar pedidos`}
+function Operador({ simbolo }: { simbolo: ReactNode }) {
+  return (
+    <span
+      aria-hidden
+      className="hidden place-items-center text-muted-foreground xl:grid [&_svg]:size-4"
     >
-      {corpo}
-    </button>
-  ) : (
-    <section className={classe}>{corpo}</section>
+      {simbolo}
+    </span>
   );
 }
 
@@ -389,59 +485,65 @@ function CartaoPreco({
   });
 
   return (
-    <section className="space-y-3 rounded-lg border border-border bg-card p-4">
-      <div>
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Tag className="size-4" /> Preço de venda
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Vale para pedidos novos; quem já pediu mantém o preço gravado no pedido.
-        </p>
-      </div>
+    <Secao
+      titulo="Preço de venda"
+      descricao="Vale para pedidos novos; quem já pediu mantém o preço gravado no pedido."
+      icone={<Tag />}
+      acoes={
+        !carregando && (
+          <Selo tom={ativo ? "sucesso" : "neutro"} ponto={ativo}>
+            {ativo ? "Venda ligada" : "Venda desligada"}
+          </Selo>
+        )
+      }
+    >
       {carregando ? (
         <Skeleton className="h-24" />
       ) : podeEditar ? (
         <form
-          className="space-y-3"
+          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             salvar.mutate();
           }}
         >
-          <div className="space-y-1">
-            <Label htmlFor="consulta-preco">Preço de venda (R$)</Label>
-            <Input
-              id="consulta-preco"
-              inputMode="decimal"
-              className="max-w-40 tabular-nums"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-            />
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="consulta-preco">Preço por consulta (R$)</Label>
+              <Input
+                id="consulta-preco"
+                inputMode="decimal"
+                className="h-10 w-36 text-base tabular-nums sm:text-sm"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+              />
+            </div>
+            <label htmlFor="consulta-ativa" className="flex min-h-10 items-center gap-2 text-sm">
+              <Switch
+                id="consulta-ativa"
+                checked={ligado}
+                onCheckedChange={setLigado}
+                aria-label="Venda ligada para as licenças"
+              />
+              Venda ligada para as licenças
+            </label>
           </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id="consulta-ativa"
-              checked={ligado}
-              onCheckedChange={setLigado}
-              aria-label="Venda ligada para as licenças"
-            />
-            <Label htmlFor="consulta-ativa">Venda ligada para as licenças</Label>
-          </div>
-          <Button type="submit" size="sm" disabled={salvar.isPending || !valor.trim()}>
+          <Button
+            type="submit"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            disabled={salvar.isPending || !valor.trim()}
+          >
             {salvar.isPending ? "Salvando…" : "Salvar preço"}
           </Button>
         </form>
       ) : (
-        <div className="space-y-1">
-          <p className="text-lg font-semibold tabular-nums">
-            {preco != null ? formatBRL(preco) : "—"}
-          </p>
-          <Badge variant={ativo ? "outline" : "secondary"}>
-            {ativo ? "Venda ligada" : "Venda desligada"}
-          </Badge>
-        </div>
+        <p className="text-[clamp(1.2rem,1rem+0.8vw,1.6rem)] font-medium tracking-tight tabular-nums">
+          {preco != null ? formatBRL(preco) : "—"}
+          <span className="ml-1 text-sm font-normal text-muted-foreground">por consulta</span>
+        </p>
       )}
-    </section>
+    </Secao>
   );
 }
 
@@ -471,63 +573,75 @@ function CartaoCusto({
   });
 
   return (
-    <section className="space-y-3 rounded-lg border border-border bg-card p-4">
-      <div>
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Landmark className="size-4" /> Custo da APIFull
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Fica só na plataforma: licença nenhuma vê este valor. Cada mudança tem vigência própria.
-        </p>
-      </div>
+    <Secao
+      titulo="Custo da APIFull"
+      descricao="Só a plataforma vê este valor; licença nenhuma. Cada mudança tem vigência própria."
+      icone={<Landmark />}
+    >
       {carregando ? (
         <Skeleton className="h-24" />
       ) : !podeVerCustos || !custos ? (
-        <p className="text-sm text-muted-foreground">Seu perfil não vê custos de fornecedor.</p>
+        <EstadoVazio
+          className="py-6"
+          titulo="Custo restrito"
+          descricao="Seu perfil não vê custos de fornecedor."
+        />
       ) : (
         <div className="space-y-4">
           {custos.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum custo registrado.</p>
           ) : (
-            <ul className="divide-y divide-border text-sm">
-              {custos.map((c) => (
-                <li key={c.vigente_desde} className="flex flex-wrap justify-between gap-2 py-2">
-                  <span className="font-semibold tabular-nums">{formatBRL(c.custo)}</span>
-                  <span className="text-xs text-muted-foreground">
-                    desde {dataHora(c.vigente_desde)}
+            <ol className="space-y-2">
+              {custos.map((c, idx) => (
+                <li
+                  key={c.vigente_desde}
+                  className={cn(
+                    "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-sm",
+                    idx === 0 ? "bg-primary/[0.05] ring-1 ring-inset ring-primary/15" : "bg-secondary/50",
+                  )}
+                >
+                  <span className="font-medium tabular-nums text-foreground">
+                    {formatBRL(c.custo)}
+                    {idx === 0 && (
+                      <Selo tom="marca" className="ml-2 align-middle">
+                        Vigente
+                      </Selo>
+                    )}
                   </span>
+                  <span className="text-xs text-muted-foreground">desde {dataHora(c.vigente_desde)}</span>
                   {c.observacao && (
                     <span className="w-full text-xs text-muted-foreground">{c.observacao}</span>
                   )}
                 </li>
               ))}
-            </ul>
+            </ol>
           )}
           {podeEditar && (
             <form
-              className="space-y-3"
+              className="space-y-3 border-t border-border/70 pt-4"
               onSubmit={(e) => {
                 e.preventDefault();
                 registrar.mutate();
               }}
             >
-              <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
-                <div className="space-y-1">
+              <div className="grid gap-3 sm:grid-cols-[9rem_1fr]">
+                <div className="space-y-1.5">
                   <Label htmlFor="consulta-custo">Novo custo (R$)</Label>
                   <Input
                     id="consulta-custo"
                     inputMode="decimal"
-                    className="tabular-nums"
+                    className="h-10 text-base tabular-nums sm:text-sm"
                     placeholder="6,72"
                     value={valor}
                     onChange={(e) => setValor(e.target.value)}
                   />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <Label htmlFor="consulta-custo-origem">Origem do valor</Label>
                   <Input
                     id="consulta-custo-origem"
                     maxLength={300}
+                    className="h-10 text-base sm:text-sm"
                     placeholder="Ex.: tabela da APIFull de novembro"
                     value={obs}
                     onChange={(e) => setObs(e.target.value)}
@@ -538,6 +652,7 @@ function CartaoCusto({
                 type="submit"
                 size="sm"
                 variant="secondary"
+                className="min-h-11 sm:min-h-9"
                 disabled={registrar.isPending || !valor.trim()}
               >
                 {registrar.isPending ? "Registrando…" : "Registrar custo"}
@@ -546,7 +661,40 @@ function CartaoCusto({
           )}
         </div>
       )}
-    </section>
+    </Secao>
+  );
+}
+
+function SeloPagamento({ p }: { p: PedidoConsulta }) {
+  const f = FIN[p.situacao_financeira] ?? { rotulo: p.situacao_financeira, tom: "neutro" as Tom };
+  return (
+    <div className="min-w-0">
+      <Selo tom={f.tom}>{f.rotulo}</Selo>
+      {p.pago_em && (
+        <p className="mt-1 text-[11px] text-muted-foreground">pago em {formatData(p.pago_em)}</p>
+      )}
+    </div>
+  );
+}
+
+function SeloConsulta({ p }: { p: PedidoConsulta }) {
+  const c = CONS[p.situacao_consulta] ?? { rotulo: p.situacao_consulta, tom: "neutro" as Tom };
+  return (
+    <div className="min-w-0">
+      <Selo tom={c.tom} ponto={p.situacao_consulta === "executando"}>
+        {c.rotulo}
+      </Selo>
+      {p.tipo_falha && (
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Falha {FALHA[p.tipo_falha] ?? p.tipo_falha} · {p.execucoes} execução(ões)
+        </p>
+      )}
+      {p.ultimo_erro && (
+        <p className="mt-0.5 line-clamp-2 break-all text-[11px] text-destructive" title={p.ultimo_erro}>
+          {p.ultimo_erro}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -558,6 +706,7 @@ function Pedidos({
   situacao,
   onSituacao,
   carregando,
+  atualizando,
 }: {
   pedidos: PedidoConsulta[];
   total: number;
@@ -566,165 +715,137 @@ function Pedidos({
   situacao: Situacao | null;
   onSituacao: (s: Situacao | null) => void;
   carregando: boolean;
+  atualizando: boolean;
 }) {
-  const paginas = Math.max(1, Math.ceil(total / POR_PAGINA_PEDIDOS));
+  const outraEscolhida = OUTRAS.some((o) => o.valor === situacao);
   return (
-    <section aria-label="Pedidos de consulta" className="rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
-        <h2 className="text-sm font-semibold">
-          Pedidos {total ? <span className="text-muted-foreground">({total})</span> : null}
-        </h2>
+    <Secao
+      titulo={
+        <>
+          Pedidos {total ? <span className="font-normal text-muted-foreground">({total})</span> : null}
+        </>
+      }
+      descricao="Cada compra de consulta feita por uma licença, do pagamento à entrega."
+      semRespiro
+    >
+      <div className="flex flex-col gap-2 border-b border-border/70 px-4 py-3 md:flex-row md:items-center">
+        <ChipsFiltro
+          rotulo="Situação dos pedidos"
+          className="min-w-0 flex-1"
+          valor={outraEscolhida ? "todas" : (situacao ?? "todas")}
+          onChange={(v) => onSituacao(v === "todas" ? null : v)}
+          opcoes={PRINCIPAIS.map((o) => ({ valor: o.valor, rotulo: o.rotulo }))}
+        />
         <Select
-          value={situacao ?? TODAS}
-          onValueChange={(v) => onSituacao(v === TODAS ? null : (v as Situacao))}
+          value={outraEscolhida ? (situacao as string) : "nenhuma"}
+          onValueChange={(v) => onSituacao(v === "nenhuma" ? null : (v as Situacao))}
         >
-          <SelectTrigger className="w-full sm:w-64" aria-label="Situação dos pedidos">
+          <SelectTrigger
+            className={cn("h-10 w-full md:w-56", outraEscolhida && "border-primary text-primary")}
+            aria-label="Outras situações"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={TODAS}>Todas as situações</SelectItem>
-            <SelectGroup>
-              <SelectLabel>Pagamento</SelectLabel>
-              {Object.entries(FIN).map(([v, t]) => (
-                <SelectItem key={`f-${v}`} value={v}>
-                  Pagamento: {t}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-            <SelectGroup>
-              <SelectLabel>Consulta</SelectLabel>
-              {Object.entries(CONS)
-                .filter(([v]) => v !== "aguardando_pagamento")
-                .map(([v, t]) => (
-                  <SelectItem key={`c-${v}`} value={v}>
-                    Consulta: {t}
-                  </SelectItem>
-                ))}
-            </SelectGroup>
+            <SelectItem value="nenhuma">Outras situações</SelectItem>
+            {OUTRAS.map((o) => (
+              <SelectItem key={o.valor} value={o.valor}>
+                {o.rotulo}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       {carregando ? (
-        <div className="p-4">
-          <Skeleton className="h-24" />
-        </div>
+        <ListaCarregando linhas={4} />
       ) : pedidos.length === 0 ? (
-        <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-          <Inbox className="size-4" /> Nenhum pedido. Quando uma licença comprar uma consulta, ela
-          aparece aqui.
-        </p>
+        <EstadoVazio
+          icone={<FileSearch />}
+          titulo={situacao ? "Nenhum pedido nesta situação" : "Nenhum pedido no período"}
+          descricao="Quando uma licença comprar uma consulta, ela aparece aqui."
+        />
       ) : (
-        <div className="overflow-x-auto">
-          <Table className="min-w-[860px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pedido</TableHead>
-                <TableHead>Licença</TableHead>
-                <TableHead>Documento</TableHead>
-                <TableHead className="text-right">Preço</TableHead>
-                <TableHead className="text-right">Custo</TableHead>
-                <TableHead className="text-right">Taxa</TableHead>
-                <TableHead>Pagamento</TableHead>
-                <TableHead>Consulta</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pedidos.map((p) => (
-                <TableRow key={p.id} className="align-top">
-                  <TableCell className="whitespace-nowrap text-xs tabular-nums">
-                    {dataHora(p.criado_em)}
-                  </TableCell>
-                  <TableCell className="max-w-[14rem] truncate">{p.conta}</TableCell>
-                  <TableCell className="tabular-nums">{p.documento_mascarado ?? "—"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatBRL(p.preco)}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {p.custo_fornecedor != null ? formatBRL(p.custo_fornecedor) : "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {p.taxa_pagamento != null ? formatBRL(p.taxa_pagamento) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={p.situacao_financeira === "pago" ? "outline" : "secondary"}
-                      className={
-                        p.situacao_financeira === "pago"
-                          ? "text-emerald-700"
-                          : p.situacao_financeira === "aguardando_pagamento"
-                            ? "bg-amber-100 text-amber-900"
-                            : undefined
-                      }
-                    >
-                      {FIN[p.situacao_financeira] ?? p.situacao_financeira}
-                    </Badge>
-                    {p.pago_em && (
-                      <small className="mt-1 block text-xs text-muted-foreground">
-                        pago em {formatData(p.pago_em)}
-                      </small>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        ["falhou", "reconciliar"].includes(p.situacao_consulta)
-                          ? "destructive"
-                          : "outline"
-                      }
-                      className={
-                        p.situacao_consulta === "concluida" ? "text-emerald-700" : undefined
-                      }
-                    >
-                      {CONS[p.situacao_consulta] ?? p.situacao_consulta}
-                    </Badge>
-                    {p.tipo_falha && (
-                      <small className="mt-1 block text-xs text-muted-foreground">
-                        Falha {FALHA[p.tipo_falha] ?? p.tipo_falha} · {p.execucoes} execução(ões)
-                      </small>
-                    )}
-                    {p.ultimo_erro && (
-                      <small
-                        className="mt-1 block max-w-[16rem] truncate text-xs text-destructive"
-                        title={p.ultimo_erro}
-                      >
-                        {p.ultimo_erro}
-                      </small>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <>
+          {/* Computador: tabela */}
+          <div className="hidden lg:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/70 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-4 py-2.5 font-medium">Pedido</th>
+                  <th className="px-3 py-2.5 font-medium">Licença</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Preço</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Custo</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Taxa</th>
+                  <th className="px-3 py-2.5 font-medium">Pagamento</th>
+                  <th className="px-4 py-2.5 font-medium">Consulta</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {pedidos.map((p) => (
+                  <tr key={p.id} className="align-top hover:bg-primary/[0.02]">
+                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs tabular-nums text-muted-foreground">
+                      {dataHora(p.criado_em)}
+                    </td>
+                    <td className="max-w-[16rem] px-3 py-3">
+                      <p className="truncate font-medium text-foreground">{p.conta}</p>
+                      <p className="font-mono text-xs tabular-nums text-muted-foreground">
+                        {p.documento_mascarado ?? "—"}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums">{formatBRL(p.preco)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
+                      {p.custo_fornecedor != null ? formatBRL(p.custo_fornecedor) : "—"}
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
+                      {p.taxa_pagamento != null ? formatBRL(p.taxa_pagamento) : "—"}
+                    </td>
+                    <td className="px-3 py-3">
+                      <SeloPagamento p={p} />
+                    </td>
+                    <td className="max-w-[16rem] px-4 py-3">
+                      <SeloConsulta p={p} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Celular e tablet: cartões */}
+          <ul className="divide-y divide-border/60 lg:hidden">
+            {pedidos.map((p) => (
+              <li key={p.id} className="space-y-2 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">{p.conta}</p>
+                    <p className="font-mono text-xs tabular-nums text-muted-foreground">
+                      {dataHora(p.criado_em)} · {p.documento_mascarado ?? "—"}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-sm font-medium tabular-nums">{formatBRL(p.preco)}</p>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                  <SeloPagamento p={p} />
+                  <SeloConsulta p={p} />
+                </div>
+                <p className="text-[11px] tabular-nums text-muted-foreground">
+                  Custo {p.custo_fornecedor != null ? formatBRL(p.custo_fornecedor) : "—"} · Taxa{" "}
+                  {p.taxa_pagamento != null ? formatBRL(p.taxa_pagamento) : "—"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
-      {total > POR_PAGINA_PEDIDOS && (
-        <nav
-          aria-label="Páginas dos pedidos"
-          className="flex items-center justify-between gap-2 border-t border-border p-3 text-sm"
-        >
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pagina <= 1}
-            onClick={() => onPagina(pagina - 1)}
-            aria-label="Página anterior"
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <span className="tabular-nums text-muted-foreground">
-            Página {pagina} de {paginas}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pagina >= paginas}
-            onClick={() => onPagina(pagina + 1)}
-            aria-label="Próxima página"
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </nav>
-      )}
-    </section>
+      <RodapePaginas
+        pagina={pagina}
+        porPagina={POR_PAGINA_PEDIDOS}
+        quantidade={pedidos.length}
+        total={total}
+        carregando={atualizando}
+        onPagina={onPagina}
+      />
+    </Secao>
   );
 }

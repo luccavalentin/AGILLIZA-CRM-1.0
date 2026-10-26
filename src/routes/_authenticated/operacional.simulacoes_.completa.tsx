@@ -47,21 +47,26 @@ import { formatBRL, formatPercent, formatTaxa } from "@/lib/simulacao/format";
 import { useSimulacaoCompleta } from "@/lib/simulacao/use-simulacao-completa";
 import { obterSimulacao } from "@/lib/simulacao/simulacoes.functions";
 import { cn } from "@/lib/utils";
+import { DestinoSimulacao } from "@/components/simulacao/destino-simulacao";
+import { normalizarContaId } from "@/lib/simulacao/destino-conta";
 
 export const Route = createFileRoute("/_authenticated/operacional/simulacoes_/completa")({
   head: () => ({ meta: [{ title: "Simulação completa — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.simulacoes"),
   validateSearch: (
     search: Record<string, unknown>,
-  ): { duplicar?: string; origem?: "proposta" } => ({
+  ): { duplicar?: string; origem?: "proposta"; conta?: string } => ({
     duplicar: typeof search.duplicar === "string" ? search.duplicar : undefined,
     origem: search.origem === "proposta" ? "proposta" : undefined,
+    // C29: conta do assinante onde a simulação também nasce (uuid saneado; torto = sua base).
+    conta: normalizarContaId(search.conta) ?? undefined,
   }),
   component: Pagina,
 });
 
 function Pagina() {
-  const { duplicar, origem: origemFluxo } = Route.useSearch();
+  const { duplicar, origem: origemFluxo, conta: contaDestino } = Route.useSearch();
+  const navegarRota = Route.useNavigate();
   const ctx = useSimulacaoCompleta({ duplicar, modoProposta: origemFluxo === "proposta" });
   const {
     router,
@@ -193,6 +198,16 @@ function Pagina() {
           </p>
         </div>
       </div>
+
+      <DestinoSimulacao
+        contaId={contaDestino ?? null}
+        onConta={(id) =>
+          navegarRota({
+            search: (prev: Record<string, unknown>) => ({ ...prev, conta: id ?? undefined }),
+            replace: true,
+          } as never)
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         {/* Coluna principal — formulário */}

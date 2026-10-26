@@ -1170,47 +1170,8 @@ export const removerVendedor = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Registra interação manual (nenhum disparo automático). */
-export const registrarInteracao = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z
-      .object({
-        cliente_id: z.string().uuid(),
-        canal: z.enum([
-          "ligacao",
-          "whatsapp",
-          "email",
-          "reuniao",
-          "presencial",
-          "followup",
-          "outro",
-        ]),
-        resultado: z.string().optional().nullable(),
-        observacao: z.string().optional().nullable(),
-      })
-      .parse(d),
-  )
-  .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { supabase, userId } = context;
-    await exigirEdicaoCliente(supabase, userId);
-    const { error } = await supabase.from("cliente_interacoes").insert({
-      cliente_id: data.cliente_id,
-      canal: data.canal,
-      responsavel_id: userId,
-      resultado: data.resultado ?? null,
-      observacao: data.observacao ?? null,
-    });
-    if (error) throw error;
-    await supabase.from("cliente_historico").insert({
-      cliente_id: data.cliente_id,
-      tipo: "interacao",
-      descricao: `Contato registrado (${data.canal})`,
-      ator_id: userId,
-    });
-    return { ok: true };
-  });
-
+// Registro manual de interações removido a pedido do dono (26/10/2026, C11): os dados
+// antigos continuam em `cliente_interacoes` e aparecem no painel do chat do cliente.
 export const listarInteracoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
@@ -2152,6 +2113,7 @@ export interface ClienteNegocios {
   propostas: Array<{
     id: string;
     numero_proposta: string | null;
+    homefin_id_oportunidade: string | null;
     nome_banco: string | null;
     produto: string | null;
     status: string | null;
@@ -2176,7 +2138,9 @@ export const getClienteNegocios = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false }),
       supabase
         .from("propostas")
-        .select("id, numero_proposta, nome_banco, produto, status, valor_financiamento, created_at")
+        .select(
+          "id, numero_proposta, homefin_id_oportunidade, nome_banco, produto, status, valor_financiamento, created_at",
+        )
         .eq("cliente_id", data.cliente_id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),

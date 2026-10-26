@@ -12,6 +12,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const STATUS_NOTICIA = [
   "coletada",
@@ -38,7 +39,19 @@ export interface NoticiaCuradoria {
   criado_em: string;
   fonte: string | null;
   revisor: string | null;
+  imagem_url: string | null;
+  publico: PublicoNews;
+  inicio_em: string | null;
+  fim_em: string | null;
 }
+
+/** Quem vê: todo o ecossistema, só assinantes (Agilliza Tech) ou só a equipe do Agilliza. */
+export type PublicoNews = "todos" | "assinantes" | "equipe";
+export const PUBLICOS_NEWS: { id: PublicoNews; nome: string }[] = [
+  { id: "todos", nome: "Todos os usuários do ecossistema" },
+  { id: "assinantes", nome: "Só assinantes (Agilliza Tech)" },
+  { id: "equipe", nome: "Só a equipe do Agilliza" },
+];
 
 export interface FonteNews {
   id: string;
@@ -49,6 +62,26 @@ export interface FonteNews {
   erro: string | null;
   ultima_coleta_em: string | null;
   noticias: number;
+  intervalo_min: number;
+  proxima_coleta_em: string | null;
+  ultimo_sucesso_em: string | null;
+  falhas_seguidas: number;
+  itens_ultima_coleta: number | null;
+  novos_ultima_coleta: number | null;
+  coletando_desde: string | null;
+}
+
+export interface ColetaNews {
+  id: string;
+  fonte_id: string;
+  fonte: string;
+  origem: "agenda" | "manual";
+  iniciada_em: string;
+  terminada_em: string | null;
+  ok: boolean | null;
+  itens: number | null;
+  novos: number | null;
+  erro: string | null;
 }
 
 export interface IndicadorNews {
@@ -85,6 +118,12 @@ export interface PostNews {
   publicado_em: string | null;
   atualizado_em: string;
   autor: string | null;
+  resumo: string | null;
+  inicio_em: string | null;
+  fim_em: string | null;
+  publico: PublicoNews;
+  formato: "texto" | "markdown";
+  origem: "news" | "base_conhecimento";
 }
 
 /** Um item do feed como o leitor vê, com a reação contada (audiência). */
@@ -100,6 +139,8 @@ export interface ItemFeedNews {
   publicado_em: string | null;
   curtidas: number;
   comentarios: number;
+  publico: PublicoNews;
+  fim_em: string | null;
 }
 
 export interface ComentarioNews {
@@ -116,6 +157,29 @@ const UUID = z.string().uuid("Identificador inválido.");
 const TIPO_ITEM = z.enum(["noticia", "post"], {
   errorMap: () => ({ message: "Item inválido." }),
 });
+const PUBLICO = z.enum(["todos", "assinantes", "equipe"], {
+  errorMap: () => ({ message: "Público inválido." }),
+});
+const DATA_HORA = z
+  .string()
+  .datetime({ offset: true, message: "Data inválida." })
+  .nullable()
+  .optional();
+
+/** Janela de exibição: início (opcional) e fim por data ou por "dias no ar". */
+function janela(d: { inicio_em?: string | null; fim_em?: string | null; dias?: number | null }) {
+  const inicio = d.inicio_em ? new Date(d.inicio_em) : null;
+  let fim = d.fim_em ? new Date(d.fim_em) : null;
+  if (!fim && d.dias) {
+    if (!Number.isInteger(d.dias) || d.dias < 1 || d.dias > 365)
+      throw new Error("Dias no ar: de 1 a 365.");
+    fim = new Date((inicio ?? new Date()).getTime() + d.dias * 86_400_000);
+  }
+  if (fim && fim.getTime() <= (inicio ?? new Date()).getTime()) {
+    throw new Error("A data de fim precisa ser depois do início (e no futuro).");
+  }
+  return { inicio: inicio?.toISOString() ?? null, fim: fim?.toISOString() ?? null };
+}
 
 /** Tudo o que a tela de curadoria mostra, numa transação só. */
 export const lerCuradoriaNews = createServerFn({ method: "GET" })
@@ -129,7 +193,8 @@ export const lerCuradoriaNews = createServerFn({ method: "GET" })
                 n.publicada_na_fonte_em::text as publicada_na_fonte_em,
                 n.publicado_em::text as publicado_em, n.criado_em::text as criado_em,
                 (select f.nome from radar.fontes f where f.id = n.fonte_id) as fonte,
-                (select u.nome from plataforma.usuarios(array[n.revisado_por]) u) as revisor
+                (select u.nome from plataforma.usuarios(array[n.revisado_por]) u) as revisor,
+                n.imagem_url, n.publico, n.inicio_em::text as inicio_em, n.fim_em::text as fim_em
            from radar.noticias n
           order by (n.status not in ('publicada', 'descartada')) desc, n.criado_em desc
           limit 200`,
@@ -144,8 +209,17 @@ export const lerCuradoriaNews = createServerFn({ method: "GET" })
       const fontes = await tx.consultar<FonteNews>(
         `select f.id, f.nome, f.url_rss, f.categoria, f.ativa, f.erro,
                 f.ultima_coleta_em::text as ultima_coleta_em,
-                (select count(*) from radar.noticias n where n.fonte_id = f.id)::int as noticias
-           from radar.fontes f order by f.nome`,
+                (select count(*) from radar.noticias n where n.fonte_id = f.id)::int as noticias,
+                f.intervalo_min, f.proxima_coleta_em::text as proxima_coleta_em,
+                f.ultimo_sucesso_em::text as ultimo_sucesso_em, f.falhas_seguidas,
+                f.itens_ultima_coleta, f.novos_ultima_coleta, f.coletando_desde::text as coletando_desde
+           from radar.fontes f
+          order by (f.url_rss is null), f.nome`,
+      );
+      const coletas = await tx.consultar<ColetaNews>(
+        `select id, fonte_id, fonte, origem, iniciada_em::text as iniciada_em,
+                terminada_em::text as terminada_em, ok, itens, novos, erro
+           from radar.coletas_recentes(null, 40)`,
       );
 
       const indicadores = await tx.consultar<IndicadorNews>(
@@ -166,7 +240,9 @@ export const lerCuradoriaNews = createServerFn({ method: "GET" })
                 (p.capa_midia_id is not null) as tem_capa, p.capa_midia_id, null::text as capa_url,
                 p.tempo_leitura_min::int as tempo_leitura_min,
                 p.publicado_em::text as publicado_em, p.atualizado_em::text as atualizado_em,
-                (select u.nome from plataforma.usuarios(array[p.autor_id]) u) as autor
+                (select u.nome from plataforma.usuarios(array[p.autor_id]) u) as autor,
+                p.resumo, p.inicio_em::text as inicio_em, p.fim_em::text as fim_em, p.publico,
+                p.formato, p.origem
            from radar.posts p
           order by (p.status = 'rascunho') desc, coalesce(p.publicado_em, p.criado_em) desc
           limit 100`,
@@ -184,7 +260,7 @@ export const lerCuradoriaNews = createServerFn({ method: "GET" })
       const feed = await tx.consultar<ItemFeedNews>(
         `select id, tipo, titulo, categoria_nome, fonte, url_externa, externa, fixado,
                 publicado_em::text as publicado_em, curtidas::int as curtidas,
-                comentarios::int as comentarios
+                comentarios::int as comentarios, publico, fim_em::text as fim_em
            from radar.feed(null, null, 120)`,
       );
 
@@ -192,6 +268,7 @@ export const lerCuradoriaNews = createServerFn({ method: "GET" })
         noticias,
         contagem: contagem ?? { na_fila: 0, publicadas: 0 },
         fontes,
+        coletas,
         indicadores,
         categorias,
         posts,
@@ -296,8 +373,9 @@ export const alternarIndicadorNews = createServerFn({ method: "POST" })
   });
 
 /**
- * Apontar uma matéria de um portal: guarda URL, título e chamada — nunca o texto. Ela abre
- * na página do veículo.
+ * Apontar uma matéria de um portal: guarda URL, título, chamada e o ENDEREÇO da imagem de
+ * pré-visualização — nunca o texto. Ela abre na página do veículo. Agenda (início/fim ou
+ * dias no ar), público e destaque como os posts.
  */
 export const apontarMateria = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
@@ -309,36 +387,74 @@ export const apontarMateria = createServerFn({ method: "POST" })
         resumo: z.string().max(1000).default(""),
         categoria: z.string().min(1, "Escolha a categoria.").max(60),
         fonte: z.string().max(120).default(""),
+        imagem_url: z.string().max(1000).nullable().optional(),
+        publico: PUBLICO.default("todos"),
+        fixada: z.boolean().default(false),
+        inicio_em: DATA_HORA,
+        fim_em: DATA_HORA,
+        dias: z.number().int().nullable().optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     const url = data.url.trim();
-    if (!/^https:\/\/[\w.-]+\.[a-z]{2,}(\/|$)/i.test(url)) {
-      throw new Error("Informe o endereço completo da matéria, começando com https://.");
+    if (!/^https?:\/\/[\w.-]+\.[a-z]{2,}(:\d+)?(\/|$|\?)/i.test(url)) {
+      throw new Error(
+        "Informe o endereço completo da matéria, começando com https:// (ou http://).",
+      );
     }
     if (data.titulo.trim().length < 10) {
       throw new Error("O título precisa de pelo menos 10 caracteres.");
     }
+    const imagem = data.imagem_url?.trim() || null;
+    if (imagem && !/^https:\/\/[^\s]+$/.test(imagem))
+      throw new Error("A imagem precisa ser um endereço https://.");
+    const { inicio, fim } = janela(data);
     const { comPlataforma } = await import("./ponte.server");
     await comPlataforma(context.userId, (tx) =>
       tx.consultar(
         `insert into radar.noticias
            (fonte_id, url_original, titulo_original, titulo, slug, resumo, categoria, status,
-            publicado_em, revisado_por, tempo_leitura_min)
+            publicado_em, revisado_por, tempo_leitura_min, imagem_url, publico, fixada, inicio_em, fim_em)
          values (radar.fonte_por_nome($5, $4), $1, $2, $2,
                  nucleo.slug_unico('radar.noticias', $2), $3, $4, 'publicada',
-                 now(), seguranca.auth_usuario_id(), 3)`,
+                 now(), seguranca.auth_usuario_id(), 3, $6, $7, $8, $9::timestamptz, $10::timestamptz)`,
         [
           url,
           data.titulo.trim(),
           data.resumo.trim() || null,
           data.categoria,
           data.fonte.trim() || null,
+          imagem,
+          data.publico,
+          data.fixada,
+          inicio,
+          fim,
         ],
       ),
     );
-    return { ok: true as const, mensagem: "Matéria no ar. Ela abre na página do veículo." };
+    return {
+      ok: true as const,
+      mensagem:
+        inicio && new Date(inicio) > new Date()
+          ? "Matéria agendada."
+          : "Matéria no ar. Ela abre na página do veículo.",
+    };
+  });
+
+/** Pré-visualização de um link (título, descrição, imagem, veículo) buscada pelo servidor. */
+export const previaLinkNews = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.news", "edit"])])
+  .inputValidator((d: unknown) => z.object({ url: z.string().min(8).max(1000) }).parse(d))
+  .handler(async ({ data }) => {
+    const { buscarPrevia, RecusaLink } = await import("./previa-link.server");
+    try {
+      return await buscarPrevia(data.url);
+    } catch (e) {
+      if (e instanceof RecusaLink) throw new Error(e.message);
+      console.error("[previaLinkNews]", (e as Error)?.message);
+      throw new Error("Não foi possível ler este endereço.");
+    }
   });
 
 /**
@@ -359,6 +475,13 @@ export const publicarPost = createServerFn({ method: "POST" })
         categoria: z.string().min(1, "Escolha a categoria.").max(60),
         publicar: z.boolean(),
         capaMidiaId: UUID.nullable().optional(),
+        resumo: z.string().max(400).default(""),
+        publico: PUBLICO.default("todos"),
+        fixado: z.boolean().default(false),
+        formato: z.enum(["texto", "markdown"]).default("markdown"),
+        inicio_em: DATA_HORA,
+        fim_em: DATA_HORA,
+        dias: z.number().int().nullable().optional(),
       })
       .parse(d),
   )
@@ -371,9 +494,10 @@ export const publicarPost = createServerFn({ method: "POST" })
         "O texto precisa de pelo menos 80 caracteres — menos que isso é uma chamada, não uma publicação.",
       );
     }
-    // 200 palavras por minuto, arredondado (estimativa, como na Gestão).
-    const minutos = Math.max(1, Math.round(data.corpo.trim().split(/\s+/).length / 200));
+    const { minutosDeLeitura } = await import("@/lib/conhecimento/markdown");
+    const minutos = Math.min(60, minutosDeLeitura(data.corpo));
     const status = data.publicar ? "publicado" : "rascunho";
+    const { inicio, fim } = janela(data);
     const { comPlataforma } = await import("./ponte.server");
     await comPlataforma(context.userId, async (tx) => {
       if (data.id) {
@@ -386,8 +510,9 @@ export const publicarPost = createServerFn({ method: "POST" })
           `update radar.posts
               set titulo = $2, corpo = $3, categoria = $4, tempo_leitura_min = $5,
                   status = $6, publicado_em = case when $6 = 'publicado' then coalesce(publicado_em, now()) end,
-                  capa_midia_id = $7::uuid,
-                  atualizado_em = now()
+                  capa_midia_id = $7::uuid, resumo = nullif($8, ''), publico = $9, fixado = $10,
+                  formato = $11, inicio_em = $12::timestamptz, fim_em = $13::timestamptz,
+                  editado_em = now(), editado_por = seguranca.auth_usuario_id(), atualizado_em = now()
             where id = $1`,
           [
             data.id,
@@ -397,6 +522,12 @@ export const publicarPost = createServerFn({ method: "POST" })
             minutos,
             status,
             data.capaMidiaId === undefined ? antes.capa_midia_id : data.capaMidiaId,
+            data.resumo.trim(),
+            data.publico,
+            data.fixado,
+            data.formato,
+            inicio,
+            fim,
           ],
         );
         if (
@@ -413,9 +544,11 @@ export const publicarPost = createServerFn({ method: "POST" })
       }
       await tx.consultar(
         `insert into radar.posts
-           (autor_id, titulo, slug, corpo, categoria, tempo_leitura_min, status, publicado_em, capa_midia_id)
+           (autor_id, titulo, slug, corpo, categoria, tempo_leitura_min, status, publicado_em, capa_midia_id,
+            resumo, publico, fixado, formato, inicio_em, fim_em)
          values (seguranca.auth_usuario_id(), $1, nucleo.slug_unico('radar.posts', $1), $2, $3, $4, $5,
-                 case when $5 = 'publicado' then now() end, $6::uuid)`,
+                 case when $5 = 'publicado' then now() end, $6::uuid, nullif($7, ''), $8, $9, $10,
+                 $11::timestamptz, $12::timestamptz)`,
         [
           data.titulo.trim(),
           data.corpo.trim(),
@@ -423,10 +556,260 @@ export const publicarPost = createServerFn({ method: "POST" })
           minutos,
           status,
           data.capaMidiaId ?? null,
+          data.resumo.trim(),
+          data.publico,
+          data.fixado,
+          data.formato,
+          inicio,
+          fim,
         ],
       );
     });
-    return { ok: true as const, mensagem: data.publicar ? "Publicado." : "Rascunho salvo." };
+    return {
+      ok: true as const,
+      mensagem: !data.publicar
+        ? "Rascunho salvo."
+        : inicio && new Date(inicio) > new Date()
+          ? "Publicação agendada."
+          : "Publicado.",
+    };
+  });
+
+/** Tirar do ar agora: post vai para "arquivado"; matéria apontada ganha fim imediato. */
+export const tirarDoArNews = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.news", "edit"])])
+  .inputValidator((d: unknown) => z.object({ tipo: TIPO_ITEM, id: UUID }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await import("./ponte.server");
+    const r = await comPlataforma(context.userId, (tx) =>
+      data.tipo === "post"
+        ? tx.uma<{ id: string }>(
+            "update radar.posts set status = 'arquivado', atualizado_em = now() where id = $1 returning id",
+            [data.id],
+          )
+        : tx.uma<{ id: string }>(
+            "update radar.noticias set fim_em = now() where id = $1 and status = 'publicada' returning id",
+            [data.id],
+          ),
+    );
+    if (!r) throw new Error("Item não encontrado.");
+    return { ok: true as const, mensagem: "Saiu do ar." };
+  });
+
+/* ─────────────── Fontes e coletor de RSS (0338) ─────────────── */
+
+export const salvarFonteNews = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.news", "edit"])])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: UUID.nullable().optional(),
+        nome: z.string().max(120),
+        url: z.string().max(500),
+        categoria: z.string().min(1, "Escolha a categoria.").max(60),
+        intervalo_min: z
+          .number()
+          .int()
+          .min(15, "Mínimo de 15 minutos.")
+          .max(1440, "Máximo de 24 horas."),
+        ativa: z.boolean().default(true),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await import("./ponte.server");
+    await comPlataforma(context.userId, (tx) =>
+      tx.uma("select radar.salvar_fonte($1, $2, $3, $4, $5, $6) as id", [
+        data.id ?? null,
+        data.nome.trim(),
+        data.url.trim(),
+        data.categoria,
+        data.intervalo_min,
+        data.ativa,
+      ]),
+    );
+    return {
+      ok: true as const,
+      mensagem: data.id
+        ? "Fonte atualizada."
+        : "Fonte cadastrada. A primeira coleta sai em instantes.",
+    };
+  });
+
+export const removerFonteNews = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.news", "edit"])])
+  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await import("./ponte.server");
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ r: string }>("select radar.remover_fonte($1) as r", [data.id]),
+    );
+    return {
+      ok: true as const,
+      mensagem:
+        r?.r === "mantida_como_veiculo"
+          ? "Fonte retirada do coletor. Ela continua como veículo das matérias já publicadas."
+          : "Fonte removida.",
+    };
+  });
+
+/** "Coletar agora": uma fonte ou todas. O worker é acordado pelo outbox. */
+export const coletarAgoraNews = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.news", "edit"])])
+  .inputValidator((d: unknown) => z.object({ id: UUID.nullable().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await import("./ponte.server");
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ n: number }>("select radar.pedir_coleta($1) as n", [data.id ?? null]),
+    );
+    const n = Number(r?.n ?? 0);
+    if (!n) throw new Error("Nenhuma fonte ativa com RSS para coletar.");
+    return {
+      ok: true as const,
+      mensagem:
+        n === 1
+          ? "Coleta pedida. O resultado aparece aqui em instantes."
+          : `Coleta de ${n} fontes pedida.`,
+    };
+  });
+
+/* ─────────────── Métricas estilo Ads (0340) ─────────────── */
+
+export interface MetricasNews {
+  periodo: { inicio: string; fim: string };
+  totais: {
+    impressoes: number;
+    alcance: number;
+    leitores: number;
+    leituras: number;
+    cliques: number;
+    aberturas: number;
+    ctr: number;
+    compartilhamentos: number;
+    tempo_medio_s: number | null;
+    curtidas: number;
+    comentarios: number;
+  };
+  compartilhamentos_por_canal: Partial<Record<"whatsapp" | "link" | "email" | "nativo", number>>;
+  serie: Array<{
+    dia: string;
+    impressoes: number;
+    aberturas: number;
+    compartilhamentos: number;
+    alcance: number;
+  }>;
+  por_portal: Array<{ portal: string; impressoes: number; aberturas: number; alcance: number }>;
+  por_perfil: Array<{ perfil: string; impressoes: number; aberturas: number; alcance: number }>;
+  ranking: Array<{
+    item_tipo: "noticia" | "post";
+    item_id: string;
+    titulo: string | null;
+    publico: string | null;
+    impressoes: number;
+    alcance: number;
+    leituras: number;
+    cliques: number;
+    ctr: number;
+    compartilhamentos: number;
+    tempo_medio_s: number | null;
+    curtidas: number;
+    comentarios: number;
+  }>;
+}
+
+export const lerMetricasNews = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.news", "view"])])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
+        fim: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
+        item_tipo: TIPO_ITEM.nullable().optional(),
+        item_id: UUID.nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<MetricasNews> => {
+    const { comPlataforma } = await import("./ponte.server");
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ m: MetricasNews }>("select radar.metricas($1::date, $2::date, $3, $4) as m", [
+        data.inicio,
+        data.fim,
+        data.item_tipo ?? null,
+        data.item_id ?? null,
+      ]),
+    );
+    if (!r?.m) throw new Error("Não foi possível calcular as métricas.");
+    return r.m;
+  });
+
+/* ─────────────── News da equipe do Agilliza (público todos/equipe) ─────────────── */
+
+export interface ItemNewsEquipe {
+  id: string;
+  tipo: "noticia" | "post";
+  titulo: string | null;
+  resumo: string | null;
+  categoria_nome: string | null;
+  url_externa: string | null;
+  fonte: string | null;
+  externa: boolean;
+  fixado: boolean;
+  tempo_leitura_min: number | null;
+  publicado_em: string | null;
+  imagem_url: string | null;
+  corpo: string | null;
+  formato: "texto" | "markdown" | null;
+}
+
+/** O feed para quem trabalha no Agilliza (o banco confere que a pessoa é da equipe). */
+export const lerNewsDaEquipe = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ limite: z.number().int().min(1).max(60).default(20) }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<ItemNewsEquipe[]> => {
+    const { consultarNewsDaEquipe } = await import("./ponte.server");
+    const r = await consultarNewsDaEquipe<ItemNewsEquipe>(
+      `select id, tipo, titulo, resumo, categoria_nome, url_externa, fonte, externa, fixado,
+              tempo_leitura_min, publicado_em::text as publicado_em, imagem_url, corpo, formato
+         from radar.feed_da_equipe($1, $2)`,
+      [context.userId, data.limite],
+    );
+    return r ?? [];
+  });
+
+export const registrarEventosNewsEquipe = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        eventos: z
+          .array(
+            z.object({
+              tipo: z.enum(["impressao", "leitura", "clique", "compartilhamento", "tempo"]),
+              item_tipo: TIPO_ITEM,
+              item_id: UUID,
+              canal: z.enum(["whatsapp", "link", "email", "nativo"]).optional(),
+              segundos: z.number().int().min(0).max(3600).optional(),
+            }),
+          )
+          .max(60),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    if (!data.eventos.length) return { n: 0 };
+    try {
+      const { consultarNewsDaEquipe } = await import("./ponte.server");
+      const r = await consultarNewsDaEquipe<{ n: number }>(
+        "select radar.registrar_eventos_equipe($1, $2::jsonb) as n",
+        [context.userId, JSON.stringify(data.eventos)],
+      );
+      return { n: Number(r?.[0]?.n ?? 0) };
+    } catch {
+      return { n: 0 }; // medir nunca atrapalha ler
+    }
   });
 
 /** Comentários de um item (a curadoria também vê os ocultos, pela RLS). */
@@ -461,4 +844,16 @@ export const ocultarComentarioNews = createServerFn({ method: "POST" })
       ),
     );
     return { ok: true as const, mensagem: "Comentário oculto. O registro continua guardado." };
+  });
+
+/** Categorias da News (para publicar um artigo da Base de conhecimento). */
+export const listarCategoriasNews = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.news", "edit"])])
+  .handler(async ({ context }): Promise<CategoriaNews[]> => {
+    const { comPlataforma } = await import("./ponte.server");
+    return comPlataforma(context.userId, (tx) =>
+      tx.consultar<CategoriaNews>(
+        "select id, nome from radar.categorias where ativa order by ordem, nome",
+      ),
+    );
   });

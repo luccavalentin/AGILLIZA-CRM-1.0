@@ -4,7 +4,7 @@
  * - Clientes: `plataforma.crm_da_licenca` (permissão de plataforma crm.ler_todos), com o
  *   CPF/CNPJ COMPLETO para o analista (`documentos.server`, migração 0212: decifrar auditado,
  *   um acesso registrado por consulta). A ficha é a nativa do Agilliza (conta-nativa).
- * - Propostas: a mesma consulta da fila, filtrada pela conta.
+ * - Propostas: `filtro-base.functions` (`listarPropostasDoGrupo`, com ou sem uma conta).
  * - Simulações: telas nativas pela ponte (conta-nativa.functions).
  */
 import { createServerFn } from "@tanstack/react-start";
@@ -45,18 +45,6 @@ export interface ClienteDaConta {
 }
 
 const UUID = z.string().uuid();
-
-/** Contas (corretores e imobiliárias) que o Agilliza atende. */
-export const listarContasAssinantes = createServerFn({ method: "GET" })
-  .middleware([exigirPermissao(["saas.contas", "view"])])
-  .handler(async ({ context }) => {
-    const { comPlataforma } = await import("./ponte.server");
-    return comPlataforma(context.userId, (tx) =>
-      tx.consultar<ContaAssinante>(
-        "select id, nome, tipo::text as tipo from plataforma.licencas_do_correspondente() order by nome",
-      ),
-    );
-  });
 
 export const listarClientesDaConta = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
@@ -126,47 +114,3 @@ export async function podeVerDadosSensiveis(
   });
   return pode === true;
 }
-
-/** Propostas de uma conta assinante (mesma consulta da fila, filtrada pela licença). */
-export const listarPropostasDaConta = createServerFn({ method: "GET" })
-  .middleware([exigirPermissao(["saas.contas", "view"])])
-  .inputValidator((d: unknown) =>
-    z
-      .object({
-        licenca: UUID,
-        termo: z.string().trim().max(120).optional().nullable(),
-        status: z.string().max(40).optional().nullable(),
-        pagina: z.number().int().min(1).max(1000).default(1),
-      })
-      .parse(d),
-  )
-  .handler(async ({ data, context }) => {
-    const { comPlataforma } = await import("./ponte.server");
-    const { ROTULO_PROPOSTA_ASSINANTE } = await import("./fila.functions");
-    const { anotarVinculoAgilliza } = await import("./fila.server");
-    const r = await comPlataforma(context.userId, async (tx) => {
-      const lido = await tx.uma<{
-        r: {
-          propostas: import("./fila.functions").PropostaAssinante[];
-          total: number;
-          volume: number;
-        };
-      }>("select plataforma.consultar_propostas($1::jsonb) as r", [
-        JSON.stringify({
-          aceite: "todas",
-          licenca: data.licenca,
-          termo: data.termo || null,
-          status: data.status && ROTULO_PROPOSTA_ASSINANTE[data.status] ? data.status : null,
-          pagina: data.pagina,
-        }),
-      ]);
-      // Mesmas ações da fila: vínculo com a proposta do Agilliza, quando já enviada.
-      await anotarVinculoAgilliza(tx, lido?.r?.propostas ?? []);
-      return lido;
-    });
-    return {
-      itens: r?.r?.propostas ?? [],
-      total: Number(r?.r?.total ?? 0),
-      volume: Number(r?.r?.volume ?? 0),
-    };
-  });

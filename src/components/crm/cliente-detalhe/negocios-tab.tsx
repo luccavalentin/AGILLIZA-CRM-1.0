@@ -5,6 +5,7 @@ import { BancoLogo } from "@/components/bancos/banco-logo";
 import { corDoBanco } from "@/lib/bancos/cores";
 import { SimulacaoStatusBadge } from "@/components/simulacao/status-badge";
 import { PropostaStatusBadge } from "@/components/propostas/status-badge";
+import { textoIdH } from "@/lib/propostas/id-h";
 import { fmtValor } from "./utils";
 
 export function NegociosTab({
@@ -134,7 +135,7 @@ export function NegociosTab({
                         <PropostaStatusBadge status={p.status ?? "—"} banco={p.nome_banco} />
                       </div>
                       <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-                        {p.numero_proposta ?? "—"}
+                        {textoIdH(p)}
                       </span>
                     </div>
                   </div>

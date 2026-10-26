@@ -156,7 +156,6 @@ function Alertas() {
   return (
     <div className="space-y-5 pb-24 md:space-y-6 md:pb-0">
       <div className="min-w-0">
-        <h2 className="text-base font-semibold text-foreground">Alertas</h2>
         <p className="text-xs text-muted-foreground">
           Os limites que abrem incidentes sozinhos (e os resolvem quando o sinal volta ao normal).
         </p>

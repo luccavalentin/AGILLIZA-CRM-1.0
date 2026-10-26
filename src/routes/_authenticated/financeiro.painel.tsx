@@ -1,682 +1,332 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import {
-  TrendingUp,
-  Wallet,
-  LineChart as LineChartIcon,
-  AlertTriangle,
-  Scale,
-  PiggyBank,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  BadgeCheck,
   Banknote,
-  Layers,
-  type LucideIcon,
+  BarChart3,
+  Landmark,
+  LineChart as IconeGrafico,
+  Percent,
+  ReceiptText,
+  UserRoundCheck,
+  Wallet,
 } from "lucide-react";
-import {
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Line,
-  Area,
-  ComposedChart,
-  ReferenceLine,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { obterKpisFinanceiros, listarContas } from "@/lib/financeiro/financeiro.functions";
-import type { KpiTone } from "@/components/financeiro/kpi-card";
-import {
-  PanelHeader,
-  SectionTitle,
-  PanelCard,
-  HeroMetric,
-  MiniMetric,
-} from "@/components/common/dashboard";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { formatBRL } from "@/lib/financeiro/format";
-import { KpiDrilldownDialog, type KpiDrillItem } from "@/components/reports/kpi-drilldown-dialog";
-import { ExportarFinanceiro } from "@/components/financeiro/exportar-financeiro";
-import { cn } from "@/lib/utils";
+import { usePermissao } from "@/hooks/use-permissao";
+import { consultar, isoLocal } from "@/lib/financeiro/cliente";
+import { financeiroAssinantes, listarRepasses } from "@/lib/financeiro/repasses.functions";
+import type { Natureza, Painel } from "@/lib/financeiro/tipos";
+import { AlertRow } from "@/components/common/dashboard";
+import { BancoLogo } from "@/components/bancos/banco-logo";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Carregando, Erro, FiltroPeriodo, Metrica, Metricas, PaginaFin, Vazio, corDoTom, moeda, type Tom } from "@/components/financeiro/matriz/base";
+import { SecaoCartao, useCadastros } from "@/components/financeiro/matriz/comuns";
 
 export const Route = createFileRoute("/_authenticated/financeiro/painel")({
   head: () => ({ meta: [{ title: "Painel financeiro — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("financeiro.painel"),
   component: Pagina,
-  errorComponent: () => (
-    <div className="p-6 text-sm text-muted-foreground">Não foi possível carregar o painel.</div>
-  ),
 });
 
-function mesLabel(iso: string) {
-  const [y, m] = iso.split("-");
-  return `${m}/${y.slice(2)}`;
-}
-
-function formatCurto(v: number) {
-  const abs = Math.abs(v);
-  if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (abs >= 1_000) return `${(v / 1_000).toFixed(0)}k`;
-  return String(v);
-}
-
-type KpiFinKey = "receber" | "pagar" | "saldo" | "inadimplencia";
-
-const SERIES: Record<string, { rotulo: string; cor: string }> = {
-  receita: { rotulo: "Receitas", cor: "var(--chart-3)" },
-  despesa: { rotulo: "Despesas", cor: "var(--chart-5)" },
-  resultado: { rotulo: "Resultado", cor: "var(--chart-1)" },
-};
-
-const PALETA = [
-  "var(--chart-1)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-  "var(--chart-2)",
+const NATUREZAS: { chave: Natureza; rotulo: string; entrada: boolean; tom: Tom; to: string }[] = [
+  { chave: "comissao_banco", rotulo: "Comissões dos bancos", entrada: true, tom: "sucesso", to: "/financeiro/comissoes-bancos" },
+  { chave: "conta_receber", rotulo: "Outras receitas", entrada: true, tom: "info", to: "/financeiro/contas-a-receber" },
+  { chave: "repasse_assinante", rotulo: "Repasses aos assinantes", entrada: false, tom: "violeta", to: "/financeiro/repasses" },
+  { chave: "comissao_participante", rotulo: "Corretores e parceiros", entrada: false, tom: "alerta", to: "/financeiro/comissoes-corretores" },
+  { chave: "conta_pagar", rotulo: "Despesas", entrada: false, tom: "perigo", to: "/financeiro/contas-a-pagar" },
 ];
 
-/** Tooltip editorial com tipografia tabular e cor por série. */
-function FinTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="min-w-[200px] rounded-xl border border-border/70 bg-card/95 p-3 shadow-xl backdrop-blur">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <ul className="space-y-1.5">
-        {payload.map((p: any) => (
-          <li key={p.dataKey} className="flex items-center justify-between gap-4 text-xs">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <span
-                className="size-2.5 rounded-full"
-                style={{ background: SERIES[p.dataKey]?.cor ?? p.color ?? p.payload?.cor }}
-              />
-              {SERIES[p.dataKey]?.rotulo ?? p.name}
-            </span>
-            <span className="font-mono font-semibold tabular-nums text-foreground">
-              {formatBRL(Number(p.value))}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function Legenda({ chaves }: { chaves: (keyof typeof SERIES)[] }) {
-  return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
-      {chaves.map((k) => (
-        <span
-          key={String(k)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
-        >
-          <span className="size-2 rounded-full" style={{ background: SERIES[k].cor }} />
-          {SERIES[k].rotulo}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/** Ranking horizontal com barra proporcional e participação percentual. */
-function Ranking({
-  itens,
-  cor,
-  vazio,
-}: {
-  itens: { nome: string; valor: number }[];
-  cor: string;
-  vazio: string;
-}) {
-  const total = itens.reduce((s, i) => s + (Number(i.valor) || 0), 0);
-  const max = Math.max(1, ...itens.map((i) => Number(i.valor) || 0));
-  if (!itens.length) {
-    return <p className="py-12 text-center text-sm text-muted-foreground">{vazio}</p>;
-  }
-  return (
-    <ul className="space-y-3">
-      {itens.slice(0, 7).map((i, idx) => {
-        const v = Number(i.valor) || 0;
-        const pct = total > 0 ? (v / total) * 100 : 0;
-        return (
-          <li key={`${i.nome}-${idx}`} className="min-w-0">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="w-4 shrink-0 text-right font-mono text-[10px] font-semibold text-muted-foreground/70">
-                  {idx + 1}
-                </span>
-                <span className="truncate text-xs font-medium text-foreground">{i.nome}</span>
-              </span>
-              <span className="shrink-0 font-mono text-xs font-semibold tabular-nums text-foreground">
-                {formatBRL(v)}
-              </span>
-            </div>
-            <div className="mt-1.5 flex items-center gap-2 pl-6">
-              <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted/70">
-                <span
-                  className="block h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${Math.max(3, (v / max) * 100)}%`,
-                    background: `linear-gradient(90deg, ${cor}, color-mix(in oklab, ${cor} 45%, transparent))`,
-                  }}
-                />
-              </span>
-              <span className="w-11 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground">
-                {pct.toFixed(1).replace(".", ",")}%
-              </span>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
 function Pagina() {
-  const padrao = useMemo(() => {
-    const hoje = new Date();
-    const iso = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    // "Este mês" é o mês inteiro: os cards de a receber/a pagar mostram o que ainda vence.
-    return {
-      de: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
-      ate: iso(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)),
-    };
-  }, []);
-  const [de, setDe] = useState(padrao.de);
-  const [ate, setAte] = useState(padrao.ate);
-  const [drill, setDrill] = useState<KpiFinKey | null>(null);
-  const { data, isLoading, dataUpdatedAt } = useQuery({
-    queryKey: ["fin-kpis", de, ate],
-    queryFn: () => obterKpisFinanceiros({ data: { de: de || undefined, ate: ate || undefined } }),
+  const hoje = new Date();
+  const [periodo, setPeriodo] = useState({
+    de: isoLocal(new Date(hoje.getFullYear(), hoje.getMonth() - 2, 1)),
+    ate: isoLocal(new Date(hoje.getFullYear(), hoje.getMonth() + 3, 0)),
+  });
+  const [banco, setBanco] = useState("");
+  const [produto, setProduto] = useState("");
+  const cad = useCadastros();
+  const verRepasses = usePermissao("financeiro.repasses", "view");
+
+  const q = useQuery({
+    queryKey: ["financeiro", "painel", periodo, banco, produto],
+    queryFn: () => consultar<Painel>("painel", { _de: periodo.de, _ate: periodo.ate, _f: { banco: banco || null, produto: produto || null } }),
+  });
+  const rep = useQuery({
+    queryKey: ["financeiro", "painel-repasses", periodo],
+    enabled: verRepasses,
+    retry: false,
+    queryFn: () => listarRepasses({ data: { de: periodo.de, ate: periodo.ate } }),
+  });
+  const lic = useQuery({
+    queryKey: ["financeiro", "painel-licencas", periodo],
+    enabled: verRepasses,
+    retry: false,
+    queryFn: () => financeiroAssinantes({ data: { de: periodo.de, ate: periodo.ate } }),
   });
 
-  const listarContasFn = useServerFn(listarContas);
-  const drillQuery = useQuery({
-    enabled: !!drill,
-    queryKey: ["fin-kpi-drill", drill, de, ate],
-    queryFn: async () => {
-      if (!drill) return { itens: [] as KpiDrillItem[] };
-      const tipo: "pagar" | "receber" = drill === "pagar" ? "pagar" : "receber";
-      const status = drill === "inadimplencia" ? "atrasada" : "aberta";
-      const r = await listarContasFn({
-        data: {
-          tipo,
-          status,
-          pagina: 1,
-          porPagina: 10,
-          ...(drill === "inadimplencia" ? {} : { de, ate }),
-        },
-      });
-      const itens: KpiDrillItem[] = r.itens.map((c) => ({
-        label: c.contraparte ?? c.descricao ?? c.numero ?? "Sem descrição",
-        sub: c.categoria_nome ?? c.descricao ?? undefined,
-        valor: formatBRL(c.valor - c.valor_pago),
-        data: new Date(c.vencimento + "T00:00:00").toLocaleDateString("pt-BR"),
-        to: tipo === "pagar" ? "/financeiro/contas-a-pagar" : "/financeiro/contas-a-receber",
-      }));
-      return { itens };
-    },
-  });
-
-  const drillMeta: Record<
-    KpiFinKey,
-    {
-      titulo: string;
-      subtitulo: string;
-      valor: string;
-      icon: LucideIcon;
-      tone: KpiTone;
-      to: string;
-      empty: string;
+  const p = q.data;
+  const realizado = useMemo(() => {
+    const m = new Map<Natureza, { previsto: number; realizado: number }>();
+    for (const f of p?.fluxo ?? []) {
+      const a = m.get(f.natureza) ?? { previsto: 0, realizado: 0 };
+      a.previsto += Number(f.previsto);
+      a.realizado += Number(f.realizado);
+      m.set(f.natureza, a);
     }
-  > = {
-    receber: {
-      titulo: "Contas a receber",
-      subtitulo: "Próximos vencimentos no período",
-      valor: formatBRL(data?.aReceber30d ?? 0),
-      icon: TrendingUp,
-      tone: "success",
-      to: "/financeiro/contas-a-receber",
-      empty: "Nenhum recebimento no período.",
-    },
-    pagar: {
-      titulo: "Contas a pagar",
-      subtitulo: "Próximos vencimentos no período",
-      valor: formatBRL(data?.aPagar30d ?? 0),
-      icon: Wallet,
-      tone: "warning",
-      to: "/financeiro/contas-a-pagar",
-      empty: "Nenhum pagamento no período.",
-    },
-    saldo: {
-      titulo: "Saldo projetado",
-      subtitulo: "Composto pelos recebimentos em aberto",
-      valor: formatBRL(data?.saldoProjetado ?? 0),
-      icon: LineChartIcon,
-      tone: "brand",
-      to: "/financeiro/fluxo-de-caixa",
-      empty: "Sem projeção para o período.",
-    },
-    inadimplencia: {
-      titulo: "Inadimplência",
-      subtitulo: "Contas em atraso há mais de 10 dias",
-      valor: formatBRL(data?.inadimplencia ?? 0),
-      icon: AlertTriangle,
-      tone: "danger",
-      to: "/financeiro/contas-a-receber",
-      empty: "Nenhuma conta em atraso.",
-    },
-  };
+    if (rep.data) {
+      const a = m.get("repasse_assinante") ?? { previsto: 0, realizado: 0 };
+      a.previsto = rep.data.totais.previsto + rep.data.totais.aprovado;
+      m.set("repasse_assinante", a);
+    }
+    return m;
+  }, [p, rep.data]);
 
-  const mensal = (data?.receitaDespesaMensal ?? []).map((r: any) => {
-    const receita = Number(r.receita) || 0;
-    const despesa = Number(r.despesa) || 0;
-    return { ...r, receita, despesa, resultado: receita - despesa, label: mesLabel(r.mes) };
-  });
+  const grafico = useMemo(() => {
+    const meses = new Map<string, { mes: string; entradaPrev: number; entradaReal: number; saidaPrev: number; saidaReal: number }>();
+    for (const f of p?.fluxo ?? []) {
+      const n = NATUREZAS.find((x) => x.chave === f.natureza);
+      const l = meses.get(f.mes) ?? { mes: f.mes, entradaPrev: 0, entradaReal: 0, saidaPrev: 0, saidaReal: 0 };
+      if (n?.entrada) {
+        l.entradaPrev += Number(f.previsto);
+        l.entradaReal += Number(f.realizado);
+      } else {
+        l.saidaPrev += Number(f.previsto);
+        l.saidaReal += Number(f.realizado);
+      }
+      meses.set(f.mes, l);
+    }
+    return [...meses.values()].sort((a, b) => a.mes.localeCompare(b.mes)).map((l) => ({ ...l, rotulo: `${l.mes.slice(5)}/${l.mes.slice(2, 4)}` }));
+  }, [p]);
 
-  const totalReceita = mensal.reduce((s: number, m: any) => s + m.receita, 0);
-  const totalDespesa = mensal.reduce((s: number, m: any) => s + m.despesa, 0);
-  const resultado12m = totalReceita - totalDespesa;
-  const margem = totalReceita > 0 ? (resultado12m / totalReceita) * 100 : 0;
-  const ticketMensal = mensal.length ? totalReceita / mensal.length : 0;
-
-  const bancos = (data?.receitaPorBanco ?? []) as { nome: string; valor: number }[];
-  const categorias = (data?.despesaPorCategoria ?? []) as { nome: string; valor: number }[];
-  const categoriasTop = categorias.slice(0, 5).map((c, i) => ({
-    ...c,
-    valor: Number(c.valor) || 0,
-    cor: PALETA[i % PALETA.length],
-  }));
-  const totalCategorias = categoriasTop.reduce((s, c) => s + c.valor, 0);
-
-  const exportColunas = [
-    { key: "mes", label: "Competência" },
-    {
-      key: "receita",
-      label: "Receitas",
-      align: "right" as const,
-      format: "brl" as const,
-      footer: "sum" as const,
-    },
-    {
-      key: "despesa",
-      label: "Despesas",
-      align: "right" as const,
-      format: "brl" as const,
-      footer: "sum" as const,
-    },
-    {
-      key: "resultado",
-      label: "Resultado",
-      align: "right" as const,
-      format: "brl" as const,
-      footer: "sum" as const,
-    },
-  ];
-  const exportLinhas = mensal.map((m: any) => ({
-    mes: m.label,
-    receita: m.receita,
-    despesa: m.despesa,
-    resultado: m.resultado,
-  }));
-  const exportKpis = [
-    { label: "A receber", valor: formatBRL(data?.aReceber30d ?? 0), tone: "success" as const },
-    { label: "A pagar", valor: formatBRL(data?.aPagar30d ?? 0), tone: "warning" as const },
-    {
-      label: "Saldo projetado",
-      valor: formatBRL(data?.saldoProjetado ?? 0),
-      tone: "brand" as const,
-    },
-    { label: "Inadimplência", valor: formatBRL(data?.inadimplencia ?? 0), tone: "danger" as const },
-  ];
-  const alterado = de !== padrao.de || ate !== padrao.ate;
-  const periodoLabel = alterado ? "no período" : "este mês";
-  const atualizado = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : undefined;
+  const al = p?.alertas;
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-3 sm:p-4 md:space-y-8 md:p-6">
-      <PanelHeader
-        eyebrow="Financeiro · Painel"
-        titulo="Painel financeiro"
-        descricao="Visão geral de recebimentos, pagamentos e caixa projetado."
-        atualizadoEm={atualizado}
-        actions={
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end">
-            <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
-              De
-              <Input
-                type="date"
-                className="h-9 w-full sm:w-40"
-                value={de}
-                onChange={(e) => setDe(e.target.value)}
-              />
-            </label>
-            <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
-              Até
-              <Input
-                type="date"
-                className="h-9 w-full sm:w-40"
-                value={ate}
-                onChange={(e) => setAte(e.target.value)}
-              />
-            </label>
-            {alterado && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="col-span-2 h-9 sm:col-span-1"
-                onClick={() => {
-                  setDe(padrao.de);
-                  setAte(padrao.ate);
-                }}
-              >
-                Restaurar mês atual
-              </Button>
-            )}
-            <ExportarFinanceiro
-              titulo="Painel financeiro"
-              descricao="Visão geral de recebimentos, pagamentos e caixa projetado."
-              meta={[`Período: ${de} até ${ate}`]}
-              kpis={exportKpis}
-              columns={exportColunas}
-              rows={exportLinhas}
-              className="col-span-2 h-9 sm:col-span-1"
-            />
-          </div>
-        }
-      />
-
-      <SectionTitle>Indicadores executivos</SectionTitle>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <HeroMetric
-          label={`A receber (${periodoLabel})`}
-          valor={formatBRL(data?.aReceber30d ?? 0)}
-          hint={`Hoje: ${formatBRL(data?.aReceberHoje ?? 0)}`}
-          icon={TrendingUp}
-          tone="success"
-          onDetails={() => setDrill("receber")}
-        />
-        <HeroMetric
-          label={`A pagar (${periodoLabel})`}
-          valor={formatBRL(data?.aPagar30d ?? 0)}
-          hint={`Hoje: ${formatBRL(data?.aPagarHoje ?? 0)}`}
-          icon={Wallet}
-          tone="warning"
-          onDetails={() => setDrill("pagar")}
-        />
-        <HeroMetric
-          label="Saldo projetado"
-          valor={formatBRL(data?.saldoProjetado ?? 0)}
-          hint="Recebimentos em aberto − pagamentos"
-          icon={PiggyBank}
-          tone={(data?.saldoProjetado ?? 0) >= 0 ? "brand" : "danger"}
-          onDetails={() => setDrill("saldo")}
-        />
-        <HeroMetric
-          label="Inadimplência"
-          valor={formatBRL(data?.inadimplencia ?? 0)}
-          hint="Vencido há mais de 10 dias"
-          icon={AlertTriangle}
-          tone="danger"
-          onDetails={() => setDrill("inadimplencia")}
-        />
+    <PaginaFin
+      titulo="Painel financeiro"
+      descricao="A matriz em uma tela, sem misturar naturezas: o que os bancos devem, o que entrou, o que sai para assinantes, corretores e fornecedores — previsto x realizado."
+      icone={IconeGrafico}
+      acoes={
+        <Link to="/financeiro/relatorios" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted">
+          <BarChart3 className="h-4 w-4" /> Relatórios
+        </Link>
+      }
+    >
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <FiltroPeriodo de={periodo.de} ate={periodo.ate} onChange={setPeriodo} />
+        <div className="flex flex-wrap gap-2">
+          <Select value={banco || "_"} onValueChange={(v) => setBanco(v === "_" ? "" : v)}>
+            <SelectTrigger className="h-9 w-40">
+              <SelectValue placeholder="Banco" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_">Todos os bancos</SelectItem>
+              {(cad.data?.bancos ?? []).map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={produto || "_"} onValueChange={(v) => setProduto(v === "_" ? "" : v)}>
+            <SelectTrigger className="h-9 w-36">
+              <SelectValue placeholder="Produto" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_">Todos os produtos</SelectItem>
+              {(cad.data?.produtos ?? []).map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <MiniMetric label="Receitas (12m)" valor={formatBRL(totalReceita)} tone="success" />
-        <MiniMetric label="Despesas (12m)" valor={formatBRL(totalDespesa)} tone="danger" />
-        <MiniMetric
-          label="Resultado (12m)"
-          valor={formatBRL(resultado12m)}
-          tone={resultado12m >= 0 ? "brand" : "danger"}
-        />
-        <MiniMetric
-          label="Margem líquida"
-          valor={`${margem.toFixed(1).replace(".", ",")}%`}
-          tone={margem >= 0 ? "success" : "danger"}
-        />
-      </div>
-
-      <SectionTitle>Evolução</SectionTitle>
-      <PanelCard
-        titulo="Receita, despesa e resultado"
-        subtitulo="Barras = receitas e despesas por competência · área = resultado líquido acumulado no mês"
-        abrirTo="/financeiro/fluxo-de-caixa"
-      >
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <Legenda chaves={["receita", "despesa", "resultado"]} />
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-            <Scale className="size-3.5" />
-            Média mensal de receita: {formatBRL(ticketMensal)}
-          </span>
-        </div>
-        <div className="h-[360px] w-full">
-          {isLoading ? (
-            <div className="h-full w-full animate-pulse rounded-xl bg-muted/50" />
-          ) : mensal.length === 0 ? (
-            <p className="py-24 text-center text-sm text-muted-foreground">
-              Sem lançamentos para exibir no período.
-            </p>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={mensal}
-                margin={{ top: 12, right: 12, left: 0, bottom: 0 }}
-                barGap={6}
-              >
-                <defs>
-                  <linearGradient id="pfReceita" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.95} />
-                    <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0.4} />
-                  </linearGradient>
-                  <linearGradient id="pfDespesa" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--chart-5)" stopOpacity={0.95} />
-                    <stop offset="100%" stopColor="var(--chart-5)" stopOpacity={0.4} />
-                  </linearGradient>
-                  <linearGradient id="pfResultado" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="4 6"
-                  stroke="hsl(var(--border))"
-                  strokeOpacity={0.6}
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={10}
-                  minTickGap={12}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={58}
-                  tickMargin={8}
-                  tickFormatter={(v) => formatCurto(Number(v))}
-                />
-                <Tooltip
-                  content={<FinTooltip />}
-                  cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.35, radius: 8 }}
-                />
-                <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
-                <Area
-                  type="monotone"
-                  dataKey="resultado"
-                  name="Resultado"
-                  stroke="var(--chart-1)"
-                  strokeWidth={2.5}
-                  fill="url(#pfResultado)"
-                  dot={false}
-                  activeDot={{ r: 5, strokeWidth: 2, stroke: "hsl(var(--card))" }}
-                />
-                <Bar
-                  dataKey="receita"
-                  name="Receitas"
-                  fill="url(#pfReceita)"
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={26}
-                />
-                <Bar
-                  dataKey="despesa"
-                  name="Despesas"
-                  fill="url(#pfDespesa)"
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={26}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="resultado"
-                  name="Resultado"
-                  stroke="var(--chart-1)"
-                  strokeWidth={2}
-                  strokeDasharray="5 4"
-                  dot={false}
-                  legendType="none"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </PanelCard>
-
-      <SectionTitle>Distribuição</SectionTitle>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <PanelCard
-          titulo="Receita por banco"
-          subtitulo="Valores em aberto, ordenados por participação"
-          abrirTo="/financeiro/contas-a-receber"
-        >
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
-            <Banknote className="size-4 text-primary" />
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              Total em aberto
-            </span>
-            <span className="ml-auto font-mono text-sm font-semibold tabular-nums text-foreground">
-              {formatBRL(bancos.reduce((s, b) => s + (Number(b.valor) || 0), 0))}
-            </span>
+      {q.isLoading ? (
+        <Carregando linhas={6} />
+      ) : q.error ? (
+        <Erro erro={q.error} onTentar={() => q.refetch()} />
+      ) : !p ? null : (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {NATUREZAS.map((n) => {
+              const v = realizado.get(n.chave);
+              const visivel =
+                n.chave === "comissao_banco"
+                  ? !!p.bancos
+                  : n.chave === "conta_receber"
+                    ? !!p.receitas
+                    : n.chave === "conta_pagar"
+                      ? !!p.despesas
+                      : n.chave === "comissao_participante"
+                        ? !!p.participantes
+                        : verRepasses;
+              if (!visivel) return null;
+              const total = (v?.previsto ?? 0) + (v?.realizado ?? 0);
+              const pctReal = total > 0 ? Math.round(((v?.realizado ?? 0) / total) * 100) : 0;
+              return (
+                <Link key={n.chave} to={n.to} className="i3d-grupo rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    {n.entrada ? <ArrowDownCircle className="h-3.5 w-3.5 text-success" /> : <ArrowUpCircle className="h-3.5 w-3.5 text-destructive" />}
+                    {n.rotulo}
+                  </p>
+                  <p className="mt-2 font-mono text-xl font-semibold tabular-nums">{moeda(v?.realizado ?? 0)}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {n.entrada ? "recebido" : "pago"} · {moeda(v?.previsto ?? 0)} {n.entrada ? "a receber" : "a pagar"}
+                  </p>
+                  <div className="fin-barra mt-2">
+                    <span style={{ width: `${pctReal}%`, background: corDoTom(n.tom) }} />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-          {isLoading ? (
-            <div className="h-56 w-full animate-pulse rounded-xl bg-muted/50" />
-          ) : (
-            <Ranking itens={bancos} cor="var(--chart-1)" vazio="Nenhuma receita em aberto." />
-          )}
-        </PanelCard>
 
-        <PanelCard
-          titulo="Despesa por categoria"
-          subtitulo="Composição das saídas em aberto"
-          abrirTo="/financeiro/contas-a-pagar"
-        >
-          {isLoading ? (
-            <div className="h-56 w-full animate-pulse rounded-xl bg-muted/50" />
-          ) : categoriasTop.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">
-              Nenhuma despesa em aberto.
-            </p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)] sm:items-center">
-              <div className="relative h-[220px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoriasTop}
-                      dataKey="valor"
-                      nameKey="nome"
-                      innerRadius="62%"
-                      outerRadius="92%"
-                      paddingAngle={3}
-                      stroke="hsl(var(--card))"
-                      strokeWidth={2}
-                    >
-                      {categoriasTop.map((c) => (
-                        <Cell key={c.nome} fill={c.cor} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<FinTooltip />} />
-                  </PieChart>
+          <SecaoCartao titulo="Fluxo de caixa: previsto x realizado" descricao="Entradas (bancos e outras receitas) e saídas (despesas, corretores/parceiros e repasses pagos), mês a mês.">
+            {grafico.length === 0 ? (
+              <Vazio titulo="Sem movimento no período" />
+            ) : (
+              <div className="h-72 w-full">
+                <ResponsiveContainer>
+                  <ComposedChart data={grafico} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis dataKey="rotulo" tickLine={false} axisLine={false} fontSize={11} />
+                    <YAxis tickLine={false} axisLine={false} fontSize={11} width={56} tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
+                    <Tooltip formatter={(v: number) => moeda(v)} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Bar dataKey="entradaReal" name="Entradas realizadas" fill="var(--success)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="saidaReal" name="Saídas realizadas" fill="var(--destructive)" radius={[4, 4, 0, 0]} />
+                    <Line dataKey="entradaPrev" name="Entradas previstas" stroke="var(--success)" strokeDasharray="5 4" dot={false} />
+                    <Line dataKey="saidaPrev" name="Saídas previstas" stroke="var(--destructive)" strokeDasharray="5 4" dot={false} />
+                  </ComposedChart>
                 </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Total
-                  </span>
-                  <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                    {formatBRL(totalCategorias)}
-                  </span>
-                </div>
               </div>
-              <ul className="space-y-2">
-                {categoriasTop.map((c) => {
-                  const pct = totalCategorias > 0 ? (c.valor / totalCategorias) * 100 : 0;
-                  return (
-                    <li key={c.nome} className="flex items-center gap-2 text-xs">
-                      <span
-                        className="size-2.5 shrink-0 rounded-full"
-                        style={{ background: c.cor }}
-                      />
-                      <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-                        {c.nome}
-                      </span>
-                      <span className="font-mono tabular-nums text-muted-foreground">
-                        {pct.toFixed(1).replace(".", ",")}%
-                      </span>
-                      <span
-                        className={cn(
-                          "w-24 shrink-0 text-right font-mono font-semibold tabular-nums text-foreground",
-                        )}
-                      >
-                        {formatBRL(c.valor)}
+            )}
+          </SecaoCartao>
+
+          {al && (
+            <SecaoCartao titulo="Pede atenção" descricao="Cada alerta leva à lista de origem.">
+              <div className="grid gap-2 md:grid-cols-2">
+                {(al.sem_previsao ?? 0) > 0 && (
+                  <AlertRow tone="danger" titulo="Contratos sem previsão de comissão do banco" descricao="Emitido/registrado e nenhuma comissão prevista." contador={al.sem_previsao ?? 0} to="/financeiro/relatorios" />
+                )}
+                {(al.sem_regra ?? 0) > 0 && (
+                  <AlertRow tone="warning" titulo="Previsões sem regra do banco (valor zero)" descricao="Cadastre a regra ou informe o valor." contador={al.sem_regra ?? 0} to="/financeiro/comissoes-bancos" />
+                )}
+                {(al.vencidas_sem_recebimento ?? 0) > 0 && (
+                  <AlertRow tone="danger" titulo="Previsões vencidas sem recebimento" contador={al.vencidas_sem_recebimento ?? 0} to="/financeiro/comissoes-bancos" />
+                )}
+                {(al.divergencias ?? 0) > 0 && (
+                  <AlertRow tone="warning" titulo="Comissões com diferença entre previsto, informado e recebido" contador={al.divergencias ?? 0} to="/financeiro/comissoes-bancos" />
+                )}
+                {(al.soma_excedida ?? 0) > 0 && (
+                  <AlertRow tone="warning" titulo="Propostas em que corretores/parceiros somam mais que a comissão do banco" contador={al.soma_excedida ?? 0} to="/financeiro/comissoes-corretores" />
+                )}
+                {(al.contestacoes ?? 0) > 0 && <AlertRow tone="warning" titulo="Comissões contestadas" contador={al.contestacoes ?? 0} to="/financeiro/comissoes-corretores" />}
+                {(al.despesas_vencidas ?? 0) > 0 && <AlertRow tone="danger" titulo="Despesas vencidas" contador={al.despesas_vencidas ?? 0} to="/financeiro/contas-a-pagar" />}
+                {(al.rascunhos ?? 0) > 0 && <AlertRow tone="brand" titulo="Boletos esperando conferência" contador={al.rascunhos ?? 0} to="/financeiro/contas-a-pagar" />}
+                {(al.extrato_pendente ?? 0) > 0 && <AlertRow tone="brand" titulo="Movimentações do extrato a conciliar" contador={al.extrato_pendente ?? 0} to="/financeiro/conciliacao" />}
+                {Object.entries(al).every(([k, v]) => k === "repasses_visiveis" || !v) && (
+                  <p className="text-sm text-muted-foreground md:col-span-2">Nada pendente no período.</p>
+                )}
+              </div>
+            </SecaoCartao>
+          )}
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            {p.bancos && (
+              <SecaoCartao titulo="Comissões dos bancos" descricao="Previsto, informado pelo banco e recebido.">
+                <Metricas colunas={2}>
+                  <Metrica rotulo="Previsto" valor={moeda(p.bancos.previsto)} tom="info" icone={Landmark} />
+                  <Metrica rotulo="Recebido" valor={moeda(p.bancos.recebido)} tom="sucesso" icone={BadgeCheck} />
+                  <Metrica rotulo="Informado" valor={moeda(p.bancos.informado)} tom="marca" icone={ReceiptText} />
+                  <Metrica rotulo="A receber" valor={moeda(p.bancos.a_receber)} ajuda={`${p.bancos.vencidas_qtd} vencidas`} tom="alerta" icone={Wallet} />
+                </Metricas>
+                <ul className="mt-3 space-y-2">
+                  {p.bancos.por_banco.map((b) => (
+                    <li key={b.banco} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 text-sm">
+                      <BancoLogo nome={b.banco} size="md" />
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium">{b.banco}</p>
+                        <div className="fin-barra">
+                          <span style={{ width: `${b.previsto > 0 ? Math.min(100, (b.recebido / b.previsto) * 100) : 0}%`, background: "var(--success)" }} />
+                        </div>
+                      </div>
+                      <span className="text-right font-mono text-xs tabular-nums">
+                        {moeda(b.recebido)}
+                        <span className="block text-[10px] text-muted-foreground">de {moeda(b.previsto)}</span>
                       </span>
                     </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-          {categorias.length > categoriasTop.length && (
-            <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Layers className="size-3.5" />
-              Exibindo as {categoriasTop.length} maiores de {categorias.length} categorias.
-            </p>
-          )}
-        </PanelCard>
-      </div>
-
-      {drill && (
-        <KpiDrilldownDialog
-          open={!!drill}
-          onOpenChange={(o) => !o && setDrill(null)}
-          titulo={drillMeta[drill].titulo}
-          subtitulo={drillMeta[drill].subtitulo}
-          valor={drillMeta[drill].valor}
-          icon={drillMeta[drill].icon}
-          tone={drillMeta[drill].tone}
-          itens={drillQuery.data?.itens ?? []}
-          isLoading={drillQuery.isLoading}
-          linkAbrir={drillMeta[drill].to}
-          empty={drillMeta[drill].empty}
-        />
+                  ))}
+                </ul>
+              </SecaoCartao>
+            )}
+            {verRepasses && (
+              <SecaoCartao titulo="Assinantes: repasses e licenças" descricao="Repasse aos assinantes e receita de licença do Agilliza Tech, lidos da plataforma.">
+                {rep.error || lic.error ? (
+                  <Erro erro={rep.error ?? lic.error} />
+                ) : (
+                  <Metricas colunas={2}>
+                    <Metrica rotulo="Repasse previsto" valor={moeda(rep.data?.totais.previsto)} tom="info" icone={Percent} />
+                    <Metrica rotulo="Repasse a pagar (aprovado)" valor={moeda(rep.data?.totais.aprovado)} tom="alerta" icone={Wallet} />
+                    <Metrica rotulo="Licenças recebidas" valor={moeda(lic.data?.totais.licenca_recebida)} tom="sucesso" icone={Banknote} />
+                    <Metrica
+                      rotulo="Inadimplência de licença"
+                      valor={moeda(lic.data?.totais.inadimplencia)}
+                      ajuda={`${lic.data?.totais.contas_inadimplentes ?? 0} contas`}
+                      tom={(lic.data?.totais.inadimplencia ?? 0) > 0 ? "perigo" : "neutro"}
+                      icone={ReceiptText}
+                    />
+                  </Metricas>
+                )}
+              </SecaoCartao>
+            )}
+            {p.participantes && (
+              <SecaoCartao titulo="Corretores e parceiros" descricao="Fluxo próprio, separado dos repasses.">
+                <Metricas colunas={2}>
+                  <Metrica rotulo="Previstas" valor={moeda(p.participantes.previstas + p.participantes.aguardando)} tom="info" icone={UserRoundCheck} />
+                  <Metrica rotulo="Aprovadas a pagar" valor={moeda(p.participantes.aprovadas)} tom="alerta" icone={Wallet} />
+                  <Metrica rotulo="Pagas" valor={moeda(p.participantes.pagas)} tom="sucesso" icone={BadgeCheck} />
+                  <Metrica rotulo="Contestadas" valor={String(p.participantes.contestadas)} tom={p.participantes.contestadas ? "perigo" : "neutro"} icone={ReceiptText} />
+                </Metricas>
+                <ul className="mt-3 space-y-1.5 text-xs">
+                  {p.participantes.por_pessoa.slice(0, 6).map((x) => (
+                    <li key={x.pessoa} className="flex justify-between gap-2">
+                      <span className="truncate">{x.pessoa}</span>
+                      <span className="font-mono tabular-nums">
+                        {moeda(x.pago)} <span className="text-muted-foreground">/ {moeda(x.valor)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </SecaoCartao>
+            )}
+            {p.despesas && (
+              <SecaoCartao titulo="Despesas" descricao="Contas a pagar da operação (sem comissões).">
+                <Metricas colunas={2}>
+                  <Metrica rotulo="Em aberto" valor={moeda(p.despesas.abertas)} tom="alerta" icone={Wallet} />
+                  <Metrica rotulo="Vencidas" valor={moeda(p.despesas.vencidas)} ajuda={`${p.despesas.vencidas_qtd} contas`} tom={p.despesas.vencidas_qtd ? "perigo" : "neutro"} icone={ReceiptText} />
+                  <Metrica rotulo="Pagas" valor={moeda(p.despesas.pagas)} tom="sucesso" icone={BadgeCheck} />
+                  <Metrica rotulo="Recorrentes" valor={String(p.despesas.recorrentes_qtd)} tom="info" icone={ArrowUpCircle} />
+                </Metricas>
+                <ul className="mt-3 space-y-1.5 text-xs">
+                  {p.despesas.por_categoria.slice(0, 6).map((x) => (
+                    <li key={x.categoria} className="flex justify-between gap-2">
+                      <span className="truncate">{x.categoria}</span>
+                      <span className="font-mono tabular-nums">{moeda(x.valor)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </SecaoCartao>
+            )}
+          </div>
+        </>
       )}
-    </div>
+    </PaginaFin>
   );
 }

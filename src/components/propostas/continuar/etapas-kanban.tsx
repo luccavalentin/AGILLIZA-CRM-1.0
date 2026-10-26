@@ -17,6 +17,7 @@ import {
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
+import { textoIdH } from "@/lib/propostas/id-h";
 
 type ColunaPosAprovacao = { status: readonly string[]; titulo: string };
 
@@ -27,6 +28,8 @@ const COLUNAS_KANBAN: readonly ColunaPosAprovacao[] = [
   { status: ["engenharia_vistoria"], titulo: "Engenharia / vistoria" },
   { status: ["analise_juridica"], titulo: "Análise jurídica" },
   { status: ["contrato_emitido"], titulo: "Contrato emitido" },
+  // C12 (26/10/2026): o registro em cartório é a etapa seguinte, com a data escolhida.
+  { status: ["registrado"], titulo: "Contrato registrado" },
 ];
 
 /**
@@ -42,7 +45,13 @@ function colunasDoBanco(nomeBanco: unknown, status: string): ColunaPosAprovacao[
   ];
 }
 
-export type DestinoManual = "engenharia_vistoria" | "analise_juridica" | "contrato_emitido";
+export type DestinoManual =
+  | "engenharia_vistoria"
+  | "analise_juridica"
+  | "contrato_emitido"
+  | "registrado";
+/** Etapas que o "Mover para" daqui grava (o registro pede a data na ação própria). */
+const DESTINOS_MANUAIS: readonly string[] = ["engenharia_vistoria", "analise_juridica", "contrato_emitido", "registrado"];
 
 function dataHora(v: string | null | undefined) {
   if (!v) return null;
@@ -87,7 +96,8 @@ export function EtapasKanban({
   // O operador só move daqui a partir de Documentos; até lá quem move é o
   // banco (crédito, formulários) ou a conferência de dados.
   const indiceDocumentos = colunas.findIndex((c) => c.status.includes("aguardando_documentos"));
-  const proxima = indiceAtual >= indiceDocumentos ? colunas[indiceAtual + 1] : undefined;
+  const seguinte = indiceAtual >= indiceDocumentos ? colunas[indiceAtual + 1] : undefined;
+  const proxima = seguinte && DESTINOS_MANUAIS.includes(seguinte.status[0]) ? seguinte : undefined;
   const pelaHomefin = fonteDoAndamento(nomeBanco) === "homefin";
 
   const etapasBanco: EtapaBanco[] = Array.isArray(proposta.etapas_banco)
@@ -153,7 +163,7 @@ export function EtapasKanban({
         <div
           className="grid gap-2"
           style={{
-            // 180 px por coluna: 5 colunas (Bradesco) ou 6 (Itaú, Santander).
+            // 180 px por coluna: 6 colunas (Bradesco) ou 7 (Itaú, Santander).
             gridTemplateColumns: `repeat(${colunas.length}, minmax(0, 1fr))`,
             minWidth: `${colunas.length * 180}px`,
           }}
@@ -201,7 +211,7 @@ export function EtapasKanban({
                       <div className="flex items-center gap-2">
                         <BancoLogo nome={banco?.nome_banco} size="sm" />
                         <span className="truncate text-xs font-semibold text-foreground">
-                          {proposta.numero_proposta}
+                          {textoIdH(proposta)}
                         </span>
                       </div>
                       <p className="mt-1 truncate text-xs text-muted-foreground">

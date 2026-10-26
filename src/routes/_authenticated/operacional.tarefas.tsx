@@ -1,20 +1,15 @@
 import { mensagemDeErro } from "@/lib/erros/mensagem";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  KanbanSquare,
-  CalendarDays,
-  Search,
-  ListChecks,
-  CircleDot,
-  Loader2,
-  CheckCircle2,
-  Clock,
+  AlertTriangle,
+  BadgeCheck,
+  CalendarCheck2,
   Download,
-  Flag,
-  ArrowDownUp,
+  ListChecks,
+  Search,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -25,16 +20,26 @@ import {
   listarTarefas,
   excluirTarefa,
   concluirTarefa,
+  criarTarefa,
   moverStatusTarefa,
+  type TarefaItem,
 } from "@/lib/operacional/tarefas.functions";
+import { listarColegas } from "@/lib/operacional/shared.functions";
+import {
+  LISTA_TIPOS_TAREFA,
+  TIPOS_TAREFA,
+  metricasAgenda,
+} from "@/lib/operacional/agenda-tarefas";
+import type { TipoTarefa } from "@/lib/operacional/frase-tarefa";
 import { NovaTarefaDialog } from "@/components/operacional/nova-tarefa-dialog";
 import { TarefaDrawer } from "@/components/operacional/tarefa-drawer";
 import { OpHero, OpStat } from "@/components/operacional/ui";
-import { TarefasBoard } from "@/components/operacional/tarefas-board";
+import { VisoesTarefas } from "@/components/operacional/tarefas/visoes-tarefas";
+import { CriacaoRapida, GruposAgenda } from "@/components/operacional/tarefas/agenda-tarefas";
+import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -42,7 +47,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ROTULO_PRIORIDADE } from "@/components/operacional/status";
 
 export const Route = createFileRoute("/_authenticated/operacional/tarefas")({
   head: () => ({ meta: [{ title: "Tarefas — Agilliza" }] }),
@@ -50,126 +54,65 @@ export const Route = createFileRoute("/_authenticated/operacional/tarefas")({
   component: Pagina,
 });
 
-type Tarefa = Awaited<ReturnType<typeof listarTarefas>>[number];
-
-function fmtData(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function vencida(prazo: string | null, status: string): boolean {
-  if (!prazo || status === "concluida" || status === "cancelada") return false;
-  return new Date(prazo).getTime() < Date.now();
-}
-
-const GRUPOS: Array<{
-  id: string;
-  titulo: string;
-  match: (s: string) => boolean;
-  accent: string;
-  icon: typeof CircleDot;
-}> = [
-  {
-    id: "aberta",
-    titulo: "A fazer",
-    match: (s) => s === "aberta",
-    accent: "var(--primary)",
-    icon: CircleDot,
-  },
-  {
-    id: "em_andamento",
-    titulo: "Em andamento",
-    match: (s) => s === "em_andamento",
-    accent: "var(--warning)",
-    icon: Loader2,
-  },
-  {
-    id: "concluida",
-    titulo: "Concluídas",
-    match: (s) => s === "concluida" || s === "cancelada",
-    accent: "var(--success)",
-    icon: CheckCircle2,
-  },
-];
-
+/**
+ * Tarefas do correspondente no desenho das Tarefas dos assinantes (Agilliza Tech, C35):
+ * os quatro números do topo, filtros numa faixa, criação rápida por frase e a agenda
+ * agrupada por quando. Kanban e calendário continuam (alternador no topo).
+ */
 function Pagina() {
-  const [escopo, setEscopo] = useState<"todas" | "minhas">("minhas");
+  // "eu" = só minhas; "todas" = toda a equipe; ou o id de uma pessoa.
+  const [responsavel, setResponsavel] = useState<string>("eu");
+  const [qDigitado, setQDigitado] = useState("");
   const [q, setQ] = useState("");
+  const [tipo, setTipo] = useState<string>("todos");
   const [prioridade, setPrioridade] = useState<string>("todas");
-  const [ordem, setOrdem] = useState<"recentes" | "prazo" | "prioridade" | "alfabetica">(
-    "recentes",
-  );
-
   const [sel, setSel] = useState<string | null>(null);
   const [alternando, setAlternando] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setQ(qDigitado.trim()), 300);
+    return () => clearTimeout(t);
+  }, [qDigitado]);
+
   const excluir = useServerFn(excluirTarefa);
+  const concluir = useServerFn(concluirTarefa);
+  const mover = useServerFn(moverStatusTarefa);
+  const criar = useServerFn(criarTarefa);
   // Mesma regra de excluirTarefa: quem cria exclui as próprias; "edit" para a gestão.
   const podeEditarTarefa = usePermissao("operacional.tarefas", "edit");
   const podeCriarTarefa = usePermissao("operacional.tarefas", "create");
   const podeExcluir = podeEditarTarefa || podeCriarTarefa;
-  const concluir = useServerFn(concluirTarefa);
-  const mover = useServerFn(moverStatusTarefa);
 
-  const { data, refetch, isLoading } = useQuery({
-    queryKey: ["tarefas", escopo, q],
-    queryFn: () => listarTarefas({ data: { escopo, q: q || undefined } }),
+  const escopo = responsavel === "eu" ? "minhas" : "todas";
+  const responsavelId = responsavel !== "eu" && responsavel !== "todas" ? responsavel : undefined;
+
+  const { data, refetch, isLoading, isError, error } = useQuery({
+    queryKey: ["tarefas", escopo, responsavelId, q, tipo, prioridade],
+    queryFn: () =>
+      listarTarefas({
+        data: {
+          escopo,
+          responsavel_id: responsavelId,
+          q: q || undefined,
+          tipo: tipo !== "todos" ? (tipo as TipoTarefa) : undefined,
+          prioridade: prioridade !== "todas" ? (prioridade as "p1" | "p2" | "p3") : undefined,
+          ordem: "prazo",
+        },
+      }),
+  });
+  const itens = useMemo(() => data ?? [], [data]);
+
+  const { data: colegas } = useQuery({
+    queryKey: ["colegas"],
+    queryFn: () => listarColegas(),
+    staleTime: 5 * 60_000,
   });
 
-  const itens = data ?? [];
-
-  const stats = useMemo(() => {
-    const agora = new Date();
-    const fimHoje = new Date(
-      agora.getFullYear(),
-      agora.getMonth(),
-      agora.getDate(),
-      23,
-      59,
-      59,
-    ).getTime();
-    const abertasList = itens.filter((t) => t.status !== "concluida" && t.status !== "cancelada");
-    const vencidas = itens.filter((t) => vencida(t.prazo, t.status)).length;
-    const hoje = abertasList.filter(
-      (t) => t.prazo && !vencida(t.prazo, t.status) && new Date(t.prazo).getTime() <= fimHoje,
-    ).length;
-    const concluidas = itens.filter((t) => t.status === "concluida").length;
-    return {
-      total: itens.length,
-      abertas: itens.filter((t) => t.status === "aberta").length,
-      andamento: itens.filter((t) => t.status === "em_andamento").length,
-      hoje,
-      vencidas,
-      concluidas,
-      taxaConclusao: itens.length ? Math.round((concluidas / itens.length) * 100) : 0,
-    };
-  }, [itens]);
-
-  const grupos = useMemo(() => {
-    const peso: Record<string, number> = { p1: 0, p2: 1, p3: 2 };
-    const base = itens.filter((t) => prioridade === "todas" || t.prioridade === prioridade);
-    const ordenados = [...base].sort((a, b) => {
-      if (ordem === "prioridade") return (peso[a.prioridade] ?? 9) - (peso[b.prioridade] ?? 9);
-      if (ordem === "alfabetica") return a.titulo.localeCompare(b.titulo);
-      if (ordem === "prazo") {
-        const va = a.prazo ? new Date(a.prazo).getTime() : Infinity;
-        const vb = b.prazo ? new Date(b.prazo).getTime() : Infinity;
-        return va - vb;
-      }
-      return 0;
-    });
-    return GRUPOS.map((g) => ({
-      ...g,
-      tarefas: ordenados.filter((t) => g.match(t.status)),
-    }));
-  }, [itens, prioridade, ordem]);
+  const m = useMemo(() => metricasAgenda(itens, new Date()), [itens]);
+  const filtrando = Boolean(q) || tipo !== "todos" || prioridade !== "todas";
 
   async function handleExcluir(id: string) {
+    if (!window.confirm("Excluir esta tarefa? A exclusão fica registrada na auditoria.")) return;
     try {
       await excluir({ data: { id } });
       toast.success("Tarefa excluída.");
@@ -179,17 +122,17 @@ function Pagina() {
     }
   }
 
-  async function toggle(t: Tarefa) {
+  async function alternar(t: TarefaItem) {
     if (alternando) return;
-    const concluida = t.status === "concluida" || t.status === "cancelada";
+    const fechada = t.status === "concluida";
     setAlternando(t.id);
     try {
-      if (concluida) {
+      if (fechada) {
         await mover({ data: { id: t.id, status: "aberta" } });
         toast.success("Tarefa reaberta.");
       } else {
         await concluir({ data: { id: t.id } });
-        toast.success("Tarefa concluída.");
+        toast.success(t.recorrencia ? "Concluída. A próxima já está na agenda." : "Tarefa concluída.");
       }
       await refetch();
     } catch (e) {
@@ -199,35 +142,48 @@ function Pagina() {
     }
   }
 
+  async function criarDaFrase(t: { titulo: string; tipo: string; prazo: string | null }) {
+    try {
+      await criar({
+        data: {
+          titulo: t.titulo,
+          tipo: t.tipo as TipoTarefa,
+          prazo: t.prazo ?? undefined,
+          prioridade: "p2",
+        },
+      });
+    } catch (e) {
+      throw new Error(mensagemDeErro(e, "Não foi possível criar a tarefa."));
+    }
+    toast.success("Tarefa criada.");
+    await refetch();
+  }
+
+  const irPara = (grupo: string, n: number) => () => {
+    if (!n) return;
+    document.getElementById(`tarefas-${grupo}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-4 p-3 sm:space-y-5 sm:p-4 md:p-6">
       <OpHero
         icon={<ListChecks className="h-6 w-6" />}
         eyebrow="Operacional"
         titulo="Tarefas"
-        descricao="Sua lista de trabalho — marque como concluída ao finalizar cada item."
+        descricao="Sua agenda de compromissos: o que precisa ser feito e quando. Riscou, concluiu."
         acoes={
           <>
-            <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
-              <Link to="/operacional/tarefas/calendario">
-                <CalendarDays className="mr-1.5 h-4 w-4" /> Calendário
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
-              <Link to="/operacional/tarefas/kanban">
-                <KanbanSquare className="mr-1.5 h-4 w-4" /> Kanban
-              </Link>
-            </Button>
+            <VisoesTarefas atual="lista" />
             <Button
               variant="outline"
               size="sm"
-              className="bg-card/60 backdrop-blur"
+              className="h-10 rounded-xl bg-card/60 backdrop-blur"
               disabled={itens.length === 0}
               onClick={async () => {
                 try {
                   await baixarTarefasPDF({
                     tarefas: itens,
-                    escopo: escopo === "minhas" ? "Minhas tarefas" : "Todas as tarefas",
+                    escopo: escopo === "minhas" ? "Minhas tarefas" : "Tarefas da equipe",
                   });
                   toast.success("PDF gerado com sucesso.");
                 } catch {
@@ -235,137 +191,137 @@ function Pagina() {
                 }
               }}
             >
-              <Download className="mr-1.5 h-4 w-4" /> Baixar PDF
+              <Download className="mr-1.5 h-4 w-4" /> PDF
             </Button>
-            <NovaTarefaDialog onCriada={refetch} />
+            {podeCriarTarefa && <NovaTarefaDialog onCriada={refetch} />}
           </>
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-        <OpStat
-          label="Total"
-          value={stats.total}
-          hint={`${stats.abertas + stats.andamento} em aberto`}
-          icon={<ListChecks className="h-5 w-5" />}
-        />
-        <OpStat
-          label="A fazer"
-          value={stats.abertas}
-          icon={<CircleDot className="h-5 w-5" />}
-          accent="var(--primary)"
-        />
-        <OpStat
-          label="Em andamento"
-          value={stats.andamento}
-          icon={<Loader2 className="h-5 w-5" />}
-          accent="var(--warning)"
-        />
-        <OpStat
-          label="Para hoje"
-          value={stats.hoje}
-          hint="Prazo até o fim do dia"
-          icon={<Clock className="h-5 w-5" />}
-          accent="var(--warning)"
-          alerta={stats.hoje > 0}
-        />
-        <OpStat
-          label="Vencidas"
-          value={stats.vencidas}
-          hint="Prazo ultrapassado"
-          icon={<Clock className="h-5 w-5" />}
-          accent="var(--destructive)"
-          alerta={stats.vencidas > 0}
-        />
-        <OpStat
-          label="Conclusão"
-          value={`${stats.taxaConclusao}%`}
-          hint={`${stats.concluidas} ${stats.concluidas === 1 ? "concluída" : "concluídas"}`}
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          accent="var(--success)"
-        />
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+        <button type="button" className="text-left" onClick={irPara("atrasadas", m.atrasadas)}>
+          <OpStat
+            label="Atrasadas"
+            value={m.atrasadas}
+            hint={m.atrasadas ? "pedem atenção agora" : "nada atrasado"}
+            icon={<AlertTriangle className="h-5 w-5" />}
+            accent={m.atrasadas ? "var(--destructive)" : "var(--muted-foreground)"}
+            alerta={m.atrasadas > 0}
+          />
+        </button>
+        <button type="button" className="text-left" onClick={irPara("hoje", m.hoje)}>
+          <OpStat label="Para hoje" value={m.hoje} icon={<CalendarCheck2 className="h-5 w-5" />} />
+        </button>
+        <button type="button" className="text-left" onClick={irPara("semana", m.semana)}>
+          <OpStat
+            label="Próximos 7 dias"
+            value={m.semana}
+            icon={<ListChecks className="h-5 w-5" />}
+          />
+        </button>
+        <button type="button" className="text-left" onClick={irPara("feitas", m.concluidasSemana)}>
+          <OpStat
+            label="Concluídas na semana"
+            value={m.concluidasSemana}
+            icon={<BadgeCheck className="h-5 w-5" />}
+            accent="var(--success)"
+          />
+        </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Tabs value={escopo} onValueChange={(v) => setEscopo(v as "todas" | "minhas")}>
-          <TabsList className="h-10 rounded-xl">
-            <TabsTrigger value="minhas" className="rounded-lg">
-              Minhas
-            </TabsTrigger>
-            <TabsTrigger value="todas" className="rounded-lg">
-              Todas
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="relative min-w-[200px] flex-1 sm:max-w-sm">
+      <section
+        aria-label="Filtros das tarefas"
+        className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-border/70 bg-card p-3 shadow-card"
+      >
+        <div className="relative min-w-0 flex-[1_1_240px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar por título, código ou responsável…"
+            value={qDigitado}
+            onChange={(e) => setQDigitado(e.target.value)}
+            placeholder="Buscar tarefa…"
+            maxLength={120}
             className="h-10 rounded-xl pl-9"
           />
         </div>
-        <Select value={prioridade} onValueChange={setPrioridade}>
-          <SelectTrigger className="h-10 w-[168px] rounded-xl">
-            <Flag className="mr-1 h-4 w-4 text-muted-foreground" />
+        <Select value={responsavel} onValueChange={setResponsavel}>
+          <SelectTrigger className="h-10 w-full rounded-xl sm:w-[190px]" aria-label="Responsável">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todas">Prioridade: Todas</SelectItem>
+            <SelectItem value="eu">Só minhas</SelectItem>
+            <SelectItem value="todas">Toda a equipe</SelectItem>
+            {(colegas ?? []).map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.nome ?? c.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={tipo} onValueChange={setTipo}>
+          <SelectTrigger className="h-10 w-[calc(50%-0.35rem)] rounded-xl sm:w-[160px]" aria-label="Tipo">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os tipos</SelectItem>
+            {LISTA_TIPOS_TAREFA.map((t) => (
+              <SelectItem key={t} value={t}>
+                {TIPOS_TAREFA[t]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={prioridade} onValueChange={setPrioridade}>
+          <SelectTrigger className="h-10 w-[calc(50%-0.35rem)] rounded-xl sm:w-[160px]" aria-label="Prioridade">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Toda prioridade</SelectItem>
             <SelectItem value="p1">{ROTULO_PRIORIDADE.p1}</SelectItem>
             <SelectItem value="p2">{ROTULO_PRIORIDADE.p2}</SelectItem>
             <SelectItem value="p3">{ROTULO_PRIORIDADE.p3}</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={ordem} onValueChange={(v) => setOrdem(v as typeof ordem)}>
-          <SelectTrigger className="h-10 w-[176px] rounded-xl">
-            <ArrowDownUp className="mr-1 h-4 w-4 text-muted-foreground" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="recentes">Mais recentes</SelectItem>
-            <SelectItem value="prazo">Prazo mais próximo</SelectItem>
-            <SelectItem value="prioridade">Maior prioridade</SelectItem>
-            <SelectItem value="alfabetica">Título (A–Z)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      </section>
+
+      {podeCriarTarefa && <CriacaoRapida onCriar={criarDaFrase} />}
 
       {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl bg-muted/60" />
+        <div className="grid gap-3 xl:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-40 animate-pulse rounded-2xl bg-muted/60" />
           ))}
         </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center">
+          <AlertTriangle className="h-7 w-7 text-destructive" />
+          <p className="text-sm font-medium text-foreground">Não foi possível carregar as tarefas</p>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            {mensagemDeErro(error, "Tente de novo em instantes.")}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>
+            Tentar de novo
+          </Button>
+        </div>
       ) : itens.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border/70 bg-card p-14 text-center shadow-card">
-          <div className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary">
-            <ListChecks className="h-7 w-7" />
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border/70 bg-card p-12 text-center shadow-card">
+          <div className="grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <CalendarCheck2 className="h-7 w-7" />
           </div>
-          <p className="text-sm font-medium text-foreground">Nenhuma tarefa encontrada</p>
+          <p className="text-sm font-semibold text-foreground">
+            {filtrando ? "Nenhuma tarefa com esses filtros" : "Nenhuma tarefa"}
+          </p>
           <p className="max-w-xs text-xs text-muted-foreground">
-            Crie uma nova tarefa para organizar o trabalho da equipe.
+            {filtrando
+              ? "Limpe a busca ou troque o tipo e a prioridade."
+              : "Comece agendando a próxima ligação ou reunião: escreva acima e pressione Enter."}
           </p>
         </div>
       ) : (
-        <TarefasBoard
-          grupos={grupos}
+        <GruposAgenda
+          tarefas={itens}
           alternando={alternando}
-          onSelecionar={setSel}
-          onToggle={(t) => toggle(t as Tarefa)}
-          onStatus={async (t, status) => {
-            if (alternando) return;
-            setAlternando(t.id);
-            try {
-              await mover({ data: { id: t.id, status: status as any } });
-              await refetch();
-            } catch (e) {
-              toast.error(mensagemDeErro(e, "Não foi possível atualizar o status."));
-            } finally {
-              setAlternando(null);
-            }
-          }}
+          onAbrir={setSel}
+          onAlternar={alternar}
           onExcluir={podeExcluir ? handleExcluir : undefined}
         />
       )}

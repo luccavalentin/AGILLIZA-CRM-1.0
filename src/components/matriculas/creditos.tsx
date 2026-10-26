@@ -1,177 +1,218 @@
 import { useMemo, useState } from "react";
-import { mensagemDeErro } from "@/lib/erros/mensagem";
-import { usePermissao } from "@/hooks/use-permissao";
+import { useServerFn } from "@tanstack/react-start";
+import { FileDown, Plus, Receipt } from "lucide-react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
-import { formatBRL, maskBRLCents, parseBRL } from "@/lib/simulacao/format";
-import {
-  criarCreditoMatricula,
-  excluirCreditoMatricula,
-} from "@/lib/matriculas/matriculas.functions";
+import { usePermissao } from "@/hooks/use-permissao";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { hojeISO } from "@/lib/financeiro/format";
+import { formatBRL, maskBRLCents, parseBRL } from "@/lib/simulacao/format";
+import { erroDoArquivo } from "@/lib/matriculas/regras";
+import {
+  excluirCreditoMatricula,
+  linkArquivoMatricula,
+  registrarRecargaMatricula,
+  type MatriculaCredito,
+} from "@/lib/matriculas/matriculas.functions";
 
-const hoje = () => hojeISO();
+function data(iso: string) {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
 
-export function Creditos({
-  lista,
-  onMudou,
-}: {
-  lista: { id: string; data: string; valor: number; descricao: string | null }[];
-  onMudou: () => void;
-}) {
+/** Recargas do crédito do cartório/serviço: quem recarregou, quanto e o comprovante. */
+export function Creditos({ lista, onMudou }: { lista: MatriculaCredito[]; onMudou: () => void }) {
   const total = useMemo(() => lista.reduce((s, c) => s + Number(c.valor), 0), [lista]);
-  // Créditos são configuração: "Matrículas: editar" (o servidor confere).
   const podeEditar = usePermissao("documentos.matriculas", "edit");
+  const linkFn = useServerFn(linkArquivoMatricula);
+  const excluirFn = useServerFn(excluirCreditoMatricula);
+  const [nova, setNova] = useState(false);
+
+  async function abrir(id: string) {
+    try {
+      const { url } = await linkFn({ data: { id, tipo: "comprovante" } });
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível abrir o comprovante."));
+    }
+  }
+
   return (
-    <Card className="p-0">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+    <section className="rounded-2xl border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">Compras de crédito</h2>
-          <p className="text-xs text-muted-foreground">Total: {formatBRL(total)}</p>
+          <h2 className="text-sm font-semibold text-foreground">Recargas de crédito</h2>
+          <p className="text-xs text-muted-foreground">Total recarregado: {formatBRL(total)}</p>
         </div>
-        {podeEditar && <CreditoDialog onMudou={onMudou} />}
+        {podeEditar && (
+          <Button size="sm" variant="secondary" onClick={() => setNova(true)}>
+            <Plus className="mr-1 h-4 w-4" />
+            Registrar recarga
+          </Button>
+        )}
       </div>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {lista.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
-                  Nenhuma compra de crédito registrada.
-                </TableCell>
-              </TableRow>
-            )}
-            {lista.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell className="tabular-nums">
-                  {new Date(c.data + "T00:00:00").toLocaleDateString("pt-BR", {
-                    timeZone: "America/Sao_Paulo",
-                  })}
-                </TableCell>
-                <TableCell>{c.descricao ?? "Compra de crédito"}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatBRL(c.valor)}</TableCell>
-                <TableCell className="text-right">
-                  {podeEditar && (
-                    <ConfirmDelete
-                      descricao="Excluir esta compra de crédito?"
-                      onConfirm={async () => {
-                        try {
-                          await excluirCreditoMatricula({ data: { id: c.id } });
-                          onMudou();
-                        } catch (e) {
-                          toast.error(mensagemDeErro(e, "Não foi possível excluir o crédito."));
-                        }
-                      }}
-                    />
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </Card>
+      {lista.length === 0 ? (
+        <div className="px-5 py-10 text-center">
+          <Receipt className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-3 font-medium text-foreground">Nenhuma recarga registrada</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+            Registre cada recarga do crédito do cartório (com o comprovante): é dela que sai o custo
+            de cada matrícula puxada.
+          </p>
+        </div>
+      ) : (
+        <ul className="divide-y">
+          {lista.map((c) => (
+            <li key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {c.servico || c.descricao || "Recarga de crédito"}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {data(c.data)}
+                  {c.recarregado_por_nome && ` · por ${c.recarregado_por_nome}`}
+                  {c.servico && c.descricao && ` · ${c.descricao}`}
+                </p>
+              </div>
+              <span className="font-semibold tabular-nums text-foreground">{formatBRL(c.valor)}</span>
+              {c.tem_comprovante && (
+                <Button size="sm" variant="outline" onClick={() => void abrir(c.id)}>
+                  <FileDown className="mr-1 h-3.5 w-3.5" />
+                  Comprovante
+                </Button>
+              )}
+              {podeEditar && (
+                <ConfirmDelete
+                  descricao="Excluir esta recarga? O saldo de crédito diminui."
+                  onConfirm={async () => {
+                    await excluirFn({ data: { id: c.id } });
+                    onMudou();
+                  }}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <RecargaDialog aberto={nova} aoFechar={() => setNova(false)} onMudou={onMudou} />
+    </section>
   );
 }
 
-function CreditoDialog({ onMudou }: { onMudou: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [data, setData] = useState(hoje());
+function RecargaDialog({
+  aberto,
+  aoFechar,
+  onMudou,
+}: {
+  aberto: boolean;
+  aoFechar: () => void;
+  onMudou: () => void;
+}) {
+  const registrarFn = useServerFn(registrarRecargaMatricula);
+  const [quando, setQuando] = useState(hojeISO());
   const [valor, setValor] = useState("");
+  const [servico, setServico] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [comprovante, setComprovante] = useState<File | null>(null);
   const [salvando, setSalvando] = useState(false);
 
   async function salvar() {
-    if (parseBRL(valor) <= 0) return toast.error("Informe um valor maior que zero.");
+    const v = parseBRL(valor);
+    if (v <= 0) return void toast.error("Informe um valor maior que zero.");
+    const fd = new FormData();
+    fd.set("data", quando);
+    fd.set("valor", String(v));
+    fd.set("servico", servico);
+    fd.set("descricao", descricao);
+    if (comprovante) fd.set("comprovante", comprovante);
     setSalvando(true);
     try {
-      await criarCreditoMatricula({
-        data: { data, valor: parseBRL(valor), descricao: descricao.trim() || null },
-      });
-      toast.success("Crédito registrado.");
-      setOpen(false);
+      await registrarFn({ data: fd });
+      toast.success("Recarga registrada.");
       setValor("");
+      setServico("");
       setDescricao("");
-      setData(hoje());
+      setComprovante(null);
+      setQuando(hojeISO());
+      aoFechar();
       onMudou();
     } catch (e) {
-      toast.error(mensagemDeErro(e, "Falha ao salvar."));
+      toast.error(mensagemDeErro(e, "Não foi possível registrar a recarga."));
     } finally {
       setSalvando(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="secondary" size="sm">
-          <Plus className="mr-1 h-4 w-4" /> Adicionar crédito
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-md">
+    <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
+      <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Compra de crédito</DialogTitle>
+          <DialogTitle>Registrar recarga</DialogTitle>
+          <DialogDescription>O valor entra no saldo de crédito usado para puxar as matrículas.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label>Data</Label>
-              <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label>Valor</Label>
-              <Input
-                inputMode="decimal"
-                value={valor}
-                onChange={(e) => setValor(maskBRLCents(e.target.value))}
-                placeholder="0,00"
-              />
-            </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label htmlFor="rc-data">Data</Label>
+            <Input id="rc-data" type="date" max={hojeISO()} value={quando} onChange={(e) => setQuando(e.target.value)} />
           </div>
           <div className="space-y-1">
-            <Label>Descrição</Label>
+            <Label htmlFor="rc-valor">Valor</Label>
             <Input
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Opcional"
+              id="rc-valor"
+              inputMode="decimal"
+              value={valor}
+              onChange={(e) => setValor(maskBRLCents(e.target.value))}
+              placeholder="0,00"
+            />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="rc-serv">Serviço / cartório</Label>
+            <Input
+              id="rc-serv"
+              value={servico}
+              maxLength={120}
+              onChange={(e) => setServico(e.target.value)}
+              placeholder="Ex.: ONR, e-Cartório, Registradores"
+            />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="rc-desc">Observação</Label>
+            <Input id="rc-desc" value={descricao} maxLength={500} onChange={(e) => setDescricao(e.target.value)} />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="rc-comp">Comprovante (PDF ou imagem)</Label>
+            <Input
+              id="rc-comp"
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                const erro = f ? erroDoArquivo(f) : null;
+                if (erro) {
+                  toast.error(erro);
+                  e.target.value = "";
+                  setComprovante(null);
+                } else setComprovante(f);
+              }}
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="ghost" onClick={aoFechar}>
             Cancelar
           </Button>
-          <Button onClick={salvar} disabled={salvando}>
-            {salvando ? "Salvando…" : "Salvar"}
+          <Button onClick={() => void salvar()} disabled={salvando}>
+            {salvando ? "Salvando…" : "Registrar"}
           </Button>
         </DialogFooter>
       </DialogContent>

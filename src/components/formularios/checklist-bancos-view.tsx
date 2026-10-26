@@ -1,447 +1,321 @@
-import { useState, useEffect } from "react";
+/**
+ * Checklist de documentos por banco (antes "Exigidos pelo banco") — pedido do dono de
+ * 26/10/2026 (C44): "MELHORE O DESIGNER, ESTÃO ENORMES". Seletor de banco compacto com a logo
+ * oficial, lista densa em duas colunas, títulos de seção (itens terminados em ":") como
+ * cabeçalho, e as mesmas ações de antes: marcar o que vai, editar, incluir, obrigatório ou
+ * opcional, compartilhar e baixar o PDF. As mudanças valem só para este envio.
+ */
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { toast } from "sonner";
+import { Check, CheckCheck, Download, Pencil, Plus, Share2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  ListChecks,
-  Download,
-  Share2,
-  Mail,
-  MessageCircle,
-  FileText,
-  Plus,
-  Trash2,
-  Edit2,
-  Check,
-  X,
-} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { CHECKLISTS_BANCOS } from "@/lib/formularios/checklists.functions";
-import { resolveBancoBrand } from "@/lib/relatorios/banco-brand";
-import { corDoBanco } from "@/lib/bancos/cores";
+import { BancoLogo, BancoMarca } from "@/components/bancos/banco-logo";
 import { EncaminharChecklistDialog } from "./encaminhar-checklist-dialog";
-import { toast } from "sonner";
 
-/** "Caixa Econômica" -> "CX"; "Inter" -> "IN". Duas letras, sem acento. */
-function monogramaBanco(nome: string): string {
-  const n = nome.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  if (n.includes("caixa")) return "CX";
-  if (n.includes("inter")) return "IN";
-  if (n.includes("banco do brasil")) return "BB";
-  return nome.trim().slice(0, 2).toUpperCase();
+interface Item {
+  nome: string;
+  obrigatorio: boolean;
+}
+
+const BANCOS: { id: string; nome: string }[] = [
+  { id: "itau", nome: "Itaú" },
+  { id: "bradesco", nome: "Bradesco" },
+  { id: "santander", nome: "Santander" },
+  { id: "inter", nome: "Banco Inter" },
+  { id: "caixa", nome: "Caixa" },
+].filter((b) => !!CHECKLISTS_BANCOS[b.id]);
+
+/** "IMOVEL:", "REPRESENTANTES:" — título de seção dentro da lista do banco. */
+const ehSecao = (nome: string) => nome.trim().endsWith(":");
+
+function listaInicial(id: string): Item[] {
+  return (CHECKLISTS_BANCOS[id]?.docs ?? []).map((d) => ({ nome: d, obrigatorio: true }));
 }
 
 export function ChecklistBancosView() {
   const search = useSearch({ from: "/_authenticated/formularios/$banco" });
   const navigate = useNavigate({ from: "/formularios/$banco" });
-  const [bancoSelecionado, setBancoSelecionado] = useState<string | null>(null);
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [bancoParaCompartilhar, setBancoParaCompartilhar] = useState<{
-    id: string;
-    nome: string;
-  } | null>(null);
+  const banco = search.banco && CHECKLISTS_BANCOS[search.banco] ? search.banco : (BANCOS[0]?.id ?? "itau");
+  const nomeBanco = BANCOS.find((b) => b.id === banco)?.nome ?? banco;
 
-  // Estado para gerenciar itens de checklist por banco (iniciado com os dados fixos)
-  const [checklists, setChecklists] = useState<
-    Record<string, { nome: string; obrigatorio: boolean }[]>
-  >({});
-  const [selecionados, setSelecionados] = useState<Record<string, string[]>>({});
-  const [editandoIndex, setEditandoIndex] = useState<number | null>(null);
-  const [novoValor, setNovoValor] = useState("");
+  // Por banco: a lista (editável só nesta tela) e o que está marcado para ir.
+  const [listas, setListas] = useState<Record<string, Item[]>>({});
+  const [marcados, setMarcados] = useState<Record<string, string[]>>({});
+  const [editando, setEditando] = useState<number | null>(null);
+  const [valor, setValor] = useState("");
+  const [compartilhar, setCompartilhar] = useState(false);
 
   useEffect(() => {
-    // Inicializar checklists e selecionados a partir da config se ainda não estiverem no estado
-    const initial: Record<string, { nome: string; obrigatorio: boolean }[]> = {};
-    const initialSelected: Record<string, string[]> = {};
-    Object.keys(CHECKLISTS_BANCOS).forEach((key) => {
-      initial[key] = CHECKLISTS_BANCOS[key].docs.map((doc) => ({ nome: doc, obrigatorio: true }));
-      initialSelected[key] = [...CHECKLISTS_BANCOS[key].docs];
+    if (listas[banco]) return;
+    const l = listaInicial(banco);
+    setListas((p) => ({ ...p, [banco]: l }));
+    setMarcados((p) => ({ ...p, [banco]: l.map((i) => i.nome) }));
+  }, [banco, listas]);
+
+  useEffect(() => setEditando(null), [banco]);
+
+  const itens = listas[banco] ?? [];
+  const sel = marcados[banco] ?? [];
+  const documentos = itens.filter((i) => !ehSecao(i.nome));
+  const totalMarcados = documentos.filter((i) => sel.includes(i.nome)).length;
+
+  const trocarBanco = (id: string) => void navigate({ search: { banco: id }, replace: true });
+
+  const alternar = (nome: string) =>
+    setMarcados((p) => {
+      const atual = p[banco] ?? [];
+      return { ...p, [banco]: atual.includes(nome) ? atual.filter((n) => n !== nome) : [...atual, nome] };
     });
-    setChecklists(initial);
-    setSelecionados(initialSelected);
-  }, []);
 
-  useEffect(() => {
-    if (search.banco && CHECKLISTS_BANCOS[search.banco]) {
-      setBancoSelecionado(search.banco);
-    }
-  }, [search.banco]);
+  const marcarTodos = (todos: boolean) =>
+    setMarcados((p) => ({
+      ...p,
+      [banco]: todos ? itens.map((i) => i.nome) : itens.filter((i) => ehSecao(i.nome)).map((i) => i.nome),
+    }));
 
-  const bancos = [
-    { id: "itau", nome: "Itaú" },
-    { id: "bradesco", nome: "Bradesco" },
-    { id: "santander", nome: "Santander" },
-  ];
+  const atualizarItens = (fn: (l: Item[]) => Item[]) => setListas((p) => ({ ...p, [banco]: fn(p[banco] ?? []) }));
 
-  const handleDownload = async (bancoId: string) => {
-    try {
-      // Filtrar apenas os itens selecionados (que agora são objetos)
-      const todosItems = checklists[bancoId] || [];
-      const nomesSelecionados = selecionados[bancoId] || [];
-      const itemsParaPdf = todosItems.filter((item) => nomesSelecionados.includes(item.nome));
+  function salvarEdicao(idx: number) {
+    const novo = valor.trim();
+    if (!novo) return setEditando(null);
+    const antigo = itens[idx]?.nome;
+    atualizarItens((l) => l.map((i, j) => (j === idx ? { ...i, nome: novo } : i)));
+    // Continua marcado com o nome novo.
+    setMarcados((p) => ({ ...p, [banco]: (p[banco] ?? []).map((n) => (n === antigo ? novo : n)) }));
+    setEditando(null);
+  }
 
-      const { gerarChecklistBancoPDF } = await import("@/lib/formularios/checklist-pdf");
-      await gerarChecklistBancoPDF(bancoId, undefined, itemsParaPdf);
-      toast.success("Checklist gerado com sucesso!");
-    } catch (error) {
-      console.error(error);
-      toast.error("Erro ao gerar checklist.");
-    }
-  };
+  function adicionar() {
+    const nome = "Novo documento";
+    atualizarItens((l) => [...l, { nome, obrigatorio: true }]);
+    setMarcados((p) => ({ ...p, [banco]: [...(p[banco] ?? []), nome] }));
+    setEditando(itens.length);
+    setValor(nome);
+  }
 
-  const handleShare = (bancoId: string, bancoNome: string) => {
-    setBancoParaCompartilhar({ id: bancoId, nome: bancoNome });
-    setShareDialogOpen(true);
-  };
+  // O PDF leva os títulos de seção e os documentos marcados, na ordem da lista.
+  const paraEnvio = useMemo(
+    () => itens.filter((i) => ehSecao(i.nome) || sel.includes(i.nome)),
+    [itens, sel],
+  );
 
-  const onConfirmShare = async (dados: {
-    email: string;
-    whatsapp: string;
-    canal: "email" | "whatsapp" | "pdf";
-  }) => {
-    if (!bancoParaCompartilhar) return;
-
-    if (dados.canal === "pdf") {
-      await handleDownload(bancoParaCompartilhar.id);
+  async function baixar() {
+    if (!documentos.some((i) => sel.includes(i.nome))) {
+      toast.error("Marque pelo menos um documento.");
       return;
     }
+    try {
+      const { gerarChecklistBancoPDF } = await import("@/lib/formularios/checklist-pdf");
+      await gerarChecklistBancoPDF(banco, undefined, paraEnvio);
+      toast.success("PDF do checklist gerado.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível gerar o PDF.");
+    }
+  }
 
-    const docs = selecionados[bancoParaCompartilhar.id] || [];
-    const listaTexto = docs.map((doc) => `• ${doc}`).join("\n");
-
+  async function confirmarCompartilhar(dados: { email: string; whatsapp: string; canal: "email" | "whatsapp" | "pdf" }) {
+    if (dados.canal === "pdf") return baixar();
+    const texto = paraEnvio.map((i) => (ehSecao(i.nome) ? `\n${i.nome}` : `• ${i.nome}`)).join("\n");
     if (dados.canal === "whatsapp") {
       const msg = encodeURIComponent(
-        `Olá! Segue o checklist de documentos para financiamento no banco ${bancoParaCompartilhar.nome}:\n\n${listaTexto}\n\nAtenciosamente, Agilliza.`,
+        `Olá! Segue o checklist de documentos para financiamento no banco ${nomeBanco}:\n${texto}\n\nAtenciosamente, Agilliza.`,
       );
       window.open(`https://api.whatsapp.com/send?phone=55${dados.whatsapp}&text=${msg}`, "_blank");
-      toast.success("Redirecionando para o WhatsApp...");
-    }
-
-    if (dados.canal === "email") {
-      const subject = encodeURIComponent(`Checklist de Documentos - ${bancoParaCompartilhar.nome}`);
-      const body = encodeURIComponent(
-        `Olá,\n\nSegue a relação de documentos necessários para o banco ${bancoParaCompartilhar.nome}:\n\n${listaTexto}\n\nAtenciosamente,\nEquipe Agilliza`,
+      toast.success("Abrindo o WhatsApp…");
+    } else {
+      const assunto = encodeURIComponent(`Checklist de documentos - ${nomeBanco}`);
+      const corpo = encodeURIComponent(
+        `Olá,\n\nSegue a relação de documentos necessários para o banco ${nomeBanco}:\n${texto}\n\nAtenciosamente,\nEquipe Agilliza`,
       );
-      window.open(
-        `https://mail.google.com/mail/?view=cm&fs=1&to=${dados.email}&su=${subject}&body=${body}`,
-        "_blank",
-      );
-      toast.success("Redirecionando para o Gmail...");
+      window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${dados.email}&su=${assunto}&body=${corpo}`, "_blank");
+      toast.success("Abrindo o Gmail…");
     }
-  };
-
-  const adicionarItem = () => {
-    if (!bancoSelecionado) return;
-    setChecklists((prev) => ({
-      ...prev,
-      [bancoSelecionado]: [
-        ...(prev[bancoSelecionado] || []),
-        { nome: "Novo Documento", obrigatorio: true },
-      ],
-    }));
-    setEditandoIndex(checklists[bancoSelecionado]?.length || 0);
-    setNovoValor("Novo Documento");
-  };
-
-  const removerItem = (index: number) => {
-    if (!bancoSelecionado) return;
-    setChecklists((prev) => ({
-      ...prev,
-      [bancoSelecionado]: prev[bancoSelecionado].filter((_, i) => i !== index),
-    }));
-    toast.success("Item removido.");
-  };
-
-  const toggleObrigatoriedade = (index: number) => {
-    if (!bancoSelecionado) return;
-    setChecklists((prev) => {
-      const novos = [...prev[bancoSelecionado]];
-      novos[index] = { ...novos[index], obrigatorio: !novos[index].obrigatorio };
-      return { ...prev, [bancoSelecionado]: novos };
-    });
-  };
-
-  const iniciarEdicao = (index: number, valor: string) => {
-    setEditandoIndex(index);
-    setNovoValor(valor);
-  };
-
-  const salvarEdicao = (index: number) => {
-    if (!bancoSelecionado) return;
-    setChecklists((prev) => {
-      const novos = [...prev[bancoSelecionado]];
-      novos[index] = { ...novos[index], nome: novoValor };
-      return { ...prev, [bancoSelecionado]: novos };
-    });
-    setEditandoIndex(null);
-    toast.success("Item atualizado.");
-  };
-
-  const brandAtiva = bancoSelecionado ? resolveBancoBrand(bancoSelecionado) : null;
-  const itemsAtivos = bancoSelecionado ? checklists[bancoSelecionado] || [] : [];
-  const selecionadosAtivos = bancoSelecionado ? selecionados[bancoSelecionado] || [] : [];
-
-  const toggleSelecao = (docNome: string) => {
-    if (!bancoSelecionado) return;
-    setSelecionados((prev) => {
-      const bancoDocs = prev[bancoSelecionado] || [];
-      if (bancoDocs.includes(docNome)) {
-        return { ...prev, [bancoSelecionado]: bancoDocs.filter((d) => d !== docNome) };
-      }
-      return { ...prev, [bancoSelecionado]: [...bancoDocs, docNome] };
-    });
-  };
-
-  const handleToggleDoc = (e: React.MouseEvent, docNome: string) => {
-    e.stopPropagation();
-    toggleSelecao(docNome);
-  };
+  }
 
   return (
-    <div className="container py-6 space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Checklist de Documentação</h1>
-        <p className="text-muted-foreground">
-          Selecione um banco para visualizar, editar e compartilhar a lista de documentos
-          necessários.
+    <div className="mx-auto w-full max-w-6xl space-y-4 p-4 md:p-6">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Checklist de documentos por banco</h1>
+        <p className="text-sm text-muted-foreground">
+          Escolha o banco, marque o que vai e envie ao cliente. As mudanças valem só para este envio.
         </p>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {bancos.map((b) => {
-          const brand = resolveBancoBrand(b.id);
-          const isSelected = bancoSelecionado === b.id;
-
+      {/* Seletor de banco: compacto, com a logo oficial */}
+      <div
+        role="tablist"
+        aria-label="Banco"
+        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {BANCOS.map((b) => {
+          const ativo = b.id === banco;
           return (
-            <Card
+            <button
               key={b.id}
-              className={`cursor-pointer transition-all hover:shadow-md ${
-                isSelected ? "ring-2 ring-primary bg-primary/5" : "hover:bg-accent/50"
-              }`}
-              onClick={() => {
-                setBancoSelecionado(b.id);
-                // Mantém o banco no endereço (?banco=…): antes o parâmetro sumia ao
-                // trocar de banco e o link copiado abria outro.
-                void navigate({ search: { banco: b.id }, replace: true });
-              }}
+              type="button"
+              role="tab"
+              aria-selected={ativo}
+              onClick={() => trocarBanco(b.id)}
+              className={cn(
+                "flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all",
+                ativo
+                  ? "border-primary bg-primary/5 text-foreground shadow-sm ring-1 ring-primary/30"
+                  : "border-border/70 bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
+              )}
             >
-              <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-4">
-                {/*
-                  Caixa e Inter não têm logotipo no projeto e caíam num ícone
-                  genérico sobre fundo cinza — pareciam card quebrado, do lado
-                  dos bancos que têm marca. Sem a logo, usamos a cor
-                  institucional do banco com o monograma, que identifica sem
-                  fingir que há um logotipo.
-                */}
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center p-3 shadow-sm"
-                  style={{ backgroundColor: brand?.cor || corDoBanco(b.nome) }}
-                >
-                  {brand?.logo ? (
-                    <img
-                      src={brand.logo}
-                      alt={b.nome}
-                      className={`w-full h-full object-contain ${b.id === "itau" ? "" : "brightness-0 invert"}`}
-                    />
-                  ) : (
-                    <span className="text-xl font-bold tracking-tight text-white">
-                      {monogramaBanco(b.nome)}
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-semibold">{b.nome}</h3>
-                </div>
-              </CardContent>
-            </Card>
+              <BancoLogo nome={b.nome} size="md" />
+              {b.nome}
+            </button>
           );
         })}
       </div>
 
-      {bancoSelecionado && (
-        <Card className="animate-in slide-in-from-bottom-4 duration-500 border-none shadow-xl bg-white/50 backdrop-blur-sm">
-          <CardHeader className="flex flex-col gap-4 border-b bg-muted/30 px-4 py-6 rounded-t-xl sm:px-8 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-2xl flex items-center gap-3">
-                <div
-                  className="w-3 h-8 rounded-full"
-                  style={{ backgroundColor: brandAtiva?.cor || "var(--primary)" }}
-                />
-                Checklist {bancos.find((b) => b.id === bancoSelecionado)?.nome}
-              </CardTitle>
-              <CardDescription>
-                Personalize a relação de documentos antes de baixar ou enviar. As mudanças valem só
-                para este envio — a lista padrão do banco não é alterada.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                onClick={adicionarItem}
-                className="hover:bg-primary/5 border-primary/20 text-primary"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Item
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() =>
-                  handleShare(
-                    bancoSelecionado,
-                    bancos.find((b) => b.id === bancoSelecionado)?.nome || "",
-                  )
-                }
-                className="hover:bg-primary/5"
-              >
-                <Share2 className="mr-2 h-4 w-4" />
-                Compartilhar
-              </Button>
-              <Button
-                onClick={() => handleDownload(bancoSelecionado)}
-                className="shadow-lg shadow-primary/20"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Baixar PDF
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-              {itemsAtivos.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-start gap-4 p-4 rounded-lg hover:bg-white transition-colors group border border-transparent hover:border-border cursor-pointer ${
-                    !selecionadosAtivos.includes(item.nome)
-                      ? "bg-slate-50/50 border-slate-100"
-                      : "bg-white shadow-sm border-slate-200"
-                  }`}
-                  onClick={() => toggleSelecao(item.nome)}
-                >
-                  <div
-                    className={`mt-1 h-5 w-5 rounded border-2 flex items-center justify-center transition-colors ${
-                      selecionadosAtivos.includes(item.nome)
-                        ? "border-primary bg-primary"
-                        : "border-primary/30 group-hover:border-primary"
-                    }`}
-                  >
-                    {selecionadosAtivos.includes(item.nome) && (
-                      <Check className="h-3 w-3 text-white" />
-                    )}
-                  </div>
-
-                  <div className="flex-1 space-y-1">
-                    {editandoIndex === idx ? (
-                      <div className="flex gap-2 items-center" onClick={(e) => e.stopPropagation()}>
-                        <Input
-                          value={novoValor}
-                          onChange={(e) => setNovoValor(e.target.value)}
-                          className="h-8"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") salvarEdicao(idx);
-                            if (e.key === "Escape") setEditandoIndex(null);
-                          }}
-                        />
-                        <Button
-                          size="icon"
-                          aria-label="Salvar item"
-                          variant="ghost"
-                          className="h-8 w-8 text-green-600"
-                          onClick={() => salvarEdicao(idx)}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          aria-label="Cancelar edição"
-                          variant="ghost"
-                          className="h-8 w-8 text-red-600"
-                          onClick={() => setEditandoIndex(null)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-700 leading-tight">{item.nome}</p>
-                          <div
-                            className="flex items-center gap-2 mt-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleObrigatoriedade(idx);
-                            }}
-                          >
-                            <div
-                              className={`h-4 w-8 rounded-full transition-colors relative flex items-center px-1 ${item.obrigatorio ? "bg-primary" : "bg-slate-300"}`}
-                            >
-                              <div
-                                className={`h-2.5 w-2.5 rounded-full bg-white transition-transform ${item.obrigatorio ? "translate-x-3.5" : "translate-x-0"}`}
-                              />
-                            </div>
-                            <span className="text-xs text-slate-400">
-                              {item.obrigatorio ? "Documento Obrigatório" : "Documento Opcional"}
-                            </span>
-                          </div>
-                        </div>
-                        <div
-                          className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            size="icon"
-                            aria-label="Editar item"
-                            variant="ghost"
-                            className="h-7 w-7 text-muted-foreground hover:text-primary"
-                            onClick={() => iniciarEdicao(idx, item.nome)}
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            aria-label="Remover item"
-                            variant="ghost"
-                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => removerItem(idx)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {itemsAtivos.length === 0 && (
-              <div className="text-center py-10 text-muted-foreground">
-                <p>Nenhum item no checklist. Adicione um novo item acima.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {!bancoSelecionado && (
-        <div className="py-20 text-center space-y-4 bg-muted/20 rounded-2xl border-2 border-dashed border-muted">
-          <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-            <FileText className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-medium">Nenhum banco selecionado</h3>
-            <p className="text-muted-foreground max-w-xs mx-auto text-sm">
-              Escolha um dos bancos acima para gerar o checklist personalizado com a marca Agilliza.
+      <section className="overflow-hidden rounded-xl border border-border/70 bg-card">
+        <div className="flex flex-col gap-3 border-b border-border/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <BancoMarca nome={nomeBanco} altura={22} />
+            <p className="text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{totalMarcados}</span> de {documentos.length} documentos
             </p>
           </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="ghost" className="h-8" onClick={() => marcarTodos(totalMarcados < documentos.length)}>
+              <CheckCheck className="mr-1.5 h-4 w-4" />
+              {totalMarcados < documentos.length ? "Marcar todos" : "Desmarcar todos"}
+            </Button>
+            <Button size="sm" variant="outline" className="h-8" onClick={adicionar}>
+              <Plus className="mr-1.5 h-4 w-4" /> Item
+            </Button>
+            <Button size="sm" variant="outline" className="h-8" onClick={() => setCompartilhar(true)}>
+              <Share2 className="mr-1.5 h-4 w-4" /> Compartilhar
+            </Button>
+            <Button size="sm" className="h-8" onClick={baixar}>
+              <Download className="mr-1.5 h-4 w-4" /> Baixar PDF
+            </Button>
+          </div>
         </div>
-      )}
+
+        {itens.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            Nenhum documento neste checklist. Use “Item” para incluir.
+          </p>
+        ) : (
+          <ul className="grid gap-x-6 px-2 py-2 sm:px-3 lg:grid-cols-2">
+            {itens.map((item, idx) => {
+              if (ehSecao(item.nome) && editando !== idx) {
+                return (
+                  <li
+                    key={`${idx}-${item.nome}`}
+                    className="col-span-full mt-2 border-b border-border/60 px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-primary first:mt-0"
+                  >
+                    {item.nome.replace(/:\s*$/, "")}
+                  </li>
+                );
+              }
+              const marcado = sel.includes(item.nome);
+              return (
+                <li
+                  key={`${idx}-${item.nome}`}
+                  className={cn(
+                    "group flex min-h-9 items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted/50",
+                    !marcado && "opacity-60",
+                  )}
+                >
+                  {editando === idx ? (
+                    <div className="flex flex-1 items-center gap-1">
+                      <Input
+                        value={valor}
+                        autoFocus
+                        maxLength={200}
+                        onChange={(e) => setValor(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") salvarEdicao(idx);
+                          if (e.key === "Escape") setEditando(null);
+                        }}
+                        className="h-8 text-sm"
+                        aria-label="Nome do documento"
+                      />
+                      <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Salvar" onClick={() => salvarEdicao(idx)}>
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Cancelar" onClick={() => setEditando(null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={marcado}
+                        onClick={() => alternar(item.nome)}
+                        className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                      >
+                        <span
+                          className={cn(
+                            "flex size-4 shrink-0 items-center justify-center rounded border transition-colors",
+                            marcado ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40",
+                          )}
+                        >
+                          {marcado && <Check className="h-3 w-3" />}
+                        </span>
+                        <span className="min-w-0 text-[13px] leading-snug text-foreground">{item.nome}</span>
+                      </button>
+                      <button
+                        type="button"
+                        title="Alternar obrigatório/opcional"
+                        onClick={() =>
+                          atualizarItens((l) => l.map((i, j) => (j === idx ? { ...i, obrigatorio: !i.obrigatorio } : i)))
+                        }
+                        className={cn(
+                          "shrink-0 rounded-full px-2 py-px text-[10px] font-semibold transition-colors",
+                          item.obrigatorio ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {item.obrigatorio ? "Obrigatório" : "Opcional"}
+                      </button>
+                      <span className="flex shrink-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground"
+                          aria-label="Editar documento"
+                          onClick={() => {
+                            setEditando(idx);
+                            setValor(item.nome);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          aria-label="Remover documento"
+                          onClick={() => atualizarItens((l) => l.filter((_, j) => j !== idx))}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </span>
+                    </>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <EncaminharChecklistDialog
-        aberto={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        onConfirm={onConfirmShare}
-        bancoNome={bancoParaCompartilhar?.nome || ""}
+        aberto={compartilhar}
+        onOpenChange={setCompartilhar}
+        onConfirm={confirmarCompartilhar}
+        bancoNome={nomeBanco}
       />
     </div>
   );

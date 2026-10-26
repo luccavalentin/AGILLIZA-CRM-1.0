@@ -1,22 +1,6 @@
 import { FileArchive, FileImage, FileSpreadsheet, FileText, FileType } from "lucide-react";
 
-/** Formata bytes em unidade legível (B, KB, MB, GB). */
-export function formatBytes(n: number | null): string {
-  if (!n) return "—";
-  const u = ["B", "KB", "MB", "GB"];
-  let i = 0;
-  let v = n;
-  while (v >= 1024 && i < u.length - 1) {
-    v /= 1024;
-    i++;
-  }
-  return `${v.toFixed(v < 10 && i > 0 ? 1 : 0)} ${u[i]}`;
-}
-
-/** Normaliza um nome de arquivo para uso seguro em storage path. */
-export function sanitizePath(nome: string): string {
-  return nome.replace(/[^\w.\-]+/g, "_").slice(0, 100);
-}
+// Tamanho e nomes seguros: @/lib/documentos/arquivos-regras (formatarBytes, nomeParaCaminho).
 
 /** Ícone e tonalidade do bloco conforme o tipo de arquivo. */
 export function estiloArquivo(

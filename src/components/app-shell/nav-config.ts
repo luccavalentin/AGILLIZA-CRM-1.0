@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { iconeDeBanco } from "@/components/bancos/banco-logo";
 import {
   Activity,
   Cable,
@@ -88,6 +89,32 @@ export interface NavGroup {
   label: string;
   items: NavItem[];
 }
+
+/** Logo oficial pequena dos bancos no menu (Documentos diversos e Checklists — frente a4). */
+const ICONE_BANCO = {
+  itau: iconeDeBanco("Itaú"),
+  bradesco: iconeDeBanco("Bradesco"),
+  santander: iconeDeBanco("Santander"),
+  inter: iconeDeBanco("Banco Inter"),
+  caixa: iconeDeBanco("Caixa"),
+};
+
+/**
+ * Módulos das áreas de Configurações gerais: o hub `/admin` abre para quem vê qualquer um
+ * deles (cada cartão do hub confere o seu). Mesma lista da rota `admin.index.tsx`.
+ */
+export const MODULOS_CONFIGURACOES_GERAIS = [
+  "admin.pessoas",
+  "admin.parametros",
+  "admin.integracoes",
+  "admin.notificacoes",
+  "admin.auditoria",
+  "admin.backup",
+  "saas.provedores",
+  "saas.integracoes",
+  "saas.configuracoes",
+  "relatorios.geral",
+];
 
 /**
  * Navegação do shell interno (usuários do correspondente).
@@ -319,25 +346,25 @@ export const navInterno: NavGroup[] = [
         children: [
           {
             label: "Itaú",
-            icon: Landmark,
+            icon: ICONE_BANCO.itau,
             to: "/formularios/itau",
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Bradesco",
-            icon: Landmark,
+            icon: ICONE_BANCO.bradesco,
             to: "/formularios/bradesco",
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Santander",
-            icon: Landmark,
+            icon: ICONE_BANCO.santander,
             to: "/formularios/santander",
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Inter",
-            icon: Landmark,
+            icon: ICONE_BANCO.inter,
             to: "/formularios/inter",
             perm: { modulo: "documentos.formularios" },
           },
@@ -401,28 +428,28 @@ export const navInterno: NavGroup[] = [
         children: [
           {
             label: "Bradesco",
-            icon: Landmark,
+            icon: ICONE_BANCO.bradesco,
             to: "/checklists/$id",
             params: { id: "abertura-bradesco" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Itaú",
-            icon: Landmark,
+            icon: ICONE_BANCO.itau,
             to: "/checklists/$id",
             params: { id: "abertura-itau" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Santander",
-            icon: Landmark,
+            icon: ICONE_BANCO.santander,
             to: "/checklists/$id",
             params: { id: "abertura-santander" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Inter",
-            icon: Landmark,
+            icon: ICONE_BANCO.inter,
             to: "/checklists/$id",
             params: { id: "abertura-inter" },
             perm: { modulo: "documentos.formularios" },
@@ -444,35 +471,35 @@ export const navInterno: NavGroup[] = [
         children: [
           {
             label: "Itaú",
-            icon: Landmark,
+            icon: ICONE_BANCO.itau,
             to: "/formularios/checklist",
             search: { banco: "itau" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Bradesco",
-            icon: Landmark,
+            icon: ICONE_BANCO.bradesco,
             to: "/formularios/checklist",
             search: { banco: "bradesco" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Santander",
-            icon: Landmark,
+            icon: ICONE_BANCO.santander,
             to: "/formularios/checklist",
             search: { banco: "santander" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Inter",
-            icon: Landmark,
+            icon: ICONE_BANCO.inter,
             to: "/formularios/checklist",
             search: { banco: "inter" },
             perm: { modulo: "documentos.formularios" },
           },
           {
             label: "Caixa",
-            icon: Landmark,
+            icon: ICONE_BANCO.caixa,
             to: "/formularios/checklist",
             search: { banco: "caixa" },
             perm: { modulo: "documentos.formularios" },
@@ -488,54 +515,43 @@ export const navInterno: NavGroup[] = [
     items: [{ label: "Automações", icon: Workflow, to: "/automacoes", emBreve: true }],
   },
   {
-    // Financeiro da matriz: três fluxos separados (comissão dos bancos, repasse
-    // aos assinantes, comissão de corretores e parceiros) mais as despesas e
-    // receitas da operação, com conciliação e painel consolidado.
+    // Financeiro da matriz (frente a5, 26/10/2026): três fluxos separados — comissões dos
+    // bancos, repasse aos assinantes, comissões de corretores e parceiros — mais as despesas
+    // e receitas da operação, conciliação, painel consolidado (sem misturar naturezas),
+    // relatórios, regras e auditoria. Endereços antigos redirecionam (comissoes →
+    // comissoes-bancos; comissoes-usuario → comissoes-corretores).
     id: "financeiro",
     label: "Financeiro",
     items: [
+      { label: "Painel", icon: LineChart, to: "/financeiro/painel", perm: { modulo: "financeiro.painel" } },
       {
-        label: "Painel",
-        icon: LineChart,
-        to: "/financeiro/painel",
-        perm: { modulo: "financeiro.painel" },
+        label: "Comissões dos bancos",
+        icon: Landmark,
+        to: "/financeiro/comissoes-bancos",
+        perm: { modulo: "financeiro.comissoes_bancos", equivalentes: ["financeiro.comissoes"] },
       },
+      { label: "Repasses aos assinantes", icon: Percent, to: "/financeiro/repasses", perm: { modulo: "financeiro.repasses" } },
       {
-        label: "Contas a pagar",
-        icon: ArrowUpCircle,
-        to: "/financeiro/contas-a-pagar",
-        perm: { modulo: "financeiro.contas_pagar" },
-      },
-      {
-        label: "Contas a receber",
-        icon: ArrowDownCircle,
-        to: "/financeiro/contas-a-receber",
-        perm: { modulo: "financeiro.contas_receber" },
-      },
-      {
-        label: "Fluxo de caixa",
-        icon: Wallet,
-        to: "/financeiro/fluxo-de-caixa",
-        perm: { modulo: "financeiro.fluxo_caixa" },
-      },
-      {
-        label: "Repasses",
-        icon: Percent,
-        to: "/financeiro/comissoes",
+        label: "Corretores e parceiros",
+        icon: HandCoins,
+        to: "/financeiro/comissoes-corretores",
         perm: { modulo: "financeiro.comissoes" },
       },
+      { label: "Contas a pagar", icon: ArrowUpCircle, to: "/financeiro/contas-a-pagar", perm: { modulo: "financeiro.contas_pagar" } },
+      { label: "Contas a receber", icon: ArrowDownCircle, to: "/financeiro/contas-a-receber", perm: { modulo: "financeiro.contas_receber" } },
+      { label: "Licenças dos assinantes", icon: Building2, to: "/financeiro/assinantes", perm: { modulo: "financeiro.repasses" } },
+      { label: "Conciliação", icon: FileCheck2, to: "/financeiro/conciliacao", perm: { modulo: "financeiro.conciliacao" } },
+      { label: "Fluxo de caixa", icon: Wallet, to: "/financeiro/fluxo-de-caixa", perm: { modulo: "financeiro.fluxo_caixa" } },
+      { label: "Relatórios", icon: BarChart3, to: "/financeiro/relatorios", perm: { modulo: "financeiro.painel", equivalentes: ["financeiro.fluxo_caixa"] } },
       {
-        label: "Comissões (usuários)",
-        icon: Percent,
-        to: "/financeiro/comissoes-usuario",
-        perm: { modulo: "financeiro.comissoes" },
-      },
-      {
-        label: "Configurações",
+        label: "Regras e configurações",
         icon: SlidersHorizontal,
         to: "/financeiro/configuracoes",
-        perm: { modulo: "financeiro.painel" },
+        perm: { modulo: "financeiro.regras", equivalentes: ["financeiro.painel"] },
       },
+      { label: "Auditoria", icon: ScrollText, to: "/financeiro/auditoria", perm: { modulo: "financeiro.auditoria" } },
+      // Demonstrativo individual: cada pessoa vê só as próprias comissões (o banco confere).
+      { label: "Minhas comissões", icon: UserRound, to: "/financeiro/minhas-comissoes" },
     ],
   },
   {
@@ -795,9 +811,16 @@ export const navInterno: NavGroup[] = [
       {
         label: "Configurações gerais",
         icon: SlidersHorizontal,
-        to: "/admin/pessoas",
-        perm: { modulo: "admin.pessoas" },
+        to: "/admin",
+        // O hub abre para quem vê qualquer uma das áreas dele.
+        perm: { modulo: "admin.pessoas", equivalentes: MODULOS_CONFIGURACOES_GERAIS },
         children: [
+          {
+            label: "Visão geral",
+            icon: LayoutDashboard,
+            to: "/admin",
+            perm: { modulo: "admin.pessoas", equivalentes: MODULOS_CONFIGURACOES_GERAIS },
+          },
           {
             label: "Pessoas e permissões",
             icon: UserCog,

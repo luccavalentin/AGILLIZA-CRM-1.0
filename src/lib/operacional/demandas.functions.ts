@@ -1,33 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { textoIdH } from "@/lib/propostas/id-h";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { listarClienteIdsParceiroDoUsuario } from "@/lib/escopo";
 import { carregarReacoes } from "@/lib/chat-core/reacoes.functions";
-import { statusDemanda } from "@/components/operacional/status";
-import { exigirAcao, exigirMesmoCorrespondente } from "./permissao-acao";
 
 export type DemandaStatus = "aberta" | "em_andamento" | "aguardando" | "concluida" | "cancelada";
 export type Prioridade = "p1" | "p2" | "p3";
 
-const TODOS_STATUS: DemandaStatus[] = [
-  "aberta",
-  "em_andamento",
-  "aguardando",
-  "concluida",
-  "cancelada",
-];
-
-const TRANSICOES: Record<DemandaStatus, DemandaStatus[]> = {
-  aberta: TODOS_STATUS,
-  em_andamento: TODOS_STATUS,
-  aguardando: TODOS_STATUS,
-  concluida: TODOS_STATUS,
-  cancelada: TODOS_STATUS,
-};
-
-export function transicaoDemandaPermitida(de: DemandaStatus, para: DemandaStatus): boolean {
-  return de === para || (TRANSICOES[de]?.includes(para) ?? false);
-}
+// Transições: a mesma tabela do banco (demanda_transicao_permitida), em demandas-regras.
+export { transicaoDemandaPermitida } from "./demandas-regras";
 
 export interface DemandaItem {
   id: string;
@@ -147,7 +129,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
     let query = supabase
       .from("demandas")
       .select(
-        "id, numero, tipo, titulo, descricao, status, prioridade, cliente_id, proposta_id, simulacao_id, responsavel_id, criador_id, prazo_sla, sla_inicio, sla_horas, concluida_em, escalonada, created_at, clientes(nome), propostas(numero_proposta), simulacoes(numero_simulacao)",
+        "id, numero, tipo, titulo, descricao, status, prioridade, cliente_id, proposta_id, simulacao_id, responsavel_id, criador_id, prazo_sla, sla_inicio, sla_horas, concluida_em, escalonada, created_at, clientes(nome), propostas(numero_proposta, homefin_id_oportunidade), simulacoes(numero_simulacao)",
       )
       .limit(300);
 
@@ -231,7 +213,8 @@ export const listarDemandas = createServerFn({ method: "GET" })
       cliente_id: r.cliente_id,
       nome_cliente: r.clientes?.nome ?? null,
       proposta_id: r.proposta_id ?? null,
-      numero_proposta: r.propostas?.numero_proposta ?? null,
+      // C33: o número visível da proposta é o ID H.
+      numero_proposta: r.propostas ? textoIdH(r.propostas) : null,
       simulacao_id: r.simulacao_id ?? null,
       numero_simulacao: r.simulacoes?.numero_simulacao ?? null,
       criador_id: r.criador_id,
@@ -259,7 +242,7 @@ export const listarPropostasOpcoes = createServerFn({ method: "GET" })
     const { supabase } = context;
     let query = supabase
       .from("propostas")
-      .select("id, numero_proposta, cliente_id, clientes(nome)")
+      .select("id, numero_proposta, homefin_id_oportunidade, cliente_id, clientes(nome)")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -268,7 +251,7 @@ export const listarPropostasOpcoes = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return ((rows ?? []) as any[]).map((r) => ({
       id: r.id as string,
-      numero: r.numero_proposta as string | null,
+      numero: textoIdH(r),
       nome_cliente: r.clientes?.nome ?? null,
     }));
   });
@@ -530,190 +513,10 @@ export const excluirChatDemanda = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const criarDemanda = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
-    z
-      .object({
-        tipo: z.string().min(1).default("diversos"),
-        titulo: z.string().min(2),
-        descricao: z.string().optional(),
-        prioridade: z.enum(["p1", "p2", "p3"]).default("p2"),
-        cliente_id: z.string().uuid().optional().nullable(),
-        proposta_id: z.string().uuid().optional().nullable(),
-        simulacao_id: z.string().uuid().optional().nullable(),
-        responsavel_id: z.string().uuid(),
-        participantes: z.array(z.string().uuid()).optional(),
-      })
-      .parse(data),
-  )
-  .handler(async ({ context, data }) => {
-    const { supabase, userId } = context;
-    const corr = await correspondenteId(supabase, userId);
-
-    // A política de INSERT de `demandas` pode barrar a criação quando há
-    // destinatário/cliente vinculado e a reavaliação de escopo acontece no
-    // contexto da sessão. O correspondente do usuário já foi validado acima;
-    // daqui em diante usamos o cliente administrativo apenas para persistir
-    // a demanda e seus vínculos sem violar a regra de negócio.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    if (data.responsavel_id) {
-      const { data: responsavel } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("id", data.responsavel_id)
-        .eq("correspondente_id", corr)
-        .maybeSingle();
-      if (!responsavel) throw new Error("Responsável fora do seu ecossistema.");
-    }
-
-    if (data.cliente_id) {
-      const { data: cliente } = await supabaseAdmin
-        .from("clientes")
-        .select("id")
-        .eq("id", data.cliente_id)
-        .eq("correspondente_id", corr)
-        .maybeSingle();
-      if (!cliente) throw new Error("Cliente fora do seu ecossistema.");
-    }
-
-    // Teste adversarial 23/10/2026: proposta e simulação também vêm da tela e a
-    // gravação é sem RLS — sem conferir, a demanda apontava para registro de outra conta.
-    for (const [tabela, id] of [
-      ["propostas", data.proposta_id],
-      ["simulacoes", data.simulacao_id],
-    ] as const) {
-      if (!id) continue;
-      const { data: achado } = await supabaseAdmin
-        .from(tabela)
-        .select("id")
-        .eq("id", id)
-        .eq("correspondente_id", corr)
-        .maybeSingle();
-      if (!achado) throw new Error("Proposta ou simulação fora do seu ecossistema.");
-    }
-
-    const participantes = [...new Set(data.participantes ?? [])];
-    if (participantes.length) {
-      const { data: usuarios } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .in("id", participantes)
-        .eq("correspondente_id", corr);
-      if ((usuarios ?? []).length !== participantes.length) {
-        throw new Error("Há participantes fora do seu ecossistema.");
-      }
-    }
-
-    const { data: nova, error } = await supabaseAdmin
-      .from("demandas")
-      .insert({
-        correspondente_id: corr,
-        tipo: data.tipo,
-        titulo: data.titulo,
-        descricao: data.descricao ?? null,
-        prioridade: data.prioridade,
-        cliente_id: data.cliente_id ?? null,
-        proposta_id: data.proposta_id ?? null,
-        simulacao_id: data.simulacao_id ?? null,
-        responsavel_id: data.responsavel_id,
-        criador_id: userId,
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-    if (participantes.length) {
-      await supabaseAdmin
-        .from("demanda_participantes")
-        .insert(participantes.map((u) => ({ demanda_id: nova.id, user_id: u })));
-    }
-
-    // Notifica responsável e participantes sobre a nova demanda.
-    const destinatarios = new Set<string>();
-    if (data.responsavel_id && data.responsavel_id !== userId)
-      destinatarios.add(data.responsavel_id);
-    for (const p of participantes) if (p !== userId) destinatarios.add(p);
-    for (const uid of destinatarios) {
-      await supabase.rpc("emitir_notificacao", {
-        _user_id: uid,
-        _corr: corr,
-        _tipo: "demanda.criada",
-        _titulo: "Nova demanda: " + data.titulo,
-        _corpo: data.descricao ?? "",
-        _link: "/operacional/demandas/" + nova.id,
-      });
-    }
-    return { id: nova.id as string };
-  });
-
-export const transferirDemanda = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
-    z
-      .object({
-        id: z.string().uuid(),
-        novo_responsavel_id: z.string().uuid(),
-        motivo: z.string().min(3),
-      })
-      .parse(data),
-  )
-  .handler(async ({ context, data }) => {
-    const { supabase, userId } = context;
-    const atual = await papelNaDemanda(supabase, data.id, userId);
-    if (!atual.souResponsavel && !atual.souCriador) {
-      throw new Error("Apenas quem enviou ou recebeu a demanda pode transferi-la.");
-    }
-    await exigirAcao(
-      supabase,
-      userId,
-      "operacional.demandas",
-      "transferir",
-      "Você não tem permissão para transferir demandas.",
-    );
-    await exigirMesmoCorrespondente(
-      supabase,
-      atual.correspondente_id,
-      [data.novo_responsavel_id],
-      "Responsável fora do seu ecossistema.",
-    );
-    const anterior = atual.responsavel_id;
-    const { error } = await supabase
-      .from("demandas")
-      .update({ responsavel_id: data.novo_responsavel_id })
-      .eq("id", data.id);
-    if (error) throw new Error(error.message);
-    await supabase.from("demanda_historico").insert({
-      demanda_id: data.id,
-      ator_id: userId,
-      acao: "transferida",
-      responsavel_anterior_id: anterior,
-      responsavel_novo_id: data.novo_responsavel_id,
-      motivo: data.motivo,
-    });
-    await supabase.rpc("emitir_notificacao", {
-      _user_id: data.novo_responsavel_id,
-      _corr: atual.correspondente_id,
-      _tipo: "demanda.transferida",
-      _titulo: "Demanda transferida: " + atual.titulo,
-      _corpo: data.motivo,
-      _link: "/operacional/demandas/" + data.id,
-    });
-    // Também avisa o responsável anterior (perdeu a titularidade), quando não é
-    // o próprio autor da transferência.
-    if (anterior && anterior !== userId && anterior !== data.novo_responsavel_id) {
-      await supabase.rpc("emitir_notificacao", {
-        _user_id: anterior,
-        _corr: atual.correspondente_id,
-        _tipo: "demanda.transferida",
-        _titulo: "Demanda transferida para outra pessoa",
-        _corpo: data.motivo,
-        _link: "/operacional/demandas/" + data.id,
-      });
-    }
-    return { ok: true };
-  });
-
+/**
+ * Muda a situação pela função do banco (demanda_mudar_status): transição validada, ação
+ * "encerrar" para concluir/cancelar, motivo para cancelar e aviso aos envolvidos.
+ */
 export const moverStatusDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
@@ -721,72 +524,17 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         status: z.enum(["aberta", "em_andamento", "aguardando", "concluida", "cancelada"]),
+        motivo: z.string().trim().max(500).optional().nullable(),
       })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
-    const { supabase, userId } = context;
-    const { data: atual } = await supabase
-      .from("demandas")
-      .select("status, titulo, correspondente_id, criador_id, responsavel_id")
-      .eq("id", data.id)
-      .single();
-    if (!atual) throw new Error("Demanda não encontrada.");
-    if (!transicaoDemandaPermitida(atual.status as DemandaStatus, data.status)) {
-      throw new Error(
-        `Transição de status inválida: ${statusDemanda(atual.status).label} → ${statusDemanda(data.status).label}.`,
-      );
-    }
-    // Concluir ou cancelar é a ação "Encerrar" da matriz de permissões.
-    if (
-      (data.status === "concluida" || data.status === "cancelada") &&
-      atual.status !== data.status
-    ) {
-      await exigirAcao(
-        supabase,
-        userId,
-        "operacional.demandas",
-        "encerrar",
-        "Você não tem permissão para encerrar demandas.",
-      );
-    }
-    const patch: Record<string, unknown> = { status: data.status };
-    // Carimba/limpa `concluida_em` para reabertura consistente em relatórios/SLA.
-    if (data.status === "concluida") patch.concluida_em = new Date().toISOString();
-    else if (atual.status === "concluida") patch.concluida_em = null;
-    const { error } = await supabase
-      .from("demandas")
-      .update(patch as any)
-      .eq("id", data.id);
-
+    const { error } = await (context.supabase as any).rpc("demanda_mudar_status", {
+      p_dem: data.id,
+      p_status: data.status,
+      p_motivo: data.motivo ?? null,
+    });
     if (error) throw new Error(error.message);
-    await supabase
-      .from("demanda_historico")
-      .insert({ demanda_id: data.id, ator_id: userId, acao: "status", detalhe: data.status });
-
-    // Notifica a contraparte (criador ↔ responsável) e participantes.
-    const { data: parts } = await supabase
-      .from("demanda_participantes")
-      .select("user_id")
-      .eq("demanda_id", data.id);
-    const destinatarios = new Set<string>();
-    if (atual.criador_id && atual.criador_id !== userId)
-      destinatarios.add(atual.criador_id as string);
-    if (atual.responsavel_id && atual.responsavel_id !== userId)
-      destinatarios.add(atual.responsavel_id as string);
-    for (const p of (parts ?? []) as any[]) {
-      if (p.user_id && p.user_id !== userId) destinatarios.add(p.user_id);
-    }
-    for (const uid of destinatarios) {
-      await supabase.rpc("emitir_notificacao", {
-        _user_id: uid,
-        _corr: atual.correspondente_id as string,
-        _tipo: "demanda.status",
-        _titulo: "Demanda atualizada: " + (atual.titulo ?? ""),
-        _corpo: "Situação: " + statusDemanda(data.status).label,
-        _link: "/operacional/demandas/" + data.id,
-      });
-    }
     return { ok: true };
   });
 
@@ -960,6 +708,16 @@ export const excluirDemanda = createServerFn({ method: "POST" })
       throw new Error("Apenas quem enviou a demanda pode excluí-la.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // A demanda de uma proposta de assinante acompanha a fila de propostas: apagar faria a
+    // próxima mudança da proposta criá-la de novo. Ela se encerra (cancelar), não se apaga.
+    const { data: ref } = await supabaseAdmin
+      .from("demandas")
+      .select("ref_tipo")
+      .eq("id", data.id)
+      .maybeSingle();
+    if ((ref as { ref_tipo?: string | null } | null)?.ref_tipo) {
+      throw new Error("Esta demanda acompanha uma proposta de assinante: cancele em vez de excluir.");
+    }
     const { error } = await supabaseAdmin.from("demandas").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };

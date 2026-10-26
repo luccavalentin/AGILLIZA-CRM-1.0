@@ -13,18 +13,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getMinhaSessao, atualizarMeuPerfil, atualizarMeuEmail } from "@/lib/session.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminHero } from "@/components/admin/admin-hero";
+import { ContaCabecalho, SecaoConta } from "@/components/conta/conta-cabecalho";
 import { ChatSoundSetting } from "@/components/shared/chat-sound-setting";
+import { CartaoMeuArroba } from "@/components/chat/cartao-meu-arroba";
 import { otimizarImagem } from "@/lib/imagem";
 
 // URL assinada de longa duração para exibir a foto do bucket privado.
 const URL_EXPIRACAO_SEGUNDOS = 60 * 60 * 24 * 365 * 10;
 
 export const Route = createFileRoute("/_authenticated/conta/perfil")({
-  head: () => ({ meta: [{ title: "Meu perfil — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Meus dados — Agilliza" }] }),
   component: Pagina,
 });
 
+/** Seção numerada (mesma peça 3D das outras telas da Conta). */
 function Secao({
   numero,
   icon,
@@ -39,25 +41,9 @@ function Secao({
   children: ReactNode;
 }) {
   return (
-    <Card className="overflow-hidden border-border/60 shadow-sm">
-      <div className="flex items-center gap-3 border-b border-border/60 bg-muted/30 px-5 py-4">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
-          {icon}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold tracking-[0.18em] text-primary/70">
-              {numero}
-            </span>
-            <h2 className="truncate text-sm font-semibold tracking-tight text-foreground">
-              {titulo}
-            </h2>
-          </div>
-          <p className="truncate text-xs text-muted-foreground">{descricao}</p>
-        </div>
-      </div>
-      <CardContent className="p-5">{children}</CardContent>
-    </Card>
+    <SecaoConta numero={numero} icone={icon} titulo={titulo} descricao={descricao}>
+      {children}
+    </SecaoConta>
   );
 }
 
@@ -183,27 +169,8 @@ function Pagina() {
   const iniciais = (nome || "?").slice(0, 2).toUpperCase();
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 pb-28 md:p-6">
-      <AdminHero
-        secao="Minha conta"
-        icon={<UserRound className="h-5 w-5" />}
-        titulo="Meu perfil"
-        descricao="Dados pessoais, foto, senha e preferências de som."
-        acoes={
-          <div className="flex items-center gap-3 rounded-full border border-border/60 bg-card/60 py-1 pl-1 pr-3">
-            <Avatar className="size-8">
-              <AvatarImage src={fotoUrl || undefined} alt={nome} />
-              <AvatarFallback className="text-[11px]">{iniciais}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-xs font-semibold text-foreground">{nome || "—"}</p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                {sessao?.profile?.email ?? ""}
-              </p>
-            </div>
-          </div>
-        }
-      />
+    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 pb-28 md:p-6">
+      <ContaCabecalho pagina="perfil" pessoa={{ nome, foto: fotoUrl }} />
 
       <Secao
         numero="01"
@@ -345,11 +312,13 @@ function Pagina() {
           </div>
         </Secao>
 
+        {/* O @ único do ecossistema (t1, C01/C02): ver e trocar. */}
+        <CartaoMeuArroba canal="equipe" />
         <ChatSoundSetting />
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
             <span
               className={`size-2 rounded-full ${alterado ? "bg-amber-500" : "bg-emerald-500"}`}

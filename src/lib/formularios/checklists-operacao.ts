@@ -48,7 +48,7 @@ export const NOME_BANCO_ABERTURA: Record<BancoAbertura, string> = {
 export const CHECKLIST_ABERTURA_CONTA: Record<BancoAbertura, ChecklistOperacao> = {
   bradesco: {
     id: "abertura-bradesco",
-    titulo: "Abertura de conta — Bradesco",
+    titulo: "Docs para abertura de conta — Bradesco",
     descricao: "Documentos necessários para abrir a conta no Bradesco.",
     blocos: [
       {
@@ -65,7 +65,7 @@ export const CHECKLIST_ABERTURA_CONTA: Record<BancoAbertura, ChecklistOperacao> 
   },
   itau: {
     id: "abertura-itau",
-    titulo: "Abertura de conta — Itaú",
+    titulo: "Docs para abertura de conta — Itaú",
     descricao: "Documentos necessários para abrir a conta no Itaú.",
     blocos: [
       {
@@ -75,7 +75,7 @@ export const CHECKLIST_ABERTURA_CONTA: Record<BancoAbertura, ChecklistOperacao> 
   },
   santander: {
     id: "abertura-santander",
-    titulo: "Abertura de conta — Santander",
+    titulo: "Docs para abertura de conta — Santander",
     descricao: "Documentos necessários para abrir a conta no Santander.",
     blocos: [
       {
@@ -88,7 +88,7 @@ export const CHECKLIST_ABERTURA_CONTA: Record<BancoAbertura, ChecklistOperacao> 
   },
   inter: {
     id: "abertura-inter",
-    titulo: "Abertura de conta — Inter",
+    titulo: "Docs para abertura de conta — Inter",
     descricao: "Documentos necessários para abrir a conta no Inter.",
     blocos: [
       {
@@ -120,7 +120,7 @@ export const NOME_BANCO_EXIGIDO: Record<BancoExigido, string> = {
 /** Dossiê da operação — igual para todos os bancos. */
 export const CHECKLIST_PROPOSTA: ChecklistOperacao = {
   id: "seguir-proposta",
-  titulo: "Checklist para seguir com a proposta",
+  titulo: "Docs para sequenciar proposta",
   descricao: "Documentos e informações necessários para dar andamento à proposta de financiamento.",
   blocos: [
     {

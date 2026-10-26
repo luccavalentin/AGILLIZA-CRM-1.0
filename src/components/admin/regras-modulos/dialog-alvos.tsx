@@ -7,8 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CATALOGO_MODULOS, type EscopoAlvo } from "@/lib/admin/regras-modulos.functions";
+import type { EscopoAlvo } from "@/lib/admin/regras-modulos.functions";
 import { PAPEIS_ALVO } from "./constants";
+import { moduloNoMenu } from "./grupos-menu";
 
 export function DialogAlvos({
   moduloAtivo,
@@ -41,7 +42,7 @@ export function DialogAlvos({
           <DialogTitle>
             Quem este papel pode ver
             {moduloAtivo
-              ? ` — ${CATALOGO_MODULOS.find((m) => m.modulo === moduloAtivo)?.label ?? ""}`
+              ? ` — ${moduloNoMenu(moduloAtivo)?.rotuloMenu ?? moduloAtivo}`
               : ""}
           </DialogTitle>
         </DialogHeader>
