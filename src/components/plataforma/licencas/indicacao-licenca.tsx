@@ -64,8 +64,8 @@ function estadoDaLicenca(l: Licenca): EstadoIndicacao {
 }
 
 const MODOS: { id: ModoIndicacao; rotulo: string }[] = [
-  { id: "nenhuma", rotulo: "Sem indicação" },
-  { id: "conta", rotulo: "Um assinante" },
+  { id: "nenhuma", rotulo: "Nenhuma" },
+  { id: "conta", rotulo: "Assinante" },
   { id: "nome", rotulo: "Outra pessoa" },
 ];
 
@@ -132,7 +132,7 @@ export function CamposIndicacao({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{estado.conta.nome}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="truncate text-xs text-muted-foreground">
                 {estado.conta.tipo ? `${ROTULO_TIPO[estado.conta.tipo]} · ` : ""}conta que indicou
               </p>
             </div>
