@@ -36,6 +36,7 @@ const LABEL_STATUS_BANCO: Record<string, string> = {
 
 // Paleta do documento — segue o tema (claro/escuro) ativo na geração.
 import { getPdfPalette, type PdfPalette } from "@/lib/relatorios/pdf-theme";
+import { rendaEnviadaAoBanco } from "@/lib/simulacao/trava-renda";
 let P: PdfPalette = getPdfPalette();
 
 /** Preenche o fundo da página quando o tema é escuro. */
@@ -188,81 +189,274 @@ function drawTituloExtrato(
 }
 
 /** Caixa formal com os dados do cliente em destaque. */
-function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number {
-  const w = pageW - MARGIN * 2;
-  const hasConjuge = Boolean(s.possui_conjuge) || Boolean(s.nome_conjuge);
-  const boxH = hasConjuge ? 94 : 64;
+// ---------------------------------------------------------------------------
+// Dados do proponente (pedido do dono, 26/10/2026: "não sai os dados do cliente
+// completo"). Antes saíam só nome, nascimento e CPF do titular e do cônjuge, em
+// caixa de altura fixa: nome longo cortava. Agora sai tudo o que a simulação
+// tem do cliente, em grade que mede cada valor e quebra linha e página.
+// ---------------------------------------------------------------------------
 
-  // Faixa de rótulo "DADOS DO PROPONENTE"
-  doc.setFillColor(P.destaque);
-  doc.roundedRect(MARGIN, y, w, 14, 4, 4, "F");
-  doc.rect(MARGIN, y + 7, w, 7, "F");
-  doc.setTextColor(P.headText ?? "#FFFFFF");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("DADOS DO PROPONENTE", MARGIN + 10, y + 10);
+const ESTADO_CIVIL_PDF: Record<string, string> = {
+  s: "Solteiro(a)",
+  solteiro: "Solteiro(a)",
+  ca: "Casado(a)",
+  casado: "Casado(a)",
+  ue: "União estável",
+  uniao_estavel: "União estável",
+  di: "Divorciado(a)",
+  divorciado: "Divorciado(a)",
+  vi: "Viúvo(a)",
+  viuvo: "Viúvo(a)",
+  sl: "Separado(a)",
+  separado: "Separado(a)",
+};
+const REGIME_PDF: Record<string, string> = {
+  comunhao_parcial: "Comunhão parcial",
+  comunhao_universal: "Comunhão universal",
+  separacao_total: "Separação total",
+  separacao_bens: "Separação de bens",
+  participacao_final: "Participação final nos aquestos",
+  nao_aplicavel: "Não aplicável",
+};
 
-  // Corpo da caixa
-  const bodyY = y + 14;
-  const bodyH = boxH - 14;
-  doc.setFillColor(P.card);
-  doc.setDrawColor(P.borda);
-  doc.setLineWidth(0.6);
-  doc.roundedRect(MARGIN, bodyY, w, bodyH, 4, 4, "FD");
-  doc.rect(MARGIN, bodyY, w, 2, "F");
-  doc.setFillColor(P.coral);
-  doc.rect(MARGIN, bodyY + 6, 4, bodyH - 12, "F");
+function texto(v: unknown): string {
+  const t = String(v ?? "").trim();
+  return t ? t : "—";
+}
+function estadoCivilTxt(v: unknown): string {
+  const k = String(v ?? "")
+    .trim()
+    .toLowerCase();
+  return k ? (ESTADO_CIVIL_PDF[k] ?? String(v)) : "—";
+}
+function sexoTxt(v: unknown): string {
+  const k = String(v ?? "")
+    .trim()
+    .toUpperCase();
+  return k === "M" ? "Masculino" : k === "F" ? "Feminino" : "—";
+}
+function celularTxt(v: unknown): string {
+  const d = String(v ?? "").replace(/\D/g, "");
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return texto(v);
+}
+function cepTxt(v: unknown): string {
+  const d = String(v ?? "").replace(/\D/g, "");
+  return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : texto(v);
+}
+function simNao(v: unknown): string {
+  return v === true || v === "S" ? "Sim" : v === false || v === "N" ? "Não" : "—";
+}
+function docTxt(v: unknown): string {
+  const t = String(v ?? "").trim();
+  return t ? maskCpfCnpj(t) : "—";
+}
+function numOuNull(v: unknown): number | null {
+  const n = Number(v);
+  return v == null || v === "" || !Number.isFinite(n) ? null : n;
+}
 
-  // Titular
-  const colX = [MARGIN + 16, MARGIN + w * 0.5, MARGIN + w * 0.75];
-  const rotulos = ["TITULAR", "DATA DE NASCIMENTO", "CPF / CNPJ"];
-  const valores = [
-    (s.nome_cliente ?? "—").toString().toUpperCase(),
-    dataTxt(s.data_nascimento),
-    s.cpf_cnpj ? maskCpfCnpj(s.cpf_cnpj) : "—",
+export type ItemDado = { rotulo: string; valor: string; largo?: boolean };
+export type SecaoDados = { titulo: string; itens: ItemDado[] };
+
+/** Participantes da composição de renda que vieram junto da simulação. */
+function participantesDe(s: any): any[] {
+  const lista = s?._participantes ?? s?.participantes;
+  return Array.isArray(lista) ? lista : [];
+}
+
+/**
+ * Tudo o que a simulação tem do cliente, em seções. Pura (testável): titular,
+ * cônjuge, composição de renda e a renda considerada com os dados do imóvel.
+ */
+export function dadosDoProponente(s: any): SecaoDados[] {
+  const pj = s?.tipo_pessoa === "PJ";
+  const casado = ["ca", "ue", "casado", "uniao_estavel"].includes(
+    String(s?.estado_civil ?? "").toLowerCase(),
+  );
+  const titular: ItemDado[] = [
+    {
+      rotulo: pj ? "Razão social" : "Titular",
+      valor: texto(s?.nome_cliente).toUpperCase(),
+      largo: true,
+    },
+    { rotulo: pj ? "CNPJ" : "CPF", valor: docTxt(s?.cpf_cnpj) },
+    { rotulo: pj ? "Data de abertura" : "Data de nascimento", valor: dataTxt(s?.data_nascimento) },
   ];
-
-  rotulos.forEach((r, i) => {
-    doc.setTextColor(P.cinza);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.5);
-    doc.text(r, colX[i], bodyY + 16);
-    doc.setTextColor(P.destaque);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(i === 0 ? 11 : 10);
-    doc.text(String(valores[i]), colX[i], bodyY + 30, {
-      maxWidth: (i === 0 ? w * 0.5 : w * 0.25) - 20,
-    });
-  });
-
-  // Cônjuge
-  if (hasConjuge) {
-    const cy = bodyY + 44;
-    doc.setDrawColor(P.borda);
-    doc.setLineWidth(0.3);
-    doc.line(MARGIN + 10, cy - 8, MARGIN + w - 10, cy - 8);
-
-    const rotulosC = ["CÔNJUGE / COOBRIGADO", "DATA DE NASCIMENTO", "CPF"];
-    const valoresC = [
-      (s.nome_conjuge ?? "—").toString().toUpperCase(),
-      dataTxt(s.data_nascimento_conjuge),
-      s.cpf_conjuge ? maskCpfCnpj(s.cpf_conjuge) : "—",
-    ];
-    rotulosC.forEach((r, i) => {
-      doc.setTextColor(P.cinza);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(6.5);
-      doc.text(r, colX[i], cy + 8);
-      doc.setTextColor(P.destaque);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(i === 0 ? 11 : 10);
-      doc.text(String(valoresC[i]), colX[i], cy + 22, {
-        maxWidth: (i === 0 ? w * 0.5 : w * 0.25) - 20,
+  if (!pj) {
+    titular.push(
+      { rotulo: "Sexo", valor: sexoTxt(s?.sexo) },
+      { rotulo: "Estado civil", valor: estadoCivilTxt(s?.estado_civil) },
+    );
+    if (casado)
+      titular.push({
+        rotulo: "Regime de casamento",
+        valor: REGIME_PDF[String(s?.regime_casamento ?? "")] ?? texto(s?.regime_casamento),
       });
+  }
+  titular.push(
+    { rotulo: "E-mail", valor: texto(s?.email), largo: true },
+    { rotulo: "Celular", valor: celularTxt(s?.celular) },
+    {
+      rotulo: pj ? "Faturamento mensal" : "Renda do titular",
+      valor: brlOuTraco(numOuNull(s?.renda_total)),
+    },
+  );
+  const secoes: SecaoDados[] = [{ titulo: "Dados do proponente", itens: titular }];
+
+  const temConjuge = Boolean(String(s?.nome_conjuge ?? "").trim()) || (Boolean(s?.possui_conjuge) && casado);
+  if (temConjuge) {
+    secoes.push({
+      titulo: "Cônjuge / coobrigado",
+      itens: [
+        { rotulo: "Nome", valor: texto(s?.nome_conjuge).toUpperCase(), largo: true },
+        { rotulo: "CPF", valor: docTxt(s?.cpf_conjuge) },
+        { rotulo: "Data de nascimento", valor: dataTxt(s?.data_nascimento_conjuge) },
+        { rotulo: "Sexo", valor: sexoTxt(s?.sexo_conjuge) },
+        {
+          rotulo: "Estado civil",
+          valor: estadoCivilTxt(s?.estado_civil_conjuge || s?.estado_civil),
+        },
+        { rotulo: "E-mail", valor: texto(s?.email_conjuge), largo: true },
+        { rotulo: "Celular", valor: celularTxt(s?.celular_conjuge) },
+        { rotulo: "Renda do cônjuge", valor: brlOuTraco(numOuNull(s?.renda_conjuge)) },
+        { rotulo: "Compõe renda", valor: simNao(Boolean(s?.compoe_renda_conjuge)) },
+      ],
     });
   }
 
-  return y + boxH + 14;
+  const parts = participantesDe(s);
+  if (parts.length > 0) {
+    const itens: ItemDado[] = [];
+    parts.forEach((p, i) => {
+      itens.push(
+        { rotulo: `Participante ${i + 1}`, valor: texto(p?.nome).toUpperCase(), largo: true },
+        { rotulo: "Vínculo", valor: texto(p?.vinculo ?? p?.tipo_qualificacao) },
+        { rotulo: "CPF", valor: docTxt(p?.cpf_cnpj ?? p?.cpf) },
+        { rotulo: "Data de nascimento", valor: dataTxt(p?.data_nascimento) },
+        { rotulo: "Estado civil", valor: estadoCivilTxt(p?.estado_civil) },
+        { rotulo: "Renda", valor: brlOuTraco(numOuNull(p?.renda)) },
+        { rotulo: "Compõe renda", valor: simNao(p?.compoe_renda !== false) },
+      );
+    });
+    secoes.push({ titulo: "Composição de renda", itens });
+  }
+
+  const sit = String(s?.situacao_imovel ?? "").toUpperCase();
+  secoes.push({
+    titulo: "Renda e imóvel",
+    itens: [
+      {
+        rotulo: "Renda total considerada",
+        valor: pj
+          ? brlOuTraco(numOuNull(s?.renda_total))
+          : formatBRL(rendaEnviadaAoBanco({ ...s, participantes: parts })),
+      },
+      { rotulo: "Utiliza FGTS", valor: simNao(s?.utiliza_fgts) },
+      {
+        rotulo: "Situação do imóvel",
+        valor: sit === "N" ? "Novo" : sit === "U" ? "Usado" : texto(s?.situacao_imovel),
+      },
+      { rotulo: "UF do imóvel", valor: texto(s?.uf) },
+      { rotulo: "CEP do imóvel", valor: cepTxt(s?.cep_imovel) },
+    ],
+  });
+  return secoes;
+}
+
+/** Sem espaço para `h` pontos: nova página com o cabeçalho institucional. */
+function garantirEspaco(doc: jsPDF, pageW: number, y: number, h: number): number {
+  const pageH = doc.internal.pageSize.getHeight();
+  if (y + h <= pageH - 44) return y;
+  doc.addPage();
+  drawPageBackground(doc, pageW, pageH);
+  drawClienteHeader(doc, pageW);
+  return HEADER_H + 22;
+}
+
+function drawDadosCliente(doc: jsPDF, pageW: number, s: any, y: number): number {
+  const w = pageW - MARGIN * 2;
+  const cols = 3;
+  const gap = 6;
+  const cw = (w - gap * (cols - 1)) / cols;
+  for (const secao of dadosDoProponente(s)) {
+    // Título da seção junto com a primeira linha (nunca sozinho no pé da página).
+    y = garantirEspaco(doc, pageW, y, 18 + 40);
+    doc.setFillColor(P.destaque);
+    doc.roundedRect(MARGIN, y, w, 14, 3, 3, "F");
+    doc.setTextColor(P.headText ?? "#FFFFFF");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text(secao.titulo.toUpperCase(), MARGIN + 8, y + 9.6);
+    y += 18;
+
+    // Linhas da grade: itens largos ocupam 2 colunas.
+    const linhas: { it: ItemDado; span: number }[][] = [];
+    let atual: { it: ItemDado; span: number }[] = [];
+    let usadas = 0;
+    for (const it of secao.itens) {
+      const span = it.largo ? 2 : 1;
+      if (usadas + span > cols) {
+        linhas.push(atual);
+        atual = [];
+        usadas = 0;
+      }
+      atual.push({ it, span });
+      usadas += span;
+    }
+    if (atual.length) linhas.push(atual);
+
+    for (const linha of linhas) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      const valores = linha.map(
+        ({ it, span }) => doc.splitTextToSize(it.valor, cw * span + gap * (span - 1) - 14) as string[],
+      );
+      const h = Math.max(30, ...valores.map((v) => 18 + v.length * 10.5));
+      y = garantirEspaco(doc, pageW, y, h + gap);
+      let x = MARGIN;
+      linha.forEach(({ it, span }, k) => {
+        const largura = cw * span + gap * (span - 1);
+        doc.setFillColor(P.card);
+        doc.setDrawColor(P.borda);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(x, y, largura, h, 3, 3, "FD");
+        doc.setTextColor(P.cinza);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(6);
+        doc.text(it.rotulo.toUpperCase(), x + 7, y + 10);
+        doc.setTextColor(P.destaque);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(valores[k]!, x + 7, y + 21, { lineHeightFactor: 1.15 });
+        x += largura + gap;
+      });
+      y += h + gap;
+    }
+    y += 6;
+  }
+  return y + 6;
+}
+
+/**
+ * Participantes da composição de renda junto da simulação. As telas passam só
+ * a simulação; o PDF busca os participantes (RLS de quem baixa) quando faltam.
+ */
+async function comParticipantes(s: any): Promise<any> {
+  if (!s?.id || Array.isArray(s?._participantes) || Array.isArray(s?.participantes)) return s;
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase
+      .from("simulacao_participantes")
+      .select(
+        "nome, vinculo, cpf_cnpj, data_nascimento, estado_civil, renda, compoe_renda, tipo_qualificacao",
+      )
+      .eq("simulacao_id", s.id);
+    return { ...s, _participantes: data ?? [] };
+  } catch {
+    return s;
+  }
 }
 
 /** Formata em BRL, mas devolve "—" quando o valor não veio da API (evita inventar R$ 0,00). */
@@ -738,8 +932,10 @@ function anexarDetalhesBancos(doc: jsPDF, pageW: number, pageH: number, s: any, 
 }
 
 /** Gera e baixa um PDF institucional consolidado (dados + comparativo de bancos). */
-export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
-  const { simulacao: s, bancos } = input;
+export async function baixarSimulacaoPDF(input: SimulacaoPdfInput): Promise<void> {
+  const s = await comParticipantes(input.simulacao);
+  const { bancos } = input;
+  input = { ...input, simulacao: s };
 
   // Se for uma simulação completa com um único banco (e não for simulação rápida com AMBOS),
   // emite o extrato detalhado com parcelas.
@@ -853,7 +1049,14 @@ export function baixarSimulacaoPDF(input: SimulacaoPdfInput) {
     sanitizarNomeArquivo(nomeDescritivo(s, bancos ?? [])),
     DISCLAIMER,
     firstColLogos,
-    undefined,
+    // Dados completos do proponente numa página própria, depois do comparativo.
+    (doc, pageW, pageH) => {
+      P = getPdfPalette();
+      doc.addPage();
+      drawPageBackground(doc, pageW, pageH);
+      drawClienteHeader(doc, pageW);
+      drawDadosCliente(doc, pageW, s, HEADER_H + 22);
+    },
     "portrait",
     docInfo,
   );
@@ -959,9 +1162,11 @@ export function baixarSimulacaoSimplificadaPDF({
       y,
     );
     y = drawDadosCliente(doc, pageW, s, y);
+    y = garantirEspaco(doc, pageW, y, 190);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
 
     // Resumo das parcelas (valores fornecidos pela instituição — sem recálculo)
+    y = garantirEspaco(doc, pageW, y, 80);
     y = drawResumoPagamento(doc, pageW, y, [
       { label: "1ª parcela", valor: brlOuTraco(d?.primeiraParcela ?? b?.valor_parcela) },
       { label: "Última parcela", valor: brlOuTraco(d?.ultimaParcela) },
@@ -1017,11 +1222,13 @@ function criarDocSimulacaoDetalhada({
 
     y = drawFaixaBanco(doc, pageW, nomeBanco, y);
     y = drawDadosCliente(doc, pageW, s, y);
+    y = garantirEspaco(doc, pageW, y, 190);
     y = drawInfoFinanciamento(doc, pageW, s, b, d, y);
 
     // A tabela abaixo é projeção sem seguros; a parcela que o cliente paga é a
     // do banco (com MIP/DFI). Sem este resumo o extrato detalhado não mostrava
     // a 1ª parcela real em lugar nenhum.
+    y = garantirEspaco(doc, pageW, y, 80);
     y = drawResumoPagamento(doc, pageW, y, [
       {
         label: "1ª parcela (com seguros)",
@@ -1063,6 +1270,7 @@ function criarDocSimulacaoDetalhada({
       { content: "", styles: { halign: "right" as const } },
     ];
 
+    y = garantirEspaco(doc, pageW, y, 60);
     doc.setTextColor(P.destaque);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
@@ -1162,6 +1370,7 @@ function criarDocSimulacaoDetalhada({
  */
 export async function baixarSimulacaoDetalhadaPDF(input: SimulacaoPdfInput): Promise<boolean> {
   if (!input.bancos || input.bancos.length === 0) return false;
+  input = { ...input, simulacao: await comParticipantes(input.simulacao) };
 
   // Se tem mais de um banco, baixa cada um individualmente (conforme pedido: "baixar SOMENTE a simulação")
   // O nome "ZipPDF" é legado, na verdade ele dispara múltiplos downloads individuais.
@@ -1192,7 +1401,8 @@ export async function baixarSimulacoesDetalhadasZipPDF(input: SimulacaoPdfInput)
 export async function baixarSimulacoesDetalhadasAgrupadasZipPDF(
   grupos: Array<{ simulacao: any; bancos: any[] }>,
 ) {
-  const gruposValidos = grupos
+  const comParts = await Promise.all(grupos.map(async (g) => ({ ...g, simulacao: await comParticipantes(g.simulacao) })));
+  const gruposValidos = comParts
     .map((g) => ({
       simulacao: g.simulacao,
       bancos: bancosParaExtrato(bancosDaTabelaSolicitada(g.simulacao, g.bancos)),
