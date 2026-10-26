@@ -244,6 +244,16 @@ export type MotivoDenuncia =
   "spam" | "assedio" | "golpe" | "ofensa" | "perfil_falso" | "conteudo_improprio" | "outro";
 
 /** Evento de tempo real repassado ao chat (no Tech, o cano /api/eventos; no Agilliza, não há). */
+/**
+ * Peça 3D do anfitrião (o padrão visual de cada sistema: `Bloco3D` no Tech, `Icone3D` no
+ * Agilliza). Sem ela, a pasta desenha o ícone em traço fino.
+ */
+export type DesenharIcone3D = (
+  icone: import("lucide-react").LucideIcon,
+  tamanho: "md" | "lg" | "xl",
+  tom?: "marca" | "sucesso" | "alerta" | "info",
+) => import("react").ReactNode;
+
 export type EventoChat =
   | {
       tipo: "chat";

@@ -225,6 +225,12 @@
   color: var(--brand);
   border: 1px solid var(--borda-suave);
 }
+.cu-vazio-3d,
+.cu-boas-vindas-3d {
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+}
 .cu-vazio b {
   font-size: 14px;
 }

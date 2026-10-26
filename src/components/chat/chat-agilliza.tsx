@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { ChatUniversal } from "@/components/chat-universal/chat-universal";
+import type { DesenharIcone3D } from "@/components/chat-universal/tipos";
+import { Icone3D } from "@/components/ui/icone-3d";
 import { apiChatAgilliza } from "@/lib/chat/api-agilliza";
 import type { CanalChat } from "@/lib/chat/pessoa.server";
 import "@/components/chat-universal/chat-base.css";
 import "./chat-agilliza.css";
+
+/** A peça 3D do Agilliza (sistema 3D da frente a1) nos estados vazios e nas boas-vindas. */
+const icone3D: DesenharIcone3D = (icone, tamanho, tom) => <Icone3D icone={icone} tamanho={tamanho} tom={tom ?? "marca"} />;
 
 /**
  * O chat universal no Agilliza (C14): a MESMA tela do chat dos assinantes do Agilliza Tech,
@@ -69,6 +74,7 @@ export function ChatAgilliza({
         abaInicial={pedidos ? "pedidos" : undefined}
         podeGrupo={canal !== "cliente"}
         intervaloMs={4000}
+        icone3D={icone3D}
         classe={embutido ? "cu-host-embutido" : canal === "cliente" ? "cu-host-cliente" : "cu-host-agilliza"}
         titulo={canal === "cliente" ? "Conversas" : "Chat"}
         textoBoasVindas={

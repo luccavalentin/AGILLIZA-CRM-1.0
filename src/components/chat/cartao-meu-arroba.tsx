@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AtSign, Loader2 } from "lucide-react";
+import { Icone3D } from "@/components/ui/icone-3d";
 import type { MeuArroba } from "@/components/chat-universal/tipos";
 import { arrobaValido, limparArroba } from "@/components/chat-universal/util";
 import { apiChatAgilliza } from "@/lib/chat/api-agilliza";
@@ -36,12 +37,7 @@ export function CartaoMeuArroba({ canal }: { canal: CanalChat }) {
   return (
     <section id="meu-arroba" className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
       <div className="flex items-start gap-3">
-        <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
-          aria-hidden
-        >
-          <AtSign className="h-[18px] w-[18px]" />
-        </span>
+        <Icone3D icone={AtSign} tamanho="md" className="shrink-0" />
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold">Seu @ no ecossistema</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">

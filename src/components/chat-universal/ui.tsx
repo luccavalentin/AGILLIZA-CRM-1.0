@@ -60,9 +60,15 @@ export function Vazio({
 }) {
   return (
     <div className="cu-vazio">
-      <span className="cu-vazio-icone" aria-hidden>
-        {icone ?? <MessageCircle size={22} />}
-      </span>
+      {icone ? (
+        <span className="cu-vazio-3d" aria-hidden>
+          {icone}
+        </span>
+      ) : (
+        <span className="cu-vazio-icone" aria-hidden>
+          <MessageCircle size={22} />
+        </span>
+      )}
       <b>{titulo}</b>
       {texto && <p>{texto}</p>}
     </div>

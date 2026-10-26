@@ -47,6 +47,7 @@ import {
   X,
 } from "lucide-react";
 import type {
+  DesenharIcone3D,
   Achado,
   AcaoPreferencia,
   ApiChat,
@@ -88,6 +89,7 @@ export function ChatUniversal({
   enfileirar,
   classe,
   titulo = "Chat",
+  icone3D,
   textoBoasVindas = "Equipe, clientes, parceiros e o correspondente num lugar só: texto, fotos, vídeos, documentos, áudio, reações e grupos, com histórico guardado.",
 }: {
   api: ApiChat;
@@ -109,6 +111,8 @@ export function ChatUniversal({
   classe?: string;
   titulo?: string;
   textoBoasVindas?: string;
+  /** Peça 3D do sistema anfitrião (estados vazios e boas-vindas). */
+  icone3D?: DesenharIcone3D;
 }) {
   const [lista, setLista] = useState<ItemListaConversa[] | null>(null);
   const [resumo, setResumo] = useState<ResumoConversas>({
@@ -815,6 +819,7 @@ export function ChatUniversal({
             ) : pedidos.length === 0 ? (
               <li className="ec-vazio-lista">
                 <Vazio
+                  icone={icone3D?.(Inbox, "lg")}
                   titulo="Nenhum pedido de mensagem"
                   texto="Quando alguém de fora da sua base mandar mensagem pelo seu @, ela chega aqui."
                 />
@@ -863,6 +868,7 @@ export function ChatUniversal({
             ) : listaFiltrada.length === 0 && !achadosGlobais?.length ? (
               <li className="ec-vazio-lista">
                 <Vazio
+                  icone={icone3D?.(busca ? Search : MessageCircle, "lg")}
                   titulo={
                     busca
                       ? "Nada encontrado"
@@ -956,9 +962,13 @@ export function ChatUniversal({
         )}
         {!aberta ? (
           <div className="ec-boas-vindas">
-            <span className="ec-boas-vindas-icone">
-              <MessageCircle size={28} aria-hidden />
-            </span>
+            {icone3D ? (
+              <span className="cu-boas-vindas-3d">{icone3D(MessageCircle, "xl")}</span>
+            ) : (
+              <span className="ec-boas-vindas-icone">
+                <MessageCircle size={28} aria-hidden />
+              </span>
+            )}
             <b>Suas conversas, num lugar só</b>
             <p>{textoBoasVindas}</p>
             <button
