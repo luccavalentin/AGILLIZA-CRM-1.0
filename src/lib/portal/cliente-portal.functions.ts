@@ -169,6 +169,22 @@ export function extensaoSegura(nomeArquivo: string): string {
   return limpa || "bin";
 }
 
+/**
+ * eco-aud: o tipo verdadeiro do arquivo pelos primeiros bytes. O aparelho dizia o tipo e a
+ * extensão, e um "documento" .html/.svg (text/html) abria na origem do Storage quando a equipe
+ * clicava. Só PDF e foto; o tipo gravado é o detectado, não o informado.
+ */
+export function tipoDoDocumento(b: Uint8Array): { mime: string; ext: string } | null {
+  const txt = (i: number, j: number) => String.fromCharCode(...b.subarray(i, j));
+  if (txt(0, 5) === "%PDF-") return { mime: "application/pdf", ext: "pdf" };
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return { mime: "image/jpeg", ext: "jpg" };
+  if (b[0] === 0x89 && txt(1, 4) === "PNG") return { mime: "image/png", ext: "png" };
+  if (txt(0, 4) === "RIFF" && txt(8, 12) === "WEBP") return { mime: "image/webp", ext: "webp" };
+  if (txt(4, 8) === "ftyp" && ["heic", "heix", "mif1", "msf1", "hevc"].includes(txt(8, 12)))
+    return { mime: "image/heic", ext: "heic" };
+  return null;
+}
+
 export const ESQUEMA_ENVIO = z
   .object({
     /** Pendência que o arquivo atende (o registro e a pasta definidos pela equipe). */
@@ -196,12 +212,14 @@ export const clienteEnviarDocumento = createServerFn({ method: "POST" })
     if (bin.length === 0 || bin.length > TAMANHO_MAXIMO) {
       throw new Error("Arquivo vazio ou maior que 10 MB.");
     }
+    const tipo = tipoDoDocumento(bin);
+    if (!tipo) throw new Error("Envie o documento em PDF ou foto (JPG, PNG, WEBP ou HEIC).");
     // O caminho é montado aqui, sempre dentro da pasta do próprio cliente.
-    const path = `${sess.cid}/app/${Date.now()}-${crypto.randomUUID()}.${extensaoSegura(data.nome_arquivo)}`;
+    const path = `${sess.cid}/app/${Date.now()}-${crypto.randomUUID()}.${tipo.ext}`;
     const db = portalDb();
     const { error: upErr } = await db.storage
       .from("cliente-documentos")
-      .upload(path, bin, { contentType: data.mime_type, upsert: false });
+      .upload(path, bin, { contentType: tipo.mime, upsert: false });
     if (upErr) throw new Error("Falha ao enviar o arquivo. Tente novamente.");
 
     const { data: r, error } = await db.rpc("portal_cliente_enviar_documento" as never, {
@@ -212,7 +230,7 @@ export const clienteEnviarDocumento = createServerFn({ method: "POST" })
       _tipo: data.tipo,
       _nome: data.nome_arquivo,
       _path: path,
-      _mime: data.mime_type,
+      _mime: tipo.mime,
       _tamanho: bin.length,
     } as never);
     if (error) {

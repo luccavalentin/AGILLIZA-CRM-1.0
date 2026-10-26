@@ -122,6 +122,17 @@ export function exportDOCX(
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
+/**
+ * Uma célula do CSV, entre aspas. eco-aud: texto que começa com = + - @ tab ou CR vira fórmula
+ * no Excel (a descrição de um Pix/TED vem do pagador pelo extrato importado): ganha um apóstrofo
+ * na frente. Número (inclusive negativo, "-1.234,56") continua número.
+ */
+export function celulaCSV(v: unknown): string {
+  let s = String(v ?? "");
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?[\d.,]+%?$/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
 /** Exporta a relação em CSV (compatível com Excel pt-BR). */
 export function exportCSV(
   columns: ReportColumn[],
@@ -129,8 +140,7 @@ export function exportCSV(
   filename = "agilliza-relatorio",
 ) {
   const sep = ";";
-  const linha = (vals: string[]) =>
-    vals.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(sep);
+  const linha = (vals: string[]) => vals.map(celulaCSV).join(sep);
   const conteudo = [
     linha(columns.map((c) => c.label)),
     ...rows.map((r) => linha(columns.map((c) => formatCell(r[c.key], c.format)))),

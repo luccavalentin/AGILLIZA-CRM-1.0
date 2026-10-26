@@ -33,11 +33,21 @@ export type Bloco =
   | { t: "codigo"; v: string }
   | { t: "figura"; src: string; alt: string };
 
+/**
+ * Caminho interno de verdade: começa com "/" e não tem barra invertida, controle (tab, quebra)
+ * nem a barra/barra invertida codificada — o navegador normaliza "/\evil.com" e "/<tab>/evil.com"
+ * para "//evil.com" e o link "interno" levava para fora (eco-aud).
+ */
+function caminhoInterno(s: string): boolean {
+  return /^\/(?!\/)/.test(s) && !/[\\\u0000-\u001f\u007f]|%5c|%2f|%09|%0a|%0d/i.test(s);
+}
+
 /** Destino de link aceito (ou null): http(s), mailto, tel e caminho interno. */
 export function hrefSeguro(bruto: string): string | null {
   const s = bruto.trim();
   if (!s || s.length > 2000) return null;
-  if (/^(\/(?!\/)|#)/.test(s)) return s;
+  if (s.startsWith("/")) return caminhoInterno(s) ? s : null;
+  if (/^#/.test(s)) return s;
   if (/^mailto:[^\s]+$/i.test(s) || /^tel:\+?[\d\s()-]+$/i.test(s)) return s;
   try {
     const u = new URL(s);
@@ -51,7 +61,7 @@ export function hrefSeguro(bruto: string): string | null {
 export function srcSeguro(bruto: string): string | null {
   const s = bruto.trim();
   if (!s || s.length > 2000) return null;
-  if (/^\/(?!\/)/.test(s)) return s;
+  if (s.startsWith("/")) return caminhoInterno(s) ? s : null;
   try {
     const u = new URL(s);
     return u.protocol === "https:" ? u.toString() : null;

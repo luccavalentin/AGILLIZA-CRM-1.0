@@ -24,7 +24,7 @@ import { decifrarSenha } from "./cripto.server";
 import { bancoDoRemetente, extrairCodigo, htmlParaTexto, trechoDoCorpo } from "./detectar";
 import { avaliarCaptura, type RegraFiltro } from "./filtros";
 import { ehRecusaDeLogin } from "./teste-conexao";
-import { hostPermitido } from "./rede.server";
+import { destinoImap, hostPermitido } from "./rede.server";
 
 const LEITOR = `${hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
 const ALUGUEL_S = 90;
@@ -183,7 +183,7 @@ async function vigiar(caixa: Caixa, sinal: { parado: boolean }) {
     throw new Error("servidor não permitido (endereço de rede interna)");
   }
   const cliente = new ImapFlow({
-    host: caixa.imap_host,
+    ...(await destinoImap(caixa.imap_host)), // eco-aud: conecta no IP conferido (sem DNS rebinding)
     port: caixa.imap_port,
     secure: caixa.imap_ssl,
     auth: { user: caixa.usuario || caixa.email, pass: decifrarSenha(caixa.senha_cifrada) },

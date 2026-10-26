@@ -53,7 +53,7 @@ export function DestinoSimulacao({
   onConta: (id: string | null) => void;
   className?: string;
 }) {
-  const pode = usePermissao("saas.contas", "view");
+  const pode = usePermissao("saas.contas", "edit"); // eco-aud: grava na conta do assinante
   const buscarFn = useServerFn(buscarContasDoFiltro);
   const resolvida = useQuery({
     queryKey: ["destino-simulacao-conta", contaId],

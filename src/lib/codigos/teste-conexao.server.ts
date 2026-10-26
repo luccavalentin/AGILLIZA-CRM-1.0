@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ImapFlow } from "imapflow";
 import { decifrarSenha } from "./cripto.server";
-import { hostPermitido } from "./rede.server";
+import { destinoImap, hostPermitido } from "./rede.server";
 import { executarTeste, type CaixaParaTeste, type ResultadoTeste } from "./teste-conexao";
 
 export async function testarCaixa(db: SupabaseClient, id: string): Promise<ResultadoTeste> {
@@ -38,7 +38,7 @@ export async function testarCaixa(db: SupabaseClient, id: string): Promise<Resul
     },
     conectar: async () => {
       const cliente = new ImapFlow({
-        host: caixa.imap_host,
+        ...(await destinoImap(caixa.imap_host)), // eco-aud: conecta no IP conferido (sem DNS rebinding)
         port: caixa.imap_port,
         secure: caixa.imap_ssl,
         auth: { user: caixa.usuario || caixa.email, pass: decifrarSenha(linha.senha_cifrada) },

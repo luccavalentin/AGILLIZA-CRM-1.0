@@ -311,10 +311,12 @@ export const criarSimulacao = createServerFn({ method: "POST" })
           await import("@/lib/plataforma/simulacao-na-conta.server");
         const contaDestino = contaDestinoDosDados(dd);
         if (contaDestino) {
+          // eco-aud: simular na base do assinante GRAVA cliente e simulação na conta dele:
+          // "Editar clientes da conta" (edit), não só "Ver a base da conta".
           const { data: podeContas } = await supabase.rpc("usuario_tem_permissao", {
             _user_id: userId,
             _modulo: "saas.contas",
-            _acao: "view",
+            _acao: "edit",
           });
           if (!podeContas) {
             throw new Error("Você não tem permissão para simular na base de um assinante.");
