@@ -54,6 +54,11 @@ import { Route as AuthenticatedAdminNotificacoesRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminParametrosRouteImport } from './routes/_authenticated/admin.parametros'
 import { Route as AuthenticatedAdminPessoasRouteImport } from './routes/_authenticated/admin.pessoas'
 import { Route as AuthenticatedAdminRegrasModulosRouteImport } from './routes/_authenticated/admin.regras-modulos'
+import { Route as AuthenticatedAutomacoesIndexRouteImport } from './routes/_authenticated/automacoes.index'
+import { Route as AuthenticatedAutomacoesMidiaRouteImport } from './routes/_authenticated/automacoes.midia'
+import { Route as AuthenticatedAutomacoesNovoRouteImport } from './routes/_authenticated/automacoes.novo'
+import { Route as AuthenticatedAutomacoesRedesRouteImport } from './routes/_authenticated/automacoes.redes'
+import { Route as AuthenticatedAutomacoesRelatoriosRouteImport } from './routes/_authenticated/automacoes.relatorios'
 import { Route as AuthenticatedChecklistsIndexRouteImport } from './routes/_authenticated/checklists.index'
 import { Route as AuthenticatedChecklistsIdRouteImport } from './routes/_authenticated/checklists.$id'
 import { Route as AuthenticatedContaNotificacoesRouteImport } from './routes/_authenticated/conta.notificacoes'
@@ -168,6 +173,8 @@ import { Route as AuthenticatedAdminAuditoriaManutencaoRouteImport } from './rou
 import { Route as AuthenticatedAdminComprasIndexRouteImport } from './routes/_authenticated/admin.compras.index'
 import { Route as AuthenticatedAdminComprasAprovacoesRouteImport } from './routes/_authenticated/admin.compras.aprovacoes'
 import { Route as AuthenticatedAdminComprasPedidosRouteImport } from './routes/_authenticated/admin.compras.pedidos'
+import { Route as AuthenticatedAutomacoesPostsIndexRouteImport } from './routes/_authenticated/automacoes.posts.index'
+import { Route as AuthenticatedAutomacoesPostsIdRouteImport } from './routes/_authenticated/automacoes.posts.$id'
 import { Route as AuthenticatedCrmClientesIdRouteImport } from './routes/_authenticated/crm.clientes_.$id'
 import { Route as AuthenticatedCrmClientesNovoRouteImport } from './routes/_authenticated/crm.clientes_.novo'
 import { Route as AuthenticatedCrmScanIaIdRouteImport } from './routes/_authenticated/crm.scan-ia_.$id'
@@ -422,6 +429,36 @@ const AuthenticatedAdminRegrasModulosRoute =
     id: '/admin/regras-modulos',
     path: '/admin/regras-modulos',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAutomacoesIndexRoute =
+  AuthenticatedAutomacoesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAutomacoesRoute,
+  } as any)
+const AuthenticatedAutomacoesMidiaRoute =
+  AuthenticatedAutomacoesMidiaRouteImport.update({
+    id: '/midia',
+    path: '/midia',
+    getParentRoute: () => AuthenticatedAutomacoesRoute,
+  } as any)
+const AuthenticatedAutomacoesNovoRoute =
+  AuthenticatedAutomacoesNovoRouteImport.update({
+    id: '/novo',
+    path: '/novo',
+    getParentRoute: () => AuthenticatedAutomacoesRoute,
+  } as any)
+const AuthenticatedAutomacoesRedesRoute =
+  AuthenticatedAutomacoesRedesRouteImport.update({
+    id: '/redes',
+    path: '/redes',
+    getParentRoute: () => AuthenticatedAutomacoesRoute,
+  } as any)
+const AuthenticatedAutomacoesRelatoriosRoute =
+  AuthenticatedAutomacoesRelatoriosRouteImport.update({
+    id: '/relatorios',
+    path: '/relatorios',
+    getParentRoute: () => AuthenticatedAutomacoesRoute,
   } as any)
 const AuthenticatedChecklistsIndexRoute =
   AuthenticatedChecklistsIndexRouteImport.update({
@@ -1097,6 +1134,18 @@ const AuthenticatedAdminComprasPedidosRoute =
     path: '/admin/compras/pedidos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAutomacoesPostsIndexRoute =
+  AuthenticatedAutomacoesPostsIndexRouteImport.update({
+    id: '/posts/',
+    path: '/posts/',
+    getParentRoute: () => AuthenticatedAutomacoesRoute,
+  } as any)
+const AuthenticatedAutomacoesPostsIdRoute =
+  AuthenticatedAutomacoesPostsIdRouteImport.update({
+    id: '/posts/$id',
+    path: '/posts/$id',
+    getParentRoute: () => AuthenticatedAutomacoesRoute,
+  } as any)
 const AuthenticatedCrmClientesIdRoute =
   AuthenticatedCrmClientesIdRouteImport.update({
     id: '/clientes_/$id',
@@ -1214,7 +1263,7 @@ export interface FileRoutesByFullPath {
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
-  '/automacoes': typeof AuthenticatedAutomacoesRoute
+  '/automacoes': typeof AuthenticatedAutomacoesRouteWithChildren
   '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -1250,6 +1299,10 @@ export interface FileRoutesByFullPath {
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/automacoes/midia': typeof AuthenticatedAutomacoesMidiaRoute
+  '/automacoes/novo': typeof AuthenticatedAutomacoesNovoRoute
+  '/automacoes/redes': typeof AuthenticatedAutomacoesRedesRoute
+  '/automacoes/relatorios': typeof AuthenticatedAutomacoesRelatoriosRoute
   '/checklists/$id': typeof AuthenticatedChecklistsIdRoute
   '/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
@@ -1354,6 +1407,7 @@ export interface FileRoutesByFullPath {
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/automacoes/': typeof AuthenticatedAutomacoesIndexRoute
   '/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/imobmatch/': typeof AuthenticatedImobmatchIndexRoute
@@ -1363,6 +1417,7 @@ export interface FileRoutesByFullPath {
   '/admin/auditoria/manutencao': typeof AuthenticatedAdminAuditoriaManutencaoRoute
   '/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
   '/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
+  '/automacoes/posts/$id': typeof AuthenticatedAutomacoesPostsIdRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/crm/scan-ia/$id': typeof AuthenticatedCrmScanIaIdRoute
@@ -1381,6 +1436,7 @@ export interface FileRoutesByFullPath {
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
   '/admin/auditoria/': typeof AuthenticatedAdminAuditoriaIndexRoute
   '/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
+  '/automacoes/posts/': typeof AuthenticatedAutomacoesPostsIndexRoute
   '/crm/scan-ia/lote/$id': typeof AuthenticatedCrmScanIaLoteIdRoute
   '/operacional/propostas/$id/continuar': typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
@@ -1392,7 +1448,6 @@ export interface FileRoutesByTo {
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
-  '/automacoes': typeof AuthenticatedAutomacoesRoute
   '/crm': typeof AuthenticatedCrmRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -1424,6 +1479,10 @@ export interface FileRoutesByTo {
   '/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/automacoes/midia': typeof AuthenticatedAutomacoesMidiaRoute
+  '/automacoes/novo': typeof AuthenticatedAutomacoesNovoRoute
+  '/automacoes/redes': typeof AuthenticatedAutomacoesRedesRoute
+  '/automacoes/relatorios': typeof AuthenticatedAutomacoesRelatoriosRoute
   '/checklists/$id': typeof AuthenticatedChecklistsIdRoute
   '/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/conta/perfil': typeof AuthenticatedContaPerfilRoute
@@ -1528,6 +1587,7 @@ export interface FileRoutesByTo {
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/automacoes': typeof AuthenticatedAutomacoesIndexRoute
   '/checklists': typeof AuthenticatedChecklistsIndexRoute
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
   '/imobmatch': typeof AuthenticatedImobmatchIndexRoute
@@ -1537,6 +1597,7 @@ export interface FileRoutesByTo {
   '/admin/auditoria/manutencao': typeof AuthenticatedAdminAuditoriaManutencaoRoute
   '/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
   '/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
+  '/automacoes/posts/$id': typeof AuthenticatedAutomacoesPostsIdRoute
   '/crm/clientes/$id': typeof AuthenticatedCrmClientesIdRoute
   '/crm/clientes/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/crm/scan-ia/$id': typeof AuthenticatedCrmScanIaIdRoute
@@ -1555,6 +1616,7 @@ export interface FileRoutesByTo {
   '/rh/funcionarios/novo': typeof AuthenticatedRhFuncionariosNovoRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaIndexRoute
   '/admin/compras': typeof AuthenticatedAdminComprasIndexRoute
+  '/automacoes/posts': typeof AuthenticatedAutomacoesPostsIndexRoute
   '/crm/scan-ia/lote/$id': typeof AuthenticatedCrmScanIaLoteIdRoute
   '/operacional/propostas/$id/continuar': typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
@@ -1568,7 +1630,7 @@ export interface FileRoutesById {
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
-  '/_authenticated/automacoes': typeof AuthenticatedAutomacoesRoute
+  '/_authenticated/automacoes': typeof AuthenticatedAutomacoesRouteWithChildren
   '/_authenticated/crm': typeof AuthenticatedCrmRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
@@ -1604,6 +1666,10 @@ export interface FileRoutesById {
   '/_authenticated/admin/parametros': typeof AuthenticatedAdminParametrosRoute
   '/_authenticated/admin/pessoas': typeof AuthenticatedAdminPessoasRoute
   '/_authenticated/admin/regras-modulos': typeof AuthenticatedAdminRegrasModulosRoute
+  '/_authenticated/automacoes/midia': typeof AuthenticatedAutomacoesMidiaRoute
+  '/_authenticated/automacoes/novo': typeof AuthenticatedAutomacoesNovoRoute
+  '/_authenticated/automacoes/redes': typeof AuthenticatedAutomacoesRedesRoute
+  '/_authenticated/automacoes/relatorios': typeof AuthenticatedAutomacoesRelatoriosRoute
   '/_authenticated/checklists/$id': typeof AuthenticatedChecklistsIdRoute
   '/_authenticated/conta/notificacoes': typeof AuthenticatedContaNotificacoesRoute
   '/_authenticated/conta/perfil': typeof AuthenticatedContaPerfilRoute
@@ -1708,6 +1774,7 @@ export interface FileRoutesById {
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/automacoes/': typeof AuthenticatedAutomacoesIndexRoute
   '/_authenticated/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/_authenticated/imobmatch/': typeof AuthenticatedImobmatchIndexRoute
@@ -1717,6 +1784,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/auditoria/manutencao': typeof AuthenticatedAdminAuditoriaManutencaoRoute
   '/_authenticated/admin/compras/aprovacoes': typeof AuthenticatedAdminComprasAprovacoesRoute
   '/_authenticated/admin/compras/pedidos': typeof AuthenticatedAdminComprasPedidosRoute
+  '/_authenticated/automacoes/posts/$id': typeof AuthenticatedAutomacoesPostsIdRoute
   '/_authenticated/crm/clientes_/$id': typeof AuthenticatedCrmClientesIdRoute
   '/_authenticated/crm/clientes_/novo': typeof AuthenticatedCrmClientesNovoRoute
   '/_authenticated/crm/scan-ia_/$id': typeof AuthenticatedCrmScanIaIdRoute
@@ -1735,6 +1803,7 @@ export interface FileRoutesById {
   '/_authenticated/rh/funcionarios_/novo': typeof AuthenticatedRhFuncionariosNovoRoute
   '/_authenticated/admin/auditoria/': typeof AuthenticatedAdminAuditoriaIndexRoute
   '/_authenticated/admin/compras/': typeof AuthenticatedAdminComprasIndexRoute
+  '/_authenticated/automacoes/posts/': typeof AuthenticatedAutomacoesPostsIndexRoute
   '/_authenticated/crm/scan-ia_/lote/$id': typeof AuthenticatedCrmScanIaLoteIdRoute
   '/_authenticated/operacional/propostas_/$id_/continuar': typeof AuthenticatedOperacionalPropostasIdContinuarRoute
 }
@@ -1784,6 +1853,10 @@ export interface FileRouteTypes {
     | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
+    | '/automacoes/midia'
+    | '/automacoes/novo'
+    | '/automacoes/redes'
+    | '/automacoes/relatorios'
     | '/checklists/$id'
     | '/conta/notificacoes'
     | '/conta/perfil'
@@ -1888,6 +1961,7 @@ export interface FileRouteTypes {
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
     | '/admin/'
+    | '/automacoes/'
     | '/checklists/'
     | '/formularios/'
     | '/imobmatch/'
@@ -1897,6 +1971,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria/manutencao'
     | '/admin/compras/aprovacoes'
     | '/admin/compras/pedidos'
+    | '/automacoes/posts/$id'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/crm/scan-ia/$id'
@@ -1915,6 +1990,7 @@ export interface FileRouteTypes {
     | '/rh/funcionarios/novo'
     | '/admin/auditoria/'
     | '/admin/compras/'
+    | '/automacoes/posts/'
     | '/crm/scan-ia/lote/$id'
     | '/operacional/propostas/$id/continuar'
   fileRoutesByTo: FileRoutesByTo
@@ -1926,7 +2002,6 @@ export interface FileRouteTypes {
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
-    | '/automacoes'
     | '/crm'
     | '/dashboard'
     | '/documentos'
@@ -1958,6 +2033,10 @@ export interface FileRouteTypes {
     | '/admin/parametros'
     | '/admin/pessoas'
     | '/admin/regras-modulos'
+    | '/automacoes/midia'
+    | '/automacoes/novo'
+    | '/automacoes/redes'
+    | '/automacoes/relatorios'
     | '/checklists/$id'
     | '/conta/notificacoes'
     | '/conta/perfil'
@@ -2062,6 +2141,7 @@ export interface FileRouteTypes {
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
     | '/admin'
+    | '/automacoes'
     | '/checklists'
     | '/formularios'
     | '/imobmatch'
@@ -2071,6 +2151,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria/manutencao'
     | '/admin/compras/aprovacoes'
     | '/admin/compras/pedidos'
+    | '/automacoes/posts/$id'
     | '/crm/clientes/$id'
     | '/crm/clientes/novo'
     | '/crm/scan-ia/$id'
@@ -2089,6 +2170,7 @@ export interface FileRouteTypes {
     | '/rh/funcionarios/novo'
     | '/admin/auditoria'
     | '/admin/compras'
+    | '/automacoes/posts'
     | '/crm/scan-ia/lote/$id'
     | '/operacional/propostas/$id/continuar'
   id:
@@ -2137,6 +2219,10 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/parametros'
     | '/_authenticated/admin/pessoas'
     | '/_authenticated/admin/regras-modulos'
+    | '/_authenticated/automacoes/midia'
+    | '/_authenticated/automacoes/novo'
+    | '/_authenticated/automacoes/redes'
+    | '/_authenticated/automacoes/relatorios'
     | '/_authenticated/checklists/$id'
     | '/_authenticated/conta/notificacoes'
     | '/_authenticated/conta/perfil'
@@ -2241,6 +2327,7 @@ export interface FileRouteTypes {
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
     | '/_authenticated/admin/'
+    | '/_authenticated/automacoes/'
     | '/_authenticated/checklists/'
     | '/_authenticated/formularios/'
     | '/_authenticated/imobmatch/'
@@ -2250,6 +2337,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/auditoria/manutencao'
     | '/_authenticated/admin/compras/aprovacoes'
     | '/_authenticated/admin/compras/pedidos'
+    | '/_authenticated/automacoes/posts/$id'
     | '/_authenticated/crm/clientes_/$id'
     | '/_authenticated/crm/clientes_/novo'
     | '/_authenticated/crm/scan-ia_/$id'
@@ -2268,6 +2356,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rh/funcionarios_/novo'
     | '/_authenticated/admin/auditoria/'
     | '/_authenticated/admin/compras/'
+    | '/_authenticated/automacoes/posts/'
     | '/_authenticated/crm/scan-ia_/lote/$id'
     | '/_authenticated/operacional/propostas_/$id_/continuar'
   fileRoutesById: FileRoutesById
@@ -2606,6 +2695,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/regras-modulos'
       preLoaderRoute: typeof AuthenticatedAdminRegrasModulosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/automacoes/': {
+      id: '/_authenticated/automacoes/'
+      path: '/'
+      fullPath: '/automacoes/'
+      preLoaderRoute: typeof AuthenticatedAutomacoesIndexRouteImport
+      parentRoute: typeof AuthenticatedAutomacoesRoute
+    }
+    '/_authenticated/automacoes/midia': {
+      id: '/_authenticated/automacoes/midia'
+      path: '/midia'
+      fullPath: '/automacoes/midia'
+      preLoaderRoute: typeof AuthenticatedAutomacoesMidiaRouteImport
+      parentRoute: typeof AuthenticatedAutomacoesRoute
+    }
+    '/_authenticated/automacoes/novo': {
+      id: '/_authenticated/automacoes/novo'
+      path: '/novo'
+      fullPath: '/automacoes/novo'
+      preLoaderRoute: typeof AuthenticatedAutomacoesNovoRouteImport
+      parentRoute: typeof AuthenticatedAutomacoesRoute
+    }
+    '/_authenticated/automacoes/redes': {
+      id: '/_authenticated/automacoes/redes'
+      path: '/redes'
+      fullPath: '/automacoes/redes'
+      preLoaderRoute: typeof AuthenticatedAutomacoesRedesRouteImport
+      parentRoute: typeof AuthenticatedAutomacoesRoute
+    }
+    '/_authenticated/automacoes/relatorios': {
+      id: '/_authenticated/automacoes/relatorios'
+      path: '/relatorios'
+      fullPath: '/automacoes/relatorios'
+      preLoaderRoute: typeof AuthenticatedAutomacoesRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedAutomacoesRoute
     }
     '/_authenticated/checklists/': {
       id: '/_authenticated/checklists/'
@@ -3405,6 +3529,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminComprasPedidosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/automacoes/posts/': {
+      id: '/_authenticated/automacoes/posts/'
+      path: '/posts'
+      fullPath: '/automacoes/posts/'
+      preLoaderRoute: typeof AuthenticatedAutomacoesPostsIndexRouteImport
+      parentRoute: typeof AuthenticatedAutomacoesRoute
+    }
+    '/_authenticated/automacoes/posts/$id': {
+      id: '/_authenticated/automacoes/posts/$id'
+      path: '/posts/$id'
+      fullPath: '/automacoes/posts/$id'
+      preLoaderRoute: typeof AuthenticatedAutomacoesPostsIdRouteImport
+      parentRoute: typeof AuthenticatedAutomacoesRoute
+    }
     '/_authenticated/crm/clientes_/$id': {
       id: '/_authenticated/crm/clientes_/$id'
       path: '/clientes/$id'
@@ -3533,6 +3671,34 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedAutomacoesRouteChildren {
+  AuthenticatedAutomacoesMidiaRoute: typeof AuthenticatedAutomacoesMidiaRoute
+  AuthenticatedAutomacoesNovoRoute: typeof AuthenticatedAutomacoesNovoRoute
+  AuthenticatedAutomacoesRedesRoute: typeof AuthenticatedAutomacoesRedesRoute
+  AuthenticatedAutomacoesRelatoriosRoute: typeof AuthenticatedAutomacoesRelatoriosRoute
+  AuthenticatedAutomacoesIndexRoute: typeof AuthenticatedAutomacoesIndexRoute
+  AuthenticatedAutomacoesPostsIdRoute: typeof AuthenticatedAutomacoesPostsIdRoute
+  AuthenticatedAutomacoesPostsIndexRoute: typeof AuthenticatedAutomacoesPostsIndexRoute
+}
+
+const AuthenticatedAutomacoesRouteChildren: AuthenticatedAutomacoesRouteChildren =
+  {
+    AuthenticatedAutomacoesMidiaRoute: AuthenticatedAutomacoesMidiaRoute,
+    AuthenticatedAutomacoesNovoRoute: AuthenticatedAutomacoesNovoRoute,
+    AuthenticatedAutomacoesRedesRoute: AuthenticatedAutomacoesRedesRoute,
+    AuthenticatedAutomacoesRelatoriosRoute:
+      AuthenticatedAutomacoesRelatoriosRoute,
+    AuthenticatedAutomacoesIndexRoute: AuthenticatedAutomacoesIndexRoute,
+    AuthenticatedAutomacoesPostsIdRoute: AuthenticatedAutomacoesPostsIdRoute,
+    AuthenticatedAutomacoesPostsIndexRoute:
+      AuthenticatedAutomacoesPostsIndexRoute,
+  }
+
+const AuthenticatedAutomacoesRouteWithChildren =
+  AuthenticatedAutomacoesRoute._addFileChildren(
+    AuthenticatedAutomacoesRouteChildren,
+  )
 
 interface AuthenticatedCrmRouteChildren {
   AuthenticatedCrmChatRoute: typeof AuthenticatedCrmChatRoute
@@ -3701,7 +3867,7 @@ const AuthenticatedTecnologiaRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAutomacoesRoute: typeof AuthenticatedAutomacoesRoute
+  AuthenticatedAutomacoesRoute: typeof AuthenticatedAutomacoesRouteWithChildren
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
@@ -3807,7 +3973,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAutomacoesRoute: AuthenticatedAutomacoesRoute,
+  AuthenticatedAutomacoesRoute: AuthenticatedAutomacoesRouteWithChildren,
   AuthenticatedCrmRoute: AuthenticatedCrmRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,

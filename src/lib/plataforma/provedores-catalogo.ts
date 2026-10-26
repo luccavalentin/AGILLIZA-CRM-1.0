@@ -10,7 +10,17 @@
  */
 
 export type ProvedorConhecido =
-  "homefin" | "serasa" | "spc" | "asaas" | "boavista" | "apifull" | "email";
+  | "homefin"
+  | "serasa"
+  | "spc"
+  | "asaas"
+  | "boavista"
+  | "apifull"
+  | "email"
+  | "meta"
+  | "linkedin"
+  | "tiktok"
+  | "google";
 
 export type CampoCredencial = {
   chave: string;
@@ -262,5 +272,126 @@ export const CATALOGO: Record<ProvedorConhecido, Provedor> = {
       mensagem: "Preencha o ID e o segredo da API do SendPulse (ou a chave do Resend).",
     },
     baseExemplo: "Padrão do provedor (api.sendpulse.com ou api.resend.com)",
+  },
+  /*
+   * Apps oficiais das redes sociais (Automações). Os campos têm o NOME DA VARIÁVEL DE AMBIENTE
+   * que o Agilliza Tech (web e worker) lê: a chave cadastrada aqui vale primeiro; sem ela, o
+   * servidor usa o ambiente. Endereço de retorno a cadastrar no app de cada rede:
+   * https://agillizatech.com.br/api/social/retorno/<meta|linkedin|tiktok|youtube|google_business>.
+   */
+  meta: {
+    rotulo: "Meta (Facebook e Instagram)",
+    descricao:
+      "Publicação nas Páginas do Facebook e nos perfis profissionais do Instagram (fotos, carrossel, Reels e Stories) e as métricas. App em developers.facebook.com com o produto Login do Facebook para Empresas.",
+    campos: [
+      {
+        chave: "META_APP_ID",
+        rotulo: "ID do app",
+        segredo: true,
+        ajuda:
+          "Painel do app › Configurações › Básico. Retorno a cadastrar: https://agillizatech.com.br/api/social/retorno/meta. Permissões: pages_show_list, pages_read_engagement, pages_manage_posts, business_management, instagram_basic, instagram_content_publish, instagram_manage_comments, instagram_manage_insights e read_insights.",
+      },
+      { chave: "META_APP_SECRET", rotulo: "Chave secreta do app", segredo: true },
+      {
+        chave: "META_LOGIN_CONFIG_ID",
+        rotulo: "ID da configuração do Login para Empresas (opcional)",
+        segredo: false,
+        ajuda:
+          "Com o Login do Facebook para Empresas, a configuração substitui a lista de permissões.",
+      },
+      {
+        chave: "META_GRAPH_VERSION",
+        rotulo: "Versão da Graph API (opcional)",
+        segredo: false,
+        exemplo: "v26.0",
+        formato: { regex: /^v\d{2}\.\d$/, mensagem: "A versão da Graph API é no formato v26.0." },
+      },
+    ],
+    baseExemplo: "https://graph.facebook.com",
+  },
+  linkedin: {
+    rotulo: "LinkedIn",
+    descricao:
+      "Publicação no perfil e nas páginas de empresa (texto, fotos e vídeo). App em linkedin.com/developers com Sign In with LinkedIn (OpenID) e Share on LinkedIn; páginas de empresa pedem o Community Management API.",
+    campos: [
+      {
+        chave: "LINKEDIN_CLIENT_ID",
+        rotulo: "Client ID",
+        segredo: true,
+        ajuda:
+          "Aba Auth do app. Retorno: https://agillizatech.com.br/api/social/retorno/linkedin. Permissões: openid, profile, w_member_social; com Community Management: w_organization_social, r_organization_social, rw_organization_admin.",
+      },
+      { chave: "LINKEDIN_CLIENT_SECRET", rotulo: "Client Secret", segredo: true },
+      {
+        chave: "LINKEDIN_API_VERSION",
+        rotulo: "Versão da API (opcional)",
+        segredo: false,
+        exemplo: "202610",
+        formato: {
+          regex: /^\d{6}$/,
+          mensagem: "A versão do LinkedIn é no formato AAAAMM (ex.: 202610).",
+        },
+      },
+      {
+        chave: "LINKEDIN_COMMUNITY_MANAGEMENT",
+        rotulo: "Páginas de empresa liberadas? (opcional)",
+        segredo: false,
+        exemplo: "true",
+        ajuda:
+          "Escreva true quando o LinkedIn aprovar o Community Management API (publicar nas páginas de empresa).",
+        formato: { regex: /^(true|false)$/, mensagem: "Escreva true ou false." },
+      },
+    ],
+    baseExemplo: "https://api.linkedin.com",
+  },
+  tiktok: {
+    rotulo: "TikTok",
+    descricao:
+      "Publicação direta de vídeos e carrossel de fotos pela Content Posting API. App em developers.tiktok.com com Login Kit e Content Posting API (Direct Post exige a auditoria do TikTok).",
+    campos: [
+      {
+        chave: "TIKTOK_CLIENT_KEY",
+        rotulo: "Client key",
+        segredo: true,
+        ajuda:
+          "Retorno: https://agillizatech.com.br/api/social/retorno/tiktok. Escopos: user.info.basic, user.info.profile, video.publish (e user.info.stats para seguidores).",
+      },
+      { chave: "TIKTOK_CLIENT_SECRET", rotulo: "Client secret", segredo: true },
+      {
+        chave: "TIKTOK_PULL_FROM_URL",
+        rotulo: "Puxar o vídeo pelo link (opcional)",
+        segredo: false,
+        exemplo: "false",
+        ajuda:
+          "true só depois de verificar o domínio de mídia no TikTok; sem isso o vídeo vai por envio direto.",
+        formato: { regex: /^(true|false)$/, mensagem: "Escreva true ou false." },
+      },
+      {
+        chave: "TIKTOK_ESCOPO_ESTATISTICAS",
+        rotulo: "Pedir seguidores da conta? (opcional)",
+        segredo: false,
+        exemplo: "true",
+        ajuda:
+          "true quando o escopo user.info.stats estiver aprovado no app (sem aprovação, o login falha).",
+        formato: { regex: /^(true|false)$/, mensagem: "Escreva true ou false." },
+      },
+    ],
+    baseExemplo: "https://open.tiktokapis.com",
+  },
+  google: {
+    rotulo: "Google (YouTube e Meu Negócio)",
+    descricao:
+      "Vídeos e Shorts no YouTube e novidades, eventos e ofertas no Perfil da Empresa no Google. Projeto em console.cloud.google.com com as APIs YouTube Data, YouTube Analytics e Business Profile.",
+    campos: [
+      {
+        chave: "GOOGLE_CLIENT_ID",
+        rotulo: "ID do cliente OAuth",
+        segredo: true,
+        ajuda:
+          "Credenciais › ID do cliente OAuth (aplicativo da Web). Retornos: https://agillizatech.com.br/api/social/retorno/youtube e https://agillizatech.com.br/api/social/retorno/google_business. Escopos: youtube.upload, youtube.readonly, yt-analytics.readonly e business.manage.",
+      },
+      { chave: "GOOGLE_CLIENT_SECRET", rotulo: "Chave secreta do cliente", segredo: true },
+    ],
+    baseExemplo: "https://www.googleapis.com",
   },
 };

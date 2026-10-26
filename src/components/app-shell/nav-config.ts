@@ -61,6 +61,10 @@ import {
   HeartHandshake,
   BadgeCheck,
   Megaphone,
+  LayoutList,
+  PenSquare,
+  Images,
+  Waypoints,
 } from "lucide-react";
 
 /** Permissão exigida por um item (chave = `${modulo}:view`). */
@@ -524,11 +528,57 @@ export const navInterno: NavGroup[] = [
       },
     ],
   },
-  // Automações de marketing nas redes (pedido do dono, 21/10/2026): anunciada com "Em breve".
+  // Automações nas redes da AgillizaTech, no modelo do Postei (pedido do dono, 26/10/2026): ligadas
+  // no Agilliza para quem tem o módulo, independentes do "Em breve" dos assinantes.
   {
     id: "marketing",
     label: "Marketing",
-    items: [{ label: "Automações", icon: Workflow, to: "/automacoes", emBreve: true }],
+    items: [
+      {
+        label: "Automações",
+        icon: Workflow,
+        to: "/automacoes",
+        perm: { modulo: "marketing.automacoes" },
+        children: [
+          {
+            label: "Calendário",
+            icon: CalendarDays,
+            to: "/automacoes",
+            perm: { modulo: "marketing.automacoes" },
+          },
+          {
+            label: "Posts",
+            icon: LayoutList,
+            to: "/automacoes/posts",
+            perm: { modulo: "marketing.automacoes" },
+          },
+          {
+            label: "Novo post",
+            icon: PenSquare,
+            to: "/automacoes/novo",
+            perm: { modulo: "marketing.automacoes" },
+          },
+          {
+            label: "Mídia",
+            icon: Images,
+            to: "/automacoes/midia",
+            perm: { modulo: "marketing.automacoes" },
+          },
+          {
+            label: "Relatórios",
+            icon: BarChart3,
+            to: "/automacoes/relatorios",
+            perm: { modulo: "marketing.automacoes" },
+          },
+          {
+            label: "Redes",
+            icon: Waypoints,
+            to: "/automacoes/redes",
+            perm: { modulo: "marketing.automacoes" },
+          },
+        ],
+      },
+    ],
   },
   {
     // Financeiro da matriz (frente a5, 26/10/2026): três fluxos separados — comissões dos
@@ -539,14 +589,24 @@ export const navInterno: NavGroup[] = [
     id: "financeiro",
     label: "Financeiro",
     items: [
-      { label: "Painel", icon: LineChart, to: "/financeiro/painel", perm: { modulo: "financeiro.painel" } },
+      {
+        label: "Painel",
+        icon: LineChart,
+        to: "/financeiro/painel",
+        perm: { modulo: "financeiro.painel" },
+      },
       {
         label: "Comissões dos bancos",
         icon: Landmark,
         to: "/financeiro/comissoes-bancos",
         perm: { modulo: "financeiro.comissoes_bancos", equivalentes: ["financeiro.comissoes"] },
       },
-      { label: "Repasses aos assinantes", icon: Percent, to: "/financeiro/repasses", perm: { modulo: "financeiro.repasses" } },
+      {
+        label: "Repasses aos assinantes",
+        icon: Percent,
+        to: "/financeiro/repasses",
+        perm: { modulo: "financeiro.repasses" },
+      },
       {
         label: "Corretores e parceiros",
         icon: HandCoins,
@@ -567,7 +627,12 @@ export const navInterno: NavGroup[] = [
         to: "/financeiro/configuracoes",
         perm: { modulo: "financeiro.regras", equivalentes: ["financeiro.painel"] },
       },
-      { label: "Auditoria", icon: ScrollText, to: "/financeiro/auditoria", perm: { modulo: "financeiro.auditoria" } },
+      {
+        label: "Auditoria",
+        icon: ScrollText,
+        to: "/financeiro/auditoria",
+        perm: { modulo: "financeiro.auditoria" },
+      },
       // Demonstrativo individual: cada pessoa vê só as próprias comissões (o banco confere).
       { label: "Minhas comissões", icon: UserRound, to: "/financeiro/minhas-comissoes" },
     ],

@@ -78,6 +78,12 @@ const GRUPOS: { titulo: string; descricao: string; provedores: ProvedorConhecido
     descricao: "Faturas dos assinantes e e-mails do sistema.",
     provedores: ["asaas", "email"],
   },
+  {
+    titulo: "Redes sociais (Automações)",
+    descricao:
+      "Apps oficiais da Meta, do LinkedIn, do TikTok e do Google. Com a chave aqui, as Automações conectam as redes e publicam no horário.",
+    provedores: ["meta", "linkedin", "tiktok", "google"],
+  },
 ];
 
 function Pagina() {
@@ -94,7 +100,13 @@ function Pagina() {
   const grupos = [
     ...GRUPOS,
     ...(provedores.some((p) => !agrupados.has(p))
-      ? [{ titulo: "Outros", descricao: "", provedores: provedores.filter((p) => !agrupados.has(p)) }]
+      ? [
+          {
+            titulo: "Outros",
+            descricao: "",
+            provedores: provedores.filter((p) => !agrupados.has(p)),
+          },
+        ]
       : []),
   ];
   const producao = q.data?.ambiente === "producao";
@@ -139,7 +151,10 @@ function Pagina() {
         />
       </FaixaIndicadores>
 
-      <div data-tour="provedores-aviso" className="flex items-start gap-2.5 rounded-[14px] border border-primary/15 bg-primary/[0.04] p-3 text-sm text-foreground">
+      <div
+        data-tour="provedores-aviso"
+        className="flex items-start gap-2.5 rounded-[14px] border border-primary/15 bg-primary/[0.04] p-3 text-sm text-foreground"
+      >
         <Lock className="mt-0.5 size-4 shrink-0 text-primary" />
         <p>
           Nenhuma tela devolve o valor de uma chave. Guardar, ligar e apagar ficam na auditoria com
@@ -152,6 +167,21 @@ function Pagina() {
           )}
         </p>
       </div>
+
+      {q.data && !producao && (
+        <div
+          role="note"
+          className="flex items-start gap-2.5 rounded-[14px] border border-warning/40 bg-warning/10 p-3 text-sm text-foreground"
+        >
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-warning-foreground" />
+          <p>
+            Este servidor grava as chaves no ambiente de <b>homologação</b> (falta
+            PROVEDOR_AMBIENTE=producao). O Agilliza Tech de produção lê as chaves de <b>produção</b>
+            : confira a variável antes de cadastrar chaves que precisam valer lá (redes sociais,
+            e-mail, Asaas).
+          </p>
+        </div>
+      )}
 
       {q.isError ? (
         <Secao>
@@ -398,7 +428,10 @@ function FormularioChave({
               type={c.segredo ? "password" : "text"}
               autoComplete="new-password"
               className="text-base sm:text-sm"
-              placeholder={c.exemplo ?? (guardada?.dicas?.[c.chave] ? `atual ••••${guardada.dicas[c.chave]}` : "")}
+              placeholder={
+                c.exemplo ??
+                (guardada?.dicas?.[c.chave] ? `atual ••••${guardada.dicas[c.chave]}` : "")
+              }
               value={campos[c.chave] ?? ""}
               onChange={(e) => setCampos((v) => ({ ...v, [c.chave]: e.target.value }))}
             />
@@ -426,8 +459,8 @@ function FormularioChave({
           />
         </div>
         <p className="flex items-start gap-2 rounded-lg bg-secondary/70 p-2.5 text-xs text-muted-foreground">
-          <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success-texto" />
-          A chave vai cifrada direto para o banco; esta tela não guarda nem mostra o valor.
+          <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success-texto" />A chave vai
+          cifrada direto para o banco; esta tela não guarda nem mostra o valor.
         </p>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button type="button" variant="ghost" className="min-h-11 sm:min-h-9" onClick={onFechar}>

@@ -6,7 +6,14 @@
  * birôs, Asaas, SendPulse…) ficam com um ícone de traço fino que diz a CATEGORIA — nada de
  * logo desenhado à mão. A integração bancária nunca mostra o nome do fornecedor.
  */
-import { SiGooglegemini, SiResend } from "@icons-pack/react-simple-icons";
+import {
+  SiGoogle,
+  SiGooglegemini,
+  SiMeta,
+  SiResend,
+  SiTiktok,
+} from "@icons-pack/react-simple-icons";
+import { SiLinkedIn } from "@/components/automacoes/marca-rede";
 import {
   Bot,
   Building2,
@@ -45,6 +52,20 @@ const MARCAS: Record<string, InfoMarca> = {
   gemini: { nome: "Gemini", oficial: SiGooglegemini as Marca, icone: <Bot />, tom: "neutro" },
   openai: { nome: "OpenAI", icone: <Bot />, tom: "neutro" },
   viacep: { nome: "ViaCEP", icone: <MapPin />, tom: "neutro" },
+  meta: {
+    nome: "Meta (Facebook e Instagram)",
+    oficial: SiMeta as Marca,
+    icone: <Webhook />,
+    tom: "neutro",
+  },
+  linkedin: { nome: "LinkedIn", oficial: SiLinkedIn as Marca, icone: <Webhook />, tom: "neutro" },
+  tiktok: { nome: "TikTok", oficial: SiTiktok as Marca, icone: <Webhook />, tom: "neutro" },
+  google: {
+    nome: "Google (YouTube e Meu Negócio)",
+    oficial: SiGoogle as Marca,
+    icone: <Webhook />,
+    tom: "neutro",
+  },
 };
 
 /** Nome de exibição de um código de provedor (o banco grava em minúsculas). */
@@ -64,7 +85,13 @@ export function MarcaProvedor({
   const m = MARCAS[codigo];
   if (m?.oficial) {
     const Oficial = m.oficial;
-    return <IconeGestao tom="neutro" tamanho={tamanho} icone={<Oficial color="default" title={m.nome} />} />;
+    return (
+      <IconeGestao
+        tom="neutro"
+        tamanho={tamanho}
+        icone={<Oficial color="default" title={m.nome} />}
+      />
+    );
   }
   return <IconeGestao tom={m?.tom ?? "neutro"} tamanho={tamanho} icone={m?.icone ?? <Webhook />} />;
 }
