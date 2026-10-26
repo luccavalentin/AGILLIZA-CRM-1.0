@@ -13,10 +13,25 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
-export type StatusComissaoAssinante = "a_conferir" | "a_pagar" | "paga" | "cancelada";
+export type StatusComissaoAssinante =
+  | "a_conferir"
+  | "a_pagar"
+  | "aguardando_base"
+  | "aprovada"
+  | "parcial"
+  | "paga"
+  | "cancelada";
 
 /** Situações que podem ser filtradas na lista. */
-export const STATUS_COMISSAO_ASSINANTE = ["a_conferir", "a_pagar", "paga", "cancelada"] as const;
+export const STATUS_COMISSAO_ASSINANTE = [
+  "a_conferir",
+  "a_pagar",
+  "aguardando_base",
+  "aprovada",
+  "parcial",
+  "paga",
+  "cancelada",
+] as const;
 
 export interface TotaisComissaoAssinante {
   a_pagar: number;

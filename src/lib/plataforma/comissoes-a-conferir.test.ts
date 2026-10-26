@@ -80,10 +80,9 @@ describe("comissões em conferência", () => {
 
   it("a tela mostra o selo, o filtro, o total e a conferência com a base editável", () => {
     expect(tela).toMatch(/a_conferir: \{ rotulo: "Em conferência"/);
-    expect(tela).toContain('["a_conferir", "a_pagar", "paga", "cancelada", "todas"]');
-    expect(tela).toMatch(
-      /rotulo="Em conferência"\s+valor=\{formatBRL\(Number\(q\.data\?\.totais\.a_conferir/,
-    );
+    // Desenho da Gestão de sistemas (C52): chips de situação e faixa de indicadores.
+    expect(tela).toContain('{ valor: "a_conferir", rotulo: "Em conferência" }');
+    expect(tela).toMatch(/rotulo="Em conferência"[\s\S]{0,200}?totais\.a_conferir/);
     const conferir = tela.slice(tela.indexOf("function ConferirComissao"));
     // Campo preenchido com a base informada; comissão recalculada ao vivo.
     expect(conferir).toContain("useState(() => maskBRLInput(Number(comissao.base)))");
@@ -95,7 +94,7 @@ describe("comissões em conferência", () => {
 
   it("em conferência, a linha só oferece Conferir (ou Cancelar): sem atalho para a pagar/paga", () => {
     const linha = tela.slice(
-      tela.indexOf("function LinhaComissao"),
+      tela.indexOf("function AcoesComissao"),
       tela.indexOf("function CancelarComissao"),
     );
     const conferir = linha.indexOf('c.status === "a_conferir" ?');

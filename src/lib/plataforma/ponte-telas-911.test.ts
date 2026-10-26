@@ -10,21 +10,51 @@
  */
 import { describe, expect, it } from "vitest";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 
 const RAIZ = join(__dirname, "..");
-const TESTE_911 = join(
-  __dirname,
-  "..",
-  "..",
-  "..",
-  "..",
-  "CORRETOR 2.0",
-  "packages",
-  "db",
-  "testes",
-  "911_ponte_so_o_modulo_e_gestor_com_saas.sql",
-);
+const PASTA_IRMAOS = join(__dirname, "..", "..", "..", "..");
+const ARQ_911 = join("packages", "db", "testes", "911_ponte_so_o_modulo_e_gestor_com_saas.sql");
+
+/** Ramo (HEAD) de uma worktree ou repositório: lê `.git/HEAD` ou o `gitdir:` da worktree. */
+function ramoDe(pasta: string): string | null {
+  try {
+    const g = join(pasta, ".git");
+    let dirGit = g;
+    if (statSync(g).isFile()) {
+      const m = readFileSync(g, "utf8").match(/^gitdir:\s*(.+)\s*$/m);
+      if (!m) return null;
+      dirGit = isAbsolute(m[1]) ? m[1] : join(pasta, m[1]);
+    }
+    const head = readFileSync(join(dirGit, "HEAD"), "utf8").trim();
+    return head.startsWith("ref: ") ? head.slice(5) : head;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * O 911 que vale é o do Agilliza Tech no MESMO ramo deste repositório (as telas e a lista
+ * andam juntas): `ECO_CORRETOR` se indicado; senão a pasta irmã do Agilliza Tech que está no
+ * mesmo ramo; por último `CORRETOR 2.0` (o repositório principal).
+ */
+function acharTeste911(): string {
+  if (process.env.ECO_CORRETOR) return join(process.env.ECO_CORRETOR, ARQ_911);
+  const meu = ramoDe(join(__dirname, "..", "..", ".."));
+  if (meu) {
+    try {
+      for (const d of readdirSync(PASTA_IRMAOS)) {
+        if (!/^CORRETOR/.test(d)) continue;
+        const p = join(PASTA_IRMAOS, d);
+        if (ramoDe(p) === meu && existsSync(join(p, ARQ_911))) return join(p, ARQ_911);
+      }
+    } catch {
+      /* sem irmãos legíveis: cai no padrão */
+    }
+  }
+  return join(PASTA_IRMAOS, "CORRETOR 2.0", ARQ_911);
+}
+const TESTE_911 = acharTeste911();
 
 /** Tabelas que aparecem como `esquema.tabela (` em listas de colunas de insert — não são funções. */
 const NAO_SAO_FUNCOES = new Set([

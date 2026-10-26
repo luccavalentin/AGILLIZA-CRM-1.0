@@ -70,6 +70,10 @@ const STATUS: Record<StatusComissaoAssinante, { rotulo: string; tom: Tom }> = {
   // 0481: a base veio só do valor que a conta informou; o Agilliza confere antes de pagar.
   a_conferir: { rotulo: "Em conferência", tom: "info" },
   a_pagar: { rotulo: "A pagar", tom: "alerta" },
+  // Repasse (0327): base = comissão do banco ainda não recebida; aprovada; paga em parte.
+  aguardando_base: { rotulo: "Aguardando banco", tom: "neutro" },
+  aprovada: { rotulo: "Aprovada", tom: "marca" },
+  parcial: { rotulo: "Paga em parte", tom: "alerta" },
   paga: { rotulo: "Paga", tom: "sucesso" },
   cancelada: { rotulo: "Cancelada", tom: "neutro" },
 };
@@ -400,7 +404,7 @@ function AcoesComissao({
         <Button size="sm" className="min-h-11 sm:min-h-8" onClick={onConferir}>
           <ClipboardCheck className="mr-1.5 size-4" /> Conferir
         </Button>
-      ) : c.status === "a_pagar" ? (
+      ) : c.status === "a_pagar" || c.status === "aprovada" || c.status === "parcial" ? (
         <Button
           size="sm"
           className="min-h-11 sm:min-h-8"
@@ -409,7 +413,7 @@ function AcoesComissao({
         >
           <BadgeCheck className="mr-1.5 size-4" /> Dar baixa
         </Button>
-      ) : (
+      ) : c.status === "aguardando_base" ? null : (
         <Button
           size="sm"
           variant="outline"

@@ -147,6 +147,7 @@ export const SITUACAO_PARTICIPANTE: Record<string, DefChip> = {
 
 export const SITUACAO_REPASSE: Record<string, DefChip> = {
   a_pagar: { rotulo: "Previsto", tom: "info" },
+  a_conferir: { rotulo: "Em conferência", tom: "info" },
   aguardando_base: { rotulo: "Aguardando banco", tom: "neutro" },
   aprovada: { rotulo: "Aprovado p/ pagar", tom: "alerta" },
   parcial: { rotulo: "Pago em parte", tom: "alerta" },
