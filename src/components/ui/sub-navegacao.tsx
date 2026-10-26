@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
@@ -36,8 +37,18 @@ export function SubNavegacao({
     i.exato
       ? caminho === i.to || caminho === `${i.to}/`
       : caminho === i.to || caminho.startsWith(`${i.to}/`);
+  // No celular o trilho rola de lado: a aba atual entra na tela sozinha.
+  const nav = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = nav.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    const trilho = nav.current;
+    if (el && trilho && trilho.scrollWidth > trilho.clientWidth) {
+      const dx = el.getBoundingClientRect().left - trilho.getBoundingClientRect().left;
+      trilho.scrollLeft += dx - (trilho.clientWidth - el.offsetWidth) / 2;
+    }
+  }, [caminho]);
   return (
-    <nav aria-label={rotulo} className={cn("subnav-3d", className)}>
+    <nav ref={nav} aria-label={rotulo} className={cn("subnav-3d", className)}>
       {itens.map((i) => (
         <Link key={i.to} to={i.to as never} aria-current={atual(i) ? "page" : undefined}>
           <Icone3D icone={i.icone} tom={i.tom ?? "marca"} tamanho="sm" />
