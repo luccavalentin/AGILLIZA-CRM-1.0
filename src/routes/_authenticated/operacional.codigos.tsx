@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Copy, KeyRound, Mail, Settings2 } from "lucide-react";
+import { Check, Copy, KeyRound, Mail, Plus, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { BancoLogo } from "@/components/bancos/banco-logo";
 import { CaixaDialog } from "@/components/operacional/codigos/caixa-dialog";
@@ -47,7 +47,11 @@ function haQuanto(iso: string, agora: number): string {
 }
 
 function hora(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return new Date(iso).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 /** "482917" → "482 917" para ler e ditar sem erro. */
@@ -122,24 +126,33 @@ function Pagina() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDialogo({ aberto: true, caixa: caixas.data?.[0] ?? null })}
+            onClick={() => setDialogo({ aberto: true, caixa: null })}
           >
-            <Settings2 className="mr-1.5 h-4 w-4" />
-            {semCaixa ? "Cadastrar caixa" : "Caixa vigiada"}
+            <Plus className="mr-1.5 h-4 w-4" />
+            {semCaixa ? "Cadastrar caixa" : "Nova caixa"}
           </Button>
         )}
       </div>
 
-      {caixas.data?.map((c) => <EstadoCaixa key={c.id} caixa={c} agora={agora} />)}
+      {caixas.data?.map((c) => (
+        <EstadoCaixa
+          key={c.id}
+          caixa={c}
+          agora={agora}
+          aoConfigurar={podeEditar ? () => setDialogo({ aberto: true, caixa: c }) : undefined}
+        />
+      ))}
 
       {semCaixa && (
         <div className="rounded-2xl border border-dashed bg-card px-5 py-10 text-center">
           <Mail className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-3 font-medium text-foreground">Nenhuma caixa vigiada ainda</p>
+          <p className="mt-3 font-medium text-foreground">
+            {podeEditar ? "Nenhuma caixa vigiada ainda" : "Nenhuma caixa liberada para você"}
+          </p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
             {podeEditar
               ? "Cadastre o e-mail que recebe os códigos dos bancos. O Agilliza só lê: não envia nada."
-              : "Peça a um administrador para cadastrar o e-mail que recebe os códigos dos bancos."}
+              : "Cada pessoa vê só as caixas liberadas para ela. Peça a quem gere as caixas para liberar a que você precisa acompanhar."}
           </p>
           {podeEditar && (
             <Button className="mt-4" onClick={() => setDialogo({ aberto: true, caixa: null })}>
@@ -190,10 +203,23 @@ function Pagina() {
   );
 }
 
-function EstadoCaixa({ caixa, agora }: { caixa: CaixaVigiada; agora: number }) {
+function EstadoCaixa({
+  caixa,
+  agora,
+  aoConfigurar,
+}: {
+  caixa: CaixaVigiada;
+  agora: number;
+  aoConfigurar?: () => void;
+}) {
   const espera = caixa.espera_ate && new Date(caixa.espera_ate).getTime() > agora;
-  const tom =
-    !caixa.ativo ? "cinza" : caixa.status === "conectado" ? "verde" : espera || caixa.status === "erro" ? "ambar" : "azul";
+  const tom = !caixa.ativo
+    ? "cinza"
+    : caixa.status === "conectado"
+      ? "verde"
+      : espera || caixa.status === "erro"
+        ? "ambar"
+        : "azul";
   const texto = !caixa.ativo
     ? "Leitura desligada"
     : caixa.status === "conectado"
@@ -217,6 +243,18 @@ function EstadoCaixa({ caixa, agora }: { caixa: CaixaVigiada; agora: number }) {
       />
       <span className="min-w-0 truncate font-medium text-foreground">{caixa.email}</span>
       <span className="text-muted-foreground">{texto}</span>
+      {aoConfigurar && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-auto h-8 px-2 text-muted-foreground"
+          onClick={aoConfigurar}
+          aria-label={`Configurar a caixa ${caixa.email}`}
+        >
+          <Settings2 className="h-4 w-4 sm:mr-1.5" />
+          <span className="hidden sm:inline">Configurar</span>
+        </Button>
+      )}
       {caixa.erro && caixa.status !== "conectado" && (
         <span className="w-full text-xs text-amber-700 dark:text-amber-400">{caixa.erro}</span>
       )}
@@ -274,7 +312,9 @@ function CartaoCodigo({
           </p>
           {c.assunto && <p className="mt-1.5 text-sm font-medium text-foreground">{c.assunto}</p>}
           {c.trecho && (
-            <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{c.trecho}</p>
+            <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+              {c.trecho}
+            </p>
           )}
         </div>
       </div>
