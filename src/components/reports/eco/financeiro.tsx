@@ -39,6 +39,7 @@ const NATUREZA: Record<Natureza, string> = {
   conta_pagar: "Contas a pagar",
   comissao_participante: "Comissões da equipe e parceiros",
   repasse_assinante: "Repasses aos assinantes",
+  matricula: "Matrículas a receber",
 };
 
 export function RelatorioFinanceiro() {
