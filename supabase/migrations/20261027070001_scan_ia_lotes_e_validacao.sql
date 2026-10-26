@@ -67,11 +67,11 @@ alter table public.scan_ia_leituras
 create index if not exists idx_scan_ia_leituras_lote on public.scan_ia_leituras (lote_id) where lote_id is not null;
 
 -- A leitura só entra num lote do MESMO correspondente (lote de outra conta não é aceito
--- nem por quem acerta o id).
+-- nem por quem acerta o id). Roda com os direitos de quem grava: lote que a pessoa não
+-- enxerga também não serve.
 create or replace function public.scan_ia_leitura_lote_mesma_conta()
 returns trigger
 language plpgsql
-security definer
 set search_path = public
 as $$
 begin
