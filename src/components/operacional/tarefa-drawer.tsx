@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { lembreteDoCampo, OPCOES_LEMBRETE, rotuloLembrete } from "@/lib/operacional/lembrete-tarefa";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -131,6 +132,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
     cliente_id: "",
     tipo: "lembrete",
     duracao: "nenhuma",
+    lembrete: "nenhum",
     recorrencia: "nenhuma",
   });
   const [salvando, setSalvando] = useState(false);
@@ -192,6 +194,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
       cliente_id: t.cliente_id ?? "",
       tipo: (t as any).tipo ?? "lembrete",
       duracao: (t as any).duracao_min ? String((t as any).duracao_min) : "nenhuma",
+      lembrete: (t as any).lembrete_minutos != null ? String((t as any).lembrete_minutos) : "nenhum",
       recorrencia: (t as any).recorrencia ?? "nenhuma",
     });
   }, [data?.tarefa?.id]);
@@ -220,6 +223,7 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
           cliente_id: form.cliente_id || null,
           tipo: form.tipo as TipoTarefa,
           duracao_min: form.duracao !== "nenhuma" ? Number(form.duracao) : null,
+          lembrete_minutos: lembreteDoCampo(form.lembrete),
           recorrencia: form.recorrencia !== "nenhuma" ? (form.recorrencia as Recorrencia) : null,
         },
       });
@@ -487,6 +491,30 @@ export function TarefaDrawer({ id, onClose }: { id: string | null; onClose: () =
                               ![15, 30, 45, 60, 90, 120, 180].includes(Number(form.duracao)) && (
                                 <SelectItem value={form.duracao}>{form.duracao} min</SelectItem>
                               )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Lembrete
+                        </Label>
+                        <Select
+                          value={form.lembrete}
+                          onValueChange={(v) => setForm((f) => ({ ...f, lembrete: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nenhum">Sem lembrete</SelectItem>
+                            {OPCOES_LEMBRETE.map((m) => (
+                              <SelectItem key={m} value={String(m)}>
+                                {rotuloLembrete(m)}
+                              </SelectItem>
+                            ))}
+                            {form.lembrete !== "nenhum" && !OPCOES_LEMBRETE.includes(Number(form.lembrete)) && (
+                              <SelectItem value={form.lembrete}>{rotuloLembrete(Number(form.lembrete))}</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>

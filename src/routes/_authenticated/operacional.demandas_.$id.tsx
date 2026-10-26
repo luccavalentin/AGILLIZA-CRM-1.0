@@ -335,7 +335,7 @@ function Pagina() {
             </div>
           </div>
 
-          {(d.cliente_id || d.proposta_id || d.simulacao_id || d.ref_tipo === "proposta_assinante") && (
+          {(d.cliente_id || d.proposta_id || d.simulacao_id || d.ref_tipo) && (
             <div className="rounded-2xl border border-border/70 bg-card p-4">
               <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Ligada a</h2>
               <div className="space-y-1.5 text-[12.5px]">
@@ -354,6 +354,19 @@ function Pagina() {
                 {d.simulacao_id && (
                   <Link to="/operacional/simulacoes/$id" params={{ id: d.simulacao_id }} className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-accent">
                     <span>Simulação</span>
+                    <ExternalLink className="size-3.5 text-muted-foreground" />
+                  </Link>
+                )}
+                {d.ref_tipo === "matricula" && (
+                  <Link to="/matriculas" className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-accent">
+                    <span>
+                      Pedido de matrícula {d.ref_codigo ?? ""}
+                      {d.ref_status ? (
+                        <span className="block text-[11px] text-muted-foreground">
+                          Situação: {d.ref_status.replaceAll("_", " ")} · concluir a matrícula encerra esta demanda
+                        </span>
+                      ) : null}
+                    </span>
                     <ExternalLink className="size-3.5 text-muted-foreground" />
                   </Link>
                 )}

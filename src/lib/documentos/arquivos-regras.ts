@@ -122,3 +122,19 @@ export function planejarEnvio(
     return { nome: novo, novaVersao: false, pular: false };
   });
 }
+
+/**
+ * Dias até a rotina diária excluir para sempre um item da lixeira (mesma conta do banco:
+ * `excluido_em < agora − prazo`). 0 = sai na próxima rodada. null = data inválida.
+ */
+export function diasParaSairDaLixeira(
+  excluidoEm: string | null | undefined,
+  prazoDias: number,
+  agora: Date = new Date(),
+): number | null {
+  if (!excluidoEm) return null;
+  const t = new Date(excluidoEm).getTime();
+  if (Number.isNaN(t) || !Number.isFinite(prazoDias) || prazoDias < 1) return null;
+  const sai = t + prazoDias * 86_400_000;
+  return Math.max(0, Math.ceil((sai - agora.getTime()) / 86_400_000));
+}

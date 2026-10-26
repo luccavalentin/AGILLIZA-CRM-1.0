@@ -4,12 +4,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Folder, RotateCcw, Trash2 } from "lucide-react";
 import {
+  definirPrazoLixeira,
   excluirDefinitivo,
+  lerArmazenamento,
   listarLixeira,
   restaurarDaLixeira,
   type ItemLixeira,
 } from "@/lib/documentos/arquivos.functions";
-import { formatarBytes } from "@/lib/documentos/arquivos-regras";
+import { diasParaSairDaLixeira, formatarBytes } from "@/lib/documentos/arquivos-regras";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -44,6 +46,46 @@ export function LixeiraView({ onRestaurado }: { onRestaurado: (pasta: string | n
   const [ocupado, setOcupado] = useState<string | null>(null);
 
   const itens = useQuery({ queryKey: ["arquivos", "lixeira"], queryFn: () => fnListar() });
+  const fnArmazenamento = useServerFn(lerArmazenamento);
+  const fnPrazo = useServerFn(definirPrazoLixeira);
+  const armazenamento = useQuery({ queryKey: ["arquivos-armazenamento"], queryFn: () => fnArmazenamento() });
+  const prazo = armazenamento.data?.lixeira_dias ?? 30;
+
+  async function mudarPrazo(dias: number) {
+    try {
+      await fnPrazo({ data: { dias } });
+      toast.success(`A lixeira agora esvazia sozinha depois de ${dias} dias.`);
+      qc.invalidateQueries({ queryKey: ["arquivos-armazenamento"] });
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível alterar o prazo."));
+    }
+  }
+
+  const faixaPrazo = (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/70 bg-muted/25 px-3 py-2 text-xs text-muted-foreground">
+      <span>
+        A lixeira esvazia sozinha: itens com mais de <strong className="text-foreground">{prazo} dias</strong> saem
+        para sempre (rotina diária).
+      </span>
+      {armazenamento.data?.pode_alterar && (
+        <label className="inline-flex items-center gap-1.5">
+          Prazo
+          <select
+            className="h-8 rounded-lg border border-border/70 bg-card px-2 text-xs text-foreground"
+            value={prazo}
+            onChange={(e) => mudarPrazo(Number(e.target.value))}
+            aria-label="Dias até esvaziar a lixeira"
+          >
+            {[...new Set([7, 15, 30, 60, 90, 180, 365, prazo])].sort((a, b) => a - b).map((d) => (
+              <option key={d} value={d}>
+                {d} dias
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+    </div>
+  );
 
   const atualizar = () => {
     qc.invalidateQueries({ queryKey: ["arquivos"] });
@@ -105,6 +147,8 @@ export function LixeiraView({ onRestaurado }: { onRestaurado: (pasta: string | n
   const lista = itens.data ?? [];
   if (lista.length === 0) {
     return (
+      <>
+      {faixaPrazo}
       <div className="flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-border/70 p-8 text-center">
         <span className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
           <Trash2 className="h-6 w-6" />
@@ -114,11 +158,13 @@ export function LixeiraView({ onRestaurado }: { onRestaurado: (pasta: string | n
           O que você mandar para a lixeira fica aqui até ser restaurado ou excluído para sempre.
         </p>
       </div>
+      </>
     );
   }
 
   return (
     <>
+      {faixaPrazo}
       <p className="mb-2 text-xs text-muted-foreground">
         Itens na lixeira ainda ocupam espaço. Excluir para sempre não tem volta.
       </p>
@@ -142,6 +188,10 @@ export function LixeiraView({ onRestaurado }: { onRestaurado: (pasta: string | n
                 <span className="block truncate text-xs text-muted-foreground">
                   de {i.origem} · {formatarBytes(i.tamanho)} · {dataHora(i.excluido_em)}
                   {i.excluido_por_nome ? ` · por ${i.excluido_por_nome}` : ""}
+                  {(() => {
+                    const d = diasParaSairDaLixeira(i.excluido_em, prazo);
+                    return d === null ? "" : d === 0 ? " · sai na próxima limpeza" : ` · sai em ${d} dia${d > 1 ? "s" : ""}`;
+                  })()}
                 </span>
               </span>
               <span className="ml-auto flex shrink-0 gap-1.5">

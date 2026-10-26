@@ -12,6 +12,8 @@ export type Prioridade = "p1" | "p2" | "p3";
 const TIPO_TAREFA = z.enum(["ligacao", "visita", "reuniao", "documento", "lembrete", "outro"]);
 const DURACAO_TAREFA = z.number().int().min(5).max(1440);
 const RECORRENCIA_TAREFA = z.enum(["diaria", "semanal", "mensal"]);
+/** Antecedência do lembrete em minutos (0 = na hora; até 7 dias). */
+const LEMBRETE_TAREFA = z.number().int().min(0).max(10080);
 
 /** Transições válidas de status de tarefa. Movimentação livre entre colunas. */
 const TODOS_STATUS_TAREFA: TarefaStatus[] = ["aberta", "em_andamento", "concluida", "cancelada"];
@@ -44,6 +46,7 @@ export interface TarefaItem {
   tipo: string;
   duracao_min: number | null;
   recorrencia: string | null;
+  lembrete_minutos: number | null;
   /** Itens do checklist (feitos / total) — "subtarefas" no Agilliza Tech. */
   n_checklist: number;
   n_checklist_feitos: number;
@@ -83,7 +86,7 @@ export const listarTarefas = createServerFn({ method: "GET" })
     let query = supabase
       .from("tasks")
       .select(
-        "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, criador_id, created_at, concluida_em, tipo, duracao_min, recorrencia, clientes(nome)",
+        "id, numero, titulo, status, prioridade, prazo, cliente_id, responsavel_id, criador_id, created_at, concluida_em, tipo, duracao_min, recorrencia, lembrete_minutos, clientes(nome)",
       )
       .limit(1000);
 
@@ -156,6 +159,7 @@ export const listarTarefas = createServerFn({ method: "GET" })
       tipo: r.tipo ?? "lembrete",
       duracao_min: r.duracao_min ?? null,
       recorrencia: r.recorrencia ?? null,
+      lembrete_minutos: r.lembrete_minutos ?? null,
       n_checklist: checklist.get(r.id)?.n ?? 0,
       n_checklist_feitos: checklist.get(r.id)?.feitos ?? 0,
     }));
@@ -250,6 +254,7 @@ export const criarTarefa = createServerFn({ method: "POST" })
         tipo: TIPO_TAREFA.default("lembrete"),
         duracao_min: DURACAO_TAREFA.optional().nullable(),
         recorrencia: RECORRENCIA_TAREFA.optional().nullable(),
+        lembrete_minutos: LEMBRETE_TAREFA.optional().nullable(),
       })
       .parse(data),
   )
@@ -301,6 +306,7 @@ export const criarTarefa = createServerFn({ method: "POST" })
         tipo: data.tipo,
         duracao_min: data.duracao_min ?? null,
         recorrencia: data.recorrencia ?? null,
+        lembrete_minutos: data.lembrete_minutos ?? null,
       } as any)
       .select("id")
       .single();
@@ -436,6 +442,7 @@ export const atualizarTarefa = createServerFn({ method: "POST" })
         tipo: TIPO_TAREFA.optional(),
         duracao_min: DURACAO_TAREFA.nullable().optional(),
         recorrencia: RECORRENCIA_TAREFA.nullable().optional(),
+        lembrete_minutos: LEMBRETE_TAREFA.nullable().optional(),
       })
       .parse(d),
   )

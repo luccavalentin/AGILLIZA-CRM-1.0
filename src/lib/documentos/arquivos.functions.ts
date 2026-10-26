@@ -74,6 +74,8 @@ export interface Armazenamento {
   na_lixeira: number;
   limite: number;
   pode_alterar: boolean;
+  /** Dias na lixeira até a exclusão definitiva automática (rotina diária). */
+  lixeira_dias: number;
   /** Pasta do bucket onde a pessoa pode enviar (`<correspondente>`). */
   prefixo: string | null;
 }
@@ -306,6 +308,7 @@ export const listarLixeira = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<ItemLixeira[]> => {
     const { data, error } = await rpcDe(context.supabase)("arquivos_lixeira");
     if (error) falhar(error, "Não foi possível abrir a lixeira.");
+    await drenarObjetosApagados();
     return ((data ?? []) as ItemLixeira[]).map((l) => ({
       ...l,
       tamanho: l.tamanho == null ? null : Number(l.tamanho),
@@ -415,9 +418,43 @@ export const lerArmazenamento = createServerFn({ method: "GET" })
       na_lixeira: Number(data?.na_lixeira ?? 0),
       limite: Number(data?.limite ?? 0),
       pode_alterar: !!data?.pode_alterar,
+      lixeira_dias: Number(data?.lixeira_dias ?? 30),
       prefixo: perfil.data?.correspondente_id ?? null,
     };
   });
+
+/** Dono/admin muda o prazo da lixeira (1 a 365 dias). */
+export const definirPrazoLixeira = createServerFn({ method: "POST" })
+  .middleware([VER])
+  .inputValidator((d) => z.object({ dias: z.number().int().min(1).max(365) }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { error } = await rpcDe(context.supabase)("arquivos_definir_lixeira_dias", { p_dias: data.dias });
+    if (error) falhar(error, "Não foi possível alterar o prazo da lixeira.");
+    return { ok: true as const };
+  });
+
+/**
+ * Apaga do bucket os objetos dos itens que a rotina diária excluiu para sempre (fila
+ * `arquivos_objetos_apagar`). O acesso a eles já acabou no banco; aqui só se liberam os bytes.
+ * Roda de carona quando alguém abre a lixeira ou o armazenamento. Nunca derruba a tela.
+ */
+async function drenarObjetosApagados(): Promise<void> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
+    const { data } = await db.from("arquivos_objetos_apagar").select("caminho").order("criado_em").limit(200);
+    const caminhos = ((data ?? []) as { caminho: string }[]).map((r) => r.caminho).filter(Boolean);
+    if (!caminhos.length) return;
+    const { error } = await supabaseAdmin.storage.from("arquivos").remove(caminhos);
+    if (error) {
+      console.error("[arquivos] fila de objetos não apagada", error.message);
+      return;
+    }
+    await db.from("arquivos_objetos_apagar").delete().in("caminho", caminhos);
+  } catch (e) {
+    console.error("[arquivos] fila de objetos", (e as Error)?.message);
+  }
+}
 
 export const definirCota = createServerFn({ method: "POST" })
   .middleware([VER])

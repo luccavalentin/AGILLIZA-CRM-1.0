@@ -7095,6 +7095,8 @@ export type Database = {
           deleted_motivo: string | null
           descricao: string | null
           duracao_min: number | null
+          lembrete_minutos: number | null
+          lembrete_enviado_em: string | null
           id: string
           numero: string | null
           origem: string
@@ -7119,6 +7121,8 @@ export type Database = {
           deleted_motivo?: string | null
           descricao?: string | null
           duracao_min?: number | null
+          lembrete_minutos?: number | null
+          lembrete_enviado_em?: string | null
           id?: string
           numero?: string | null
           origem?: string
@@ -7143,6 +7147,8 @@ export type Database = {
           deleted_motivo?: string | null
           descricao?: string | null
           duracao_min?: number | null
+          lembrete_minutos?: number | null
+          lembrete_enviado_em?: string | null
           id?: string
           numero?: string | null
           origem?: string

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { lembreteDoCampo, OPCOES_LEMBRETE, rotuloLembrete } from "@/lib/operacional/lembrete-tarefa";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -58,6 +59,7 @@ export function NovaTarefaDialog({
   const [checklist, setChecklist] = useState<string[]>([]);
   const [tipo, setTipo] = useState<TipoTarefa>("lembrete");
   const [duracao, setDuracao] = useState<string>("nenhuma");
+  const [lembrete, setLembrete] = useState<string>("nenhum");
   const [recorrencia, setRecorrencia] = useState<string>("nenhuma");
   const [novoItem, setNovoItem] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -89,6 +91,7 @@ export function NovaTarefaDialog({
           checklist: checklist.length ? checklist : undefined,
           tipo,
           duracao_min: duracao !== "nenhuma" ? Number(duracao) : null,
+          lembrete_minutos: lembreteDoCampo(lembrete),
           recorrencia: recorrencia !== "nenhuma" ? (recorrencia as Recorrencia) : null,
         },
       });
@@ -105,6 +108,7 @@ export function NovaTarefaDialog({
       setChecklist([]);
       setTipo("lembrete");
       setDuracao("nenhuma");
+    setLembrete("nenhum");
       setRecorrencia("nenhuma");
       onCriada();
     } catch (e) {
@@ -186,7 +190,7 @@ export function NovaTarefaDialog({
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>Duração</Label>
               <Select value={duracao} onValueChange={setDuracao}>
@@ -198,6 +202,22 @@ export function NovaTarefaDialog({
                   {DURACOES.map((d) => (
                     <SelectItem key={d} value={String(d)}>
                       {d < 60 ? `${d} min` : `${d / 60} h`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Lembrete</Label>
+              <Select value={lembrete} onValueChange={setLembrete}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nenhum">Sem lembrete</SelectItem>
+                  {OPCOES_LEMBRETE.map((m) => (
+                    <SelectItem key={m} value={String(m)}>
+                      {rotuloLembrete(m)}
                     </SelectItem>
                   ))}
                 </SelectContent>

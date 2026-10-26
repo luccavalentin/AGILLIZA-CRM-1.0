@@ -84,3 +84,19 @@ describe("arquivos-regras", () => {
     expect(planejarEnvio(["a.pdf"], ["a.pdf"], "pular")[0].pular).toBe(true);
   });
 });
+
+describe("lixeira esvazia sozinha", () => {
+  const agora = new Date("2026-10-26T12:00:00Z");
+  it("conta os dias que faltam pelo prazo do correspondente", async () => {
+    const { diasParaSairDaLixeira } = await import("./arquivos-regras");
+    expect(diasParaSairDaLixeira("2026-10-26T12:00:00Z", 30, agora)).toBe(30);
+    expect(diasParaSairDaLixeira("2026-10-20T12:00:00Z", 7, agora)).toBe(1);
+    expect(diasParaSairDaLixeira("2026-09-01T00:00:00Z", 30, agora)).toBe(0);
+  });
+  it("entrada torta não inventa prazo", async () => {
+    const { diasParaSairDaLixeira } = await import("./arquivos-regras");
+    expect(diasParaSairDaLixeira(null, 30, agora)).toBeNull();
+    expect(diasParaSairDaLixeira("ontem", 30, agora)).toBeNull();
+    expect(diasParaSairDaLixeira("2026-10-26T12:00:00Z", 0, agora)).toBeNull();
+  });
+});
