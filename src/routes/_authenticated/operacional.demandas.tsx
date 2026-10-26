@@ -1,550 +1,254 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
-import {
-  Search,
-  Kanban,
-  MessageCircle,
-  Clock,
-  AlertTriangle,
-  CheckCircle2,
-  X,
-  Users,
-  Inbox,
-  Hourglass,
-  Flame,
-  Bell,
-  ChevronRight,
-  Download,
-  Trash2,
-  Pencil,
-  User as UserIcon,
-  FileText,
-  Calculator,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarOff, Hand, Layers, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { baixarDemandasPDF } from "@/lib/operacional/pdf-lazy";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import {
-  listarDemandas,
-  excluirDemanda,
-  type DemandaStatus,
-} from "@/lib/operacional/demandas.functions";
-import { getMinhaSessao } from "@/lib/session.functions";
-import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
-import { PriorityChip, OpAvatar, OpStat } from "@/components/operacional/ui";
-import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
-import { EditarDemandaDialog } from "@/components/operacional/editar-demanda-dialog";
+import { usePermissao } from "@/hooks/use-permissao";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { OpHero } from "@/components/operacional/ui";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  assumirDemanda,
+  centralDemandas,
+  configDemandas,
+  pegarProximaDemanda,
+} from "@/lib/operacional/demandas-central.functions";
+import type { DemandaEscopo, DemandaOrigem, DemandaPrioridade } from "@/lib/operacional/demandas-regras";
+import { CartaoDemanda } from "@/components/demandas/cartao-demanda";
+import { NovaDemandaDialog } from "@/components/demandas/nova-demanda-dialog";
+import { ConfigDemandasView } from "@/components/demandas/config-demandas";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+  AbasEscopo,
+  FaixaFiltros,
+  FILTROS_VAZIOS,
+  IndicadoresDemandas,
+  VisoesDemandas,
+  type FiltrosDemanda,
+} from "@/components/demandas/barra-demandas";
+import { VazioDemandas } from "@/components/demandas/pecas";
+
+type Aba = DemandaEscopo | "config";
+const ABAS: Aba[] = ["minhas", "sem_responsavel", "equipe", "criadas", "config"];
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas")({
-  head: () => ({ meta: [{ title: "Demandas — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Central de demandas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.demandas"),
+  validateSearch: (s: Record<string, unknown>): { aba?: Aba } => ({
+    aba: ABAS.includes(s.aba as Aba) ? (s.aba as Aba) : undefined,
+  }),
   component: Pagina,
 });
 
-function fmtData(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  const hoje = new Date();
-  const diff = Math.floor((hoje.getTime() - d.getTime()) / 86_400_000);
-  if (diff <= 0) return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  if (diff === 1) return "ontem";
-  if (diff < 7) return `${diff}d atrás`;
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-}
-
-function SlaChip({ prazo, status }: { prazo: string | null; status: DemandaStatus }) {
-  if (status === "concluida")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10.5px] font-medium text-success">
-        <CheckCircle2 className="h-3 w-3" /> Concluída
-      </span>
-    );
-  if (status === "cancelada")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
-        Cancelada
-      </span>
-    );
-  if (!prazo)
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
-        <Clock className="h-3 w-3" /> Sem prazo
-      </span>
-    );
-  const restante = new Date(prazo).getTime() - Date.now();
-  if (restante < 0)
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10.5px] font-semibold text-destructive">
-        <AlertTriangle className="h-3 w-3" /> SLA vencido
-      </span>
-    );
-  if (restante < 24 * 3600_000)
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[10.5px] font-medium text-warning">
-        <Clock className="h-3 w-3" /> &lt; 24h
-      </span>
-    );
-  const dias = Math.ceil(restante / 86_400_000);
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
-      <Clock className="h-3 w-3" /> {dias}d
-    </span>
-  );
-}
-
+/**
+ * Central de demandas (C36, design novo): minhas, sem responsável (fila), equipe e as que
+ * pedi; indicadores de prazo; "pegar a próxima"; e a configuração da fila justa.
+ */
 function Pagina() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const excluirFn = useServerFn(excluirDemanda);
-  const sessaoFn = useServerFn(getMinhaSessao);
-  const [escopo, setEscopo] = useState<"minhas" | "geral">(
-    () =>
-      (typeof window !== "undefined" &&
-        (localStorage.getItem("demandas:escopo") as "minhas" | "geral")) ||
-      "geral",
-  );
-  const [q, setQ] = useState("");
-  const [statusFiltro, setStatusFiltro] = useState<DemandaStatus | "todas">("todas");
-  const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
-  const [excluirId, setExcluirId] = useState<string | null>(null);
-  const [editandoDemanda, setEditandoDemanda] = useState<any | null>(null);
-  const [excluindo, setExcluindo] = useState(false);
+  const { aba: abaUrl } = Route.useSearch();
+  const aba: Aba = abaUrl ?? "minhas";
+  const navigate = useNavigate({ from: "/operacional/demandas" });
+  const qc = useQueryClient();
+  const [f, setF] = useState<FiltrosDemanda>(FILTROS_VAZIOS);
+  const [termo, setTermo] = useState("");
+  const [sla, setSla] = useState<"atrasadas" | "vencendo" | null>(null);
+  const [encerradas, setEncerradas] = useState(false);
+  const [assumindo, setAssumindo] = useState<string | null>(null);
+  const [pegando, setPegando] = useState(false);
+  const podeCriar = usePermissao("operacional.demandas", "create");
+  const assumir = useServerFn(assumirDemanda);
+  const pegar = useServerFn(pegarProximaDemanda);
 
-  const { data: sessao } = useQuery({
-    queryKey: ["minha-sessao"],
-    queryFn: () => sessaoFn(),
-    staleTime: 5 * 60_000,
+  useEffect(() => {
+    const t = setTimeout(() => setTermo(f.termo.trim()), 300);
+    return () => clearTimeout(t);
+  }, [f.termo]);
+
+  const escopo: DemandaEscopo = aba === "config" ? "minhas" : aba;
+  const chave = ["demandas-central", escopo, termo, f.tipo, f.origem, f.prioridade, sla, encerradas];
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: chave,
+    queryFn: () =>
+      centralDemandas({
+        data: {
+          escopo,
+          termo: termo || null,
+          tipo: f.tipo !== "todos" ? f.tipo : null,
+          origem: f.origem !== "todas" ? (f.origem as DemandaOrigem) : null,
+          prioridade: f.prioridade !== "todas" ? (f.prioridade as DemandaPrioridade) : null,
+          sla,
+          status: encerradas ? ["concluida", "cancelada"] : ["aberta", "em_andamento", "aguardando"],
+          encerradas_dias: encerradas ? 30 : 7,
+        },
+      }),
+    refetchInterval: 60_000,
   });
-  const meuId = sessao?.profile?.id ?? null;
-
-  const {
-    data: itens,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["demandas", "lista", escopo],
-    queryFn: () => listarDemandas({ data: { escopo } }),
+  const { data: cfg } = useQuery({
+    queryKey: ["demandas-config"],
+    queryFn: () => configDemandas(),
+    staleTime: 60_000,
   });
+  useRealtimeInvalidate("demandas-central", [["demandas-central"]], ["demandas"]);
 
-  async function confirmarExclusao() {
-    if (!excluirId) return;
-    setExcluindo(true);
+  const tipos = cfg?.tipos ?? [];
+  const itens = useMemo(() => data?.itens ?? [], [data]);
+  const trocarAba = (a: Aba) => navigate({ search: a === "minhas" ? {} : { aba: a }, replace: true });
+
+  async function onAssumir(id: string) {
+    setAssumindo(id);
     try {
-      await excluirFn({ data: { id: excluirId } });
-      toast.success("Demanda excluída.");
-      queryClient.invalidateQueries({ queryKey: ["demandas"] });
-      setExcluirId(null);
+      await assumir({ data: { id } });
+      toast.success("Demanda assumida. Ela é sua agora.");
+      qc.invalidateQueries({ queryKey: ["demandas-central"] });
     } catch (e) {
-      toast.error(mensagemDeErro(e, "Não foi possível excluir a demanda."));
+      toast.error(mensagemDeErro(e, "Não foi possível assumir."));
+      refetch();
     } finally {
-      setExcluindo(false);
+      setAssumindo(null);
     }
   }
 
-  const tiposDisponiveis = useMemo(() => {
-    const set = new Set<string>();
-    (itens ?? []).forEach((d) => {
-      if (d.tipo_responsavel) set.add(d.tipo_responsavel);
-    });
-    return [...set].sort();
-  }, [itens]);
-
-  const filtrados = useMemo(() => {
-    const arr = itens ?? [];
-    const termo = q.trim().toLowerCase();
-    return arr.filter((d) => {
-      if (statusFiltro !== "todas" && d.status !== statusFiltro) return false;
-      if (tipoFiltro !== "todos" && d.tipo_responsavel !== tipoFiltro) return false;
-      if (!termo) return true;
-      return (
-        d.titulo.toLowerCase().includes(termo) ||
-        (d.numero ?? "").toLowerCase().includes(termo) ||
-        (d.nome_cliente ?? "").toLowerCase().includes(termo) ||
-        (d.nome_responsavel ?? "").toLowerCase().includes(termo)
-      );
-    });
-  }, [itens, q, statusFiltro, tipoFiltro]);
-
-  const kpis = useMemo(() => {
-    const arr = itens ?? [];
-    const abertas = arr.filter((d) => d.status === "aberta" || d.status === "em_andamento").length;
-    const aguardando = arr.filter((d) => d.status === "aguardando").length;
-    const vencidas = arr.filter(
-      (d) =>
-        d.prazo_sla &&
-        new Date(d.prazo_sla).getTime() < Date.now() &&
-        d.status !== "concluida" &&
-        d.status !== "cancelada",
-    ).length;
-    const naoLidas = arr.reduce((n, d) => n + (d.nao_lidas ?? 0), 0);
-    return { abertas, aguardando, vencidas, naoLidas };
-  }, [itens]);
+  async function onPegar() {
+    setPegando(true);
+    try {
+      const { id } = await pegar();
+      if (!id) {
+        toast.info("Nenhuma demanda sem responsável nas suas filas agora.");
+        return;
+      }
+      toast.success("Você pegou a próxima da fila.");
+      navigate({ to: "/operacional/demandas/$id", params: { id } });
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível pegar a próxima."));
+    } finally {
+      setPegando(false);
+    }
+  }
 
   return (
-    <div className="space-y-5 p-4 md:p-6">
-      {/* Hero */}
-      <div className="op-hero flex flex-col gap-3 p-5 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center md:p-6">
-        <div className="min-w-0">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
-            Operacional
-          </span>
-          <h1 className="mt-0.5 truncate text-2xl font-bold tracking-tight text-foreground md:text-[26px]">
-            Demandas
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Distribua tarefas, acompanhe SLAs e converse com o time em tempo real.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
-            <Link to="/operacional/demandas/kanban">
-              <Kanban className="mr-1.5 h-4 w-4" /> Kanban
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-card/60 backdrop-blur"
-            disabled={(filtrados?.length ?? 0) === 0}
-            onClick={async () => {
-              try {
-                await baixarDemandasPDF({
-                  demandas: filtrados,
-                  escopo: escopo === "minhas" ? "Minhas demandas" : "Demandas gerais",
-                });
-                toast.success("PDF gerado com sucesso.");
-              } catch {
-                toast.error("Não foi possível gerar o PDF.");
-              }
-            }}
-          >
-            <Download className="mr-1.5 h-4 w-4" /> Baixar PDF
-          </Button>
-          <NovaDemandaDialog onCriada={() => refetch()} />
-        </div>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <OpStat
-          label="Ativas"
-          value={kpis.abertas}
-          icon={<Inbox className="h-4 w-4" />}
-          accent="var(--primary)"
-        />
-        <OpStat
-          label="Aguardando"
-          value={kpis.aguardando}
-          icon={<Hourglass className="h-4 w-4" />}
-          accent="var(--warning)"
-        />
-        <OpStat
-          label="Vencidas"
-          value={kpis.vencidas}
-          icon={<Flame className="h-4 w-4" />}
-          accent="var(--destructive)"
-          alerta={kpis.vencidas > 0}
-        />
-        <OpStat
-          label="Não lidas"
-          value={kpis.naoLidas}
-          icon={<Bell className="h-4 w-4" />}
-          accent="var(--info)"
-        />
-      </div>
-
-      {/* Filtros */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/80 p-3 shadow-sm backdrop-blur md:flex-row md:items-center">
-        <Tabs
-          value={escopo}
-          onValueChange={(v) => {
-            const val = v as "minhas" | "geral";
-            setEscopo(val);
-            if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
-          }}
-        >
-          <TabsList className="h-9 rounded-lg">
-            <TabsTrigger value="minhas" className="rounded-md text-xs">
-              Minhas
-            </TabsTrigger>
-            <TabsTrigger value="geral" className="rounded-md text-xs">
-              Gerais
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar por título, número, cliente ou responsável…"
-            className="h-9 rounded-lg pl-9 text-sm"
-          />
-          {q && (
-            <button
-              onClick={() => setQ("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
-              aria-label="Limpar"
+    <div className="space-y-4 p-3 sm:space-y-5 sm:p-4 md:p-6">
+      <OpHero
+        icon={<Layers className="h-6 w-6" />}
+        eyebrow="Operacional"
+        titulo="Central de demandas"
+        descricao="Consultas, simulações, propostas e documentação delegadas com fila justa: cada demanda com dono, prazo e conversa."
+        acoes={
+          <>
+            <VisoesDemandas atual="lista" />
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl bg-card/60 backdrop-blur"
+              disabled={pegando}
+              onClick={onPegar}
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
+              <Hand className="mr-1.5 h-4 w-4" /> Pegar a próxima
+            </Button>
+            {podeCriar && <NovaDemandaDialog onCriada={() => qc.invalidateQueries({ queryKey: ["demandas-central"] })} />}
+          </>
+        }
+      />
+
+      {data?.estou_ausente && (
+        <div className="flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-[12.5px] text-foreground">
+          <CalendarOff className="size-4 text-warning" />
+          Você está marcado como ausente: a fila não manda demandas novas para você. Ajuste em “Filas e prazos”.
         </div>
+      )}
 
-        {tiposDisponiveis.length > 0 && (
-          <Select value={tipoFiltro} onValueChange={setTipoFiltro}>
-            <SelectTrigger className="h-9 w-full rounded-lg text-xs md:w-[200px]">
-              <Users className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-              <SelectValue placeholder="Tipo de usuário" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os tipos</SelectItem>
-              {tiposDisponiveis.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {tipoLabel(t)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+      <IndicadoresDemandas c={data} onSla={aba === "config" ? undefined : setSla} slaAtual={sla} />
 
-        <div className="flex flex-wrap gap-1.5">
-          {(["todas", "aberta", "em_andamento", "aguardando", "concluida"] as const).map((s) => {
-            const ativo = statusFiltro === s;
-            const label = s === "todas" ? "Todas" : statusDemanda(s as DemandaStatus).label;
-            return (
-              <button
-                key={s}
-                onClick={() => setStatusFiltro(s)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-[11px] font-medium transition-all",
-                  ativo
-                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                    : "border-border/60 bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground",
-                )}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Lista */}
-      <div className="space-y-2">
-        {isLoading && (
-          <p className="rounded-2xl border border-dashed border-border/60 bg-card p-10 text-center text-sm text-muted-foreground">
-            Carregando demandas…
-          </p>
-        )}
-        {!isLoading && filtrados.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border/60 bg-card p-10 text-center">
-            <Inbox className="mx-auto h-8 w-8 text-muted-foreground/50" />
-            <p className="mt-3 text-sm font-medium text-foreground">Nenhuma demanda encontrada</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Ajuste os filtros ou crie uma nova demanda.
-            </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <AbasEscopo atual={aba} onTrocar={trocarAba} contadores={data?.contadores} config />
+        {aba !== "config" && (
+          <div className="flex items-center gap-2">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border/70 bg-card px-3 py-2 text-[12px] font-medium text-muted-foreground">
+              <input
+                type="checkbox"
+                className="accent-[var(--primary)]"
+                checked={encerradas}
+                onChange={(e) => setEncerradas(e.target.checked)}
+              />
+              Encerradas (30 dias)
+            </label>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-9 rounded-xl"
+              onClick={() => refetch()}
+              aria-label="Atualizar"
+              title="Atualizar"
+            >
+              <RefreshCw className={isFetching ? "size-4 animate-spin" : "size-4"} />
+            </Button>
           </div>
         )}
-        {filtrados.map((d) => {
-          const cfg = statusDemanda(d.status as DemandaStatus);
-          const souCriador = Boolean(meuId && d.criador_id === meuId);
-          const abrir = () => navigate({ to: "/operacional/demandas/$id", params: { id: d.id } });
-          return (
-            <div
-              key={d.id}
-              role="button"
-              tabIndex={0}
-              onClick={abrir}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  abrir();
-                }
-              }}
-              className="group relative flex w-full cursor-pointer items-start gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              <span
-                className={cn("absolute inset-y-0 left-0 w-1 rounded-r-full", TONE_BAR[cfg.tone])}
-              />
-              <div className="min-w-0 flex-1 pl-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {d.numero ?? "DEM-—"}
-                  </span>
-                  <PriorityChip prioridade={d.prioridade} />
-                  <Badge
-                    variant="outline"
-                    className="border-border/70 bg-muted/40 text-[10px] font-medium"
-                  >
-                    {cfg.label}
-                  </Badge>
-                  {d.nao_lidas > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm">
-                      <MessageCircle className="h-3 w-3" /> {d.nao_lidas}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1.5 truncate text-sm font-semibold text-foreground">{d.titulo}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  {d.nome_cliente && (
-                    <span className="inline-flex items-center gap-1.5 truncate">
-                      <UserIcon className="h-3.5 w-3.5 text-muted-foreground/70" />
-                      <span className="truncate">{d.nome_cliente}</span>
-                    </span>
-                  )}
-                  {d.numero_proposta && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <FileText className="h-3.5 w-3.5 text-muted-foreground/70" />
-                      <span className="font-mono text-[11px]">{d.numero_proposta}</span>
-                    </span>
-                  )}
-                  {d.numero_simulacao && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Calculator className="h-3.5 w-3.5 text-muted-foreground/70" />
-                      <span className="font-mono text-[11px]">{d.numero_simulacao}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="max-w-[10rem] truncate text-right">
-                    <p className="truncate text-xs font-semibold text-foreground">
-                      {d.nome_responsavel ?? "—"}
-                    </p>
-                    {d.tipo_responsavel && (
-                      <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {tipoLabel(d.tipo_responsavel)}
-                      </p>
-                    )}
-                  </div>
-                  <OpAvatar nome={d.nome_responsavel} className="size-7 text-[10px]" />
-                </div>
-                <SlaChip prazo={d.prazo_sla} status={d.status as DemandaStatus} />
-                {d.ultima_mensagem_em && (
-                  <span className="text-[10px] text-muted-foreground/70">
-                    últ. msg {fmtData(d.ultima_mensagem_em)}
-                  </span>
-                )}
-              </div>
-              <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
-                {(souCriador || (meuId && d.responsavel_id === meuId)) && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditandoDemanda({
-                        id: d.id,
-                        titulo: d.titulo,
-                        descricao: d.descricao,
-                        prioridade: d.prioridade,
-                        sla_horas: d.sla_horas ?? null,
-                      });
-                    }}
-                    aria-label="Editar demanda"
-                    title="Editar demanda"
-                    className="grid size-7 place-items-center rounded-lg text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary focus:opacity-100"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                )}
-                {souCriador && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExcluirId(d.id);
-                    }}
-                    aria-label="Excluir demanda"
-                    title="Excluir demanda"
-                    className="grid size-7 place-items-center rounded-lg text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive focus:opacity-100"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-              <ChevronRight className="mt-1 hidden h-4 w-4 shrink-0 text-muted-foreground/40 transition group-hover:text-primary md:block" />
-            </div>
-          );
-        })}
       </div>
 
-      <AlertDialog
-        open={excluirId !== null}
-        onOpenChange={(o) => !o && !excluindo && setExcluirId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir demanda?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Toda a conversa, anexos e histórico serão removidos
-              permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={excluindo}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={excluindo}
-              onClick={(e) => {
-                e.preventDefault();
-                void confirmarExclusao();
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {excluindo ? "Excluindo…" : "Excluir"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {editandoDemanda && (
-        <EditarDemandaDialog
-          demanda={editandoDemanda}
-          onSalva={() => {
-            setEditandoDemanda(null);
-            refetch();
-          }}
-          trigger={<span className="hidden" />}
-          abertoOverride={true}
-          onOpenChangeOverride={(open) => !open && setEditandoDemanda(null)}
-        />
+      {aba === "config" ? (
+        <ConfigDemandasView />
+      ) : (
+        <>
+          <FaixaFiltros f={f} onF={setF} tipos={tipos} />
+          {sla && (
+            <p className="text-[12px] text-muted-foreground">
+              Mostrando só {sla === "atrasadas" ? "as atrasadas" : "as que vencem em 4 horas"}.{" "}
+              <button type="button" className="font-semibold text-primary hover:underline" onClick={() => setSla(null)}>
+                Limpar
+              </button>
+            </p>
+          )}
+          {isLoading ? (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-40 animate-pulse rounded-2xl border border-border/60 bg-muted/40" />
+              ))}
+            </div>
+          ) : isError ? (
+            <VazioDemandas
+              titulo="Não foi possível carregar as demandas"
+              texto={mensagemDeErro(error, "Tente de novo em instantes.")}
+              acao={<Button onClick={() => refetch()}>Tentar de novo</Button>}
+            />
+          ) : itens.length === 0 ? (
+            <VazioDemandas
+              titulo={
+                aba === "sem_responsavel"
+                  ? "Nenhuma demanda esperando na fila"
+                  : aba === "minhas"
+                    ? encerradas
+                      ? "Nada encerrado por aqui"
+                      : "Você está em dia"
+                    : "Nenhuma demanda encontrada"
+              }
+              texto={
+                aba === "minhas" && !encerradas
+                  ? "Nenhuma demanda aberta com você. Pegue a próxima da fila ou crie uma nova."
+                  : "Ajuste os filtros ou troque a aba para ver outras demandas."
+              }
+              acao={
+                aba === "minhas" && !encerradas ? (
+                  <Button variant="outline" onClick={onPegar} disabled={pegando}>
+                    <Hand className="mr-1.5 size-4" /> Pegar a próxima
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {itens.map((d) => (
+                <CartaoDemanda key={d.id} d={d} tipos={tipos} onAssumir={onAssumir} assumindo={assumindo === d.id} />
+              ))}
+            </div>
+          )}
+          {itens.length >= 300 && (
+            <p className="text-center text-[12px] text-muted-foreground">
+              Mostrando as 300 mais urgentes. Use a busca e os filtros para achar as demais.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
-}
-
-function tipoLabel(slug: string): string {
-  if (!slug) return "—";
-  return slug
-    .split(/[-_\s]+/)
-    .map((s) => (s ? s[0].toUpperCase() + s.slice(1) : s))
-    .join(" ");
 }

@@ -1,507 +1,267 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { mensagemDeErro } from "@/lib/erros/mensagem";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Kanban } from "lucide-react";
 import { toast } from "sonner";
-import { ArrowLeft, MoreHorizontal, Plus, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import {
-  listarDemandas,
-  moverStatusDemanda,
-  transicaoDemandaPermitida,
-  type DemandaStatus,
-} from "@/lib/operacional/demandas.functions";
-import { listarResponsaveisEquipe } from "@/lib/propostas/propostas.functions";
-import { statusDemanda, TONE_BAR } from "@/components/operacional/status";
-import { PriorityChip, OpAvatar } from "@/components/operacional/ui";
-import { NovaDemandaDialog } from "@/components/operacional/nova-demanda-dialog";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { usePermissao } from "@/hooks/use-permissao";
+import { useRealtimeInvalidate } from "@/hooks/use-realtime-invalidate";
 import { cn } from "@/lib/utils";
-
-type DemandaItem = Awaited<ReturnType<typeof listarDemandas>>[number];
-
-/* ------------------------------- SLA (kanban) ------------------------------ */
-
-type Urgencia = "overdue" | "critical" | "warning" | "healthy" | "none";
-
-function fmtDur(ms: number, comSegundos = false): string {
-  const total = Math.max(Math.floor(Math.abs(ms) / 1000), 0);
-  const d = Math.floor(total / 86400);
-  const h = Math.floor((total % 86400) / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
-  if (h > 0) return `${h}h ${m.toString().padStart(2, "0")}m`;
-  if (comSegundos) return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  return `${m}m`;
-}
-function fmtDias(inicio: string, now: number): string {
-  const dias = Math.max(Math.floor((now - new Date(inicio).getTime()) / 86_400_000), 0);
-  if (dias <= 0) return "hoje";
-  if (dias === 1) return "há 1 dia";
-  return `há ${dias} dias`;
-}
-function fmtData(d: string): string {
-  return new Date(d).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-/** Classifica urgência de SLA para colorir borda, barra e cronômetro. */
-function slaUrgency(
-  d: DemandaItem,
-  now: number,
-): { level: Urgencia; restanteMs: number; progresso: number } {
-  if (d.status === "concluida" || d.status === "cancelada")
-    return { level: "none", restanteMs: 0, progresso: 1 };
-  if (!d.prazo_sla) return { level: "none", restanteMs: 0, progresso: 0 };
-  const fim = new Date(d.prazo_sla).getTime();
-  const ini = new Date(d.sla_inicio).getTime();
-  const restante = fim - now;
-  const total = Math.max(fim - ini, 1);
-  const decorrido = Math.min(Math.max(now - ini, 0), total);
-  const progresso = decorrido / total;
-  if (restante < 0) return { level: "overdue", restanteMs: restante, progresso: 1 };
-  if (restante < 2 * 3600_000) return { level: "critical", restanteMs: restante, progresso };
-  if (restante < 24 * 3600_000) return { level: "warning", restanteMs: restante, progresso };
-  return { level: "healthy", restanteMs: restante, progresso };
-}
-
-const URG_TEXT: Record<Urgencia, string> = {
-  overdue: "text-destructive",
-  critical: "text-destructive",
-  warning: "text-warning",
-  healthy: "text-success",
-  none: "text-muted-foreground",
-};
-const URG_BAR: Record<Urgencia, string> = {
-  overdue: "bg-destructive",
-  critical: "bg-destructive",
-  warning: "bg-warning",
-  healthy: "bg-success",
-  none: "bg-muted-foreground/40",
-};
-const URG_BORDER: Record<Urgencia, string> = {
-  overdue: "border-destructive/50 hover:border-destructive",
-  critical: "border-destructive/40 hover:border-destructive/70",
-  warning: "border-warning/40 hover:border-warning/70",
-  healthy: "border-success/30 hover:border-success/60",
-  none: "border-border/70 hover:border-primary/40",
-};
-
-function SlaLine({ d, now }: { d: DemandaItem; now: number }) {
-  if (d.status === "concluida") {
-    const noPrazo =
-      !d.concluida_em ||
-      !d.prazo_sla ||
-      new Date(d.concluida_em).getTime() <= new Date(d.prazo_sla).getTime();
-    return (
-      <span
-        className={cn(
-          "inline-flex items-center gap-1.5",
-          noPrazo ? "text-success" : "text-destructive",
-        )}
-      >
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        Concluída em {d.concluida_em ? fmtData(d.concluida_em) : "—"}
-      </span>
-    );
-  }
-  if (d.status === "cancelada") {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-        <Clock className="h-3.5 w-3.5" /> Cancelada
-      </span>
-    );
-  }
-  const { level, restanteMs } = slaUrgency(d, now);
-  if (level === "none") {
-    const rot =
-      d.status === "aguardando" ? "Aguardando" : d.status === "aberta" ? "Aberta" : "Em andamento";
-    return (
-      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-        <Clock className="h-3.5 w-3.5" /> {rot} {fmtDias(d.sla_inicio, now)}
-      </span>
-    );
-  }
-  if (level === "overdue") {
-    return (
-      <span className="inline-flex items-center gap-1.5 font-semibold text-destructive">
-        <span className="relative flex size-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
-          <span className="relative inline-flex size-2 rounded-full bg-destructive" />
-        </span>
-        <AlertTriangle className="h-3.5 w-3.5" /> Vencido {fmtDur(restanteMs)}
-      </span>
-    );
-  }
-  if (level === "critical") {
-    return (
-      <span className="inline-flex items-center gap-1.5 font-semibold text-destructive tabular-nums">
-        <span className="relative flex size-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
-          <span className="relative inline-flex size-2 rounded-full bg-destructive" />
-        </span>
-        <Clock className="h-3.5 w-3.5" /> SLA em {fmtDur(restanteMs, true)}
-      </span>
-    );
-  }
-  if (level === "warning") {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-warning font-medium">
-        <Clock className="h-3.5 w-3.5" /> SLA em {fmtDur(restanteMs)}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 text-success">
-      <Clock className="h-3.5 w-3.5" /> SLA em {fmtDur(restanteMs)}
-    </span>
-  );
-}
-
-/* --------------------------------- Card ------------------------------------ */
-
-const KanbanCard = memo(function KanbanCard({
-  d,
-  now,
-  onDragStart,
-  onDragEnd,
-  onOpen,
-}: {
-  d: DemandaItem;
-  now: number;
-  onDragStart: (id: string, status: DemandaStatus) => void;
-  onDragEnd: () => void;
-  onOpen: (id: string) => void;
-}) {
-  const { level, progresso } = slaUrgency(d, now);
-  return (
-    <div
-      draggable
-      onDragStart={() => onDragStart(d.id, d.status as DemandaStatus)}
-      onDragEnd={onDragEnd}
-      onClick={() => onOpen(d.id)}
-      className={cn(
-        "group relative cursor-pointer overflow-hidden rounded-xl border bg-card p-3.5 pl-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg active:cursor-grabbing",
-        URG_BORDER[level],
-      )}
-    >
-      <span
-        className={cn("absolute inset-y-2 left-0 w-1 rounded-r-full", URG_BAR[level])}
-        aria-hidden
-      />
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground/80">
-          {d.numero ?? "DEM-—"}
-        </span>
-        <PriorityChip prioridade={d.prioridade} />
-      </div>
-      <p className="mt-1.5 line-clamp-2 text-[13.5px] font-semibold leading-snug text-foreground">
-        {d.titulo}
-      </p>
-      {d.nome_cliente && (
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">{d.nome_cliente}</p>
-      )}
-      <div className="mt-2.5 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <OpAvatar nome={d.nome_responsavel} className="size-6 text-[9px]" />
-          <span className="truncate text-xs font-medium text-foreground/80">
-            {d.nome_responsavel ?? "Sem responsável"}
-          </span>
-        </div>
-      </div>
-      <div className="mt-2.5 border-t border-border/60 pt-2 text-[11px] tabular-nums">
-        <SlaLine d={d} now={now} />
-      </div>
-      {level !== "none" && (
-        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted/60" aria-hidden>
-          <div
-            className={cn("h-full rounded-full transition-all", URG_BAR[level])}
-            style={{ width: `${Math.min(Math.max(progresso, 0.04), 1) * 100}%` }}
-          />
-        </div>
-      )}
-    </div>
-  );
-});
-
-/* --------------------------------- Rota ------------------------------------ */
+import { Button } from "@/components/ui/button";
+import { OpHero } from "@/components/operacional/ui";
+import {
+  assumirDemanda,
+  centralDemandas,
+  configDemandas,
+  mudarStatusDemanda,
+  type DemandaCentralItem,
+} from "@/lib/operacional/demandas-central.functions";
+import {
+  estadoPrazo,
+  exigeEncerrar,
+  ROTULO_STATUS_DEMANDA,
+  STATUS_DEMANDA_ORDEM,
+  transicaoDemandaPermitida,
+  type DemandaEscopo,
+  type DemandaOrigem,
+  type DemandaPrioridade,
+  type DemandaStatus,
+} from "@/lib/operacional/demandas-regras";
+import { CartaoDemanda } from "@/components/demandas/cartao-demanda";
+import { NovaDemandaDialog } from "@/components/demandas/nova-demanda-dialog";
+import {
+  AbasEscopo,
+  FaixaFiltros,
+  FILTROS_VAZIOS,
+  MotivoDialog,
+  VisoesDemandas,
+  type FiltrosDemanda,
+} from "@/components/demandas/barra-demandas";
+import { COR_STATUS, VazioDemandas } from "@/components/demandas/pecas";
 
 export const Route = createFileRoute("/_authenticated/operacional/demandas_/kanban")({
-  head: () => ({ meta: [{ title: "Kanban de Demandas — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Kanban de demandas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("operacional.demandas"),
   component: Pagina,
 });
 
-const COLUNAS: DemandaStatus[] = ["aberta", "em_andamento", "aguardando", "concluida", "cancelada"];
-
+/**
+ * Kanban das demandas por situação (C36). Arrastar valida a transição (mesma tabela do
+ * banco), concluir/cancelar exigem "encerrar" e cancelar pede o motivo. Soltar em
+ * "Em andamento" uma demanda sem responsável = assumir.
+ */
 function Pagina() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
-  const moverFn = useServerFn(moverStatusDemanda);
-  const arrastandoRef = useRef<{ id: string; status: DemandaStatus } | null>(null);
-  const [arrastando, setArrastando] = useState<{ id: string; status: DemandaStatus } | null>(null);
-  const [escopo, setEscopo] = useState<"minhas" | "equipe">(
-    () =>
-      (typeof window !== "undefined" &&
-        (localStorage.getItem("demandas:escopo") as "minhas" | "equipe")) ||
-      "equipe",
-  );
-  const [filtroResponsavel, setFiltroResponsavel] = useState<string>("todos");
+  const [escopo, setEscopo] = useState<DemandaEscopo>("equipe");
+  const [f, setF] = useState<FiltrosDemanda>(FILTROS_VAZIOS);
+  const [termo, setTermo] = useState("");
+  const [arrastando, setArrastando] = useState<DemandaCentralItem | null>(null);
+  const [sobre, setSobre] = useState<DemandaStatus | null>(null);
+  const [cancelar, setCancelar] = useState<DemandaCentralItem | null>(null);
+  const [assumindo, setAssumindo] = useState<string | null>(null);
+  const podeCriar = usePermissao("operacional.demandas", "create");
+  const mover = useServerFn(mudarStatusDemanda);
+  const assumir = useServerFn(assumirDemanda);
 
-  const { data, refetch } = useQuery({
-    queryKey: ["demandas", "kanban", escopo],
-    queryFn: () => listarDemandas({ data: { escopo } }),
-  });
-
-  const { data: responsaveis } = useQuery({
-    queryKey: ["demandas", "responsaveis-equipe"],
-    queryFn: () => listarResponsaveisEquipe(),
-    staleTime: 5 * 60_000,
-  });
-
-  // Relógio compartilhado — evita 1 timer por card.
-  const [now, setNow] = useState(() => Date.now());
-  // Tick de 1s quando houver algum SLA crítico/vencido; caso contrário 30s.
-  const precisaTickRapido = useMemo(() => {
-    const arr = data ?? [];
-    return arr.some((d) => {
-      if (d.status === "concluida" || d.status === "cancelada" || !d.prazo_sla) return false;
-      const restante = new Date(d.prazo_sla).getTime() - now;
-      return restante < 2 * 3600_000; // crítico ou vencido
-    });
-  }, [data, now]);
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const t = setInterval(() => setNow(Date.now()), precisaTickRapido ? 1000 : 30_000);
-    return () => clearInterval(t);
-  }, [precisaTickRapido]);
+    const t = setTimeout(() => setTermo(f.termo.trim()), 300);
+    return () => clearTimeout(t);
+  }, [f.termo]);
 
-  const onDragStart = useCallback((id: string, status: DemandaStatus) => {
-    arrastandoRef.current = { id, status };
-    requestAnimationFrame(() => setArrastando({ id, status }));
-  }, []);
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["demandas-central", "kanban", escopo, termo, f.tipo, f.origem, f.prioridade],
+    queryFn: () =>
+      centralDemandas({
+        data: {
+          escopo,
+          termo: termo || null,
+          tipo: f.tipo !== "todos" ? f.tipo : null,
+          origem: f.origem !== "todas" ? (f.origem as DemandaOrigem) : null,
+          prioridade: f.prioridade !== "todas" ? (f.prioridade as DemandaPrioridade) : null,
+          encerradas_dias: 7,
+        },
+      }),
+    refetchInterval: 60_000,
+  });
+  const { data: cfg } = useQuery({
+    queryKey: ["demandas-config"],
+    queryFn: () => configDemandas(),
+    staleTime: 60_000,
+  });
+  useRealtimeInvalidate("demandas-kanban", [["demandas-central"]], ["demandas"]);
 
-  const onDragEnd = useCallback(() => {
-    arrastandoRef.current = null;
+  const colunas = useMemo(() => {
+    const m = new Map<DemandaStatus, DemandaCentralItem[]>();
+    for (const s of STATUS_DEMANDA_ORDEM) m.set(s, []);
+    for (const d of data?.itens ?? []) m.get(d.status)?.push(d);
+    return m;
+  }, [data]);
+
+  async function soltar(para: DemandaStatus) {
+    const d = arrastando;
     setArrastando(null);
-  }, []);
-
-  const onOpen = useCallback(
-    (id: string) => navigate({ to: "/operacional/demandas/$id", params: { id } }),
-    [navigate],
-  );
-
-  const soltar = useCallback(
-    async (coluna: DemandaStatus) => {
-      const origem = arrastandoRef.current;
-      arrastandoRef.current = null;
-      setArrastando(null);
-      if (!origem) return;
-      const { id, status } = origem;
-      if (status === coluna) return;
-      if (!transicaoDemandaPermitida(status, coluna)) {
-        toast.error(
-          `Transição inválida: ${statusDemanda(status).label} → ${statusDemanda(coluna).label}.`,
-        );
-        return;
+    setSobre(null);
+    if (!d || d.status === para) return;
+    if (!transicaoDemandaPermitida(d.status, para)) {
+      toast.error(`De "${ROTULO_STATUS_DEMANDA[d.status]}" não vai direto para "${ROTULO_STATUS_DEMANDA[para]}".`);
+      return;
+    }
+    if (para === "cancelada") {
+      setCancelar(d);
+      return;
+    }
+    try {
+      if (para === "em_andamento" && !d.responsavel_id) {
+        await assumir({ data: { id: d.id } });
+        toast.success("Demanda assumida.");
+      } else {
+        await mover({ data: { id: d.id, status: para } });
+        toast.success(`Movida para ${ROTULO_STATUS_DEMANDA[para]}.`);
       }
-      try {
-        await moverFn({ data: { id, status: coluna } });
-        qc.invalidateQueries({ queryKey: ["demandas"] });
-      } catch (e) {
-        toast.error(mensagemDeErro(e, "Falha ao mover."));
-      }
-    },
-    [moverFn, qc],
-  );
+      qc.invalidateQueries({ queryKey: ["demandas-central"] });
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível mover."));
+      refetch();
+    }
+  }
 
-  const itens = useMemo(() => {
-    const base = data ?? [];
-    if (filtroResponsavel === "todos") return base;
-    if (filtroResponsavel === "sem") return base.filter((d) => !d.responsavel_id);
-    return base.filter((d) => d.responsavel_id === filtroResponsavel);
-  }, [data, filtroResponsavel]);
-  const porStatus = useMemo(() => {
-    const mapa = new Map<DemandaStatus, DemandaItem[]>();
-    for (const col of COLUNAS) mapa.set(col, []);
-    for (const d of itens) mapa.get(d.status as DemandaStatus)?.push(d);
-    return mapa;
-  }, [itens]);
+  async function onAssumir(id: string) {
+    setAssumindo(id);
+    try {
+      await assumir({ data: { id } });
+      toast.success("Demanda assumida.");
+      qc.invalidateQueries({ queryKey: ["demandas-central"] });
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível assumir."));
+      refetch();
+    } finally {
+      setAssumindo(null);
+    }
+  }
 
   return (
-    <div className="space-y-5 p-4 md:p-6">
-      <div className="op-hero flex flex-col gap-3 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center p-5 md:p-6">
-        <div className="min-w-0">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
-            Operacional
-          </span>
-          <h1 className="mt-0.5 truncate text-2xl font-bold tracking-tight text-foreground md:text-[26px]">
-            Kanban de Demandas
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Arraste os cards entre etapas permitidas para atualizar o status.
-          </p>
+    <div className="space-y-4 p-3 sm:space-y-5 sm:p-4 md:p-6">
+      <OpHero
+        icon={<Kanban className="h-6 w-6" />}
+        eyebrow="Operacional · Demandas"
+        titulo="Kanban de demandas"
+        descricao="Arraste entre as situações. A regra é a mesma do banco: a coluna que não aceita a demanda fica apagada."
+        acoes={
+          <>
+            <VisoesDemandas atual="kanban" />
+            {podeCriar && <NovaDemandaDialog onCriada={() => qc.invalidateQueries({ queryKey: ["demandas-central"] })} />}
+          </>
+        }
+      />
+      <AbasEscopo atual={escopo} onTrocar={(a) => a !== "config" && setEscopo(a)} contadores={data?.contadores} />
+      <FaixaFiltros f={f} onF={setF} tipos={cfg?.tipos ?? []} />
+
+      {isLoading ? (
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
+          {STATUS_DEMANDA_ORDEM.map((s) => (
+            <div key={s} className="h-72 animate-pulse rounded-2xl border border-border/60 bg-muted/40" />
+          ))}
         </div>
-        <Button asChild variant="outline" size="sm" className="bg-card/60 backdrop-blur">
-          <Link to="/operacional/demandas">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Lista
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-card/80 p-3 shadow-sm backdrop-blur">
-        <Tabs
-          value={escopo}
-          onValueChange={(v) => {
-            const val = v as "minhas" | "equipe";
-            setEscopo(val);
-            if (typeof window !== "undefined") localStorage.setItem("demandas:escopo", val);
-          }}
-        >
-          <TabsList className="h-9 rounded-lg">
-            <TabsTrigger value="minhas" className="rounded-md text-xs">
-              Minhas
-            </TabsTrigger>
-            <TabsTrigger value="equipe" className="rounded-md text-xs">
-              Gerais
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
-          <SelectTrigger className="h-9 w-full max-w-[260px] rounded-lg text-xs sm:w-[260px]">
-            <SelectValue placeholder="Filtrar por responsável" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os responsáveis</SelectItem>
-            <SelectItem value="sem">Sem responsável</SelectItem>
-            {(responsaveis ?? []).map((r) => (
-              <SelectItem key={r.id} value={r.id}>
-                {r.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {filtroResponsavel !== "todos" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9"
-            onClick={() => setFiltroResponsavel("todos")}
-          >
-            Limpar filtro
-          </Button>
-        )}
-      </div>
-
-      {/* Legenda de SLA */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-border/50 bg-card/60 px-3 py-2 text-[11px] text-muted-foreground">
-        <span className="font-semibold uppercase tracking-wider text-muted-foreground/80">SLA</span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-success" /> No prazo
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-warning" /> &lt; 24h
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-destructive" /> &lt; 2h · crítico
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="relative flex size-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" />
-            <span className="relative inline-flex size-2 rounded-full bg-destructive" />
-          </span>
-          Vencido
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-5">
-        {COLUNAS.map((col) => {
-          const cfg = statusDemanda(col);
-          const doStatus = porStatus.get(col) ?? [];
-          const alvo = arrastando && transicaoDemandaPermitida(arrastando.status, col);
-          return (
-            <div
-              key={col}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => soltar(col)}
-              className={cn(
-                "group/col flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/60 bg-muted/25 shadow-sm transition-all",
-                alvo && "border-primary/60 bg-primary/5 ring-2 ring-primary/30",
-              )}
-            >
-              {/* Header com barra de tom */}
-              <div className="relative border-b border-border/50 bg-card/60 px-4 py-3 backdrop-blur">
-                <span className={cn("absolute inset-x-0 top-0 h-0.5", TONE_BAR[cfg.tone])} />
-                <div className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <span className={cn("size-2 rounded-full", TONE_BAR[cfg.tone])} />
-                    {cfg.label}
-                    <span className="ml-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums text-muted-foreground">
-                      {doStatus.length}
+      ) : isError ? (
+        <VazioDemandas
+          titulo="Não foi possível carregar o kanban"
+          texto={mensagemDeErro(error, "Tente de novo em instantes.")}
+          acao={<Button onClick={() => refetch()}>Tentar de novo</Button>}
+        />
+      ) : (
+        <div className="-mx-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0">
+          <div className="grid min-w-max auto-cols-[minmax(17rem,1fr)] grid-flow-col gap-3 xl:min-w-0">
+            {STATUS_DEMANDA_ORDEM.map((s) => {
+              const itens = colunas.get(s) ?? [];
+              const atrasadas = itens.filter((d) => estadoPrazo(d.prazo_sla, d.status) === "atrasada").length;
+              const aceita = arrastando ? transicaoDemandaPermitida(arrastando.status, s) && arrastando.status !== s : true;
+              return (
+                <section
+                  key={s}
+                  onDragOver={(e) => {
+                    if (!arrastando || !aceita) return;
+                    e.preventDefault();
+                    setSobre(s);
+                  }}
+                  onDragLeave={() => setSobre((x) => (x === s ? null : x))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    soltar(s);
+                  }}
+                  className={cn(
+                    "flex max-h-[calc(100dvh-16rem)] min-h-64 flex-col rounded-2xl border border-border/70 bg-muted/25 transition",
+                    arrastando && !aceita && "opacity-45",
+                    arrastando && aceita && "border-dashed border-primary/50",
+                    sobre === s && "bg-primary/5 ring-2 ring-primary/30",
+                  )}
+                >
+                  <header className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2.5">
+                    <span className="flex items-center gap-2 text-[12.5px] font-semibold">
+                      <span className={cn("size-2 rounded-full", COR_STATUS[s].ponto)} />
+                      {ROTULO_STATUS_DEMANDA[s]}
                     </span>
-                  </span>
-                  <button
-                    type="button"
-                    className="rounded-md p-1 text-muted-foreground/60 opacity-0 transition hover:bg-muted hover:text-foreground group-hover/col:opacity-100"
-                    aria-label="Opções da coluna"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Cards */}
-              <div className="brand-scroll flex-1 space-y-2.5 p-2.5">
-                {doStatus.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-border/60 bg-background/40 px-2 py-8 text-center">
-                    <p className="text-[11px] text-muted-foreground/70">Sem demandas</p>
+                    <span className="flex items-center gap-1.5">
+                      {atrasadas > 0 && (
+                        <span className="rounded-full bg-destructive/10 px-1.5 text-[10.5px] font-semibold text-destructive">
+                          {atrasadas} atrasada{atrasadas > 1 ? "s" : ""}
+                        </span>
+                      )}
+                      <span className="rounded-full bg-card px-2 text-[11px] font-semibold tabular-nums ring-1 ring-border">
+                        {itens.length}
+                      </span>
+                    </span>
+                  </header>
+                  <div className="flex-1 space-y-2.5 overflow-y-auto p-2.5">
+                    {itens.length === 0 ? (
+                      <p className="px-2 py-8 text-center text-[11.5px] text-muted-foreground">
+                        {exigeEncerrar(s) ? "Encerradas nos últimos 7 dias aparecem aqui." : "Nada aqui."}
+                      </p>
+                    ) : (
+                      itens.map((d) => (
+                        <CartaoDemanda
+                          key={d.id}
+                          d={d}
+                          tipos={cfg?.tipos}
+                          mostrarStatus={false}
+                          arrastavel
+                          onDragStart={(e, x) => {
+                            e.dataTransfer.effectAllowed = "move";
+                            e.dataTransfer.setData("text/plain", x.id);
+                            setArrastando(x);
+                          }}
+                          onAssumir={onAssumir}
+                          assumindo={assumindo === d.id}
+                        />
+                      ))
+                    )}
                   </div>
-                )}
-                {doStatus.map((d) => (
-                  <KanbanCard
-                    key={d.id}
-                    d={d}
-                    now={now}
-                    onDragStart={onDragStart}
-                    onDragEnd={onDragEnd}
-                    onOpen={onOpen}
-                  />
-                ))}
-              </div>
+                </section>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-              {/* Footer — criar demanda */}
-              <div className="border-t border-border/50 bg-card/40 p-2">
-                <NovaDemandaDialog
-                  onCriada={() => refetch()}
-                  trigger={
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Criar demanda
-                    </button>
-                  }
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <MotivoDialog
+        aberto={!!cancelar}
+        titulo="Cancelar demanda"
+        descricao="O motivo vai para o histórico e quem participa é avisado."
+        rotulo="Cancelar demanda"
+        onFechar={() => setCancelar(null)}
+        onConfirmar={async (motivo) => {
+          if (!cancelar) return;
+          try {
+            await mover({ data: { id: cancelar.id, status: "cancelada", motivo } });
+            toast.success("Demanda cancelada.");
+            setCancelar(null);
+            qc.invalidateQueries({ queryKey: ["demandas-central"] });
+          } catch (e) {
+            toast.error(mensagemDeErro(e, "Não foi possível cancelar."));
+          }
+        }}
+      />
     </div>
   );
 }
