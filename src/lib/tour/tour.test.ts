@@ -148,5 +148,6 @@ describe("tour: roteiros", () => {
         .map((a) => `${chave} → ${a}`),
     );
     expect(orfaos).toEqual([]);
-  });
+    // Varre todos os .tsx do app: com a suíte inteira em paralelo, passa dos 5 s padrão.
+  }, 30_000);
 });
