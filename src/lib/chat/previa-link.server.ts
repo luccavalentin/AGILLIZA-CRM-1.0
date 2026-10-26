@@ -2,15 +2,17 @@ import { lookup as resolverDns } from "node:dns";
 import http from "node:http";
 import https from "node:https";
 import type { LookupFunction } from "node:net";
-import { extrairPrevia, ipPrivado, urlPermitida } from "./previa-link-regras";
+import { armarPrazo, criarBuscadorDePrevia, ipPrivado, type Baixado } from "./previa-link-regras";
 
 /**
  * Prévia de link do chat, buscada pelo servidor com as travas de `previa-link-regras`.
  *
  * O IP é conferido NA CONEXÃO (função `lookup` própria), não antes: assim um nome que
  * resolve para um IP público na conferência e para 127.0.0.1 na conexão (DNS rebinding)
- * não passa. Até 3 redirecionamentos (cada um conferido de novo), 4 s, 256 KB, só HTML.
- * Resultado (inclusive "sem prévia") fica 6 h num cache em memória de 300 endereços.
+ * não passa. Até 3 redirecionamentos (cada um conferido de novo), 256 KB, só HTML, e UM prazo
+ * total para a busca inteira (auditoria rodada 2: o `timeout` do http é só de ociosidade).
+ * Resultado (inclusive "sem prévia") fica 6 h num cache em memória de 300 endereços; a busca
+ * que não está no cache passa antes pelo limite da pessoa (`antesDeBuscar`).
  */
 export type Previa = {
   url: string;
@@ -19,8 +21,6 @@ export type Previa = {
   descricao: string | null;
 };
 
-const cache = new Map<string, { em: number; valor: Previa | null }>();
-const VALIDADE_MS = 6 * 3600_000;
 const TETO_BYTES = 256 * 1024;
 
 const lookupSeguro: LookupFunction = (host, opcoes, cb) => {
@@ -43,7 +43,7 @@ const lookupSeguro: LookupFunction = (host, opcoes, cb) => {
   });
 };
 
-function baixar(u: URL): Promise<{ status: number; local?: string; tipo: string; corpo: string }> {
+function baixar(u: URL, prazo: number): Promise<Baixado> {
   return new Promise((resolver, rejeitar) => {
     const mod = u.protocol === "https:" ? https : http;
     const req = mod.request(
@@ -88,33 +88,18 @@ function baixar(u: URL): Promise<{ status: number; local?: string; tipo: string;
       },
     );
     req.on("timeout", () => req.destroy(new Error("tempo esgotado")));
+    armarPrazo(req, prazo);
     req.on("error", rejeitar);
     req.end();
   });
 }
 
-export async function buscarPreviaLink(bruta: string): Promise<Previa | null> {
-  const inicial = urlPermitida(bruta);
-  if (!inicial) return null;
-  const chave = inicial.toString();
-  const em = cache.get(chave);
-  if (em && Date.now() - em.em < VALIDADE_MS) return em.valor;
-  let valor: Previa | null = null;
-  try {
-    let u: URL | null = inicial;
-    for (let i = 0; i < 4 && u; i++) {
-      const r = await baixar(u);
-      if (r.local) {
-        u = urlPermitida(new URL(r.local, u).toString());
-        continue;
-      }
-      if (r.status >= 200 && r.status < 300 && r.corpo) valor = extrairPrevia(r.corpo, u);
-      break;
-    }
-  } catch {
-    valor = null;
-  }
-  if (cache.size >= 300) cache.delete(cache.keys().next().value!);
-  cache.set(chave, { em: Date.now(), valor });
-  return valor;
+const buscar = criarBuscadorDePrevia({ baixar });
+
+/** Prévia do link; `antesDeBuscar` é o limite da pessoa (só para o que não está no cache). */
+export function buscarPreviaLink(
+  bruta: string,
+  antesDeBuscar?: () => Promise<unknown>,
+): Promise<Previa | null> {
+  return buscar(bruta, antesDeBuscar);
 }

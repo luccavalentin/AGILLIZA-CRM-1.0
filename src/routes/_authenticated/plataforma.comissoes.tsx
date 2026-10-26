@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   BadgeCheck,
   CircleDollarSign,
+  ClipboardCheck,
   HandCoins,
   ListChecks,
   Percent,
@@ -45,11 +46,16 @@ import { Dinheiro, TIPO_CONTA } from "@/components/plataforma/receita/comum";
 import { useValorAssentado } from "@/components/plataforma/paginacao";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
-import { formatBRL, formatData } from "@/lib/financeiro/format";
+import { formatBRL, formatData, maskBRLInput, parseBRL } from "@/lib/financeiro/format";
+import { maskBRLCents } from "@/lib/simulacao/format";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import {
   atualizarComissaoAssinante,
+  calcularComissao,
+  conferirComissaoAssinante,
   listarComissoesAssinantes,
+  observacaoDaConferencia,
+  problemaNaBase,
   type ComissaoAssinante,
   type StatusComissaoAssinante,
 } from "@/lib/plataforma/comissoes-assinantes.functions";
@@ -61,7 +67,13 @@ export const Route = createFileRoute("/_authenticated/plataforma/comissoes")({
 });
 
 const STATUS: Record<StatusComissaoAssinante, { rotulo: string; tom: Tom }> = {
+  // 0481: a base veio só do valor que a conta informou; o Agilliza confere antes de pagar.
+  a_conferir: { rotulo: "Em conferência", tom: "info" },
   a_pagar: { rotulo: "A pagar", tom: "alerta" },
+  // Repasse (0327): base = comissão do banco ainda não recebida; aprovada; paga em parte.
+  aguardando_base: { rotulo: "Aguardando banco", tom: "neutro" },
+  aprovada: { rotulo: "Aprovada", tom: "marca" },
+  parcial: { rotulo: "Paga em parte", tom: "alerta" },
   paga: { rotulo: "Paga", tom: "sucesso" },
   cancelada: { rotulo: "Cancelada", tom: "neutro" },
 };
@@ -82,6 +94,7 @@ function Pagina() {
   const termo = useValorAssentado(busca.trim());
   const [cancelando, setCancelando] = useState<ComissaoAssinante | null>(null);
   const [percentuais, setPercentuais] = useState(false);
+  const [conferindo, setConferindo] = useState<ComissaoAssinante | null>(null);
 
   const q = useQuery({
     queryKey: ["plataforma-comissoes", status, de, ate, termo],
@@ -120,7 +133,17 @@ function Pagina() {
         }
       />
 
-      <FaixaIndicadores>
+      <FaixaIndicadores colunas={5}>
+        <Indicador
+          rotulo="Em conferência"
+          icone={<ClipboardCheck />}
+          tom="info"
+          carregando={q.isLoading}
+          valor={<Dinheiro valor={Number(q.data?.totais.a_conferir ?? 0)} />}
+          detalhe="base informada pela conta"
+          onClick={() => setStatus("a_conferir")}
+          ativo={status === "a_conferir"}
+        />
         <Indicador
           rotulo="A pagar"
           icone={<CircleDollarSign />}
@@ -174,6 +197,7 @@ function Pagina() {
           valor={status}
           onChange={setStatus}
           opcoes={[
+            { valor: "a_conferir", rotulo: "Em conferência" },
             { valor: "a_pagar", rotulo: "A pagar" },
             { valor: "paga", rotulo: "Pagas" },
             { valor: "cancelada", rotulo: "Canceladas" },
@@ -288,7 +312,12 @@ function Pagina() {
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">
-                      <AcoesComissao c={c} podeEditar={podeEditar} onCancelar={() => setCancelando(c)} />
+                      <AcoesComissao
+                        c={c}
+                        podeEditar={podeEditar}
+                        onCancelar={() => setCancelando(c)}
+                        onConferir={() => setConferindo(c)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -317,7 +346,12 @@ function Pagina() {
                   </p>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Selo tom={STATUS[c.status].tom}>{STATUS[c.status].rotulo}</Selo>
-                    <AcoesComissao c={c} podeEditar={podeEditar} onCancelar={() => setCancelando(c)} />
+                    <AcoesComissao
+                        c={c}
+                        podeEditar={podeEditar}
+                        onCancelar={() => setCancelando(c)}
+                        onConferir={() => setConferindo(c)}
+                      />
                   </div>
                 </li>
               ))}
@@ -327,6 +361,9 @@ function Pagina() {
       </div>
 
       {cancelando && <CancelarComissao comissao={cancelando} aoFechar={() => setCancelando(null)} />}
+      {conferindo && (
+        <ConferirComissao comissao={conferindo} aoFechar={() => setConferindo(null)} />
+      )}
       {podeEditar && config && (
         <GavetaPercentuais
           aberta={percentuais}
@@ -343,10 +380,12 @@ function AcoesComissao({
   c,
   podeEditar,
   onCancelar,
+  onConferir,
 }: {
   c: ComissaoAssinante;
   podeEditar: boolean;
   onCancelar: () => void;
+  onConferir: () => void;
 }) {
   const qc = useQueryClient();
   const atualizarFn = useServerFn(atualizarComissaoAssinante);
@@ -361,7 +400,11 @@ function AcoesComissao({
   if (!podeEditar || c.status === "cancelada") return null;
   return (
     <div className="flex items-center justify-end gap-1">
-      {c.status === "a_pagar" ? (
+      {c.status === "a_conferir" ? (
+        <Button size="sm" className="min-h-11 sm:min-h-8" onClick={onConferir}>
+          <ClipboardCheck className="mr-1.5 size-4" /> Conferir
+        </Button>
+      ) : c.status === "a_pagar" || c.status === "aprovada" || c.status === "parcial" ? (
         <Button
           size="sm"
           className="min-h-11 sm:min-h-8"
@@ -370,7 +413,7 @@ function AcoesComissao({
         >
           <BadgeCheck className="mr-1.5 size-4" /> Dar baixa
         </Button>
-      ) : (
+      ) : c.status === "aguardando_base" ? null : (
         <Button
           size="sm"
           variant="outline"
@@ -441,6 +484,123 @@ function CancelarComissao({
             onClick={() => cancelar.mutate()}
           >
             Cancelar comissão
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * "Em conferência" (0481): a base veio só do valor que a conta informou. Quem confere
+ * olha o contrato, corrige a base se precisar e passa para "a pagar" (0495). O valor é
+ * recalculado na hora com o percentual guardado na comissão, como o banco faz.
+ */
+function ConferirComissao({
+  comissao,
+  aoFechar,
+}: {
+  comissao: ComissaoAssinante;
+  aoFechar: () => void;
+}) {
+  const qc = useQueryClient();
+  const conferirFn = useServerFn(conferirComissaoAssinante);
+  const [baseTexto, setBaseTexto] = useState(() => maskBRLInput(Number(comissao.base)));
+  const [nota, setNota] = useState("");
+  const baseConferida = parseBRL(baseTexto);
+  const problema = problemaNaBase(baseConferida);
+  const novoValor = calcularComissao(baseConferida, Number(comissao.percentual));
+  const corrigida = Math.round(baseConferida * 100) !== Math.round(Number(comissao.base) * 100);
+  const conferir = useMutation({
+    mutationFn: () =>
+      conferirFn({
+        data: {
+          id: comissao.id,
+          base: baseConferida,
+          observacao: observacaoDaConferencia(nota, baseConferida),
+        },
+      }),
+    onSuccess: (r) => {
+      toast.success("Comissão conferida: passou para a pagar.", {
+        description: `${formatBRL(r.valor)} sobre a base de ${formatBRL(r.base)}.`,
+      });
+      qc.invalidateQueries({ queryKey: ["plataforma-comissoes"] });
+      aoFechar();
+    },
+    onError: (e) => toast.error(mensagemDeErro(e, "Não foi possível conferir.")),
+  });
+  return (
+    <Dialog open onOpenChange={(v) => !v && aoFechar()}>
+      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Conferir comissão</DialogTitle>
+          <DialogDescription>
+            A base desta comissão veio do valor que a própria conta informou. Confira no contrato e
+            corrija se precisar antes de passar para a pagar.
+          </DialogDescription>
+        </DialogHeader>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg border bg-muted/40 p-3 text-sm">
+          <dt className="text-muted-foreground">Conta</dt>
+          <dd className="min-w-0 truncate text-right font-medium">{comissao.conta}</dd>
+          <dt className="text-muted-foreground">Proposta</dt>
+          <dd className="min-w-0 truncate text-right">{comissao.proposta}</dd>
+          <dt className="text-muted-foreground">Base informada</dt>
+          <dd className="text-right tabular-nums">{formatBRL(Number(comissao.base))}</dd>
+          <dt className="text-muted-foreground">Percentual</dt>
+          <dd className="text-right tabular-nums">{pct(comissao.percentual)}</dd>
+        </dl>
+        <div className="space-y-1">
+          <Label htmlFor="cm-base">Base conferida (R$)</Label>
+          <Input
+            id="cm-base"
+            inputMode="numeric"
+            autoComplete="off"
+            className="tabular-nums"
+            value={baseTexto}
+            onChange={(e) => setBaseTexto(maskBRLCents(e.target.value))}
+            aria-invalid={problema ? true : undefined}
+            aria-describedby="cm-base-ajuda"
+          />
+          <p
+            id="cm-base-ajuda"
+            className={problema ? "text-xs text-destructive" : "text-xs text-muted-foreground"}
+          >
+            {problema ??
+              (corrigida
+                ? `Corrigida: era ${formatBRL(Number(comissao.base))}.`
+                : "Igual à base informada pela conta.")}
+          </p>
+        </div>
+        <div
+          className="flex items-baseline justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5"
+          aria-live="polite"
+        >
+          <span className="text-sm text-muted-foreground">Comissão a pagar</span>
+          <span className="text-lg font-semibold tabular-nums text-foreground">
+            {problema ? "—" : formatBRL(novoValor)}
+          </span>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="cm-nota">Anotação da conferência (opcional)</Label>
+          <Textarea
+            id="cm-nota"
+            rows={2}
+            maxLength={400}
+            placeholder="Ex.: conferido com o contrato registrado"
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+          />
+        </div>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={aoFechar}>
+            Voltar
+          </Button>
+          <Button
+            className="w-full sm:w-auto"
+            disabled={conferir.isPending || !!problema}
+            onClick={() => conferir.mutate()}
+          >
+            <ClipboardCheck className="mr-1.5 size-4" /> Conferir e passar para a pagar
           </Button>
         </DialogFooter>
       </DialogContent>

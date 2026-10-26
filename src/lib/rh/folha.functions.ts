@@ -168,13 +168,10 @@ async function carregarDadosCompetencia(
       .select("funcionario_id, valor, desconto, vigencia_inicio, vigencia_fim, rh_beneficios_tipos(nome)")
       .in("funcionario_id", ids)
       .eq("ativo", true),
-    supabase
-      .from("rh_ocorrencias")
-      .select("funcionario_id, data_inicio, data_fim, abonada")
-      .in("funcionario_id", ids)
-      .eq("tipo", "falta")
-      .lte("data_inicio", fim)
-      .or(`data_fim.gte.${inicio},data_inicio.gte.${inicio}`),
+    // Faltas pela função do banco (sem CID nem justificativa): a RLS de rh_ocorrencias exige
+    // "Ocorrências · ver" e quem fecha a folha sem ela via a prévia sem as faltas — o banco,
+    // que recalcula no fechamento, recusaria (auditoria rodada 2).
+    supabase.rpc("rh_faltas_da_folha", { p_ids: ids, p_ini: inicio, p_fim: fim }),
     supabase
       .from("rh_adiantamentos")
       .select("funcionario_id, valor")

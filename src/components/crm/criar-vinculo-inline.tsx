@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Copy, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,11 +53,6 @@ export function CriarVinculoInline({
   const [email, setEmail] = useState("");
   const [comLogin, setComLogin] = useState(false);
   const [nivelId, setNivelId] = useState("");
-  const [credenciais, setCredenciais] = useState<{
-    email: string;
-    senha: string;
-    idCriado: string;
-  } | null>(null);
 
   const { data: niveis } = useQuery({
     queryKey: ["niveis-acesso"],
@@ -105,20 +100,25 @@ export function CriarVinculoInline({
     onSuccess: async (res) => {
       await qc.invalidateQueries({ queryKey: ["parceiros-disponiveis"] });
       await qc.invalidateQueries({ queryKey: ["pessoas"] });
-      if (comLogin && res.senha_temporaria) {
-        // Não exibe a senha em toast (pode ser perdida): abre modal dedicado
-        // que persiste até o admin copiar e confirmar.
-        setCredenciais({
-          email: res.email || email.trim(),
-          senha: res.senha_temporaria,
-          idCriado: res.id,
+      // A senha provisória vai só para o e-mail da pessoa: nunca aparece aqui
+      // (decisão 15 do backtest de 23/10/2026).
+      if (comLogin && res.senha_enviada) {
+        toast.success("Cadastro criado e vinculado.", {
+          description: `A senha provisória foi enviada para ${res.email || email.trim()}.`,
+        });
+      } else if (comLogin) {
+        toast.warning("Cadastro criado e vinculado, mas a senha não foi enviada.", {
+          description:
+            res.aviso_envio ??
+            "Use “Redefinir senha” em Pessoas para enviar outra senha por e-mail.",
+          duration: 12_000,
         });
       } else {
         toast.success("Cadastro criado e vinculado.");
-        onCriado(res.id);
-        limpar();
-        onOpenChange(false);
       }
+      onCriado(res.id);
+      limpar();
+      onOpenChange(false);
     },
     onError: (e: Error) => toast.error(mensagemDeErro(e, "Não foi possível concluir a operação.")),
   });
@@ -218,69 +218,6 @@ export function CriarVinculoInline({
           </Button>
         </DialogFooter>
       </DialogContent>
-
-      {/* Modal dedicado: senha temporária (persiste até o admin copiar) */}
-      <Dialog
-        open={!!credenciais}
-        onOpenChange={(o) => {
-          if (!o && credenciais) {
-            const id = credenciais.idCriado;
-            setCredenciais(null);
-            onCriado(id);
-            limpar();
-            onOpenChange(false);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Copiar senha temporária</DialogTitle>
-            <DialogDescription>
-              Esta senha não será exibida novamente — copie e repasse por canal seguro.
-            </DialogDescription>
-          </DialogHeader>
-          {credenciais && (
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label>E-mail</Label>
-                <Input readOnly value={credenciais.email} />
-              </div>
-              <div className="space-y-1">
-                <Label>Senha temporária</Label>
-                <div className="flex gap-2">
-                  <Input readOnly value={credenciais.senha} className="font-mono" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    aria-label="Copiar senha"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(credenciais.senha);
-                      toast.success("Senha copiada.");
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                if (!credenciais) return;
-                const id = credenciais.idCriado;
-                setCredenciais(null);
-                onCriado(id);
-                limpar();
-                onOpenChange(false);
-              }}
-            >
-              Concluído
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Dialog>
   );
 }

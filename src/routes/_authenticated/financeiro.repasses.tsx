@@ -78,7 +78,7 @@ const BASES: Record<BaseRepasse, string> = {
   comissao_recebida: "Comissão recebida do banco",
 };
 
-type Filtro = "todos" | "a_pagar" | "aguardando_base" | "aprovada" | "parcial" | "paga" | "cancelada";
+type Filtro = "todos" | "a_pagar" | "a_conferir" | "aguardando_base" | "aprovada" | "parcial" | "paga" | "cancelada";
 
 function Pagina() {
   const qc = useQueryClient();
@@ -266,6 +266,7 @@ function Pagina() {
           opcoes={[
             { valor: "todos", rotulo: "Todos" },
             { valor: "a_pagar", rotulo: "Previstos" },
+            { valor: "a_conferir", rotulo: "Em conferência", contador: t?.em_conferencia },
             { valor: "aguardando_base", rotulo: "Aguardando banco", contador: t?.aguardando_base },
             { valor: "aprovada", rotulo: "Aprovados" },
             { valor: "parcial", rotulo: "Parciais" },
@@ -328,7 +329,7 @@ function Pagina() {
                   rotulo: "Ajustar valor",
                   icone: Pencil,
                   onClick: () => setAcao({ tipo: "ajustar", item: l }),
-                  oculto: !podeEditar || ["paga", "cancelada"].includes(l.status),
+                  oculto: !podeEditar || ["paga", "cancelada", "a_conferir"].includes(l.status),
                   separarAntes: true,
                 },
                 {

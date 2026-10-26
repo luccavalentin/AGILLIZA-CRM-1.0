@@ -776,6 +776,7 @@ function ParametrosAba({ p }: { p: Parametros }) {
     dias_previsao_recebimento: String(p.dias_previsao_recebimento),
     dias_vencimento_comissao: String(p.dias_vencimento_comissao),
     tolerancia_divergencia: String(p.tolerancia_divergencia).replace(".", ","),
+    teto_tolerancia_divergencia: String(p.teto_tolerancia_divergencia ?? 1).replace(".", ","),
     dias_janela_conciliacao: String(p.dias_janela_conciliacao),
   });
   const [enviando, setEnviando] = useState(false);
@@ -811,6 +812,11 @@ function ParametrosAba({ p }: { p: Parametros }) {
           <Input inputMode="decimal" value={f.tolerancia_divergencia} disabled={!pode} onChange={(e) => setF({ ...f, tolerancia_divergencia: e.target.value })} />
         </div>
         <div className="space-y-1.5">
+          <Label>Teto da tolerância (R$)</Label>
+          <Input inputMode="decimal" value={f.teto_tolerancia_divergencia} disabled={!pode} onChange={(e) => setF({ ...f, teto_tolerancia_divergencia: e.target.value })} />
+          <p className="text-xs text-muted-foreground">Padrão R$ 1,00. Só a administração do correspondente muda o teto.</p>
+        </div>
+        <div className="space-y-1.5">
           <Label>Janela da conciliação (± dias)</Label>
           <Input type="number" min={0} max={30} value={f.dias_janela_conciliacao} disabled={!pode} onChange={(e) => setF({ ...f, dias_janela_conciliacao: e.target.value })} />
         </div>
@@ -828,6 +834,7 @@ function ParametrosAba({ p }: { p: Parametros }) {
                     dias_previsao_recebimento: Number(f.dias_previsao_recebimento),
                     dias_vencimento_comissao: Number(f.dias_vencimento_comissao),
                     tolerancia_divergencia: Number(f.tolerancia_divergencia.replace(",", ".")),
+                    teto_tolerancia_divergencia: Number(f.teto_tolerancia_divergencia.replace(",", ".")),
                     dias_janela_conciliacao: Number(f.dias_janela_conciliacao),
                   },
                 });

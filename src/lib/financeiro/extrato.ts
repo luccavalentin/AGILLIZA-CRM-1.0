@@ -24,8 +24,14 @@ export interface LeituraExtrato {
 
 const MAX_MOVIMENTOS = 5000;
 
-/** "1.234,56", "1,234.56", "-12,90", "(12,90)", "12,90 D", "R$ 3.500,00 C" → número. */
-export function lerValor(bruto: string | null | undefined): number | null {
+export type SeparadorDecimal = "," | ".";
+
+/**
+ * "1.234,56", "1,234.56", "-12,90", "(12,90)", "12,90 D", "R$ 3.500,00 C" → número.
+ * Com `decimal` (o formato do ARQUIVO, ver `detectarDecimal`), o outro separador é milhar e
+ * precisa estar no lugar certo (grupos de 3): "1.234" com decimal "," é 1234, não 1,234.
+ */
+export function lerValor(bruto: string | null | undefined, decimal?: SeparadorDecimal): number | null {
   if (bruto == null) return null;
   let s = String(bruto).trim();
   if (!s) return null;
@@ -47,6 +53,28 @@ export function lerValor(bruto: string | null | undefined): number | null {
     s = s.slice(1);
   }
   if (!/^[\d.,]+$/.test(s)) return null;
+  if (decimal) {
+    // O próprio valor decide quando é inequívoco ("3.500,00", "-500.00", "1.000.000"); só o
+    // ambíguo ("1.234": um separador seguido de 3 dígitos) segue o decimal do arquivo.
+    const temV = s.includes(",");
+    const temP = s.includes(".");
+    let dec: SeparadorDecimal = decimal;
+    if (temV && temP) dec = s.lastIndexOf(",") > s.lastIndexOf(".") ? "," : ".";
+    else if (temV || temP) {
+      const c: SeparadorDecimal = temV ? "," : ".";
+      const partes = s.split(c);
+      if (partes.length > 2) dec = c === "," ? "." : ",";
+      else if (partes[1]!.length !== 3) dec = c;
+    }
+    const milhar = dec === "," ? "." : ",";
+    const [inteiro, ...resto] = s.split(dec);
+    if (resto.length > 1 || resto.some((x) => !/^\d*$/.test(x))) return null;
+    const grupos = inteiro!.split(milhar);
+    if (grupos.length > 1 && (!/^\d{1,3}$/.test(grupos[0]!) || grupos.slice(1).some((g) => !/^\d{3}$/.test(g)))) return null;
+    const n = Number((grupos.join("") || "0") + (resto.length ? "." + (resto[0] || "0") : ""));
+    if (!Number.isFinite(n)) return null;
+    return Math.round((negativo ? -n : n) * 100) / 100;
+  }
   const ultVirgula = s.lastIndexOf(",");
   const ultPonto = s.lastIndexOf(".");
   if (ultVirgula > ultPonto) s = s.replace(/\./g, "").replace(",", ".");
@@ -55,6 +83,40 @@ export function lerValor(bruto: string | null | undefined): number | null {
   const n = Number(s);
   if (!Number.isFinite(n)) return null;
   return Math.round((negativo ? -n : n) * 100) / 100;
+}
+
+/**
+ * Separador decimal do arquivo, pelos valores dele: o último separador seguido de 1–2 dígitos
+ * (ou os dois separadores no mesmo valor) decide; "1.234" sozinho é ambíguo e não vota.
+ * Sem voto nenhum, vale o `padrao` (CSV com ";" → vírgula; CSV com "," e OFX → ponto).
+ */
+export function detectarDecimal(valores: string[], padrao: SeparadorDecimal): SeparadorDecimal {
+  let virgula = 0;
+  let ponto = 0;
+  for (const bruto of valores) {
+    const s = String(bruto ?? "").replace(/[^\d.,]/g, "");
+    const uv = s.lastIndexOf(",");
+    const up = s.lastIndexOf(".");
+    if (uv === -1 && up === -1) continue;
+    if (uv >= 0 && up >= 0) {
+      if (uv > up) virgula++;
+      else ponto++;
+      continue;
+    }
+    const pos = Math.max(uv, up);
+    const depois = s.length - pos - 1;
+    const repetido = (s.match(uv >= 0 ? /,/g : /\./g) ?? []).length > 1;
+    if (repetido) {
+      // "1.000.000": o repetido é milhar, então o decimal é o outro
+      if (uv >= 0) ponto++;
+      else virgula++;
+    } else if (depois !== 3) {
+      if (uv >= 0) virgula++;
+      else ponto++;
+    }
+  }
+  if (virgula === ponto) return padrao;
+  return virgula > ponto ? "," : ".";
 }
 
 function dataValida(a: number, m: number, d: number): string | null {
@@ -96,10 +158,15 @@ export function lerOfx(texto: string): LeituraExtrato {
   const avisos: string[] = [];
   const blocos = texto.split(/<STMTTRN>/i).slice(1);
   const movimentos: MovimentoExtrato[] = [];
+  // O decimal é do arquivo (alguns bancos brasileiros mandam TRNAMT com vírgula).
+  const decimal = detectarDecimal(
+    blocos.map((b) => tagOfx(b.split(/<\/STMTTRN>/i)[0]!, "TRNAMT") ?? ""),
+    ".",
+  );
   blocos.forEach((bruto, i) => {
     const bloco = bruto.split(/<\/STMTTRN>/i)[0];
     const data = lerData(tagOfx(bloco, "DTPOSTED") ?? tagOfx(bloco, "DTUSER"));
-    const valor = lerValor(tagOfx(bloco, "TRNAMT"));
+    const valor = lerValor(tagOfx(bloco, "TRNAMT"), decimal);
     if (!data || valor == null || valor === 0) {
       avisos.push(`Movimentação ${i + 1} sem data ou valor: ignorada.`);
       return;
@@ -198,6 +265,15 @@ export function lerCsv(texto: string): LeituraExtrato {
   }
 
   const movimentos: MovimentoExtrato[] = [];
+  // O decimal é do arquivo inteiro (auditoria rodada 2: "1.234" não pode virar 1,23).
+  const amostraValores: string[] = [];
+  for (let i = inicio; i < linhas.length && i < inicio + MAX_MOVIMENTOS; i++) {
+    const cols = dividirLinhaCsv(linhas[i], sep);
+    for (const c of ["valor", "credito", "debito"] as const) {
+      if (mapa[c] !== undefined) amostraValores.push(cols[mapa[c]!] ?? "");
+    }
+  }
+  const decimal = detectarDecimal(amostraValores, sep === "," ? "." : ",");
   for (let i = inicio; i < linhas.length && movimentos.length < MAX_MOVIMENTOS; i++) {
     const cols = dividirLinhaCsv(linhas[i], sep);
     const pega = (c: Coluna) => (mapa[c] !== undefined ? (cols[mapa[c]!] ?? "") : "");
@@ -206,13 +282,13 @@ export function lerCsv(texto: string): LeituraExtrato {
     const data = lerData(pega("data"));
     let valor: number | null;
     if (mapa.valor !== undefined) {
-      valor = lerValor(pega("valor"));
+      valor = lerValor(pega("valor"), decimal);
       const tipo = normal(pega("tipo"));
       if (valor != null && (tipo === "d" || tipo.startsWith("deb"))) valor = -Math.abs(valor);
       if (valor != null && (tipo === "c" || tipo.startsWith("cred"))) valor = Math.abs(valor);
     } else {
-      const cr = lerValor(pega("credito"));
-      const db = lerValor(pega("debito"));
+      const cr = lerValor(pega("credito"), decimal);
+      const db = lerValor(pega("debito"), decimal);
       valor = cr ? Math.abs(cr) : db ? -Math.abs(db) : null;
     }
     if (!data || valor == null || valor === 0) {

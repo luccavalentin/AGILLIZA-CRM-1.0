@@ -3,6 +3,12 @@
  * (as tabelas não abrem para a API do navegador). `operacional.codigos › view` para ver
  * as mensagens capturadas; `operacional.codigos › edit` para cadastrar, editar, pausar e
  * testar as caixas vigiadas e o filtro de palavras de cada uma.
+ *
+ * Caixas por pessoa (decisão 16 do docs/38, 26/10/2026): cada pessoa vê SÓ as caixas liberadas
+ * para ela — quem cadastrou, as pessoas que ele liberou e a administração do correspondente.
+ * Quem decide é o banco (`codigos_pode_ver_caixa`/`codigos_pode_gerir_caixa`, migração
+ * 20261027120002): toda leitura passa por `codigos_mensagens`/`codigos_caixas_visiveis` com o
+ * id da pessoa, e toda ação numa caixa confere antes se a pessoa a gere.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -52,6 +58,15 @@ export interface CaixaVigiada {
   teste_ok: boolean | null;
   teste_msg: string | null;
   filtros: FiltroCaixa[];
+  /** Pessoas liberadas (além de quem cadastrou e da administração). */
+  pessoas: string[];
+  /** Quem cadastrou ou a administração: edita, pausa, testa, remove e libera pessoas. */
+  pode_gerir: boolean;
+}
+
+export interface PessoaLiberavel {
+  id: string;
+  nome: string;
 }
 
 async function admin(): Promise<SupabaseClient> {
@@ -79,6 +94,19 @@ async function exigirEquipeInterna(userId: string): Promise<void> {
   }
 }
 
+/** Caixas que a pessoa vê (e se gere cada uma), decididas pelo banco. */
+async function caixasDaPessoa(db: SupabaseClient, userId: string): Promise<Map<string, boolean>> {
+  const { data, error } = await db.rpc("codigos_caixas_visiveis", { p_user: userId });
+  if (error) throw new Error("Não foi possível carregar as caixas.");
+  return new Map(((data ?? []) as { caixa_id: string; pode_gerir: boolean }[]).map((x) => [x.caixa_id, x.pode_gerir]));
+}
+
+/** Ação numa caixa: só quem a gere (quem cadastrou ou a administração). */
+async function exigirGerir(db: SupabaseClient, caixaId: string, userId: string): Promise<void> {
+  const { data, error } = await db.rpc("codigos_pode_gerir_caixa", { p_caixa: caixaId, p_user: userId });
+  if (error || data !== true) throw new Error("Caixa não encontrada ou sem permissão para gerir.");
+}
+
 const filtroListaSchema = z
   .object({
     caixaId: z.string().uuid().nullable().optional(),
@@ -97,38 +125,19 @@ export const listarCodigos = createServerFn({ method: "GET" })
     const db = await admin();
     const horas = f.periodo === "7d" ? 7 * 24 : 24;
     const desde = new Date(Date.now() - horas * 3_600_000).toISOString();
-    let q = db
-      .from("codigos_recebidos")
-      .select(
-        "id, caixa_id, recebido_em, remetente_nome, remetente_email, banco, assunto, trecho, codigo, motivo, codigos_caixas(email, nome)",
-      )
-      .gte("recebido_em", desde)
-      .order("recebido_em", { ascending: false })
-      .limit(f.periodo === "7d" ? 300 : 100);
-    if (f.caixaId) q = q.eq("caixa_id", f.caixaId);
-    if (f.soCodigos) q = q.not("codigo", "is", null);
-    if (f.busca) {
-      // Vírgula e parênteses quebrariam o filtro "or" do PostgREST: saem do termo.
-      const t = f.busca.replace(/[,()%*\\]/g, " ").trim();
-      if (t) {
-        q = q.or(
-          `assunto.ilike.%${t}%,remetente_email.ilike.%${t}%,remetente_nome.ilike.%${t}%,banco.ilike.%${t}%,codigo.ilike.%${t}%`,
-        );
-      }
-    }
-    const { data, error } = await q;
-    if (error) throw new Error("Não foi possível carregar as mensagens.");
-    return (data ?? []).map((r) => {
-      const { codigos_caixas: cx, ...resto } = r as typeof r & {
-        codigos_caixas: { email: string; nome: string | null } | null;
-      };
-      return {
-        ...(resto as Omit<CodigoRecebido, "caixa_email" | "caixa_nome">),
-        caixa_email: cx?.email ?? "",
-        caixa_nome: cx?.nome ?? null,
-      };
+    // O banco devolve só as mensagens das caixas que a pessoa vê (decisão 16 do docs/38).
+    const { data, error } = await db.rpc("codigos_mensagens", {
+      p_user: context.userId,
+      p_caixa: f.caixaId ?? null,
+      p_desde: desde,
+      p_so_codigos: f.soCodigos,
+      p_busca: f.busca ?? null,
+      p_limite: f.periodo === "7d" ? 300 : 100,
     });
+    if (error) throw new Error("Não foi possível carregar as mensagens.");
+    return (data ?? []) as CodigoRecebido[];
   });
+
 
 /** Caixas vigiadas, o estado da leitura e as regras de filtro (sem a senha). */
 export const listarCaixas = createServerFn({ method: "GET" })
@@ -136,16 +145,25 @@ export const listarCaixas = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<CaixaVigiada[]> => {
     await exigirEquipeInterna(context.userId);
     const db = await admin();
-    const [caixas, filtros] = await Promise.all([
+    const visiveis = await caixasDaPessoa(db, context.userId);
+    const ids = [...visiveis.keys()];
+    if (!ids.length) return [];
+    const [caixas, filtros, pessoas] = await Promise.all([
       db
         .from("codigos_caixas")
         .select(
           "id, nome, email, usuario, imap_host, imap_port, imap_ssl, pasta, usar_palavras_padrao, ativo, senha_cifrada, status, erro, espera_ate, ultima_leitura, teste_em, teste_ok, teste_msg",
         )
+        .in("id", ids)
         .order("created_at"),
-      db.from("codigos_filtros").select("caixa_id, operador, campo, termo, ativo").order("created_at"),
+      db.from("codigos_filtros").select("caixa_id, operador, campo, termo, ativo").in("caixa_id", ids).order("created_at"),
+      db.from("codigos_caixas_pessoas").select("caixa_id, user_id").in("caixa_id", ids),
     ]);
-    if (caixas.error || filtros.error) throw new Error("Não foi possível carregar as caixas.");
+    if (caixas.error || filtros.error || pessoas.error) throw new Error("Não foi possível carregar as caixas.");
+    const pessoasPorCaixa = new Map<string, string[]>();
+    for (const x of (pessoas.data ?? []) as { caixa_id: string; user_id: string }[]) {
+      pessoasPorCaixa.set(x.caixa_id, [...(pessoasPorCaixa.get(x.caixa_id) ?? []), x.user_id]);
+    }
     const porCaixa = new Map<string, FiltroCaixa[]>();
     for (const f of (filtros.data ?? []) as (FiltroCaixa & { caixa_id: string })[]) {
       const { caixa_id, ...regra } = f;
@@ -155,6 +173,8 @@ export const listarCaixas = createServerFn({ method: "GET" })
       ...(c as Omit<CaixaVigiada, "tem_senha" | "filtros">),
       tem_senha: Boolean(senha_cifrada),
       filtros: porCaixa.get((c as { id: string }).id) ?? [],
+      pessoas: pessoasPorCaixa.get((c as { id: string }).id) ?? [],
+      pode_gerir: visiveis.get((c as { id: string }).id) === true,
     }));
   });
 
@@ -187,6 +207,8 @@ export const caixaSchema = z.object({
   usar_palavras_padrao: z.boolean().default(true),
   ativo: z.boolean(),
   filtros: z.array(filtroSchema).max(50, "Use no máximo 50 regras por caixa.").default([]),
+  /** Quem mais vê a caixa (quem cadastrou e a administração sempre veem). */
+  pessoas: z.array(z.string().uuid()).max(200).default([]),
 });
 
 export type DadosCaixa = z.input<typeof caixaSchema>;
@@ -203,6 +225,7 @@ export const salvarCaixa = createServerFn({ method: "POST" })
     const db = await admin();
     const { cifrarSenha } = await import("./cripto.server");
     const usuario = data.usuario?.trim() ? data.usuario.trim() : null;
+    if (data.id) await exigirGerir(db, data.id, context.userId);
     if (data.id && !data.senha) {
       const { data: atual } = await db
         .from("codigos_caixas")
@@ -265,6 +288,12 @@ export const salvarCaixa = createServerFn({ method: "POST" })
       p_autor: context.userId,
     });
     if (erroFiltros) throw new Error("A caixa foi salva, mas as regras de filtro não. Tente de novo.");
+    const { error: erroPessoas } = await db.rpc("codigos_definir_pessoas", {
+      p_caixa: id,
+      p_pessoas: data.pessoas,
+      p_autor: context.userId,
+    });
+    if (erroPessoas) throw new Error("A caixa foi salva, mas a lista de pessoas não. Confira as pessoas escolhidas.");
     return { id: id! };
   });
 
@@ -275,6 +304,7 @@ export const pausarCaixa = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await exigirEquipeInterna(context.userId);
     const db = await admin();
+    await exigirGerir(db, data.id, context.userId);
     const { data: feito, error } = await db
       .from("codigos_caixas")
       .update({
@@ -295,6 +325,7 @@ export const testarConexaoCaixa = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await exigirEquipeInterna(context.userId);
     const db = await admin();
+    await exigirGerir(db, data.id, context.userId);
     const { testarCaixa } = await import("./teste-conexao.server");
     const r = await testarCaixa(db, data.id);
     return { ok: r.ok, mensagem: r.mensagem };
@@ -307,9 +338,21 @@ export const removerCaixa = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await exigirEquipeInterna(context.userId);
     const db = await admin();
+    await exigirGerir(db, data.id, context.userId);
     const { error } = await db.from("codigos_caixas").delete().eq("id", data.id);
     if (error) throw new Error("Não foi possível remover a caixa.");
     return { ok: true };
+  });
+
+/** Pessoas da equipe interna do correspondente que podem ser liberadas numa caixa. */
+export const listarPessoasLiberaveis = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["operacional.codigos", "edit"])])
+  .handler(async ({ context }): Promise<PessoaLiberavel[]> => {
+    await exigirEquipeInterna(context.userId);
+    const db = await admin();
+    const { data, error } = await db.rpc("codigos_pessoas_disponiveis", { p_user: context.userId });
+    if (error) throw new Error("Não foi possível carregar a equipe.");
+    return ((data ?? []) as PessoaLiberavel[]).filter((p) => p.id !== context.userId);
   });
 
 function mensagem(msg: string): string {

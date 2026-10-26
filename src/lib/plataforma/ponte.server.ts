@@ -302,6 +302,108 @@ export async function registrarErroNaPlataforma(e: {
   }
 }
 
+/** A ponte com a plataforma está configurada neste servidor (envio de e-mail depende dela). */
+export function ponteConfigurada(): boolean {
+  return Boolean(process.env.PONTE_DATABASE_URL);
+}
+
+/**
+ * O worker só manda e-mail com credencial (SendPulse ou Resend) e remetente; sem eles a
+ * mensagem é encerrada SEM envio e a senha se perde (auditoria de 26/10/2026). Confere a
+ * credencial guardada em "Chaves dos provedores" (a mesma que o worker lê primeiro). Não
+ * devolve nem registra o segredo — só se ele existe.
+ */
+export async function emailConfiguradoNaPlataforma(): Promise<boolean> {
+  const c = await credencialDoSistema("email");
+  const s = c?.segredo ?? {};
+  const temProvedor = Boolean((s.SENDPULSE_API_ID && s.SENDPULSE_API_SECRET) || s.RESEND_API_KEY);
+  return temProvedor && Boolean((s.EMAIL_REMETENTE ?? "").trim());
+}
+
+/**
+ * Antes de trocar a senha no Auth: o envio vai passar? (0498 do Corretor — freio de 5 por
+ * hora e, se `perfilAtivo`, perfil ativo com e-mail.) Lança a frase do banco para a tela.
+ */
+export async function conferirEnvioDeSenha(authUid: string, perfilAtivo: boolean): Promise<void> {
+  if (!process.env.PONTE_DATABASE_URL) {
+    throw new Error("O envio de e-mail não está configurado neste servidor. Nada foi alterado.");
+  }
+  try {
+    await obterPool().query("select plataforma.conferir_envio_senha_agilliza($1, $2)", [
+      authUid,
+      perfilAtivo,
+    ]);
+  } catch (e) {
+    const err = e as { code?: string; message?: string };
+    if ((err?.code === "P0001" || err?.code === "22023") && err.message) {
+      throw new Error(`${err.message} Nada foi alterado.`);
+    }
+    console.error("[ponte-plataforma] conferir envio de senha", err?.code ?? "sem código");
+    throw new Error("A fila de e-mail não respondeu agora. Nada foi alterado; tente de novo.");
+  }
+}
+
+/**
+ * Troca do e-mail de acesso (0498): o endereço antigo é avisado na hora e, por 72 horas,
+ * recebe cópia de toda senha provisória nova. Devolve se ficou registrado.
+ */
+export async function registrarTrocaDeEmail(
+  authUid: string,
+  antigo: string,
+  novo: string,
+): Promise<boolean> {
+  if (!process.env.PONTE_DATABASE_URL) return false;
+  try {
+    await obterPool().query("select plataforma.registrar_troca_email_agilliza($1, $2, $3)", [
+      authUid,
+      antigo,
+      novo,
+    ]);
+    return true;
+  } catch (e) {
+    console.error(
+      "[ponte-plataforma] troca de e-mail não registrada",
+      (e as { code?: string }).code ?? "sem código",
+    );
+    return false;
+  }
+}
+
+/**
+ * Senha provisória → fila de e-mail da plataforma, para o e-mail da PRÓPRIA pessoa
+ * (migração 0494 do Corretor, decisão 15 do backtest de 23/10/2026). O banco confere
+ * que o perfil está ativo e tem e-mail, freia repetição (5 por hora) e apaga a senha
+ * da fila quando a mensagem termina. Roda pelo papel da ponte, SEM contexto de pessoa.
+ *
+ * Nunca lança e nunca põe a senha em log: devolve se entrou na fila e, se não entrou,
+ * a frase para a tela.
+ */
+export async function enviarSenhaProvisoriaPorEmail(
+  authUid: string,
+  senha: string,
+): Promise<{ ok: true } | { ok: false; motivo: string }> {
+  if (!process.env.PONTE_DATABASE_URL) {
+    return { ok: false, motivo: "O envio de e-mail não está configurado neste servidor." };
+  }
+  const endereco = (process.env.VITE_SITE_URL ?? "https://crm.agillizatech.com.br").trim();
+  try {
+    await obterPool().query("select plataforma.enviar_senha_provisoria_agilliza($1, $2, $3)", [
+      authUid,
+      senha,
+      endereco || null,
+    ]);
+    return { ok: true };
+  } catch (e) {
+    const err = e as { code?: string; message?: string };
+    // Só o código (a mensagem do pg pode ecoar parâmetros).
+    console.error("[ponte-plataforma] senha provisória não enfileirada", err?.code ?? "sem código");
+    if ((err?.code === "P0001" || err?.code === "22023") && err.message) {
+      return { ok: false, motivo: err.message };
+    }
+    return { ok: false, motivo: "A fila de e-mail não respondeu agora." };
+  }
+}
+
 /** Sonda de saúde da ponte (`/api/saude`): `select 1` com tempo-limite de 2 s. */
 export async function sondarPonte(): Promise<{
   configurada: boolean;
