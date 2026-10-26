@@ -7,21 +7,18 @@ import {
   Activity,
   AlertTriangle,
   Cable,
-  CheckCircle2,
   Clock,
   Code,
   Inbox,
   KeySquare,
+  Layers,
   RefreshCw,
   RotateCw,
   ShieldCheck,
   XCircle,
 } from "lucide-react";
-import { AdminHero } from "@/components/admin/admin-hero";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -31,10 +28,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  CabecalhoGestao,
+  ChipsFiltro,
+  EstadoErro,
+  EstadoVazio,
+  FaixaIndicadores,
+  Indicador,
+  ListaCarregando,
+  PaginaGestao,
+  Secao,
+  Selo,
+  type Tom,
+} from "@/components/plataforma/kit";
+import { MarcaProvedor, nomeDoProvedor } from "@/components/plataforma/provedores/marca-provedor";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatData } from "@/lib/financeiro/format";
+import { cn } from "@/lib/utils";
 import { CATALOGO, type ProvedorConhecido } from "@/lib/plataforma/provedores-catalogo";
 import {
   alternarJobPlataforma,
@@ -51,7 +63,7 @@ import {
 } from "@/lib/plataforma/integracoes.functions";
 
 export const Route = createFileRoute("/_authenticated/plataforma/integracoes")({
-  head: () => ({ meta: [{ title: "Integrações e filas — Plataforma — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Integrações e filas — Configurações gerais — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("saas.integracoes"),
   component: Pagina,
 });
@@ -59,12 +71,12 @@ export const Route = createFileRoute("/_authenticated/plataforma/integracoes")({
 const QK = "plataforma-integracoes";
 const TODAS = "todas";
 
-const STATUS_ROTULO: Record<string, string> = {
-  pendente: "Pendente",
-  processando: "Processando",
-  erro: "Com erro",
-  morto: "Morta",
-  concluido: "Concluída",
+const STATUS: Record<string, { rotulo: string; tom: Tom }> = {
+  pendente: { rotulo: "Pendente", tom: "info" },
+  processando: { rotulo: "Processando", tom: "marca" },
+  erro: { rotulo: "Com erro", tom: "alerta" },
+  morto: { rotulo: "Morta", tom: "perigo" },
+  concluido: { rotulo: "Concluída", tom: "sucesso" },
 };
 
 /* Provedores: nome e para que serve (mesmos textos da Gestão). */
@@ -87,6 +99,15 @@ const PROVEDOR: Record<string, { nome: string; desc: string }> = {
   r2: { nome: "Armazenamento", desc: "Fotos e documentos" },
   google: { nome: "Google", desc: "Agenda e login" },
 };
+const nomeChamada = (p: string) => PROVEDOR[p]?.nome ?? nomeDoProvedor(p);
+
+/**
+ * O fornecedor da integração bancária nunca aparece na tela (regra do dono): tipo de
+ * mensagem, erro, endereço e conteúdo passam por aqui antes de serem desenhados.
+ */
+function semFornecedor(texto: string | null | undefined): string {
+  return (texto ?? "").replace(/home\s*fin/gi, "integracao-bancaria");
+}
 
 /** "há 3 min" / "em 5 min" a partir de um instante ISO (relógio do navegador). */
 function relativo(iso: string | null | undefined): string {
@@ -141,82 +162,101 @@ function Pagina() {
   };
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <AdminHero
-        secao="Gestão de sistemas"
-        icon={<Cable className="h-5 w-5" />}
+    <PaginaGestao>
+      <CabecalhoGestao
+        secao="Configurações gerais"
+        icone={<Cable />}
         titulo="Integrações e filas"
         descricao="Mensagens na fila, mensagens que falharam de vez, rotinas automáticas e chamadas aos provedores. Atualiza a cada 30 segundos."
         acoes={
           <>
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm" className="min-h-11 sm:min-h-8">
               <Link to="/plataforma/provedores">
                 <KeySquare className="mr-2 size-4" /> Chaves dos provedores
               </Link>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => q.refetch()} disabled={q.isFetching}>
-              <RefreshCw className={`mr-2 size-4 ${q.isFetching ? "animate-spin" : ""}`} />{" "}
-              Atualizar
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-11 sm:min-h-8"
+              onClick={() => q.refetch()}
+              disabled={q.isFetching}
+            >
+              <RefreshCw className={cn("mr-2 size-4", q.isFetching && "animate-spin")} /> Atualizar
             </Button>
           </>
         }
       />
 
       {q.isError && (
-        <p
-          role="alert"
-          className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
-        >
-          {mensagemDeErro(q.error, "Não foi possível carregar as integrações.")}
-        </p>
+        <Secao>
+          <EstadoErro
+            mensagem={mensagemDeErro(q.error, "Não foi possível carregar as integrações.")}
+            onTentar={() => q.refetch()}
+          />
+        </Secao>
       )}
 
-      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
-        <Metrica
-          icone={<Cable className="size-4" />}
+      <FaixaIndicadores>
+        <Indicador
           rotulo="Na fila"
-          valor={pendentes}
-          detalhe="aguardando o processador"
-          tom={pendentes ? "info" : undefined}
+          valor={pendentes.toLocaleString("pt-BR")}
+          detalhe="Aguardando o processador"
+          icone={<Layers />}
+          tom="info"
           onClick={() => verFila("pendente")}
+          ativo={aba === "filas" && status === "pendente"}
           carregando={carregando}
         />
-        <Metrica
-          icone={<AlertTriangle className="size-4" />}
+        <Indicador
           rotulo="Com erro"
-          valor={comErro}
-          detalhe="vão tentar de novo"
-          tom={comErro ? "alerta" : undefined}
+          valor={comErro.toLocaleString("pt-BR")}
+          detalhe="Vão tentar de novo"
+          icone={<AlertTriangle />}
+          tom={comErro ? "alerta" : "neutro"}
           onClick={() => verFila("erro")}
+          ativo={aba === "filas" && status === "erro"}
           carregando={carregando}
         />
-        <Metrica
-          icone={<XCircle className="size-4" />}
+        <Indicador
           rotulo="Mortas"
-          valor={mortas}
-          detalhe="esgotaram as tentativas"
-          tom={mortas ? "perigo" : undefined}
+          valor={mortas.toLocaleString("pt-BR")}
+          detalhe="Esgotaram as tentativas"
+          icone={<XCircle />}
+          tom={mortas ? "perigo" : "neutro"}
           onClick={() => verFila("morto")}
+          ativo={aba === "filas" && status === "morto"}
           carregando={carregando}
         />
-        <Metrica
-          icone={<Activity className="size-4" />}
+        <Indicador
           rotulo="Rotinas com falha"
           valor={jobsQuebrados}
           detalhe={`${jobs.filter((j) => j.ativo).length} rotina(s) ativa(s)`}
-          tom={jobsQuebrados ? "perigo" : undefined}
+          icone={<Activity />}
+          tom={jobsQuebrados ? "perigo" : "neutro"}
           onClick={() => setAba("rotinas")}
+          ativo={aba === "rotinas"}
           carregando={carregando}
         />
-      </div>
+      </FaixaIndicadores>
 
       <Tabs value={aba} onValueChange={setAba} className="space-y-4">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:inline-flex sm:w-auto">
-          <TabsTrigger value="filas">Filas</TabsTrigger>
-          <TabsTrigger value="chamadas">Chamadas aos provedores</TabsTrigger>
-          <TabsTrigger value="rotinas">Rotinas</TabsTrigger>
-          <TabsTrigger value="credito">Integrações de crédito</TabsTrigger>
-        </TabsList>
+        <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none]">
+          <TabsList className="h-auto w-max">
+            <TabsTrigger value="filas" className="min-h-11 sm:min-h-8">
+              Filas
+            </TabsTrigger>
+            <TabsTrigger value="chamadas" className="min-h-11 sm:min-h-8">
+              Chamadas aos provedores
+            </TabsTrigger>
+            <TabsTrigger value="rotinas" className="min-h-11 sm:min-h-8">
+              Rotinas
+            </TabsTrigger>
+            <TabsTrigger value="credito" className="min-h-11 sm:min-h-8">
+              Integrações de crédito
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="filas" className="space-y-4">
           <Filas
@@ -250,54 +290,7 @@ function Pagina() {
           />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function Metrica({
-  icone,
-  rotulo,
-  valor,
-  detalhe,
-  tom,
-  onClick,
-  carregando,
-}: {
-  icone: React.ReactNode;
-  rotulo: string;
-  valor: number;
-  detalhe: string;
-  tom?: "info" | "alerta" | "perigo";
-  onClick: () => void;
-  carregando: boolean;
-}) {
-  const cor =
-    tom === "perigo"
-      ? "border-destructive/50"
-      : tom === "alerta"
-        ? "border-amber-400/70"
-        : tom === "info"
-          ? "border-primary/40"
-          : "border-border";
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`${rotulo}: ${valor}. Ver detalhes`}
-      className={`min-w-0 rounded-lg border bg-card p-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${cor}`}
-    >
-      <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-        {icone} {rotulo}
-      </span>
-      {carregando ? (
-        <Skeleton className="mt-2 h-7 w-16" />
-      ) : (
-        <span className="mt-1 block text-xl font-semibold tabular-nums">
-          {valor.toLocaleString("pt-BR")}
-        </span>
-      )}
-      <span className="mt-0.5 block text-xs text-muted-foreground">{detalhe}</span>
-    </button>
+    </PaginaGestao>
   );
 }
 
@@ -376,19 +369,12 @@ function Filas({
       return n;
     });
 
-  const abas: { valor: StatusFila | null; rotulo: string; total?: number }[] = [
-    { valor: null, rotulo: "Todas" },
-    { valor: "pendente", rotulo: "Pendentes", total: conta("pendente") },
-    { valor: "erro", rotulo: "Com erro", total: conta("erro") },
-    { valor: "morto", rotulo: "Mortas", total: conta("morto") },
-  ];
-
   return (
     <>
       {semWorker && (
         <div
           role="status"
-          className="flex items-start gap-2 rounded-lg border border-amber-400/60 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+          className="flex items-start gap-2.5 rounded-[14px] border border-warning/50 bg-warning/10 p-3 text-sm text-warning-foreground"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <p>
@@ -400,146 +386,134 @@ function Filas({
       )}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <section aria-label="Mensagens" className="min-w-0 rounded-lg border border-border bg-card">
-          <div className="space-y-3 border-b border-border p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 className="flex items-center gap-2 text-sm font-semibold">
-                  <Inbox className="size-4" /> Mensagens
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  O conteúdo aparece mascarado: e-mail, telefone e documento não são exibidos em
-                  claro.
-                </p>
-              </div>
-              {podeReprocessar && mortasNaLista.length > 0 && (
-                <Button
-                  size="sm"
-                  disabled={reprocessar.isPending || marcadas.size === 0}
-                  onClick={() => reprocessar.mutate()}
-                >
-                  <RotateCw
-                    className={`mr-2 size-4 ${reprocessar.isPending ? "animate-spin" : ""}`}
-                  />
-                  Reprocessar{marcadas.size ? ` ${marcadas.size}` : ""}
-                </Button>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div
-                role="group"
-                aria-label="Situação das mensagens"
-                className="flex flex-wrap gap-1"
+        <Secao
+          titulo="Mensagens"
+          descricao="O conteúdo aparece mascarado: e-mail, telefone e documento nunca em claro."
+          icone={<Inbox />}
+          semRespiro
+          acoes={
+            podeReprocessar &&
+            mortasNaLista.length > 0 && (
+              <Button
+                size="sm"
+                className="min-h-11 sm:min-h-8"
+                disabled={reprocessar.isPending || marcadas.size === 0}
+                onClick={() => reprocessar.mutate()}
               >
-                {abas.map((a) => (
-                  <Button
-                    key={a.rotulo}
-                    size="sm"
-                    variant={status === a.valor ? "default" : "outline"}
-                    aria-pressed={status === a.valor}
-                    onClick={() => onStatus(a.valor)}
-                  >
-                    {a.rotulo}
-                    {a.total != null ? ` (${a.total})` : ""}
-                  </Button>
-                ))}
-              </div>
-              {faixas.length > 1 && (
-                <Select
-                  value={faixa ?? TODAS}
-                  onValueChange={(v) => onFaixa(v === TODAS ? null : v)}
-                >
-                  <SelectTrigger className="w-full sm:w-48" aria-label="Faixa da fila">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={TODAS}>Todas as faixas</SelectItem>
-                    {faixas.map((f) => (
-                      <SelectItem key={f} value={f}>
-                        {f}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+                <RotateCw className={cn("mr-2 size-4", reprocessar.isPending && "animate-spin")} />
+                Reprocessar{marcadas.size ? ` ${marcadas.size}` : ""}
+              </Button>
+            )
+          }
+        >
+          <div className="flex flex-col gap-2 border-b border-border/70 px-4 py-3 md:flex-row md:items-center">
+            <ChipsFiltro
+              rotulo="Situação das mensagens"
+              className="min-w-0 flex-1"
+              valor={status ?? "todas"}
+              onChange={(v) => onStatus(v === "todas" ? null : v)}
+              opcoes={[
+                { valor: "todas" as const, rotulo: "Todas" },
+                { valor: "pendente" as const, rotulo: "Pendentes", contagem: conta("pendente") },
+                { valor: "erro" as const, rotulo: "Com erro", contagem: conta("erro") },
+                { valor: "morto" as const, rotulo: "Mortas", contagem: conta("morto"), tom: "perigo" as Tom },
+              ]}
+            />
+            {faixas.length > 1 && (
+              <Select value={faixa ?? TODAS} onValueChange={(v) => onFaixa(v === TODAS ? null : v)}>
+                <SelectTrigger className="h-10 w-full md:w-48" aria-label="Faixa da fila">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TODAS}>Todas as faixas</SelectItem>
+                  {faixas.map((f) => (
+                    <SelectItem key={f} value={f}>
+                      {f}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {carregando ? (
-            <div className="p-4">
-              <Skeleton className="h-24" />
-            </div>
+            <ListaCarregando linhas={4} />
           ) : mensagens.length === 0 ? (
-            <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-              <Inbox className="size-4" /> Nenhuma mensagem nesta situação.
-            </p>
+            <EstadoVazio titulo="Nenhuma mensagem nesta situação" descricao="A fila está em dia." />
           ) : (
-            <ul className="max-h-[640px] divide-y divide-border overflow-y-auto">
-              {mensagens.map((m) => (
-                <li key={m.id} className="flex items-start gap-3 p-4">
-                  {podeReprocessar && m.status === "morto" && (
-                    <Checkbox
-                      className="mt-0.5"
-                      checked={marcadas.has(m.id)}
-                      onCheckedChange={() => alternar(m.id)}
-                      aria-label={`Marcar a mensagem ${m.tipo} para reprocessar`}
-                    />
-                  )}
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                      <span className="min-w-0 break-all font-mono text-xs">{m.tipo}</span>
-                      <BadgeStatus status={m.status} />
-                      {m.tentativas > 0 && (
-                        <span className="text-xs tabular-nums text-muted-foreground">
-                          {m.tentativas}/{m.max_tentativas} tentativa(s)
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {m.conta ?? "sem conta"} · {m.faixa} · criada {relativo(m.criado_em)}
-                      {m.proximo_em && m.status !== "concluido"
-                        ? new Date(m.proximo_em) <= new Date()
-                          ? " · pronta para processar"
-                          : ` · próxima tentativa ${relativo(m.proximo_em)}`
-                        : ""}
-                    </p>
-                    {m.erro && (
-                      <p className="break-words rounded-md border border-destructive/20 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
-                        {m.erro}
-                      </p>
+            <ul className="max-h-[640px] divide-y divide-border/60 overflow-y-auto">
+              {mensagens.map((m) => {
+                const st = STATUS[m.status] ?? { rotulo: m.status, tom: "neutro" as Tom };
+                return (
+                  <li key={m.id} className="flex items-start gap-3 px-4 py-3">
+                    {podeReprocessar && m.status === "morto" && (
+                      <Checkbox
+                        className="mt-1"
+                        checked={marcadas.has(m.id)}
+                        onCheckedChange={() => alternar(m.id)}
+                        aria-label={`Marcar a mensagem ${semFornecedor(m.tipo)} para reprocessar`}
+                      />
                     )}
-                    <details>
-                      <summary className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                        <Code className="size-3.5" aria-hidden /> ver conteúdo
-                      </summary>
-                      <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-2 text-[11px]">
-                        {JSON.stringify(m.payload, null, 2)}
-                      </pre>
-                    </details>
-                  </div>
-                </li>
-              ))}
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="min-w-0 break-all font-mono text-xs font-medium text-foreground">
+                          {semFornecedor(m.tipo)}
+                        </span>
+                        <Selo tom={st.tom} ponto={m.status === "processando"}>
+                          {st.rotulo}
+                        </Selo>
+                        {m.tentativas > 0 && (
+                          <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                            {m.tentativas}/{m.max_tentativas} tentativa(s)
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {m.conta ?? "sem conta"} · <span className="font-mono">{m.faixa}</span> · criada{" "}
+                        {relativo(m.criado_em)}
+                        {m.proximo_em && m.status !== "concluido"
+                          ? new Date(m.proximo_em) <= new Date()
+                            ? " · pronta para processar"
+                            : ` · próxima tentativa ${relativo(m.proximo_em)}`
+                          : ""}
+                      </p>
+                      {m.erro && (
+                        <p className="break-words rounded-md border border-destructive/20 bg-destructive/5 px-2.5 py-1.5 font-mono text-[11px] text-destructive">
+                          {semFornecedor(m.erro)}
+                        </p>
+                      )}
+                      <details>
+                        <summary className="inline-flex min-h-8 cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                          <Code className="size-3.5" aria-hidden /> ver conteúdo
+                        </summary>
+                        <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md bg-secondary p-2 font-mono text-[11px]">
+                          {semFornecedor(JSON.stringify(m.payload, null, 2))}
+                        </pre>
+                      </details>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
-        </section>
+        </Secao>
 
-        <section
-          aria-label="Fila por faixa"
-          className="min-w-0 rounded-lg border border-border bg-card p-4"
+        <Secao
+          titulo="Fila por faixa"
+          descricao="O que ainda não foi concluído. Toque numa faixa para filtrar."
+          icone={<Layers />}
         >
-          <h2 className="text-sm font-semibold">Fila por faixa</h2>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Mensagens que ainda não foram concluídas. Toque numa faixa para filtrar.
-          </p>
           {carregando ? (
-            <Skeleton className="h-24" />
+            <ListaCarregando linhas={3} className="p-0" />
           ) : porFaixa.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Fila vazia: nada pendente, em processamento, com erro ou morto.
-            </p>
+            <EstadoVazio
+              className="py-6"
+              titulo="Fila vazia"
+              descricao="Nada pendente, em processamento, com erro ou morto."
+            />
           ) : (
             <>
-              <ul className="space-y-1.5">
+              <ul className="space-y-1">
                 {porFaixa.map((x) => (
                   <li key={x.faixa}>
                     <button
@@ -547,30 +521,25 @@ function Filas({
                       onClick={() => onFaixa(faixa === x.faixa ? null : x.faixa)}
                       aria-pressed={faixa === x.faixa}
                       title={`${x.p} pendente(s), ${x.r} em processamento, ${x.e} com erro, ${x.m} morta(s)`}
-                      className={`grid w-full grid-cols-[6.5rem_1fr_auto] items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted/60 ${faixa === x.faixa ? "bg-muted" : ""}`}
+                      className={cn(
+                        "grid min-h-11 w-full grid-cols-[6.5rem_1fr_auto] items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-primary/[0.04] sm:min-h-9",
+                        faixa === x.faixa && "bg-primary/[0.06] ring-1 ring-inset ring-primary/20",
+                      )}
                     >
                       <span className="truncate font-mono">{x.faixa}</span>
                       <span
-                        className="flex h-2.5 overflow-hidden rounded-full bg-muted"
+                        className="flex h-2 overflow-hidden rounded-full bg-secondary"
                         style={{ width: `${Math.max(8, (x.total / maior) * 100)}%` }}
                       >
-                        <i className="bg-primary" style={{ width: `${(x.p / x.total) * 100}%` }} />
-                        <i className="bg-sky-400" style={{ width: `${(x.r / x.total) * 100}%` }} />
-                        <i
-                          className="bg-amber-400"
-                          style={{ width: `${(x.e / x.total) * 100}%` }}
-                        />
-                        <i
-                          className="bg-destructive"
-                          style={{ width: `${(x.m / x.total) * 100}%` }}
-                        />
+                        <i className="bg-sky-500" style={{ width: `${(x.p / x.total) * 100}%` }} />
+                        <i className="bg-primary" style={{ width: `${(x.r / x.total) * 100}%` }} />
+                        <i className="bg-warning" style={{ width: `${(x.e / x.total) * 100}%` }} />
+                        <i className="bg-destructive" style={{ width: `${(x.m / x.total) * 100}%` }} />
                       </span>
-                      <span className="text-right tabular-nums">
-                        <b>{x.total}</b>
+                      <span className="text-right font-mono tabular-nums">
+                        <b className="font-medium text-foreground">{x.total}</b>
                         {x.antiga && (
-                          <span className="block text-[10px] text-muted-foreground">
-                            {relativo(x.antiga)}
-                          </span>
+                          <span className="block text-[10px] text-muted-foreground">{relativo(x.antiga)}</span>
                         )}
                       </span>
                     </button>
@@ -578,14 +547,14 @@ function Filas({
                 ))}
               </ul>
               <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                <Legenda cor="bg-primary" texto="pendente" />
-                <Legenda cor="bg-sky-400" texto="processando" />
-                <Legenda cor="bg-amber-400" texto="com erro" />
+                <Legenda cor="bg-sky-500" texto="pendente" />
+                <Legenda cor="bg-primary" texto="processando" />
+                <Legenda cor="bg-warning" texto="com erro" />
                 <Legenda cor="bg-destructive" texto="morta" />
               </div>
             </>
           )}
-        </section>
+        </Secao>
       </div>
     </>
   );
@@ -594,27 +563,9 @@ function Filas({
 function Legenda({ cor, texto }: { cor: string; texto: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <i className={`size-2.5 rounded-full ${cor}`} /> {texto}
+      <i className={cn("size-2 rounded-full", cor)} /> {texto}
     </span>
   );
-}
-
-function BadgeStatus({ status }: { status: string }) {
-  const rotulo = STATUS_ROTULO[status] ?? status;
-  if (status === "morto") return <Badge variant="destructive">{rotulo}</Badge>;
-  if (status === "erro")
-    return (
-      <Badge variant="secondary" className="bg-amber-100 text-amber-900">
-        {rotulo}
-      </Badge>
-    );
-  if (status === "concluido")
-    return (
-      <Badge variant="outline" className="text-emerald-700">
-        {rotulo}
-      </Badge>
-    );
-  return <Badge variant="secondary">{rotulo}</Badge>;
 }
 
 /* ───────────────────── Chamadas aos provedores ───────────────────── */
@@ -627,78 +578,68 @@ function Provedores({
   carregando: boolean;
 }) {
   return (
-    <section aria-label="Provedores externos" className="rounded-lg border border-border bg-card">
-      <div className="border-b border-border p-4">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Cable className="size-4" /> Provedores externos — 7 dias
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Chamadas a Serasa, Boa Vista, integração bancária, APIFull, Asaas e portais.
-        </p>
-      </div>
+    <Secao
+      titulo="Provedores externos — 7 dias"
+      descricao="Chamadas aos birôs, à integração bancária, à APIFull, ao Asaas e aos portais."
+      icone={<Cable />}
+    >
       {carregando ? (
-        <div className="p-4">
-          <Skeleton className="h-24" />
-        </div>
+        <ListaCarregando linhas={2} className="p-0" />
       ) : provedores.length === 0 ? (
-        <p className="p-6 text-sm text-muted-foreground">
-          Nenhum provedor externo respondeu nos últimos 7 dias — as chaves ainda não foram
-          configuradas ou nada foi chamado.
-        </p>
+        <EstadoVazio
+          className="py-6"
+          titulo="Nenhuma chamada em 7 dias"
+          descricao="As chaves ainda não foram configuradas ou nada foi chamado."
+        />
       ) : (
-        <ul className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {provedores.map((p) => {
-            const info = PROVEDOR[p.provedor] ?? { nome: p.provedor, desc: "Provedor externo" };
+            const info = PROVEDOR[p.provedor] ?? { nome: nomeDoProvedor(p.provedor), desc: "Provedor externo" };
             const erros = Number(p.erros);
             return (
               <li
                 key={p.provedor}
-                className={`min-w-0 space-y-2 rounded-lg border p-3 ${erros ? "border-destructive/40" : "border-border"}`}
+                className={cn(
+                  "min-w-0 space-y-3 rounded-xl border bg-background p-3.5",
+                  erros ? "border-destructive/30" : "border-border/80",
+                )}
               >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{info.nome}</p>
-                  <p className="truncate text-xs text-muted-foreground">{info.desc}</p>
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <MarcaProvedor codigo={p.provedor === "biro-credito" ? "serasa" : p.provedor} tamanho="sm" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">{info.nome}</p>
+                    <p className="truncate text-xs text-muted-foreground">{info.desc}</p>
+                  </div>
                 </div>
                 <dl className="grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <dd className="font-semibold tabular-nums">
+                  <div className="rounded-md bg-secondary/60 py-1.5">
+                    <dd className="font-mono text-sm tabular-nums text-foreground">
                       {Number(p.chamadas).toLocaleString("pt-BR")}
                     </dd>
-                    <dt className="text-[11px] text-muted-foreground">chamadas</dt>
+                    <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">chamadas</dt>
                   </div>
-                  <div>
-                    <dd className={`font-semibold tabular-nums ${erros ? "text-destructive" : ""}`}>
+                  <div className="rounded-md bg-secondary/60 py-1.5">
+                    <dd className={cn("font-mono text-sm tabular-nums", erros ? "text-destructive" : "text-foreground")}>
                       {erros.toLocaleString("pt-BR")}
                     </dd>
-                    <dt className="text-[11px] text-muted-foreground">erros</dt>
+                    <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">erros</dt>
                   </div>
-                  <div>
-                    <dd className="font-semibold tabular-nums">{tempo(p.latencia_ms)}</dd>
-                    <dt className="text-[11px] text-muted-foreground">média</dt>
+                  <div className="rounded-md bg-secondary/60 py-1.5">
+                    <dd className="font-mono text-sm tabular-nums text-foreground">{tempo(p.latencia_ms)}</dd>
+                    <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">média</dt>
                   </div>
                 </dl>
-                {erros > 0 ? (
-                  <Badge variant="destructive">
-                    {erros} erro(s){p.ultima ? ` · última ${relativo(p.ultima)}` : ""}
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-emerald-700">
-                    sem erro{p.ultima ? ` · última ${relativo(p.ultima)}` : ""}
-                  </Badge>
-                )}
+                <Selo tom={erros ? "perigo" : "sucesso"} ponto>
+                  {erros ? `${erros} erro(s)` : "Sem erro"}
+                  {p.ultima ? ` · última ${relativo(p.ultima)}` : ""}
+                </Selo>
               </li>
             );
           })}
         </ul>
       )}
-    </section>
+    </Secao>
   );
-}
-
-function tomHttp(s: number | null, erro: string | null): "ok" | "erro" | "neutro" {
-  if (erro || (s != null && s >= 400)) return "erro";
-  if (s != null) return "ok";
-  return "neutro";
 }
 
 /** Abre em "só erro" de propósito: quem chega aqui geralmente chegou porque algo falhou. */
@@ -707,77 +648,74 @@ function Log({ linhas, carregando }: { linhas: LinhaLog[]; carregando: boolean }
   const comErro = linhas.filter((l) => l.erro || (l.status_http ?? 0) >= 400);
   const lista = soErro ? comErro : linhas;
   return (
-    <section aria-label="Chamadas recentes" className="rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
-        <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <Activity className="size-4" /> Chamadas aos provedores
-          </h2>
-          <p className="text-xs text-muted-foreground">Últimas 24 horas.</p>
-        </div>
-        <div role="group" aria-label="Filtro das chamadas" className="flex gap-1">
-          <Button
-            size="sm"
-            variant={soErro ? "default" : "outline"}
-            aria-pressed={soErro}
-            onClick={() => setSoErro(true)}
-          >
-            Só erro{comErro.length ? ` (${comErro.length})` : ""}
-          </Button>
-          <Button
-            size="sm"
-            variant={!soErro ? "default" : "outline"}
-            aria-pressed={!soErro}
-            onClick={() => setSoErro(false)}
-          >
-            Tudo ({linhas.length})
-          </Button>
-        </div>
-      </div>
+    <Secao
+      titulo="Chamadas recentes"
+      descricao="Últimas 24 horas."
+      icone={<Activity />}
+      semRespiro
+      acoes={
+        <ChipsFiltro
+          rotulo="Filtro das chamadas"
+          valor={soErro ? "erro" : "tudo"}
+          onChange={(v) => setSoErro(v === "erro")}
+          opcoes={[
+            { valor: "erro", rotulo: "Só erro", contagem: comErro.length, tom: "perigo" },
+            { valor: "tudo", rotulo: "Tudo", contagem: linhas.length },
+          ]}
+        />
+      }
+    >
       {carregando ? (
-        <div className="p-4">
-          <Skeleton className="h-24" />
-        </div>
+        <ListaCarregando linhas={3} />
       ) : lista.length === 0 ? (
-        <p className="p-6 text-sm text-muted-foreground">
-          {soErro
-            ? "Nenhum provedor devolveu erro nas últimas 24 horas. Em “Tudo” estão as chamadas que deram certo."
-            : "Nenhum provedor foi chamado nas últimas 24 horas. Sem chave configurada, nada sai daqui."}
-        </p>
+        <EstadoVazio
+          titulo={soErro ? "Nenhum erro nas últimas 24 horas" : "Nenhuma chamada nas últimas 24 horas"}
+          descricao={
+            soErro
+              ? "Em “Tudo” estão as chamadas que deram certo."
+              : "Sem chave configurada, nada sai daqui."
+          }
+        />
       ) : (
-        <ul className="max-h-[560px] divide-y divide-border overflow-y-auto">
+        <ul className="max-h-[560px] divide-y divide-border/60 overflow-y-auto">
           {lista.map((l) => {
-            const tom = tomHttp(l.status_http, l.erro);
+            const erro = Boolean(l.erro || (l.status_http != null && l.status_http >= 400));
             return (
               <li key={l.id} className="flex items-start gap-3 px-4 py-2.5">
-                <Badge
-                  variant={tom === "erro" ? "destructive" : "outline"}
-                  className={`shrink-0 tabular-nums ${tom === "ok" ? "text-emerald-700" : ""}`}
+                <span
+                  className={cn(
+                    "mt-0.5 inline-flex min-w-[3.25rem] shrink-0 justify-center rounded-md border px-1.5 py-0.5 font-mono text-[11px] tabular-nums",
+                    erro
+                      ? "border-destructive/25 bg-destructive/[0.08] text-destructive"
+                      : l.status_http != null
+                        ? "border-success/25 bg-success/10 text-success-texto"
+                        : "border-border bg-secondary text-muted-foreground",
+                  )}
                 >
                   {l.status_http ?? (l.erro ? "falhou" : "—")}
-                </Badge>
+                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm">
-                    <span className="font-medium">{l.provedor}</span>
-                    <span className="text-muted-foreground">
+                    <span className="font-medium text-foreground">{nomeChamada(l.provedor)}</span>
+                    <span className="font-mono text-xs text-muted-foreground">
                       {" "}
-                      {l.metodo ?? ""} {l.endpoint ?? ""}
+                      {l.metodo ?? ""} {semFornecedor(l.endpoint)}
                     </span>
                   </span>
                   {l.erro && (
-                    <span className="block break-words text-xs text-destructive">{l.erro}</span>
+                    <span className="block break-words text-xs text-destructive">{semFornecedor(l.erro)}</span>
                   )}
                 </span>
-                <span className="shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+                <span className="shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground">
                   {l.duracao_ms != null ? `${l.duracao_ms} ms` : "—"}
-                  <span className="block">{relativo(l.criado_em)}</span>
+                  <span className="block font-sans">{relativo(l.criado_em)}</span>
                 </span>
               </li>
             );
           })}
         </ul>
       )}
-    </section>
+    </Secao>
   );
 }
 
@@ -786,30 +724,24 @@ function Log({ linhas, carregando }: { linhas: LinhaLog[]; carregando: boolean }
 function Rotinas({ jobs, carregando }: { jobs: JobPlataforma[]; carregando: boolean }) {
   const podeEditar = usePermissao("saas.integracoes", "edit");
   return (
-    <section aria-label="Rotinas agendadas" className="rounded-lg border border-border bg-card">
-      <div className="border-b border-border p-4">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Clock className="size-4" /> Rotinas agendadas ({jobs.length})
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Rotinas que rodam sozinhas: partições, retenção, lembretes, reajustes, cobranças, saúde
-          das contas.
-        </p>
-      </div>
+    <Secao
+      titulo={`Rotinas agendadas (${jobs.length})`}
+      descricao="Rotinas que rodam sozinhas: partições, retenção, lembretes, reajustes, cobranças e saúde das contas."
+      icone={<Clock />}
+      semRespiro
+    >
       {carregando ? (
-        <div className="p-4">
-          <Skeleton className="h-24" />
-        </div>
+        <ListaCarregando linhas={4} />
       ) : jobs.length === 0 ? (
-        <p className="p-6 text-sm text-muted-foreground">Nenhuma rotina agendada neste ambiente.</p>
+        <EstadoVazio titulo="Nenhuma rotina agendada neste ambiente" />
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="divide-y divide-border/60">
           {jobs.map((j) => (
             <LinhaRotina key={j.nome} j={j} podeEditar={podeEditar} />
           ))}
         </ul>
       )}
-    </section>
+    </Secao>
   );
 }
 
@@ -826,31 +758,29 @@ function LinhaRotina({ j, podeEditar }: { j: JobPlataforma; podeEditar: boolean 
   });
   const erro = j.ultimo_status === "erro";
   return (
-    <li className="flex items-start gap-3 p-4">
+    <li className="flex items-start gap-3 px-4 py-3">
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-          <span className="min-w-0 break-all font-mono text-xs">{j.nome}</span>
-          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="min-w-0 break-all font-mono text-xs font-medium text-foreground">{j.nome}</span>
+          <span className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
             {j.cron}
           </span>
-          {!j.ativo && <Badge variant="secondary">Desligada</Badge>}
+          {!j.ativo && <Selo tom="neutro">Desligada</Selo>}
           {j.ultimo_status &&
             (erro ? (
-              <Badge variant="destructive">Erro</Badge>
+              <Selo tom="perigo">Erro</Selo>
             ) : (
-              <Badge variant="outline" className="text-emerald-700">
-                {j.ultimo_status === "sucesso" ? "OK" : j.ultimo_status}
-              </Badge>
+              <Selo tom="sucesso">{j.ultimo_status === "sucesso" ? "OK" : j.ultimo_status}</Selo>
             ))}
         </p>
         {j.descricao && <p className="text-xs text-muted-foreground">{j.descricao}</p>}
         <p className="text-xs text-muted-foreground">
-          {j.ultimo_inicio ? `última execução ${relativo(j.ultimo_inicio)}` : "nunca executada"}
+          {j.ultimo_inicio ? `Última execução ${relativo(j.ultimo_inicio)}` : "Nunca executada"}
           {j.proxima_execucao ? ` · próxima ${relativo(j.proxima_execucao)}` : ""}
         </p>
         {j.ultimo_erro && (
-          <p className="break-words rounded-md border border-destructive/20 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
-            {j.ultimo_erro}
+          <p className="break-words rounded-md border border-destructive/20 bg-destructive/5 px-2.5 py-1.5 font-mono text-[11px] text-destructive">
+            {semFornecedor(j.ultimo_erro)}
           </p>
         )}
       </div>
@@ -888,7 +818,7 @@ function Credito({
   ambiente: string | undefined;
   carregando: boolean;
 }) {
-  // A integração bancária aparece no log como "homefin"; os birôs, como "biro-credito".
+  // A integração bancária aparece no log pelo código interno; os birôs, como "biro-credito".
   const chamadasDe = (p: string) =>
     provedores.find(
       (x) =>
@@ -896,9 +826,9 @@ function Credito({
         (x.provedor === "biro-credito" && (p === "serasa" || p === "spc" || p === "boavista")),
     );
   return (
-    <section aria-label="Integrações de crédito" className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-        <p className="flex min-w-0 flex-1 items-start gap-2">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-[14px] border border-primary/15 bg-primary/[0.04] p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <p className="flex min-w-0 items-start gap-2.5">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
           <span>
             A integração bancária, que leva as propostas aos bancos, e os birôs de consulta.
@@ -906,7 +836,7 @@ function Credito({
             cifradas no banco e são cadastradas em “Chaves dos provedores”.
           </span>
         </p>
-        <Button asChild size="sm" variant="outline">
+        <Button asChild size="sm" variant="outline" className="min-h-11 shrink-0 sm:min-h-8">
           <Link to="/plataforma/provedores">
             <KeySquare className="mr-2 size-4" /> Gerenciar chaves
           </Link>
@@ -914,7 +844,9 @@ function Credito({
       </div>
 
       {carregando ? (
-        <Skeleton className="h-40" />
+        <Secao>
+          <ListaCarregando linhas={3} className="p-0" />
+        </Secao>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {PROVEDORES_DO_CREDITO.map((p) => {
@@ -923,26 +855,30 @@ function Credito({
             const ch = chamadasDe(p);
             const dicas = c ? dicasEmTexto(c.dicas) : [];
             return (
-              <li key={p} className="min-w-0 space-y-2 rounded-lg border border-border bg-card p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">{cat?.rotulo ?? p}</p>
-                    <p className="text-xs text-muted-foreground">{cat?.descricao}</p>
+              <li
+                key={p}
+                className="min-w-0 space-y-3 rounded-[14px] border border-border/80 bg-card p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]"
+              >
+                <div className="flex items-start gap-3">
+                  <MarcaProvedor codigo={p} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="text-sm font-semibold text-foreground">{cat?.rotulo ?? nomeDoProvedor(p)}</p>
+                      {!c ? (
+                        <Selo tom="neutro">Sem chave</Selo>
+                      ) : c.ativo ? (
+                        <Selo tom="sucesso" ponto>
+                          Ligada
+                        </Selo>
+                      ) : (
+                        <Selo tom="alerta">Desligada</Selo>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{cat?.descricao}</p>
                   </div>
-                  {!c ? (
-                    <Badge variant="secondary">Não configurada</Badge>
-                  ) : c.ativo ? (
-                    <Badge variant="outline" className="text-emerald-700">
-                      <CheckCircle2 className="mr-1 size-3" /> Ligada
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-900">
-                      Desligada
-                    </Badge>
-                  )}
                 </div>
                 {c && (
-                  <dl className="space-y-1 text-xs">
+                  <dl className="space-y-1 rounded-lg bg-secondary/60 px-3 py-2 text-xs">
                     {dicas.length > 0 && (
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
                         <dt className="text-muted-foreground">Chaves</dt>
@@ -952,7 +888,7 @@ function Credito({
                     {c.base_url && (
                       <div className="flex flex-wrap gap-x-3">
                         <dt className="text-muted-foreground">Endereço</dt>
-                        <dd className="min-w-0 break-all">{c.base_url}</dd>
+                        <dd className="min-w-0 break-all font-mono">{semFornecedor(c.base_url)}</dd>
                       </div>
                     )}
                     <div className="flex flex-wrap gap-x-3">
@@ -980,6 +916,6 @@ function Credito({
           })}
         </ul>
       )}
-    </section>
+    </div>
   );
 }

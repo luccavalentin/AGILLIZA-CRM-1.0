@@ -47,6 +47,10 @@ export interface ResumoReceita {
   vencida_valor: number;
   vencidas: number;
   recebido_mes: number;
+  /** Quantidades por filtro da lista de faturas (chips da tela). */
+  qtd_abertas: number;
+  qtd_pagas: number;
+  qtd_faturas: number;
 }
 
 export interface MesReceita {
@@ -99,7 +103,10 @@ export const lerReceita = createServerFn({ method: "GET" })
            (select count(*) from nucleo.faturas_plataforma
              where status = 'vencida' or (status = 'pendente' and vencimento < current_date))::int as vencidas,
            coalesce((select sum(valor) from nucleo.faturas_plataforma
-                      where status = 'paga' and pago_em >= date_trunc('month', now())), 0)::float8 as recebido_mes`,
+                      where status = 'paga' and pago_em >= date_trunc('month', now())), 0)::float8 as recebido_mes,
+           (select count(*) from nucleo.faturas_plataforma where status in ('pendente', 'vencida'))::int as qtd_abertas,
+           (select count(*) from nucleo.faturas_plataforma where status = 'paga')::int as qtd_pagas,
+           (select count(*) from nucleo.faturas_plataforma)::int as qtd_faturas`,
       );
       const meses = await tx.consultar<MesReceita>(
         `select mes::text as mes, mrr_inicio::float8 as mrr_inicio, novo::float8 as novo,

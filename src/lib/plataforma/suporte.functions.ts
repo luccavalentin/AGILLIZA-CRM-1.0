@@ -23,7 +23,7 @@ export const STATUS_CHAMADO = [
   "fechado",
 ] as const;
 export const PRIORIDADES_CHAMADO = ["baixa", "normal", "alta", "urgente"] as const;
-export const RECORTES_CHAMADO = ["abertos", "atrasados", "sem-responsavel", "avaliados"] as const;
+export const RECORTES_CHAMADO = ["abertos", "atrasados", "sem-responsavel", "avaliados", "meus"] as const;
 export const CATEGORIAS_ARTIGO = [
   "duvida",
   "erro",
@@ -53,6 +53,9 @@ export interface Chamado {
   sla_ate: string | null;
   criado_em: string;
   resolvido_em: string | null;
+  /** Primeira resposta aberta de quem atende (0309). */
+  primeira_resposta_em: string | null;
+  atribuido_a: string | null;
   avaliacao: number | null;
   atrasado: boolean;
   conta: string | null;
@@ -149,6 +152,7 @@ export const listarChamados = createServerFn({ method: "GET" })
         `select c.id, c.codigo, c.tenant_id, c.assunto, c.descricao, c.categoria, c.prioridade, c.status,
                 c.perfil, c.url, c.ultimo_erro::text as ultimo_erro, to_json(c.sla_ate) #>> '{}' as sla_ate,
                 to_json(c.criado_em) #>> '{}' as criado_em, to_json(c.resolvido_em) #>> '{}' as resolvido_em,
+                to_json(c.primeira_resposta_em) #>> '{}' as primeira_resposta_em, c.atribuido_a,
                 c.avaliacao::int as avaliacao,
                 coalesce(c.sla_ate < now() and c.resolvido_em is null, false) as atrasado,
                 (select t.nome from nucleo.tenants t where t.id = c.tenant_id) as conta,
@@ -164,9 +168,11 @@ export const listarChamados = createServerFn({ method: "GET" })
                  or ($4 = 'abertos' and c.resolvido_em is null)
                  or ($4 = 'atrasados' and c.resolvido_em is null and c.sla_ate < now())
                  or ($4 = 'sem-responsavel' and c.resolvido_em is null and c.atribuido_a is null)
-                 or ($4 = 'avaliados' and c.avaliacao is not null))
-            and ($5::text is null or c.assunto ilike '%' || $5 || '%' or c.codigo ilike '%' || $5 || '%')
-          order by (c.resolvido_em is null) desc, c.sla_ate nulls last, c.criado_em desc, c.id
+                 or ($4 = 'avaliados' and c.avaliacao is not null)
+                 or ($4 = 'meus' and c.resolvido_em is null and c.atribuido_a = seguranca.auth_usuario_id()))
+            and ($5::text is null or c.assunto ilike '%' || $5 || '%' or c.codigo ilike '%' || $5 || '%'
+                 or exists (select 1 from nucleo.tenants t where t.id = c.tenant_id and t.nome ilike '%' || $5 || '%'))
+          order by (c.resolvido_em is null) desc, (c.prioridade = 'urgente') desc, c.sla_ate nulls last, c.criado_em desc, c.id
           limit ${POR_PAGINA_CHAMADOS} offset $6`,
         [
           data.status ?? null,
@@ -445,4 +451,70 @@ export const salvarArtigoSuporte = createServerFn({ method: "POST" })
           ),
     );
     return { ok: true as const };
+  });
+
+/* ------------------------------------------- central de atendimento (0309 do Agilliza Tech) --- */
+
+export interface AtendenteSuporte {
+  id: string;
+  nome: string;
+  papel: string;
+  eu: boolean;
+  abertos: number;
+}
+
+export interface MetricasSuporte {
+  dias: number;
+  criados: number;
+  resolvidos: number;
+  primeira_resposta_media_min: number | null;
+  primeira_resposta_mediana_min: number | null;
+  resolucao_media_min: number | null;
+  sem_resposta: number;
+  prazo_cumprido_pct: number | null;
+  avaliacao_media: number | null;
+  fila_por_prioridade: Partial<Record<PrioridadeChamado, number>>;
+  fila_por_status: Partial<Record<StatusChamado, number>>;
+  por_atendente: { id: string; nome: string; abertos: number; resolvidos: number }[];
+  por_dia: { dia: string; criados: number; resolvidos: number }[];
+}
+
+/** Equipe que atende (para atribuir), com a fila aberta de cada pessoa. */
+export const listarAtendentes = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.suporte", "view"])])
+  .handler(async ({ context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ j: AtendenteSuporte[] }>("select comunicacao.suporte_atendentes() as j"),
+    );
+    return r?.j ?? [];
+  });
+
+/** Atribui o chamado a alguém da equipe (null = devolve à fila). O banco confere quem atende. */
+export const atribuirChamado = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["saas.suporte", "edit"])])
+  .inputValidator((d: unknown) =>
+    z.object({ id: ID_CHAMADO, atendente: z.string().uuid("Atendente inválido.").nullable() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    await comPlataforma(context.userId, (tx) =>
+      tx.consultar("select comunicacao.suporte_atribuir($1, $2)", [data.id, data.atendente]),
+    );
+    return { ok: true as const };
+  });
+
+/** Métricas da central (primeira resposta, resolução, prazo cumprido, fila) do período. */
+export const lerMetricasSuporte = createServerFn({ method: "GET" })
+  .middleware([exigirPermissao(["saas.suporte", "view"])])
+  .inputValidator((d: unknown) =>
+    z.object({ dias: z.union([z.literal(7), z.literal(30), z.literal(90)]).default(30) }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const { comPlataforma } = await ponte();
+    const r = await comPlataforma(context.userId, (tx) =>
+      tx.uma<{ j: MetricasSuporte }>("select comunicacao.suporte_metricas($1) as j", [data.dias]),
+    );
+    if (!r?.j) throw new Error("Não foi possível calcular as métricas.");
+    return r.j;
   });

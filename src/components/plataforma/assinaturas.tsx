@@ -2,16 +2,15 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { FilePlus2, Plus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Ban, FilePlus2, Plus, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -23,15 +22,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { usePermissao } from "@/hooks/use-permissao";
+import {
+  Avatar,
+  BarraFiltros,
+  CampoBusca,
+  EstadoErro,
+  EstadoVazio,
+  ListaCarregando,
+  Selo,
+  type Tom,
+} from "@/components/plataforma/kit";
+import { Dinheiro, TIPO_CONTA } from "@/components/plataforma/receita/comum";
 import { RodapePaginas, useValorAssentado } from "@/components/plataforma/paginacao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL, formatData, hojeISO, somarMesesISO } from "@/lib/financeiro/format";
@@ -59,21 +61,18 @@ const NOME_PERIODO: Record<string, string> = {
 const MESES: Record<string, number> = { mensal: 1, trimestral: 3, semestral: 6, anual: 12 };
 
 /** Situação da assinatura (o banco tem também "em teste" e "encerrada", que antes viravam "Ativa"). */
-function situacao(a: AssinaturaPlataforma): {
-  rotulo: string;
-  tom: "default" | "secondary" | "destructive" | "outline";
-} {
+function situacao(a: AssinaturaPlataforma): { rotulo: string; tom: Tom } {
   // Licença por pacote (0253): em dia, vencida (carência) ou bloqueada.
   if (a.licenca) {
-    if (a.status === "ativa") return { rotulo: "Em dia", tom: "default" };
-    if (a.status === "vencida") return { rotulo: "Vencida", tom: "secondary" };
-    return { rotulo: "Bloqueada", tom: "destructive" };
+    if (a.status === "ativa") return { rotulo: "Em dia", tom: "sucesso" };
+    if (a.status === "vencida") return { rotulo: "Vencida", tom: "alerta" };
+    return { rotulo: "Bloqueada", tom: "perigo" };
   }
-  if (a.cancelada_em || a.status === "cancelada") return { rotulo: "Cancelada", tom: "outline" };
-  if (a.status === "encerrada") return { rotulo: "Encerrada", tom: "outline" };
-  if (a.status === "inadimplente") return { rotulo: "Inadimplente", tom: "destructive" };
-  if (a.status === "trial") return { rotulo: "Em teste", tom: "secondary" };
-  return { rotulo: "Ativa", tom: "default" };
+  if (a.cancelada_em || a.status === "cancelada") return { rotulo: "Cancelada", tom: "neutro" };
+  if (a.status === "encerrada") return { rotulo: "Encerrada", tom: "neutro" };
+  if (a.status === "inadimplente") return { rotulo: "Inadimplente", tom: "perigo" };
+  if (a.status === "trial") return { rotulo: "Em teste", tom: "info" };
+  return { rotulo: "Ativa", tom: "sucesso" };
 }
 
 /** "1.234,50" ou "1234.5" → número; inválido → NaN. */
@@ -82,7 +81,9 @@ function numero(v: string): number {
   return Number(t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t);
 }
 
-/** Assinaturas dos assinantes, com criar, cancelar e fatura avulsa. */
+const tipoConta = (t: string) => TIPO_CONTA[t] ?? "Corretor";
+
+/** Assinaturas e licenças por pacote dos assinantes (lista com busca e cancelar). */
 export function AssinaturasPlataforma() {
   const listarFn = useServerFn(listarAssinaturas);
   const pode = usePermissao("saas.receita", "edit");
@@ -94,145 +95,211 @@ export function AssinaturasPlataforma() {
     queryFn: () => listarFn({ data: { busca: termo || null, pagina } }),
     placeholderData: (anterior) => anterior,
   });
-  const [nova, setNova] = useState(false);
-  const [fatura, setFatura] = useState(false);
   const [cancelando, setCancelando] = useState<AssinaturaPlataforma | null>(null);
+  const itens = q.data?.assinaturas ?? [];
+
+  const valor = (a: AssinaturaPlataforma) => (
+    <>
+      <span className="font-medium">
+        <Dinheiro valor={a.valor} />
+      </span>
+      <span className="text-xs text-muted-foreground">/{CICLO[a.ciclo] ?? a.ciclo}</span>
+      {(MESES[a.ciclo] ?? 1) > 1 && (
+        <span className="block text-xs text-muted-foreground">{formatBRL(a.mrr)}/mês</span>
+      )}
+    </>
+  );
+  const plano = (a: AssinaturaPlataforma) => (
+    <>
+      <span className="text-foreground">{a.plano ?? "Sem plano"}</span>
+      <span className="block text-xs text-muted-foreground">
+        {a.licenca
+          ? `Licença ${NOME_PERIODO[a.ciclo]?.toLowerCase() ?? a.ciclo}`
+          : "Assinatura recorrente"}
+      </span>
+    </>
+  );
+  const cancelar = (a: AssinaturaPlataforma) =>
+    pode && !a.cancelada_em && !a.licenca ? (
+      <Button
+        size="sm"
+        variant="ghost"
+        className="min-h-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:min-h-8"
+        onClick={() => setCancelando(a)}
+      >
+        <Ban className="mr-1.5 size-4" /> Cancelar
+      </Button>
+    ) : null;
 
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
-        <h2 className="text-sm font-semibold">Assinaturas</h2>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <Input
-            aria-label="Buscar assinatura pela conta"
-            placeholder="Buscar pela conta"
-            className="sm:w-56"
-            value={busca}
-            onChange={(e) => {
-              setBusca(e.target.value);
-              setPagina(1);
-            }}
+    <div className="space-y-3">
+      <BarraFiltros className="md:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Assinaturas recorrentes e licenças por pacote, vigentes primeiro.
+        </p>
+        <CampoBusca
+          rotulo="Buscar assinatura pela conta"
+          placeholder="Buscar pela conta"
+          valor={busca}
+          onChange={(v) => {
+            setBusca(v);
+            setPagina(1);
+          }}
+        />
+      </BarraFiltros>
+      <div className="overflow-hidden rounded-[14px] border border-border/80 bg-card shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
+        {q.isLoading ? (
+          <ListaCarregando />
+        ) : q.isError ? (
+          <EstadoErro
+            mensagem={mensagemDeErro(q.error, "Não foi possível carregar as assinaturas.")}
+            onTentar={() => q.refetch()}
           />
-          {pode && (
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => setFatura(true)}>
-                <FilePlus2 className="mr-1 size-4" /> Fatura avulsa
-              </Button>
-              <Button size="sm" onClick={() => setNova(true)}>
-                <Plus className="mr-1 size-4" /> Nova assinatura
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Conta</TableHead>
-              <TableHead>Plano</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
-              <TableHead className="hidden md:table-cell">Próxima cobrança</TableHead>
-              <TableHead>Situação</TableHead>
-              <TableHead className="w-[1%] text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {q.isLoading && (
-              <TableRow>
-                <TableCell colSpan={6}>
-                  <Skeleton className="h-10" />
-                </TableCell>
-              </TableRow>
-            )}
-            {q.isError && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-6 text-center text-sm text-destructive">
-                  {mensagemDeErro(q.error, "Não foi possível carregar as assinaturas.")}
-                </TableCell>
-              </TableRow>
-            )}
-            {q.data && q.data.assinaturas.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                  {termo ? "Nenhuma assinatura com esta busca." : "Nenhuma assinatura ainda."}
-                </TableCell>
-              </TableRow>
-            )}
-            {(q.data?.assinaturas ?? []).map((a) => (
-              <TableRow key={a.id}>
-                <TableCell>
-                  <p className="font-medium">{a.conta}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {a.conta_tipo === "imobiliaria"
-                      ? "Imobiliária"
-                      : a.conta_tipo === "parceiro"
-                        ? "Parceiro"
-                        : "Corretor"}
-                    {a.quantidade_usuarios
-                      ? ` · ${a.quantidade_usuarios} ${a.quantidade_usuarios === 1 ? "usuário" : "usuários"}`
-                      : ""}
-                  </p>
-                </TableCell>
-                <TableCell>
-                  {a.plano ?? "—"}
-                  {a.licenca && (
-                    <p className="text-xs text-muted-foreground">
-                      Licença {NOME_PERIODO[a.ciclo]?.toLowerCase() ?? a.ciclo}
-                    </p>
-                  )}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatBRL(a.valor)}/{CICLO[a.ciclo] ?? a.ciclo}
-                  {(MESES[a.ciclo] ?? 1) > 1 && (
-                    <span className="block text-xs text-muted-foreground">
-                      {formatBRL(a.mrr)}/mês
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {a.proxima_cobranca_em ? formatData(a.proxima_cobranca_em) : "—"}
-                  {a.licenca && a.proxima_cobranca_em && (
-                    <span className="block text-xs text-muted-foreground">fim do acesso</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={situacao(a).tom}>{situacao(a).rotulo}</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  {pode && !a.cancelada_em && !a.licenca && (
-                    <Button size="sm" variant="ghost" onClick={() => setCancelando(a)}>
-                      Cancelar
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <RodapePaginas
-        pagina={pagina}
-        porPagina={POR_PAGINA_ASSINATURAS}
-        quantidade={q.data?.assinaturas.length ?? 0}
-        total={q.data?.total}
-        carregando={q.isFetching}
-        onPagina={setPagina}
-      />
-
-      {q.data && (
-        <>
-          <NovaAssinatura
-            aberto={nova}
-            onFechar={() => setNova(false)}
-            contas={q.data.contas}
-            planos={q.data.planos}
+        ) : itens.length === 0 ? (
+          <EstadoVazio
+            icone={<Repeat />}
+            titulo={termo ? "Nenhuma assinatura com esta busca" : "Nenhuma assinatura ainda"}
+            descricao={termo ? undefined : "Crie a primeira em “Nova assinatura”, no topo da tela."}
           />
-          <FaturaAvulsa aberto={fatura} onFechar={() => setFatura(false)} contas={q.data.contas} />
-        </>
-      )}
+        ) : (
+          <>
+            <table className="hidden w-full text-sm lg:table">
+              <thead>
+                <tr className="border-b border-border/70 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="px-4 py-2.5 font-medium">Conta</th>
+                  <th className="px-3 py-2.5 font-medium">Plano</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Valor</th>
+                  <th className="hidden px-3 py-2.5 font-medium xl:table-cell">Próxima cobrança</th>
+                  <th className="px-3 py-2.5 font-medium">Situação</th>
+                  <th className="w-[1%] px-4 py-2.5">
+                    <span className="sr-only">Ações</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {itens.map((a) => {
+                  const s = situacao(a);
+                  return (
+                    <tr key={a.id} className="hover:bg-primary/[0.02]">
+                      <td className="max-w-[16rem] px-4 py-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar nome={a.conta} tamanho="sm" />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground">{a.conta}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {tipoConta(a.conta_tipo)}
+                              {a.quantidade_usuarios
+                                ? ` · ${a.quantidade_usuarios} ${a.quantidade_usuarios === 1 ? "usuário" : "usuários"}`
+                                : ""}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">{plano(a)}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">{valor(a)}</td>
+                      <td className="hidden whitespace-nowrap px-3 py-2.5 xl:table-cell">
+                        {a.proxima_cobranca_em ? formatData(a.proxima_cobranca_em) : "—"}
+                        {a.licenca && a.proxima_cobranca_em && (
+                          <span className="block text-xs text-muted-foreground">fim do acesso</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <Selo tom={s.tom} ponto={s.tom === "perigo"}>
+                          {s.rotulo}
+                        </Selo>
+                      </td>
+                      <td className="px-4 py-2.5 text-right">{cancelar(a)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <ul className="divide-y divide-border/60 lg:hidden">
+              {itens.map((a) => {
+                const s = situacao(a);
+                return (
+                  <li key={a.id} className="space-y-2 p-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{a.conta}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {tipoConta(a.conta_tipo)} · {a.plano ?? "sem plano"}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-right">{valor(a)}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Selo tom={s.tom}>{s.rotulo}</Selo>
+                        {a.proxima_cobranca_em
+                          ? `${a.licenca ? "acesso até" : "próxima"} ${formatData(a.proxima_cobranca_em)}`
+                          : ""}
+                      </div>
+                      {cancelar(a)}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+        <RodapePaginas
+          pagina={pagina}
+          porPagina={POR_PAGINA_ASSINATURAS}
+          quantidade={itens.length}
+          total={q.data?.total}
+          carregando={q.isFetching}
+          onPagina={setPagina}
+        />
+      </div>
       <CancelarAssinatura assinatura={cancelando} onFechar={() => setCancelando(null)} />
-    </section>
+    </div>
+  );
+}
+
+/**
+ * Ações do topo da Receita: fatura avulsa e nova assinatura. As listas de contas e planos
+ * vêm da mesma consulta das assinaturas, só quando um dos diálogos abre.
+ */
+export function AcoesReceita() {
+  const pode = usePermissao("saas.receita", "edit");
+  const listarFn = useServerFn(listarAssinaturas);
+  const [nova, setNova] = useState(false);
+  const [fatura, setFatura] = useState(false);
+  const q = useQuery({
+    queryKey: ["plataforma-assinaturas", "", 1],
+    queryFn: () => listarFn({ data: { busca: null, pagina: 1 } }),
+    enabled: pode && (nova || fatura),
+    staleTime: 60_000,
+  });
+  if (!pode) return null;
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="min-h-11 sm:min-h-9"
+        onClick={() => setFatura(true)}
+      >
+        <FilePlus2 className="mr-1.5 size-4" /> Fatura avulsa
+      </Button>
+      <Button size="sm" className="min-h-11 sm:min-h-9" onClick={() => setNova(true)}>
+        <Plus className="mr-1.5 size-4" /> Nova assinatura
+      </Button>
+      <NovaAssinatura
+        aberto={nova}
+        onFechar={() => setNova(false)}
+        contas={q.data?.contas ?? []}
+        planos={q.data?.planos ?? []}
+        carregando={q.isLoading}
+      />
+      <FaturaAvulsa
+        aberto={fatura}
+        onFechar={() => setFatura(false)}
+        contas={q.data?.contas ?? []}
+        carregando={q.isLoading}
+      />
+    </>
   );
 }
 
@@ -250,6 +317,7 @@ function NovaAssinatura({
   onFechar,
   contas,
   planos,
+  carregando,
 }: {
   aberto: boolean;
   onFechar: () => void;
@@ -261,6 +329,7 @@ function NovaAssinatura({
     preco_mensal: number;
     preco_anual: number | null;
   }[];
+  carregando?: boolean;
 }) {
   const criarFn = useServerFn(criarAssinaturaPlataforma);
   const recarregar = useRecarregar();
@@ -269,10 +338,11 @@ function NovaAssinatura({
   const [ciclo, setCiclo] = useState<"mensal" | "trimestral" | "anual">("mensal");
   const [valor, setValor] = useState("");
   const [usuarios, setUsuarios] = useState("1");
-  const tipoConta = contas.find((c) => c.id === conta)?.tipo;
+  const tipoDaConta = contas.find((c) => c.id === conta)?.tipo;
   const planosDaConta = useMemo(
-    () => planos.filter((p) => !tipoConta || p.publico === tipoConta || p.publico === "todos"),
-    [planos, tipoConta],
+    () =>
+      planos.filter((p) => !tipoDaConta || p.publico === tipoDaConta || p.publico === "todos"),
+    [planos, tipoDaConta],
   );
   // Sugere o preço do catálogo; o valor cobrado pode ser negociado.
   function sugerir(idPlano: string, c: typeof ciclo) {
@@ -310,30 +380,39 @@ function NovaAssinatura({
 
   return (
     <Dialog open={aberto} onOpenChange={(v) => !v && onFechar()}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Nova assinatura</DialogTitle>
+          <DialogDescription>
+            A assinatura anterior da conta é encerrada, a primeira fatura sai hoje e a conta deixa o
+            teste.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <Select
-            value={conta}
-            onValueChange={(v) => {
-              setConta(v);
-              setPlano("");
-            }}
-          >
-            <SelectTrigger aria-label="Conta">
-              <SelectValue placeholder="Escolha a conta" />
-            </SelectTrigger>
-            <SelectContent>
-              {contas.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="ass-conta">Conta</Label>
+            <Select
+              value={conta}
+              onValueChange={(v) => {
+                setConta(v);
+                setPlano("");
+              }}
+              disabled={carregando}
+            >
+              <SelectTrigger id="ass-conta">
+                <SelectValue placeholder={carregando ? "Carregando contas…" : "Escolha a conta"} />
+              </SelectTrigger>
+              <SelectContent>
+                {contas.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome} · {TIPO_CONTA[c.tipo] ?? c.tipo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="ass-plano">Plano</Label>
             <Select
               value={plano}
               onValueChange={(v) => {
@@ -341,8 +420,8 @@ function NovaAssinatura({
                 sugerir(v, ciclo);
               }}
             >
-              <SelectTrigger aria-label="Plano">
-                <SelectValue placeholder="Plano" />
+              <SelectTrigger id="ass-plano">
+                <SelectValue placeholder="Escolha o plano" />
               </SelectTrigger>
               <SelectContent>
                 {planosDaConta.map((p) => (
@@ -352,6 +431,9 @@ function NovaAssinatura({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="ass-ciclo">Ciclo</Label>
             <Select
               value={ciclo}
               onValueChange={(v) => {
@@ -359,7 +441,7 @@ function NovaAssinatura({
                 sugerir(plano, v as typeof ciclo);
               }}
             >
-              <SelectTrigger aria-label="Ciclo">
+              <SelectTrigger id="ass-ciclo">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -368,29 +450,33 @@ function NovaAssinatura({
                 <SelectItem value="anual">Anual</SelectItem>
               </SelectContent>
             </Select>
-            <div className="space-y-1">
-              <Label htmlFor="ass-valor">Valor cobrado por ciclo (R$)</Label>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="ass-valor">Valor por ciclo</Label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                R$
+              </span>
               <Input
                 id="ass-valor"
                 inputMode="decimal"
+                className="pl-9 tabular-nums"
                 value={valor}
                 onChange={(e) => setValor(e.target.value)}
               />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="ass-usuarios">Usuários</Label>
-              <Input
-                id="ass-usuarios"
-                inputMode="numeric"
-                value={usuarios}
-                onChange={(e) => setUsuarios(e.target.value)}
-              />
-            </div>
+            <p className="text-xs text-muted-foreground">Sugerido pelo catálogo; pode negociar.</p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            A assinatura anterior da conta é encerrada, a primeira fatura sai hoje e a conta deixa o
-            teste.
-          </p>
+          <div className="space-y-1">
+            <Label htmlFor="ass-usuarios">Usuários</Label>
+            <Input
+              id="ass-usuarios"
+              inputMode="numeric"
+              className="w-24"
+              value={usuarios}
+              onChange={(e) => setUsuarios(e.target.value)}
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onFechar}>
@@ -412,10 +498,12 @@ function FaturaAvulsa({
   aberto,
   onFechar,
   contas,
+  carregando,
 }: {
   aberto: boolean;
   onFechar: () => void;
   contas: { id: string; nome: string; tipo: string }[];
+  carregando?: boolean;
 }) {
   const emitirFn = useServerFn(emitirFaturaAvulsa);
   const recarregar = useRecarregar();
@@ -440,23 +528,29 @@ function FaturaAvulsa({
   });
   return (
     <Dialog open={aberto} onOpenChange={(v) => !v && onFechar()}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Fatura avulsa</DialogTitle>
+          <DialogDescription>
+            Serviço extra, ajuste ou cobrança combinada. Entra na fila de cobrança da conta.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <Select value={conta} onValueChange={setConta}>
-            <SelectTrigger aria-label="Conta da fatura">
-              <SelectValue placeholder="Escolha a conta" />
-            </SelectTrigger>
-            <SelectContent>
-              {contas.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-1">
+            <Label htmlFor="fat-conta">Conta</Label>
+            <Select value={conta} onValueChange={setConta} disabled={carregando}>
+              <SelectTrigger id="fat-conta">
+                <SelectValue placeholder={carregando ? "Carregando contas…" : "Escolha a conta"} />
+              </SelectTrigger>
+              <SelectContent>
+                {contas.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nome} · {TIPO_CONTA[c.tipo] ?? c.tipo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-1">
             <Label htmlFor="fat-desc">Descrição</Label>
             <Input
@@ -468,13 +562,19 @@ function FaturaAvulsa({
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="fat-valor">Valor (R$)</Label>
-              <Input
-                id="fat-valor"
-                inputMode="decimal"
-                value={valor}
-                onChange={(e) => setValor(e.target.value)}
-              />
+              <Label htmlFor="fat-valor">Valor</Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  id="fat-valor"
+                  inputMode="decimal"
+                  className="pl-9 tabular-nums"
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="fat-venc">Vencimento</Label>
@@ -534,6 +634,9 @@ function CancelarAssinatura({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Cancelar assinatura de {assinatura?.conta}?</DialogTitle>
+          <DialogDescription>
+            Para de faturar a partir de agora. O motivo fica registrado no histórico da conta.
+          </DialogDescription>
         </DialogHeader>
         <Textarea
           aria-label="Motivo do cancelamento"

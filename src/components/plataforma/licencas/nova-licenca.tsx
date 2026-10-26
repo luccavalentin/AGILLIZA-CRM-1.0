@@ -1,16 +1,9 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { Building2, Gift, Handshake, Hourglass, ShieldCheck, UserRound, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,56 +13,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { IconeGestao } from "@/components/plataforma/kit";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL } from "@/lib/financeiro/format";
-import {
-  criarLicenca,
-  pessoasParaCarteira,
-  type PlanoLicenca,
-  type TipoLicenca,
-} from "@/lib/plataforma/licencas.functions";
-import {
-  CamposDesconto,
-  DESCONTO_INICIAL,
-  paraDesconto,
-  type EstadoDesconto,
-} from "./desconto-licenca";
+import { cn } from "@/lib/utils";
+import { criarLicenca, type PlanoLicenca, type TipoLicenca } from "@/lib/plataforma/licencas.functions";
+import { CamposDesconto, DESCONTO_INICIAL, paraDesconto, type EstadoDesconto } from "./desconto-licenca";
+import { ROTULO_TIPO } from "./rotulos";
 
 type Modalidade = "cortesia" | "teste" | "pagamento";
 
-const MODALIDADES: { id: Modalidade; titulo: string; texto: string }[] = [
-  { id: "cortesia", titulo: "Cortesia", texto: "Liberada sem pagar pelos dias que você escolher." },
-  { id: "teste", titulo: "Teste", texto: "Período de teste; depois a pessoa contrata." },
-  { id: "pagamento", titulo: "Pagamento", texto: "A pessoa entra e paga o plano para liberar." },
+const MODALIDADES: { id: Modalidade; titulo: string; texto: string; icone: ReactNode }[] = [
+  { id: "cortesia", titulo: "Cortesia", texto: "Liberada sem pagar pelos dias escolhidos.", icone: <Gift /> },
+  { id: "teste", titulo: "Teste", texto: "Período de teste; depois a pessoa contrata.", icone: <Hourglass /> },
+  { id: "pagamento", titulo: "Pagamento", texto: "A pessoa entra e paga o plano para liberar.", icone: <Wallet /> },
+];
+
+const TIPOS: { id: TipoLicenca; icone: ReactNode }[] = [
+  { id: "corretor", icone: <UserRound /> },
+  { id: "imobiliaria", icone: <Building2 /> },
+  { id: "parceiro", icone: <Handshake /> },
 ];
 
 const SEM_CARTEIRA = "__nenhuma__";
 
 /**
  * "Nova licença": cria a conta de um corretor, imobiliária ou parceiro sem o cadastro do
- * site, com a modalidade (cortesia, teste ou pagamento) e a carteira de quem cuida dela.
- * A pessoa recebe o e-mail para criar a própria senha — ninguém escolhe a senha por ela.
+ * site, em quatro passos numa gaveta (conta, plano e modalidade, desconto, carteira e
+ * motivo) com o resumo do que vai acontecer antes de confirmar. A pessoa recebe o e-mail
+ * para criar a própria senha — ninguém escolhe a senha por ela.
  */
 export function NovaLicenca({
   aberta,
   aoFechar,
   planos,
+  carteiras,
 }: {
   aberta: boolean;
   aoFechar: () => void;
   planos: PlanoLicenca[];
+  carteiras: { id: string; nome: string }[];
 }) {
   const qc = useQueryClient();
   const criarFn = useServerFn(criarLicenca);
-  const pessoasFn = useServerFn(pessoasParaCarteira);
-  const pessoas = useQuery({
-    queryKey: ["plataforma-pessoas-carteira"],
-    queryFn: () => pessoasFn(),
-    enabled: aberta,
-    staleTime: 60_000,
-  });
 
   const [tipo, setTipo] = useState<TipoLicenca>("corretor");
   const [nome, setNome] = useState("");
@@ -88,6 +77,7 @@ export function NovaLicenca({
   const descontoPronto = comDesconto ? paraDesconto(desconto) : null;
 
   const planosDoTipo = planos.filter((p) => p.publico === tipo || p.publico === "todos");
+  const plano = planosDoTipo.find((p) => p.id === planoId) ?? null;
 
   function limpar() {
     setNome("");
@@ -119,7 +109,8 @@ export function NovaLicenca({
           planoId,
           modalidade,
           dias: modalidade === "pagamento" ? null : Number(dias),
-          carteira: carteira === SEM_CARTEIRA ? null : carteira,
+          carteira: null,
+          carteiraGrupo: carteira === SEM_CARTEIRA ? null : carteira,
           motivo,
           desconto: descontoPronto,
         },
@@ -129,6 +120,7 @@ export function NovaLicenca({
         `Licença criada${descontoPronto ? " com desconto" : ""}. ${email} recebeu o e-mail para criar a senha.`,
       );
       qc.invalidateQueries({ queryKey: ["plataforma-licencas"] });
+      qc.invalidateQueries({ queryKey: ["plataforma-carteiras"] });
       limpar();
       aoFechar();
     },
@@ -136,151 +128,138 @@ export function NovaLicenca({
   });
 
   const diasOk = modalidade === "pagamento" || (Number(dias) >= 1 && Number(dias) <= 365);
+  const contaOk = nome.trim().length >= 2 && /\S+@\S+\.\S+/.test(email);
   const pronto =
-    nome.trim().length >= 2 &&
-    /\S+@\S+\.\S+/.test(email) &&
-    planoId &&
+    contaOk &&
+    !!planoId &&
     diasOk &&
     (!comDesconto || descontoPronto !== null) &&
     motivo.trim().length >= 5;
 
+  const resumo = [
+    `${ROTULO_TIPO[tipo]}${nome.trim() ? ` "${nome.trim()}"` : ""}`,
+    plano ? `plano ${plano.nome}` : "sem plano escolhido",
+    modalidade === "pagamento" ? "liberada depois do pagamento" : `${modalidade} de ${dias || "?"} dias`,
+    descontoPronto ? "com desconto" : null,
+    carteira !== SEM_CARTEIRA ? `na carteira ${carteiras.find((c) => c.id === carteira)?.nome ?? ""}` : "sem carteira",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <Dialog open={aberta} onOpenChange={(v) => !v && aoFechar()}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Nova licença</DialogTitle>
-          <DialogDescription>
-            Cria a conta sem o cadastro do site. A pessoa recebe um e-mail para criar a própria
-            senha.
-          </DialogDescription>
-        </DialogHeader>
+    <Sheet open={aberta} onOpenChange={(v) => !v && aoFechar()}>
+      <SheetContent className="w-full gap-0 p-0 sm:max-w-xl">
+        <SheetHeader className="border-b border-border px-5 py-4">
+          <SheetTitle>Nova licença</SheetTitle>
+          <SheetDescription>
+            Cria a conta sem o cadastro do site. A pessoa recebe um e-mail para criar a própria senha.
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4">
-          <div
-            className="grid grid-cols-3 gap-1.5 rounded-lg bg-muted p-1"
-            role="radiogroup"
-            aria-label="Tipo de conta"
-          >
-            {(["corretor", "imobiliaria", "parceiro"] as TipoLicenca[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="radio"
-                aria-checked={tipo === t}
-                onClick={() => {
-                  setTipo(t);
-                  setPlanoId("");
-                }}
-                className={
-                  "min-h-10 rounded-md px-2 text-sm font-medium transition-colors " +
-                  (tipo === t ? "bg-background text-foreground shadow-sm" : "text-muted-foreground")
-                }
-              >
-                {t === "corretor" ? "Corretor" : t === "imobiliaria" ? "Imobiliária" : "Parceiro"}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="nl-nome">
-                {tipo === "corretor" ? "Nome do corretor" : "Nome da empresa"}
-              </Label>
-              <Input
-                id="nl-nome"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                maxLength={200}
-              />
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5">
+          <Passo n={1} titulo="Conta">
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Tipo de conta">
+              {TIPOS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={tipo === t.id}
+                  onClick={() => {
+                    setTipo(t.id);
+                    setPlanoId("");
+                  }}
+                  className={cn(
+                    "flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border px-2 text-sm font-medium transition-colors",
+                    tipo === t.id
+                      ? "border-primary bg-primary/[0.05] text-primary ring-1 ring-primary/30"
+                      : "border-border text-muted-foreground hover:bg-secondary/60",
+                  )}
+                >
+                  <span className="[&_svg]:size-4">{t.icone}</span>
+                  {ROTULO_TIPO[t.id]}
+                </button>
+              ))}
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="nl-email">E-mail de acesso</Label>
-              <Input
-                id="nl-email"
-                type="email"
-                inputMode="email"
-                autoComplete="off"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="nl-doc">CPF ou CNPJ (opcional)</Label>
-              <Input
-                id="nl-doc"
-                inputMode="numeric"
-                value={documento}
-                onChange={(e) => setDocumento(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="nl-cel">Celular (opcional)</Label>
-              <Input
-                id="nl-cel"
-                inputMode="tel"
-                value={celular}
-                onChange={(e) => setCelular(e.target.value)}
-              />
-            </div>
-            {tipo !== "parceiro" && (
-              <div className="grid grid-cols-[1fr_80px] gap-2 sm:col-span-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="nl-creci">CRECI (opcional)</Label>
-                  <Input id="nl-creci" value={creci} onChange={(e) => setCreci(e.target.value)} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Campo id="nl-nome" rotulo={tipo === "corretor" ? "Nome do corretor" : "Nome da empresa"} largo>
+                <Input id="nl-nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={200} />
+              </Campo>
+              <Campo id="nl-email" rotulo="E-mail de acesso" largo>
+                <Input
+                  id="nl-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="off"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Campo>
+              <Campo id="nl-doc" rotulo="CPF ou CNPJ" opcional>
+                <Input id="nl-doc" inputMode="numeric" value={documento} onChange={(e) => setDocumento(e.target.value)} />
+              </Campo>
+              <Campo id="nl-cel" rotulo="Celular" opcional>
+                <Input id="nl-cel" inputMode="tel" value={celular} onChange={(e) => setCelular(e.target.value)} />
+              </Campo>
+              {tipo !== "parceiro" && (
+                <div className="grid grid-cols-[1fr_72px] gap-2 sm:col-span-2 sm:max-w-sm">
+                  <Campo id="nl-creci" rotulo="CRECI" opcional>
+                    <Input id="nl-creci" value={creci} onChange={(e) => setCreci(e.target.value)} />
+                  </Campo>
+                  <Campo id="nl-uf" rotulo="UF">
+                    <Input
+                      id="nl-uf"
+                      maxLength={2}
+                      value={creciUf}
+                      onChange={(e) => setCreciUf(e.target.value.toUpperCase())}
+                    />
+                  </Campo>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="nl-uf">UF</Label>
-                  <Input
-                    id="nl-uf"
-                    maxLength={2}
-                    value={creciUf}
-                    onChange={(e) => setCreciUf(e.target.value.toUpperCase())}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </Passo>
 
-          <div className="space-y-1.5">
-            <Label>Plano</Label>
-            <Select value={planoId} onValueChange={setPlanoId}>
-              <SelectTrigger aria-label="Plano">
-                <SelectValue placeholder="Escolha o plano" />
-              </SelectTrigger>
-              <SelectContent>
-                {planosDoTipo.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.nome} · {formatBRL(p.preco_mensal)}/mês
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <fieldset className="space-y-2">
-            <legend className="mb-1.5 text-sm font-medium">Modalidade</legend>
-            <div className="grid gap-2 sm:grid-cols-3">
+          <Passo n={2} titulo="Plano e modalidade">
+            <Campo id="nl-plano" rotulo="Plano">
+              <Select value={planoId} onValueChange={setPlanoId}>
+                <SelectTrigger id="nl-plano" aria-label="Plano">
+                  <SelectValue placeholder="Escolha o plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {planosDoTipo.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome} · {formatBRL(p.preco_mensal)}/mês
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Campo>
+            <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Modalidade">
               {MODALIDADES.map((m) => (
                 <button
                   key={m.id}
                   type="button"
-                  aria-pressed={modalidade === m.id}
+                  role="radio"
+                  aria-checked={modalidade === m.id}
                   onClick={() => setModalidade(m.id)}
-                  className={
-                    "rounded-lg border p-3 text-left transition-colors " +
-                    (modalidade === m.id
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "border-border hover:bg-muted/50")
-                  }
+                  className={cn(
+                    "rounded-xl border p-3 text-left transition-colors",
+                    modalidade === m.id
+                      ? "border-primary bg-primary/[0.05] ring-1 ring-primary/30"
+                      : "border-border hover:bg-secondary/60",
+                  )}
                 >
-                  <span className="block text-sm font-semibold">{m.titulo}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">{m.texto}</span>
+                  <span className="flex items-center gap-2 text-sm font-semibold">
+                    <IconeGestao icone={m.icone} tamanho="sm" tom={modalidade === m.id ? "marca" : "neutro"} />
+                    {m.titulo}
+                  </span>
+                  <span className="mt-1.5 block text-xs text-muted-foreground">{m.texto}</span>
                 </button>
               ))}
             </div>
             {modalidade !== "pagamento" && (
               <div className="flex items-center gap-2">
-                <Label htmlFor="nl-dias" className="shrink-0">
+                <Label htmlFor="nl-dias" className="shrink-0 text-sm">
                   Dias de {modalidade === "cortesia" ? "cortesia" : "teste"}
                 </Label>
                 <Input
@@ -293,12 +272,13 @@ export function NovaLicenca({
                   value={dias}
                   onChange={(e) => setDias(e.target.value)}
                 />
+                {!diasOk && <span className="text-xs text-destructive">De 1 a 365 dias.</span>}
               </div>
             )}
-          </fieldset>
+          </Passo>
 
-          <section className="rounded-lg border border-border p-3">
-            <div className="flex items-start justify-between gap-3">
+          <Passo n={3} titulo="Desconto" opcional>
+            <div className="flex items-start justify-between gap-3 rounded-xl border border-border p-3">
               <div className="min-w-0">
                 <Label htmlFor="nl-com-desconto" className="text-sm font-medium">
                   Conceder desconto
@@ -311,64 +291,105 @@ export function NovaLicenca({
               </div>
               <Switch id="nl-com-desconto" checked={comDesconto} onCheckedChange={setComDesconto} />
             </div>
-            {comDesconto && (
-              <div className="mt-3 border-t border-border pt-3">
-                <CamposDesconto estado={desconto} aoMudar={setDesconto} prefixo="nl-desc" />
-              </div>
-            )}
-          </section>
+            {comDesconto && <CamposDesconto estado={desconto} aoMudar={setDesconto} prefixo="nl-desc" />}
+          </Passo>
 
-          <div className="space-y-1.5">
-            <Label>Carteira de</Label>
-            <Select value={carteira} onValueChange={setCarteira}>
-              <SelectTrigger aria-label="Carteira de">
-                <SelectValue placeholder="Escolha quem cuida da conta" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={SEM_CARTEIRA}>Sem carteira por enquanto</SelectItem>
-                {(pessoas.data ?? []).map((p) => (
-                  <SelectItem key={p.auth_uid} value={p.auth_uid}>
-                    {p.nome}
-                    {p.contas ? ` · ${p.contas} conta(s)` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              As propostas novas desta conta já chegam para essa pessoa.
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="nl-motivo">Motivo</Label>
-            <Textarea
-              id="nl-motivo"
-              rows={2}
-              placeholder="Ex.: parceria de lançamento combinada com o Lucca"
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-            />
-          </div>
+          <Passo n={4} titulo="Carteira e motivo">
+            <Campo id="nl-carteira" rotulo="Carteira">
+              <Select value={carteira} onValueChange={setCarteira}>
+                <SelectTrigger id="nl-carteira" aria-label="Carteira">
+                  <SelectValue placeholder="Escolha a carteira" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SEM_CARTEIRA}>Sem carteira por enquanto</SelectItem>
+                  {carteiras.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                O responsável da carteira passa a atender a conta (as propostas novas chegam para ele).
+              </p>
+            </Campo>
+            <Campo id="nl-motivo" rotulo="Motivo">
+              <Textarea
+                id="nl-motivo"
+                rows={2}
+                placeholder="Ex.: parceria de lançamento combinada com o Lucca"
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Fica no histórico da conta (pelo menos 5 letras).</p>
+            </Campo>
+          </Passo>
         </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={aoFechar}
-            disabled={criar.isPending}
-          >
-            Cancelar
-          </Button>
-          <Button
-            className="w-full sm:w-auto"
-            onClick={() => criar.mutate()}
-            disabled={!pronto || criar.isPending}
-          >
-            {criar.isPending ? "Criando…" : "Criar licença"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <footer className="space-y-3 border-t border-border bg-card px-5 py-4">
+          <p className="flex items-start gap-2 text-xs text-muted-foreground">
+            <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            <span>{resumo}</span>
+          </p>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" className="min-h-11 sm:min-h-9" onClick={aoFechar} disabled={criar.isPending}>
+              Cancelar
+            </Button>
+            <Button className="min-h-11 sm:min-h-9" onClick={() => criar.mutate()} disabled={!pronto || criar.isPending}>
+              {criar.isPending ? "Criando…" : "Criar licença"}
+            </Button>
+          </div>
+        </footer>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function Passo({
+  n,
+  titulo,
+  opcional,
+  children,
+}: {
+  n: number;
+  titulo: string;
+  opcional?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <span className="grid size-6 place-items-center rounded-full bg-primary/[0.08] text-xs font-medium text-primary ring-1 ring-inset ring-primary/15">
+          {n}
+        </span>
+        {titulo}
+        {opcional && <span className="text-xs font-normal text-muted-foreground">(opcional)</span>}
+      </h3>
+      <div className="space-y-3 pl-0 sm:pl-8">{children}</div>
+    </section>
+  );
+}
+
+function Campo({
+  id,
+  rotulo,
+  opcional,
+  largo,
+  children,
+}: {
+  id: string;
+  rotulo: string;
+  opcional?: boolean;
+  largo?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn("space-y-1.5", largo && "sm:col-span-2")}>
+      <Label htmlFor={id}>
+        {rotulo}
+        {opcional && <span className="ml-1 font-normal text-muted-foreground">(opcional)</span>}
+      </Label>
+      {children}
+    </div>
   );
 }

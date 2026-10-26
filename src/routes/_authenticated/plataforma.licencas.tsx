@@ -1,25 +1,27 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
 import {
+  Activity,
   BadgeCheck,
   Building2,
   Coins,
   KeyRound,
+  MoreHorizontal,
   Plus,
-  Search,
   ShieldAlert,
   Users,
 } from "lucide-react";
-import { AdminHero } from "@/components/admin/admin-hero";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -28,134 +30,90 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  Avatar,
+  BarraFiltros,
+  CabecalhoGestao,
+  CampoBusca,
+  ChipsFiltro,
+  EstadoErro,
+  EstadoVazio,
+  FaixaIndicadores,
+  Indicador,
+  ListaCarregando,
+  PaginaGestao,
+  Secao,
+  Selo,
+} from "@/components/plataforma/kit";
 import { assertModuloPermitido } from "@/lib/route-guards";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { formatBRL, formatData } from "@/lib/financeiro/format";
 import { RodapePaginas, useValorAssentado } from "@/components/plataforma/paginacao";
-import { CarteiraLicenca } from "@/components/plataforma/licencas/carteira-licenca";
 import { NovaLicenca } from "@/components/plataforma/licencas/nova-licenca";
-import { DescontoDaLicenca } from "@/components/plataforma/licencas/desconto-licenca";
+import {
+  GavetaLicenca,
+  type AbaLicenca,
+  type SecaoAcao,
+} from "@/components/plataforma/licencas/gaveta-licenca";
+import {
+  ROTULO_CICLO,
+  ROTULO_TIPO,
+  SITUACAO_LICENCA,
+  rotuloDe,
+  situacaoLicenca,
+} from "@/components/plataforma/licencas/rotulos";
 import {
   POR_PAGINA_LICENCAS,
-  alterarSituacaoLicenca,
-  concederCreditosLicenca,
-  concederTesteLicenca,
-  detalheLicenca,
   listarLicencas,
-  mudarPlanoLicenca,
   type Licenca,
-  type PlanoLicenca,
   type SituacaoLicenca,
   type TipoLicenca,
 } from "@/lib/plataforma/licencas.functions";
 
 export const Route = createFileRoute("/_authenticated/plataforma/licencas")({
-  head: () => ({ meta: [{ title: "Licenças e assinantes — Plataforma — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Licenças e assinaturas — Gestão de sistemas — Agilliza" }] }),
   beforeLoad: () => assertModuloPermitido("saas.licencas"),
   component: Pagina,
 });
 
-const TIPO: Record<TipoLicenca, string> = {
-  corretor: "Corretor",
-  imobiliaria: "Imobiliária",
-  parceiro: "Parceiro",
-};
+type FiltroSituacao = "todas" | SituacaoLicenca;
+const TODOS = "todos";
+const SEM_CARTEIRA = "sem";
+
+interface Aberta {
+  licenca: Licenca;
+  aba: AbaLicenca;
+  secao?: SecaoAcao;
+}
 
 /**
- * Cor por significado (antes "Ativa" usava o azul chapado de ação): ativa =
- * verde, em teste = informação, somente leitura = atenção, suspensa = perigo.
+ * Licenças e assinaturas (C49): lista densa com busca, situação em chips, filtros por tipo,
+ * plano e carteira, ações em linha e o detalhe numa gaveta com abas. A criação (cortesia,
+ * teste ou pagamento, com desconto e carteira) é uma gaveta em quatro passos.
  */
-const SITUACAO: Record<
-  SituacaoLicenca,
-  {
-    rotulo: string;
-    tom: "default" | "secondary" | "destructive" | "outline";
-    classe?: string;
-  }
-> = {
-  trial: {
-    rotulo: "Em teste",
-    tom: "outline",
-    classe: "border-primary/20 bg-primary/10 text-primary",
-  },
-  ativo: {
-    rotulo: "Ativa",
-    tom: "outline",
-    classe: "border-success/20 bg-success/10 text-success-texto",
-  },
-  somente_leitura: {
-    rotulo: "Somente leitura",
-    tom: "outline",
-    classe: "border-warning/40 bg-warning/15 text-warning-foreground",
-  },
-  suspenso: { rotulo: "Suspensa", tom: "destructive" },
-  cancelado: { rotulo: "Cancelada", tom: "outline" },
-};
-
-/** Rótulos do que o banco devolve em código (assinatura, fatura, ciclo e papel na conta). */
-const ASSINATURA: Record<string, string> = {
-  trial: "em teste",
-  ativa: "ativa",
-  inadimplente: "inadimplente",
-  cancelada: "cancelada",
-  encerrada: "encerrada",
-};
-const FATURA: Record<string, string> = {
-  pendente: "em aberto",
-  vencida: "vencida",
-  paga: "paga",
-  cancelada: "cancelada",
-  estornada: "estornada",
-};
-const CICLO: Record<string, string> = { mensal: "mês", trimestral: "trimestre", anual: "ano" };
-const PAPEL: Record<string, string> = {
-  dono: "Dono",
-  admin: "Administrador",
-  gerente: "Gerente",
-  corretor: "Corretor",
-  assistente: "Assistente",
-  financeiro: "Financeiro",
-  parceiro_dono: "Dono (parceiro)",
-  parceiro_membro: "Membro (parceiro)",
-};
-const rotulo = (mapa: Record<string, string>, v: string | null | undefined) =>
-  v ? (mapa[v] ?? v.replace(/_/g, " ")) : "—";
-
 function Pagina() {
   const listarFn = useServerFn(listarLicencas);
-  const [busca, setBusca] = useState("");
-  const [tipo, setTipo] = useState<"todos" | TipoLicenca>("todos");
-  const [situacao, setSituacao] = useState<"todas" | SituacaoLicenca>("todas");
-  const [pagina, setPagina] = useState(1);
-  const [aberta, setAberta] = useState<Licenca | null>(null);
-  const [nova, setNova] = useState(false);
   const podeCriar = usePermissao("saas.licencas", "edit");
+  const [busca, setBusca] = useState("");
+  const [tipo, setTipo] = useState<string>(TODOS);
+  const [plano, setPlano] = useState<string>(TODOS);
+  const [carteira, setCarteira] = useState<string>(TODOS);
+  const [situacao, setSituacao] = useState<FiltroSituacao>("todas");
+  const [pagina, setPagina] = useState(1);
+  const [aberta, setAberta] = useState<Aberta | null>(null);
+  const [nova, setNova] = useState(false);
   const termo = useValorAssentado(busca.trim());
 
   const q = useQuery({
-    queryKey: ["plataforma-licencas", tipo, situacao, termo, pagina],
+    queryKey: ["plataforma-licencas", tipo, situacao, termo, plano, carteira, pagina],
     queryFn: () =>
       listarFn({
         data: {
-          tipo: tipo === "todos" ? null : tipo,
+          tipo: tipo === TODOS ? null : (tipo as TipoLicenca),
           status: situacao === "todas" ? null : situacao,
           busca: termo || null,
+          plano: plano === TODOS ? null : plano,
+          carteira: carteira === TODOS ? null : carteira,
           pagina,
         },
       }),
@@ -163,179 +121,276 @@ function Pagina() {
     placeholderData: (anterior) => anterior,
   });
   const licencas = q.data?.licencas ?? [];
-  // Os números vêm do banco, somados sobre o filtro inteiro (não só a página).
+  const planos = q.data?.planos ?? [];
+  const carteiras = q.data?.carteiras ?? [];
   const kpi = q.data?.resumo ?? { total: 0, ativas: 0, teste: 0, travadas: 0, mrr: 0, usuarios: 0 };
-  // A gaveta mostra a versão mais recente da conta (depois de mudar situação, plano ou teste).
-  const abertaAtual = aberta ? (licencas.find((l) => l.id === aberta.id) ?? aberta) : null;
+  // A gaveta mostra a versão mais recente da conta (depois de mudar situação, plano ou carteira).
+  const abertaAtual = aberta ? (licencas.find((l) => l.id === aberta.licenca.id) ?? aberta.licenca) : null;
+
+  const mudar = <T,>(set: (v: T) => void) => (v: T) => {
+    set(v);
+    setPagina(1);
+  };
+  const filtrosAtivos =
+    (tipo !== TODOS ? 1 : 0) + (plano !== TODOS ? 1 : 0) + (carteira !== TODOS ? 1 : 0) + (termo ? 1 : 0);
+  const abrir = (licenca: Licenca, aba: AbaLicenca = "resumo", secao?: SecaoAcao) =>
+    setAberta({ licenca, aba, secao });
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <AdminHero
-        secao="Gestão de sistemas"
-        icon={<KeyRound className="h-5 w-5" />}
-        titulo="Licenças e assinantes"
-        descricao="Contas de corretores, imobiliárias e parceiros: situação, plano, teste, créditos e uso."
+    <PaginaGestao>
+      <CabecalhoGestao
+        titulo="Licenças e assinaturas"
+        icone={<KeyRound />}
+        descricao="Contas de corretores, imobiliárias e parceiros do Agilliza Tech: situação, plano, teste, créditos, carteira e uso."
+        acoes={
+          podeCriar && (
+            <Button className="min-h-11 w-full sm:min-h-9 sm:w-auto" onClick={() => setNova(true)}>
+              <Plus className="mr-1.5 size-4" /> Nova licença
+            </Button>
+          )
+        }
       />
-      {podeCriar && (
-        <div className="flex justify-end">
-          <Button className="w-full sm:w-auto" onClick={() => setNova(true)}>
-            <Plus className="mr-1.5 size-4" /> Nova licença
-          </Button>
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <Indicador rotulo="Licenças" valor={kpi.total} icone={<Building2 className="size-4" />} />
-        <Indicador rotulo="Ativas" valor={kpi.ativas} icone={<BadgeCheck className="size-4" />} />
-        <Indicador rotulo="Em teste" valor={kpi.teste} icone={<KeyRound className="size-4" />} />
-        {/* Rótulo curto (cabe numa linha, alinhado aos vizinhos); o detalhe explica a soma. */}
+      <FaixaIndicadores colunas={5}>
+        <Indicador
+          rotulo="Licenças no filtro"
+          valor={kpi.total}
+          icone={<Building2 />}
+          carregando={q.isLoading}
+          detalhe={`${kpi.usuarios} ${kpi.usuarios === 1 ? "usuário" : "usuários"}`}
+        />
+        <Indicador
+          rotulo="Ativas"
+          valor={kpi.ativas}
+          icone={<BadgeCheck />}
+          tom="sucesso"
+          carregando={q.isLoading}
+          onClick={() => mudar(setSituacao)(situacao === "ativo" ? "todas" : "ativo")}
+          ativo={situacao === "ativo"}
+        />
+        <Indicador
+          rotulo="Em teste"
+          valor={kpi.teste}
+          icone={<KeyRound />}
+          carregando={q.isLoading}
+          onClick={() => mudar(setSituacao)(situacao === "trial" ? "todas" : "trial")}
+          ativo={situacao === "trial"}
+        />
         <Indicador
           rotulo="Bloqueadas"
           valor={kpi.travadas}
-          icone={<ShieldAlert className="size-4" />}
+          icone={<ShieldAlert />}
+          tom={kpi.travadas > 0 ? "alerta" : "neutro"}
           detalhe="Suspensas + somente leitura"
+          carregando={q.isLoading}
         />
         <Indicador
-          rotulo="Receita mensal (assinaturas)"
+          rotulo="Receita mensal"
           valor={formatBRL(kpi.mrr)}
-          icone={<Coins className="size-4" />}
-          detalhe={`${kpi.usuarios} ${kpi.usuarios === 1 ? "usuário" : "usuários"} nas contas`}
+          icone={<Coins />}
+          detalhe="Assinaturas ativas e inadimplentes"
+          carregando={q.isLoading}
         />
-      </div>
+      </FaixaIndicadores>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 md:flex-row md:items-end">
-        <div className="relative flex-1">
-          <Label htmlFor="lic-busca" className="sr-only">
-            Buscar licença
-          </Label>
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="lic-busca"
-            className="pl-9"
-            placeholder="Buscar por nome, endereço do site ou e-mail"
-            value={busca}
-            onChange={(e) => {
-              setBusca(e.target.value);
+      <BarraFiltros>
+        <CampoBusca
+          valor={busca}
+          onChange={mudar(setBusca)}
+          rotulo="Buscar licença"
+          placeholder="Nome, endereço do site ou e-mail"
+        />
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <Select value={tipo} onValueChange={mudar(setTipo)}>
+            <SelectTrigger className="h-10 sm:w-40" aria-label="Tipo de conta">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todos os tipos</SelectItem>
+              {(Object.keys(ROTULO_TIPO) as TipoLicenca[]).map((t) => (
+                <SelectItem key={t} value={t}>
+                  {ROTULO_TIPO[t]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={plano} onValueChange={mudar(setPlano)}>
+            <SelectTrigger className="h-10 sm:w-44" aria-label="Plano">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todos os planos</SelectItem>
+              {planos.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={carteira} onValueChange={mudar(setCarteira)}>
+            <SelectTrigger className="col-span-2 h-10 sm:col-span-1 sm:w-48" aria-label="Carteira">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todas as carteiras</SelectItem>
+              <SelectItem value={SEM_CARTEIRA}>Sem carteira</SelectItem>
+              {carteiras.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {filtrosAtivos > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11 self-start sm:min-h-8 md:ml-auto"
+            onClick={() => {
+              setBusca("");
+              setTipo(TODOS);
+              setPlano(TODOS);
+              setCarteira(TODOS);
               setPagina(1);
             }}
-          />
-        </div>
-        <Select
-          value={tipo}
-          onValueChange={(v) => {
-            setTipo(v as typeof tipo);
-            setPagina(1);
-          }}
-        >
-          <SelectTrigger className="md:w-44" aria-label="Tipo de conta">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os tipos</SelectItem>
-            <SelectItem value="corretor">Corretores</SelectItem>
-            <SelectItem value="imobiliaria">Imobiliárias</SelectItem>
-            <SelectItem value="parceiro">Parceiros</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={situacao}
-          onValueChange={(v) => {
-            setSituacao(v as typeof situacao);
-            setPagina(1);
-          }}
-        >
-          <SelectTrigger className="md:w-48" aria-label="Situação">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">Todas as situações</SelectItem>
-            {(Object.keys(SITUACAO) as SituacaoLicenca[]).map((s) => (
-              <SelectItem key={s} value={s}>
-                {SITUACAO[s].rotulo}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+          >
+            Limpar filtros ({filtrosAtivos})
+          </Button>
+        )}
+      </BarraFiltros>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Conta</TableHead>
-              <TableHead>Plano</TableHead>
-              <TableHead>Situação</TableHead>
-              <TableHead className="hidden md:table-cell">Teste até</TableHead>
-              <TableHead className="hidden md:table-cell text-right">Usuários</TableHead>
-              <TableHead className="hidden lg:table-cell text-right">Assinatura</TableHead>
-              <TableHead className="hidden lg:table-cell">Desde</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {q.isLoading &&
-              Array.from({ length: 4 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={7}>
-                    <Skeleton className="h-8" />
-                  </TableCell>
-                </TableRow>
-              ))}
-            {q.isError && (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-sm text-destructive">
-                  {mensagemDeErro(q.error, "Não foi possível carregar as licenças.")}
-                </TableCell>
-              </TableRow>
-            )}
-            {!q.isLoading && !q.isError && licencas.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                  Nenhuma licença com estes filtros.
-                </TableCell>
-              </TableRow>
-            )}
-            {licencas.map((l) => (
-              <TableRow
-                key={l.id}
-                className="cursor-pointer"
-                onClick={() => setAberta(l)}
-                tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && setAberta(l)}
-              >
-                <TableCell>
-                  <p className="font-medium text-foreground">{l.nome}</p>
-                  <p className="max-w-[16rem] truncate text-xs text-muted-foreground sm:max-w-none">
-                    {TIPO[l.tipo]} · {l.email_contato ?? l.slug}
-                  </p>
-                  {l.carteira_nome && (
-                    <p className="text-xs text-muted-foreground">Carteira: {l.carteira_nome}</p>
-                  )}
-                </TableCell>
-                <TableCell>{l.plano ?? "—"}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={SITUACAO[l.status]?.tom ?? "secondary"}
-                    className={SITUACAO[l.status]?.classe}
-                  >
-                    {SITUACAO[l.status]?.rotulo ?? l.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {l.trial_ate ? formatData(l.trial_ate) : "—"}
-                </TableCell>
-                <TableCell className="hidden md:table-cell text-right tabular-nums">
-                  {l.usuarios}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-right tabular-nums">
-                  {l.assinatura_valor
-                    ? `${formatBRL(l.assinatura_valor)}/${rotulo(CICLO, l.ciclo ?? "mensal")}`
-                    : "—"}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell">{formatData(l.criado_em)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <ChipsFiltro<FiltroSituacao>
+        rotulo="Situação"
+        valor={situacao}
+        onChange={mudar(setSituacao)}
+        opcoes={[
+          { valor: "todas", rotulo: "Todas" },
+          ...(Object.keys(SITUACAO_LICENCA) as SituacaoLicenca[]).map((s) => ({
+            valor: s,
+            rotulo: SITUACAO_LICENCA[s].rotulo,
+          })),
+        ]}
+      />
+
+      <Secao semRespiro>
+        {q.isLoading && <ListaCarregando linhas={6} />}
+        {q.isError && (
+          <EstadoErro mensagem={mensagemDeErro(q.error, "Não foi possível carregar as licenças.")} onTentar={() => q.refetch()} />
+        )}
+        {!q.isLoading && !q.isError && licencas.length === 0 && (
+          <EstadoVazio
+            icone={<Building2 />}
+            titulo="Nenhuma licença com estes filtros"
+            descricao="Mude a busca ou os filtros para ver outras contas."
+          />
+        )}
+
+        {licencas.length > 0 && (
+          <>
+            {/* Monitor largo: tabela densa */}
+            <div className="hidden xl:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/70 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <th className="px-4 py-2.5 font-medium">Conta</th>
+                    <th className="px-2 py-2.5 font-medium">Plano</th>
+                    <th className="px-2 py-2.5 font-medium">Situação</th>
+                    <th className="px-2 py-2.5 font-medium">Carteira</th>
+                    <th className="px-2 py-2.5 text-right font-medium">Usuários</th>
+                    <th className="px-2 py-2.5 text-right font-medium">Assinatura</th>
+                    <th className="px-2 py-2.5 font-medium">Desde</th>
+                    <th className="w-12 px-2 py-2.5" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {licencas.map((l) => {
+                    const s = situacaoLicenca(l.status);
+                    return (
+                      <tr
+                        key={l.id}
+                        className="cursor-pointer transition-colors hover:bg-primary/[0.025]"
+                        onClick={() => abrir(l)}
+                        tabIndex={0}
+                        onKeyDown={(e) => e.key === "Enter" && abrir(l)}
+                      >
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-3">
+                            <Avatar nome={l.nome} />
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-foreground">{l.nome}</p>
+                              <p className="max-w-[22rem] truncate text-xs text-muted-foreground">
+                                {ROTULO_TIPO[l.tipo]} · {l.email_contato ?? l.slug}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-2 py-2.5">{l.plano ?? <span className="text-muted-foreground">—</span>}</td>
+                        <td className="px-2 py-2.5">
+                          <Selo tom={s.tom} ponto={l.status === "ativo"}>
+                            {s.rotulo}
+                          </Selo>
+                          {l.status === "trial" && l.trial_ate && (
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">até {formatData(l.trial_ate)}</p>
+                          )}
+                        </td>
+                        <td className="px-2 py-2.5">
+                          {l.carteira_grupo_nome ? (
+                            <span className="text-sm">{l.carteira_grupo_nome}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Sem carteira</span>
+                          )}
+                          {l.carteira_nome && <p className="truncate text-[11px] text-muted-foreground">{l.carteira_nome}</p>}
+                        </td>
+                        <td className="px-2 py-2.5 text-right tabular-nums">{l.usuarios}</td>
+                        <td className="px-2 py-2.5 text-right tabular-nums">
+                          {l.assinatura_valor
+                            ? `${formatBRL(l.assinatura_valor)}/${rotuloDe(ROTULO_CICLO, l.ciclo ?? "mensal")}`
+                            : "—"}
+                        </td>
+                        <td className="px-2 py-2.5 text-muted-foreground">{formatData(l.criado_em)}</td>
+                        <td className="px-2 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                          <AcoesEmLinha licenca={l} podeEditar={podeCriar} onAbrir={abrir} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Celular e telas médias: cartões */}
+            <ul className="divide-y divide-border/60 xl:hidden">
+              {licencas.map((l) => {
+                const s = situacaoLicenca(l.status);
+                return (
+                  <li key={l.id} className="flex items-start gap-3 px-4 py-3">
+                    <button type="button" className="flex min-w-0 flex-1 items-start gap-3 text-left" onClick={() => abrir(l)}>
+                      <Avatar nome={l.nome} />
+                      <span className="min-w-0 flex-1 space-y-1">
+                        <span className="block truncate text-sm font-medium">{l.nome}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {ROTULO_TIPO[l.tipo]} · {l.plano ?? "sem plano"}
+                          {l.carteira_grupo_nome ? ` · ${l.carteira_grupo_nome}` : ""}
+                        </span>
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          <Selo tom={s.tom} ponto={l.status === "ativo"}>
+                            {s.rotulo}
+                          </Selo>
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            <Users className="mr-0.5 inline size-3" /> {l.usuarios}
+                            {l.assinatura_valor ? ` · ${formatBRL(l.assinatura_valor)}/${rotuloDe(ROTULO_CICLO, l.ciclo ?? "mensal")}` : ""}
+                          </span>
+                        </span>
+                      </span>
+                    </button>
+                    <AcoesEmLinha licenca={l} podeEditar={podeCriar} onAbrir={abrir} />
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
         <RodapePaginas
           pagina={pagina}
           porPagina={POR_PAGINA_LICENCAS}
@@ -344,451 +399,63 @@ function Pagina() {
           carregando={q.isFetching}
           onPagina={setPagina}
         />
-      </div>
+      </Secao>
 
       <GavetaLicenca
         licenca={abertaAtual}
-        planos={q.data?.planos ?? []}
+        planos={planos}
+        carteiras={carteiras}
+        abaInicial={aberta?.aba}
+        secaoInicial={aberta?.secao}
         onFechar={() => setAberta(null)}
       />
       {podeCriar && (
-        <NovaLicenca aberta={nova} aoFechar={() => setNova(false)} planos={q.data?.planos ?? []} />
+        <NovaLicenca aberta={nova} aoFechar={() => setNova(false)} planos={planos} carteiras={carteiras} />
       )}
-    </div>
+    </PaginaGestao>
   );
 }
 
-function Indicador({
-  rotulo,
-  valor,
-  icone,
-  detalhe,
-}: {
-  rotulo: string;
-  valor: string | number;
-  icone: React.ReactNode;
-  detalhe?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between text-muted-foreground">
-        <p className="truncate text-xs uppercase tracking-wide">{rotulo}</p>
-        {icone}
-      </div>
-      <p className="mt-1 break-words text-xl font-semibold tabular-nums text-foreground 2xl:text-2xl">
-        {valor}
-      </p>
-      {detalhe && <p className="mt-0.5 text-xs text-muted-foreground">{detalhe}</p>}
-    </div>
-  );
-}
-
-function GavetaLicenca({
+/** Menu de ações da linha: abre a gaveta já na aba (e no bloco) da ação escolhida. */
+function AcoesEmLinha({
   licenca,
-  planos,
-  onFechar,
+  podeEditar,
+  onAbrir,
 }: {
-  licenca: Licenca | null;
-  planos: PlanoLicenca[];
-  onFechar: () => void;
+  licenca: Licenca;
+  podeEditar: boolean;
+  onAbrir: (l: Licenca, aba?: AbaLicenca, secao?: SecaoAcao) => void;
 }) {
-  const detalheFn = useServerFn(detalheLicenca);
-  const podeAlterar = usePermissao("saas.licencas", "edit");
-  const q = useQuery({
-    queryKey: ["plataforma-licenca", licenca?.id],
-    queryFn: () => detalheFn({ data: { id: licenca!.id } }),
-    enabled: !!licenca,
-  });
-  const d = q.data?.detalhe;
-
   return (
-    <Sheet open={!!licenca} onOpenChange={(v) => !v && onFechar()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-        {licenca && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-11 shrink-0 sm:size-8" aria-label={`Ações de ${licenca.nome}`}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuLabel className="truncate">{licenca.nome}</DropdownMenuLabel>
+        <DropdownMenuItem onSelect={() => onAbrir(licenca, "resumo")}>
+          <Activity className="mr-2 size-4" /> Ver uso e detalhes
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onAbrir(licenca, "cobranca")}>
+          <Coins className="mr-2 size-4" /> Cobrança e faturas
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onAbrir(licenca, "pessoas")}>
+          <Users className="mr-2 size-4" /> Pessoas da conta
+        </DropdownMenuItem>
+        {podeEditar && (
           <>
-            <SheetHeader>
-              <SheetTitle>{licenca.nome}</SheetTitle>
-              <SheetDescription>
-                {TIPO[licenca.tipo]} · {SITUACAO[licenca.status]?.rotulo} · plano{" "}
-                {licenca.plano ?? "sem plano"}
-                {licenca.status_motivo ? ` · ${licenca.status_motivo}` : ""}
-              </SheetDescription>
-            </SheetHeader>
-
-            <Tabs defaultValue="resumo" className="mt-4">
-              <TabsList className="h-auto w-full">
-                <TabsTrigger value="resumo" className="min-h-11 flex-1">
-                  Resumo
-                </TabsTrigger>
-                <TabsTrigger value="pessoas" className="min-h-11 flex-1">
-                  Pessoas
-                </TabsTrigger>
-                {podeAlterar && (
-                  <TabsTrigger value="acoes" className="min-h-11 flex-1">
-                    Ações
-                  </TabsTrigger>
-                )}
-              </TabsList>
-
-              <TabsContent value="resumo" className="space-y-4">
-                {q.isLoading && <Skeleton className="h-40" />}
-                {q.isError && (
-                  <p className="text-sm text-destructive">
-                    {mensagemDeErro(q.error, "Não foi possível abrir a conta.")}
-                  </p>
-                )}
-                {d && (
-                  <>
-                    <Bloco titulo="Uso">
-                      <Numeros
-                        itens={[
-                          ["Clientes", d.uso.clientes],
-                          ["Imóveis", d.uso.imoveis],
-                          ["Simulações", d.uso.simulacoes],
-                          ["Propostas", d.uso.propostas],
-                          ["Locações", d.uso.contratos_locacao],
-                          ["Sites no ar", d.uso.sites_publicados],
-                        ]}
-                      />
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Última atividade:{" "}
-                        {d.uso.ultima_atividade ? formatData(d.uso.ultima_atividade) : "nenhuma"} ·{" "}
-                        {d.sessoes_ativas} sessão(ões) ativa(s)
-                      </p>
-                    </Bloco>
-                    <Bloco titulo="Créditos">
-                      <Numeros
-                        itens={[
-                          ["Saldo", d.creditos.saldo],
-                          ["Comprados", d.creditos.comprados],
-                          ["Consumidos", d.creditos.consumidos],
-                        ]}
-                      />
-                    </Bloco>
-                    <Bloco titulo="Assinatura">
-                      {d.assinatura ? (
-                        <p className="text-sm">
-                          {d.assinatura.plano ?? licenca.plano ?? "—"} ·{" "}
-                          {formatBRL(Number(d.assinatura.valor))}/
-                          {rotulo(CICLO, d.assinatura.ciclo)} ·{" "}
-                          {rotulo(ASSINATURA, d.assinatura.status)}
-                          {d.assinatura.proxima_cobranca_em
-                            ? ` · próxima cobrança ${formatData(d.assinatura.proxima_cobranca_em)}`
-                            : ""}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          Sem assinatura
-                          {licenca.trial_ate ? ` — teste até ${formatData(licenca.trial_ate)}` : ""}
-                          .
-                        </p>
-                      )}
-                    </Bloco>
-                    <Bloco titulo="Faturas">
-                      {d.faturas.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">Nenhuma fatura.</p>
-                      ) : (
-                        <ul className="divide-y divide-border text-sm">
-                          {d.faturas.slice(0, 8).map((f) => (
-                            <li
-                              key={f.id}
-                              className="flex flex-col gap-0.5 py-1.5 sm:flex-row sm:justify-between sm:gap-3"
-                            >
-                              <span className="truncate">{f.descricao}</span>
-                              <span className="tabular-nums text-muted-foreground sm:shrink-0 sm:text-foreground">
-                                {formatBRL(Number(f.valor))} · {formatData(f.vencimento)} ·{" "}
-                                {rotulo(FATURA, f.status)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </Bloco>
-                  </>
-                )}
-              </TabsContent>
-
-              <TabsContent value="pessoas">
-                {q.isLoading && <Skeleton className="h-32" />}
-                <ul className="divide-y divide-border">
-                  {(q.data?.pessoas ?? []).map((p) => (
-                    <li key={p.id} className="flex items-center justify-between gap-3 py-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{p.nome}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {p.email_mascarado ?? "—"} · {rotulo(PAPEL, p.papel)}
-                          {p.equipe ? ` · ${p.equipe}` : ""}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        {p.mfa_ativo && <Badge variant="outline">2 fatores</Badge>}
-                        <Badge variant={p.ativo ? "secondary" : "outline"}>
-                          {p.ativo ? "Ativo" : "Desligado"}
-                        </Badge>
-                      </div>
-                    </li>
-                  ))}
-                  {q.data && q.data.pessoas.length === 0 && (
-                    <li className="py-6 text-center text-sm text-muted-foreground">
-                      Nenhuma pessoa nesta conta.
-                    </li>
-                  )}
-                </ul>
-                <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Users className="size-3.5" /> E-mails mascarados: a lista não expõe dado pessoal.
-                </p>
-              </TabsContent>
-
-              {podeAlterar && (
-                <TabsContent value="acoes">
-                  <AcoesLicenca licenca={licenca} planos={planos} />
-                </TabsContent>
-              )}
-            </Tabs>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "situacao")}>Mudar situação</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "teste")}>Teste grátis</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "plano")}>Trocar plano</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "desconto")}>Desconto</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "creditos")}>Lançar créditos</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAbrir(licenca, "acoes", "carteira")}>Carteira e acesso</DropdownMenuItem>
           </>
         )}
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-lg border border-border p-3">
-      <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {titulo}
-      </h3>
-      {children}
-    </section>
-  );
-}
-
-function Numeros({ itens }: { itens: [string, number][] }) {
-  return (
-    <dl className="grid grid-cols-3 gap-2">
-      {itens.map(([r, v]) => (
-        <div key={r}>
-          <dt className="text-xs text-muted-foreground">{r}</dt>
-          <dd className="text-lg font-semibold tabular-nums">{Number(v ?? 0)}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function AcoesLicenca({ licenca, planos }: { licenca: Licenca; planos: PlanoLicenca[] }) {
-  const qc = useQueryClient();
-  const situacaoFn = useServerFn(alterarSituacaoLicenca);
-  const testeFn = useServerFn(concederTesteLicenca);
-  const planoFn = useServerFn(mudarPlanoLicenca);
-  const creditosFn = useServerFn(concederCreditosLicenca);
-
-  const [novaSituacao, setNovaSituacao] = useState<SituacaoLicenca>(licenca.status);
-  const [motivoSituacao, setMotivoSituacao] = useState("");
-  const [dias, setDias] = useState("14");
-  const [motivoTeste, setMotivoTeste] = useState("");
-  const [planoId, setPlanoId] = useState(licenca.plano_id ?? "");
-  const [creditos, setCreditos] = useState("");
-  const [motivoCredito, setMotivoCredito] = useState<"bonus_plano" | "estorno">("bonus_plano");
-
-  const recarregar = () => {
-    qc.invalidateQueries({ queryKey: ["plataforma-licencas"] });
-    qc.invalidateQueries({ queryKey: ["plataforma-licenca", licenca.id] });
-  };
-  const erro = (e: unknown) => toast.error(mensagemDeErro(e, "Não foi possível concluir."));
-
-  const situacao = useMutation({
-    mutationFn: () =>
-      situacaoFn({ data: { id: licenca.id, status: novaSituacao, motivo: motivoSituacao } }),
-    onSuccess: () => {
-      toast.success(`Situação alterada para "${SITUACAO[novaSituacao].rotulo}".`);
-      setMotivoSituacao("");
-      recarregar();
-    },
-    onError: erro,
-  });
-  const teste = useMutation({
-    mutationFn: () =>
-      testeFn({ data: { id: licenca.id, dias: Number(dias), motivo: motivoTeste } }),
-    onSuccess: (r) => {
-      toast.success(
-        Number(dias) === 0
-          ? "Teste encerrado. A conta ficou em somente leitura."
-          : `Teste liberado até ${r.ate ? formatData(r.ate) : "—"}.`,
-      );
-      setMotivoTeste("");
-      recarregar();
-    },
-    onError: erro,
-  });
-  const plano = useMutation({
-    mutationFn: () => planoFn({ data: { id: licenca.id, planoId } }),
-    onSuccess: (r) => {
-      toast.success(`Plano alterado para ${r.plano}.`);
-      recarregar();
-    },
-    onError: erro,
-  });
-  const credito = useMutation({
-    mutationFn: () =>
-      creditosFn({ data: { id: licenca.id, quantidade: Number(creditos), motivo: motivoCredito } }),
-    onSuccess: (r) => {
-      toast.success(`Créditos lançados. Saldo agora: ${r.saldo ?? "—"}.`);
-      setCreditos("");
-      recarregar();
-    },
-    onError: erro,
-  });
-
-  const planosDoTipo = planos.filter((p) => p.publico === licenca.tipo || p.publico === "todos");
-
-  return (
-    <div className="space-y-4">
-      <Bloco titulo="Carteira e acesso">
-        <CarteiraLicenca licenca={licenca} />
-      </Bloco>
-
-      <Bloco titulo="Situação da conta">
-        <div className="space-y-2">
-          <Select value={novaSituacao} onValueChange={(v) => setNovaSituacao(v as SituacaoLicenca)}>
-            <SelectTrigger aria-label="Nova situação">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(SITUACAO) as SituacaoLicenca[]).map((s) => (
-                <SelectItem key={s} value={s}>
-                  {SITUACAO[s].rotulo}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Textarea
-            aria-label="Motivo da mudança de situação"
-            rows={2}
-            placeholder="Motivo (fica registrado na auditoria)"
-            value={motivoSituacao}
-            onChange={(e) => setMotivoSituacao(e.target.value)}
-          />
-          <Button
-            size="sm"
-            onClick={() => situacao.mutate()}
-            disabled={
-              situacao.isPending ||
-              novaSituacao === licenca.status ||
-              motivoSituacao.trim().length < 5
-            }
-          >
-            Alterar situação
-          </Button>
-        </div>
-      </Bloco>
-
-      <Bloco titulo="Teste grátis">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="lic-dias" className="shrink-0 text-sm">
-              Dias a mais
-            </Label>
-            <Input
-              id="lic-dias"
-              type="number"
-              min={0}
-              max={365}
-              className="w-24"
-              value={dias}
-              onChange={(e) => setDias(e.target.value)}
-            />
-            <span className="text-xs text-muted-foreground">
-              Somam ao prazo atual (ou contam de hoje, se já venceu). 0 encerra o teste.
-            </span>
-          </div>
-          <Textarea
-            aria-label="Motivo do teste"
-            rows={2}
-            placeholder="Motivo (ex.: combinado com o cliente na reunião de hoje)"
-            value={motivoTeste}
-            onChange={(e) => setMotivoTeste(e.target.value)}
-          />
-          <Button
-            size="sm"
-            onClick={() => teste.mutate()}
-            disabled={
-              teste.isPending ||
-              dias === "" ||
-              Number(dias) < 0 ||
-              Number(dias) > 365 ||
-              motivoTeste.trim().length < 5
-            }
-          >
-            Aplicar teste
-          </Button>
-        </div>
-      </Bloco>
-
-      <Bloco titulo="Plano">
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Select value={planoId} onValueChange={setPlanoId}>
-            <SelectTrigger aria-label="Plano" className="flex-1">
-              <SelectValue placeholder="Escolha o plano" />
-            </SelectTrigger>
-            <SelectContent>
-              {planosDoTipo.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.nome} · {formatBRL(p.preco_mensal)}/mês
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            size="sm"
-            onClick={() => plano.mutate()}
-            disabled={plano.isPending || !planoId || planoId === licenca.plano_id}
-          >
-            Trocar plano
-          </Button>
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Troca os recursos liberados. Preço e cobrança seguem na assinatura.
-        </p>
-      </Bloco>
-
-      <Bloco titulo="Desconto">
-        <DescontoDaLicenca licenca={licenca} />
-      </Bloco>
-
-      <Bloco titulo="Créditos">
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            aria-label="Quantidade de créditos"
-            type="number"
-            min={1}
-            max={10000}
-            placeholder="Quantidade"
-            className="sm:w-32"
-            value={creditos}
-            onChange={(e) => setCreditos(e.target.value)}
-          />
-          <Select
-            value={motivoCredito}
-            onValueChange={(v) => setMotivoCredito(v as typeof motivoCredito)}
-          >
-            <SelectTrigger aria-label="Motivo dos créditos" className="flex-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="bonus_plano">Cortesia</SelectItem>
-              <SelectItem value="estorno">Estorno</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            size="sm"
-            onClick={() => credito.mutate()}
-            disabled={credito.isPending || !(Number(creditos) >= 1 && Number(creditos) <= 10000)}
-          >
-            Lançar
-          </Button>
-        </div>
-      </Bloco>
-    </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

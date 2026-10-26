@@ -37,6 +37,9 @@ export interface Licenca {
   /** Pessoa do Agilliza que cuida da conta (carteira, 0228). */
   carteira_uid: string | null;
   carteira_nome: string | null;
+  /** Carteira nomeada da conta (0308), quando houver. */
+  carteira_grupo_id: string | null;
+  carteira_grupo_nome: string | null;
 }
 
 export interface PlanoLicenca {
@@ -142,6 +145,9 @@ export const listarLicencas = createServerFn({ method: "GET" })
           .optional()
           .nullable(),
         busca: z.string().trim().max(120).optional().nullable(),
+        plano: z.string().uuid().optional().nullable(),
+        /** Carteira nomeada (id) ou "sem" (contas fora de carteira). */
+        carteira: z.union([z.string().uuid(), z.literal("sem")]).optional().nullable(),
         pagina: z.number().int().min(1).max(10_000).default(1),
       })
       .parse(d ?? {}),
@@ -150,7 +156,14 @@ export const listarLicencas = createServerFn({ method: "GET" })
     const { comPlataforma } = await ponte();
     // A busca é texto literal: % e _ digitados não viram curinga.
     const busca = data.busca ? data.busca.replace(/[\\%_]/g, (c) => "\\" + c) : null;
-    const filtros = [data.tipo ?? null, data.status ?? null, busca];
+    const filtros = [
+      data.tipo ?? null,
+      data.status ?? null,
+      busca,
+      data.plano ?? null,
+      data.carteira && data.carteira !== "sem" ? data.carteira : null,
+      data.carteira === "sem",
+    ];
     // Assinatura vigente: no máximo uma por conta (índice assinaturas_uma_vigente). A antiga
     // junção por `cancelada_em is null` também pegava assinatura encerrada e duplicava a conta.
     const origem = `
@@ -167,7 +180,12 @@ export const listarLicencas = createServerFn({ method: "GET" })
             and ($1::text is null or t.tipo::text = $1)
             and ($2::text is null or t.status::text = $2)
             and ($3::text is null or t.nome ilike '%' || $3 || '%' or t.slug::text ilike '%' || $3 || '%'
-                 or t.email_contato::text ilike '%' || $3 || '%')`;
+                 or t.email_contato::text ilike '%' || $3 || '%')
+            and ($4::uuid is null or t.plano_id = $4)
+            and ($5::uuid is null or exists (select 1 from plataforma.carteira c
+                                              where c.tenant_id = t.id and c.grupo_id = $5))
+            and (not $6::boolean or not exists (select 1 from plataforma.carteira c
+                                                 where c.tenant_id = t.id and c.grupo_id is not null))`;
     return comPlataforma(context.userId, async (tx) => {
       const licencas = await tx.consultar<Licenca>(
         `select t.id, t.tipo::text as tipo, t.nome, t.slug::text as slug, t.status::text as status,
@@ -181,7 +199,7 @@ export const listarLicencas = createServerFn({ method: "GET" })
                 sa.score::int as score, sa.faixa::text as faixa
            ${origem}
           order by t.criado_em desc, t.id
-          limit ${POR_PAGINA_LICENCAS} offset $4`,
+          limit ${POR_PAGINA_LICENCAS} offset $7`,
         [...filtros, (data.pagina - 1) * POR_PAGINA_LICENCAS],
       );
       const resumo = await tx.uma<ResumoLicencas>(
@@ -205,17 +223,33 @@ export const listarLicencas = createServerFn({ method: "GET" })
             .catch(() => [])
         : [];
       const porConta = new Map(carteiras.map((c) => [c.tenant_id, c]));
+      // Carteira nomeada (0308 do Agilliza Tech). Sem `.catch`: numa transação, engolir o erro
+      // deixaria as consultas seguintes falhando com "transação abortada".
+      const grupos = licencas.length
+        ? await tx.consultar<{ tenant_id: string; carteira_id: string; carteira_nome: string }>(
+            "select tenant_id, carteira_id, carteira_nome from plataforma.carteira_grupo_das_contas($1::uuid[])",
+            [licencas.map((l) => l.id)],
+          )
+        : [];
+      const grupoDaConta = new Map(grupos.map((g) => [g.tenant_id, g]));
       for (const l of licencas) {
         l.carteira_uid = porConta.get(l.id)?.auth_uid ?? null;
         l.carteira_nome = porConta.get(l.id)?.nome ?? null;
+        l.carteira_grupo_id = grupoDaConta.get(l.id)?.carteira_id ?? null;
+        l.carteira_grupo_nome = grupoDaConta.get(l.id)?.carteira_nome ?? null;
       }
       const planos = await tx.consultar<PlanoLicenca>(
         `select id, codigo, nome, publico::text as publico, preco_mensal::float8 as preco_mensal
            from nucleo.planos where ativo order by ordem, nome`,
       );
+      // Carteiras ativas, para o filtro da lista.
+      const cart = await tx.uma<{ j: { id: string; nome: string }[] }>(
+        "select coalesce(jsonb_agg(jsonb_build_object('id', x->>'id', 'nome', x->>'nome')), '[]'::jsonb) as j from jsonb_array_elements(plataforma.carteiras_listar(false)) x",
+      );
       return {
         licencas,
         planos,
+        carteiras: cart?.j ?? [],
         resumo: resumo ?? { total: 0, ativas: 0, teste: 0, travadas: 0, mrr: 0, usuarios: 0 },
       };
     });
@@ -406,6 +440,8 @@ export const criarLicenca = createServerFn({ method: "POST" })
         modalidade: z.enum(["cortesia", "teste", "pagamento"]),
         dias: z.number().int().min(1, "De 1 a 365 dias.").max(365, "De 1 a 365 dias.").nullable(),
         carteira: z.string().uuid().nullable(),
+        /** Carteira nomeada (0308) em que a conta já nasce. */
+        carteiraGrupo: z.string().uuid().nullable().optional(),
         motivo: MOTIVO,
         desconto: DESCONTO.nullable().optional(),
       })
@@ -448,23 +484,16 @@ export const criarLicenca = createServerFn({ method: "POST" })
           data.motivo,
         ]);
       }
+      // Na mesma transação: carteira arquivada ou inexistente desfaz a criação inteira.
+      if (id && data.carteiraGrupo) {
+        await tx.consultar("select plataforma.carteira_adicionar_contas($1, $2::uuid[])", [
+          data.carteiraGrupo,
+          [id],
+        ]);
+      }
       return id;
     });
     return { id: r };
-  });
-
-/** Põe a conta na carteira de uma pessoa do Agilliza (ou tira, com null). */
-export const definirCarteira = createServerFn({ method: "POST" })
-  .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
-    z.object({ id: UUID, carteira: z.string().uuid().nullable() }).parse(d),
-  )
-  .handler(async ({ data, context }) => {
-    const { comPlataforma } = await ponte();
-    await comPlataforma(context.userId, (tx) =>
-      tx.consultar("select plataforma.definir_carteira($1, $2)", [data.id, data.carteira]),
-    );
-    return { ok: true as const };
   });
 
 /** Novo link de criar senha para o dono da conta (vale 72 horas). */

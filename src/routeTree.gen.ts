@@ -39,6 +39,7 @@ import { Route as ParceiroComissoesRouteImport } from './routes/parceiro.comisso
 import { Route as ParceiroDocumentosRouteImport } from './routes/parceiro.documentos'
 import { Route as ParceiroPropostasRouteImport } from './routes/parceiro.propostas'
 import { Route as ParceiroSimulacoesRouteImport } from './routes/parceiro.simulacoes'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminApisIaRouteImport } from './routes/_authenticated/admin.apis-ia'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminBancosRouteImport } from './routes/_authenticated/admin.bancos'
@@ -78,6 +79,7 @@ import { Route as AuthenticatedOperacionalPropostasRouteImport } from './routes/
 import { Route as AuthenticatedOperacionalSimulacoesRouteImport } from './routes/_authenticated/operacional.simulacoes'
 import { Route as AuthenticatedOperacionalTarefasRouteImport } from './routes/_authenticated/operacional.tarefas'
 import { Route as AuthenticatedPlataformaAuditoriaRouteImport } from './routes/_authenticated/plataforma.auditoria'
+import { Route as AuthenticatedPlataformaCarteirasRouteImport } from './routes/_authenticated/plataforma.carteiras'
 import { Route as AuthenticatedPlataformaComissoesRouteImport } from './routes/_authenticated/plataforma.comissoes'
 import { Route as AuthenticatedPlataformaConfiguracoesRouteImport } from './routes/_authenticated/plataforma.configuracoes'
 import { Route as AuthenticatedPlataformaConsultasRouteImport } from './routes/_authenticated/plataforma.consultas'
@@ -313,6 +315,11 @@ const ParceiroSimulacoesRoute = ParceiroSimulacoesRouteImport.update({
   path: '/simulacoes',
   getParentRoute: () => ParceiroRoute,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminApisIaRoute =
   AuthenticatedAdminApisIaRouteImport.update({
     id: '/admin/apis-ia',
@@ -542,6 +549,12 @@ const AuthenticatedPlataformaAuditoriaRoute =
   AuthenticatedPlataformaAuditoriaRouteImport.update({
     id: '/plataforma/auditoria',
     path: '/plataforma/auditoria',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlataformaCarteirasRoute =
+  AuthenticatedPlataformaCarteirasRouteImport.update({
+    id: '/plataforma/carteiras',
+    path: '/plataforma/carteiras',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPlataformaComissoesRoute =
@@ -1099,6 +1112,7 @@ export interface FileRoutesByFullPath {
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/plataforma/auditoria': typeof AuthenticatedPlataformaAuditoriaRoute
+  '/plataforma/carteiras': typeof AuthenticatedPlataformaCarteirasRoute
   '/plataforma/comissoes': typeof AuthenticatedPlataformaComissoesRoute
   '/plataforma/configuracoes': typeof AuthenticatedPlataformaConfiguracoesRoute
   '/plataforma/consultas': typeof AuthenticatedPlataformaConsultasRoute
@@ -1156,6 +1170,7 @@ export interface FileRoutesByFullPath {
   '/api/public/reconciliar-simulacoes': typeof ApiPublicReconciliarSimulacoesRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
@@ -1248,6 +1263,7 @@ export interface FileRoutesByTo {
   '/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/plataforma/auditoria': typeof AuthenticatedPlataformaAuditoriaRoute
+  '/plataforma/carteiras': typeof AuthenticatedPlataformaCarteirasRoute
   '/plataforma/comissoes': typeof AuthenticatedPlataformaComissoesRoute
   '/plataforma/configuracoes': typeof AuthenticatedPlataformaConfiguracoesRoute
   '/plataforma/consultas': typeof AuthenticatedPlataformaConsultasRoute
@@ -1305,6 +1321,7 @@ export interface FileRoutesByTo {
   '/api/public/reconciliar-simulacoes': typeof ApiPublicReconciliarSimulacoesRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/checklists': typeof AuthenticatedChecklistsIndexRoute
   '/formularios': typeof AuthenticatedFormulariosIndexRoute
   '/relatorios': typeof AuthenticatedRelatoriosIndexRoute
@@ -1402,6 +1419,7 @@ export interface FileRoutesById {
   '/_authenticated/operacional/simulacoes': typeof AuthenticatedOperacionalSimulacoesRoute
   '/_authenticated/operacional/tarefas': typeof AuthenticatedOperacionalTarefasRoute
   '/_authenticated/plataforma/auditoria': typeof AuthenticatedPlataformaAuditoriaRoute
+  '/_authenticated/plataforma/carteiras': typeof AuthenticatedPlataformaCarteirasRoute
   '/_authenticated/plataforma/comissoes': typeof AuthenticatedPlataformaComissoesRoute
   '/_authenticated/plataforma/configuracoes': typeof AuthenticatedPlataformaConfiguracoesRoute
   '/_authenticated/plataforma/consultas': typeof AuthenticatedPlataformaConsultasRoute
@@ -1459,6 +1477,7 @@ export interface FileRoutesById {
   '/api/public/reconciliar-simulacoes': typeof ApiPublicReconciliarSimulacoesRoute
   '/api/public/sync-propostas': typeof ApiPublicSyncPropostasRoute
   '/api/public/sync-propostas-ativas': typeof ApiPublicSyncPropostasAtivasRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/checklists/': typeof AuthenticatedChecklistsIndexRoute
   '/_authenticated/formularios/': typeof AuthenticatedFormulariosIndexRoute
   '/_authenticated/relatorios/': typeof AuthenticatedRelatoriosIndexRoute
@@ -1556,6 +1575,7 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes'
     | '/operacional/tarefas'
     | '/plataforma/auditoria'
+    | '/plataforma/carteiras'
     | '/plataforma/comissoes'
     | '/plataforma/configuracoes'
     | '/plataforma/consultas'
@@ -1613,6 +1633,7 @@ export interface FileRouteTypes {
     | '/api/public/reconciliar-simulacoes'
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
+    | '/admin/'
     | '/checklists/'
     | '/formularios/'
     | '/relatorios/'
@@ -1705,6 +1726,7 @@ export interface FileRouteTypes {
     | '/operacional/simulacoes'
     | '/operacional/tarefas'
     | '/plataforma/auditoria'
+    | '/plataforma/carteiras'
     | '/plataforma/comissoes'
     | '/plataforma/configuracoes'
     | '/plataforma/consultas'
@@ -1762,6 +1784,7 @@ export interface FileRouteTypes {
     | '/api/public/reconciliar-simulacoes'
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
+    | '/admin'
     | '/checklists'
     | '/formularios'
     | '/relatorios'
@@ -1858,6 +1881,7 @@ export interface FileRouteTypes {
     | '/_authenticated/operacional/simulacoes'
     | '/_authenticated/operacional/tarefas'
     | '/_authenticated/plataforma/auditoria'
+    | '/_authenticated/plataforma/carteiras'
     | '/_authenticated/plataforma/comissoes'
     | '/_authenticated/plataforma/configuracoes'
     | '/_authenticated/plataforma/consultas'
@@ -1915,6 +1939,7 @@ export interface FileRouteTypes {
     | '/api/public/reconciliar-simulacoes'
     | '/api/public/sync-propostas'
     | '/api/public/sync-propostas-ativas'
+    | '/_authenticated/admin/'
     | '/_authenticated/checklists/'
     | '/_authenticated/formularios/'
     | '/_authenticated/relatorios/'
@@ -2173,6 +2198,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/parceiro/simulacoes'
       preLoaderRoute: typeof ParceiroSimulacoesRouteImport
       parentRoute: typeof ParceiroRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/apis-ia': {
       id: '/_authenticated/admin/apis-ia'
@@ -2445,6 +2477,13 @@ declare module '@tanstack/react-router' {
       path: '/plataforma/auditoria'
       fullPath: '/plataforma/auditoria'
       preLoaderRoute: typeof AuthenticatedPlataformaAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/plataforma/carteiras': {
+      id: '/_authenticated/plataforma/carteiras'
+      path: '/plataforma/carteiras'
+      fullPath: '/plataforma/carteiras'
+      preLoaderRoute: typeof AuthenticatedPlataformaCarteirasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/plataforma/comissoes': {
@@ -3197,6 +3236,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOperacionalSimulacoesRoute: typeof AuthenticatedOperacionalSimulacoesRoute
   AuthenticatedOperacionalTarefasRoute: typeof AuthenticatedOperacionalTarefasRoute
   AuthenticatedPlataformaAuditoriaRoute: typeof AuthenticatedPlataformaAuditoriaRoute
+  AuthenticatedPlataformaCarteirasRoute: typeof AuthenticatedPlataformaCarteirasRoute
   AuthenticatedPlataformaComissoesRoute: typeof AuthenticatedPlataformaComissoesRoute
   AuthenticatedPlataformaConfiguracoesRoute: typeof AuthenticatedPlataformaConfiguracoesRoute
   AuthenticatedPlataformaConsultasRoute: typeof AuthenticatedPlataformaConsultasRoute
@@ -3226,6 +3266,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRhPreviaFolhaRoute: typeof AuthenticatedRhPreviaFolhaRoute
   AuthenticatedRhRelatoriosRoute: typeof AuthenticatedRhRelatoriosRoute
   AuthenticatedVisaoGeralPainelRoute: typeof AuthenticatedVisaoGeralPainelRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedChecklistsIndexRoute: typeof AuthenticatedChecklistsIndexRoute
   AuthenticatedRhIndexRoute: typeof AuthenticatedRhIndexRoute
   AuthenticatedAdminAuditoriaManutencaoRoute: typeof AuthenticatedAdminAuditoriaManutencaoRoute
@@ -3296,6 +3337,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOperacionalSimulacoesRoute,
   AuthenticatedOperacionalTarefasRoute: AuthenticatedOperacionalTarefasRoute,
   AuthenticatedPlataformaAuditoriaRoute: AuthenticatedPlataformaAuditoriaRoute,
+  AuthenticatedPlataformaCarteirasRoute: AuthenticatedPlataformaCarteirasRoute,
   AuthenticatedPlataformaComissoesRoute: AuthenticatedPlataformaComissoesRoute,
   AuthenticatedPlataformaConfiguracoesRoute:
     AuthenticatedPlataformaConfiguracoesRoute,
@@ -3332,6 +3374,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRhPreviaFolhaRoute: AuthenticatedRhPreviaFolhaRoute,
   AuthenticatedRhRelatoriosRoute: AuthenticatedRhRelatoriosRoute,
   AuthenticatedVisaoGeralPainelRoute: AuthenticatedVisaoGeralPainelRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedChecklistsIndexRoute: AuthenticatedChecklistsIndexRoute,
   AuthenticatedRhIndexRoute: AuthenticatedRhIndexRoute,
   AuthenticatedAdminAuditoriaManutencaoRoute:
