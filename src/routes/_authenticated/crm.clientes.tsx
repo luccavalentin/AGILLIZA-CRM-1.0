@@ -2,7 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Users } from "lucide-react";
+import { Plus, Search, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,9 +21,11 @@ import { FiltrosClientes } from "@/components/crm/clientes-page/filtros";
 import { ListaMobile } from "@/components/crm/clientes-page/lista-mobile";
 import { ListaDesktop } from "@/components/crm/clientes-page/lista-desktop";
 import type { Escopo, Portal, StatusF } from "@/components/crm/clientes-page/tipos";
-import { SeletorDeConta } from "@/components/crm/clientes-page/seletor-de-conta";
 import { ClientesDaContaNativos } from "@/components/plataforma/conta-nativa/clientes-da-conta";
-import type { ContaAssinante } from "@/lib/plataforma/contas.functions";
+import { ClientesDoGrupo } from "@/components/plataforma/conta-nativa/clientes-do-grupo";
+import { FiltroBase } from "@/components/crm/filtro-base/filtro-base";
+import { useFiltroBase } from "@/components/crm/filtro-base/use-filtro-base";
+import { rotuloDoFiltro } from "@/lib/plataforma/filtro-base";
 import { usePermissao } from "@/hooks/use-permissao";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 
@@ -45,8 +48,9 @@ function Pagina() {
   const etapasFn = useServerFn(listarEtapasPipeline);
   const colegasFn = useServerFn(listarColegas);
 
-  // Base exibida: a própria do Agilliza (null) ou a de uma conta assinante do Agilliza Tech.
-  const [conta, setConta] = useState<ContaAssinante | null>(null);
+  // Base exibida (C07/C08): "Sua base" (Agilliza + contas vinculadas) ou "Assinantes" (todos ou um).
+  const filtroBase = useFiltroBase();
+  const { alvo } = filtroBase;
   const [q, setQ] = useState("");
   const [busca, setBusca] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -95,6 +99,7 @@ function Pagina() {
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["clientes", filtros],
     queryFn: () => listar({ data: filtros }),
+    enabled: alvo.agilliza,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
@@ -105,6 +110,7 @@ function Pagina() {
   const { data: kpis } = useQuery({
     queryKey: ["clientes-stats", escopo],
     queryFn: () => stats({ data: { escopo } }),
+    enabled: alvo.agilliza,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
@@ -162,15 +168,14 @@ function Pagina() {
               Clientes
             </h1>
             <p className="truncate text-sm text-muted-foreground">
-              {conta
-                ? `Base de clientes de ${conta.nome}.`
+              {filtroBase.pode
+                ? `${rotuloDoFiltro(filtroBase.filtro, filtroBase.conta)} · clientes do seu ecossistema.`
                 : "Gestão de clientes do seu ecossistema."}
             </p>
           </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <SeletorDeConta conta={conta} onConta={setConta} />
-          {!conta && podeCriar && (
+          {alvo.agilliza && podeCriar && (
             <Button
               asChild
               className="h-11 w-full shrink-0 rounded-xl bg-gradient-to-br from-primary to-primary/80 px-5 font-semibold text-primary-foreground shadow-md ring-1 ring-primary/20 transition-all hover:shadow-lg hover:brightness-105 sm:w-auto"
@@ -183,9 +188,23 @@ function Pagina() {
         </div>
       </div>
 
-      {conta ? (
-        // Base de uma conta assinante: a mesma lista, com o selo da conta.
-        <ClientesDaContaNativos conta={conta} />
+      <FiltroBase uso={filtroBase} />
+
+      {!alvo.agilliza && alvo.grupo === "assinantes" && alvo.licenca ? (
+        // Um assinante: a mesma lista da base própria, com o documento completo para quem pode (auditado).
+        <ClientesDaContaNativos
+          conta={{
+            id: alvo.licenca,
+            nome: filtroBase.conta?.nome ?? "Assinante",
+            tipo: filtroBase.conta?.tipo ?? "corretor",
+          }}
+        />
+      ) : !alvo.agilliza && alvo.grupo ? (
+        // Todos os assinantes, todos os vinculados ou uma vinculada: carteiras paginadas no servidor.
+        <div className="space-y-3">
+          <BuscaDoGrupo q={q} setQ={setQ} />
+          <ClientesDoGrupo grupo={alvo.grupo} licenca={alvo.licenca} termo={busca} />
+        </div>
       ) : (
         <>
           <KpiCards
@@ -278,8 +297,35 @@ function Pagina() {
               )}
             </div>
           )}
+
+          {/* "Sua base" inclui os corretores e parceiros vinculados ao Agilliza (C07). */}
+          {alvo.grupo === "vinculados" &&
+            filtroBase.totalVinculadas > 0 &&
+            responsavel === "todos" &&
+            etapa === "todas" &&
+            portal === "todos" &&
+            statusF === "todos" && <ClientesDoGrupo grupo="vinculados" termo={busca} secao />}
         </>
       )}
+    </div>
+  );
+}
+
+/** Busca da carteira de um grupo (mesmo campo da base própria). */
+function BuscaDoGrupo({ q, setQ }: { q: string; setQ: (v: string) => void }) {
+  return (
+    <div className="relative">
+      <label htmlFor="busca-clientes-grupo" className="sr-only">
+        Buscar cliente
+      </label>
+      <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        id="busca-clientes-grupo"
+        className="h-11 rounded-xl pl-9"
+        placeholder="Buscar por nome, código, e-mail ou CPF completo"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
     </div>
   );
 }

@@ -28,6 +28,9 @@ interface SimulacaoContaBruta {
   cliente: string | null;
   responsavel: string | null;
   conta: string;
+  /** Conta (licença) da linha: vem nas listas de grupo (0315). */
+  licenca_id?: string | null;
+  homefin_id_oportunidade?: string | null;
   simulacao_agilliza_id: string | null;
   bancos: {
     banco_id: string;
@@ -59,6 +62,10 @@ const STATUS_AGILLIZA: Record<string, string> = {
 };
 
 /** Linha no formato da lista de simulações do Agilliza, com a conta de origem. */
+export function simulacaoDaContaNoFormatoAgilliza(s: SimulacaoContaBruta) {
+  return noFormatoAgilliza(s);
+}
+
 function noFormatoAgilliza(s: SimulacaoContaBruta) {
   return {
     id: s.id,
@@ -73,6 +80,7 @@ function noFormatoAgilliza(s: SimulacaoContaBruta) {
     prazo: s.prazo,
     created_at: s.criado_em,
     codigo_oportunidade_homefin: s.homefin_codigo_oportunidade,
+    homefin_id_oportunidade: s.homefin_id_oportunidade ?? null,
     bancos: (s.bancos ?? []).map((b, i) => ({
       id: `${s.id}-${i}`,
       banco_id: b.banco_id,
@@ -90,6 +98,8 @@ function noFormatoAgilliza(s: SimulacaoContaBruta) {
     _conta: s.conta,
     /** Espelho no Agilliza, quando já existe (ver/editar vão direto). */
     _simulacao_agilliza_id: s.simulacao_agilliza_id,
+    /** Conta da linha (nas listas de grupo cada linha pode ser de uma conta). */
+    _licenca: s.licenca_id ?? null,
   };
 }
 
