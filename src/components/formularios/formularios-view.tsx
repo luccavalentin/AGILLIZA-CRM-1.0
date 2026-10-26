@@ -2,7 +2,8 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { FileText, Upload, Eye, Pencil, Trash2, Download, Loader2 } from "lucide-react";
+import { FileText, Upload, Eye, Pencil, Trash2, Download, Loader2, Search } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,9 +39,8 @@ import {
   urlFormulario,
 } from "@/lib/formularios/formularios.functions";
 import { DpsView } from "@/components/formularios/dps-view";
-import { OpHero, OpStat } from "@/components/operacional/ui";
+import { OpHero } from "@/components/operacional/ui";
 import { BancoLogo } from "@/components/bancos/banco-logo";
-import { corDoBanco } from "@/lib/bancos/cores";
 import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { usePermissao } from "@/hooks/use-permissao";
 
@@ -90,7 +90,13 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
   const [editando, setEditando] = useState<FormularioBancario | null>(null);
   const [excluindo, setExcluindo] = useState<FormularioBancario | null>(null);
 
-  const itens = (data ?? []).filter((f) => f.banco === banco);
+  const [busca, setBusca] = useState("");
+  const daCategoria = (data ?? []).filter((f) => f.banco === banco);
+  const termo = busca.trim().toLowerCase();
+  const itens = termo
+    ? daCategoria.filter((f) => `${f.nome} ${f.descricao ?? ""}`.toLowerCase().includes(termo))
+    : daCategoria;
+  const contagem = (c: BancoFormulario) => (data ?? []).filter((f) => f.banco === c).length;
 
   const abrirArquivo = useServerFn(urlFormulario);
   const excluirFn = useServerFn(excluirFormulario);
@@ -114,22 +120,17 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
   const label = CATEGORIA_LABEL[banco];
   const ehBanco =
     banco === "itau" || banco === "bradesco" || banco === "santander" || banco === "inter";
-  const accent = ehBanco ? corDoBanco(label) : undefined;
 
   return (
     <div className="mx-auto w-full max-w-none space-y-5 p-4 md:p-6">
       <OpHero
         icon={ehBanco ? <BancoLogo nome={label} size="lg" /> : <FileText className="h-5 w-5" />}
-        accent={accent}
         eyebrow="Documentos · Formulários"
         titulo={label}
         descricao={`Modelos de formulários em PDF da categoria ${label}.`}
         acoes={
           podeEnviar ? (
-            <Button
-              onClick={() => setUploadOpen(true)}
-              style={accent ? { backgroundColor: accent, borderColor: accent } : undefined}
-            >
+            <Button onClick={() => setUploadOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Enviar formulário
             </Button>
@@ -137,19 +138,49 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
         }
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <OpStat
-          label="Formulários"
-          value={itens.length}
-          icon={<FileText className="h-5 w-5" />}
-          accent={accent}
-        />
-        <OpStat
-          label="Categoria"
-          value={label}
-          icon={ehBanco ? <BancoLogo nome={label} size="md" /> : <FileText className="h-5 w-5" />}
-          accent={accent}
-        />
+      <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-2 lg:flex-row lg:items-center">
+        <nav
+          aria-label="Categorias de formulários"
+          className="-mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {(Object.keys(CATEGORIA_LABEL) as BancoFormulario[]).map((c) => {
+            const ativo = c === banco;
+            const comLogo = c !== "diversos" && c !== "dps";
+            return (
+              <Link
+                key={c}
+                to="/formularios/$banco"
+                params={{ banco: c }}
+                className={
+                  "flex shrink-0 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-sm transition-colors " +
+                  (ativo
+                    ? "border-primary bg-primary/5 font-semibold text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground")
+                }
+              >
+                {comLogo ? (
+                  <BancoLogo nome={CATEGORIA_LABEL[c]} size="sm" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                {CATEGORIA_LABEL[c]}
+                <span className="rounded-full bg-muted px-1.5 text-[10px] font-semibold text-muted-foreground">
+                  {isLoading ? "…" : contagem(c)}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="relative lg:w-64">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder={`Buscar em ${label}`}
+            className="h-9 pl-8"
+            aria-label="Buscar formulário"
+          />
+        </div>
       </div>
 
       <div className="space-y-2.5">
@@ -162,7 +193,9 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
                 <FileText className="h-6 w-6" />
               </span>
               <p className="text-sm text-muted-foreground">
-                Nenhum formulário de {label} cadastrado ainda.
+                {termo
+                  ? `Nenhum formulário de ${label} com “${busca.trim()}”.`
+                  : `Nenhum formulário de ${label} cadastrado ainda.`}
               </p>
             </CardContent>
           </Card>
@@ -170,7 +203,7 @@ function FormulariosLista({ banco }: { banco: BancoFormulario }) {
           itens.map((f) => (
             <div
               key={f.id}
-              className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_10px_30px_-15px_hsl(var(--primary)/0.5)]"
+              className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-all hover:border-primary/30 hover:shadow-sm"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20 transition-transform group-hover:scale-105">

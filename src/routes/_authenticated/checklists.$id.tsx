@@ -9,7 +9,9 @@ import { assertModuloPermitido } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/_authenticated/checklists/$id")({
   beforeLoad: () => assertModuloPermitido("documentos.formularios"),
-  head: () => ({ meta: [{ title: "Checklists — Agilliza" }] }),
+  head: ({ params }) => ({
+    meta: [{ title: `${CHECKLISTS_OPERACAO[params.id]?.titulo ?? "Checklists"} — Agilliza` }],
+  }),
   component: Pagina,
 });
 
