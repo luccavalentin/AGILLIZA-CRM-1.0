@@ -1,16 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { ReportView } from "@/components/reports/report-view";
+import { buscaDaListaDeOrigem } from "@/lib/relatorios/ecossistema";
 
+// O relatório de simulações saiu (C47): cada número do relatório gerencial e do Painel geral
+// leva à lista de simulações, com o mesmo recorte e período.
 export const Route = createFileRoute("/_authenticated/relatorios/simulacoes")({
-  // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
-  // item escondido no menu (QA 19/09/2026).
-  beforeLoad: () => assertModuloPermitido("relatorios.geral"),
-  head: () => ({ meta: [{ title: "Relatório de simulações — Relatórios — Agilliza" }] }),
-  validateSearch: (s: Record<string, unknown>) => s,
-  component: Pagina,
+  beforeLoad: async ({ search }) => {
+    await assertModuloPermitido("relatorios.geral");
+    throw redirect({
+      to: "/operacional/simulacoes",
+      search: buscaDaListaDeOrigem(search as Record<string, unknown>, "simulacoes") as never,
+      replace: true,
+    });
+  },
 });
-
-function Pagina() {
-  return <ReportView codigo="simulacoes" comFiltroStatus />;
-}

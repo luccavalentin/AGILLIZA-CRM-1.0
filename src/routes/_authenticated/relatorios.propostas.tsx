@@ -1,16 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { ReportView } from "@/components/reports/report-view";
+import { buscaDaListaDeOrigem } from "@/lib/relatorios/ecossistema";
 
+// O relatório de propostas saiu (C47): cada número do relatório gerencial e do Painel geral
+// leva à lista de propostas, com o mesmo recorte, período e situação.
 export const Route = createFileRoute("/_authenticated/relatorios/propostas")({
-  // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
-  // item escondido no menu (QA 19/09/2026).
-  beforeLoad: () => assertModuloPermitido("relatorios.geral"),
-  head: () => ({ meta: [{ title: "Relatório de propostas — Relatórios — Agilliza" }] }),
-  validateSearch: (s: Record<string, unknown>) => s,
-  component: Pagina,
+  beforeLoad: async ({ search }) => {
+    await assertModuloPermitido("relatorios.geral");
+    throw redirect({
+      to: "/operacional/propostas",
+      search: buscaDaListaDeOrigem(search as Record<string, unknown>, "propostas") as never,
+      replace: true,
+    });
+  },
 });
-
-function Pagina() {
-  return <ReportView codigo="propostas" comFiltroBanco comFiltroStatus />;
-}

@@ -1,16 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { ReportView } from "@/components/reports/report-view";
+import { RelatorioGerencial } from "@/components/reports/eco/gerencial";
 
+// Relatórios gerenciais do ecossistema (C47): filtro global na URL, números do banco já agregados.
 export const Route = createFileRoute("/_authenticated/relatorios/gerencial")({
-  // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
-  // item escondido no menu (QA 19/09/2026).
   beforeLoad: () => assertModuloPermitido("relatorios.geral"),
-  head: () => ({ meta: [{ title: "Relatório gerencial de operações — Agilliza" }] }),
+  head: () => ({ meta: [{ title: "Relatório gerencial — Agilliza" }] }),
   validateSearch: (s: Record<string, unknown>) => s,
-  component: Pagina,
+  component: RelatorioGerencial,
 });
-
-function Pagina() {
-  return <ReportView codigo="gerencial" comFiltroBanco comFiltroStatus />;
-}

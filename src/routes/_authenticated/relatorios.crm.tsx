@@ -1,16 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { assertModuloPermitido } from "@/lib/route-guards";
-import { ReportView } from "@/components/reports/report-view";
 
+// A produção por pessoa e conta está em Produção e comissões (C47, 26/10/2026): endereço antigo leva ao relatório novo, com o filtro de período.
 export const Route = createFileRoute("/_authenticated/relatorios/crm")({
-  // Sem permissão de relatórios, a URL direta levava à tela mesmo com o
-  // item escondido no menu (QA 19/09/2026).
-  beforeLoad: () => assertModuloPermitido("relatorios.geral"),
-  head: () => ({ meta: [{ title: "Relatório de CRM — Relatórios — Agilliza" }] }),
-  validateSearch: (s: Record<string, unknown>) => s,
-  component: Pagina,
+  beforeLoad: async ({ search }) => {
+    await assertModuloPermitido("relatorios.geral");
+    const s = search as Record<string, unknown>;
+    const periodo = s.de && s.ate ? { periodo: "custom", de: String(s.de), ate: String(s.ate) } : {};
+    throw redirect({ to: "/relatorios/comerciais", search: periodo as never, replace: true });
+  },
 });
-
-function Pagina() {
-  return <ReportView codigo="crm" />;
-}
