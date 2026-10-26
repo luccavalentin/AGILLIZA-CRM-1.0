@@ -15,6 +15,7 @@ import { GlobalSearch } from "./global-search";
 import { NotificationsBell } from "./notifications-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { AppBreadcrumbs } from "./app-breadcrumbs";
+import { BotaoAjudaTour } from "@/components/tour/botao-ajuda";
 import type { NavGroup } from "./nav-config";
 
 export interface ShellUser {
@@ -62,6 +63,7 @@ export function Topbar({
         variant="ghost"
         size="icon"
         className="h-10 w-10 shrink-0 lg:hidden"
+        data-tour="menu"
         aria-label="Abrir menu de navegação"
         onClick={onToggleMobile}
       >
@@ -93,6 +95,7 @@ export function Topbar({
 
       <div className="ml-auto flex items-center gap-0.5 sm:gap-1.5">
         {showSearch && <GlobalSearch />}
+        <BotaoAjudaTour />
         <ThemeToggle />
         <NotificationsBell userId={user.id} />
 

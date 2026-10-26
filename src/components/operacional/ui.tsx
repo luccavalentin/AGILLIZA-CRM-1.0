@@ -59,7 +59,10 @@ export function OpHero({
           </div>
         </div>
         {acoes && (
-          <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-auto sm:justify-end">
+          <div
+            data-tour="acoes"
+            className="col-span-2 flex flex-wrap items-center gap-2 sm:col-auto sm:justify-end"
+          >
             {acoes}
           </div>
         )}

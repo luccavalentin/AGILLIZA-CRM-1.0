@@ -10,6 +10,7 @@ import { SidebarNav, SidebarRail } from "./sidebar-nav";
 import { Topbar, type ShellUser } from "./topbar";
 import { AvisoChatUniversalEquipe } from "@/components/chat/aviso-chat-equipe";
 import type { NavGroup } from "./nav-config";
+import { TourGuiado } from "@/components/tour/motor";
 
 // A conversa flutuante arrasta toda a feature de chat do CRM. Carregada de
 // forma preguiçosa e apenas dentro do shell interno, para não pesar no bundle
@@ -85,6 +86,7 @@ export function AppShell({
       <div className="flex min-h-[100dvh] w-full bg-muted/40">
         {/* Sidebar desktop */}
         <aside
+          data-tour="menu"
           className={cn(
             "app-sidebar sticky top-0 hidden h-[100dvh] shrink-0 flex-col border-r border-sidebar-border text-sidebar-foreground shadow-[1px_0_0_0_rgba(0,0,0,0.04)] transition-[width] duration-200 ease-out lg:flex",
             larguraDesktop,
@@ -159,6 +161,8 @@ export function AppShell({
           </main>
         </div>
       </div>
+      {/* Tour guiado: caixas que ensinam cada tela (src/lib/tour/roteiros.ts). */}
+      <TourGuiado />
       <Suspense fallback={null}>
         <FloatingChatHost />
       </Suspense>

@@ -193,6 +193,7 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
     <Popover>
       <PopoverTrigger asChild>
         <Button
+          data-tour="notificacoes"
           variant="ghost"
           size="icon"
           className="relative min-h-11 min-w-11 sm:min-h-10 sm:min-w-10"

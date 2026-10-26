@@ -41,7 +41,7 @@ export function PageHeader({
         )}
         <div className="min-w-0 space-y-0.5">
           {secao && <p className="text-xs font-medium text-muted-foreground">{secao}</p>}
-          <h1 className="text-xl font-medium tracking-tight text-foreground sm:text-2xl">
+          <h1 data-tour="titulo" className="text-xl font-medium tracking-tight text-foreground sm:text-2xl">
             {titulo}
           </h1>
           {descricao && (
@@ -50,7 +50,10 @@ export function PageHeader({
         </div>
       </div>
       {acoes && (
-        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
+        <div
+          data-tour="acoes"
+          className="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end"
+        >
           {acoes}
         </div>
       )}

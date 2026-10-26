@@ -57,6 +57,7 @@ export function FiltroBase({
   if (!pode) return null;
   return (
     <div
+      data-tour="filtro-base"
       className={cn(
         "flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center",
         className,

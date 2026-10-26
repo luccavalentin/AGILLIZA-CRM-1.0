@@ -40,6 +40,8 @@ import { pollingPortal } from "@/lib/portal/polling";
 import { AvisoChatAgilliza } from "@/components/chat/aviso-chat-agilliza";
 import { useContadorChat } from "@/components/chat-universal/contador";
 import { cn } from "@/lib/utils";
+import { TourGuiado } from "@/components/tour/motor";
+import { BotaoAjudaTour } from "@/components/tour/botao-ajuda";
 
 const STORAGE_KEY = "agilliza-cliente-sidebar-collapsed";
 
@@ -289,6 +291,7 @@ function NotificacoesBell() {
           variant="ghost"
           size="icon"
           aria-label="Notificações"
+          data-tour="notificacoes"
           className="relative rounded-full"
         >
           <Bell className="h-5 w-5" />
@@ -370,6 +373,7 @@ export function ClienteShell({
       <div className="flex min-h-[100dvh] w-full bg-muted/40">
         {/* Sidebar desktop */}
         <aside
+          data-tour="menu"
           className={cn(
             "app-sidebar sticky top-0 hidden h-[100dvh] shrink-0 flex-col border-r border-sidebar-border text-sidebar-foreground transition-[width] duration-200 lg:flex",
             larguraDesktop,
@@ -425,6 +429,7 @@ export function ClienteShell({
               variant="ghost"
               size="icon"
               className="min-h-11 min-w-11 lg:hidden"
+              data-tour="menu"
               aria-label="Abrir menu de navegação"
               onClick={() => setMobileOpen(true)}
             >
@@ -450,6 +455,7 @@ export function ClienteShell({
             </Link>
 
             <div className="ml-auto flex items-center gap-1 sm:gap-2">
+              <BotaoAjudaTour publico="cliente" />
               <ThemeToggle />
               <NotificacoesBell />
 
@@ -495,7 +501,7 @@ export function ClienteShell({
             </div>
           </header>
 
-          <main className="flex-1 p-3 sm:p-4 lg:p-6">
+          <main id="conteudo-principal" className="flex-1 p-3 sm:p-4 lg:p-6">
             <div className="mx-auto w-full max-w-[1280px]">{children}</div>
           </main>
 
@@ -509,6 +515,8 @@ export function ClienteShell({
       </div>
       {/* Chat universal (t1, T02): aviso flutuante de mensagem, menos na tela do chat. */}
       <AvisoChatAgilliza canal="cliente" rotaChat="/cliente/chat" />
+      {/* Tour guiado do portal do cliente (progresso pelo cookie do portal). */}
+      <TourGuiado publico="cliente" />
     </TooltipProvider>
   );
 }

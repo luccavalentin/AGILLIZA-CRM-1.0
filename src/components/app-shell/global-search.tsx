@@ -84,6 +84,7 @@ export function GlobalSearch() {
         variant="outline"
         className="h-10 w-10 shrink-0 justify-center gap-2 px-0 text-muted-foreground sm:h-9 sm:w-64 sm:max-w-xs sm:justify-start sm:px-3"
         onClick={() => setOpen(true)}
+        data-tour="busca-global"
         aria-label="Buscar"
       >
         <Search className="h-4 w-4 shrink-0" />
