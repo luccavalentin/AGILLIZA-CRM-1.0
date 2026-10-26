@@ -123,6 +123,66 @@ export const enviarAnexoSuporte = createServerFn({ method: "POST" })
     return enviar(context.userId, data);
   });
 
+const TETO_VIDEO = 60 * 1024 * 1024;
+const MIMES_VIDEO = new Set(["video/mp4", "video/quicktime", "video/webm"]);
+
+/**
+ * Vídeo de um post das Automações (Reels, Stories, TikTok, YouTube…): até 60 MB, tipo
+ * conferido pelos primeiros bytes e duração LIDA DO ARQUIVO (a da tela pode ser forjada) —
+ * a duração vai para `social.anotar_video`, e cada rede confere o limite dela.
+ */
+export const enviarVideoSocial = createServerFn({ method: "POST" })
+  .middleware([exigirPermissao(["marketing.automacoes", "edit"])])
+  .inputValidator((d: unknown) => {
+    if (!(d instanceof FormData)) throw new Error("Envie o vídeo.");
+    const arquivo = d.get("arquivo");
+    if (!(arquivo instanceof File) || arquivo.size === 0) throw new Error("Escolha um vídeo.");
+    return { arquivo };
+  })
+  .handler(async ({ data, context }): Promise<MidiaEnviada & { duracaoMs: number }> => {
+    const { arquivo } = data;
+    const mime = (arquivo.type || "").split(";")[0].trim().toLowerCase();
+    if (!MIMES_VIDEO.has(mime)) throw new Error("Envie o vídeo em MP4, MOV ou WebM.");
+    if (arquivo.size > TETO_VIDEO)
+      throw new Error("Vídeo acima de 60 MB. Exporte em resolução menor.");
+    const conteudo = Buffer.from(await arquivo.arrayBuffer());
+    const { confere, duracaoDoVideo } = await import("@/lib/social/video");
+    if (!confere(conteudo, mime)) throw new Error("O arquivo não é o vídeo que diz ser.");
+    const duracaoMs = duracaoDoVideo(conteudo, mime);
+    if (duracaoMs == null)
+      throw new Error("Não conseguimos ler este vídeo. Exporte em MP4 (H.264) e envie outra vez.");
+    const m = await import("./midias.server");
+    const { comPlataforma } = await import("./ponte.server");
+    const nome = arquivo.name.slice(0, 200) || "video";
+    let guardado: { chave: string; bytes: number; sha256: string } | null = null;
+    try {
+      return await comPlataforma(context.userId, async (tx) => {
+        const t = await tx.uma<{ t: string | null }>("select seguranca.auth_tenant_ativo() as t");
+        if (!t?.t) throw new Error("Contexto da plataforma indisponível.");
+        guardado = await m.guardarNoCorretor({ conteudo, mime, nome, pasta: `${t.t}/social` });
+        const r = await tx.uma<{ id: string }>(
+          "select integracao.registrar_midia('social', null, 'video', $1, $2, $3, $4, $5) as id",
+          [guardado.chave, nome, mime, guardado.bytes, guardado.sha256],
+        );
+        if (!r?.id) throw new Error("Não foi possível registrar o vídeo.");
+        await tx.consultar("select social.anotar_video($1, $2)", [r.id, duracaoMs]);
+        const lib = await m.liberarMidias(tx, [r.id]);
+        return {
+          id: r.id,
+          nome: nome.slice(0, 120),
+          tipo: mime,
+          tamanho: guardado.bytes,
+          url: lib[r.id]?.url ?? null,
+          duracaoMs,
+        };
+      });
+    } catch (e) {
+      const g = guardado as { chave: string } | null;
+      if (g) await m.apagarNoCorretor(g.chave);
+      throw e;
+    }
+  });
+
 /** Foto de um post das Automações (0227): vai para o armazenamento da plataforma. */
 export const enviarFotoSocial = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["marketing.automacoes", "edit"])])
