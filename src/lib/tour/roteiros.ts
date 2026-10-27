@@ -3254,6 +3254,26 @@ export const ROTEIROS: Record<string, RoteiroTour> = {
     ],
   },
 
+  // ---- Gestão de Tecnologia: Acesso master (0581)
+  "tecnologia.acesso-master": {
+    versao: 1,
+    titulo: "Acesso master",
+    passos: [
+      {
+        alvo: "acesso-master-portais",
+        titulo: "Um login para todos os portais",
+        texto:
+          "Toque num portal e ele abre já logado numa aba nova: corretor, imobiliária, parceiro, cliente ou ImobMatch. As contas são de demonstração do master.",
+      },
+      {
+        alvo: "acesso-master-preparar",
+        titulo: "Preparar ou refazer a senha",
+        texto:
+          "Cria as contas do master na primeira vez e, depois, volta a senha para o e-mail. Ela vale também no login de cada portal.",
+      },
+    ],
+  },
+
   // ---- Gestão de Tecnologia: Operação
   "tecnologia.operacao": {
     versao: 1,

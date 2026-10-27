@@ -935,6 +935,13 @@ export const navInterno: NavGroup[] = [
             to: "/tecnologia/alertas",
             perm: { modulo: "saas.tecnologia" },
           },
+          {
+            // Acesso master (0581): um login para todos os portais (contas de demonstração).
+            label: "Acesso master",
+            icon: ShieldCheck,
+            to: "/tecnologia/acesso-master",
+            perm: { modulo: "saas.tecnologia" },
+          },
         ],
       },
     ],

@@ -157,6 +157,7 @@ import { Route as AuthenticatedRhMeuRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedRhPreviaFolhaRouteImport } from './routes/_authenticated/rh.previa-folha'
 import { Route as AuthenticatedRhRelatoriosRouteImport } from './routes/_authenticated/rh.relatorios'
 import { Route as AuthenticatedTecnologiaIndexRouteImport } from './routes/_authenticated/tecnologia.index'
+import { Route as AuthenticatedTecnologiaAcessoMasterRouteImport } from './routes/_authenticated/tecnologia.acesso-master'
 import { Route as AuthenticatedTecnologiaAlertasRouteImport } from './routes/_authenticated/tecnologia.alertas'
 import { Route as AuthenticatedTecnologiaErrosRouteImport } from './routes/_authenticated/tecnologia.erros'
 import { Route as AuthenticatedTecnologiaLogsRouteImport } from './routes/_authenticated/tecnologia.logs'
@@ -1041,6 +1042,12 @@ const AuthenticatedTecnologiaIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedTecnologiaRoute,
   } as any)
+const AuthenticatedTecnologiaAcessoMasterRoute =
+  AuthenticatedTecnologiaAcessoMasterRouteImport.update({
+    id: '/acesso-master',
+    path: '/acesso-master',
+    getParentRoute: () => AuthenticatedTecnologiaRoute,
+  } as any)
 const AuthenticatedTecnologiaAlertasRoute =
   AuthenticatedTecnologiaAlertasRouteImport.update({
     id: '/alertas',
@@ -1401,6 +1408,7 @@ export interface FileRoutesByFullPath {
   '/rh/meu': typeof AuthenticatedRhMeuRoute
   '/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
   '/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
+  '/tecnologia/acesso-master': typeof AuthenticatedTecnologiaAcessoMasterRoute
   '/tecnologia/alertas': typeof AuthenticatedTecnologiaAlertasRoute
   '/tecnologia/erros': typeof AuthenticatedTecnologiaErrosRoute
   '/tecnologia/logs': typeof AuthenticatedTecnologiaLogsRoute
@@ -1582,6 +1590,7 @@ export interface FileRoutesByTo {
   '/rh/meu': typeof AuthenticatedRhMeuRoute
   '/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
   '/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
+  '/tecnologia/acesso-master': typeof AuthenticatedTecnologiaAcessoMasterRoute
   '/tecnologia/alertas': typeof AuthenticatedTecnologiaAlertasRoute
   '/tecnologia/erros': typeof AuthenticatedTecnologiaErrosRoute
   '/tecnologia/logs': typeof AuthenticatedTecnologiaLogsRoute
@@ -1770,6 +1779,7 @@ export interface FileRoutesById {
   '/_authenticated/rh/meu': typeof AuthenticatedRhMeuRoute
   '/_authenticated/rh/previa-folha': typeof AuthenticatedRhPreviaFolhaRoute
   '/_authenticated/rh/relatorios': typeof AuthenticatedRhRelatoriosRoute
+  '/_authenticated/tecnologia/acesso-master': typeof AuthenticatedTecnologiaAcessoMasterRoute
   '/_authenticated/tecnologia/alertas': typeof AuthenticatedTecnologiaAlertasRoute
   '/_authenticated/tecnologia/erros': typeof AuthenticatedTecnologiaErrosRoute
   '/_authenticated/tecnologia/logs': typeof AuthenticatedTecnologiaLogsRoute
@@ -1958,6 +1968,7 @@ export interface FileRouteTypes {
     | '/rh/meu'
     | '/rh/previa-folha'
     | '/rh/relatorios'
+    | '/tecnologia/acesso-master'
     | '/tecnologia/alertas'
     | '/tecnologia/erros'
     | '/tecnologia/logs'
@@ -2139,6 +2150,7 @@ export interface FileRouteTypes {
     | '/rh/meu'
     | '/rh/previa-folha'
     | '/rh/relatorios'
+    | '/tecnologia/acesso-master'
     | '/tecnologia/alertas'
     | '/tecnologia/erros'
     | '/tecnologia/logs'
@@ -2326,6 +2338,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rh/meu'
     | '/_authenticated/rh/previa-folha'
     | '/_authenticated/rh/relatorios'
+    | '/_authenticated/tecnologia/acesso-master'
     | '/_authenticated/tecnologia/alertas'
     | '/_authenticated/tecnologia/erros'
     | '/_authenticated/tecnologia/logs'
@@ -3430,6 +3443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTecnologiaIndexRouteImport
       parentRoute: typeof AuthenticatedTecnologiaRoute
     }
+    '/_authenticated/tecnologia/acesso-master': {
+      id: '/_authenticated/tecnologia/acesso-master'
+      path: '/acesso-master'
+      fullPath: '/tecnologia/acesso-master'
+      preLoaderRoute: typeof AuthenticatedTecnologiaAcessoMasterRouteImport
+      parentRoute: typeof AuthenticatedTecnologiaRoute
+    }
     '/_authenticated/tecnologia/alertas': {
       id: '/_authenticated/tecnologia/alertas'
       path: '/alertas'
@@ -3861,6 +3881,7 @@ const AuthenticatedRelatoriosRouteWithChildren =
   )
 
 interface AuthenticatedTecnologiaRouteChildren {
+  AuthenticatedTecnologiaAcessoMasterRoute: typeof AuthenticatedTecnologiaAcessoMasterRoute
   AuthenticatedTecnologiaAlertasRoute: typeof AuthenticatedTecnologiaAlertasRoute
   AuthenticatedTecnologiaErrosRoute: typeof AuthenticatedTecnologiaErrosRoute
   AuthenticatedTecnologiaLogsRoute: typeof AuthenticatedTecnologiaLogsRoute
@@ -3872,6 +3893,8 @@ interface AuthenticatedTecnologiaRouteChildren {
 
 const AuthenticatedTecnologiaRouteChildren: AuthenticatedTecnologiaRouteChildren =
   {
+    AuthenticatedTecnologiaAcessoMasterRoute:
+      AuthenticatedTecnologiaAcessoMasterRoute,
     AuthenticatedTecnologiaAlertasRoute: AuthenticatedTecnologiaAlertasRoute,
     AuthenticatedTecnologiaErrosRoute: AuthenticatedTecnologiaErrosRoute,
     AuthenticatedTecnologiaLogsRoute: AuthenticatedTecnologiaLogsRoute,
