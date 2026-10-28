@@ -146,13 +146,14 @@ export function ehMesmoNegocio(candidata: CandidataOportunidade, nova: Simulacao
  * nesses casos o banco já está com a proposta na mão e o `PUT` da oportunidade
  * mudaria dados sob análise.
  *
- * Também recusa quando alguma simulação ficou SEM PARCELA: o banco recusou,
- * não respondeu ou o provedor nem despachou. "P" não serve de sinal — é o
- * estado de toda simulação sem proposta, inclusive as que deram certo. Antes
- * do reaproveitamento, reenviar criava oportunidade nova, e isso é o que a
- * própria mensagem de erro recomenda ("reenvie uma vez"). Em 16/09 as 21
- * tentativas do Santander de um cliente caíram na mesma oportunidade quebrada
- * e nenhuma foi despachada ao banco.
+ * Sobre parcela: o que desqualifica a oportunidade é NENHUMA simulação dela ter
+ * voltado com parcela — aí ela nunca foi despachada ao banco e está quebrada
+ * (em 16/09 as 21 tentativas do Santander de um cliente caíram numa dessas).
+ * Uma recusa isolada no meio, não: o Bradesco dizer "não simulou este titular
+ * com o valor financiado solicitado" é resposta de banco, não defeito da
+ * oportunidade. Exigir parcela em TODAS queimava a oportunidade no primeiro
+ * "não" — em 28/10 o mesmo negócio abriu 39695, 39699 e 39702 porque a
+ * primeira delas tinha uma recusa de banco junto de uma simulação boa.
  */
 export function oportunidadeAceitaNovaSimulacao(situacao: SituacaoNaHomeFin | null): boolean {
   if (!situacao) return false;
@@ -164,7 +165,8 @@ export function oportunidadeAceitaNovaSimulacao(situacao: SituacaoNaHomeFin | nu
     simulacoes.some((s) => SIMULACAO_EM_ANDAMENTO.has(String(s?.tipoSituacao ?? "").toUpperCase()))
   )
     return false;
-  return simulacoes.every((s) => Number(s?.valorParcelaBanco) > 0);
+  if (simulacoes.length === 0) return true;
+  return simulacoes.some((s) => Number(s?.valorParcelaBanco) > 0);
 }
 
 /**

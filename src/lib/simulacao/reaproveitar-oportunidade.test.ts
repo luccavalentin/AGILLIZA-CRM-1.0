@@ -52,18 +52,30 @@ describe("ehMesmoNegocio", () => {
 });
 
 describe("oportunidadeAceitaNovaSimulacao", () => {
-  it("aceita oportunidade ativa em que todas as simulações têm parcela", () => {
+  it("aceita oportunidade ativa com parcela, e também a recém-criada sem simulação", () => {
     expect(oportunidadeAceitaNovaSimulacao(ativaLivre)).toBe(true);
     expect(oportunidadeAceitaNovaSimulacao({ tipoSituacao: "A", simulacoes: [] })).toBe(true);
   });
 
-  it("recusa quando alguma simulação ficou sem parcela (falha ou sem despacho)", () => {
+  it("aceita quando um banco recusou ao lado de uma simulação boa (39695, 28/10)", () => {
     expect(
       oportunidadeAceitaNovaSimulacao({
         tipoSituacao: "A",
         simulacoes: [
           { tipoSituacao: "P", valorParcelaBanco: 4377.59 },
           { tipoSituacao: "P", valorParcelaBanco: null },
+        ],
+      }),
+    ).toBe(true);
+  });
+
+  it("recusa a oportunidade quebrada: nenhuma simulação voltou com parcela", () => {
+    expect(
+      oportunidadeAceitaNovaSimulacao({
+        tipoSituacao: "A",
+        simulacoes: [
+          { tipoSituacao: "P", valorParcelaBanco: null },
+          { tipoSituacao: "P", valorParcelaBanco: 0 },
         ],
       }),
     ).toBe(false);
