@@ -3,7 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { avaliarRendaMinima, limitesLtv } from "@/lib/simulacao/renda";
-import { decidirRendaDoCrm } from "@/lib/simulacao/renda-crm";
+import { decidirRendaDoCrm, rendaInicialDosCampos } from "@/lib/simulacao/renda-crm";
 import { validarCamposSimulacao } from "@/lib/simulacao/campos-obrigatorios";
 import { completaSchema } from "@/lib/simulacao/schemas";
 import {
@@ -383,18 +383,10 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     if (!rendaCrm || f.renda_origem !== "crm") return;
     setF((prev) => {
       if (prev.renda_origem !== "crm") return prev;
-      // Renda do CRM que não cobre a necessária deixava o campo ZERADO para o
-      // operador digitar. Agora cada campo abre com a renda de qualificação da
-      // sua tabela — SAC e PRICE exigem valores diferentes, e com "Ambos" o
-      // PRICE pede mais —, e o aviso abaixo do campo diz que foi ajustada.
-      // Digitar qualquer valor marca `renda_origem: "manual"` em `set()` e
-      // este efeito sai de cena: daí em diante vale o que o operador digitou.
-      const titular = rendaCrm.suficiente
-        ? rendaCrm.rendaTitularCrm
-        : (rendaCrm.necessariaSac ?? rendaCrm.necessaria);
-      const titularPrice = rendaCrm.suficiente
-        ? rendaCrm.rendaTitularCrm
-        : (rendaCrm.necessariaPrice ?? rendaCrm.necessaria);
+      // Com que valor cada campo abre: a regra está em `rendaInicialDosCampos`.
+      // Digitar qualquer valor marca `renda_origem: "manual"` em `set()` e este
+      // efeito sai de cena — daí em diante vale o que o operador digitou.
+      const { sac: titular, price: titularPrice } = rendaInicialDosCampos(rendaCrm);
       const conjuge = rendaCrm.rendaConjugeCrm;
       const next: Form = { ...prev, renda_total: titular, renda_price: titularPrice };
       if (rendaCrm.suficiente && conjuge > 0) {

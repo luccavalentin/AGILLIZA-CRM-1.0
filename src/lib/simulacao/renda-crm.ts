@@ -25,6 +25,25 @@ const num = (v: unknown) => {
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
 
+/**
+ * Com que valor cada campo de renda abre.
+ *
+ * Cobrindo a necessária, abre com a renda do CRM — é a renda real do cliente.
+ * Não cobrindo, abre com a renda de qualificação DA TABELA do campo: o SAC
+ * qualifica a 30% da parcela e o PRICE a 15%, então com "Ambos" o campo do
+ * PRICE pede bem mais que o do SAC. Antes o campo abria zerado nesse caso.
+ *
+ * Vale só enquanto a renda é a do CRM: o que o operador digitar marca a renda
+ * como manual e nada mais sobrescreve.
+ */
+export function rendaInicialDosCampos(d: DecisaoRendaCrm): { sac: number; price: number } {
+  if (d.suficiente) return { sac: d.rendaTitularCrm, price: d.rendaTitularCrm };
+  return {
+    sac: d.necessariaSac ?? d.necessaria,
+    price: d.necessariaPrice ?? d.necessaria,
+  };
+}
+
 export function decidirRendaDoCrm(params: {
   rendaTitularCrm: unknown;
   rendaConjugeCrm: unknown;

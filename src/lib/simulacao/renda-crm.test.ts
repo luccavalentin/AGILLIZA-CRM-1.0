@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decidirRendaDoCrm } from "./renda-crm";
+import { decidirRendaDoCrm, rendaInicialDosCampos } from "./renda-crm";
 
 const base = {
   valor_financiamento: 520000,
@@ -84,5 +84,64 @@ describe("renda do CRM na simulação", () => {
         temConjuge: false,
       }),
     ).toBeNull();
+  });
+});
+
+describe("com que valor cada campo de renda abre", () => {
+  it("cobrindo a necessária, os dois campos abrem com a renda do CRM", () => {
+    const d = decidirRendaDoCrm({
+      ...base,
+      sistema: "B",
+      rendaTitularCrm: 400000,
+      rendaConjugeCrm: 0,
+      temConjuge: false,
+    })!;
+    expect(d.suficiente).toBe(true);
+    expect(rendaInicialDosCampos(d)).toEqual({ sac: 400000, price: 400000 });
+  });
+
+  it("não cobrindo, cada campo abre com a renda de qualificação da sua tabela", () => {
+    const d = decidirRendaDoCrm({
+      ...base,
+      sistema: "B",
+      rendaTitularCrm: 3000,
+      rendaConjugeCrm: 0,
+      temConjuge: false,
+    })!;
+    expect(d.suficiente).toBe(false);
+    const campos = rendaInicialDosCampos(d);
+    // O campo não abre mais zerado, que era o que mandava ao banco uma renda
+    // que ele recusa.
+    expect(campos.sac).toBe(d.necessariaSac);
+    expect(campos.price).toBe(d.necessariaPrice);
+    expect(campos.sac).toBeGreaterThan(0);
+    // PRICE qualifica a 15% da parcela e SAC a 30%: o campo do PRICE pede mais.
+    expect(campos.price).toBeGreaterThan(campos.sac);
+  });
+
+  it("só SAC: o campo do PRICE não fica para trás da tabela simulada", () => {
+    const d = decidirRendaDoCrm({
+      ...base,
+      sistema: "S",
+      rendaTitularCrm: 3000,
+      rendaConjugeCrm: 0,
+      temConjuge: false,
+    })!;
+    expect(d.necessariaPrice).toBeNull();
+    const campos = rendaInicialDosCampos(d);
+    expect(campos.sac).toBe(d.necessariaSac);
+    expect(campos.price).toBe(d.necessaria);
+  });
+
+  it("só PRICE: o campo abre com a renda do PRICE", () => {
+    const d = decidirRendaDoCrm({
+      ...base,
+      sistema: "P",
+      rendaTitularCrm: 3000,
+      rendaConjugeCrm: 0,
+      temConjuge: false,
+    })!;
+    expect(d.necessariaSac).toBeNull();
+    expect(rendaInicialDosCampos(d).sac).toBe(d.necessariaPrice);
   });
 });
