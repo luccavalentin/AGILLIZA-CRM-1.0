@@ -383,9 +383,20 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     if (!rendaCrm || f.renda_origem !== "crm") return;
     setF((prev) => {
       if (prev.renda_origem !== "crm") return prev;
-      const titular = rendaCrm.suficiente ? rendaCrm.rendaTitularCrm : 0;
+      // Renda do CRM que não cobre a necessária deixava o campo ZERADO para o
+      // operador digitar. Agora cada campo abre com a renda de qualificação da
+      // sua tabela — SAC e PRICE exigem valores diferentes, e com "Ambos" o
+      // PRICE pede mais —, e o aviso abaixo do campo diz que foi ajustada.
+      // Digitar qualquer valor marca `renda_origem: "manual"` em `set()` e
+      // este efeito sai de cena: daí em diante vale o que o operador digitou.
+      const titular = rendaCrm.suficiente
+        ? rendaCrm.rendaTitularCrm
+        : (rendaCrm.necessariaSac ?? rendaCrm.necessaria);
+      const titularPrice = rendaCrm.suficiente
+        ? rendaCrm.rendaTitularCrm
+        : (rendaCrm.necessariaPrice ?? rendaCrm.necessaria);
       const conjuge = rendaCrm.rendaConjugeCrm;
-      const next: Form = { ...prev, renda_total: titular, renda_price: titular };
+      const next: Form = { ...prev, renda_total: titular, renda_price: titularPrice };
       if (rendaCrm.suficiente && conjuge > 0) {
         next.renda_conjuge = conjuge;
         next.compoe_renda = true;

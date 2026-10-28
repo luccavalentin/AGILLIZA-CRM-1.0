@@ -38,12 +38,17 @@ export function DicaRendaMinima(props: Props) {
   } = props;
 
   if (sistema === "AMBOS") {
+    // `renda_informada: 0` fixo deixava `suficiente` sempre nulo: os dois
+    // valores saíam verdes mesmo com renda abaixo do mínimo. Agora compara com
+    // a renda do campo, que é o que pinta de vermelho quando não cobre.
+    const rendaParaComparar = Number(props.rendaInformada) || 0;
+
     const evalSac = avaliarRendaMinima({
       valor_financiamento: valorFinanciamento,
       valor_imovel: valorImovel,
       prazo_meses: prazoMeses,
       taxa_ano: taxaAno,
-      renda_informada: 0,
+      renda_informada: rendaParaComparar,
       sistema: "S",
     });
 
@@ -52,7 +57,7 @@ export function DicaRendaMinima(props: Props) {
       valor_imovel: valorImovel,
       prazo_meses: prazoMeses,
       taxa_ano: taxaAno,
-      renda_informada: 0,
+      renda_informada: rendaParaComparar,
       sistema: "P",
     });
 
@@ -127,13 +132,14 @@ export function DicaRendaMinima(props: Props) {
     );
   }
 
-  const apiEval = rendaMinimaPelosBancos(bancos, 0);
+  const rendaParaComparar = Number(props.rendaInformada) || 0;
+  const apiEval = rendaMinimaPelosBancos(bancos, rendaParaComparar);
   const local = avaliarRendaMinima({
     valor_financiamento: valorFinanciamento,
     valor_imovel: valorImovel,
     prazo_meses: prazoMeses,
     taxa_ano: taxaAno,
-    renda_informada: 0,
+    renda_informada: rendaParaComparar,
     sistema: sistema as any,
   });
 
@@ -170,7 +176,14 @@ export function DicaRendaMinima(props: Props) {
             </span>
           </div>
         </div>
-        <p className={cn("font-mono text-sm font-bold tabular-nums text-emerald-600")}>
+        <p
+          className={cn(
+            "font-mono text-sm font-bold tabular-nums",
+            // Verde fixo escondia a renda insuficiente: o valor só avisa se
+            // mudar de cor quando a renda do campo não cobre o mínimo.
+            principal.suficiente === false ? "text-destructive" : "text-emerald-600",
+          )}
+        >
           {formatBRL(rendaMin)}
         </p>
       </div>
