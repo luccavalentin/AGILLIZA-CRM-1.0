@@ -28,6 +28,7 @@ import { propostaQueryOptions } from "./queries";
 import { grupoDoStatus, statusDoGrupo, type GrupoProposta } from "./status-grupos";
 import { aplicarFiltrosPropostas } from "./lista-filtros";
 import type { SituacaoDocumentacao } from "./documentacao-status";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 /** ===== Tipos de saída ===== */
 export interface PropostaBancoResumo {
@@ -507,7 +508,7 @@ export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
       .is("deleted_at", null);
     if (data.q) {
       const q = data.q.trim();
-      query = query.or(`numero_simulacao.ilike.%${q}%,nome_cliente.ilike.%${q}%`);
+      query = query.or(`${clausulaTexto("numero_simulacao", q)},${clausulaTexto("nome_cliente", q)}`);
     }
     query = query.order("created_at", { ascending: false }).limit(30);
     const { data: rows, error } = await query;

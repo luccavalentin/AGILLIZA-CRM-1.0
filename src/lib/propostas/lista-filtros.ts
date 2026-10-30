@@ -1,3 +1,5 @@
+import { clausulaTexto } from "@/lib/busca-texto";
+
 /**
  * Filtros da listagem de propostas (parte pura, para teste).
  *
@@ -8,11 +10,12 @@
 export function clausulasDeBusca(termo: string): string[] {
   const q = String(termo ?? "").trim();
   if (!q) return [];
+  // Nome sem diferenciar acento e por palavra (ver busca-texto).
   const clausulas = [
-    `numero_proposta.ilike.%${q}%`,
-    `numero_proposta_banco.ilike.%${q}%`,
-    `nome_cliente.ilike.%${q}%`,
-  ];
+    clausulaTexto("numero_proposta", q),
+    clausulaTexto("numero_proposta_banco", q),
+    clausulaTexto("nome_cliente", q),
+  ].filter(Boolean);
   const digitos = q.replace(/\D/g, "");
   if (digitos) clausulas.push(`cpf_cnpj.ilike.%${digitos}%`);
   // C33: o ID H. (oportunidade na integração) é o número visível da proposta — "ID H. 12345"

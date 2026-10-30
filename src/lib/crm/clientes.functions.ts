@@ -20,6 +20,7 @@ import {
 } from "@/lib/crm/padroes-cadastro";
 import { etapaEhComercial, MSG_ETAPA_SINCRONIZADA } from "@/lib/crm/etapas";
 import { hojeISO } from "@/lib/financeiro/format";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 type TipoPessoa = Database["public"]["Enums"]["tipo_pessoa"];
 type EstadoCivil = Database["public"]["Enums"]["cliente_estado_civil"];
@@ -180,9 +181,9 @@ export const listarClientes = createServerFn({ method: "GET" })
         // sem acento ("joao" acha "João") pela coluna gerada nome_busca.
         if (safe)
           ors.push(
-            `nome_busca.ilike.%${termoSemAcento(safe)}%`,
-            `email.ilike.%${safe}%`,
-            `numero_cliente.ilike.%${safe}%`,
+            clausulaTexto("nome_busca", termoSemAcento(safe)),
+            clausulaTexto("email", safe),
+            clausulaTexto("numero_cliente", safe),
           );
         // Sem "Ver dados sensíveis", só o documento inteiro encontra o cliente: a busca
         // por pedaço deixava descobrir o CPF que a lista mostra mascarado.
@@ -1765,9 +1766,9 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
     if (!safe) return [];
     const dig = term.replace(/\D/g, "");
     const ors = [
-      `nome_busca.ilike.%${termoSemAcento(safe)}%`,
-      `email.ilike.%${safe}%`,
-      `numero_cliente.ilike.%${safe}%`,
+      clausulaTexto("nome_busca", termoSemAcento(safe)),
+      clausulaTexto("email", safe),
+      clausulaTexto("numero_cliente", safe),
     ];
     if (dig) ors.push(`documento.ilike.%${dig}%`);
     const { data: rows, error } = await context.supabase

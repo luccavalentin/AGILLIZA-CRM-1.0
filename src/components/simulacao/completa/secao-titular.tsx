@@ -235,7 +235,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                       prazoMeses={f.prazo}
                       taxaAno={ctx.melhorTaxaAno}
                       sistema={sistemaRenda}
-                      rendaInformada={0}
+                      rendaInformada={Number(f.renda_total) || 0}
                       compoeRendaConjuge={f.compoe_renda && f.compoe_renda_conjuge}
                     />
                   </div>
@@ -294,7 +294,7 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
                       prazoMeses={f.prazo}
                       taxaAno={ctx.melhorTaxaAno}
                       sistema="P"
-                      rendaInformada={0}
+                      rendaInformada={Number(f.renda_price) || 0}
                     />
                   </div>
                 )}
@@ -452,8 +452,9 @@ export function SecaoTitular({ ctx }: { ctx: SimulacaoCompletaCtx }) {
 
 /**
  * Renda do CRM x renda necessária. Cobre: a renda do cadastro fica (editável).
- * Não cobre: o campo vem vazio para o usuário digitar a renda da simulação,
- * que é a enviada ao banco — ou usar a do CRM mesmo assim.
+ * Não cobre: o campo abre com a renda de qualificação da tabela e o aviso diz
+ * isso — o operador troca por outra, que é a que vai ao banco, ou volta para a
+ * do CRM mesmo assim.
  */
 function AvisoRendaCrm({ ctx }: { ctx: SimulacaoCompletaCtx }) {
   const { f, rendaCrm, usarRendaDoCrm } = ctx as any;
@@ -486,8 +487,19 @@ function AvisoRendaCrm({ ctx }: { ctx: SimulacaoCompletaCtx }) {
     <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] text-amber-800 dark:text-amber-300">
       <p>
         A renda do CRM ({formatBRL(rendaCrm.rendaCrm)}
-        {composicao}) não cobre a renda necessária para {tabelas} ({formatBRL(rendaCrm.necessaria)}
-        ). Digite a renda desta simulação — é ela que vai ao banco.
+        {composicao}) não cobre a renda necessária para {tabelas}
+        {f.sistema_amortizacao === "B" &&
+        rendaCrm.necessariaSac != null &&
+        rendaCrm.necessariaPrice != null ? (
+          <>
+            {" "}
+            (SAC {formatBRL(rendaCrm.necessariaSac)} e PRICE {formatBRL(rendaCrm.necessariaPrice)})
+          </>
+        ) : (
+          <> ({formatBRL(rendaCrm.necessaria)})</>
+        )}
+        . Preenchemos {f.sistema_amortizacao === "B" ? "os campos" : "o campo"} com a renda de
+        qualificação — troque por outra se o cliente tiver, é a renda do campo que vai ao banco.
       </p>
       <Button
         type="button"

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { clausulaTexto } from "@/lib/busca-texto";
 
 export interface Colega {
   id: string;
@@ -65,7 +66,7 @@ export const buscarClientesOpcoes = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(20);
     const q = data.q?.trim();
-    if (q) query = query.or(`nome.ilike.%${q}%,numero_cliente.ilike.%${q}%`);
+    if (q) query = query.or(`${clausulaTexto("nome", q)},${clausulaTexto("numero_cliente", q)}`);
     const { data: itens, error } = await query;
     if (error) throw new Error(error.message);
     return (itens ?? []) as ClienteOpcao[];

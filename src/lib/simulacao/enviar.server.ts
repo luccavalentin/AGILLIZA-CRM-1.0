@@ -1,5 +1,6 @@
 import { EnviarArgs, EnviarResultado, IntegracaoBancariaError } from "./enviar.types";
 import { chamarIntegracao } from "./homefin.server";
+import { camposRetornoBanco } from "./campos-retorno-banco";
 import {
   num,
   sanitizarMensagemErro,
@@ -660,6 +661,17 @@ export async function enviarSimulacaoImpl({
       if (!idOportunidade) throw e;
     }
 
+    // Participantes completos antes de simular: desde 18/10/2026 a HomeFin
+    // devolve 500 ao criar simulação em oportunidade com participante sem
+    // sexo, mãe, documento, profissão, endereço e regime. Ver
+    // `completar-participantes.ts`.
+    if (idOportunidade && !ehPJ) {
+      const { completarParticipantesOportunidade } = await import(
+        "./completar-participantes.server"
+      );
+      await completarParticipantesOportunidade(String(idOportunidade), sim, simulacaoId);
+    }
+
     const resultados: EnviarResultado["bancos"] = [];
 
     // ETAPA 3: Paralelização controlada de bancos no servidor.
@@ -1028,6 +1040,7 @@ async function processarBancoIndividual(
           valor_parcela: valorParcela,
           taxa_juros_ano: taxaJuros != null && num(taxaJuros) > 0 ? num(taxaJuros) : undefined,
           taxa_cet_ano: taxaCet != null && num(taxaCet) > 0 ? num(taxaCet) : undefined,
+          ...camposRetornoBanco(fonte),
           mensagem_banco: avisoDespesas,
           raw_response: fonte,
           simulado_em: new Date().toISOString(),

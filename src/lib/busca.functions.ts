@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { clausulaTexto } from "@/lib/busca-texto";
 import { termoSemAcento } from "@/lib/crm/busca";
 import { mascararDocumento } from "@/lib/crm/documento";
 import { temPiiCliente } from "@/lib/crm/pii";
@@ -62,8 +63,7 @@ export const buscaGlobal = createServerFn({ method: "GET" })
     // termo quebravam a consulta. Aspas, barra e `%` saem do termo (`_` fica:
     // como curinga de um caractere, ainda casa com o próprio `_`).
     const limpo = termo.replace(/["\\%]/g, "");
-    const like = `%${limpo}%`;
-    const ilike = (col: string) => `${col}.ilike."${like}"`;
+    const ilike = (col: string) => clausulaTexto(col, limpo);
     // CPF/CNPJ digitado com ou sem pontuação: o gravado é só dígito. Sem "Ver
     // dados sensíveis", só o documento inteiro encontra o registro: a busca por
     // pedaço deixava descobrir o CPF que a tela mostra mascarado (mesma regra de
@@ -94,7 +94,7 @@ export const buscaGlobal = createServerFn({ method: "GET" })
             .or(
               [
                 // Nome sem acento ("joao" acha "João"), como na lista de clientes.
-                `nome_busca.ilike."%${termoSemAcento(limpo)}%"`,
+                clausulaTexto("nome_busca", termoSemAcento(limpo)),
                 ilike("email"),
                 ilike("numero_cliente"),
                 ...porDoc("documento"),

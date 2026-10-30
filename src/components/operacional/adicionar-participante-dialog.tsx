@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { adicionarParticipantesDemanda } from "@/lib/operacional/demandas.functions";
 import { listarColegas } from "@/lib/operacional/shared.functions";
 import { cn } from "@/lib/utils";
+import { contemBusca } from "@/lib/busca-texto";
 
 /**
  * Dialog para adicionar novos participantes (co-observadores) a uma demanda,
@@ -51,8 +52,7 @@ export function AdicionarParticipanteDialog({
   const filtrados = (colegas ?? []).filter((c) => {
     if (jaSet.has(c.id)) return false;
     if (!busca.trim()) return true;
-    const t = busca.toLowerCase();
-    return (c.nome ?? "").toLowerCase().includes(t) || (c.email ?? "").toLowerCase().includes(t);
+    return contemBusca([c.nome, c.email], busca);
   });
 
   function toggle(id: string) {

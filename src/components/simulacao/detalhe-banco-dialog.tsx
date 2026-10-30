@@ -327,9 +327,7 @@ export function DetalheBancoDialog({
                         <TableHead>Data</TableHead>
                         <TableHead className="text-right">Amortização</TableHead>
                         <TableHead className="text-right">Juros</TableHead>
-                        <TableHead className="text-right">
-                          {detalhe!.parcelasEstimadas ? "Parcela s/ seguro" : "Parcela"}
-                        </TableHead>
+                        <TableHead className="text-right">Parcela</TableHead>
                         <TableHead className="text-right">Saldo devedor</TableHead>
                       </TableRow>
                     </TableHeader>

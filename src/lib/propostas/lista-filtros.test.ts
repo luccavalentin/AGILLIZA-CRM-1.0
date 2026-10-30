@@ -6,7 +6,12 @@ describe("busca da listagem de propostas", () => {
   it("nome não gera comparação de CPF (que casava com tudo)", () => {
     const c = clausulasDeBusca("Elisabeth");
     expect(c.some((x) => x.startsWith("cpf_cnpj"))).toBe(false);
-    expect(c).toContain("nome_cliente.ilike.%Elisabeth%");
+    expect(c).toContain('nome_cliente.ilike."%_l_s_b_th%"');
+  });
+
+  it("nome sem acento acha o nome acentuado, palavra por palavra", () => {
+    const c = clausulasDeBusca("Crisleia Camizao");
+    expect(c).toContain('and(nome_cliente.ilike."%_r_sl___%",nome_cliente.ilike."%__m_z__%")');
   });
 
   it("documento procura pelos dígitos", () => {
@@ -15,8 +20,8 @@ describe("busca da listagem de propostas", () => {
 
   it("número da proposta procura nos dois números", () => {
     const c = clausulasDeBusca("PRO-000311");
-    expect(c).toContain("numero_proposta.ilike.%PRO-000311%");
-    expect(c).toContain("numero_proposta_banco.ilike.%PRO-000311%");
+    expect(c).toContain('numero_proposta.ilike."%PR_-000311%"');
+    expect(c).toContain('numero_proposta_banco.ilike."%PR_-000311%"');
   });
 
   it("C33: o ID H. acha a proposta (com ou sem o prefixo)", () => {

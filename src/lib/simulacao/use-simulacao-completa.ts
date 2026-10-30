@@ -3,7 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { avaliarRendaMinima, limitesLtv } from "@/lib/simulacao/renda";
-import { decidirRendaDoCrm } from "@/lib/simulacao/renda-crm";
+import { decidirRendaDoCrm, rendaInicialDosCampos } from "@/lib/simulacao/renda-crm";
 import { validarCamposSimulacao } from "@/lib/simulacao/campos-obrigatorios";
 import { completaSchema } from "@/lib/simulacao/schemas";
 import {
@@ -384,9 +384,12 @@ export function useSimulacaoCompleta({ duplicar, modoProposta }: OpcoesHook) {
     if (!rendaCrm || f.renda_origem !== "crm") return;
     setF((prev) => {
       if (prev.renda_origem !== "crm") return prev;
-      const titular = rendaCrm.suficiente ? rendaCrm.rendaTitularCrm : 0;
+      // Com que valor cada campo abre: a regra está em `rendaInicialDosCampos`.
+      // Digitar qualquer valor marca `renda_origem: "manual"` em `set()` e este
+      // efeito sai de cena — daí em diante vale o que o operador digitou.
+      const { sac: titular, price: titularPrice } = rendaInicialDosCampos(rendaCrm);
       const conjuge = rendaCrm.rendaConjugeCrm;
-      const next: Form = { ...prev, renda_total: titular, renda_price: titular };
+      const next: Form = { ...prev, renda_total: titular, renda_price: titularPrice };
       if (rendaCrm.suficiente && conjuge > 0) {
         next.renda_conjuge = conjuge;
         next.compoe_renda = true;

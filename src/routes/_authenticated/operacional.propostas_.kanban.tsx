@@ -73,6 +73,7 @@ import {
 import { formatBRL, maskCpfCnpj } from "@/lib/simulacao/format";
 import { cn } from "@/lib/utils";
 import { numeroBancoParaExibir } from "@/lib/propostas/numero-banco-display";
+import { contemBusca } from "@/lib/busca-texto";
 
 /** Cartões visíveis por coluna antes de "ver todas" (o resto abre numa pasta com busca). */
 const MAX_VISIVEIS_POR_COLUNA = 5;
@@ -526,12 +527,11 @@ function Pagina() {
   const cartoesDaPasta = useMemo(() => {
     if (!pastaAberta) return [];
     const todos = porColuna.get(pastaAberta) ?? [];
-    const t = buscaPasta.trim().toLowerCase();
-    if (!t) return todos;
     return todos.filter((c) =>
-      [c.cliente, c.documento, c.numero, c.numeroSecundario, c.banco, c.responsavel, c.conta]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(t)),
+      contemBusca(
+        [c.cliente, c.documento, c.numero, c.numeroSecundario, c.banco, c.responsavel, c.conta],
+        buscaPasta,
+      ),
     );
   }, [pastaAberta, porColuna, buscaPasta]);
 
