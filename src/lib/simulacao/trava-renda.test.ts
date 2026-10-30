@@ -18,7 +18,7 @@ import { humanizarErroBanco, humanizarRespostaErro } from "./bank-error-humanize
  */
 
 /** O Intl separa "R$" do número com espaço não separável. */
-const semNbsp = (t: string | null | undefined) => String(t ?? "").replace(/ /g, " ");
+const semNbsp = (t: string | null | undefined) => String(t ?? "").replace(/\u00a0/g, " ");
 
 const form = (mudar: Record<string, unknown> = {}) => ({
   tipo_pessoa: "PF",
@@ -53,8 +53,18 @@ const min = (sistema: "S" | "P", prazo = 360) =>
 describe("1ª parcela e renda mínima", () => {
   it("SAC: 1ª parcela = amortização + juros; PRICE: parcela fixa, menor", () => {
     const i = Math.pow(1.1199, 1 / 12) - 1;
-    const sac = calcularSimulacao({ valor_financiamento: 400_000, prazo_meses: 360, taxa_ano: 0.1199, sistema: "S" });
-    const price = calcularSimulacao({ valor_financiamento: 400_000, prazo_meses: 360, taxa_ano: 0.1199, sistema: "P" });
+    const sac = calcularSimulacao({
+      valor_financiamento: 400_000,
+      prazo_meses: 360,
+      taxa_ano: 0.1199,
+      sistema: "S",
+    });
+    const price = calcularSimulacao({
+      valor_financiamento: 400_000,
+      prazo_meses: 360,
+      taxa_ano: 0.1199,
+      sistema: "P",
+    });
     expect(sac.primeira_parcela).toBeCloseTo(400_000 / 360 + 400_000 * i, 1);
     expect(price.primeira_parcela).toBeLessThan(sac.primeira_parcela);
   });
@@ -82,9 +92,20 @@ describe("rendaEnviadaAoBanco (igual ao rendaTotal do envio)", () => {
   });
 
   it("cônjuge compondo sem renda entra com o padrão do cadastro; solteiro não soma cônjuge", () => {
-    const casado = form({ renda_total: 10_000, estado_civil: "CA", nome_conjuge: "C", compoe_renda_conjuge: true, renda_conjuge: 0 });
+    const casado = form({
+      renda_total: 10_000,
+      estado_civil: "CA",
+      nome_conjuge: "C",
+      compoe_renda_conjuge: true,
+      renda_conjuge: 0,
+    });
     expect(rendaEnviadaAoBanco(casado)).toBeGreaterThan(10_000);
-    const solteiro = form({ renda_total: 10_000, nome_conjuge: "C", compoe_renda_conjuge: true, renda_conjuge: 7_000 });
+    const solteiro = form({
+      renda_total: 10_000,
+      nome_conjuge: "C",
+      compoe_renda_conjuge: true,
+      renda_conjuge: 7_000,
+    });
     expect(rendaEnviadaAoBanco(solteiro)).toBe(10_000);
   });
 });
@@ -134,7 +155,13 @@ describe("limite seco (trava) e limite com margem (aviso)", () => {
   it("Ambos: o aviso cita só o sistema no limite; o que trava não entra no aviso", () => {
     const ambos = (rs: number, rp: number) =>
       travaRendaDoFormulario(
-        form({ sistema_amortizacao: "B", renda_total: rs, renda_price: rp, bancos_sac_ids: ["itau"], bancos_price_ids: ["bradesco"] }),
+        form({
+          sistema_amortizacao: "B",
+          renda_total: rs,
+          renda_price: rp,
+          bancos_sac_ids: ["itau"],
+          bancos_price_ids: ["bradesco"],
+        }),
       );
     expect(ambos(20_000, 30_000).aviso).toContain("no limite para SAC e PRICE");
     expect(ambos(30_000, 30_000).aviso).toContain("no limite para PRICE:");
@@ -155,7 +182,13 @@ describe("travaRendaDoFormulario", () => {
   });
 
   it("composição de renda resolve: titular 10 mil + cônjuge 7 mil cobre o SAC", () => {
-    const f = form({ renda_total: 10_000, estado_civil: "casado", nome_conjuge: "C", compoe_renda_conjuge: true, renda_conjuge: 7_000 });
+    const f = form({
+      renda_total: 10_000,
+      estado_civil: "casado",
+      nome_conjuge: "C",
+      compoe_renda_conjuge: true,
+      renda_conjuge: 7_000,
+    });
     expect(travaRendaDoFormulario(f).mensagem).toBeNull();
     expect(travaRendaDoFormulario({ ...f, compoe_renda_conjuge: false }).mensagem).not.toBeNull();
   });
@@ -167,19 +200,40 @@ describe("travaRendaDoFormulario", () => {
 
   it("Ambos: só o PRICE não cabe — destaca a renda PRICE e explica que o SAC pode ir sozinho", () => {
     const t = travaRendaDoFormulario(
-      form({ sistema_amortizacao: "B", renda_total: 25_000, renda_price: 25_000, bancos_sac_ids: ["itau"], bancos_price_ids: ["bradesco"] }),
+      form({
+        sistema_amortizacao: "B",
+        renda_total: 25_000,
+        renda_price: 25_000,
+        bancos_sac_ids: ["itau"],
+        bancos_price_ids: ["bradesco"],
+      }),
     );
     expect(t.campo).toBe("renda_price");
-    expect(semNbsp(t.mensagem)).toContain("A renda cobre o SAC: tire os bancos PRICE para enviar só SAC.");
+    expect(semNbsp(t.mensagem)).toContain(
+      "A renda cobre o SAC: tire os bancos PRICE para enviar só SAC.",
+    );
     // Sem os bancos PRICE, passa.
     expect(
-      travaRendaDoFormulario(form({ sistema_amortizacao: "B", renda_total: 25_000, renda_price: 25_000, bancos_sac_ids: ["itau"] })).mensagem,
+      travaRendaDoFormulario(
+        form({
+          sistema_amortizacao: "B",
+          renda_total: 25_000,
+          renda_price: 25_000,
+          bancos_sac_ids: ["itau"],
+        }),
+      ).mensagem,
     ).toBeNull();
   });
 
   it("Ambos com os dois abaixo e rendas diferentes: cita cada renda", () => {
     const t = travaRendaDoFormulario(
-      form({ sistema_amortizacao: "B", renda_total: 10_000, renda_price: 12_000, bancos_sac_ids: ["itau"], bancos_price_ids: ["bradesco"] }),
+      form({
+        sistema_amortizacao: "B",
+        renda_total: 10_000,
+        renda_price: 12_000,
+        bancos_sac_ids: ["itau"],
+        bancos_price_ids: ["bradesco"],
+      }),
     );
     expect(t.campo).toBe("renda_total");
     expect(semNbsp(t.mensagem)).toBe(
@@ -201,18 +255,31 @@ describe("travaRendaDoFormulario", () => {
 describe("travaRendaDaSimulacao (servidor)", () => {
   it("simulação gravada abaixo do seco é barrada antes da integração; no seco, segue", () => {
     expect(
-      semNbsp(travaRendaDaSimulacao({ ...form({ renda_total: "16967.75" }), sistema_amortizacao: "S" })),
+      semNbsp(
+        travaRendaDaSimulacao({ ...form({ renda_total: "16967.75" }), sistema_amortizacao: "S" }),
+      ),
     ).toContain("abaixo da mínima para SAC");
-    expect(travaRendaDaSimulacao({ ...form({ renda_total: "16968.75" }), sistema_amortizacao: "S" })).toBeNull();
+    expect(
+      travaRendaDaSimulacao({ ...form({ renda_total: "16968.75" }), sistema_amortizacao: "S" }),
+    ).toBeNull();
   });
 
   it("simulação PRICE do modo Ambos usa a sua própria renda_total", () => {
-    expect(travaRendaDaSimulacao({ ...form({ renda_total: 27_404.56 }), sistema_amortizacao: "P" })).not.toBeNull();
-    expect(travaRendaDaSimulacao({ ...form({ renda_total: 27_405.56 }), sistema_amortizacao: "P" })).toBeNull();
+    expect(
+      travaRendaDaSimulacao({ ...form({ renda_total: 27_404.56 }), sistema_amortizacao: "P" }),
+    ).not.toBeNull();
+    expect(
+      travaRendaDaSimulacao({ ...form({ renda_total: 27_405.56 }), sistema_amortizacao: "P" }),
+    ).toBeNull();
   });
 
   it("mensagemRendaInsuficiente: nada faltando, nada a dizer", () => {
-    const av = avaliarTravaRenda({ sistemas: [{ sistema: "S", renda: 99_000 }], prazos: [360], valor_financiamento: 400_000, valor_imovel: 500_000 });
+    const av = avaliarTravaRenda({
+      sistemas: [{ sistema: "S", renda: 99_000 }],
+      prazos: [360],
+      valor_financiamento: 400_000,
+      valor_imovel: 500_000,
+    });
     expect(mensagemRendaInsuficiente(av)).toBeNull();
   });
 });
@@ -226,7 +293,12 @@ describe("erro de renda devolvido pelo banco vira mensagem com o que fazer", () 
 
   it("Bradesco 119", () => {
     const msg = humanizarRespostaErro(
-      { error: { code: "INT-006", message: 'Simulação Bradesco falhou: {"codigo":"119","mensagem":""}' } },
+      {
+        error: {
+          code: "INT-006",
+          message: 'Simulação Bradesco falhou: {"codigo":"119","mensagem":""}',
+        },
+      },
       400,
     );
     expect(msg).toMatch(/abaixo da renda mínima exigida pelo banco\. Aumente a renda/);
@@ -234,14 +306,25 @@ describe("erro de renda devolvido pelo banco vira mensagem com o que fazer", () 
 
   it("texto livre do banco sobre capacidade de pagamento / comprometimento", () => {
     const a = humanizarRespostaErro(
-      { error: { code: "INT-006", message: 'Simulação Santander falhou: {"codigo":"77","mensagem":"Capacidade de pagamento insuficiente"}' } },
+      {
+        error: {
+          code: "INT-006",
+          message:
+            'Simulação Santander falhou: {"codigo":"77","mensagem":"Capacidade de pagamento insuficiente"}',
+        },
+      },
       400,
     );
     expect(a).toMatch(/^O banco recusou por renda/);
     expect(a).toContain("Motivo do banco: Capacidade de pagamento insuficiente");
-    const b = humanizarRespostaErro({ error: { message: "Parcela excede 30% da renda do proponente" } }, 400);
+    const b = humanizarRespostaErro(
+      { error: { message: "Parcela excede 30% da renda do proponente" } },
+      400,
+    );
     expect(b).toMatch(/^O banco recusou por renda/);
-    expect(humanizarErroBanco(null, "Renda insuficiente para o valor")).toMatch(/^O banco recusou por renda/);
+    expect(humanizarErroBanco(null, "Renda insuficiente para o valor")).toMatch(
+      /^O banco recusou por renda/,
+    );
   });
 
   it("erro que não é de renda continua com a tradução de antes", () => {

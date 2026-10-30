@@ -1,5 +1,5 @@
 import js from "@eslint/js";
-import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
+import eslintConfigPrettier from "eslint-config-prettier";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
@@ -46,5 +46,7 @@ export default tseslint.config(
       "@typescript-eslint/no-empty-object-type": "off",
     },
   },
-  eslintPluginPrettier,
+  // Formatação tem seu próprio gate (`npm run format`). O lint deve sinalizar
+  // defeitos de código, sem transformar diferenças de estilo legadas em erros.
+  eslintConfigPrettier,
 );

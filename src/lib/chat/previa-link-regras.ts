@@ -102,16 +102,21 @@ const ENTIDADES: Record<string, string> = {
 };
 
 function decodificar(s: string): string {
-  return s
-    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) => {
+  return Array.from(
+    s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) => {
       if (e[0] === "#") {
         const n =
           e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
         return Number.isFinite(n) && n > 31 && n < 0x10ffff ? String.fromCodePoint(n) : "";
       }
       return ENTIDADES[e.toLowerCase()] ?? m;
-    })
-    .replace(/[\u0000-\u001f\u007f]+/g, " ")
+    }),
+    (caractere) => {
+      const codigo = caractere.charCodeAt(0);
+      return codigo < 32 || codigo === 127 ? " " : caractere;
+    },
+  )
+    .join("")
     .replace(/\s+/g, " ")
     .trim();
 }

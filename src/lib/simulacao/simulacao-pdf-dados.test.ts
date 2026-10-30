@@ -43,14 +43,25 @@ const base = {
   situacao_imovel: "U",
   utiliza_fgts: "S",
   _participantes: [
-    { nome: "Ana Beatriz", vinculo: "Filho(a)", cpf_cnpj: "39053344705", data_nascimento: "2001-02-03", estado_civil: "S", renda: 4500, compoe_renda: true },
+    {
+      nome: "Ana Beatriz",
+      vinculo: "Filho(a)",
+      cpf_cnpj: "39053344705",
+      data_nascimento: "2001-02-03",
+      estado_civil: "S",
+      renda: 4500,
+      compoe_renda: true,
+    },
     { nome: "Carlos", vinculo: "Pai", cpf_cnpj: "86288366757", renda: 3000, compoe_renda: false },
   ],
 };
 
 const mapa = (s: any) =>
   Object.fromEntries(
-    dadosDoProponente(s).map((sec) => [sec.titulo, Object.fromEntries(sec.itens.map((i) => [i.rotulo, i.valor.replace(/ /g, " ")]))]),
+    dadosDoProponente(s).map((sec) => [
+      sec.titulo,
+      Object.fromEntries(sec.itens.map((i) => [i.rotulo, i.valor.replace(/\u00a0/g, " ")])),
+    ]),
   );
 
 describe("dados do proponente no PDF", () => {
@@ -100,7 +111,14 @@ describe("dados do proponente no PDF", () => {
   });
 
   it("solteiro sem cônjuge e sem participantes: sem essas seções; campo vazio vira traço", () => {
-    const secs = mapa({ ...base, estado_civil: "S", nome_conjuge: "", possui_conjuge: false, _participantes: [], email: "" });
+    const secs = mapa({
+      ...base,
+      estado_civil: "S",
+      nome_conjuge: "",
+      possui_conjuge: false,
+      _participantes: [],
+      email: "",
+    });
     expect(Object.keys(secs)).toEqual(["Dados do proponente", "Renda e imóvel"]);
     expect(secs["Dados do proponente"]!["E-mail"]).toBe("—");
     expect(secs["Dados do proponente"]!["Regime de casamento"]).toBeUndefined();

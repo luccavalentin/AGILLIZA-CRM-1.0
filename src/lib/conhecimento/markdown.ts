@@ -39,7 +39,11 @@ export type Bloco =
  * para "//evil.com" e o link "interno" levava para fora (eco-aud).
  */
 function caminhoInterno(s: string): boolean {
-  return /^\/(?!\/)/.test(s) && !/[\\\u0000-\u001f\u007f]|%5c|%2f|%09|%0a|%0d/i.test(s);
+  const temControle = Array.from(s).some((caractere) => {
+    const codigo = caractere.charCodeAt(0);
+    return codigo < 32 || codigo === 127;
+  });
+  return /^\/(?!\/)/.test(s) && !temControle && !/[\\]|%5c|%2f|%09|%0a|%0d/i.test(s);
 }
 
 /** Destino de link aceito (ou null): http(s), mailto, tel e caminho interno. */

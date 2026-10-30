@@ -31,7 +31,10 @@ export type SeparadorDecimal = "," | ".";
  * Com `decimal` (o formato do ARQUIVO, ver `detectarDecimal`), o outro separador é milhar e
  * precisa estar no lugar certo (grupos de 3): "1.234" com decimal "," é 1234, não 1,234.
  */
-export function lerValor(bruto: string | null | undefined, decimal?: SeparadorDecimal): number | null {
+export function lerValor(
+  bruto: string | null | undefined,
+  decimal?: SeparadorDecimal,
+): number | null {
   if (bruto == null) return null;
   let s = String(bruto).trim();
   if (!s) return null;
@@ -70,7 +73,11 @@ export function lerValor(bruto: string | null | undefined, decimal?: SeparadorDe
     const [inteiro, ...resto] = s.split(dec);
     if (resto.length > 1 || resto.some((x) => !/^\d*$/.test(x))) return null;
     const grupos = inteiro!.split(milhar);
-    if (grupos.length > 1 && (!/^\d{1,3}$/.test(grupos[0]!) || grupos.slice(1).some((g) => !/^\d{3}$/.test(g)))) return null;
+    if (
+      grupos.length > 1 &&
+      (!/^\d{1,3}$/.test(grupos[0]!) || grupos.slice(1).some((g) => !/^\d{3}$/.test(g)))
+    )
+      return null;
     const n = Number((grupos.join("") || "0") + (resto.length ? "." + (resto[0] || "0") : ""));
     if (!Number.isFinite(n)) return null;
     return Math.round((negativo ? -n : n) * 100) / 100;
@@ -173,7 +180,8 @@ export function lerOfx(texto: string): LeituraExtrato {
     }
     const memo = decodificarEntidades(tagOfx(bloco, "MEMO") ?? "");
     const nome = decodificarEntidades(tagOfx(bloco, "NAME") ?? "");
-    const descricao = [nome, memo].filter((x, j, arr) => x && arr.indexOf(x) === j).join(" · ") || "Sem descrição";
+    const descricao =
+      [nome, memo].filter((x, j, arr) => x && arr.indexOf(x) === j).join(" · ") || "Sem descrição";
     movimentos.push({
       data,
       valor,
@@ -209,11 +217,7 @@ export function dividirLinhaCsv(linha: string, sep: string): string[] {
 }
 
 function normal(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .trim();
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
 type Coluna = "data" | "descricao" | "valor" | "credito" | "debito" | "documento" | "tipo";
@@ -234,11 +238,17 @@ function identificarColuna(nome: string): Coluna | null {
 /** CSV de banco (separador ; , ou tab; com ou sem cabeçalho; decimal com vírgula). */
 export function lerCsv(texto: string): LeituraExtrato {
   const avisos: string[] = [];
-  const linhas = texto.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
+  const linhas = texto
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((l) => l.trim());
   if (!linhas.length) return { formato: "csv", movimentos: [], avisos: ["Arquivo vazio."] };
   const amostra = linhas.slice(0, 10).join("\n");
   const sep = [";", "\t", ","]
-    .map((s) => ({ s, n: (amostra.match(new RegExp(s === "\t" ? "\t" : `\\${s}`, "g")) ?? []).length }))
+    .map((s) => ({
+      s,
+      n: (amostra.match(new RegExp(s === "\t" ? "\t" : `\\${s}`, "g")) ?? []).length,
+    }))
     .sort((a, b) => b.n - a.n)[0].s;
 
   // Cabeçalho: a primeira linha (entre as 15 primeiras) com coluna de data e de valor/crédito/débito
@@ -251,7 +261,10 @@ export function lerCsv(texto: string): LeituraExtrato {
       const tipo = identificarColuna(c);
       if (tipo && m[tipo] === undefined) m[tipo] = j;
     });
-    if (m.data !== undefined && (m.valor !== undefined || m.credito !== undefined || m.debito !== undefined)) {
+    if (
+      m.data !== undefined &&
+      (m.valor !== undefined || m.credito !== undefined || m.debito !== undefined)
+    ) {
       mapa = m;
       inicio = i + 1;
       break;
@@ -260,7 +273,10 @@ export function lerCsv(texto: string): LeituraExtrato {
   if (inicio === 0) {
     // sem cabeçalho: data; descrição; [documento;] valor
     const n = dividirLinhaCsv(linhas[0], sep).length;
-    mapa = n >= 4 ? { data: 0, descricao: 1, documento: 2, valor: n - 1 } : { data: 0, descricao: 1, valor: n - 1 };
+    mapa =
+      n >= 4
+        ? { data: 0, descricao: 1, documento: 2, valor: n - 1 }
+        : { data: 0, descricao: 1, valor: n - 1 };
     avisos.push("Arquivo sem cabeçalho: lido como data, descrição, (documento) e valor.");
   }
 
@@ -292,7 +308,8 @@ export function lerCsv(texto: string): LeituraExtrato {
       valor = cr ? Math.abs(cr) : db ? -Math.abs(db) : null;
     }
     if (!data || valor == null || valor === 0) {
-      if (cols.some((c) => c)) avisos.push(`Linha ${i + 1} sem data ou valor reconhecível: ignorada.`);
+      if (cols.some((c) => c))
+        avisos.push(`Linha ${i + 1} sem data ou valor reconhecível: ignorada.`);
       continue;
     }
     movimentos.push({
@@ -304,7 +321,8 @@ export function lerCsv(texto: string): LeituraExtrato {
       ordem: movimentos.length,
     });
   }
-  if (linhas.length - inicio > MAX_MOVIMENTOS) avisos.push(`Só as primeiras ${MAX_MOVIMENTOS} movimentações foram lidas.`);
+  if (linhas.length - inicio > MAX_MOVIMENTOS)
+    avisos.push(`Só as primeiras ${MAX_MOVIMENTOS} movimentações foram lidas.`);
   return { formato: "csv", movimentos, avisos: avisos.slice(0, 20) };
 }
 

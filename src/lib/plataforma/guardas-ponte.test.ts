@@ -39,7 +39,9 @@ function varrer(): ServerFn[] {
     if (!s.includes("createServerFn")) continue;
     // Middlewares nomeados: const VER = exigirPermissao([...]) / const ler = () => exigirPermissao(...)
     const nomes = new Map<string, string>();
-    for (const m of s.matchAll(/const\s+(\w+)\s*=\s*(?:\(\)\s*=>\s*)?exigirPermissao\(([\s\S]*?)\);/g)) {
+    for (const m of s.matchAll(
+      /const\s+(\w+)\s*=\s*(?:\(\)\s*=>\s*)?exigirPermissao\(([\s\S]*?)\);/g,
+    )) {
       nomes.set(m[1], m[2].replace(/\s+/g, ""));
     }
     const inicios = [...s.matchAll(/export\s+const\s+(\w+)\s*=\s*createServerFn\(/g)];
@@ -52,14 +54,19 @@ function varrer(): ServerFn[] {
       const mw = (cab.match(/\.middleware\(([\s\S]*)$/)?.[1] ?? "").replace(/\s+/g, "");
       const guardas = [
         ...[...mw.matchAll(/exigirPermissao\((.*?)\)\]/g)].map((x) => x[1]),
-        ...[...nomes.entries()].filter(([n]) => mw.split(/[^A-Za-z0-9_]/).includes(n)).map(([, g]) => g),
+        ...[...nomes.entries()]
+          .filter(([n]) => mw.split(/[^A-Za-z0-9_]/).includes(n))
+          .map(([, g]) => g),
       ];
       out.push({
         arquivo: relative(RAIZ, a).split(sep).join("/"),
         nome: m[1],
         guardas,
         usaPonte: /\bcom(Plataforma|Conta)\b/.test(corpo),
-        usaPonteDireta: /\b(comChatAgilliza|comPonteDireta|consultarNewsDaEquipe|dependenciasReaisConsulta)\b/.test(corpo),
+        usaPonteDireta:
+          /\b(comChatAgilliza|comPonteDireta|consultarNewsDaEquipe|dependenciasReaisConsulta)\b/.test(
+            corpo,
+          ),
         metodo: /createServerFn\(\{\s*method:\s*"POST"/.test(bloco) ? "POST" : "GET",
         corpo,
         usaCodigos: /codigos_(caixas|recebidos)/.test(corpo),
@@ -83,7 +90,9 @@ describe("guardas das server functions da ponte", () => {
       .filter(
         (f) =>
           !f.guardas.some((g) =>
-            /"(saas\.[a-z_]+|imobmatch\.(visao|moderacao|financeiro|planos|config)|marketing\.automacoes|financeiro\.repasses)"/.test(g),
+            /"(saas\.[a-z_]+|imobmatch\.(visao|moderacao|financeiro|planos|config)|marketing\.automacoes|financeiro\.repasses)"/.test(
+              g,
+            ),
           ),
       )
       .map((f) => `${f.arquivo} › ${f.nome}`);
@@ -122,9 +131,9 @@ describe("guardas das server functions da ponte", () => {
     for (const f of im) expect(f.guardas.join()).toContain('"saas.imobmatch"');
     // Toda escrita (POST) exige a ação "edit" — ver não basta para moderar.
     const fonte = readFileSync(join(RAIZ, "plataforma/imobmatch.functions.ts"), "utf8");
-    const posts = [...fonte.matchAll(/export const (\w+) = createServerFn\(\{ method: "POST" \}\)/g)].map(
-      (m) => m[1],
-    );
+    const posts = [
+      ...fonte.matchAll(/export const (\w+) = createServerFn\(\{ method: "POST" \}\)/g),
+    ].map((m) => m[1]);
     expect(posts.length).toBeGreaterThanOrEqual(5);
     for (const nome of posts) {
       const f = im.find((x) => x.nome === nome)!;
@@ -154,7 +163,9 @@ describe("guardas das server functions da ponte", () => {
     expect(fonte).toContain("plataforma.imobmatch_salvar_plano($1, $2::jsonb)");
     expect(fonte).toContain("plataforma.imobmatch_salvar_parametro($1, $2::jsonb)");
     expect(fonte).toContain("imobmatch.configurar_produto_loja($1, $2, $3, $4, $5)");
-    expect(fonte).not.toMatch(/(update|insert into|delete from)\s+(nucleo|plataforma|imobmatch)\./i);
+    expect(fonte).not.toMatch(
+      /\b(update|insert into|delete from)\s+(nucleo|plataforma|imobmatch)\./i,
+    );
   });
 
   it("receita do ImobMatch no financeiro da matriz (0461): financeiro.repasses ver, só leitura", () => {
@@ -184,9 +195,9 @@ describe("guardas das server functions da ponte", () => {
     expect(pt.length).toBeGreaterThanOrEqual(12);
     for (const f of pt) expect(f.guardas.join()).toMatch(/"saas\.(patrocinados|planos)"/);
     const fonte = readFileSync(join(RAIZ, "plataforma/patrocinados.functions.ts"), "utf8");
-    const posts = [...fonte.matchAll(/export const (\w+) = createServerFn\(\{ method: "POST" \}\)/g)].map(
-      (m) => m[1],
-    );
+    const posts = [
+      ...fonte.matchAll(/export const (\w+) = createServerFn\(\{ method: "POST" \}\)/g),
+    ].map((m) => m[1]);
     expect(posts.length).toBeGreaterThanOrEqual(6);
     for (const nome of posts) {
       const f = pt.find((x) => x.nome === nome)!;
@@ -226,7 +237,9 @@ describe("guardas das server functions da ponte", () => {
   /** POSTs de um arquivo: todos exigem "edit" do módulo (ver nunca basta para mudar). */
   const postsDe = (arquivo: string) => {
     const fonte = readFileSync(join(RAIZ, arquivo), "utf8");
-    return [...fonte.matchAll(/export const (\w+) = createServerFn\(\{ method: "POST" \}\)/g)].map((m) => m[1]);
+    return [...fonte.matchAll(/export const (\w+) = createServerFn\(\{ method: "POST" \}\)/g)].map(
+      (m) => m[1],
+    );
   };
 
   it("carteiras (C50): ler pede saas.licencas; criar, editar, arquivar e mexer em contas pedem edit", () => {
@@ -235,7 +248,13 @@ describe("guardas das server functions da ponte", () => {
     for (const f of cs) expect(f.guardas.join()).toContain('"saas.licencas"');
     const posts = postsDe("plataforma/carteiras.functions.ts");
     expect(posts.sort()).toEqual(
-      ["adicionarContasCarteira", "arquivarCarteira", "criarCarteira", "editarCarteira", "removerContaCarteira"].sort(),
+      [
+        "adicionarContasCarteira",
+        "arquivarCarteira",
+        "criarCarteira",
+        "editarCarteira",
+        "removerContaCarteira",
+      ].sort(),
     );
     for (const nome of posts) {
       const f = cs.find((x) => x.nome === nome)!;
@@ -283,7 +302,10 @@ describe("guardas das server functions da ponte", () => {
     ];
     const comImobNet = telas.filter((a) => /ImobNet/.test(readFileSync(a, "utf8")));
     expect(comImobNet.map((a) => relative(RAIZ, a))).toEqual([]);
-    const aba = readFileSync(join(RAIZ, "../components/plataforma/imobmatch/aba-comunidade.tsx"), "utf8");
+    const aba = readFileSync(
+      join(RAIZ, "../components/plataforma/imobmatch/aba-comunidade.tsx"),
+      "utf8",
+    );
     expect(aba).toContain("ImobMatch Comunidade");
   });
 
@@ -300,7 +322,13 @@ describe("guardas das server functions da ponte", () => {
    */
   it("as outras portas da ponte também são vistas (sanidade)", () => {
     const nomes = todas.filter((f) => f.usaPonteDireta).map((f) => f.nome);
-    for (const n of ["chatAcao", "chatEnviarArquivo", "lerNewsDaEquipe", "registrarEventosNewsEquipe", "consultarFichaBureau"]) {
+    for (const n of [
+      "chatAcao",
+      "chatEnviarArquivo",
+      "lerNewsDaEquipe",
+      "registrarEventosNewsEquipe",
+      "consultarFichaBureau",
+    ]) {
       expect(nomes, n).toContain(n);
     }
   });
@@ -310,7 +338,12 @@ describe("guardas das server functions da ponte", () => {
       .filter((f) => f.usaPonteDireta)
       .filter((f) => {
         if (f.guardas.length) return false;
-        if (/pessoaDoChat\(data\.canal( as CanalChat)?,\s*(permissaoDaAcao\(|"create"|"view")/.test(f.corpo)) return false;
+        if (
+          /pessoaDoChat\(data\.canal( as CanalChat)?,\s*(permissaoDaAcao\(|"create"|"view")/.test(
+            f.corpo,
+          )
+        )
+          return false;
         // News da equipe: só com sessão e o id da pessoa (o banco confere que ela é da equipe ativa).
         if (/consultarNewsDaEquipe/.test(f.corpo) && /context\.userId/.test(f.corpo)) return false;
         return true;
@@ -331,12 +364,16 @@ describe("guardas das server functions da ponte", () => {
     "plataforma/news.functions.ts › registrarEventosNewsEquipe": "telemetria da própria leitura",
     // "Abrir no Agilliza": espelho idempotente da simulação/cliente da conta para a tela nativa
     // (para LER no Agilliza); o que se faz depois na tela nativa segue a permissão do Agilliza.
-    "plataforma/conta-nativa.functions.ts › espelharSimulacaoDaConta": "espelho idempotente para abrir",
-    "plataforma/conta-nativa.functions.ts › espelharClienteDaConta": "espelho idempotente para abrir",
+    "plataforma/conta-nativa.functions.ts › espelharSimulacaoDaConta":
+      "espelho idempotente para abrir",
+    "plataforma/conta-nativa.functions.ts › espelharClienteDaConta":
+      "espelho idempotente para abrir",
     // Relatórios: POST só porque os filtros vão no corpo; nada é gravado.
     "relatorios/ecossistema.functions.ts › getRelatorioContas": "leitura (filtros no corpo)",
-    "relatorios/producao-ecossistema.functions.ts › getProducaoPlataforma": "leitura (filtros no corpo)",
-    "relatorios/producao-ecossistema.functions.ts › getOpcoesPlataforma": "leitura (filtros no corpo)",
+    "relatorios/producao-ecossistema.functions.ts › getProducaoPlataforma":
+      "leitura (filtros no corpo)",
+    "relatorios/producao-ecossistema.functions.ts › getOpcoesPlataforma":
+      "leitura (filtros no corpo)",
   };
 
   it("POST pela ponte exige a ação de escrita (ver não basta), salvo as exceções com motivo", () => {
@@ -344,9 +381,13 @@ describe("guardas das server functions da ponte", () => {
       .filter((f) => (f.usaPonte || f.usaPonteDireta) && f.metodo === "POST")
       .filter((f) => {
         const g = f.guardas.join();
-        if (f.guardas.length) return !/"(edit|create|delete|aprovar|pagar|regras|baixar|executar|gerir)"/.test(g);
+        if (f.guardas.length)
+          return !/"(edit|create|delete|aprovar|pagar|regras|baixar|executar|gerir)"/.test(g);
         // Sem exigirPermissao: o chat decide a ação por permissaoDaAcao (escrita = create).
-        if (/pessoaDoChat\(data\.canal( as CanalChat)?,\s*(permissaoDaAcao\(|"create")/.test(f.corpo)) return false;
+        if (
+          /pessoaDoChat\(data\.canal( as CanalChat)?,\s*(permissaoDaAcao\(|"create")/.test(f.corpo)
+        )
+          return false;
         return true;
       })
       .map((f) => `${f.arquivo} › ${f.nome}`)
@@ -354,7 +395,10 @@ describe("guardas das server functions da ponte", () => {
     expect(soVer).toEqual([]);
     // As exceções continuam existindo (exceção morta sai da lista).
     for (const k of Object.keys(ESCREVE_COM_VER)) {
-      expect(todas.some((f) => `${f.arquivo} › ${f.nome}` === k), k).toBe(true);
+      expect(
+        todas.some((f) => `${f.arquivo} › ${f.nome}` === k),
+        k,
+      ).toBe(true);
     }
   });
 
