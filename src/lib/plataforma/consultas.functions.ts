@@ -112,7 +112,7 @@ function dinheiro(v: string): number {
 
 export const lerConsultasPagas = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.consultas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         de: DATA,
@@ -180,7 +180,7 @@ export const lerConsultasPagas = createServerFn({ method: "GET" })
  */
 export const salvarProdutoConsulta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.consultas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         produto: z.enum(PRODUTOS_CONSULTA),
@@ -207,7 +207,7 @@ export const salvarProdutoConsulta = createServerFn({ method: "POST" })
 /** Novo custo do fornecedor de um produto, com vigência a partir de agora. Não altera pedidos já feitos. */
 export const registrarCustoConsulta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.consultas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         produto: z.enum(PRODUTOS_CONSULTA).default("serasa-premium"),
@@ -317,7 +317,7 @@ export const lerRecargaApifull = createServerFn({ method: "GET" })
 
 export const salvarRecargaApifull = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.consultas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         ligado: z.boolean(),
@@ -356,7 +356,7 @@ export const salvarRecargaApifull = createServerFn({ method: "POST" })
 /** Resolve à mão uma recarga em conferência (depois de olhar o extrato da APIFull e o Asaas). */
 export const resolverRecargaApifull = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.consultas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),

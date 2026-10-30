@@ -59,7 +59,7 @@ export const listarPrazosKanban = createServerFn({ method: "GET" })
 /** Ajusta (ou volta ao padrão, sem dias) o prazo de uma etapa. O banco confere a permissão. */
 export const definirPrazoKanban = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         etapa: z.enum(ETAPAS_COM_PRAZO),
@@ -104,7 +104,7 @@ const LIMITE_ASSINANTES = 300;
  */
 export const listarPropostasAssinantesKanban = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.fila", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         licenca: z.string().uuid().optional().nullable(),

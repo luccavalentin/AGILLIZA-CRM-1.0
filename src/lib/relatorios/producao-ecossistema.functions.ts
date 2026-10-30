@@ -191,7 +191,7 @@ export interface ProducaoAgilliza {
  */
 export const getProducaoAgilliza = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => lerFiltros(d as Record<string, unknown>))
+  .validator((d: unknown) => lerFiltros(d as Record<string, unknown>))
   .handler(async ({ data: f, context }): Promise<ProducaoAgilliza> => {
     const { supabase, userId } = context;
     const intervalo = resolverIntervaloProducao(f);
@@ -240,7 +240,7 @@ export interface ProducaoPlataforma {
  */
 export const getProducaoPlataforma = createServerFn({ method: "POST" })
   .middleware([guardaPlataforma()])
-  .inputValidator((d: unknown) => lerFiltros(d as Record<string, unknown>))
+  .validator((d: unknown) => lerFiltros(d as Record<string, unknown>))
   .handler(async ({ data: f, context }): Promise<ProducaoPlataforma> => {
     if (f.usuario?.startsWith("a:")) {
       return { bloco: BLOCO_VAZIO, agregacao: "listas", assinanteNome: null };
@@ -300,7 +300,7 @@ export interface OpcoesPlataforma {
 /** Busca de assinantes e usuários de uma conta do Tech (ou das contas da Sua base). */
 export const getOpcoesPlataforma = createServerFn({ method: "POST" })
   .middleware([guardaPlataforma()])
-  .inputValidator((d: unknown) => {
+  .validator((d: unknown) => {
     const o = (d ?? {}) as Record<string, unknown>;
     const f = lerFiltros(o);
     const busca = typeof o.busca === "string" ? o.busca.trim().slice(0, 80) : "";

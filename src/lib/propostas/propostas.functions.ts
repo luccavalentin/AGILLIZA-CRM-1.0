@@ -128,7 +128,7 @@ export interface ResumoPropostas {
 /** ===== Listagem ===== */
 export const listarPropostas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         escopo: z.enum(["todas", "minhas"]).default("todas"),
@@ -387,7 +387,7 @@ async function comNomeDoAutor(supabase: SupabaseClient<any, any, any>, fups: any
 
 export const obterProposta = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }): Promise<PropostaCompleta> => {
     const { supabase, userId } = context;
     const { data: proposta, error } = await supabase
@@ -493,7 +493,7 @@ export const obterProposta = createServerFn({ method: "GET" })
 /** ===== Simulações elegíveis para virar proposta ===== */
 export const listarSimulacoesElegiveis = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ q: z.string().optional() }).parse(data))
+  .validator((data) => z.object({ q: z.string().optional() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     let query = supabase
@@ -585,7 +585,7 @@ export interface CriarPropostaResultado {
 
 export const criarProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         simulacao_id: z.string().uuid().optional(),
@@ -1156,7 +1156,7 @@ async function primeiroProponentePendente(
  */
 export const obterConjugeCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }): Promise<Record<string, string | number | null> | null> => {
     const { supabase } = context;
     const { data: cli } = await supabase
@@ -1197,7 +1197,7 @@ export const obterConjugeCliente = createServerFn({ method: "GET" })
 
 export const listarBancosDaProposta = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const { data: prop } = await supabase
@@ -1217,7 +1217,7 @@ export const listarBancosDaProposta = createServerFn({ method: "GET" })
 /** ===== Replicar uma proposta existente ===== */
 export const replicarProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -1368,7 +1368,7 @@ export const replicarProposta = createServerFn({ method: "POST" })
 
 export const atualizarDadosProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z.object({ id: z.string().uuid(), patch: z.record(z.string(), z.unknown()) }).parse(data),
   )
   .handler(async ({ context, data }) => {
@@ -1415,7 +1415,7 @@ export const atualizarDadosProposta = createServerFn({ method: "POST" })
 /** ===== Selecionar banco vencedor ===== */
 export const selecionarBancoProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z.object({ proposta_id: z.string().uuid(), proposta_banco_id: z.string().uuid() }).parse(data),
   )
   .handler(async ({ context, data }) => {
@@ -1474,7 +1474,7 @@ export const SITUACOES_BANCO = [
 /** Define a situação de crédito de um banco específico dentro da proposta. */
 export const definirSituacaoBanco = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -1589,7 +1589,7 @@ export async function sincronizarEnvolvidoParaCliente(
 /** ===== Envolvidos (compradores/vendedores) ===== */
 export const adicionarEnvolvido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({ proposta_id: z.string().uuid(), dados: z.record(z.string(), z.unknown()) })
       .parse(data),
@@ -1611,7 +1611,7 @@ export const adicionarEnvolvido = createServerFn({ method: "POST" })
 /** Atualiza os dados complementares de um envolvido/participante. */
 export const atualizarEnvolvido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z.object({ id: z.string().uuid(), dados: z.record(z.string(), z.unknown()) }).parse(data),
   )
   .handler(async ({ context, data }) => {
@@ -1640,7 +1640,7 @@ export const atualizarEnvolvido = createServerFn({ method: "POST" })
 /** ===== Documentos ===== */
 export const registrarDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -1681,7 +1681,7 @@ export const registrarDocumento = createServerFn({ method: "POST" })
 
 export const removerDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { data: doc } = await context.supabase
       .from("proposta_documentos")
@@ -1701,7 +1701,7 @@ export const removerDocumento = createServerFn({ method: "POST" })
 /** URL assinada de curta duração (5 min) para um documento. */
 export const urlDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ storage_path: z.string() }).parse(data))
+  .validator((data) => z.object({ storage_path: z.string() }).parse(data))
   .handler(async ({ context, data }) => {
     const { data: signed, error } = await context.supabase.storage
       .from("documentos-proposta")
@@ -1713,7 +1713,7 @@ export const urlDocumento = createServerFn({ method: "POST" })
 /** Salva dados do IQ (interveniente quitante). */
 export const salvarIq = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -1734,7 +1734,7 @@ export const salvarIq = createServerFn({ method: "POST" })
 
 export const removerEnvolvido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { data: env } = await context.supabase
       .from("proposta_envolvidos")
@@ -1757,7 +1757,7 @@ export const removerEnvolvido = createServerFn({ method: "POST" })
  */
 export const listarComentariosProposta = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const [{ data: proposta, error }, { data: followups, error: erroFups }] = await Promise.all([
@@ -1801,7 +1801,7 @@ export const listarComentariosProposta = createServerFn({ method: "GET" })
  */
 export const marcarComentariosVistos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const { error } = await supabase.from("proposta_comentarios_vistos" as any).upsert(
@@ -1818,7 +1818,7 @@ export const marcarComentariosVistos = createServerFn({ method: "POST" })
 
 export const adicionarFollowup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -1862,7 +1862,7 @@ export const adicionarFollowup = createServerFn({ method: "POST" })
 /** ===== Máquina de estados ===== */
 export const moverStatusProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -1920,7 +1920,7 @@ export const moverStatusProposta = createServerFn({ method: "POST" })
  */
 export const marcarContratoRegistrado = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -1968,7 +1968,7 @@ export const marcarContratoRegistrado = createServerFn({ method: "POST" })
 /** ===== Cancelamento ===== */
 export const cancelarProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -2026,7 +2026,7 @@ export const cancelarProposta = createServerFn({ method: "POST" })
 /** ===== Enviar / reenviar ao banco ===== */
 export const enviarPropostaHomeFin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -2103,7 +2103,7 @@ export const reenviarHomeFin = enviarPropostaHomeFin;
 /** ===== Sincronizar andamento (polling — a API não tem webhook) ===== */
 export const sincronizarProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const { sincronizarPropostaImpl } = await import("./enviar.server");
@@ -2117,7 +2117,7 @@ export const sincronizarProposta = createServerFn({ method: "POST" })
  */
 export const sincronizarPropostasAtivas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z.object({ limite: z.number().int().min(1).max(100).default(40) }).parse(data ?? {}),
   )
   .handler(async ({ context, data }) => {
@@ -2167,7 +2167,7 @@ export const sincronizarPropostasAtivas = createServerFn({ method: "POST" })
 /** ===== Enviar documentos do cadastro ao banco (upload + inclusão) ===== */
 export const enviarDocumentosBanco = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -2196,7 +2196,7 @@ export const enviarDocumentosBanco = createServerFn({ method: "POST" })
  */
 export const removerArquivoVagaBanco = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -2246,7 +2246,7 @@ export const removerArquivoVagaBanco = createServerFn({ method: "POST" })
 /** Situação dos documentos enviados à HomeFin por ESTA proposta. */
 export const documentosHomefinProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { data: linhas, error } = await context.supabase
       .from("proposta_documentos_homefin" as any)
@@ -2270,7 +2270,7 @@ export const documentosHomefinProposta = createServerFn({ method: "POST" })
 /** Vagas do checklist de documentos da oportunidade na HomeFin (só leitura). */
 export const checklistBancoProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { checklistBancoImpl } = await import("./enviar.server");
     return checklistBancoImpl({ propostaId: data.proposta_id, supabase: context.supabase });
@@ -2282,7 +2282,7 @@ export const checklistBancoProposta = createServerFn({ method: "POST" })
  */
 export const dadosImovelBanco = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z.object({ proposta_id: z.string().uuid(), enviar: z.boolean().default(false) }).parse(data),
   )
   .handler(async ({ context, data }) => {
@@ -2300,7 +2300,7 @@ export const dadosImovelBanco = createServerFn({ method: "POST" })
  */
 export const propostasParaEnvioDocumentos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ cliente_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ cliente_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const { data: comoParticipante } = await supabase
@@ -2358,7 +2358,7 @@ async function exigirGestaoDaProposta(supabase: any, userId: string, criadorId: 
 
 export const excluirProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -2496,7 +2496,7 @@ export const excluirProposta = createServerFn({ method: "POST" })
 
 export const excluirPropostaDefinitivamente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -2552,7 +2552,7 @@ export const excluirPropostaDefinitivamente = createServerFn({ method: "POST" })
 
 export const restaurarProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { data: prop } = await supabase
@@ -2592,7 +2592,7 @@ export const restaurarProposta = createServerFn({ method: "POST" })
  * e vincula a proposta (e a simulação de origem) ao novo cliente. */
 export const cadastrarClienteDaProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ proposta_id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ proposta_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }): Promise<{ cliente_id: string }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteId(supabase, userId);
@@ -2681,7 +2681,7 @@ export const cadastrarClienteDaProposta = createServerFn({ method: "POST" })
  */
 export const getPrefillCadastroProposta = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ proposta_id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ proposta_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const { data: prop, error } = await supabase
@@ -2736,7 +2736,7 @@ export const getPrefillCadastroProposta = createServerFn({ method: "GET" })
  */
 export const vincularClienteAProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ proposta_id: z.string().uuid(), cliente_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
@@ -2941,7 +2941,7 @@ const participanteSchema = z.object({
 
 export const adicionarParticipanteProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => participanteSchema.parse(data))
+  .validator((data) => participanteSchema.parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const { adicionarParticipanteImpl } = await import("./enviar.server");
@@ -2955,7 +2955,7 @@ export const adicionarParticipanteProposta = createServerFn({ method: "POST" })
 
 export const removerParticipanteProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -3088,7 +3088,7 @@ function vazioEnvolvido(v: unknown): boolean {
 
 export const ressincronizarDadosParticipantes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),

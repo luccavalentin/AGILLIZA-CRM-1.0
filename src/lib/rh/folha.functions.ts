@@ -126,7 +126,7 @@ export async function tabelaDaCompetencia(supabase: any, c: Competencia): Promis
 /** Tabela vigente na competência (não é dado pessoal: qualquer usuário do RH lê). */
 export const obterTabelaFiscal = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => competenciaSchema.parse(d))
+  .validator((d: unknown) => competenciaSchema.parse(d))
   .handler(async ({ data, context }): Promise<TabelaFiscal> => tabelaDaCompetencia(context.supabase, data));
 
 // ------------------------------------------------------------------
@@ -266,7 +266,7 @@ async function calcularPrevia(supabase: any, c: Competencia, funcionarioId?: str
 /** Entrada do holerite de um funcionário na competência, já com os lançamentos do mês. */
 export const entradaHoleriteDaCompetencia = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.salarios", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     competenciaSchema.extend({ funcionario_id: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }): Promise<HoleriteEntrada | null> => {
@@ -278,7 +278,7 @@ export const entradaHoleriteDaCompetencia = createServerFn({ method: "GET" })
 /** Prévia calculada (não grava). Valores por pessoa = salário: exige ver salário e ver a folha. */
 export const previaFolha = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.salarios", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     competenciaSchema.extend({ funcionario_id: z.string().uuid().optional() }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -292,7 +292,7 @@ export const previaFolha = createServerFn({ method: "GET" })
 
 export const listarLancamentos = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.folha", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     competenciaSchema.extend({ funcionario_id: z.string().uuid().optional() }).parse(data),
   )
   .handler(async ({ data, context }): Promise<Lancamento[]> => {
@@ -322,7 +322,7 @@ export const listarLancamentos = createServerFn({ method: "GET" })
 
 export const salvarLancamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.folha", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     competenciaSchema
       .extend({
         id: z.string().uuid().optional(),
@@ -377,7 +377,7 @@ export const salvarLancamento = createServerFn({ method: "POST" })
 
 export const excluirLancamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.folha", "edit"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("rh_lancamentos")
@@ -421,7 +421,7 @@ export const listarCompetencias = createServerFn({ method: "GET" })
  */
 export const fecharCompetencia = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.folha", "gerir"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     competenciaSchema
       .extend({
         vencimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Vencimento inválido."),
@@ -462,7 +462,7 @@ export const fecharCompetencia = createServerFn({ method: "POST" })
 
 export const reabrirCompetencia = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.folha", "gerir"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     competenciaSchema.extend({ motivo: z.string().trim().min(5, "Diga o motivo da reabertura.").max(500) }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -492,7 +492,7 @@ export interface ItemFolhaFechada {
 /** Itens de uma competência fechada (para gerar e publicar os holerites em PDF). */
 export const listarItensFolha = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.salarios", "view"])])
-  .inputValidator((data: unknown) => competenciaSchema.parse(data))
+  .validator((data: unknown) => competenciaSchema.parse(data))
   .handler(
     async ({
       data,

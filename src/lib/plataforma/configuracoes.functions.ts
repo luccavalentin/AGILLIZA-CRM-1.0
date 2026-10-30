@@ -123,7 +123,7 @@ export const lerConfiguracoesGlobais = createServerFn({ method: "GET" })
 
 export const salvarParametroGlobal = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.configuracoes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         chave: z.string().regex(/^[a-z][a-z0-9_.]{2,60}$/, { message: "Chave inválida." }),
@@ -174,7 +174,7 @@ const numero = (rotulo: string, max: number) =>
  */
 export const salvarBancoGlobal = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.configuracoes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: ID_BANCO,
@@ -228,7 +228,7 @@ export const salvarBancoGlobal = createServerFn({ method: "POST" })
 /** Aprova as taxas que vieram propostas pelo provedor (limpa a proposta e aplica os valores). */
 export const aprovarTaxasBanco = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.configuracoes", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: ID_BANCO }).parse(d))
+  .validator((d: unknown) => z.object({ id: ID_BANCO }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     const r = await comPlataforma(context.userId, (tx) =>
@@ -251,7 +251,7 @@ export const aprovarTaxasBanco = createServerFn({ method: "POST" })
 /** Liga ou desliga um recurso — para todas as contas ou só para uma. */
 export const alternarFeatureFlag = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.configuracoes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().uuid({ message: "Flag inválida." }), ligado: z.boolean() }).parse(d),
   )
   .handler(async ({ data, context }) => {

@@ -22,7 +22,7 @@ export interface ReacaoAgrupada {
  */
 export const reagirMensagem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { origem: ChatOrigem; mensagem_id: string; emoji: string }) =>
+  .validator((d: { origem: ChatOrigem; mensagem_id: string; emoji: string }) =>
     z
       .object({
         origem: z.enum(["cliente", "demanda", "dm"]),

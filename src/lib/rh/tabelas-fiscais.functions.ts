@@ -64,7 +64,7 @@ const tabelaSchema = z
 
 export const salvarTabelaFiscal = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
-  .inputValidator((d: unknown) => tabelaSchema.parse(d))
+  .validator((d: unknown) => tabelaSchema.parse(d))
   .handler(async ({ data, context }) => {
     const cid = await correspondenteId(context.supabase, context.userId);
     const { id, ...resto } = data;
@@ -93,7 +93,7 @@ export const salvarTabelaFiscal = createServerFn({ method: "POST" })
 
 export const excluirTabelaFiscal = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("rh_tabelas_fiscais")

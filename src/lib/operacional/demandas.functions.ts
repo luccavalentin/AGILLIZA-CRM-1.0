@@ -92,7 +92,7 @@ async function papelNaDemanda(supabase: any, demandaId: string, userId: string) 
 
 export const listarDemandas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         // "equipe" é mantido como sinônimo de "geral" para compatibilidade
@@ -238,7 +238,7 @@ export const listarDemandas = createServerFn({ method: "GET" })
 /** Opções de propostas para vincular a uma demanda (filtra por cliente quando informado). */
 export const listarPropostasOpcoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ cliente_id: z.string().uuid().optional() }).parse(data))
+  .validator((data) => z.object({ cliente_id: z.string().uuid().optional() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     let query = supabase
@@ -260,7 +260,7 @@ export const listarPropostasOpcoes = createServerFn({ method: "GET" })
 /** Opções de simulações para vincular a uma demanda (filtra por cliente quando informado). */
 export const listarSimulacoesOpcoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ cliente_id: z.string().uuid().optional() }).parse(data))
+  .validator((data) => z.object({ cliente_id: z.string().uuid().optional() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     let query = supabase
@@ -281,7 +281,7 @@ export const listarSimulacoesOpcoes = createServerFn({ method: "GET" })
 
 export const obterDemanda = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const [demanda, historico, mensagens, participantes, anexos] = await Promise.all([
@@ -390,7 +390,7 @@ function nomeDoAnexoDoChat(nome: string | null, path: string, _criadoEm?: string
  */
 export const listarChatDemanda = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ demanda_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ demanda_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const [{ data: msgs, error }, { data: leitura }] = await Promise.all([
@@ -484,7 +484,7 @@ export const listarChatDemanda = createServerFn({ method: "GET" })
 /** Edita o texto da própria mensagem em uma demanda. */
 export const editarChatDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string; mensagem: string }) =>
+  .validator((d: { id: string; mensagem: string }) =>
     z.object({ id: z.string().uuid(), mensagem: z.string().trim().min(1).max(4000) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -502,7 +502,7 @@ export const editarChatDemanda = createServerFn({ method: "POST" })
 /** Exclui (suave) a própria mensagem em uma demanda. */
 export const excluirChatDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { error } = await supabase
@@ -520,7 +520,7 @@ export const excluirChatDemanda = createServerFn({ method: "POST" })
  */
 export const moverStatusDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         id: z.string().uuid(),
@@ -541,7 +541,7 @@ export const moverStatusDemanda = createServerFn({ method: "POST" })
 
 export const comentarDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         demanda_id: z.string().uuid(),
@@ -617,7 +617,7 @@ export const comentarDemanda = createServerFn({ method: "POST" })
 /** Registra um anexo enviado ao storage de uma demanda. */
 export const registrarAnexoDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         demanda_id: z.string().uuid(),
@@ -643,7 +643,7 @@ export const registrarAnexoDemanda = createServerFn({ method: "POST" })
 /** Remove um anexo da demanda (registro + arquivo). */
 export const removerAnexoDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const { data: anexo } = await supabase
@@ -662,7 +662,7 @@ export const removerAnexoDemanda = createServerFn({ method: "POST" })
 /** Gera uma URL assinada temporária para baixar um anexo. */
 export const urlAnexoDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ storage_path: z.string().min(1) }).parse(data))
+  .validator((data) => z.object({ storage_path: z.string().min(1) }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const { data: signed, error } = await supabase.storage
@@ -674,7 +674,7 @@ export const urlAnexoDemanda = createServerFn({ method: "POST" })
 
 export const marcarDemandaLida = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ demanda_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ demanda_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     await supabase
@@ -701,7 +701,7 @@ export const escalarDemanda = createServerFn({ method: "POST" })
  */
 export const excluirDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const atual = await papelNaDemanda(supabase, data.id, userId);
@@ -730,7 +730,7 @@ export const excluirDemanda = createServerFn({ method: "POST" })
  */
 export const editarDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -789,7 +789,7 @@ export const editarDemanda = createServerFn({ method: "POST" })
 
 export const adicionarParticipantesDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),

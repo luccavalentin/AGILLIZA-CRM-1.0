@@ -66,7 +66,7 @@ async function nomesPorId(
 
 export const listarTarefas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         escopo: z.enum(["todas", "minhas"]).default("todas"),
@@ -167,7 +167,7 @@ export const listarTarefas = createServerFn({ method: "GET" })
 
 export const obterTarefa = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
     const [tarefa, checklist, participantes, comentarios, historico, tagLinks, anexos] =
@@ -240,7 +240,7 @@ async function correspondenteId(supabase: any, userId: string): Promise<string> 
 
 export const criarTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         titulo: z.string().min(2),
@@ -340,7 +340,7 @@ export const criarTarefa = createServerFn({ method: "POST" })
 
 export const moverStatusTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         id: z.string().uuid(),
@@ -393,7 +393,7 @@ export const moverStatusTarefa = createServerFn({ method: "POST" })
 
 export const concluirTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const { data: atual } = await supabase
@@ -429,7 +429,7 @@ export const concluirTarefa = createServerFn({ method: "POST" })
 /** Edita campos básicos da tarefa. Não altera status/criador/número. */
 export const atualizarTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         id: z.string().uuid(),
@@ -487,7 +487,7 @@ export const atualizarTarefa = createServerFn({ method: "POST" })
 
 export const toggleChecklistItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid(), concluido: z.boolean() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid(), concluido: z.boolean() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const { data: item, error } = await supabase
@@ -511,7 +511,7 @@ export const toggleChecklistItem = createServerFn({ method: "POST" })
 
 export const comentarTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z.object({ task_id: z.string().uuid(), corpo: z.string().min(1) }).parse(data),
   )
   .handler(async ({ context, data }) => {
@@ -531,7 +531,7 @@ export const comentarTarefa = createServerFn({ method: "POST" })
 /** Exclui um comentário próprio da tarefa. */
 export const excluirComentarioTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { data: com } = await supabase
@@ -557,7 +557,7 @@ export const excluirComentarioTarefa = createServerFn({ method: "POST" })
  */
 export const excluirTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { data: snap } = await supabase.from("tasks").select("*").eq("id", data.id).maybeSingle();
@@ -612,7 +612,7 @@ export const listarTagsTarefa = createServerFn({ method: "GET" })
 /** Cria uma nova etiqueta. */
 export const criarTagTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({ nome: z.string().trim().min(1), cor: z.string().trim().min(1).default("#64748b") })
       .parse(d),
@@ -632,7 +632,7 @@ export const criarTagTarefa = createServerFn({ method: "POST" })
 /** Vincula ou desvincula uma etiqueta a uma tarefa. */
 export const alternarTagTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({ task_id: z.string().uuid(), tag_id: z.string().uuid(), vincular: z.boolean() })
       .parse(d),
@@ -660,7 +660,7 @@ export const alternarTagTarefa = createServerFn({ method: "POST" })
 /** Registra um anexo já enviado ao storage (bucket tarefa-anexos). */
 export const registrarAnexoTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         task_id: z.string().uuid(),
@@ -692,7 +692,7 @@ export const registrarAnexoTarefa = createServerFn({ method: "POST" })
 /** Remove um anexo (registro + arquivo do storage). */
 export const removerAnexoTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { data: anexo } = await supabase
@@ -719,7 +719,7 @@ export const removerAnexoTarefa = createServerFn({ method: "POST" })
 /** URL assinada temporária para baixar um anexo. */
 export const urlAnexoTarefa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ storage_path: z.string().trim().min(1) }).parse(d))
+  .validator((d) => z.object({ storage_path: z.string().trim().min(1) }).parse(d))
   .handler(async ({ context, data }): Promise<{ url: string }> => {
     const { supabase } = context;
     const { data: signed, error } = await supabase.storage

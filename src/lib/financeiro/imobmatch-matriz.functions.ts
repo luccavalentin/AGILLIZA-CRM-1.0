@@ -41,7 +41,7 @@ export interface ReceitaImobMatchMatriz {
 
 export const receitaImobMatchMatriz = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["financeiro.repasses", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({ de: data, ate: data })
       .refine((p) => p.de <= p.ate, { message: "O início do período vem antes do fim." })

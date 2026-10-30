@@ -143,7 +143,7 @@ export const obterParametros = createServerFn({ method: "GET" })
 export const salvarParametros = createServerFn({ method: "POST" })
   // Matriz (Parâmetros: editar), como a leitura; antes só o papel admin/correspondente/gestor.
   .middleware([exigirPermissao(["admin.parametros", "edit"])])
-  .inputValidator((data: unknown) => salvarSchema.parse(data))
+  .validator((data: unknown) => salvarSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const c = await corr(supabase, userId);

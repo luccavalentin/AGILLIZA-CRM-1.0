@@ -87,7 +87,7 @@ export const listarOportunidadesOrfas = createServerFn({ method: "GET" })
 
 export const cancelarOrfaEmLote = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.integracoes", "edit"])])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         ids: z.array(z.string()),

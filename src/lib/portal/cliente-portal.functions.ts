@@ -204,7 +204,7 @@ export const ESQUEMA_ENVIO = z
 
 /** Envio direto: atende a pendência (na pasta certa) ou guarda um documento novo na pasta escolhida. */
 export const clienteEnviarDocumento = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => ESQUEMA_ENVIO.parse(d))
+  .validator((d: unknown) => ESQUEMA_ENVIO.parse(d))
   .handler(async ({ data }): Promise<{ ok: true; pasta: string }> => {
     const sess = requireClienteSession();
     const { portalDb } = await import("./portal-db.server");

@@ -274,7 +274,7 @@ export const lerResumoImobMatch = createServerFn({ method: "GET" })
 /** Anúncios em revisão de possível duplicado, cada um com os outros do mesmo endereço. */
 export const lerRevisao = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) => z.object({ pagina }).parse(d ?? {}))
+  .validator((d: unknown) => z.object({ pagina }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -297,7 +297,7 @@ export const lerRevisao = createServerFn({ method: "GET" })
 /** Ficha de um anúncio pelo código (para moderar um anúncio fora da fila). */
 export const lerAnuncioPorCodigo = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         codigo: z
@@ -318,7 +318,7 @@ export const lerAnuncioPorCodigo = createServerFn({ method: "GET" })
 /** Anúncios moderados, com busca pelo código, título, cidade ou conta. */
 export const lerModerados = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ busca: z.string().max(80).default(""), pagina }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -335,7 +335,7 @@ export const SITUACOES_DENUNCIA = ["abertas", "decididas", "todas"] as const;
 /** Denúncias agrupadas por anúncio (mais denunciados primeiro). */
 export const lerDenuncias = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ situacao: z.enum(SITUACOES_DENUNCIA).default("abertas"), pagina }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -364,7 +364,7 @@ export const FILTROS_PROFISSIONAIS = [
 /** Profissionais do ImobMatch Pro com o CRECI e a situação da verificação. */
 export const lerProfissionais = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         filtro: z.enum(FILTROS_PROFISSIONAIS).default("pendentes"),
@@ -386,7 +386,7 @@ export const TIPOS_ANUNCIANTE = ["todos", "profissionais", "particulares"] as co
 /** Contas que anunciam (profissionais com o Pro e particulares). */
 export const lerAnunciantes = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tipo: z.enum(TIPOS_ANUNCIANTE).default("todos"),
@@ -406,7 +406,7 @@ export const lerAnunciantes = createServerFn({ method: "GET" })
 /** Compradores, só com o necessário (LGPD). A busca é pelo e-mail exato. */
 export const lerCompradores = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         email: z
@@ -433,7 +433,7 @@ export const lerCompradores = createServerFn({ method: "GET" })
 /** Totais e série diária do ImobMatch (7 a 90 dias). */
 export const lerNumerosImobMatch = createServerFn({ method: "GET" })
   .middleware([VER_NUMEROS])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ dias: z.number().int().min(7).max(90).default(30) }).parse(d ?? {}),
   )
   .handler(({ data, context }) =>
@@ -447,7 +447,7 @@ export const lerNumerosImobMatch = createServerFn({ method: "GET" })
 /** Decide a revisão: publicar os dois, manter o outro (este sai) ou trocar (este fica). */
 export const resolverRevisao = createServerFn({ method: "POST" })
   .middleware([MODERAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         anuncioId: z.string().regex(UUID, "Anúncio inválido."),
@@ -467,7 +467,7 @@ export const resolverRevisao = createServerFn({ method: "POST" })
 /** Tira o anúncio do ar com motivo (o anunciante lê e não republica). */
 export const moderarAnuncio = createServerFn({ method: "POST" })
   .middleware([MODERAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({ anuncioId: z.string().regex(UUID, "Anúncio inválido."), motivo: motivoObrigatorio })
       .parse(d),
@@ -483,7 +483,7 @@ export const moderarAnuncio = createServerFn({ method: "POST" })
 /** Desfaz a moderação: o anúncio volta ao anunciante, liberado para publicar de novo. */
 export const reverterModeracao = createServerFn({ method: "POST" })
   .middleware([MODERAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({ anuncioId: z.string().regex(UUID, "Anúncio inválido."), motivo: motivoLivre })
       .parse(d),
@@ -499,7 +499,7 @@ export const reverterModeracao = createServerFn({ method: "POST" })
 /** Julga as denúncias abertas de um anúncio: procedente (modera) ou improcedente. */
 export const decidirDenuncias = createServerFn({ method: "POST" })
   .middleware([MODERAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         anuncioId: z.string().regex(UUID, "Anúncio inválido."),
@@ -528,7 +528,7 @@ export const decidirDenuncias = createServerFn({ method: "POST" })
 /** Verifica, recusa, suspende ou devolve para pendente o CRECI de um profissional. */
 export const verificarCreci = createServerFn({ method: "POST" })
   .middleware([MODERAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tenantId: z.string().regex(UUID, "Profissional inválido."),

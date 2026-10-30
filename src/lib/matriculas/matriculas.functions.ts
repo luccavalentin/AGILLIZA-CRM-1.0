@@ -285,7 +285,7 @@ export const listarSolicitantesMatricula = createServerFn({ method: "GET" })
 /** Pix, correspondente que recebe os pedidos das contas assinantes, limite e valor de referência. */
 export const salvarConfigMatriculas = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         pix_chave: z.string().trim().max(200).optional().nullable(),
@@ -344,7 +344,7 @@ async function apagar(caminho: string | null) {
 /** Recarga do crédito do cartório/serviço, com comprovante (FormData). */
 export const registrarRecargaMatricula = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
-  .inputValidator((d: unknown) => {
+  .validator((d: unknown) => {
     if (!(d instanceof FormData)) throw new Error("Envie os dados da recarga.");
     const valor = Number(String(d.get("valor") ?? ""));
     const data = String(d.get("data") ?? "");
@@ -384,7 +384,7 @@ export const registrarRecargaMatricula = createServerFn({ method: "POST" })
 /** Exclui uma recarga (e o comprovante). */
 export const excluirCreditoMatricula = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
     const corr = await correspondenteDoUsuario(supabase, context.userId);
@@ -402,7 +402,7 @@ export const excluirCreditoMatricula = createServerFn({ method: "POST" })
 /** Novo pedido de matrícula (para um usuário do correspondente ou um nome avulso). */
 export const pedirMatricula = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "create"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         solicitante_user_id: UUID.nullable().optional(),
@@ -438,7 +438,7 @@ const acaoSchema = z.object({ id: UUID });
 function rpcSimples(nome: string, padrao: string) {
   return createServerFn({ method: "POST" })
     .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
-    .inputValidator((d: unknown) => acaoSchema.parse(d))
+    .validator((d: unknown) => acaoSchema.parse(d))
     .handler(async ({ data, context }): Promise<{ ok: true }> => {
       const { error } = await (context.supabase as any).rpc(nome, { p_id: data.id });
       if (error) falha(error, padrao);
@@ -461,7 +461,7 @@ export const desfazerPagamentoMatricula = rpcSimples(
 
 export const marcarMatriculaPaga = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({ id: UUID, data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional() })
       .parse(d),
@@ -477,7 +477,7 @@ export const marcarMatriculaPaga = createServerFn({ method: "POST" })
 
 export const cancelarMatricula = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: UUID, motivo: z.string().trim().min(3, "Diga o motivo.").max(300) }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
@@ -492,7 +492,7 @@ export const cancelarMatricula = createServerFn({ method: "POST" })
 /** O analista puxou a matrícula: custo, número e arquivo (FormData). */
 export const concluirMatricula = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
-  .inputValidator((d: unknown) => {
+  .validator((d: unknown) => {
     if (!(d instanceof FormData)) throw new Error("Envie os dados da matrícula.");
     const id = UUID.parse(String(d.get("id") ?? ""));
     const valor = Number(String(d.get("valor") ?? ""));
@@ -532,7 +532,7 @@ export const concluirMatricula = createServerFn({ method: "POST" })
 /** Link de 5 minutos para a matrícula anexada ou o comprovante da recarga. */
 export const linkArquivoMatricula = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: UUID, tipo: z.enum(["matricula", "comprovante"]) }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ url: string }> => {
@@ -567,7 +567,7 @@ const registroSchema = z.object({
  */
 export const criarSolicitacaoMatricula = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "create"])])
-  .inputValidator((d: unknown) => registroSchema.parse(d))
+  .validator((d: unknown) => registroSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
     const corr = await correspondenteDoUsuario(supabase, context.userId);
@@ -595,7 +595,7 @@ export const criarSolicitacaoMatricula = createServerFn({ method: "POST" })
 /** Edita um lançamento manual (o banco recusa mudar o valor de matrícula já paga). */
 export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
-  .inputValidator((d: unknown) => registroSchema.extend({ id: UUID }).parse(d))
+  .validator((d: unknown) => registroSchema.extend({ id: UUID }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
     const corr = await correspondenteDoUsuario(supabase, context.userId);
@@ -633,7 +633,7 @@ export const atualizarSolicitacaoMatricula = createServerFn({ method: "POST" })
 /** Exclui um lançamento (pedido de assinante não some: o banco só deixa cancelar). */
 export const excluirSolicitacaoMatricula = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.matriculas", "edit"])])
-  .inputValidator((d: unknown) => acaoSchema.parse(d))
+  .validator((d: unknown) => acaoSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const supabase = context.supabase as any;
     const corr = await correspondenteDoUsuario(supabase, context.userId);

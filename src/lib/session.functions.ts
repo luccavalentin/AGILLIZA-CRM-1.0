@@ -62,7 +62,7 @@ export const getMinhaSessao = createServerFn({ method: "GET" })
 /** Atualiza os dados básicos do próprio perfil (nome, telefone, foto). */
 export const atualizarMeuPerfil = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { nome: string; telefone?: string; foto_url?: string }) =>
+  .validator((d: { nome: string; telefone?: string; foto_url?: string }) =>
     z
       .object({
         nome: z.string().trim().min(2).max(120),
@@ -92,7 +92,7 @@ export const atualizarMeuPerfil = createServerFn({ method: "POST" })
  */
 export const atualizarMeuEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { email: string }) =>
+  .validator((d: { email: string }) =>
     z.object({ email: z.string().trim().email().max(255) }).parse(d),
   )
   .handler(async ({ context }) => {

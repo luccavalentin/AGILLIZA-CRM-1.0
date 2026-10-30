@@ -16,7 +16,7 @@ export type { EbookFaq, EbookSecao, EbookExemplo, EbookGrafico } from "./ebook.s
 // Gera com a IA da conta: mesma permissão de quem usa o Consultor.
 export const gerarFaqEbook = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .inputValidator((d: { pergunta: string; resposta?: string | null }) =>
+  .validator((d: { pergunta: string; resposta?: string | null }) =>
     z
       .object({
         pergunta: z.string().min(3).max(4000),
@@ -33,7 +33,7 @@ export const gerarFaqEbook = createServerFn({ method: "POST" })
 // Gravar na base é curadoria: mesma regra da tela Base de Conhecimento.
 export const publicarFaqNaBase = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.parametros", "edit"])])
-  .inputValidator((d: { ebook: unknown; global?: boolean }) =>
+  .validator((d: { ebook: unknown; global?: boolean }) =>
     z
       .object({
         ebook: z

@@ -395,7 +395,7 @@ export const lerVisaoGeral = createServerFn({ method: "GET" })
 /** Série do gráfico "Acessos e latência" (janela escolhida no próprio cartão). */
 export const lerAcessos = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.tecnologia", "view"])])
-  .inputValidator((d: unknown) => z.object({ janela }).parse(d ?? {}))
+  .validator((d: unknown) => z.object({ janela }).parse(d ?? {}))
   .handler(async ({ data, context }) =>
     ponte(context.userId, async (tx) =>
       (await pode(tx, "integracoes.ver"))
@@ -413,7 +413,7 @@ export const lerAcessos = createServerFn({ method: "GET" })
 
 export const lerOperacao = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.tecnologia", "view"])])
-  .inputValidator((d: unknown) => z.object({ janela }).parse(d ?? {}))
+  .validator((d: unknown) => z.object({ janela }).parse(d ?? {}))
   .handler(async ({ data, context }) =>
     ponte(context.userId, async (tx) => {
       const resumo = await tx.uma<{ r: ResumoOperacao }>(
@@ -449,7 +449,7 @@ export const lerOperacao = createServerFn({ method: "GET" })
 
 export const lerServidor = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.tecnologia", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ janela: z.enum(["24h", "7d"]).default("24h") }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) =>
@@ -467,7 +467,7 @@ export const lerServidor = createServerFn({ method: "GET" })
 
 export const lerErros = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.tecnologia", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         sistema: z.enum(["corretor", "agilliza"]).nullable().default(null),
@@ -491,7 +491,7 @@ export const lerErros = createServerFn({ method: "GET" })
 
 export const marcarErro = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.tecnologia", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.number().int().positive(), status: z.enum(["aberto", "resolvido"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -509,7 +509,7 @@ export const FONTES_LOG = ["requisicao", "provedor", "rotina"] as const;
 
 export const lerLogs = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.tecnologia", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         fontes: z
@@ -557,7 +557,7 @@ export const lerLogs = createServerFn({ method: "GET" })
 
 export const lerUsuarios = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.tecnologia", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ janela: z.enum(["agora", "24h", "30d"]).default("agora") }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) =>
@@ -593,7 +593,7 @@ export const lerAlertas = createServerFn({ method: "GET" })
 
 export const salvarAlertas = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.tecnologia", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         valores: z

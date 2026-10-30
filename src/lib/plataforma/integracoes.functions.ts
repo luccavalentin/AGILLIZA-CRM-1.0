@@ -95,7 +95,7 @@ function ambiente(): "producao" | "homologacao" {
 
 export const lerIntegracoes = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.integracoes", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         status: z.enum(STATUS_FILA).nullable().optional(),
@@ -166,7 +166,7 @@ export const lerIntegracoes = createServerFn({ method: "GET" })
 /** Devolve mensagens mortas à fila (zera as tentativas). Única escrita no outbox. */
 export const reprocessarMortas = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.integracoes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         ids: z
@@ -189,7 +189,7 @@ export const reprocessarMortas = createServerFn({ method: "POST" })
 /** Liga ou desliga uma rotina agendada da plataforma (RLS de `plataforma.jobs`). */
 export const alternarJobPlataforma = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.integracoes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         nome: z.string().regex(/^[a-z_]{3,60}$/, "Rotina inválida."),

@@ -27,7 +27,7 @@ async function opcoesDaBusca(termo: string | null | undefined): Promise<{ kek?: 
 /** Contas para o combobox (busca e página no servidor). `id` resolve uma conta vinda da URL. */
 export const buscarContasDoFiltro = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         grupo: GRUPO.optional().nullable(),
@@ -80,7 +80,7 @@ export interface ClienteDoGrupo {
 /** Carteiras de clientes de um grupo (ou de uma conta dele), paginadas no servidor. */
 export const listarClientesDoGrupo = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         grupo: GRUPO,
@@ -121,7 +121,7 @@ export const listarClientesDoGrupo = createServerFn({ method: "GET" })
 /** Simulações de um grupo no formato da lista nativa do Agilliza (mesmos cartões e ações). */
 export const listarSimulacoesDoGrupo = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         grupo: GRUPO,
@@ -184,7 +184,7 @@ export type FiltrosPropostasGrupo = z.infer<typeof FILTROS_PROPOSTAS_GRUPO>;
 export const listarPropostasDoGrupo = createServerFn({ method: "GET" })
   // Quem atende a fila (saas.fila) também lê as propostas dos assinantes (mesma consulta da fila).
   .middleware([exigirPermissao(["saas.contas", "view"], ["saas.fila", "view"])])
-  .inputValidator((d: unknown) => FILTROS_PROPOSTAS_GRUPO.parse(d))
+  .validator((d: unknown) => FILTROS_PROPOSTAS_GRUPO.parse(d))
   .handler(async ({ data, context }) => {
     if (data.de && data.ate && data.de > data.ate) {
       throw new Error("A data inicial deve ser anterior à final.");
@@ -239,7 +239,7 @@ export const listarPropostasDoGrupo = createServerFn({ method: "GET" })
 /** Usuários de uma conta (filtro "Responsável" quando um assinante está escolhido). */
 export const listarUsuariosDaConta = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"], ["saas.fila", "view"])])
-  .inputValidator((d: unknown) => z.object({ licenca: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ licenca: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     return comPlataforma(context.userId, (tx) =>

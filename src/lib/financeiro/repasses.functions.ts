@@ -121,7 +121,7 @@ async function ponte() {
 
 export const listarRepasses = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["financeiro.repasses", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         status: z.string().max(20).nullable().optional(),
@@ -142,7 +142,7 @@ export const listarRepasses = createServerFn({ method: "GET" })
 
 export const detalheRepasse = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["financeiro.repasses", "view"])])
-  .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
+  .validator((d: unknown) => z.object({ id: uuid }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -165,7 +165,7 @@ export const regrasRepasse = createServerFn({ method: "GET" })
 
 export const definirRegraRepasse = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["financeiro.repasses", "regras"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tenantId: uuid.nullable(),
@@ -192,7 +192,7 @@ export const definirRegraRepasse = createServerFn({ method: "POST" })
 
 export const aprovarRepasses = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["financeiro.repasses", "aprovar"])])
-  .inputValidator((d: unknown) => z.object({ ids: z.array(uuid).min(1).max(500) }).parse(d))
+  .validator((d: unknown) => z.object({ ids: z.array(uuid).min(1).max(500) }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -205,7 +205,7 @@ export const aprovarRepasses = createServerFn({ method: "POST" })
 
 export const confirmarBaseRepasse = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["financeiro.repasses", "aprovar"])])
-  .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
+  .validator((d: unknown) => z.object({ id: uuid }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -216,7 +216,7 @@ export const confirmarBaseRepasse = createServerFn({ method: "POST" })
 
 export const ajustarRepasse = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["financeiro.repasses", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: uuid, valor: z.number().min(0).max(999_999_999), motivo }).parse(d))
+  .validator((d: unknown) => z.object({ id: uuid, valor: z.number().min(0).max(999_999_999), motivo }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -227,7 +227,7 @@ export const ajustarRepasse = createServerFn({ method: "POST" })
 
 export const cancelarRepasse = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["financeiro.repasses", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: uuid, motivo }).parse(d))
+  .validator((d: unknown) => z.object({ id: uuid, motivo }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) => tx.consultar("select plataforma.repasse_cancelar($1, $2)", [d.id, d.motivo]));
@@ -236,7 +236,7 @@ export const cancelarRepasse = createServerFn({ method: "POST" })
 
 export const pagarRepasse = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["financeiro.repasses", "pagar"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: uuid,
@@ -263,7 +263,7 @@ export const pagarRepasse = createServerFn({ method: "POST" })
 
 export const estornarPagamentoRepasse = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["financeiro.repasses", "pagar"])])
-  .inputValidator((d: unknown) => z.object({ baixaId: uuid, motivo }).parse(d))
+  .validator((d: unknown) => z.object({ baixaId: uuid, motivo }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -275,7 +275,7 @@ export const estornarPagamentoRepasse = createServerFn({ method: "POST" })
 /** Licenças, inadimplência, receita avulsa e repasse por assinante (C45k). */
 export const financeiroAssinantes = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["financeiro.repasses", "view"])])
-  .inputValidator((d: unknown) => z.object({ de: data, ate: data, busca: z.string().trim().max(120).nullable().optional() }).parse(d))
+  .validator((d: unknown) => z.object({ de: data, ate: data, busca: z.string().trim().max(120).nullable().optional() }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -290,7 +290,7 @@ export const financeiroAssinantes = createServerFn({ method: "GET" })
 /** Contas assinantes para escolher numa regra própria. */
 export const contasParaRegraRepasse = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["financeiro.repasses", "regras"])])
-  .inputValidator((d: unknown) => z.object({ busca: z.string().trim().max(80) }).parse(d))
+  .validator((d: unknown) => z.object({ busca: z.string().trim().max(80) }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { comPlataforma } = await ponte();
     const termo = d.busca.replace(/[\\%_]/g, (c) => "\\" + c);

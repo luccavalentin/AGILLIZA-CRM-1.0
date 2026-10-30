@@ -51,7 +51,7 @@ const COLUNAS =
 /** O desligamento em andamento (ou o último concluído) do funcionário. */
 export const obterDesligamento = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.funcionarios", "view"])])
-  .inputValidator((d: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(d))
   .handler(async ({ data: d, context }): Promise<Desligamento | null> => {
     const { data: rows, error } = await context.supabase
       .from("rh_desligamentos")
@@ -79,7 +79,7 @@ const dadosSchema = z
 
 export const iniciarDesligamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
-  .inputValidator((d: unknown) => dadosSchema.and(z.object({ funcionario_id: z.string().uuid() })).parse(d))
+  .validator((d: unknown) => dadosSchema.and(z.object({ funcionario_id: z.string().uuid() })).parse(d))
   .handler(async ({ data: d, context }) => {
     const { data: func } = await context.supabase
       .from("rh_funcionarios")
@@ -116,7 +116,7 @@ export const iniciarDesligamento = createServerFn({ method: "POST" })
 
 export const atualizarDesligamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -161,7 +161,7 @@ export const atualizarDesligamento = createServerFn({ method: "POST" })
 /** Estimativa das verbas (usa o salário: só com RH · Salários · ver). */
 export const estimarVerbasRescisorias = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.salarios", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid(),
@@ -214,7 +214,7 @@ export const estimarVerbasRescisorias = createServerFn({ method: "POST" })
 /** Conclui: a ficha vira "desligado" com a data e o motivo; o desligamento fecha. */
 export const concluirDesligamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { data: desl, error: e1 } = await context.supabase
       .from("rh_desligamentos")
@@ -254,7 +254,7 @@ export const concluirDesligamento = createServerFn({ method: "POST" })
 
 export const cancelarDesligamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data: d, context }) => {
     const { data: rows, error } = await context.supabase
       .from("rh_desligamentos")

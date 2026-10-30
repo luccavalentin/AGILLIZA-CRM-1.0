@@ -64,7 +64,7 @@ export const POR_PAGINA_PEDIDOS_LGPD = 50;
 
 export const lerLgpd = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.lgpd", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         recorte: z.enum(RECORTES_PEDIDO).default("todos"),
@@ -140,7 +140,7 @@ export const lerLgpd = createServerFn({ method: "GET" })
 
 export const atenderPedidoTitular = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.lgpd", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid({ message: "Pedido inválido." }),
@@ -186,7 +186,7 @@ function normalizarNome(s: string): string {
  */
 export const destruirChavesConta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.lgpd", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tenantId: z.string().uuid({ message: "Escolha a conta." }),

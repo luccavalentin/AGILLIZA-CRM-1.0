@@ -82,7 +82,7 @@ async function ponte() {
 /** Carteiras com responsável, contas e receita mensal, e quantas contas estão sem carteira. */
 export const listarCarteiras = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.licencas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ arquivadas: z.boolean().default(false) }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -104,7 +104,7 @@ export const listarCarteiras = createServerFn({ method: "GET" })
 /** Produção da carteira no período (30, 90 ou 365 dias) e as contas dela. */
 export const detalheCarteira = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.licencas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: ID,
@@ -129,7 +129,7 @@ export const detalheCarteira = createServerFn({ method: "GET" })
 
 export const criarCarteira = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         nome: NOME,
@@ -153,7 +153,7 @@ export const criarCarteira = createServerFn({ method: "POST" })
 /** Renomeia, muda a descrição e/ou o responsável (o banco reatribui as contas). */
 export const editarCarteira = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: ID,
@@ -178,7 +178,7 @@ export const editarCarteira = createServerFn({ method: "POST" })
 
 export const arquivarCarteira = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: ID, arquivar: z.boolean() }).parse(d))
+  .validator((d: unknown) => z.object({ id: ID, arquivar: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -189,7 +189,7 @@ export const arquivarCarteira = createServerFn({ method: "POST" })
 
 export const adicionarContasCarteira = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: ID,
@@ -213,7 +213,7 @@ export const adicionarContasCarteira = createServerFn({ method: "POST" })
 
 export const removerContaCarteira = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: ID, conta: z.string().uuid("Conta inválida.") }).parse(d),
   )
   .handler(async ({ data, context }) => {

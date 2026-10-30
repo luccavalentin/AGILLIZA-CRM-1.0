@@ -361,7 +361,7 @@ export function permissaoDaAcao(acao: AcaoChat): false | "view" | "create" {
 }
 
 export const chatAcao = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({ canal: CANAL, acao: z.string().refine((a): a is AcaoChat => a in ACOES, "Ação inválida."), args: z.unknown() })
       .parse(d),
@@ -471,7 +471,7 @@ function lerArquivo(d: unknown): { canal: CanalChat; conversaId: string; arquivo
 
 /** Sobe um anexo para a conversa: confere participação, tipo, tamanho e conteúdo; registra no banco. */
 export const chatEnviarArquivo = createServerFn({ method: "POST" })
-  .inputValidator(lerArquivo)
+  .validator(lerArquivo)
   .handler(async ({ data }) => {
     const { arquivo, conversaId } = data;
     const mime = (arquivo.type || "").split(";")[0]!.trim().toLowerCase();

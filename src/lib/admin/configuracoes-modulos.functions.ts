@@ -37,7 +37,7 @@ const salvarSchema = z.object({
 
 export const salvarConfiguracaoModulo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => salvarSchema.parse(data))
+  .validator((data: unknown) => salvarSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const c = await corr(supabase, userId);

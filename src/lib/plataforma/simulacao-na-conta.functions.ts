@@ -47,7 +47,7 @@ export async function dependenciasReais() {
 
 export const levarSimulacaoParaConta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.contas", "edit"])])
-  .inputValidator((d: unknown) => ENTRADA_LEVAR.parse(d))
+  .validator((d: unknown) => ENTRADA_LEVAR.parse(d))
   .handler(async ({ data, context }) => {
     // A simulação precisa ser visível para quem pede (RLS do Agilliza).
     const { data: sim, error } = await context.supabase
@@ -75,7 +75,7 @@ export const levarSimulacaoParaConta = createServerFn({ method: "POST" })
 
 export const salvarSimulacaoRapidaNaConta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.contas", "edit"])])
-  .inputValidator((d: unknown) => ENTRADA_RAPIDA.parse(d))
+  .validator((d: unknown) => ENTRADA_RAPIDA.parse(d))
   .handler(async ({ data, context }) => {
     const { comConta } = await import("./ponte.server");
     const r = await comConta(context.userId, data.licenca, (tx) =>

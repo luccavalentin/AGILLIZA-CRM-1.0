@@ -90,7 +90,7 @@ export const listarSlaConfiguracoes = createServerFn({ method: "GET" })
 /** Cria ou atualiza uma configuração de SLA. */
 export const salvarSlaConfiguracao = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.sla", "edit"])])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         id: z.string().uuid().optional(),
@@ -128,7 +128,7 @@ export const salvarSlaConfiguracao = createServerFn({ method: "POST" })
 /** Remove uma configuração de SLA. */
 export const excluirSlaConfiguracao = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.sla", "edit"])])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("sla_configuracoes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -150,7 +150,7 @@ export const listarFeriados = createServerFn({ method: "GET" })
 /** Cadastra um feriado do correspondente. */
 export const criarFeriado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.sla", "edit"])])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ data: z.string().min(1), descricao: z.string().trim().min(2).max(200) }).parse(d),
   )
   .handler(async ({ data, context }): Promise<Feriado> => {
@@ -168,7 +168,7 @@ export const criarFeriado = createServerFn({ method: "POST" })
 /** Remove um feriado (apenas os do próprio correspondente). */
 export const excluirFeriado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.sla", "edit"])])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("feriados").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -186,7 +186,7 @@ const CATEGORIAS: CategoriaCatalogo[] = ["tipo_demanda", "prioridade", "canal"];
  */
 export const listarCatalogoSla = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["admin.sla", "view"])])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ categoria: z.enum(["tipo_demanda", "prioridade", "canal"]) }).parse(d),
   )
   .handler(async ({ data, context }): Promise<CatalogoItem[]> => {
@@ -226,7 +226,7 @@ export const listarCatalogoSla = createServerFn({ method: "GET" })
 /** Cria ou atualiza um item de catálogo. */
 export const salvarCatalogoItem = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.sla", "edit"])])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         id: z.string().uuid().optional(),
@@ -268,7 +268,7 @@ export const salvarCatalogoItem = createServerFn({ method: "POST" })
 /** Remove um item de catálogo. */
 export const excluirCatalogoItem = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.sla", "edit"])])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("sla_catalogo_itens").delete().eq("id", data.id);
     if (error) throw new Error(error.message);

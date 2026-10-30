@@ -7,7 +7,7 @@ import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
  * Função administrativa para destravar simulações e limpar locks.
  */
 export const destravarSimulacoes = createServerFn({ method: "POST" }).middleware([exigirPermissao(["admin.parametros", "edit"])])
-  .inputValidator((d) => z.object({ confirm: z.boolean() }).parse(d))
+  .validator((d) => z.object({ confirm: z.boolean() }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { chamarIntegracao } = await import("@/lib/simulacao/homefin.server");

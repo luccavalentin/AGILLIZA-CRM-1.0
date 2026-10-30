@@ -69,7 +69,7 @@ const termoSchema = z.string().trim().max(120).optional().nullable();
 /** Clientes (paginados) com a contagem por pasta. A busca acha pelo cliente OU pelo arquivo. */
 export const listarClientesComDocumentos = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         termo: termoSchema,
@@ -181,7 +181,7 @@ export const listarClientesComDocumentos = createServerFn({ method: "GET" })
 /** Arquivos de um cliente, já com a pasta padrão de cada um. */
 export const listarDocumentosDoClientePorPasta = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<DocumentoDoCliente[]> => {
     const { supabase } = context;
     const { data: linhas, error } = await todasAsLinhas(() =>
@@ -226,7 +226,7 @@ const pastaSchema = z.enum(PASTAS_DESTINO);
 /** Move um arquivo para outra pasta padrão (só organização: categoria e tipo ficam). */
 export const moverDocumentoDePasta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         documento_id: z.string().uuid(),
@@ -284,7 +284,7 @@ export const moverDocumentoDePasta = createServerFn({ method: "POST" })
  */
 export const anexarDocumentoNaPasta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),

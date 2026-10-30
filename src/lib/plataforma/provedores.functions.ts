@@ -52,7 +52,7 @@ export const listarCredenciais = createServerFn({ method: "GET" })
 
 export const guardarCredencial = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.provedores", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         provedor: PROVEDOR,
@@ -100,7 +100,7 @@ export const guardarCredencial = createServerFn({ method: "POST" })
 
 export const alternarCredencial = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.provedores", "edit"])])
-  .inputValidator((d: unknown) => z.object({ provedor: PROVEDOR, ativo: z.boolean() }).parse(d))
+  .validator((d: unknown) => z.object({ provedor: PROVEDOR, ativo: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     await comPlataforma(context.userId, (tx) =>
@@ -115,7 +115,7 @@ export const alternarCredencial = createServerFn({ method: "POST" })
 
 export const apagarCredencial = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.provedores", "edit"])])
-  .inputValidator((d: unknown) => z.object({ provedor: PROVEDOR }).parse(d))
+  .validator((d: unknown) => z.object({ provedor: PROVEDOR }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     await comPlataforma(context.userId, (tx) =>

@@ -48,7 +48,7 @@ const UUID = z.string().uuid();
 
 export const listarClientesDaConta = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         licenca: UUID,

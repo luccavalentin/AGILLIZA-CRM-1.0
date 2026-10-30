@@ -280,7 +280,7 @@ export const lerCuradoriaNews = createServerFn({ method: "GET" })
 /** Curar uma notícia coletada: título e resumo próprios, categoria, destaque e situação. */
 export const curarNoticia = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID,
@@ -337,7 +337,7 @@ export const curarNoticia = createServerFn({ method: "POST" })
 
 export const alternarFonteNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID, ativa: z.boolean() }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID, ativa: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     const r = await comPlataforma(context.userId, (tx) =>
@@ -352,7 +352,7 @@ export const alternarFonteNews = createServerFn({ method: "POST" })
 
 export const alternarIndicadorNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         codigo: z.string().regex(/^[a-z_]{2,30}$/, "Indicador inválido."),
@@ -379,7 +379,7 @@ export const alternarIndicadorNews = createServerFn({ method: "POST" })
  */
 export const apontarMateria = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         url: z.string().max(1000),
@@ -445,7 +445,7 @@ export const apontarMateria = createServerFn({ method: "POST" })
 /** Pré-visualização de um link (título, descrição, imagem, veículo) buscada pelo servidor. */
 export const previaLinkNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) => z.object({ url: z.string().min(8).max(1000) }).parse(d))
+  .validator((d: unknown) => z.object({ url: z.string().min(8).max(1000) }).parse(d))
   .handler(async ({ data }) => {
     const { buscarPrevia, RecusaLink } = await import("./previa-link.server");
     try {
@@ -466,7 +466,7 @@ export const previaLinkNews = createServerFn({ method: "POST" })
  */
 export const publicarPost = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID.nullable().optional(),
@@ -578,7 +578,7 @@ export const publicarPost = createServerFn({ method: "POST" })
 /** Tirar do ar agora: post vai para "arquivado"; matéria apontada ganha fim imediato. */
 export const tirarDoArNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) => z.object({ tipo: TIPO_ITEM, id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ tipo: TIPO_ITEM, id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     const r = await comPlataforma(context.userId, (tx) =>
@@ -600,7 +600,7 @@ export const tirarDoArNews = createServerFn({ method: "POST" })
 
 export const salvarFonteNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID.nullable().optional(),
@@ -638,7 +638,7 @@ export const salvarFonteNews = createServerFn({ method: "POST" })
 
 export const removerFonteNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     const r = await comPlataforma(context.userId, (tx) =>
@@ -656,7 +656,7 @@ export const removerFonteNews = createServerFn({ method: "POST" })
 /** "Coletar agora": uma fonte ou todas. O worker é acordado pelo outbox. */
 export const coletarAgoraNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID.nullable().optional() }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID.nullable().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     const r = await comPlataforma(context.userId, (tx) =>
@@ -719,7 +719,7 @@ export interface MetricasNews {
 
 export const lerMetricasNews = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.news", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
@@ -765,7 +765,7 @@ export interface ItemNewsEquipe {
 /** O feed para quem trabalha no Agilliza (o banco confere que a pessoa é da equipe). */
 export const lerNewsDaEquipe = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ limite: z.number().int().min(1).max(60).default(20) }).parse(d ?? {}),
   )
   .handler(async ({ data, context }): Promise<ItemNewsEquipe[]> => {
@@ -781,7 +781,7 @@ export const lerNewsDaEquipe = createServerFn({ method: "GET" })
 
 export const registrarEventosNewsEquipe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         eventos: z
@@ -815,7 +815,7 @@ export const registrarEventosNewsEquipe = createServerFn({ method: "POST" })
 /** Comentários de um item (a curadoria também vê os ocultos, pela RLS). */
 export const lerComentariosNews = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.news", "view"])])
-  .inputValidator((d: unknown) => z.object({ tipo: TIPO_ITEM, itemId: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ tipo: TIPO_ITEM, itemId: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     const r = await comPlataforma(context.userId, (tx) =>
@@ -830,7 +830,7 @@ export const lerComentariosNews = createServerFn({ method: "GET" })
 /** Ocultar um comentário. O registro fica, com quem ocultou e o motivo. */
 export const ocultarComentarioNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: UUID, motivo: z.string().max(1000).default("") }).parse(d),
   )
   .handler(async ({ data, context }) => {

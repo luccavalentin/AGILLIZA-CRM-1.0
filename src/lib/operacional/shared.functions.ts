@@ -56,7 +56,7 @@ export interface ClienteOpcao {
 /** Autocomplete de clientes para vincular tarefas/demandas. */
 export const buscarClientesOpcoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ q: z.string().optional() }).parse(data))
+  .validator((data) => z.object({ q: z.string().optional() }).parse(data))
   .handler(async ({ context, data }): Promise<ClienteOpcao[]> => {
     const { supabase } = context;
     let query = supabase

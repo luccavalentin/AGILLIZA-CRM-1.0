@@ -94,7 +94,7 @@ const bancoSchema = z.object({
 /** Atualiza os dados de configuração de um banco parceiro. */
 export const salvarBancoAdmin = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.integracoes", "edit"])])
-  .inputValidator((d) => bancoSchema.parse(d))
+  .validator((d) => bancoSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const payload = {
       updated_at: new Date().toISOString(),
@@ -129,7 +129,7 @@ const credSchema = z.object({
 /** Cria/atualiza a credencial (nomes de secrets) de um banco para o correspondente. */
 export const salvarCredencialBanco = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.integracoes", "edit"])])
-  .inputValidator((d) => credSchema.parse(d))
+  .validator((d) => credSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);

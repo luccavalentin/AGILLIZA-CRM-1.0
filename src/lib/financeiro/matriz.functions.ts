@@ -323,7 +323,7 @@ function preparar(lista: Record<string, Acao>, nome: string, bruto: unknown) {
 
 export const consultarFinanceiro = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ acao: z.enum(Object.keys(CONSULTAS) as [ConsultaFinanceiro, ...ConsultaFinanceiro[]]), args: z.unknown() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -336,7 +336,7 @@ export const consultarFinanceiro = createServerFn({ method: "GET" })
 
 export const executarFinanceiro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ acao: z.enum(Object.keys(EXECUCOES) as [ExecucaoFinanceiro, ...ExecucaoFinanceiro[]]), args: z.unknown() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<RespostaExecucao<Json>> => {
@@ -366,7 +366,7 @@ export const executarFinanceiro = createServerFn({ method: "POST" })
  */
 export const lerBoletoPdf = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ nome: texto(200), base64: z.string().max(14_500_000, "Arquivo acima de 10 MB.") }).parse(d),
   )
   .handler(async ({ data, context }) => {

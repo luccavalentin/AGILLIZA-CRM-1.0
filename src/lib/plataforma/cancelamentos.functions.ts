@@ -26,7 +26,7 @@ export interface CancelamentoRenovacao {
 /** Cancelamentos dos últimos `dias` (o banco limita de 1 a 730 e a 1000 linhas). */
 export const lerCancelamentos = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.receita", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ dias: z.number().int().min(1).max(730).default(90) }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {

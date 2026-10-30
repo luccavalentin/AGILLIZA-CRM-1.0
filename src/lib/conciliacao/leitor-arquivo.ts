@@ -4,7 +4,7 @@
  * O CPF completo só existe aqui, em memória, e é usado apenas para o
  * cruzamento no servidor — a persistência grava sempre a versão mascarada.
  */
-import * as XLSX from "xlsx";
+import * as XLSX from "@e965/xlsx";
 import { montarLinha, parseTabulado, type BancoMapping, type LinhaBanco } from "./bancos";
 
 /** Detecta se o conteúdo é texto tabulado mesmo com extensão .xls. */

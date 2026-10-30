@@ -158,7 +158,7 @@ const configSchema = z.object({
 /** Salva a configuração do provedor de IA (metadados, prompt, temperatura e chave da API). */
 export const salvarConfigIA = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.integracoes", "edit"])])
-  .inputValidator((d) => configSchema.parse(d))
+  .validator((d) => configSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -201,7 +201,7 @@ export const salvarConfigIA = createServerFn({ method: "POST" })
 /** Testa a conexão com o provedor de IA usando a chave e URL salvas (ou informadas). */
 export const testarConexaoIA = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.integracoes", "edit"])])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         provedor: z.enum(["gemini", "openai"]),

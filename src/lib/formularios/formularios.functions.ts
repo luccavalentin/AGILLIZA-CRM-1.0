@@ -56,7 +56,7 @@ export const listarFormularios = createServerFn({ method: "GET" })
 /** Registra os metadados de um formulário recém-enviado ao storage. */
 export const criarFormulario = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.formularios", "create"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         banco: bancoSchema,
@@ -101,7 +101,7 @@ export const criarFormulario = createServerFn({ method: "POST" })
 /** Atualiza nome, descrição, banco e, opcionalmente, substitui o arquivo. */
 export const atualizarFormulario = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.formularios", "create"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -176,7 +176,7 @@ export const atualizarFormulario = createServerFn({ method: "POST" })
 /** Exclui um formulário e o arquivo correspondente. */
 export const excluirFormulario = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.formularios", "create"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
     const { data: row, error: erroBusca } = await supabase
@@ -198,7 +198,7 @@ export const excluirFormulario = createServerFn({ method: "POST" })
 /** Gera uma URL assinada temporária para visualizar/baixar o arquivo. */
 export const urlFormulario = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.formularios", "view"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ url: string }> => {
     const { supabase } = context;
     const { data: row, error: erroBusca } = await supabase

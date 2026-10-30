@@ -376,7 +376,7 @@ export const listarRedesAgz = createServerFn({ method: "GET" })
 
 export const removerRedeAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -388,7 +388,7 @@ export const removerRedeAgz = createServerFn({ method: "POST" })
 /** Endereço para conectar uma rede: pedido de uso único (10 min) no Corretor; volta em Redes. */
 export const linkConectarRedeAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         conector: z.enum(["meta", "linkedin", "youtube", "google_business", "tiktok", "teste"]),
@@ -409,7 +409,7 @@ export const linkConectarRedeAgz = createServerFn({ method: "POST" })
 /** Contas que o login da rede trouxe, esperando a escolha (sem token). */
 export const contasPendentesAgz = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) => z.object({ lote: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ lote: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -421,7 +421,7 @@ export const contasPendentesAgz = createServerFn({ method: "GET" })
 /** Conecta as contas escolhidas (decifra e cifra o token: precisa da chave-mestra). */
 export const confirmarContasAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) => z.object({ lote: UUID, ids: z.array(UUID).max(200) }).parse(d))
+  .validator((d: unknown) => z.object({ lote: UUID, ids: z.array(UUID).max(200) }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(
@@ -440,7 +440,7 @@ export const confirmarContasAgz = createServerFn({ method: "POST" })
 
 export const postsDoPeriodoAgz = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ de: z.string().datetime(), ate: z.string().datetime() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -490,7 +490,7 @@ const FILTRO = z.object({
 
 export const listarPostsAgz = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) => FILTRO.parse(d))
+  .validator((d: unknown) => FILTRO.parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -504,7 +504,7 @@ export const listarPostsAgz = createServerFn({ method: "GET" })
 
 export const carregarPostAgz = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -542,7 +542,7 @@ const DESTINO = z.object({
 /** Valida pelas regras de cada rede (as mesmas do Corretor) e grava. */
 export const salvarPostAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID.nullable(),
@@ -607,7 +607,7 @@ export const salvarPostAgz = createServerFn({ method: "POST" })
 
 export const cancelarPostAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -618,7 +618,7 @@ export const cancelarPostAgz = createServerFn({ method: "POST" })
 
 export const repetirFalhasAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -629,7 +629,7 @@ export const repetirFalhasAgz = createServerFn({ method: "POST" })
 
 export const duplicarPostAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -641,7 +641,7 @@ export const duplicarPostAgz = createServerFn({ method: "POST" })
 /** Arrastar no calendário: muda a data (o banco recusa o que já começou a sair). */
 export const reagendarPostAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) => z.object({ id: UUID, quando: z.string().datetime() }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID, quando: z.string().datetime() }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -652,7 +652,7 @@ export const reagendarPostAgz = createServerFn({ method: "POST" })
 
 export const publicarAgoraAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -665,7 +665,7 @@ export const publicarAgoraAgz = createServerFn({ method: "POST" })
 
 export const bibliotecaAgz = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tipo: z.enum(["todos", "foto", "video"]).default("todos"),
@@ -694,7 +694,7 @@ export const bibliotecaAgz = createServerFn({ method: "GET" })
 
 export const removerMidiaAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -707,7 +707,7 @@ export const removerMidiaAgz = createServerFn({ method: "POST" })
 
 export const relatorioAgz = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ de: z.string().datetime(), ate: z.string().datetime() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -722,7 +722,7 @@ const DIAS = z.object({ dias: z.number().int().min(7).max(365) });
 
 export const relatorioPublicacaoAgz = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) => DIAS.parse(d))
+  .validator((d: unknown) => DIAS.parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -750,7 +750,7 @@ export const relatorioPublicacaoAgz = createServerFn({ method: "GET" })
 
 export const metricasContaAgz = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) => DIAS.parse(d))
+  .validator((d: unknown) => DIAS.parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -807,7 +807,7 @@ async function renovarTiktok(
  */
 export const infoCriadorTiktokAgz = createServerFn({ method: "POST" })
   .middleware([EDITAR])
-  .inputValidator((d: unknown) => z.object({ conta: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ conta: UUID }).parse(d))
   .handler(async ({ data, context }): Promise<InfoCriadorTiktok> => {
     const { comPlataforma } = await ponte();
     const c = await comPlataforma(

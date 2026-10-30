@@ -235,7 +235,7 @@ export const lerFilaCriativos = createServerFn({ method: "GET" })
 /** Ficha de um criativo, com o histórico das decisões. */
 export const lerCriativo = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().regex(UUID, "Criativo inválido.") }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -251,7 +251,7 @@ export const lerCriativo = createServerFn({ method: "GET" })
 /** Patrocinadores (busca no nome, razão social e e-mail). */
 export const lerPatrocinadores = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ busca: z.string().max(80).default("") }).parse(d ?? {}),
   )
   .handler(({ data, context }) =>
@@ -278,7 +278,7 @@ export const SITUACOES_CAMPANHA: SituacaoCampanha[] = [
 /** Campanhas (de um patrocinador ou de todos), pela situação calculada no banco. */
 export const lerCampanhas = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         conta: z.string().regex(UUID).nullable().default(null),
@@ -334,7 +334,7 @@ export const lerPacotes = createServerFn({ method: "GET" })
 /** Impressões, cliques, conversões, receita e os números por espaço e patrocinador. */
 export const lerMetricasBanners = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         de: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -362,7 +362,7 @@ const versaoVista = z.number().int().positive("Versão do criativo inválida.");
  */
 export const aprovarCriativo = createServerFn({ method: "POST" })
   .middleware([MODERAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().regex(UUID, "Criativo inválido."), versao: versaoVista }).parse(d),
   )
   .handler(({ data, context }) =>
@@ -376,7 +376,7 @@ export const aprovarCriativo = createServerFn({ method: "POST" })
 /** Reprova o criativo com o motivo que o patrocinador lê para corrigir (na versão que está na tela). */
 export const reprovarCriativo = createServerFn({ method: "POST" })
   .middleware([MODERAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().regex(UUID, "Criativo inválido."),
@@ -397,7 +397,7 @@ export const reprovarCriativo = createServerFn({ method: "POST" })
 /** Pausa (com motivo) ou retoma uma campanha ou um criativo. Pausa da plataforma o patrocinador não desfaz. */
 export const pausarBanner = createServerFn({ method: "POST" })
   .middleware([MODERAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         alvo: z.enum(["campanha", "criativo"]),
@@ -429,7 +429,7 @@ export const pausarBanner = createServerFn({ method: "POST" })
 /** Bloqueia (com motivo) ou libera o patrocinador. Bloqueado, nada dele vai ao ar. */
 export const bloquearPatrocinador = createServerFn({ method: "POST" })
   .middleware([MODERAR])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         conta: z.string().regex(UUID, "Patrocinador inválido."),
@@ -459,7 +459,7 @@ export const bloquearPatrocinador = createServerFn({ method: "POST" })
 /** Cria (sem id) ou edita um pacote; `a_venda` põe à venda ou tira. Permissão de preços. */
 export const salvarPacote = createServerFn({ method: "POST" })
   .middleware([EDITAR_PRECOS])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().regex(UUID).nullable().default(null),
@@ -500,7 +500,7 @@ export const salvarPacote = createServerFn({ method: "POST" })
 /** Liga/desliga um espaço de banner ou muda o nome e a descrição. Permissão de preços. */
 export const salvarEspaco = createServerFn({ method: "POST" })
   .middleware([EDITAR_PRECOS])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         chave: z.string().min(1).max(40),

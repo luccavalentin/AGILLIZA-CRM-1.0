@@ -89,7 +89,7 @@ async function ponte() {
 /** Lista os vinculados (com o acesso do dono e o resumo). */
 export const listarVinculados = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.licencas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         busca: z.string().trim().max(120).optional().nullable(),
@@ -140,7 +140,7 @@ export const ESQUEMA_NOVO_VINCULADO = z
 /** Cadastra o vinculado e manda o convite de acesso (criar senha, 72 h). */
 export const criarVinculado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => ESQUEMA_NOVO_VINCULADO.parse(d))
+  .validator((d: unknown) => ESQUEMA_NOVO_VINCULADO.parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -165,7 +165,7 @@ export const criarVinculado = createServerFn({ method: "POST" })
 /** Novo link de criar senha para o dono da conta vinculada. */
 export const reenviarConviteVinculado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -177,7 +177,7 @@ export const reenviarConviteVinculado = createServerFn({ method: "POST" })
 /** Suspende ou reativa a conta vinculada. */
 export const situacaoVinculado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: UUID, acao: z.enum(["suspender", "reativar"]), motivo: MOTIVO }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -208,7 +208,7 @@ export const ESQUEMA_DESVINCULAR = z
 /** Desvincula: vira assinante comum (plano e teste escolhidos) ou a conta é encerrada. Nada é apagado. */
 export const desvincularVinculado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => ESQUEMA_DESVINCULAR.parse(d))
+  .validator((d: unknown) => ESQUEMA_DESVINCULAR.parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -229,7 +229,7 @@ export const desvincularVinculado = createServerFn({ method: "POST" })
 /** Procura a conta do Agilliza Tech pelo e-mail do dono (para vincular uma conta que já existe). */
 export const buscarContaParaVincular = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ email: z.string().trim().toLowerCase().email("E-mail inválido.") }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -245,7 +245,7 @@ export const buscarContaParaVincular = createServerFn({ method: "GET" })
 /** Vincula uma conta que já existe no Agilliza Tech (encerra a assinatura dela). */
 export const vincularContaExistente = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID, motivo: MOTIVO }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID, motivo: MOTIVO }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -297,7 +297,7 @@ export const ESQUEMA_CONVERTER = z
  */
 export const converterParceiroEmVinculado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => ESQUEMA_CONVERTER.parse(d))
+  .validator((d: unknown) => ESQUEMA_CONVERTER.parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>

@@ -90,7 +90,7 @@ export const CHECKLISTS_BANCOS: Record<string, { docs: string[]; logos: string[]
 
 export const obterChecklistBanco = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ({ banco: String(d) }))
+  .validator((d: unknown) => ({ banco: String(d) }))
   .handler(async ({ data }) => {
     return CHECKLISTS_BANCOS[data.banco] || null;
   });

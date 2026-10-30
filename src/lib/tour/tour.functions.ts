@@ -56,7 +56,7 @@ async function dbCliente() {
 // ------------------------------------------------------------------------- equipe ---
 export const tourEstadoEquipe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ESQ_ESTADO.parse(d))
+  .validator((d: unknown) => ESQ_ESTADO.parse(d))
   .handler(async ({ context, data }): Promise<EstadoTour | null> => {
     try {
       return await rpc<EstadoTour>(context.supabase, "tour_estado", {
@@ -69,7 +69,7 @@ export const tourEstadoEquipe = createServerFn({ method: "POST" })
 
 export const tourRegistrarEquipe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ESQ_REGISTRO.parse(d))
+  .validator((d: unknown) => ESQ_REGISTRO.parse(d))
   .handler(async ({ context, data }): Promise<boolean> => {
     try {
       await rpc(context.supabase, "tour_registrar", {
@@ -86,7 +86,7 @@ export const tourRegistrarEquipe = createServerFn({ method: "POST" })
 
 export const tourReiniciarEquipe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ESQ_REINICIAR.parse(d))
+  .validator((d: unknown) => ESQ_REINICIAR.parse(d))
   .handler(async ({ context, data }): Promise<boolean> => {
     try {
       await rpc(context.supabase, "tour_reiniciar", { p_tela: data.tela });
@@ -98,7 +98,7 @@ export const tourReiniciarEquipe = createServerFn({ method: "POST" })
 
 export const tourAutomaticoEquipe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ESQ_AUTOMATICO.parse(d))
+  .validator((d: unknown) => ESQ_AUTOMATICO.parse(d))
   .handler(async ({ context, data }): Promise<boolean> => {
     try {
       await rpc(context.supabase, "tour_automatico", { p_ligado: data.ligado });
@@ -110,7 +110,7 @@ export const tourAutomaticoEquipe = createServerFn({ method: "POST" })
 
 // ------------------------------------------------------------------------ cliente ---
 export const tourEstadoCliente = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => ESQ_ESTADO.parse(d))
+  .validator((d: unknown) => ESQ_ESTADO.parse(d))
   .handler(async ({ data }): Promise<EstadoTour | null> => {
     const sess = requireClienteSession();
     try {
@@ -124,7 +124,7 @@ export const tourEstadoCliente = createServerFn({ method: "POST" })
   });
 
 export const tourRegistrarCliente = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => ESQ_REGISTRO.parse(d))
+  .validator((d: unknown) => ESQ_REGISTRO.parse(d))
   .handler(async ({ data }): Promise<boolean> => {
     const sess = requireClienteSession();
     try {
@@ -142,7 +142,7 @@ export const tourRegistrarCliente = createServerFn({ method: "POST" })
   });
 
 export const tourReiniciarCliente = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => ESQ_REINICIAR.parse(d))
+  .validator((d: unknown) => ESQ_REINICIAR.parse(d))
   .handler(async ({ data }): Promise<boolean> => {
     const sess = requireClienteSession();
     try {
@@ -157,7 +157,7 @@ export const tourReiniciarCliente = createServerFn({ method: "POST" })
   });
 
 export const tourAutomaticoCliente = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => ESQ_AUTOMATICO.parse(d))
+  .validator((d: unknown) => ESQ_AUTOMATICO.parse(d))
   .handler(async ({ data }): Promise<boolean> => {
     const sess = requireClienteSession();
     try {

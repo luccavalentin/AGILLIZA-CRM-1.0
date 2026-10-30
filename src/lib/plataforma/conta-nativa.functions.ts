@@ -107,7 +107,7 @@ export type SimulacaoDaContaNativa = ReturnType<typeof noFormatoAgilliza>;
 
 export const listarSimulacoesDaContaNativas = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         licenca: UUID,
@@ -155,7 +155,7 @@ function semMigracao(e: unknown): never {
 /** Simulação do assinante no Agilliza (idempotente): o id para as telas nativas. */
 export const espelharSimulacaoDaConta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
-  .inputValidator((d: unknown) => z.object({ licenca: UUID, simulacaoId: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ licenca: UUID, simulacaoId: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comConta } = await import("./ponte.server");
     const r = await comConta(context.userId, data.licenca, (tx) =>
@@ -181,7 +181,7 @@ export const espelharSimulacaoDaConta = createServerFn({ method: "POST" })
 /** Cliente do assinante no Agilliza (idempotente pelo CPF): o id da ficha nativa. */
 export const espelharClienteDaConta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
-  .inputValidator((d: unknown) => z.object({ licenca: UUID, clienteId: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ licenca: UUID, clienteId: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comConta } = await import("./ponte.server");
     const r = await comConta(context.userId, data.licenca, (tx) =>

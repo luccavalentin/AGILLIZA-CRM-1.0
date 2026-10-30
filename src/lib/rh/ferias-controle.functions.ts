@@ -55,7 +55,7 @@ export interface ControleFeriasResumo {
 
 export const obterControleFerias = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.ferias", "view"], ["rh.funcionarios", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({ funcionario_id: z.string().uuid().optional() })
       .default({})

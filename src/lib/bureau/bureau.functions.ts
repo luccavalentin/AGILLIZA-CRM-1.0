@@ -129,7 +129,7 @@ export const obterConfigBureau = createServerFn({ method: "GET" })
 
 export const salvarConfigBureau = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.integracoes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         provedor: z.string().min(1),
@@ -196,7 +196,7 @@ export const salvarConfigBureau = createServerFn({ method: "POST" })
  */
 export const consultarFichaBureau = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         documento: z.string().min(11).max(20),
@@ -294,7 +294,7 @@ export const consultarFichaBureau = createServerFn({ method: "POST" })
  */
 export const acompanharConsultaFicha = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -407,7 +407,7 @@ async function papelAmplo(supabase: any, userId: string): Promise<boolean> {
  */
 export const listarConsultasBureau = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ cliente_id: UUID.nullable().optional() }).parse(d ?? {}),
   )
   .handler(async ({ data, context }): Promise<ConsultaHistorico[]> => {
@@ -516,7 +516,7 @@ export const resumoConsultasBureau = createServerFn({ method: "GET" })
  */
 export const obterConsultaBureau = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -558,7 +558,7 @@ export const obterConsultaBureau = createServerFn({ method: "GET" })
 /** Cliente do CRM para abrir a Consulta Ficha já escolhido (`?cliente=`). */
 export const clienteParaFichaBureau = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const [r, podePii] = await Promise.all([

@@ -107,7 +107,7 @@ async function correspondenteDoUsuario(
 /** Lista o log de auditoria administrativa do ecossistema com filtros. */
 export const listarAuditoria = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["admin.auditoria", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         limite: z.number().min(1).max(500).optional(),
@@ -205,7 +205,7 @@ export const opcoesAuditoria = createServerFn({ method: "GET" })
  */
 export const estatisticasAuditoria = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["admin.auditoria", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         dataInicio: z.string().optional(),

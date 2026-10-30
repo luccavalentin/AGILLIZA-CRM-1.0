@@ -25,7 +25,7 @@ export interface FichaConsolidada {
 /** Dados consolidados do cliente para o botão "Consultar ficha". */
 export const obterFichaConsolidada = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["crm.clientes", "view"])])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<FichaConsolidada> => {
     const { supabase, userId } = context;
     const podePii = await temPiiCliente(supabase, userId);

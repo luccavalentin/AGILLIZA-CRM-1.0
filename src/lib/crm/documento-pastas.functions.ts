@@ -76,7 +76,7 @@ function documentoNaPasta(
 /** Lista as pastas do cliente, criando as padrão quando ainda não existem. */
 export const listarPastasDocumentos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<DocumentoPasta[]> => {
     const { supabase, userId } = context;
 
@@ -144,7 +144,7 @@ export const listarPastasDocumentos = createServerFn({ method: "GET" })
 /** Cria uma nova pasta de documentos para o cliente. */
 export const criarPastaDocumentos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -198,7 +198,7 @@ export const criarPastaDocumentos = createServerFn({ method: "POST" })
 /** Renomeia uma pasta de documentos. */
 export const renomearPastaDocumentos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().uuid(), nome: z.string().trim().min(1).max(120) }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
@@ -236,7 +236,7 @@ export const renomearPastaDocumentos = createServerFn({ method: "POST" })
 /** Exclui uma pasta; documentos dela vão para a pasta "Outros". */
 export const excluirPastaDocumentos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     if (!(await podeEditar(supabase, userId))) {

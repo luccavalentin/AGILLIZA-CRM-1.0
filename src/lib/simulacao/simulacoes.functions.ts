@@ -155,7 +155,7 @@ export const listarOperacoes = createServerFn({ method: "GET" })
 /** ===== Busca de clientes do CRM (combobox) ===== */
 export const buscarClientesCRM = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ q: z.string().min(2) }).parse(d))
+  .validator((d: unknown) => z.object({ q: z.string().min(2) }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const termo = data.q.trim();
@@ -184,7 +184,7 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
  * puxar o cônjuge do cadastro mesmo quando a simulação foi salva como solteiro. */
 export const obterClienteCRM = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: row, error } = await supabase
@@ -204,7 +204,7 @@ export const obterClienteCRM = createServerFn({ method: "GET" })
 /** ===== Verificação por e-mail (OTP) ===== */
 export const enviarOtpEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ email: z.string().email() }).parse(d))
+  .validator((d: unknown) => z.object({ email: z.string().email() }).parse(d))
   .handler(async ({ data }): Promise<{ ok: boolean; expires_at: string }> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = data.email.toLowerCase();
@@ -242,7 +242,7 @@ export const enviarOtpEmail = createServerFn({ method: "POST" })
 
 export const validarOtpEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ email: z.string().email(), codigo: z.string().length(6) }).parse(d),
   )
   .handler(async ({ data }): Promise<{ ok: boolean; verificado_em: string }> => {
@@ -290,7 +290,7 @@ const criarSchema = z.object({
 
 export const criarSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => criarSchema.parse(d))
+  .validator((d: unknown) => criarSchema.parse(d))
   .handler(
     async ({
       data,
@@ -1014,7 +1014,7 @@ export const criarSimulacao = createServerFn({ method: "POST" })
 /** ===== Obter simulações por agrupador ===== */
 export const obterSimulacoesPorAgrupador = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ agrupador_id: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ agrupador_id: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: sims, error } = await supabase
@@ -1031,7 +1031,7 @@ export const obterSimulacoesPorAgrupador = createServerFn({ method: "GET" })
 /** ===== Obter simulação ===== */
 export const obterSimulacao = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: simulacao, error } = await supabase
@@ -1174,7 +1174,7 @@ const listarSchema = z.object({
 
 export const listarSimulacoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => listarSchema.parse(d))
+  .validator((d: unknown) => listarSchema.parse(d))
   .handler(
     async ({
       data,
@@ -1570,7 +1570,7 @@ export const listarSimulacoes = createServerFn({ method: "GET" })
  * ao grupo SAC/PRICE original ou ressuscitava linhas excluídas. */
 export const duplicarSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ id: string; numero_simulacao: string }> => {
     const { supabase, userId } = context;
     const { data: orig, error } = await supabase
@@ -1661,7 +1661,7 @@ export const duplicarSimulacao = createServerFn({ method: "POST" })
 /** ===== Enviar à integração bancária ===== */
 export const enviarSimulacaoBanco = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         simulacao_id: z.string().uuid(),
@@ -1818,7 +1818,7 @@ export { humanizarErroBanco };
  */
 export const excluirSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().uuid(), motivo: z.string().max(500).optional() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
@@ -1910,7 +1910,7 @@ export const excluirSimulacao = createServerFn({ method: "POST" })
 /** Restaura uma simulação excluída logicamente. */
 export const restaurarSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
     const { error } = await supabase
@@ -1930,7 +1930,7 @@ export const restaurarSimulacao = createServerFn({ method: "POST" })
  */
 export const inverterTitularSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
     const { data: s, error: eSel } = await supabase
@@ -2151,7 +2151,7 @@ export const inverterTitularSimulacao = createServerFn({ method: "POST" })
  * ou "aguardando" após o término do processamento. */
 export const destravarSimulacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     // Teste adversarial 23/10/2026: sem estas conferências, qualquer pessoa logada

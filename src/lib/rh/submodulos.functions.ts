@@ -107,7 +107,7 @@ export interface RhDocumento {
 
 export const listarDocumentos = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.documentos", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid().optional(),
@@ -153,7 +153,7 @@ export const listarDocumentos = createServerFn({ method: "GET" })
 
 export const registrarDocumento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.documentos", "create"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid(),
@@ -191,7 +191,7 @@ export const registrarDocumento = createServerFn({ method: "POST" })
 
 export const excluirDocumento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.documentos", "delete"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("rh_documentos")
@@ -206,7 +206,7 @@ export const excluirDocumento = createServerFn({ method: "POST" })
 /** URL temporária de um arquivo do RH. A política do bucket decide quem abre cada pasta. */
 export const gerarUrlAssinada = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z.object({ path: z.string().min(1).max(500), expira_em: z.number().int().min(30).max(3600).default(300) }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -239,7 +239,7 @@ export interface RhOcorrencia {
 
 export const listarOcorrencias = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.ocorrencias", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid().optional(),
@@ -283,7 +283,7 @@ export const listarOcorrencias = createServerFn({ method: "GET" })
 
 export const registrarOcorrencia = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.ocorrencias", "create"], ["rh.ocorrencias", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid().optional(),
@@ -341,7 +341,7 @@ export const registrarOcorrencia = createServerFn({ method: "POST" })
 
 export const excluirOcorrencia = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.ocorrencias", "edit"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("rh_ocorrencias")
@@ -375,7 +375,7 @@ export interface RhFerias {
 
 export const listarFerias = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.ferias", "view"], ["rh.funcionarios", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid().optional(),
@@ -420,7 +420,7 @@ export const listarFerias = createServerFn({ method: "GET" })
  */
 export const salvarFerias = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.ferias", "create"], ["rh.ferias", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid().optional(),
@@ -533,7 +533,7 @@ export const listarBeneficiosTipos = createServerFn({ method: "GET" })
 
 export const salvarBeneficioTipo = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.beneficios", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid().optional(),
@@ -576,7 +576,7 @@ export const salvarBeneficioTipo = createServerFn({ method: "POST" })
 
 export const listarBeneficiosDoFuncionario = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.beneficios", "view"], ["rh.funcionarios", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({ funcionario_id: z.string().uuid().optional() })
       .default({})
@@ -610,7 +610,7 @@ export const listarBeneficiosDoFuncionario = createServerFn({ method: "GET" })
 
 export const vincularBeneficio = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.beneficios", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid().optional(),
@@ -677,7 +677,7 @@ export interface RhAlteracaoSalarial {
 
 export const listarAlteracoesSalariais = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.salarios", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({ funcionario_id: z.string().uuid().optional() })
       .default({})
@@ -709,7 +709,7 @@ export const listarAlteracoesSalariais = createServerFn({ method: "GET" })
 
 export const registrarAlteracaoSalarial = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.salarios", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid(),
@@ -776,7 +776,7 @@ export interface RhAdiantamento {
 
 export const listarAdiantamentos = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.folha", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid().optional(),
@@ -869,7 +869,7 @@ async function sincronizarAdiantamentoFinanceiro(
 
 export const registrarAdiantamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.folha", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid().optional(),
@@ -930,7 +930,7 @@ export const registrarAdiantamento = createServerFn({ method: "POST" })
 
 export const excluirAdiantamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.folha", "edit"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("rh_adiantamentos")
@@ -972,7 +972,7 @@ export interface RhHolerite {
 
 export const listarHolerites = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.salarios", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid().optional(),
@@ -1013,7 +1013,7 @@ export const listarHolerites = createServerFn({ method: "GET" })
 
 export const anexarHolerite = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.folha", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid(),
@@ -1079,7 +1079,7 @@ export const anexarHolerite = createServerFn({ method: "POST" })
 
 export const excluirHolerite = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.folha", "edit"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     // Primeiro o registro, depois o PDF: se o registro não sair, o arquivo fica.
     const { data: rows, error } = await context.supabase

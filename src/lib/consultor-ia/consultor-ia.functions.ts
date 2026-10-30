@@ -137,7 +137,7 @@ export const listarConversasConsultor = createServerFn({ method: "GET" })
 /** Mensagens de uma conversa (RLS garante que é do próprio usuário). */
 export const listarMensagensConsultor = createServerFn({ method: "GET" })
   .middleware([usaConsultor])
-  .inputValidator((d: { conversa_id: string }) =>
+  .validator((d: { conversa_id: string }) =>
     z.object({ conversa_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<MensagemConsultor[]> => {
@@ -160,7 +160,7 @@ export const listarMensagensConsultor = createServerFn({ method: "GET" })
 
 export const excluirConversaConsultor = createServerFn({ method: "POST" })
   .middleware([usaConsultor])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context as any;
     const { error } = await supabase.from("consultor_ia_conversas").delete().eq("id", data.id);
@@ -170,7 +170,7 @@ export const excluirConversaConsultor = createServerFn({ method: "POST" })
 
 export const avaliarRespostaConsultor = createServerFn({ method: "POST" })
   .middleware([usaConsultor])
-  .inputValidator((d: { mensagem_id: string; avaliacao: "util" | "nao_util" | null }) =>
+  .validator((d: { mensagem_id: string; avaliacao: "util" | "nao_util" | null }) =>
     z
       .object({
         mensagem_id: z.string().uuid(),
@@ -191,7 +191,7 @@ export const avaliarRespostaConsultor = createServerFn({ method: "POST" })
 /** Envia uma sugestão de conteúdo (lacuna de conhecimento) para curadoria. */
 export const sugerirConteudoBase = createServerFn({ method: "POST" })
   .middleware([usaConsultor])
-  .inputValidator((d: { pergunta: string; observacao?: string }) =>
+  .validator((d: { pergunta: string; observacao?: string }) =>
     z
       .object({
         pergunta: z.string().min(3).max(4000),
@@ -215,7 +215,7 @@ export const sugerirConteudoBase = createServerFn({ method: "POST" })
 /** Conteúdo completo de um item da base (para a citação clicável). */
 export const obterItemBase = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["crm.clientes", "view"], ["admin.parametros", "view"])])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<ItemBase | null> => {
     const { supabase } = context as any;
     const { data: row, error } = await supabase
@@ -231,7 +231,7 @@ export const obterItemBase = createServerFn({ method: "GET" })
 
 export const listarBaseConhecimento = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["admin.parametros", "view"])])
-  .inputValidator((d?: { q?: string; categoria?: string; incluirInativos?: boolean }) =>
+  .validator((d?: { q?: string; categoria?: string; incluirInativos?: boolean }) =>
     z
       .object({
         q: z.string().optional(),
@@ -269,7 +269,7 @@ export const obterPermissoesBase = createServerFn({ method: "GET" })
 
 export const salvarItemBase = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.parametros", "edit"])])
-  .inputValidator(
+  .validator(
     (d: {
       id?: string;
       categoria: string;
@@ -387,7 +387,7 @@ export const salvarItemBase = createServerFn({ method: "POST" })
 
 export const excluirItemBase = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.parametros", "edit"])])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     const { data: atual, error: erroAtual } = await supabase
@@ -432,7 +432,7 @@ export const listarSugestoesBase = createServerFn({ method: "GET" })
 
 export const resolverSugestaoBase = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.parametros", "edit"])])
-  .inputValidator((d: { id: string; status: "resolvida" | "descartada" }) =>
+  .validator((d: { id: string; status: "resolvida" | "descartada" }) =>
     z.object({ id: z.string().uuid(), status: z.enum(["resolvida", "descartada"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -488,7 +488,7 @@ const parametrosSchema = z.object({
 
 export const salvarParametrosConsultor = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.parametros", "edit"])])
-  .inputValidator((d: unknown) => parametrosSchema.parse(d))
+  .validator((d: unknown) => parametrosSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context as any;
     const corr = await correspondenteDoUsuario(supabase, userId);

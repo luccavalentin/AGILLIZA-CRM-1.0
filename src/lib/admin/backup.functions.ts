@@ -96,7 +96,7 @@ export const obterConfigBackup = createServerFn({ method: "GET" })
 /** Salva a janela de retenção de backup (somente usuários com permissão). */
 export const salvarConfigBackup = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.backup", "create"])])
-  .inputValidator((data) =>
+  .validator((data) =>
     z.object({ retencaoDias: z.number().int().min(1).max(365) }).parse(data),
   )
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
@@ -206,7 +206,7 @@ export const criarBackup = createServerFn({ method: "POST" })
 /** Exclui um registro de backup do histórico. */
 export const excluirBackup = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.backup", "create"])])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);

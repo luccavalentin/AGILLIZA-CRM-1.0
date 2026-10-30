@@ -1395,7 +1395,7 @@ function itemSimulacao(s: any): PanelDrilldownItem {
 
 export const getPanelDrilldown = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => drillSchema.parse(d))
+  .validator((d: unknown) => drillSchema.parse(d))
   .handler(async ({ data, context }): Promise<PanelDrilldown> => {
     const toSafeJSON = (val: any) => JSON.parse(JSON.stringify(val ?? null));
     const { supabase, userId } = context;

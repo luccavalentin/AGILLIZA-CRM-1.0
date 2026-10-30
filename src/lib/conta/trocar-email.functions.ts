@@ -19,7 +19,7 @@ async function ipDaRequisicao(): Promise<string | null> {
 /** Segurança → "Trocar e-mail de acesso": e-mail novo + senha atual. */
 export const pedirTrocaDeEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => {
+  .validator((d: unknown) => {
     const x = (d ?? {}) as { email?: unknown; senha?: unknown };
     return {
       email: typeof x.email === "string" ? x.email.slice(0, 320) : "",
@@ -52,7 +52,7 @@ export const minhaTrocaDeEmail = createServerFn({ method: "GET" })
  * de 256 bits é a credencial; o banco confere validade, uso único e troca concorrente.
  */
 export const confirmarTrocaDeEmail = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => {
+  .validator((d: unknown) => {
     const token = (d as { token?: unknown } | null)?.token;
     return { token: typeof token === "string" ? token.slice(0, 220) : "" };
   })

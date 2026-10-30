@@ -80,7 +80,7 @@ export const POR_PAGINA_INCIDENTES = 50;
 
 export const lerMonitoramento = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.monitoramento", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         status: z.enum(["aberto", "reconhecido", "resolvido"]).optional().nullable(),
@@ -106,7 +106,7 @@ export const lerMonitoramento = createServerFn({ method: "GET" })
 
 export const agirIncidente = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.monitoramento", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),

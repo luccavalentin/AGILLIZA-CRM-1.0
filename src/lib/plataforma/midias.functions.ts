@@ -109,7 +109,7 @@ async function enviar(userId: string, p: Pedido): Promise<MidiaEnviada> {
 
 export const enviarCapaNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator(lerFormulario)
+  .validator(lerFormulario)
   .handler(async ({ data, context }) => {
     if (data.destino !== "capa_news") throw new Error("Destino inválido.");
     return enviar(context.userId, data);
@@ -117,7 +117,7 @@ export const enviarCapaNews = createServerFn({ method: "POST" })
 
 export const enviarAnexoSuporte = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.suporte", "edit"])])
-  .inputValidator(lerFormulario)
+  .validator(lerFormulario)
   .handler(async ({ data, context }) => {
     if (data.destino !== "anexo_suporte") throw new Error("Destino inválido.");
     return enviar(context.userId, data);
@@ -133,7 +133,7 @@ const MIMES_VIDEO = new Set(["video/mp4", "video/quicktime", "video/webm"]);
  */
 export const enviarVideoSocial = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["marketing.automacoes", "edit"])])
-  .inputValidator((d: unknown) => {
+  .validator((d: unknown) => {
     if (!(d instanceof FormData)) throw new Error("Envie o vídeo.");
     const arquivo = d.get("arquivo");
     if (!(arquivo instanceof File) || arquivo.size === 0) throw new Error("Escolha um vídeo.");
@@ -186,7 +186,7 @@ export const enviarVideoSocial = createServerFn({ method: "POST" })
 /** Foto de um post das Automações (0227): vai para o armazenamento da plataforma. */
 export const enviarFotoSocial = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["marketing.automacoes", "edit"])])
-  .inputValidator(lerFormulario)
+  .validator(lerFormulario)
   .handler(async ({ data, context }) => {
     if (data.destino !== "social_post") throw new Error("Destino inválido.");
     return enviar(context.userId, data);

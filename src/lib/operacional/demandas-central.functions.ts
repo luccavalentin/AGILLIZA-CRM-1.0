@@ -144,7 +144,7 @@ async function rpc<T>(supabase: unknown, nome: string, args: Record<string, unkn
 
 export const centralDemandas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         escopo: z.enum(["minhas", "criadas", "equipe", "sem_responsavel"]).default("minhas"),
@@ -176,7 +176,7 @@ export const centralDemandas = createServerFn({ method: "GET" })
 
 export const criarDemandaNaFila = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tipo: z.string().trim().min(2).max(40),
@@ -219,7 +219,7 @@ export const criarDemandaNaFila = createServerFn({ method: "POST" })
 
 export const assumirDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     await rpc(context.supabase, "demanda_assumir", { p_dem: data.id });
     return { ok: true as const };
@@ -234,7 +234,7 @@ export const pegarProximaDemanda = createServerFn({ method: "POST" })
 
 export const reatribuirDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID,
@@ -254,7 +254,7 @@ export const reatribuirDemanda = createServerFn({ method: "POST" })
 
 export const mudarStatusDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID,
@@ -280,7 +280,7 @@ export const configDemandas = createServerFn({ method: "GET" })
 
 export const salvarTipoDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         codigo: z
@@ -308,7 +308,7 @@ export const salvarTipoDemanda = createServerFn({ method: "POST" })
 
 export const salvarFilaDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID.optional().nullable(),
@@ -329,7 +329,7 @@ export const salvarFilaDemanda = createServerFn({ method: "POST" })
 
 export const excluirFilaDemanda = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     await rpc(context.supabase, "demanda_fila_excluir", { p_id: data.id });
     return { ok: true as const };
@@ -337,7 +337,7 @@ export const excluirFilaDemanda = createServerFn({ method: "POST" })
 
 export const salvarDisponibilidade = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         user_id: UUID,
@@ -361,7 +361,7 @@ export const salvarDisponibilidade = createServerFn({ method: "POST" })
 
 export const salvarRecebeAssinantes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ recebe: z.boolean() }).parse(d))
+  .validator((d: unknown) => z.object({ recebe: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     await rpc(context.supabase, "demanda_config_salvar", { p_recebe_assinantes: data.recebe });
     return { ok: true as const };

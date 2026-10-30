@@ -64,7 +64,7 @@ export interface VersaoArtigo {
 
 export const listarVersoesArtigo = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["admin.parametros", "view"])])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<VersaoArtigo[]> => {
     const { supabase } = context as any;
     const { data: rows, error } = await supabase
@@ -80,7 +80,7 @@ export const listarVersoesArtigo = createServerFn({ method: "GET" })
 /** Volta o artigo para uma versão anterior (a atual vira mais uma versão no histórico). */
 export const restaurarVersaoArtigo = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.parametros", "edit"])])
-  .inputValidator((d: { id: string; versao: number }) =>
+  .validator((d: { id: string; versao: number }) =>
     z.object({ id: z.string().uuid(), versao: z.number().int().min(1) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -134,7 +134,7 @@ export const listarCategoriasBase = createServerFn({ method: "GET" })
 
 export const criarCategoriaBase = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.parametros", "edit"])])
-  .inputValidator((d: { nome: string }) =>
+  .validator((d: { nome: string }) =>
     z
       .object({
         nome: z
@@ -163,7 +163,7 @@ export const criarCategoriaBase = createServerFn({ method: "POST" })
 /** Endereço temporário (10 min) de um anexo da base — só da pasta da própria conta. */
 export const urlAnexoBase = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.parametros", "view"], ["crm.clientes", "view"])])
-  .inputValidator((d: { caminho: string }) =>
+  .validator((d: { caminho: string }) =>
     z.object({ caminho: z.string().min(3).max(400) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -185,7 +185,7 @@ const PUBLICO = z.enum(["todos", "assinantes", "equipe"]);
 
 export const publicarArtigoNaNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -285,7 +285,7 @@ export const publicarArtigoNaNews = createServerFn({ method: "POST" })
 
 export const despublicarArtigoDaNews = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.news", "edit"])])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     if (!(await pode(supabase, userId, "admin.parametros", "view"))) {

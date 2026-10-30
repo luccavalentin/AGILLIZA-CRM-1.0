@@ -149,7 +149,7 @@ export const POR_PAGINA_LICENCAS = 50;
  */
 export const listarLicencas = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.licencas", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tipo: z.enum(["corretor", "imobiliaria", "parceiro"]).optional().nullable(),
@@ -293,7 +293,7 @@ export const listarLicencas = createServerFn({ method: "GET" })
 /** Pessoas, uso, créditos, assinatura e faturas de uma licença. */
 export const detalheLicenca = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.licencas", "view"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -314,7 +314,7 @@ export const detalheLicenca = createServerFn({ method: "GET" })
 /** Suspende, reativa, põe em somente leitura ou cancela. O motivo vai para a auditoria. */
 export const alterarSituacaoLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID,
@@ -338,7 +338,7 @@ export const alterarSituacaoLicenca = createServerFn({ method: "POST" })
 /** Concede, estende (1 a 365 dias) ou encerra (0) o teste grátis. */
 export const concederTesteLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID,
@@ -362,7 +362,7 @@ export const concederTesteLicenca = createServerFn({ method: "POST" })
 /** Troca o plano (preço e cobrança seguem na assinatura). */
 export const mudarPlanoLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID, planoId: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID, planoId: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -396,7 +396,7 @@ export interface PreviaConversaoTipo {
 
 export const previaConverterTipoLicenca = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: UUID, tipo: z.enum(["corretor", "imobiliaria"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -417,7 +417,7 @@ export const previaConverterTipoLicenca = createServerFn({ method: "GET" })
  */
 export const converterTipoLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID,
@@ -468,7 +468,7 @@ async function hashArgon2id(senha: string): Promise<string> {
  */
 export const redefinirSenhaLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: UUID, usuarioId: z.string().uuid("Pessoa inválida.") }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -491,7 +491,7 @@ export const redefinirSenhaLicenca = createServerFn({ method: "POST" })
 /** Crédito de cortesia ou estorno, com entrada no extrato da conta. */
 export const concederCreditosLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID,
@@ -587,7 +587,7 @@ export type IndicacaoNova = z.infer<typeof INDICACAO>;
  */
 export const criarLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tipo: z.enum(["corretor", "imobiliaria", "parceiro"]),
@@ -670,7 +670,7 @@ export const criarLicenca = createServerFn({ method: "POST" })
 /** Novo link de criar senha para o dono da conta (vale 72 horas). */
 export const reenviarAcessoLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -706,7 +706,7 @@ export interface DescontoAnterior {
 /** Desconto vigente e os anteriores da licença. */
 export const descontoLicenca = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.licencas", "view"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -721,7 +721,7 @@ export const descontoLicenca = createServerFn({ method: "GET" })
 /** Concede (ou troca) o desconto da licença; vale a partir da próxima fatura. */
 export const concederDescontoLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: UUID, desconto: DESCONTO, motivo: MOTIVO }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -738,7 +738,7 @@ export const concederDescontoLicenca = createServerFn({ method: "POST" })
 /** Encerra o desconto vigente (as faturas já abertas com ele continuam como estão). */
 export const encerrarDescontoLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID, motivo: MOTIVO }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID, motivo: MOTIVO }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const r = await comPlataforma(context.userId, (tx) =>
@@ -755,7 +755,7 @@ export const encerrarDescontoLicenca = createServerFn({ method: "POST" })
 /** Busca a conta assinante que indicou (nome, endereço ou e-mail; no máximo 20). */
 export const buscarContasIndicacao = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ busca: z.string().trim().max(120) }).parse(d))
+  .validator((d: unknown) => z.object({ busca: z.string().trim().max(120) }).parse(d))
   .handler(async ({ data, context }) => {
     if (data.busca.length < 2) return [] as ContaIndicadora[];
     const { comPlataforma } = await ponte();
@@ -770,7 +770,7 @@ export const buscarContasIndicacao = createServerFn({ method: "GET" })
 /** Liga a licença a quem indicou, troca ou tira (com null). Fica no histórico da conta. */
 export const definirIndicacaoLicenca = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.licencas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID, indicacao: INDICACAO.nullable() }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID, indicacao: INDICACAO.nullable() }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>

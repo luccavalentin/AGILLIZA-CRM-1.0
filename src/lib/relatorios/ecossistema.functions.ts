@@ -63,7 +63,7 @@ const entrada = (d: unknown) => lerFiltrosRelatorio((d ?? {}) as Record<string, 
 /** Parte do Agilliza (operação própria) no recorte pedido. */
 export const getRelatorioAgilliza = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator(entrada)
+  .validator(entrada)
   .handler(async ({ data: f, context }): Promise<ParteAgilliza> => {
     const { supabase, userId } = context;
     const intervalo = intervaloDoRelatorio(f);
@@ -103,7 +103,7 @@ export interface ParteContas {
  */
 export const getRelatorioContas = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["relatorios.geral", "view"]), guardaContas])
-  .inputValidator(entrada)
+  .validator(entrada)
   .handler(async ({ data: f, context }): Promise<ParteContas> => {
     const plano = planoDeLeitura(f, true);
     if (!plano.tech) return { bloco: null, avisos: [] };
@@ -164,7 +164,7 @@ export interface RelatorioOperacional {
 /** SLA da operação do Agilliza (propostas até o envio, demandas e tarefas), por responsável. */
 export const getRelatorioOperacional = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator(entrada)
+  .validator(entrada)
   .handler(async ({ data: f, context }): Promise<RelatorioOperacional> => {
     const intervalo = intervaloDoRelatorio(f);
     const { data, error } = await (context.supabase as any).rpc("relatorio_operacional_agilliza", {
@@ -222,7 +222,7 @@ export const listarRelatoriosSalvos = createServerFn({ method: "GET" })
 
 export const salvarRelatorio = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator((d: unknown) => salvoSchema.parse(d))
+  .validator((d: unknown) => salvoSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const linha = {
@@ -254,7 +254,7 @@ export const salvarRelatorio = createServerFn({ method: "POST" })
 
 export const excluirRelatorio = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("report_saved_filters")

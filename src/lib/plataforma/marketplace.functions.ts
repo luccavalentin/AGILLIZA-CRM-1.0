@@ -205,7 +205,7 @@ export interface DecisaoRegistrada {
  */
 export const decidirEspecialista = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.marketplace", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().regex(UUID, "Especialista inválido."),
@@ -238,7 +238,7 @@ export const decidirEspecialista = createServerFn({ method: "POST" })
 /** Histórico das decisões (de um especialista, ou as últimas de todos). */
 export const lerDecisoesMarketplace = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.marketplace", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ especialista: z.string().regex(UUID).optional().nullable() }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -254,7 +254,7 @@ export const lerDecisoesMarketplace = createServerFn({ method: "GET" })
 /** Publica de novo ou tira da vitrine uma avaliação (sem apagar; a nota é recalculada). */
 export const moderarAvaliacao = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.marketplace", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().regex(UUID, "Avaliação inválida."),
@@ -282,7 +282,7 @@ export const moderarAvaliacao = createServerFn({ method: "POST" })
  */
 export const lerMetricasMarketplace = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.marketplace", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         de: z.string().regex(DATA, "Data inicial inválida."),

@@ -26,7 +26,7 @@ export interface RecusaRecente {
 
 export const recusaRecenteAntesDoEnvio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ simulacaoBancoId: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ simulacaoBancoId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<RecusaRecente | null> => {
     const { supabase } = context;
     const { data: sb } = await supabase

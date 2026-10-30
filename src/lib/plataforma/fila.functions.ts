@@ -64,7 +64,7 @@ const UUID = z.string().uuid();
 
 export const listarFilaAssinantes = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.fila", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         aceite: z.enum(["todas", "pendentes", "minhas"]).default("pendentes"),
@@ -125,7 +125,7 @@ export const listarContasDaFila = createServerFn({ method: "GET" })
 /** O analista do Agilliza assume a proposta (sai de "pendentes", entra em "minhas"). */
 export const assumirPropostaAssinante = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.fila", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     const r = await comPlataforma(context.userId, (tx) =>
@@ -137,7 +137,7 @@ export const assumirPropostaAssinante = createServerFn({ method: "POST" })
 /** Designa (ou tira) o analista responsável, com o motivo registrado. */
 export const designarPropostaAssinante = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.fila", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID,
@@ -165,7 +165,7 @@ export const designarPropostaAssinante = createServerFn({ method: "POST" })
  */
 export const prepararEnvioNoAgilliza = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.fila", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: UUID, assumir: z.boolean().default(false) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -180,7 +180,7 @@ export const prepararEnvioNoAgilliza = createServerFn({ method: "POST" })
  */
 export const pedirCorrecaoAoAssinante = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.fila", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: UUID,
@@ -211,7 +211,7 @@ export const pedirCorrecaoAoAssinante = createServerFn({ method: "POST" })
  */
 export const completarImovelDaProposta = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.fila", "edit"])])
-  .inputValidator((d: unknown) => z.object({ propostaId: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ propostaId: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { COLUNAS_IMOVEL_DO_CLIENTE, imovelDaPropostaPeloCrm } =
@@ -440,7 +440,7 @@ export interface DetalhePropostaAssinante {
  */
 export const detalhePropostaAssinante = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.contas", "view"])])
-  .inputValidator((d: unknown) => z.object({ id: UUID }).parse(d))
+  .validator((d: unknown) => z.object({ id: UUID }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     const { erroLegivel } = await import("./fila.server");

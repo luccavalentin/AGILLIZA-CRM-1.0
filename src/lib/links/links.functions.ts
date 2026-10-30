@@ -48,7 +48,7 @@ export const listarLinks = createServerFn({ method: "GET" })
 /** Cria um novo link. */
 export const criarLink = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.links", "create"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         titulo: z.string().trim().min(1, "Informe um título").max(200),
@@ -78,7 +78,7 @@ export const criarLink = createServerFn({ method: "POST" })
 /** Atualiza um link existente. */
 export const atualizarLink = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.links", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -109,7 +109,7 @@ export const atualizarLink = createServerFn({ method: "POST" })
 /** Exclui um link. */
 export const excluirLink = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.links", "delete"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
     const { error } = await supabase.from("links_uteis").delete().eq("id", data.id);
@@ -145,7 +145,7 @@ export const listarCategoriasLinks = createServerFn({ method: "GET" })
 /** Cria uma categoria. */
 export const criarCategoriaLink = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.links", "create"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         nome: z.string().trim().min(1, "Informe o nome").max(120),
@@ -171,7 +171,7 @@ export const criarCategoriaLink = createServerFn({ method: "POST" })
 /** Atualiza nome/ícone/cor de uma categoria e propaga a renomeação para os links. */
 export const atualizarCategoriaLink = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.links", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -215,7 +215,7 @@ export const atualizarCategoriaLink = createServerFn({ method: "POST" })
 /** Exclui uma categoria. Os links vinculados ficam sem categoria (ou são reatribuídos). */
 export const excluirCategoriaLink = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["documentos.links", "delete"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid(),

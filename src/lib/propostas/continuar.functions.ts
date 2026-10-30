@@ -129,7 +129,7 @@ async function carregarElegivel(supabase: any, propostaId: string) {
 
 export const salvarConferenciaProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),
@@ -443,7 +443,7 @@ export const salvarConferenciaProposta = createServerFn({ method: "POST" })
  */
 export const sincronizarPropostaComCrm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ proposta_id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { sincronizarPropostaComCrmImpl } = await import("./espelho-crm.server");
     return sincronizarPropostaComCrmImpl({
@@ -455,7 +455,7 @@ export const sincronizarPropostaComCrm = createServerFn({ method: "POST" })
 /** Avança a proposta para a próxima etapa do fluxo pós-aprovação. */
 export const avancarEtapaContinuar = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         proposta_id: z.string().uuid(),

@@ -192,7 +192,7 @@ async function semSensiveisSeNaoPode(supabase: any, userId: string, payload: Rec
 /** Lista funcionários do ecossistema (com filtros e busca). */
 export const listarFuncionarios = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.funcionarios", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         q: z.string().optional(),
@@ -272,7 +272,7 @@ export const listarFuncionarios = createServerFn({ method: "GET" })
 /** Obtém uma ficha completa do funcionário. */
 export const obterFuncionario = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.funcionarios", "view"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<Funcionario | null> => {
     const { supabase } = context;
     const { data: row, error } = await supabase
@@ -339,7 +339,7 @@ async function garantirCpfLivre(supabase: any, cpf: string, ignorarId?: string) 
 
 export const criarFuncionario = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "create"])])
-  .inputValidator((data: unknown) => funcionarioSchema.parse(data))
+  .validator((data: unknown) => funcionarioSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ id: string; numero: string }> => {
     const { supabase, userId } = context;
     const correspondenteId = await correspondenteDoUsuario(supabase, userId);
@@ -384,7 +384,7 @@ export const criarFuncionario = createServerFn({ method: "POST" })
 /** Atualiza dados do funcionário; o histórico é gravado automaticamente pelo trigger. */
 export const atualizarFuncionario = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     funcionarioSchema.extend({ id: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
@@ -433,7 +433,7 @@ export const atualizarFuncionario = createServerFn({ method: "POST" })
 /** Marca funcionário como desligado (soft delete + status). */
 export const desligarFuncionario = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -509,7 +509,7 @@ export const desligarFuncionario = createServerFn({ method: "POST" })
  */
 export const excluirFuncionario = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "delete"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const correspondenteId = await correspondenteDoUsuario(supabase, userId);
@@ -586,7 +586,7 @@ const dependenteSchema = z.object({
 
 export const listarDependentes = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.funcionarios", "view"])])
-  .inputValidator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<Dependente[]> => {
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -600,7 +600,7 @@ export const listarDependentes = createServerFn({ method: "GET" })
 
 export const salvarDependente = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
-  .inputValidator((data: unknown) => dependenteSchema.parse(data))
+  .validator((data: unknown) => dependenteSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ id: string }> => {
     const { supabase, userId } = context;
     const correspondenteId = await correspondenteDoUsuario(supabase, userId);
@@ -631,7 +631,7 @@ export const salvarDependente = createServerFn({ method: "POST" })
 // a exclusão exige "editar", como a gravação.
 export const excluirDependente = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { error } = await context.supabase.from("rh_dependentes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -719,7 +719,7 @@ function valorHistorico(
 
 export const listarHistoricoFuncionario = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.funcionarios", "view"])])
-  .inputValidator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<HistoricoItem[]> => {
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -791,7 +791,7 @@ export interface UsuarioVinculavel {
 /** Lista usuários (profiles) do ecossistema que podem ser vinculados a um funcionário. */
 export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"], ["rh.funcionarios", "create"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({ funcionario_id: z.string().uuid().optional() })
       .default({})
@@ -834,7 +834,7 @@ export const listarUsuariosVinculaveis = createServerFn({ method: "GET" })
 /** Atualiza apenas a foto do funcionário (upload imediato na ficha). */
 export const salvarFotoFuncionario = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"], ["rh.funcionarios", "create"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z.object({ id: z.string().uuid(), foto_url: z.string().nullable() }).parse(data),
   )
   .handler(async ({ data, context }) => {

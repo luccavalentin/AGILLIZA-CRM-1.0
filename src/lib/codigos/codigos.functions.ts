@@ -119,7 +119,7 @@ const filtroListaSchema = z
 /** Mensagens capturadas (com ou sem código), da mais nova para a mais antiga. */
 export const listarCodigos = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["operacional.codigos", "view"])])
-  .inputValidator((d: unknown) => filtroListaSchema.parse(d ?? {}))
+  .validator((d: unknown) => filtroListaSchema.parse(d ?? {}))
   .handler(async ({ data: f, context }): Promise<CodigoRecebido[]> => {
     await exigirEquipeInterna(context.userId);
     const db = await admin();
@@ -219,7 +219,7 @@ export type DadosCaixa = z.input<typeof caixaSchema>;
  */
 export const salvarCaixa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["operacional.codigos", "edit"])])
-  .inputValidator((d: unknown) => caixaSchema.parse(d))
+  .validator((d: unknown) => caixaSchema.parse(d))
   .handler(async ({ data, context }) => {
     await exigirEquipeInterna(context.userId);
     const db = await admin();
@@ -300,7 +300,7 @@ export const salvarCaixa = createServerFn({ method: "POST" })
 /** Pausa ou retoma a leitura (o leitor solta a conexão na próxima volta). */
 export const pausarCaixa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["operacional.codigos", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), ativo: z.boolean() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid(), ativo: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     await exigirEquipeInterna(context.userId);
     const db = await admin();
@@ -321,7 +321,7 @@ export const pausarCaixa = createServerFn({ method: "POST" })
 /** Testa o login e a pasta da caixa sem atrapalhar o leitor (ver teste-conexao.ts). */
 export const testarConexaoCaixa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["operacional.codigos", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await exigirEquipeInterna(context.userId);
     const db = await admin();
@@ -334,7 +334,7 @@ export const testarConexaoCaixa = createServerFn({ method: "POST" })
 /** Remove a caixa (e as mensagens e regras dela). O leitor solta a conexão na próxima volta. */
 export const removerCaixa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["operacional.codigos", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await exigirEquipeInterna(context.userId);
     const db = await admin();

@@ -118,7 +118,7 @@ const DATA = z
 
 export const listarComissoesAssinantes = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.comissoes", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         status: z.enum(STATUS_COMISSAO_ASSINANTE).nullable().optional(),
@@ -155,7 +155,7 @@ const PERCENTUAL = z.number().min(0, "De 0 a 10%.").max(10, "De 0 a 10%.");
 /** Percentual padrão (tenantId null) ou próprio de uma conta (percentual null tira o próprio). */
 export const definirComissaoAssinante = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.comissoes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({ tenantId: z.string().uuid().nullable(), percentual: PERCENTUAL.nullable() })
       .parse(d),
@@ -179,7 +179,7 @@ export const definirComissaoAssinante = createServerFn({ method: "POST" })
  */
 export const atualizarComissaoAssinante = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.comissoes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -208,7 +208,7 @@ export const atualizarComissaoAssinante = createServerFn({ method: "POST" })
  */
 export const conferirComissaoAssinante = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.comissoes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -238,7 +238,7 @@ export const conferirComissaoAssinante = createServerFn({ method: "POST" })
 /** Contas para escolher ao definir um percentual próprio. */
 export const contasParaComissao = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.comissoes", "edit"])])
-  .inputValidator((d: unknown) => z.object({ busca: z.string().trim().max(80) }).parse(d))
+  .validator((d: unknown) => z.object({ busca: z.string().trim().max(80) }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     const termo = data.busca.replace(/[\\%_]/g, (c) => "\\" + c);

@@ -38,7 +38,7 @@ async function hashArgon2id(senha: string): Promise<string> {
 /** Abre um portal do master: devolve o endereço com a entrada de uso único. */
 export const abrirPortalMaster = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.tecnologia", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({ portal: z.enum(["corretor", "imobiliaria", "parceiro", "cliente", "imobmatch"]) })
       .parse(d),

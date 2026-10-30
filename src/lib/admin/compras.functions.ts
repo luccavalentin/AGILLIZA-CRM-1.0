@@ -72,7 +72,7 @@ export const listarCompras = createServerFn({ method: "GET" })
 
 export const criarCompra = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.compras.pedidos", "create"], ["admin.compras", "create"])])
-  .inputValidator((data: unknown) => esquemaPedido.parse(data))
+  .validator((data: unknown) => esquemaPedido.parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const c = await corr(supabase, userId);
@@ -91,7 +91,7 @@ export const criarCompra = createServerFn({ method: "POST" })
 
 export const editarCompra = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.compras.pedidos", "edit"])])
-  .inputValidator((data: unknown) => esquemaPedido.extend({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => esquemaPedido.extend({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
     // Só pedido pendente muda: editar um aprovado trocava o valor depois da aprovação.
@@ -116,7 +116,7 @@ export const editarCompra = createServerFn({ method: "POST" })
 
 export const excluirCompra = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.compras.pedidos", "edit"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase } = context;
     // Aprovado/recusado fica no histórico; antes saía sem aviso (ou nem saía, pela RLS, e a tela dizia "excluído").
@@ -140,7 +140,7 @@ export const decidirCompra = createServerFn({ method: "POST" })
   // (admin/correspondente/gestor) e a ação do catálogo nunca era conferida.
   .middleware([exigirPermissao(["admin.compras.aprovacoes", "edit"])])
   // Recusar exige motivo (C67): fica no histórico e o solicitante vê.
-  .inputValidator((data: unknown) => esquemaDecisao.parse(data))
+  .validator((data: unknown) => esquemaDecisao.parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
 

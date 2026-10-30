@@ -8,7 +8,7 @@ import type { ConciliacaoItem, ConciliacaoLote, ResumoBanco } from "@/lib/concil
 /** Processa um arquivo já lido no navegador e grava o lote conciliado. */
 export const processarConciliacao = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         bancoLabel: z.string().trim().min(1).max(120),
@@ -41,7 +41,7 @@ export const processarConciliacao = createServerFn({ method: "POST" })
 /** Lista os lotes de conciliação do ecossistema, com filtros opcionais. */
 export const listarLotesConciliacao = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         banco: z.string().trim().max(120).optional().nullable(),
@@ -70,7 +70,7 @@ export const listarLotesConciliacao = createServerFn({ method: "GET" })
 /** Resumo agregado por banco (KPIs da tela). */
 export const resumoConciliacao = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         periodo: z
@@ -116,7 +116,7 @@ export const resumoConciliacao = createServerFn({ method: "GET" })
 /** Itens de um lote, com filtro por resultado e busca textual. */
 export const listarItensConciliacao = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         loteId: z.string().uuid(),
@@ -161,7 +161,7 @@ export const listarItensConciliacao = createServerFn({ method: "GET" })
  */
 export const excluirLoteConciliacao = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator((data: unknown) => z.object({ loteId: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ loteId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { data: removidos, error } = await context.supabase
       .from("conciliacao_lotes")
@@ -188,7 +188,7 @@ export const excluirLoteConciliacao = createServerFn({ method: "POST" })
 /** Cruza as chaves das planilhas comparadas contra as propostas do sistema. */
 export const cruzarComSistema = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["relatorios.geral", "view"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         chaves: z

@@ -107,7 +107,7 @@ const listarSchema = z.object({
 /** Lista paginada de clientes (RLS aplica escopo). */
 export const listarClientes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => listarSchema.parse(d))
+  .validator((d: unknown) => listarSchema.parse(d))
   .handler(
     async ({
       data,
@@ -219,7 +219,7 @@ export const listarClientes = createServerFn({ method: "GET" })
 /** Estatísticas rápidas de clientes para KPIs (respeita RLS). */
 export const estatisticasClientes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ escopo: z.enum(["minhas", "geral"]).optional() }).parse(d ?? {}),
   )
   .handler(
@@ -363,7 +363,7 @@ export type ClienteDoDocumento = {
 
 export const clientePorDocumento = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ documento: z.string().min(11).max(14) }).parse(d))
+  .validator((d: unknown) => z.object({ documento: z.string().min(11).max(14) }).parse(d))
   .handler(async ({ data, context }): Promise<ClienteDoDocumento | null> => {
     const { supabase, userId } = context;
     const { data: me } = await supabase
@@ -395,7 +395,7 @@ export const clientePorDocumento = createServerFn({ method: "GET" })
 
 export const criarCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     clienteInputSchema
       .extend({
         // Só regrava um cadastro existente com o mesmo documento quando o operador
@@ -570,7 +570,7 @@ export const criarCliente = createServerFn({ method: "POST" })
 /** Atualiza dados do cliente. */
 export const atualizarCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     clienteInputSchema
       .extend({
         id: z.string().uuid(),
@@ -708,7 +708,7 @@ export interface ClienteDetalhe {
 /** Detalhe completo do cliente. */
 export const getCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<ClienteDetalhe> => {
     const { supabase, userId } = context;
     const podePii = await temPii(supabase, userId);
@@ -789,7 +789,7 @@ export interface PainelStage {
 /** Kanban da esteira: etapas com clientes posicionados (RLS aplica escopo). */
 export const listarPainel = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (d: unknown) =>
       z
         .object({
@@ -889,7 +889,7 @@ export const getPipelineStages = createServerFn({ method: "GET" })
 /** Posição atual do cliente na esteira. */
 export const getClientePipeline = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("cliente_pipeline")
@@ -907,7 +907,7 @@ export const getClientePipeline = createServerFn({ method: "GET" })
 /** Salva endereço principal (dispara avanço para cadastro_completo). */
 export const salvarEndereco = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -970,7 +970,7 @@ export const salvarEndereco = createServerFn({ method: "POST" })
 
 export const getEndereco = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row } = await context.supabase
       .from("cliente_enderecos")
@@ -1030,7 +1030,7 @@ const vendedorSchema = z.object({
 
 export const listarVendedores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const podePii = await temPii(context.supabase, context.userId);
     const { data: rows, error } = await context.supabase
@@ -1046,7 +1046,7 @@ export const listarVendedores = createServerFn({ method: "GET" })
 
 export const salvarVendedor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => vendedorSchema.parse(d))
+  .validator((d: unknown) => vendedorSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true; id: string; pendentes: string[] }> => {
     const { supabase, userId } = context;
     await exigirEdicaoCliente(supabase, userId);
@@ -1125,7 +1125,7 @@ async function pendenciasVendedorSalvo(vendedorCrm: Record<string, unknown>): Pr
 
 export const removerVendedor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     await exigirEdicaoCliente(supabase, userId);
@@ -1175,7 +1175,7 @@ export const removerVendedor = createServerFn({ method: "POST" })
 // antigos continuam em `cliente_interacoes` e aparecem no painel do chat do cliente.
 export const listarInteracoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("cliente_interacoes")
@@ -1188,7 +1188,7 @@ export const listarInteracoes = createServerFn({ method: "GET" })
 
 export const listarHistorico = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("cliente_historico")
@@ -1203,7 +1203,7 @@ export const listarHistorico = createServerFn({ method: "GET" })
 /** Registra documento (o upload ao bucket é feito no client). */
 export const anexarDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -1275,7 +1275,7 @@ export const anexarDocumento = createServerFn({ method: "POST" })
 
 export const listarDocumentos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("cliente_documentos")
@@ -1309,7 +1309,7 @@ export const listarDocumentos = createServerFn({ method: "GET" })
  */
 export const revisarDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -1379,7 +1379,7 @@ export const revisarDocumento = createServerFn({ method: "POST" })
 /** URL assinada (5 min) para baixar documento. */
 export const urlDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ storage_path: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ storage_path: z.string() }).parse(d))
   .handler(async ({ data, context }): Promise<{ url: string }> => {
     // Confirma que o path pertence a um documento visível ao usuário (RLS aplicada na leitura).
     const { data: doc } = await context.supabase
@@ -1398,7 +1398,7 @@ export const urlDocumento = createServerFn({ method: "POST" })
 /** Edita metadados do documento (categoria, tipo, pasta, validade). */
 export const editarDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -1466,7 +1466,7 @@ export const editarDocumento = createServerFn({ method: "POST" })
 /** Exclui documento (registro + arquivo no storage). */
 export const excluirDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     if (!(await podeAcao(supabase, userId, "crm.clientes", "edit"))) {
@@ -1519,7 +1519,7 @@ export const excluirDocumento = createServerFn({ method: "POST" })
 /** Move etapa manualmente (respeita regra de não retroceder). */
 export const moverEtapa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -1543,7 +1543,7 @@ export const moverEtapa = createServerFn({ method: "POST" })
 /** Define a etapa da esteira para qualquer posição (avança ou volta). */
 export const definirEtapa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -1657,7 +1657,7 @@ export async function recuarEsteiraSeOrfao(
  */
 export const limparVinculoEsteira = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "edit"])])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { data: cli, error: eCli } = await supabase
@@ -1725,7 +1725,7 @@ export const limparVinculoEsteira = createServerFn({ method: "POST" })
  */
 export const definirDatasVistoria = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -1755,7 +1755,7 @@ export const definirDatasVistoria = createServerFn({ method: "POST" })
 /** Busca de clientes para combobox (Etapa 04). */
 export const buscarClientesCRM = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ q: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ q: z.string() }).parse(d))
 
   .handler(async ({ data, context }) => {
     const term = data.q.trim();
@@ -1798,7 +1798,7 @@ export const buscarClientesCRM = createServerFn({ method: "GET" })
  */
 export const excluirCliente = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().uuid(), motivo: z.string().max(500).optional() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
@@ -1876,7 +1876,7 @@ export const excluirCliente = createServerFn({ method: "POST" })
 /** Habilita/desabilita o acesso do cliente ao portal (persiste no cadastro). */
 export const definirAcessoPortal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ cliente_id: z.string().uuid(), ativo: z.boolean() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true; ativo: boolean }> => {
@@ -1996,7 +1996,7 @@ export function parceiroAtendeTipos(
 /** Lista os parceiros/usuários vinculados a um cliente. */
 export const listarVinculosCliente = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<VinculoParceiro[]> => {
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -2054,7 +2054,7 @@ export const listarParceirosDisponiveis = createServerFn({ method: "GET" })
 /** Cria um vínculo de atendimento entre o cliente e um usuário/parceiro. */
 export const vincularParceiro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -2086,7 +2086,7 @@ export const vincularParceiro = createServerFn({ method: "POST" })
 /** Remove um vínculo de atendimento. */
 export const desvincularParceiro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     await exigirEdicaoCliente(supabase, userId);
@@ -2126,7 +2126,7 @@ export interface ClienteNegocios {
 /** Lista as simulações e propostas vinculadas a um cliente (RLS aplica escopo). */
 export const getClienteNegocios = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<ClienteNegocios> => {
     const { supabase } = context;
 
@@ -2176,7 +2176,7 @@ export const getClienteNegocios = createServerFn({ method: "GET" })
 /** Dados do cadastro usados para pré-marcar o checklist de documentação. */
 export const getChecklistDados = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: cli, error } = await supabase
@@ -2199,7 +2199,7 @@ export const getChecklistDados = createServerFn({ method: "GET" })
 /** Persiste o estado manual do checklist e (opcionalmente) o uso de FGTS. */
 export const salvarChecklist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -2240,7 +2240,7 @@ export const salvarChecklist = createServerFn({ method: "POST" })
 /** Salva os dados do imóvel (exigidos pela integração bancária) e do interveniente quitante (IQ) no cadastro do cliente. */
 export const salvarImovelIq = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -2317,7 +2317,7 @@ export interface ContratoEmitido {
  */
 export const definirDataContratoEmitido = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -2342,7 +2342,7 @@ export const definirDataContratoEmitido = createServerFn({ method: "POST" })
  */
 export const arquivarContrato = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["crm.clientes", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         cliente_id: z.string().uuid(),
@@ -2369,7 +2369,7 @@ export const arquivarContrato = createServerFn({ method: "POST" })
  */
 export const listarContratosEmitidos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         q: z.string().max(120).optional(),
@@ -2523,7 +2523,7 @@ const transferirSchema = z.object({
 
 export const transferirAtendimento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => transferirSchema.parse(d))
+  .validator((d: unknown) => transferirSchema.parse(d))
   .handler(async ({ data, context }): Promise<{ ok: boolean }> => {
     const { supabase } = context;
     const { error } = await supabase.rpc(

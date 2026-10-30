@@ -154,7 +154,7 @@ export const listarLeituras = createServerFn({ method: "GET" })
 
 export const obterLeitura = createServerFn({ method: "GET" })
   .middleware([verScanIa])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<LeituraDetalhe> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -228,7 +228,7 @@ export const obterLeitura = createServerFn({ method: "GET" })
 /** Registra a leitura após o upload do arquivo no bucket. O tipo é OPCIONAL — em branco, a IA identifica. */
 export const criarLeitura = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator(
+  .validator(
     (d: { arquivo_url: string; tipo_documento?: string | null; lote_id?: string | null }) =>
       z
         .object({
@@ -274,7 +274,7 @@ export const criarLeitura = createServerFn({ method: "POST" })
  */
 export const processarLeitura = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: boolean; erro?: string }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -400,7 +400,7 @@ export const processarLeitura = createServerFn({ method: "POST" })
 /** Salva as correções feitas pelo revisor. */
 export const salvarCampos = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator((d: { leitura_id: string; campos: Array<{ id: string; valor: string }> }) =>
+  .validator((d: { leitura_id: string; campos: Array<{ id: string; valor: string }> }) =>
     z
       .object({
         leitura_id: z.string().uuid(),
@@ -459,7 +459,7 @@ export const salvarCampos = createServerFn({ method: "POST" })
 /** Exclui uma leitura do Scan IA, registrando a ação em auditoria antes de remover. */
 export const excluirLeitura = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const corr = await correspondenteDoUsuario(supabase, userId);
@@ -516,7 +516,7 @@ export const excluirLeitura = createServerFn({ method: "POST" })
 /** Confirma (humano) o tipo efetivo do documento. */
 export const confirmarTipoDocumento = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator((d: { leitura_id: string; tipo: string }) =>
+  .validator((d: { leitura_id: string; tipo: string }) =>
     z.object({ leitura_id: z.string().uuid(), tipo: z.enum(TIPOS_DOCUMENTO) }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
@@ -554,7 +554,7 @@ export const confirmarTipoDocumento = createServerFn({ method: "POST" })
 /** Vincula (ou desvincula) a leitura a um cliente já cadastrado. */
 export const vincularClienteLeitura = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator((d: { leitura_id: string; cliente_id: string | null }) =>
+  .validator((d: { leitura_id: string; cliente_id: string | null }) =>
     z.object({ leitura_id: z.string().uuid(), cliente_id: z.string().uuid().nullable() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
@@ -692,7 +692,7 @@ async function garantirClientePorDocumento(
  */
 export const criarClienteParaLeitura = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator((d: { leitura_id: string; nome: string; documento: string }) =>
+  .validator((d: { leitura_id: string; nome: string; documento: string }) =>
     z
       .object({
         leitura_id: z.string().uuid(),
@@ -777,7 +777,7 @@ function textoValorAtual(v: unknown): string | null {
 /** Monta a prévia do modal de aplicação: valor da IA x valor atual do cadastro. */
 export const previaAplicacao = createServerFn({ method: "GET" })
   .middleware([verScanIa])
-  .inputValidator((d: { leitura_id: string }) =>
+  .validator((d: { leitura_id: string }) =>
     z.object({ leitura_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<PreviaAplicacao> => {
@@ -873,7 +873,7 @@ export const previaAplicacao = createServerFn({ method: "GET" })
  */
 export const aplicarAoCadastro = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator(
+  .validator(
     (d: {
       leitura_id: string;
       decisoes: Array<{ campo_id: string; aplicar: boolean; escolha?: "manter" | "substituir" }>;
@@ -1043,7 +1043,7 @@ export const aplicarAoCadastro = createServerFn({ method: "POST" })
  */
 export const arquivarDocumentoDaLeitura = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator((d: { leitura_id: string }) =>
+  .validator((d: { leitura_id: string }) =>
     z.object({ leitura_id: z.string().uuid() }).parse(d),
   )
   .handler(
@@ -1161,7 +1161,7 @@ export interface LoteScan {
  */
 export const obterLoteScan = createServerFn({ method: "GET" })
   .middleware([verScanIa])
-  .inputValidator((d: { id: string; cliente_id?: string | null }) =>
+  .validator((d: { id: string; cliente_id?: string | null }) =>
     z
       .object({ id: z.string().uuid(), cliente_id: z.string().uuid().nullable().optional() })
       .parse(d),
@@ -1302,7 +1302,7 @@ export const obterLoteScan = createServerFn({ method: "GET" })
  */
 export const aplicarLoteScan = createServerFn({ method: "POST" })
   .middleware([processarScanIa])
-  .inputValidator(
+  .validator(
     (d: {
       lote_id: string;
       cliente_id?: string | null;

@@ -102,7 +102,7 @@ function falhar(error: { message?: string } | null, padrao: string): never {
 /** Lista uma pasta (ou a raiz) ou uma visão: favoritos, compartilhados, recentes, busca. */
 export const listarArquivos = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         parent_id: UUID.nullable().optional(),
@@ -131,7 +131,7 @@ export const listarArquivos = createServerFn({ method: "GET" })
 /** Trilha da pasta até a raiz. */
 export const caminhoNo = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID.nullable().optional() }).parse(d ?? {}))
+  .validator((d) => z.object({ id: UUID.nullable().optional() }).parse(d ?? {}))
   .handler(async ({ context, data }): Promise<Migalha[]> => {
     if (!data.id) return [];
     const { data: linhas, error } = await rpcDe(context.supabase)("arquivos_trilha", { p_no: data.id });
@@ -165,7 +165,7 @@ export const listarPastasRaiz = createServerFn({ method: "GET" })
 
 export const definirMostrarNoMenu = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID, mostrar: z.boolean() }).parse(d))
+  .validator((d) => z.object({ id: UUID, mostrar: z.boolean() }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await rpcDe(context.supabase)("arquivos_mostrar_no_menu", {
       p_no: data.id,
@@ -178,7 +178,7 @@ export const definirMostrarNoMenu = createServerFn({ method: "POST" })
 /** Cria a pasta (mesmo nome no mesmo lugar devolve a existente). */
 export const criarPasta = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ parent_id: UUID.nullable().optional(), nome: z.string().trim().min(1).max(300) }).parse(d),
   )
   .handler(async ({ context, data }): Promise<{ id: string }> => {
@@ -193,7 +193,7 @@ export const criarPasta = createServerFn({ method: "POST" })
 /** Registra o arquivo já enviado ao bucket (nova versão quando pedido). */
 export const registrarArquivo = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         parent_id: UUID.nullable().optional(),
@@ -245,7 +245,7 @@ export const registrarArquivo = createServerFn({ method: "POST" })
 
 export const renomearNo = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID, nome: z.string().trim().min(1).max(300) }).parse(d))
+  .validator((d) => z.object({ id: UUID, nome: z.string().trim().min(1).max(300) }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await rpcDe(context.supabase)("arquivos_renomear", { p_no: data.id, p_nome: data.nome });
     if (error) falhar(error, "Não foi possível renomear.");
@@ -254,7 +254,7 @@ export const renomearNo = createServerFn({ method: "POST" })
 
 export const moverNo = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID, novo_parent_id: UUID.nullable().optional() }).parse(d))
+  .validator((d) => z.object({ id: UUID, novo_parent_id: UUID.nullable().optional() }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await rpcDe(context.supabase)("arquivos_mover", {
       p_no: data.id,
@@ -267,7 +267,7 @@ export const moverNo = createServerFn({ method: "POST" })
 /** Manda para a lixeira (o item e tudo dentro dele). */
 export const moverParaLixeira = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID }).parse(d))
+  .validator((d) => z.object({ id: UUID }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await rpcDe(context.supabase)("arquivos_para_lixeira", { p_no: data.id });
     if (error) falhar(error, "Não foi possível mandar para a lixeira.");
@@ -276,7 +276,7 @@ export const moverParaLixeira = createServerFn({ method: "POST" })
 
 export const restaurarDaLixeira = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID }).parse(d))
+  .validator((d) => z.object({ id: UUID }).parse(d))
   .handler(async ({ context, data }): Promise<{ pasta: string | null }> => {
     const { data: pasta, error } = await rpcDe(context.supabase)("arquivos_restaurar", { p_no: data.id });
     if (error) falhar(error, "Não foi possível restaurar.");
@@ -286,7 +286,7 @@ export const restaurarDaLixeira = createServerFn({ method: "POST" })
 /** Exclui para sempre (só da lixeira) e apaga do bucket os objetos que ficaram sem uso. */
 export const excluirDefinitivo = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID }).parse(d))
+  .validator((d) => z.object({ id: UUID }).parse(d))
   .handler(async ({ context, data }) => {
     const { data: caminhos, error } = await rpcDe(context.supabase)("arquivos_excluir_definitivo", {
       p_no: data.id,
@@ -317,7 +317,7 @@ export const listarLixeira = createServerFn({ method: "GET" })
 
 export const alternarFavorito = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID }).parse(d))
+  .validator((d) => z.object({ id: UUID }).parse(d))
   .handler(async ({ context, data }): Promise<{ favorito: boolean }> => {
     const { data: fav, error } = await rpcDe(context.supabase)("arquivos_favoritar", { p_no: data.id });
     if (error) falhar(error, "Não foi possível favoritar.");
@@ -326,7 +326,7 @@ export const alternarFavorito = createServerFn({ method: "POST" })
 
 export const definirEtiquetas = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ id: UUID, etiquetas: z.array(z.string().max(60)).max(30) }).parse(d),
   )
   .handler(async ({ context, data }): Promise<{ etiquetas: string[] }> => {
@@ -340,7 +340,7 @@ export const definirEtiquetas = createServerFn({ method: "POST" })
 
 export const listarVersoes = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID }).parse(d))
+  .validator((d) => z.object({ id: UUID }).parse(d))
   .handler(async ({ context, data }): Promise<VersaoArquivo[]> => {
     const { data: v, error } = await rpcDe(context.supabase)("arquivos_versoes_de", { p_no: data.id });
     if (error) falhar(error, "Não foi possível listar as versões.");
@@ -352,7 +352,7 @@ export const listarVersoes = createServerFn({ method: "GET" })
 
 export const restaurarVersao = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID, versao: z.number().int().min(1) }).parse(d))
+  .validator((d) => z.object({ id: UUID, versao: z.number().int().min(1) }).parse(d))
   .handler(async ({ context, data }): Promise<{ versao: number }> => {
     const { data: v, error } = await rpcDe(context.supabase)("arquivos_restaurar_versao", {
       p_no: data.id,
@@ -365,7 +365,7 @@ export const restaurarVersao = createServerFn({ method: "POST" })
 /** Link assinado (5 min) da versão atual ou de uma versão anterior. */
 export const urlArquivo = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({ id: UUID, download: z.boolean().optional(), versao: z.number().int().min(1).optional() })
       .parse(d),
@@ -426,7 +426,7 @@ export const lerArmazenamento = createServerFn({ method: "GET" })
 /** Dono/admin muda o prazo da lixeira (1 a 365 dias). */
 export const definirPrazoLixeira = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ dias: z.number().int().min(1).max(365) }).parse(d))
+  .validator((d) => z.object({ dias: z.number().int().min(1).max(365) }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await rpcDe(context.supabase)("arquivos_definir_lixeira_dias", { p_dias: data.dias });
     if (error) falhar(error, "Não foi possível alterar o prazo da lixeira.");
@@ -458,7 +458,7 @@ async function drenarObjetosApagados(): Promise<void> {
 
 export const definirCota = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ gb: z.number().min(1).max(10000) }).parse(d))
+  .validator((d) => z.object({ gb: z.number().min(1).max(10000) }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await rpcDe(context.supabase)("arquivos_definir_cota", { p_gb: data.gb });
     if (error) falhar(error, "Não foi possível alterar a cota.");
@@ -467,7 +467,7 @@ export const definirCota = createServerFn({ method: "POST" })
 
 export const lerAcesso = createServerFn({ method: "GET" })
   .middleware([VER])
-  .inputValidator((d) => z.object({ id: UUID }).parse(d))
+  .validator((d) => z.object({ id: UUID }).parse(d))
   .handler(async ({ context, data }): Promise<{ restrita: boolean; acessos: AcessoItem[] }> => {
     const { data: r, error } = await rpcDe(context.supabase)("arquivos_acesso_de", { p_no: data.id });
     if (error) falhar(error, "Não foi possível ler o acesso.");
@@ -476,7 +476,7 @@ export const lerAcesso = createServerFn({ method: "GET" })
 
 export const salvarAcesso = createServerFn({ method: "POST" })
   .middleware([VER])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         id: UUID,

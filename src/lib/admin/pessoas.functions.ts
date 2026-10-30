@@ -283,7 +283,7 @@ export interface ResultadoCriarPessoa {
  */
 export const criarPessoaComAcesso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => criarSchema.parse(data))
+  .validator((data: unknown) => criarSchema.parse(data))
   .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
     const { supabase, userId } = context;
 
@@ -522,7 +522,7 @@ export const atualizarSchema = z.object({
 /** Atualiza dados básicos e o nível de acesso (papel/portal) de uma pessoa. */
 export const atualizarPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((data: unknown) => atualizarSchema.parse(data))
+  .validator((data: unknown) => atualizarSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
@@ -602,7 +602,7 @@ export const atualizarPessoa = createServerFn({ method: "POST" })
  */
 export const habilitarLoginPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z.object({ id: z.string().uuid(), email: z.string().email("E-mail inválido.") }).parse(data),
   )
   .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
@@ -648,7 +648,7 @@ export const habilitarLoginPessoa = createServerFn({ method: "POST" })
 /** Ativa ou desativa (bloqueia) o acesso de uma pessoa. */
 export const alternarStatusPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z.object({ id: z.string().uuid(), ativar: z.boolean() }).parse(data),
   )
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
@@ -693,7 +693,7 @@ export const alternarStatusPessoa = createServerFn({ method: "POST" })
  */
 export const resetarSenhaPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<ResultadoCriarPessoa> => {
     const { supabase, userId } = context;
     const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);
@@ -744,7 +744,7 @@ export interface ResultadoSenhasAntigas {
  */
 export const redefinirSenhasProvisoriasAntigas = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((d: unknown) => z.object({ confirmar: z.boolean() }).parse(d))
+  .validator((d: unknown) => z.object({ confirmar: z.boolean() }).parse(d))
   .handler(async ({ data, context }): Promise<ResultadoSenhasAntigas> => {
     const { supabase, userId } = context;
     const { data: topo } = await supabase.rpc("has_any_role", {
@@ -841,7 +841,7 @@ export const redefinirSenhasProvisoriasAntigas = createServerFn({ method: "POST"
  */
 export const alterarEmailPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -903,7 +903,7 @@ export const alterarEmailPessoa = createServerFn({ method: "POST" })
 /** Exclui definitivamente uma pessoa (remove o acesso ao sistema). */
 export const excluirPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
     const { supabase, userId } = context;
     const { correspondenteId, alvo } = await carregarAlvo(supabase, userId, data.id);

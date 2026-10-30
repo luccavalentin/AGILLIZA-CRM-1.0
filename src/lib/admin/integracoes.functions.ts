@@ -121,7 +121,7 @@ export const listarHealthChecks = createServerFn({ method: "GET" })
 /** Testa conectividade de uma integração (HEAD/GET na base_url) e registra o resultado. */
 export const testarConectividade = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.integracoes", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z.object({ integracao: z.string().min(1), base_url: z.string().url() }).parse(data),
   )
   .handler(async ({ data, context }): Promise<HealthCheckLista> => {

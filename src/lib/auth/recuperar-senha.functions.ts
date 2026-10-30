@@ -9,7 +9,7 @@ import { ipDoCliente } from "@/lib/http/ip-cliente";
  */
 export const pedirRecuperacaoDeSenha = createServerFn({ method: "POST" })
   // Qualquer entrada vira texto curto: nem o formato do pedido muda a resposta.
-  .inputValidator((d: unknown) => {
+  .validator((d: unknown) => {
     const email = (d as { email?: unknown } | null)?.email;
     return { email: typeof email === "string" ? email.slice(0, 320) : "" };
   })

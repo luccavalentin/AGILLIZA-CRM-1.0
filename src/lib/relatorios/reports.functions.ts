@@ -13,7 +13,7 @@ import { exigirPermissao } from "@/integrations/supabase/exigir-permissao";
 
 export const registrarExport = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["relatorios.geral", "export"])])
-  .inputValidator(
+  .validator(
     (d: { codigo: string; formato: string; registros: number; filtros: Record<string, unknown> }) =>
       z
         .object({

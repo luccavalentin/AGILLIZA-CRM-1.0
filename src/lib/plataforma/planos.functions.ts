@@ -106,7 +106,7 @@ export const lerCatalogoPlanos = createServerFn({ method: "GET" })
 
 export const salvarPlanoCatalogo = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.planos", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -176,7 +176,7 @@ export const salvarPlanoCatalogo = createServerFn({ method: "POST" })
 /** Um limite do plano (ex.: usuarios = 5; -1 = sem limite; true/false para recurso). */
 export const salvarLimitePlano = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.planos", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         planoId: z.string().uuid(),
@@ -213,7 +213,7 @@ export const salvarLimitePlano = createServerFn({ method: "POST" })
 
 export const removerLimitePlano = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.planos", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ planoId: z.string().uuid(), chave: z.string().trim().min(1).max(41) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -229,7 +229,7 @@ export const removerLimitePlano = createServerFn({ method: "POST" })
 
 export const salvarPacoteCredito = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.planos", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -255,7 +255,7 @@ export const salvarPacoteCredito = createServerFn({ method: "POST" })
 /** Quantos créditos cada operação consome (consulta de ficha, SMS…). */
 export const salvarCustoOperacao = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.planos", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         operacao: z.string().trim().min(1).max(60),
@@ -282,7 +282,7 @@ export const salvarCustoOperacao = createServerFn({ method: "POST" })
 /** Prazo de suporte por plano (primeira resposta e resolução, em horas). */
 export const salvarSlaPlano = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.planos", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         plano_codigo: z.string().trim().min(1).max(60),
@@ -314,7 +314,7 @@ export const salvarSlaPlano = createServerFn({ method: "POST" })
  */
 export const criarPlanoCatalogo = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.planos", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         nome: z.string().trim().min(2, "Informe o nome do plano.").max(80),

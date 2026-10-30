@@ -34,7 +34,7 @@ const MODULO_DO_TIPO: Record<ResultadoBusca["tipo"], string> = {
  */
 export const buscaGlobal = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ termo: z.string().trim().min(1).max(120) }).parse(data))
+  .validator((data) => z.object({ termo: z.string().trim().min(1).max(120) }).parse(data))
   .handler(async ({ data, context }): Promise<RespostaBusca> => {
     const { supabase, userId } = context;
     const termo = data.termo;

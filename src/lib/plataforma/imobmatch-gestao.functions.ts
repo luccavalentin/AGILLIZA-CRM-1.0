@@ -289,7 +289,7 @@ export const lerVisaoGeralImobMatch = createServerFn({ method: "GET" })
 /** Receita por produto, canal e mês; loja, Pix, patrocínio, assinaturas e inadimplência. */
 export const lerFinanceiroImobMatch = createServerFn({ method: "GET" })
   .middleware([VER_FINANCEIRO])
-  .inputValidator((d: unknown) => PERIODO.parse(d))
+  .validator((d: unknown) => PERIODO.parse(d))
   .handler(async ({ data, context }) =>
     (await ponte(context)).um<FinanceiroImobMatch>(
       "select plataforma.imobmatch_financeiro($1::date, $2::date) as r",
@@ -300,7 +300,7 @@ export const lerFinanceiroImobMatch = createServerFn({ method: "GET" })
 /** As faturas do ImobMatch no período (a tela pede até 200; a exportação, até 5.000). */
 export const lerFaturasImobMatch = createServerFn({ method: "GET" })
   .middleware([VER_FINANCEIRO])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         de: DATA,
@@ -326,7 +326,7 @@ export const lerFaturasImobMatch = createServerFn({ method: "GET" })
 /** Contas do Pro avulso e anunciantes particulares (planos, renovação e cancelamentos). */
 export const lerAssinaturasImobMatch = createServerFn({ method: "GET" })
   .middleware([VER_ASSINATURAS])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         produto: z.enum(["pro", "anunciante"]).nullable().default(null),
@@ -365,7 +365,7 @@ export const lerParametrosImobMatch = createServerFn({ method: "GET" })
 /** Preços, venda e limite de anúncios de um plano do ImobMatch (o banco recusa plano do CRM). */
 export const salvarPlanoImobMatch = createServerFn({ method: "POST" })
   .middleware([EDITAR_PLANOS])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -410,7 +410,7 @@ export const salvarPlanoImobMatch = createServerFn({ method: "POST" })
 /** Produto da App Store / Google Play (função da loja do Corretor, `planos.editar`). */
 export const salvarProdutoLojaImobMatch = createServerFn({ method: "POST" })
   .middleware([EDITAR_PLANOS])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -453,7 +453,7 @@ export const salvarProdutoLojaImobMatch = createServerFn({ method: "POST" })
 /** Um parâmetro do ImobMatch (inteiro). Os de cobrança e o "aceita sandbox" o banco recusa. */
 export const salvarParametroImobMatch = createServerFn({ method: "POST" })
   .middleware([EDITAR_CONFIG])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         chave: z

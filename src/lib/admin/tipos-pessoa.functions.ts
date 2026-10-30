@@ -100,7 +100,7 @@ const criarSchema = z.object({
 
 export const criarTipoPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((data: unknown) => criarSchema.parse(data))
+  .validator((data: unknown) => criarSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertPodeGerenciar(supabase, userId);
@@ -130,7 +130,7 @@ const atualizarSchema = criarSchema.extend({ id: z.string().uuid() });
 
 export const atualizarTipoPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((data: unknown) => atualizarSchema.parse(data))
+  .validator((data: unknown) => atualizarSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertPodeGerenciar(supabase, userId);
@@ -153,7 +153,7 @@ export const atualizarTipoPessoa = createServerFn({ method: "POST" })
 
 export const excluirTipoPessoa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.pessoas", "edit"])])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertPodeGerenciar(supabase, userId);

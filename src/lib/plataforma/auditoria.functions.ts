@@ -51,7 +51,7 @@ export const POR_PAGINA_AUDITORIA = 100;
 
 export const lerAuditoriaPlataforma = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.auditoria", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         q: z.string().trim().max(120).optional().nullable(),

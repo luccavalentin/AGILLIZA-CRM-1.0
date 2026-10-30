@@ -87,7 +87,7 @@ export const listarTodasNotificacoes = createServerFn({ method: "GET" })
 /** Marca uma notificação como lida. */
 export const marcarNotificacaoLida = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const { error } = await supabase
@@ -116,7 +116,7 @@ export const marcarTodasLidas = createServerFn({ method: "POST" })
 /** Exclui uma notificação do usuário. */
 export const excluirNotificacao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
     const { error } = await supabase

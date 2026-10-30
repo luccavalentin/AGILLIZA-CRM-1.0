@@ -128,7 +128,7 @@ export const POR_PAGINA_FATURAS = 50;
  */
 export const listarFaturasPlataforma = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.receita", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         filtro: z.enum(FILTROS_FATURA).default("abertas"),
@@ -173,7 +173,7 @@ export const listarFaturasPlataforma = createServerFn({ method: "GET" })
 /** Confirma o pagamento (Pix/boleto/cartão recebido fora do gateway). */
 export const baixarFaturaPlataforma = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.receita", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().uuid(), forma: z.enum(["pix", "boleto", "cartao"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -192,7 +192,7 @@ export const baixarFaturaPlataforma = createServerFn({ method: "POST" })
 /** Cancela uma fatura não paga (erro de emissão, cortesia, renegociação). */
 export const cancelarFaturaPlataforma = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.receita", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await import("./ponte.server");
     const r = await comPlataforma(context.userId, (tx) =>
@@ -233,7 +233,7 @@ export const POR_PAGINA_ASSINATURAS = 50;
 /** Assinaturas (vigentes primeiro), uma página por vez, e as contas/planos para criar uma nova. */
 export const listarAssinaturas = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.receita", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         busca: z.string().trim().max(120).optional().nullable(),
@@ -305,7 +305,7 @@ export const listarAssinaturas = createServerFn({ method: "GET" })
  */
 export const criarAssinaturaPlataforma = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.receita", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tenantId: z.string().uuid("Escolha a conta."),
@@ -343,7 +343,7 @@ export const criarAssinaturaPlataforma = createServerFn({ method: "POST" })
 
 export const cancelarAssinaturaPlataforma = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.receita", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -367,7 +367,7 @@ export const cancelarAssinaturaPlataforma = createServerFn({ method: "POST" })
 /** Fatura avulsa para uma conta (serviço extra, ajuste, cobrança combinada). */
 export const emitirFaturaAvulsa = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.receita", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         tenantId: z.string().uuid("Escolha a conta."),

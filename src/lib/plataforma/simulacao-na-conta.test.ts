@@ -11,7 +11,7 @@ vi.mock("@tanstack/react-start", () => {
   const corrente = () => {
     const o: Record<string, unknown> = {};
     o.middleware = () => o;
-    o.inputValidator = () => o;
+    o.validator = () => o;
     o.handler = (h: unknown) => h;
     o.server = () => o;
     return o;

@@ -132,7 +132,7 @@ export const POR_PAGINA_CHAMADOS = 50;
 /** Fila de chamados (mesma consulta da Gestão, com filtros e página) + resumo e contas para o filtro. */
 export const listarChamados = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.suporte", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         status: z.enum(STATUS_CHAMADO).optional().nullable(),
@@ -227,7 +227,7 @@ export const listarChamados = createServerFn({ method: "GET" })
 /** A conversa do chamado, pela mesma função que serve os dois lados. */
 export const lerFioChamado = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.suporte", "view"])])
-  .inputValidator((d: unknown) => z.object({ id: ID_CHAMADO }).parse(d))
+  .validator((d: unknown) => z.object({ id: ID_CHAMADO }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     return comPlataforma(context.userId, async (tx) => {
@@ -251,7 +251,7 @@ export const lerFioChamado = createServerFn({ method: "GET" })
 /** Visto de leitura (o outro lado vê que a equipe leu): só de quem atende. */
 export const marcarChamadoLido = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.suporte", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: ID_CHAMADO }).parse(d))
+  .validator((d: unknown) => z.object({ id: ID_CHAMADO }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -268,7 +268,7 @@ export const marcarChamadoLido = createServerFn({ method: "POST" })
  */
 export const enviarMensagemChamado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.suporte", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         chamadoId: ID_CHAMADO,
@@ -322,7 +322,7 @@ export const enviarMensagemChamado = createServerFn({ method: "POST" })
 
 export const editarMensagemChamado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.suporte", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: ID_MENSAGEM,
@@ -344,7 +344,7 @@ export const editarMensagemChamado = createServerFn({ method: "POST" })
 
 export const removerMensagemChamado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.suporte", "edit"])])
-  .inputValidator((d: unknown) => z.object({ id: ID_MENSAGEM }).parse(d))
+  .validator((d: unknown) => z.object({ id: ID_MENSAGEM }).parse(d))
   .handler(async ({ data, context }) => {
     const { comPlataforma } = await ponte();
     await comPlataforma(context.userId, (tx) =>
@@ -355,7 +355,7 @@ export const removerMensagemChamado = createServerFn({ method: "POST" })
 
 export const reagirMensagemChamado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.suporte", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: ID_MENSAGEM, emoji: z.string().trim().min(1).max(16) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -369,7 +369,7 @@ export const reagirMensagemChamado = createServerFn({ method: "POST" })
 /** Situação, prioridade e "assumir" — o mesmo UPDATE de `mudarChamado` da Gestão. */
 export const mudarChamado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.suporte", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: ID_CHAMADO,
@@ -414,7 +414,7 @@ export const listarArtigosSuporte = createServerFn({ method: "GET" })
 /** Cria ou altera um artigo — mesmas instruções de `salvarArtigo` da Gestão. */
 export const salvarArtigoSuporte = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.suporte", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         id: z.string().uuid().optional().nullable(),
@@ -493,7 +493,7 @@ export const listarAtendentes = createServerFn({ method: "GET" })
 /** Atribui o chamado a alguém da equipe (null = devolve à fila). O banco confere quem atende. */
 export const atribuirChamado = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["saas.suporte", "edit"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: ID_CHAMADO, atendente: z.string().uuid("Atendente inválido.").nullable() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -507,7 +507,7 @@ export const atribuirChamado = createServerFn({ method: "POST" })
 /** Métricas da central (primeira resposta, resolução, prazo cumprido, fila) do período. */
 export const lerMetricasSuporte = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["saas.suporte", "view"])])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ dias: z.union([z.literal(7), z.literal(30), z.literal(90)]).default(30) }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {

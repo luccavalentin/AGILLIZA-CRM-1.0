@@ -162,7 +162,7 @@ export interface ResultadoAcessoCliente {
 const ERRO_GENERICO = "Dados não encontrados. Verifique as informações e tente novamente.";
 
 export const validarAcessoCliente = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => loginSchema.parse(d))
+  .validator((d: unknown) => loginSchema.parse(d))
   .handler(async ({ data }): Promise<ResultadoAcessoCliente> => {
     const { portalDb } = await import("./portal-db.server");
     const documento = normalizarDoc(data.documento);
@@ -400,7 +400,7 @@ export const clienteListarNotificacoes = createServerFn({ method: "GET" }).handl
 const notifLidaSchema = z.object({ id: z.string().uuid() });
 
 export const clienteMarcarNotificacaoLida = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => notifLidaSchema.parse(d))
+  .validator((d: unknown) => notifLidaSchema.parse(d))
   .handler(async ({ data }): Promise<{ ok: boolean }> => {
     const sess = requireClienteSession();
     const { portalDb } = await import("./portal-db.server");
@@ -434,7 +434,7 @@ export const clienteBaixarMeusDados = createServerFn({ method: "GET" }).handler(
 const lgpdSchema = z.object({ acao: z.enum(["exclusao", "portabilidade"]) });
 
 export const clienteSolicitarLGPD = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => lgpdSchema.parse(d))
+  .validator((d: unknown) => lgpdSchema.parse(d))
   .handler(async ({ data }): Promise<{ ok: boolean }> => {
     const sess = requireClienteSession();
     const { portalDb } = await import("./portal-db.server");

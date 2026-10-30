@@ -39,7 +39,7 @@ export const listarCargos = createServerFn({ method: "GET" })
 
 export const criarCargo = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z.object({ nome: z.string().min(1), cbo: z.string().optional().nullable() }).parse(data),
   )
   .handler(async ({ data, context }): Promise<Cargo> => {
@@ -87,7 +87,7 @@ export const listarDepartamentos = createServerFn({ method: "GET" })
 
 export const criarDepartamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         nome: z.string().min(1),
@@ -121,7 +121,7 @@ const editarSchema = z.object({
 
 export const editarCargo = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
-  .inputValidator((data: unknown) => editarSchema.parse(data))
+  .validator((data: unknown) => editarSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("rh_cargos")
@@ -133,7 +133,7 @@ export const editarCargo = createServerFn({ method: "POST" })
 
 export const editarDepartamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.configuracoes", "edit"])])
-  .inputValidator((data: unknown) => editarSchema.omit({ cbo: true }).parse(data))
+  .validator((data: unknown) => editarSchema.omit({ cbo: true }).parse(data))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("rh_departamentos")
@@ -145,7 +145,7 @@ export const editarDepartamento = createServerFn({ method: "POST" })
 
 export const desativarCargoOuDepartamento = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.configuracoes", "delete"], ["rh.configuracoes", "edit"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z.object({ id: z.string().uuid(), tipo: z.enum(["cargo", "departamento"]) }).parse(data),
   )
   .handler(async ({ data, context }) => {

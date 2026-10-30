@@ -56,7 +56,7 @@ export interface ItemChecklist {
 // conferida aqui, como nas demais tabelas do módulo.
 export const listarChecklistCLT = createServerFn({ method: "GET" })
   .middleware([exigirPermissao(["rh.funcionarios", "view"], ["rh.documentos", "view"])])
-  .inputValidator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ funcionario_id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<ItemChecklist[]> => {
     const { supabase } = context;
 
@@ -85,7 +85,7 @@ export const listarChecklistCLT = createServerFn({ method: "GET" })
 
 export const atualizarItemChecklist = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["rh.funcionarios", "edit"], ["rh.documentos", "create"])])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         funcionario_id: z.string().uuid(),

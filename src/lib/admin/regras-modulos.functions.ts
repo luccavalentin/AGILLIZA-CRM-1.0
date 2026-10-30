@@ -928,7 +928,7 @@ async function forkNivelPadrao(
  *  ou um baseline "somente leitura" (view = próprios) em todos os módulos. */
 export const criarNivelAcesso = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.regras", "edit"])])
-  .inputValidator(
+  .validator(
     (d: {
       nome: string;
       descricao?: string;
@@ -1037,7 +1037,7 @@ export const criarNivelAcesso = createServerFn({ method: "POST" })
 /** Atualiza nome/descrição/papel/portal de um nível de acesso customizado. */
 export const atualizarNivelAcesso = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (d: {
       id: string;
       nome: string;
@@ -1130,7 +1130,7 @@ export const atualizarNivelAcesso = createServerFn({ method: "POST" })
 /** Exclui um nível de acesso customizado (e suas permissões). */
 export const excluirNivelAcesso = createServerFn({ method: "POST" })
   .middleware([exigirPermissao(["admin.regras", "edit"])])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: nivel } = await supabase
@@ -1201,7 +1201,7 @@ const permSchema = z.object({
 /** Salva a matriz de permissões de um nível de acesso (substitui o conjunto). */
 export const salvarPermissoes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => permSchema.parse(d))
+  .validator((d: unknown) => permSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
