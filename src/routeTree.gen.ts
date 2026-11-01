@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as ClienteConsentimentoRouteImport } from './routes/cliente-consentimento'
 import { Route as ConfirmarEmailRouteImport } from './routes/confirmar-email'
+import { Route as ExcluirContaRouteImport } from './routes/excluir-conta'
 import { Route as ParceiroRouteImport } from './routes/parceiro'
 import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
 import { Route as PortalRouteImport } from './routes/portal'
@@ -223,6 +224,11 @@ const ClienteConsentimentoRoute = ClienteConsentimentoRouteImport.update({
 const ConfirmarEmailRoute = ConfirmarEmailRouteImport.update({
   id: '/confirmar-email',
   path: '/confirmar-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExcluirContaRoute = ExcluirContaRouteImport.update({
+  id: '/excluir-conta',
+  path: '/excluir-conta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParceiroRoute = ParceiroRouteImport.update({
@@ -1274,6 +1280,7 @@ export interface FileRoutesByFullPath {
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
   '/confirmar-email': typeof ConfirmarEmailRoute
+  '/excluir-conta': typeof ExcluirContaRoute
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
@@ -1461,6 +1468,7 @@ export interface FileRoutesByTo {
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
   '/confirmar-email': typeof ConfirmarEmailRoute
+  '/excluir-conta': typeof ExcluirContaRoute
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
@@ -1645,6 +1653,7 @@ export interface FileRoutesById {
   '/cliente': typeof ClienteRouteWithChildren
   '/cliente-consentimento': typeof ClienteConsentimentoRoute
   '/confirmar-email': typeof ConfirmarEmailRoute
+  '/excluir-conta': typeof ExcluirContaRoute
   '/parceiro': typeof ParceiroRouteWithChildren
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/portal': typeof PortalRoute
@@ -1834,6 +1843,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/cliente-consentimento'
     | '/confirmar-email'
+    | '/excluir-conta'
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
@@ -2021,6 +2031,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/cliente-consentimento'
     | '/confirmar-email'
+    | '/excluir-conta'
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
@@ -2204,6 +2215,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/cliente-consentimento'
     | '/confirmar-email'
+    | '/excluir-conta'
     | '/parceiro'
     | '/politica-de-privacidade'
     | '/portal'
@@ -2393,6 +2405,7 @@ export interface RootRouteChildren {
   ClienteRoute: typeof ClienteRouteWithChildren
   ClienteConsentimentoRoute: typeof ClienteConsentimentoRoute
   ConfirmarEmailRoute: typeof ConfirmarEmailRoute
+  ExcluirContaRoute: typeof ExcluirContaRoute
   ParceiroRoute: typeof ParceiroRouteWithChildren
   PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
   PortalRoute: typeof PortalRoute
@@ -2447,6 +2460,13 @@ declare module '@tanstack/react-router' {
       path: '/confirmar-email'
       fullPath: '/confirmar-email'
       preLoaderRoute: typeof ConfirmarEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/excluir-conta': {
+      id: '/excluir-conta'
+      path: '/excluir-conta'
+      fullPath: '/excluir-conta'
+      preLoaderRoute: typeof ExcluirContaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/parceiro': {
@@ -4211,6 +4231,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClienteRoute: ClienteRouteWithChildren,
   ClienteConsentimentoRoute: ClienteConsentimentoRoute,
   ConfirmarEmailRoute: ConfirmarEmailRoute,
+  ExcluirContaRoute: ExcluirContaRoute,
   ParceiroRoute: ParceiroRouteWithChildren,
   PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
   PortalRoute: PortalRoute,
