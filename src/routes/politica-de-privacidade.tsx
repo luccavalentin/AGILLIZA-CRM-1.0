@@ -25,13 +25,13 @@ export const Route = createFileRoute("/politica-de-privacidade")({
 
 // Preencher com os dados reais do controlador. Vazio = texto neutro na página.
 const DADOS_CONTROLADOR = {
-  razaoSocial: "",
-  cnpj: "",
-  endereco: "",
+  razaoSocial: "GRAZIELA BENTO DE CARVALHO LTDA",
+  cnpj: "51.306.419/0001-07",
+  endereco: "Rua Bom Jesus, 180, apto 32, Cidade Alta, Piracicaba/SP",
   dpoNome: "",
   dpoEmail: "",
   /** Data da última atualização desta política, ex.: "21/10/2026". */
-  atualizadoEm: "",
+  atualizadoEm: "01/11/2026",
 };
 
 const EM_ATUALIZACAO = "dados do controlador em atualização";

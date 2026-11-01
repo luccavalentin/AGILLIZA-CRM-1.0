@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Agilliza</string>
+    <string name="title_activity_main">Agilliza</string>
+    <string name="package_name">br.com.agillizatech.correspondente</string>
+    <string name="custom_url_scheme">br.com.agillizatech.correspondente</string>
+</resources>

@@ -34,3 +34,9 @@ dist-ssr
 
 # Arquivo acidental de redirecionamento no Windows
 nul
+
+# App das lojas: dependências e artefatos nativos
+app-loja/node_modules
+app-loja/android/app/build
+app-loja/android/build
+app-loja/android/.gradle

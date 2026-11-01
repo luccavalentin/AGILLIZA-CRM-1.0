@@ -1,0 +1,25 @@
+{
+  "name": "@agilliza/app-loja",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agilliza correspondente nas lojas: o mesmo sistema, empacotado com Capacitor para Android e iOS",
+  "scripts": {
+    "sync": "cap sync",
+    "android:apk": "cap sync android && cd android && ./gradlew assembleDebug",
+    "android:aab": "cap sync android && cd android && ./gradlew bundleRelease",
+    "android:verificar-aab": "node scripts/verificar-aab.mjs",
+    "ios:abrir": "cap sync ios && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.4.0",
+    "@capacitor/ios": "^7.4.0",
+    "@capacitor/splash-screen": "^7.0.0",
+    "@capacitor/status-bar": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.0",
+    "typescript": "^5.7.3"
+  }
+}
