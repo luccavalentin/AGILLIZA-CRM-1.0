@@ -5,11 +5,9 @@ import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { BiometricAuth } from "@/components/auth/BiometricAuth";
 import { NovaSenhaRecuperacao } from "@/components/auth/NovaSenhaRecuperacao";
 import { marcarAppDesbloqueado } from "@/lib/pwa/biometria";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { getMinhaSessao } from "@/lib/session.functions";
 import { getMinhasPermissoes } from "@/lib/permissions.functions";
@@ -43,7 +41,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const router = useRouter();
   const [carregando, setCarregando] = useState(false);
-  // Volta do link de "Esqueci minha senha": no lugar das abas, o formulário de senha nova.
+  // Volta do link de "Esqueci minha senha": no lugar do login, o formulário de senha nova.
   const [recuperando, setRecuperando] = useState(false);
   const recuperandoRef = useRef(false);
 
@@ -137,53 +135,6 @@ function AuthPage() {
     }
   }
 
-  async function criarConta(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const nome = String(form.get("nome"));
-    const email = String(form.get("email"));
-    const senha = String(form.get("senha"));
-    const confirmar = String(form.get("confirmar"));
-    const aceite = form.get("aceite");
-
-    if (senha !== confirmar) {
-      toast.error("As senhas não coincidem.");
-      return;
-    }
-    if (senha.length < 8) {
-      toast.error("A senha deve ter ao menos 8 caracteres.");
-      return;
-    }
-    if (!aceite) {
-      toast.error("É necessário aceitar os termos e a política de privacidade.");
-      return;
-    }
-
-    setCarregando(true);
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password: senha,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
-          data: {
-            full_name: nome,
-            papel_inicial: "correspondente",
-          },
-        },
-      });
-      if (error) {
-        toast.error("Não foi possível criar a conta. Tente novamente.");
-        return;
-      }
-      toast.success("Confirme seu e-mail para ativar a conta.");
-    } catch {
-      toast.error("Não foi possível criar a conta. Tente novamente.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
   // O link vai pelo e-mail da plataforma (o SMTP do Auth de produção não entrega: defeito de
   // 30/10/2026). A resposta é sempre a mesma, exista a conta ou não.
   async function esqueciSenha() {
@@ -212,82 +163,34 @@ function AuthPage() {
           }}
         />
       ) : (
-        <Tabs defaultValue="entrar" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="entrar">Entrar</TabsTrigger>
-            <TabsTrigger value="criar">Criar conta</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="entrar">
-            <form onSubmit={entrar} className="mt-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-email">E-mail</Label>
-                <Input id="login-email" name="email" type="email" autoComplete="email" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-senha">Senha</Label>
-                <Input
-                  id="login-senha"
-                  name="senha"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                />
-              </div>
-              <button
-                type="button"
-                onClick={esqueciSenha}
-                className="text-sm text-primary hover:underline"
-              >
-                Esqueci minha senha
-              </button>
-              <Button type="submit" className="w-full" disabled={carregando}>
-                {carregando ? "Entrando…" : "Entrar"}
-              </Button>
-              <BiometricAuth destino={destinoPosLogin("sistema")} disabled={carregando} />
-            </form>
-          </TabsContent>
-
-          <TabsContent value="criar">
-            <form onSubmit={criarConta} className="mt-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="reg-nome">Nome completo</Label>
-                <Input id="reg-nome" name="nome" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reg-email">E-mail</Label>
-                <Input id="reg-email" name="email" type="email" autoComplete="email" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reg-senha">Senha</Label>
-                <Input
-                  id="reg-senha"
-                  name="senha"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reg-conf">Confirmar senha</Label>
-                <Input
-                  id="reg-conf"
-                  name="confirmar"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
-              <label className="flex items-start gap-2 text-sm text-muted-foreground">
-                <Checkbox name="aceite" id="reg-aceite" className="mt-0.5" />
-                <span>Li e aceito os termos de uso e a política de privacidade.</span>
-              </label>
-              <Button type="submit" className="w-full" disabled={carregando}>
-                {carregando ? "Criando…" : "Criar conta de correspondente"}
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
+        // O cadastro público está desligado (auditoria C1): quem entra recebe a conta da equipe.
+        <form onSubmit={entrar} className="mt-6 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="login-email">E-mail</Label>
+            <Input id="login-email" name="email" type="email" autoComplete="email" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="login-senha">Senha</Label>
+            <Input
+              id="login-senha"
+              name="senha"
+              type="password"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+          <button
+            type="button"
+            onClick={esqueciSenha}
+            className="text-sm text-primary hover:underline"
+          >
+            Esqueci minha senha
+          </button>
+          <Button type="submit" className="w-full" disabled={carregando}>
+            {carregando ? "Entrando…" : "Entrar"}
+          </Button>
+          <BiometricAuth destino={destinoPosLogin("sistema")} disabled={carregando} />
+        </form>
       )}
       <p className="mt-6 text-center text-xs text-muted-foreground">
         <Link
