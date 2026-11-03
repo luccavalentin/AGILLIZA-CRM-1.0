@@ -28,6 +28,9 @@ const STATUS_APROVADOS = new Set([
   "credito_aprovado",
   "credito_condicionado",
   "formularios",
+  "aguardando_documentos",
+  "engenharia_vistoria",
+  "analise_juridica",
   "contrato_emitido",
   "registrado",
 ]);
