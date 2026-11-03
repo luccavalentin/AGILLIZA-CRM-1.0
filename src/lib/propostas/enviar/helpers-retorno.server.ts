@@ -443,6 +443,38 @@ const DEPOIS_DO_CREDITO = new Set<PropostaStatus>([
  * "Enviado p/ aprovação de crédito" — tendo sido aprovada em 24/09. Sem
  * situação legível, o que a proposta já andou vale mais que o silêncio.
  */
+/**
+ * A oportunidade está cancelada de verdade na HomeFin?
+ *
+ * `tipoSituacao: "C"` é "Cancelada" no contrato (A/T/C), mas não basta. A
+ * 22108 (PRO-000192, Bradesco 5402559) responde "C" desde a criação, sem
+ * `dataCancelamento`, sem `idUsuarioCancelamento` e com a simulação do
+ * Bradesco aprovada dentro, enquanto o painel da HomeFin a mostra ATIVA
+ * (confirmado pelo Lucca em 03/11/2026). O sync copiava o "C" e cancelava a
+ * proposta aprovada a cada rodada.
+ *
+ * Por isso "C" sem nenhum registro de cancelamento e com simulação aprovada
+ * (A, ou C de condicionado) não é cancelamento.
+ */
+export function oportunidadeCancelada(op: any): boolean {
+  const situacao = String(op?.tipoSituacao?.id ?? op?.tipoSituacao ?? op?.situacao ?? "")
+    .trim()
+    .toUpperCase()
+    .charAt(0);
+  if (situacao !== "C") return false;
+  const temRegistro = Boolean(op?.dataCancelamento) || op?.idUsuarioCancelamento != null;
+  if (temRegistro) return true;
+  const sims: any[] = Array.isArray(op?.simulacoes) ? op.simulacoes : [];
+  const algumaAprovada = sims.some((s) => {
+    const t = String(s?.tipoSituacao ?? "")
+      .trim()
+      .toUpperCase()
+      .charAt(0);
+    return t === "A" || t === "C";
+  });
+  return !algumaAprovada;
+}
+
 export function statusSemRetrocederCredito(
   derivado: PropostaStatus | null,
   atual: string | null | undefined,

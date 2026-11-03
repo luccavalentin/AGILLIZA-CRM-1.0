@@ -34,6 +34,7 @@ import {
   statusDaAtividade,
   statusGlobalPorBancos,
   statusSemRetrocederCredito,
+  oportunidadeCancelada,
   homefinPodeRegravarRegua,
 } from "./enviar/helpers-retorno.server";
 import { normalizarTexto } from "./enviar/shared-utils";
@@ -843,7 +844,8 @@ export async function garantirEnderecoParticipantes({
       .charAt(0);
 
     // Requisito 3: Interromper se a oportunidade estiver cancelada na HomeFin
-    if (situacao === "C") {
+    // ("C" sem registro de cancelamento e com simulação aprovada não conta).
+    if (situacao === "C" && oportunidadeCancelada(op)) {
       throw new Error(
         "A oportunidade desta proposta foi cancelada na integração (provavelmente por um cancelamento anterior). Será criada uma nova oportunidade para reenviar.",
       );
@@ -1362,7 +1364,10 @@ async function enviarPropostaImplInner({
         .toUpperCase()
         .charAt(0);
 
-      if (situacao === "C") {
+      // "C" sem registro de cancelamento e com simulação aprovada não é
+      // cancelamento (ver `oportunidadeCancelada`): criar oportunidade nova
+      // aqui jogaria fora a proposta que o banco aprovou.
+      if (situacao === "C" && oportunidadeCancelada(op)) {
         // CORREÇÃO: Em vez de apenas travar, tentamos criar uma oportunidade NOVA
         // para reaproveitar os dados e não bloquear o usuário.
         try {
@@ -2392,7 +2397,7 @@ export async function sincronizarPropostaImpl({
   let novoStatus: string | null = null;
   if (situacao === "T") {
     novoStatus = "contrato_emitido";
-  } else if (situacao === "C") {
+  } else if (situacao === "C" && oportunidadeCancelada(op)) {
     novoStatus = "cancelada";
   } else {
     // FONTE ÚNICA DE VERDADE: `propostas.status` é DERIVADO do estado atual de
