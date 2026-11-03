@@ -3,7 +3,8 @@ import { mensagemDeErro } from "@/lib/erros/mensagem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Send, Loader2, Info } from "lucide-react";
+import { Send, Loader2, Info, MessageSquareText } from "lucide-react";
+import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -72,10 +73,14 @@ export function TabResumo({
   proposta,
   bancos,
   propostaId,
+  followups,
+  onVerFollowup,
 }: {
   proposta: any;
   bancos: any[];
   propostaId: string;
+  followups?: any[];
+  onVerFollowup?: () => void;
 }) {
   const qc = useQueryClient();
   const selecionarFn = useServerFn(selecionarBancoProposta);
@@ -177,6 +182,8 @@ export function TabResumo({
         statusProposta={proposta.status}
         bancoReprovado={bancoReprovado}
       />
+
+      <UltimoRetornoBanco followups={followups} onVer={onVerFollowup} />
 
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="border-b border-border px-4 py-3 text-sm font-medium text-muted-foreground">
@@ -499,6 +506,54 @@ export function TabResumo({
       <EnvioResultadoDialog resultado={resultadoEnvio} onClose={() => setResultadoEnvio(null)} />
 
       <DetalhamentoBancoDialog banco={detalheBanco} onClose={() => setDetalheBanco(null)} />
+    </div>
+  );
+}
+
+/**
+ * O recado mais recente do FUP da oportunidade (laudo, pendência, analista).
+ * Fica no Resumo porque é a resposta que o operador procura quando a etapa
+ * parece parada; o histórico completo segue na aba Follow-up.
+ */
+function UltimoRetornoBanco({ followups, onVer }: { followups?: any[]; onVer?: () => void }) {
+  const ultimo = (followups ?? [])
+    .filter((f) => f?.tipo === "homefin_fup")
+    .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))[0];
+  if (!ultimo) return null;
+  const quando = new Date(ultimo.created_at).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 bg-muted/30 px-5 py-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <MessageSquareText className="h-4 w-4 shrink-0 text-primary" />
+          <h3 className="text-[13px] font-bold uppercase tracking-wider text-foreground">
+            Último retorno do banco
+          </h3>
+        </div>
+        <span className="text-[11px] tabular-nums text-muted-foreground">{quando}</span>
+      </div>
+      <div className="space-y-1.5 px-5 py-4">
+        {ultimo.titulo && (
+          <p className="break-words text-sm font-semibold text-foreground">
+            {semMarcaIntegracao(ultimo.titulo)}
+          </p>
+        )}
+        <p className="line-clamp-4 whitespace-pre-line break-words text-sm text-foreground/80">
+          {semMarcaIntegracao(String(ultimo.comentario ?? "").replace(/\n{2,}/g, "\n"))}
+        </p>
+        {onVer && (
+          <Button variant="link" size="sm" className="h-auto px-0" onClick={onVer}>
+            Ver todos no Follow-up
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

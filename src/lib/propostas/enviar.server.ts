@@ -2753,6 +2753,28 @@ export async function sincronizarPropostaImpl({
     }
   }
 
+  // FUP da oportunidade (laudo, pendência de engenharia, recado do analista):
+  // as atividades não trazem esse retorno. Vai junto da leitura que já roda
+  // depois do crédito, sem consulta automática a mais.
+  if (
+    [
+      "credito_aprovado",
+      "credito_condicionado",
+      "formularios",
+      "aguardando_documentos",
+      "engenharia_vistoria",
+      "analise_juridica",
+      "contrato_emitido",
+    ].includes(String(statusEfetivo))
+  ) {
+    try {
+      const { importarFupHomefinImpl } = await import("./enviar/lifecycle.server");
+      await importarFupHomefinImpl({ supabase, propostaId });
+    } catch (e) {
+      console.error("[proposta] leitura do FUP falhou", e);
+    }
+  }
+
   return { status: statusEfetivo, etapa: nomeEtapa, atualizado: mudouStatus };
 }
 

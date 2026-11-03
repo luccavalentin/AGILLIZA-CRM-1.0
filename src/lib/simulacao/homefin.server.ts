@@ -451,7 +451,8 @@ export async function chamarIntegracao<T = unknown>(
    * O teto total sobe de 3 para 5 chamadas simultâneas, o que continua sendo
    * um limite conservador para a API.
    */
-  const ehConsultaDeAcompanhamento = method === "GET" && /^\/oportunidade\/[^/]+$/.test(endpoint);
+  const ehConsultaDeAcompanhamento =
+    method === "GET" && (/^\/oportunidade\/[^/]+$/.test(endpoint) || endpoint.startsWith("/fup/list"));
   const faixa = ehConsultaDeAcompanhamento ? "leitura" : "escrita";
   const LIMITE = { leitura: 2, escrita: 3 } as const;
   const deveSerializar = !isAuth && !isDominio;
@@ -506,7 +507,11 @@ async function executarChamada<T = unknown>(
   ctx: HomefinRequestCtx = {},
 ): Promise<T> {
   const { base } = config();
-  const url = `${base}${endpoint}`;
+  // O FUP fica na raiz da API, fora de `/external` (`/external/fup/list` é 404;
+  // `/fup/list` responde com o mesmo token, testado em 03/11/2026).
+  const url = endpoint.startsWith("/fup/")
+    ? `${base.replace(/\/external$/, "")}${endpoint}`
+    : `${base}${endpoint}`;
   const bodyNormalizado = body ? normalizarPayloadBanco(body) : undefined;
 
   let tentativas = 0;

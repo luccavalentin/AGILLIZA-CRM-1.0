@@ -4,6 +4,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { chamarIntegracao } from "@/lib/simulacao/homefin.server";
+import { fupsNovos, type FupHomefin } from "./fup-homefin";
 
 export async function enviarFollowupHomefinImpl({
   propostaId,
@@ -32,6 +33,71 @@ export async function enviarFollowupHomefinImpl({
       correspondente_id: prop.correspondente_id,
     },
   );
+}
+
+/**
+ * Traz o FUP da oportunidade para a aba Follow-up da proposta, em nome da
+ * integração (tipo "homefin_fup", fora do espelho das atividades, que é
+ * reescrito a cada leitura). Recado novo dos últimos 7 dias avisa o
+ * responsável; o histórico mais antigo entra calado.
+ */
+export async function importarFupHomefinImpl({
+  propostaId,
+  supabase,
+}: {
+  propostaId: string;
+  supabase: SupabaseClient<any, any, any>;
+}): Promise<number> {
+  const { data: prop } = await supabase
+    .from("propostas")
+    .select(
+      "homefin_id_oportunidade, simulacao_id, correspondente_id, numero_proposta, usuario_responsavel_id",
+    )
+    .eq("id", propostaId)
+    .maybeSingle();
+  if (!prop?.homefin_id_oportunidade) return 0;
+
+  const lista = await chamarIntegracao<FupHomefin[]>(
+    `/fup/list?idOportunidade=${encodeURIComponent(String(prop.homefin_id_oportunidade))}`,
+    "GET",
+    undefined,
+    {
+      simulacao_id: prop.simulacao_id,
+      proposta_id: propostaId,
+      correspondente_id: prop.correspondente_id,
+    },
+  );
+  const { data: atuais } = await supabase
+    .from("proposta_followups")
+    .select("tipo, titulo, comentario, created_at")
+    .eq("proposta_id", propostaId);
+  const novos = fupsNovos(lista, (atuais ?? []) as any[]);
+  if (novos.length === 0) return 0;
+
+  await supabase.from("proposta_followups").insert(
+    novos.map((n) => ({
+      proposta_id: propostaId,
+      tipo: "homefin_fup",
+      titulo: n.titulo,
+      comentario: n.comentario,
+      homefin_enviado: true,
+      created_at: n.created_at,
+    })) as any,
+  );
+
+  const recentes = novos.filter((n) => Date.now() - +new Date(n.created_at) < 7 * 86_400_000);
+  if (recentes.length > 0 && prop.usuario_responsavel_id) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("notificacoes").insert({
+      user_id: prop.usuario_responsavel_id,
+      correspondente_id: prop.correspondente_id,
+      tipo: "proposta",
+      titulo: "Retorno do banco",
+      corpo: `${prop.numero_proposta}: ${recentes.map((n) => n.titulo).join(" · ")}`,
+      link: `/operacional/propostas/${propostaId}`,
+    } as any);
+  }
+  return novos.length;
 }
 
 export async function cancelarPropostaHomefinImpl({
