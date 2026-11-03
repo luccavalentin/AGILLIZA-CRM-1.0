@@ -34,12 +34,15 @@ export function HistoricoComentarios({ followups }: { followups: any[] }) {
         const quando = new Date(f.created_at);
         const anterior = i > 0 ? new Date(ordenados[i - 1].created_at) : null;
         const novoDia = !anterior || anterior.toDateString() !== quando.toDateString();
-        const nosso = f.tipo !== "banco" && f.tipo !== "homefin_documento";
+        const nosso =
+          f.tipo !== "banco" && f.tipo !== "homefin_documento" && f.tipo !== "homefin_fup";
         const autor = nosso
           ? `Agilliza · ${f.autor_nome ?? "operador"}`
           : f.tipo === "homefin_documento"
             ? "Integração · análise de documento"
-            : "Integração bancária";
+            : f.tipo === "homefin_fup"
+              ? "Integração · follow-up"
+              : "Integração bancária";
         return (
           <div key={f.id} className="flex flex-col gap-2.5">
             {novoDia && (

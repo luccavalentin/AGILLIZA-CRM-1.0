@@ -496,7 +496,15 @@ export function PropostaView({
 
       <div key={tab} className="animate-fade-in">
         <ErrorBoundaryAba nomeAba={tab}>
-          {tab === "RESUMO" && <TabResumo proposta={p} bancos={data.bancos} propostaId={id} />}
+          {tab === "RESUMO" && (
+            <TabResumo
+              proposta={p}
+              bancos={data.bancos}
+              propostaId={id}
+              followups={data.followups}
+              onVerFollowup={() => setTab("FUP")}
+            />
+          )}
           {tab === "COMPRADORES" && (
             <ClienteSecao
               clienteId={p.cliente_id}

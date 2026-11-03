@@ -68,7 +68,11 @@ describe("contrato HomeFin — endpoints", () => {
   });
 
   it("toda chamada usa um caminho e um método que existem no swagger", () => {
+    // Rotas que a HomeFin passou fora do swagger, conferidas na API real.
+    // `/fup/list` fica na raiz, sem `/external` (03/11/2026).
+    const foraDoSwagger = new Set(["GET /fup/list"]);
     const invalidas = chamadas.filter((c) => {
+      if (foraDoSwagger.has(`${c.metodo} ${c.endpoint.replace(/\?.*$/, "")}`)) return false;
       const caminho = caminhoDoSwagger(c.endpoint);
       return !caminho || !swagger.paths[caminho][c.metodo.toLowerCase()];
     });
