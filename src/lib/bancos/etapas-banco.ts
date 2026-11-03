@@ -8,8 +8,9 @@
  *   preenchimento dos "Formulários Digitais".
  * - Santander: a Análise Técnica começa pelo "Cadastro das Informações",
  *   antes do "Envio de Documentos".
- * - Bradesco (HomeFin): não tem essa etapa — do crédito vai direto aos
- *   documentos.
+ * - Bradesco: não tem essa etapa — do crédito vai direto aos documentos.
+ *   Até o laudo o andamento volta pela HomeFin; depois, o robô lê o portal do
+ *   BPO do Bradesco (Índice) e grava na mesma régua.
  *
  * O status interno é o mesmo para os dois (`formularios`); só o nome muda.
  * Mapeado nos portais em 24/09/2026. O robô dos portais usa os mesmos nomes
@@ -33,13 +34,16 @@ export function chaveDoBanco(nomeBanco: unknown): ChaveBanco | null {
 }
 
 /**
- * De onde vem o andamento de cada banco: o Bradesco volta pela HomeFin; Itaú
- * e Santander, pelo robô que lê o portal do banco (a HomeFin não move as
- * etapas deles).
+ * De onde vem o andamento de cada banco: Itaú e Santander, pelo robô que lê o
+ * portal do banco (a HomeFin não move as etapas deles); o Bradesco, pela
+ * HomeFin até o laudo e pelo portal do BPO depois; os demais, pela HomeFin.
  */
-export function fonteDoAndamento(nomeBanco: unknown): "homefin" | "portal_banco" {
+export function fonteDoAndamento(
+  nomeBanco: unknown,
+): "homefin" | "portal_banco" | "homefin_e_bpo" {
   const chave = chaveDoBanco(nomeBanco);
-  return chave === "itau" || chave === "santander" ? "portal_banco" : "homefin";
+  if (chave === "itau" || chave === "santander") return "portal_banco";
+  return chave === "bradesco" ? "homefin_e_bpo" : "homefin";
 }
 
 /** Nome da etapa de formulários no portal de cada banco que a tem. */

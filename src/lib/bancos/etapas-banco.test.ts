@@ -26,7 +26,8 @@ describe("Banco da proposta", () => {
   });
 
   it("fonte do andamento: Bradesco pela HomeFin, Itaú e Santander pelo portal", () => {
-    expect(fonteDoAndamento("Bradesco")).toBe("homefin");
+    expect(fonteDoAndamento("Bradesco")).toBe("homefin_e_bpo");
+    expect(fonteDoAndamento("Caixa")).toBe("homefin");
     expect(fonteDoAndamento("Itaú")).toBe("portal_banco");
     expect(fonteDoAndamento("Santander")).toBe("portal_banco");
   });
