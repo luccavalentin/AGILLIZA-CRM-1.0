@@ -30,4 +30,23 @@ describe("Sincronização não desfaz o que a proposta já andou", () => {
     );
     expect(statusSemRetrocederCredito(null, "aguardando_documentos")).toBeNull();
   });
+
+  it("não devolve ao envio a proposta que já andou (PRO-000554, 30/10)", () => {
+    // A HomeFin passou a devolver `tipoSituacao: "L"`, fora do contrato dela.
+    // Sem mapeamento, o derivado vira `enviada_banco` — silêncio, não notícia.
+    expect(statusSemRetrocederCredito("enviada_banco", "aguardando_documentos")).toBe(
+      "aguardando_documentos",
+    );
+    expect(statusSemRetrocederCredito("enviada_banco", "analise_juridica")).toBe(
+      "analise_juridica",
+    );
+    expect(statusSemRetrocederCredito("enviada_banco", "contrato_emitido")).toBe(
+      "contrato_emitido",
+    );
+  });
+
+  it("antes do crédito, enviada_banco continua valendo", () => {
+    expect(statusSemRetrocederCredito("enviada_banco", "em_analise_credito")).toBe("enviada_banco");
+    expect(statusSemRetrocederCredito("enviada_banco", null)).toBe("enviada_banco");
+  });
 });
