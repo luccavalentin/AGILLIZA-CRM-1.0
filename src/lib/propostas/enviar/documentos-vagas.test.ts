@@ -313,8 +313,15 @@ describe("documento nunca fica sem vaga", () => {
     expect(vagaDeReserva(checklist22108, "imovel")).toBeNull();
   });
 
-  it("a vaga de último recurso pega a que tem menos arquivos", () => {
-    expect(vagaQualquer(checklist22108)?.idDocumento).toBe(108986);
+  it("a vaga de último recurso é a Proposta de Financiamento do comprador, nunca a da cônjuge", () => {
+    // Pela vaga mais vazia caía no RG da Tayana (108986), vaga de outra pessoa.
+    expect(vagaQualquer(checklist22108)?.idDocumento).toBe(108981);
+  });
+
+  it("sem vaga de proposta: a do comprador com menos arquivos", () => {
+    const semProposta = checklist22108.filter((v) => v.idDocumento !== 108981);
+    const r = vagaQualquer(semProposta);
+    expect(r?.tipoDocumento).toBe("CO");
   });
 
   it("todas ocupadas neste envio: ainda assim devolve vaga", () => {
