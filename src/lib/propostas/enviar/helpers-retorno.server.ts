@@ -433,6 +433,15 @@ const DEPOIS_DO_CREDITO = new Set<PropostaStatus>([
  *
  * Desfechos continuam valendo: recusa, erro e cancelamento não são "aprovada",
  * então passam direto.
+ *
+ * `enviada_banco` também não passa. Ele não é notícia do banco: é o que sobra
+ * quando a linha tem número de proposta mas NENHUMA situação reconhecível —
+ * o `default` de `statusInternoBanco`. Em 30/10 a HomeFin passou a devolver
+ * `tipoSituacao: "L"` (que não está no contrato dela, só S/P/N/A/R) na
+ * simulação do Bradesco da PRO-000554; como "L" não é mapeado, o derivado caiu
+ * em `enviada_banco` e a proposta voltou de "aguardando_documentos" para
+ * "Enviado p/ aprovação de crédito" — tendo sido aprovada em 24/09. Sem
+ * situação legível, o que a proposta já andou vale mais que o silêncio.
  */
 export function statusSemRetrocederCredito(
   derivado: PropostaStatus | null,
@@ -440,7 +449,8 @@ export function statusSemRetrocederCredito(
 ): PropostaStatus | null {
   const jaAndou = DEPOIS_DO_CREDITO.has(atual as PropostaStatus);
   const soDizAprovado = derivado === "credito_aprovado" || derivado === "credito_condicionado";
-  return jaAndou && soDizAprovado ? (atual as PropostaStatus) : derivado;
+  const semNoticia = derivado === "enviada_banco";
+  return jaAndou && (soDizAprovado || semNoticia) ? (atual as PropostaStatus) : derivado;
 }
 
 /**
