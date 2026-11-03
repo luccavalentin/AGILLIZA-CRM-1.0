@@ -229,12 +229,22 @@ export function vagaDeReserva(itens: any[], categoria: string | null | undefined
  *
  * Só devolve `null` com o checklist vazio — e aí quem chama já avisa que a
  * integração ainda não abriu as vagas.
+ *
+ * A vaga escolhida é a do comprador principal (CO), de preferência a da
+ * Proposta de Financiamento, que é a pasta da operação. Pela vaga mais vazia,
+ * a Matrícula da 22108 ia parar no RG da cônjuge (CC, sem arquivo), que é a
+ * vaga de outra pessoa.
  */
 export function vagaQualquer(itens: any[]): any | null {
   const lista = (itens ?? []).filter((i) => i && i.idDocumento != null);
   if (lista.length === 0) return null;
   const qtd = (i: any) => (Array.isArray(i?.arquivos) ? i.arquivos.length : 0);
-  return [...lista].sort((a, b) => qtd(a) - qtd(b))[0] ?? null;
+  const doPrincipal = lista.filter((i) => String(i?.tipoDocumento ?? "").toUpperCase() === "CO");
+  const daOperacao = doPrincipal.filter((i) =>
+    /proposta|financiamento/.test(normTexto(String(i?.nomeDocumento ?? ""))),
+  );
+  const base = daOperacao.length > 0 ? daOperacao : doPrincipal.length > 0 ? doPrincipal : lista;
+  return [...base].sort((a, b) => qtd(a) - qtd(b))[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------
