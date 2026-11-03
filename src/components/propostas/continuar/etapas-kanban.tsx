@@ -87,7 +87,7 @@ export function EtapasKanban({
   // banco (crédito, formulários) ou a conferência de dados.
   const indiceDocumentos = colunas.findIndex((c) => c.status.includes("aguardando_documentos"));
   const proxima = indiceAtual >= indiceDocumentos ? colunas[indiceAtual + 1] : undefined;
-  const pelaHomefin = fonteDoAndamento(nomeBanco) === "homefin";
+  const fonte = fonteDoAndamento(nomeBanco);
 
   const etapasBanco: EtapaBanco[] = Array.isArray(proposta.etapas_banco)
     ? [...proposta.etapas_banco].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
@@ -125,9 +125,11 @@ export function EtapasKanban({
         <div className="flex items-start gap-2 text-xs text-muted-foreground">
           <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p>
-            {pelaHomefin
+            {fonte === "homefin"
               ? "As etapas voltam do banco pela HomeFin e movem a proposta sozinhas."
-              : `As etapas são lidas no portal do ${nomeBanco ?? "banco"} e movem a proposta sozinhas.`}
+              : fonte === "homefin_e_bpo"
+                ? "Até o laudo, as etapas voltam pela HomeFin; depois, são lidas no portal do BPO do Bradesco. Nos dois casos movem a proposta sozinhas."
+                : `As etapas são lidas no portal do ${nomeBanco ?? "banco"} e movem a proposta sozinhas.`}
             <br />
             {ultima ? `Última consulta ao banco: ${ultima}.` : "Ainda não consultado no banco."}
           </p>
