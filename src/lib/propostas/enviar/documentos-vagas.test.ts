@@ -3,6 +3,7 @@ import { termosDoTipoDocumento } from "@/lib/documentos/tipos-banco";
 import {
   arquivoDoDocumento,
   vagaDeReserva,
+  vagaQualquer,
   categoriaDaVaga,
   vagaAceitaCategoria,
   donoDoDocumento,
@@ -287,5 +288,42 @@ describe("classificação: nada vai para a vaga de outro tipo", () => {
       "3f2a1b9c-Comprovante-de-endereco-IMG_9001.jpg",
     );
     expect(nomeArquivoNaHomefin(doc)).toBe("3f2a1b9c-IMG_9001.jpg");
+  });
+});
+
+/**
+ * Checklist real da oportunidade 22108 (PRO-000192, Bradesco), lido da HomeFin
+ * em 03/11/2026: sete vagas, todas de pessoa. Nenhuma de imóvel — nem IPTU nem
+ * Matrícula, que são as que a HomeFin costuma abrir.
+ */
+const checklist22108 = [
+  { idDocumento: 108981, tipoDocumento: "CO", nomeDocumento: "Proposta de Financiamento Imobiliário", arquivos: [1, 2] },
+  { idDocumento: 108982, tipoDocumento: "CO", nomeDocumento: "Declaração Pessoal de Saúde", arquivos: [1] },
+  { idDocumento: 108983, tipoDocumento: "CO", nomeDocumento: "Cópia legível do RG ou RNE", arquivos: [1] },
+  { idDocumento: 108984, tipoDocumento: "CO", nomeDocumento: "Cópia legível CPF", arquivos: [1] },
+  { idDocumento: 108985, tipoDocumento: "CO", nomeDocumento: "Comprovante de estado civil", arquivos: [1] },
+  { idDocumento: 108986, tipoDocumento: "CC", nomeDocumento: "Cópia legível do RG ou RNE", arquivos: [] },
+  { idDocumento: 108987, tipoDocumento: "CC", nomeDocumento: "Cópia legível CPF", arquivos: [] },
+];
+
+describe("documento nunca fica sem vaga", () => {
+  it("checklist sem vaga de imóvel: a reserva por categoria não acha nada", () => {
+    // É este null que virava "o checklist do banco não tem nenhuma pasta de
+    // Imóvel para este documento" e deixava Matrícula e CVV fora do envio.
+    expect(vagaDeReserva(checklist22108, "imovel")).toBeNull();
+  });
+
+  it("a vaga de último recurso pega a que tem menos arquivos", () => {
+    expect(vagaQualquer(checklist22108)?.idDocumento).toBe(108986);
+  });
+
+  it("todas ocupadas neste envio: ainda assim devolve vaga", () => {
+    const cheias = checklist22108.map((v) => ({ ...v, arquivos: [1] }));
+    expect(vagaQualquer(cheias)).not.toBeNull();
+  });
+
+  it("só o checklist vazio fica sem vaga", () => {
+    expect(vagaQualquer([])).toBeNull();
+    expect(vagaQualquer(null as any)).toBeNull();
   });
 });
