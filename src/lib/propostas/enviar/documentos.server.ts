@@ -39,6 +39,7 @@ import {
   vagaAceitaCategoria,
   vagaCasaComTipo,
   vagaDeReserva,
+  vagaQualquer,
   type SituacaoDocumentoBanco,
 } from "./documentos-vagas";
 import { nomeDoTipoDocumento, termosDoTipoDocumento } from "@/lib/documentos/tipos-banco";
@@ -432,13 +433,17 @@ export async function enviarDocumentosBancoImpl({
       // As contagens de `arquivos` são da leitura feita antes dos uploads: sem
       // tirar as vagas já usadas neste envio, dois documentos sem vaga própria
       // caíam os dois na mesma.
+      const naoUsadas = vagas.filter((v) => !usados.has(String(v?.idDocumento)));
       item =
         melhor?.item ??
-        vagaDeReserva(
-          vagas.filter((v) => !usados.has(String(v?.idDocumento))),
-          doc.categoria,
-        ) ??
-        vagaDeReserva(vagas, doc.categoria);
+        vagaDeReserva(naoUsadas, doc.categoria) ??
+        vagaDeReserva(vagas, doc.categoria) ??
+        // Nem vaga da categoria existe: o documento vai na vaga com menos
+        // arquivos, qualquer uma. A 22108 (PRO-000192) tem 7 vagas e nenhuma
+        // de imóvel, e Matrícula e CVV voltavam com erro. Documento não é
+        // barrado por falta de vaga — o tipo vai no nome do arquivo.
+        vagaQualquer(naoUsadas) ??
+        vagaQualquer(vagas);
     }
     if (!item) {
       const motivo = nomeDono
