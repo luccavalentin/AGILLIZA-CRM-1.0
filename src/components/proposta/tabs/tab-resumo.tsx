@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Send, Loader2, Info, MessageSquareText } from "lucide-react";
-import { semMarcaIntegracao } from "@/lib/texto/sem-marca-integracao";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -542,11 +541,11 @@ function UltimoRetornoBanco({ followups, onVer }: { followups?: any[]; onVer?: (
       <div className="space-y-1.5 px-5 py-4">
         {ultimo.titulo && (
           <p className="break-words text-sm font-semibold text-foreground">
-            {semMarcaIntegracao(ultimo.titulo)}
+            {ultimo.titulo}
           </p>
         )}
         <p className="line-clamp-4 whitespace-pre-line break-words text-sm text-foreground/80">
-          {semMarcaIntegracao(String(ultimo.comentario ?? "").replace(/\n{2,}/g, "\n"))}
+          {String(ultimo.comentario ?? "").replace(/\n{2,}/g, "\n")}
         </p>
         {onVer && (
           <Button variant="link" size="sm" className="h-auto px-0" onClick={onVer}>
