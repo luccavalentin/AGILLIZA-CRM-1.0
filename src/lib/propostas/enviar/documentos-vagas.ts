@@ -216,6 +216,27 @@ export function vagaDeReserva(itens: any[], categoria: string | null | undefined
   return [...lista].sort((a, b) => qtd(a) - qtd(b))[0] ?? null;
 }
 
+/**
+ * Última vaga possível: a que tem menos arquivos, sem olhar categoria.
+ *
+ * O checklist pode não ter NENHUMA vaga da categoria do documento. Na
+ * oportunidade 22108 (PRO-000192) são 7 vagas, todas de pessoa — nenhuma de
+ * imóvel —, e Matrícula e CVV ficavam de fora com "o checklist do banco não
+ * tem nenhuma pasta de Imóvel para este documento". A decisão do Lucca de
+ * 02/10, repetida em 03/11, é que documento NUNCA é barrado por falta de
+ * vaga: a HomeFin empilha arquivos na mesma vaga e o tipo vai no nome do
+ * arquivo (`nomeArquivoNaHomefin`), então o banco acha.
+ *
+ * Só devolve `null` com o checklist vazio — e aí quem chama já avisa que a
+ * integração ainda não abriu as vagas.
+ */
+export function vagaQualquer(itens: any[]): any | null {
+  const lista = (itens ?? []).filter((i) => i && i.idDocumento != null);
+  if (lista.length === 0) return null;
+  const qtd = (i: any) => (Array.isArray(i?.arquivos) ? i.arquivos.length : 0);
+  return [...lista].sort((a, b) => qtd(a) - qtd(b))[0] ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Estado do documento na HomeFin (swagger "Documentos", 09/2026)
 // ---------------------------------------------------------------------------
