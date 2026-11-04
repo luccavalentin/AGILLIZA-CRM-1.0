@@ -155,10 +155,10 @@ export interface ComentarioNews {
 
 const UUID = z.string().uuid("Identificador inválido.");
 const TIPO_ITEM = z.enum(["noticia", "post"], {
-  errorMap: () => ({ message: "Item inválido." }),
+  error: "Item inválido.",
 });
 const PUBLICO = z.enum(["todos", "assinantes", "equipe"], {
-  errorMap: () => ({ message: "Público inválido." }),
+  error: "Público inválido.",
 });
 const DATA_HORA = z
   .string()
@@ -289,7 +289,7 @@ export const curarNoticia = createServerFn({ method: "POST" })
         categoria: z.string().max(60).default(""),
         tempoLeitura: z.union([z.string(), z.number(), z.null()]).optional(),
         fixada: z.boolean(),
-        status: z.enum(STATUS_NOTICIA, { errorMap: () => ({ message: "Situação inválida." }) }),
+        status: z.enum(STATUS_NOTICIA, { error: "Situação inválida." }),
       })
       .parse(d),
   )

@@ -158,8 +158,7 @@ const ID_BANCO = z.string().regex(/^[a-z0-9_-]{2,40}$/, { message: "Banco invál
 const numero = (rotulo: string, max: number) =>
   z
     .number({
-      invalid_type_error: `${rotulo}: informe um número.`,
-      required_error: `${rotulo}: informe um número.`,
+      error: `${rotulo}: informe um número.`,
     })
     .finite()
     .min(0, { message: `${rotulo}: não pode ser negativo.` })

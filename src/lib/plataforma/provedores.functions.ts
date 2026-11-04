@@ -33,7 +33,7 @@ function ambiente(): "producao" | "homologacao" {
 }
 
 const PROVEDOR = z.enum(Object.keys(CATALOGO) as [ProvedorConhecido, ...ProvedorConhecido[]], {
-  errorMap: () => ({ message: "Provedor desconhecido." }),
+  error: "Provedor desconhecido.",
 });
 
 export const listarCredenciais = createServerFn({ method: "GET" })

@@ -56,14 +56,14 @@ export interface SlaSuporte {
 }
 
 const dinheiro = z
-  .number({ invalid_type_error: "Valor inválido." })
+  .number({ error: "Valor inválido." })
   .min(0, "Valor não pode ser negativo.")
   .max(999_999.99, "Valor muito alto.")
   .nullable();
 
 /** Dias de acesso por pagamento: vazio = plano recorrente (mensal/anual), sem venda no site. */
 const DIAS_ACESSO = z
-  .number({ invalid_type_error: "Dias inválidos." })
+  .number({ error: "Dias inválidos." })
   .int("Use dias inteiros.")
   .min(1, "De 1 a 3650 dias.")
   .max(3650, "De 1 a 3650 dias.")
@@ -319,15 +319,15 @@ export const criarPlanoCatalogo = createServerFn({ method: "POST" })
       .object({
         nome: z.string().trim().min(2, "Informe o nome do plano.").max(80),
         publico: z.enum(["corretor", "imobiliaria", "parceiro"], {
-          errorMap: () => ({ message: "Escolha para quem é o plano." }),
+          error: "Escolha para quem é o plano.",
         }),
         descricao: z.string().trim().max(500).nullable(),
         preco: z
-          .number({ invalid_type_error: "Preço inválido." })
+          .number({ error: "Preço inválido." })
           .min(0, "Preço não pode ser negativo.")
           .max(999_999.99, "Preço muito alto."),
         dias_acesso: z
-          .number({ invalid_type_error: "Informe os dias de acesso." })
+          .number({ error: "Informe os dias de acesso." })
           .int("Use dias inteiros.")
           .min(1, "De 1 a 3650 dias.")
           .max(3650, "De 1 a 3650 dias."),

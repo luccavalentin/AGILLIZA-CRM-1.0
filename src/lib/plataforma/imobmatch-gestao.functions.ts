@@ -271,7 +271,7 @@ const PERIODO = z
   .refine((p) => p.de <= p.ate, { message: "O início do período vem antes do fim." });
 
 const dinheiro = z
-  .number({ invalid_type_error: "Valor inválido." })
+  .number({ error: "Valor inválido." })
   .min(0, "Valor não pode ser negativo.")
   .max(999_999.99, "Valor muito alto.");
 
@@ -424,7 +424,7 @@ export const salvarProdutoLojaImobMatch = createServerFn({ method: "POST" })
           .regex(/^([a-z0-9][a-z0-9-]{0,62})?$/, "Plano base inválido.")
           .default(""),
         preco: z
-          .number({ invalid_type_error: "Preço inválido." })
+          .number({ error: "Preço inválido." })
           .positive("O preço da loja precisa ser maior que zero.")
           .max(999_999.99)
           .nullable(),
@@ -460,7 +460,7 @@ export const salvarParametroImobMatch = createServerFn({ method: "POST" })
           .string()
           .regex(/^(imobmatch|patrocinio)\.[a-z0-9_.]{2,60}$/, "Parâmetro inválido."),
         valor: z
-          .number({ invalid_type_error: "Use um número inteiro." })
+          .number({ error: "Use um número inteiro." })
           .int("Use um número inteiro.")
           .min(0, "Não pode ser negativo.")
           .max(1_000_000_000, "Valor alto demais."),

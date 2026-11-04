@@ -145,7 +145,7 @@ export const atenderPedidoTitular = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid({ message: "Pedido inválido." }),
         status: z.enum(STATUS_PEDIDO, {
-          errorMap: () => ({ message: "Situação inválida." }),
+          error: "Situação inválida.",
         }),
         resposta: z.string().trim().max(5000).default(""),
       })

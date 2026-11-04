@@ -56,7 +56,7 @@ export const participanteSchema = z.object({
   data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
   renda: z.number().min(0),
   vinculo: z.string().min(1, "Selecione o vínculo"),
-  sexo: z.enum(["M", "F"], { errorMap: () => ({ message: "Selecione o gênero" }) }),
+  sexo: z.enum(["M", "F"], { error: "Selecione o gênero" }),
   estado_civil: z.string().min(1, "Selecione o estado civil"),
   compoe_renda: z.boolean().default(true),
   // Campos obrigatórios para HomeFin
@@ -158,10 +158,10 @@ export const completaSchema = z
     bancos_ids: z.array(z.string().uuid()).min(1, "Selecione ao menos um banco"),
     // Consentimentos
     consentimento_lgpd: z.literal(true, {
-      errorMap: () => ({ message: "É necessário aceitar o consentimento LGPD" }),
+      error: "É necessário aceitar o consentimento LGPD",
     }),
     consentimento_scr: z.literal(true, {
-      errorMap: () => ({ message: "É necessário autorizar a consulta ao SCR/Bacen" }),
+      error: "É necessário autorizar a consulta ao SCR/Bacen",
     }),
   })
   .refine((d) => (d.tipo_pessoa === "PJ" ? true : Boolean(d.sexo)), {
