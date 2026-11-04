@@ -20,8 +20,7 @@ workflows:
         bundle_identifier: br.com.agillizatech.correspondente
       vars:
         AGILLIZA_CRM_URL: https://crm.agillizatech.com.br/auth
-        # Preencher com o Apple ID numérico do app depois de criá-lo no App Store Connect.
-        APP_STORE_APPLE_ID: 0
+        APP_STORE_APPLE_ID: 6830862876
         VERSAO_NOME: 1.0.0
       node: 22
       xcode: latest
