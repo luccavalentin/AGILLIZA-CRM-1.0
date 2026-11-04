@@ -121,8 +121,8 @@ function acharColuna(cabecalhos: string[], alvos: string[]): string | null {
 }
 
 async function registrosDoArquivo(buf: ArrayBuffer): Promise<Record<string, unknown>[]> {
-  // `xlsx` (~400 kB) só é baixado quando o usuário importa uma planilha.
-  const XLSX = await import("xlsx");
+  // `@e965/xlsx` (~400 kB) só é baixado quando o usuário importa uma planilha.
+  const XLSX = await import("@e965/xlsx");
   const head = new Uint8Array(buf.slice(0, 8));
   const binario = (head[0] === 0xd0 && head[1] === 0xcf) || (head[0] === 0x50 && head[1] === 0x4b);
   if (!binario) {
