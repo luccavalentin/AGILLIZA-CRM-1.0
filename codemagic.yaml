@@ -1,0 +1,67 @@
+# App iOS do Agilliza correspondente pelo Codemagic (Mac na nuvem).
+#
+# Mesmo roteiro do AgillizaTech (CORRETOR 2.0/codemagic.yaml): empacota `app-loja` com o
+# Capacitor, assina para a App Store e envia ao TestFlight. Da lista do TestFlight a versão
+# vai para revisão pelo App Store Connect.
+#
+# Configuração única no Codemagic (nada de chave no repositório): a mesma chave
+# "AgillizaTech ASC" do AgillizaTech e, em Code signing identities, o perfil App Store de
+# br.com.agillizatech.correspondente.
+workflows:
+  ios-agilliza:
+    name: iOS Agilliza → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: AgillizaTech ASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: br.com.agillizatech.correspondente
+      vars:
+        AGILLIZA_CRM_URL: https://crm.agillizatech.com.br/auth
+        # Preencher com o Apple ID numérico do app depois de criá-lo no App Store Connect.
+        APP_STORE_APPLE_ID: 0
+        VERSAO_NOME: 1.0.0
+      node: 22
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events: []
+    scripts:
+      - name: Dependências do app
+        script: |
+          cd app-loja
+          npm ci --no-audit --no-fund
+      - name: Sincronizar o projeto nativo
+        script: |
+          cd app-loja
+          npx cap sync ios
+      - name: Dependências nativas
+        script: |
+          cd app-loja/ios/App
+          pod install
+      - name: Perfis de assinatura
+        script: xcode-project use-profiles
+      - name: Número do build
+        script: |
+          # Sempre maior que o último enviado ao App Store Connect (mínimo 100).
+          ULTIMO=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          TESTFLIGHT=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          [ "$TESTFLIGHT" -gt "$ULTIMO" ] 2>/dev/null && ULTIMO=$TESTFLIGHT
+          NOVO=$((ULTIMO + 1)); [ "$NOVO" -lt 100 ] && NOVO=100
+          echo "NUMERO_BUILD=$NOVO" >> "$CM_ENV"
+          echo "Build número $NOVO"
+      - name: Compilar o IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace app-loja/ios/App/App.xcworkspace \
+            --scheme App \
+            --archive-xcargs "MARKETING_VERSION=$VERSAO_NOME CURRENT_PROJECT_VERSION=$NUMERO_BUILD"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
