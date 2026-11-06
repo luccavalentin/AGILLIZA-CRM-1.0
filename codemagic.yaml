@@ -64,3 +64,41 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+
+  # Vídeo para a revisão da Apple (diretriz 2.1): compila para o iPhone simulado, grava a tela e
+  # percorre o uso típico com o Maestro (roteiro em lojas-video/). Não assina nem envia nada:
+  # o vídeo sai nos artefatos. Login do revisor no grupo seguro "revisor_apple" (Team settings →
+  # Global variables): REVISOR_EMAIL e REVISOR_SENHA.
+  video-agilliza:
+    name: Vídeo Agilliza (revisão Apple)
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      groups:
+        - revisor_apple
+      vars:
+        AGILLIZA_CRM_URL: https://crm.agillizatech.com.br/auth
+      node: 22
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events: []
+    scripts:
+      - name: Dependências do app
+        script: |
+          cd app-loja
+          npm ci --no-audit --no-fund
+      - name: Sincronizar o projeto nativo
+        script: |
+          cd app-loja
+          npx cap sync ios
+      - name: Dependências nativas
+        script: |
+          cd app-loja/ios/App
+          pod install
+      - name: Gravar o vídeo
+        script: |
+          bash scripts/lojas/gravar-video-ios.sh app-loja/ios/App/App.xcworkspace \
+            lojas-video/agilliza.yaml video
+    artifacts:
+      - video/**
