@@ -66,6 +66,28 @@ maestro --device "$UDID" test \
   -e REVISOR_EMAIL="${REVISOR_EMAIL:-}" -e REVISOR_SENHA="${REVISOR_SENHA:-}" \
   --debug-output "$SAIDA/maestro" "$ROTEIRO"
 RESULTADO=$?
+if [ "$RESULTADO" -ne 0 ]; then
+  # Mostra no log os textos que estavam na tela quando o roteiro parou (sem e-mails).
+  echo "== Textos na tela quando o roteiro parou"
+  maestro --device "$UDID" hierarchy 2>/dev/null | python3 -c '
+import json, sys
+vistos = []
+def andar(n):
+    a = n.get("attributes", {}) if isinstance(n, dict) else {}
+    for k in ("accessibilityText", "text", "hintText"):
+        v = (a.get(k) or "").strip()
+        if v and "@" not in v and v not in vistos:
+            vistos.append(v)
+    for f in (n.get("children") or []) if isinstance(n, dict) else []:
+        andar(f)
+try:
+    andar(json.load(sys.stdin))
+except Exception as e:
+    print("sem hierarquia:", e)
+for v in vistos[:120]:
+    print(" |", v[:80])
+' || true
+fi
 set -e
 sleep 2
 kill -INT "$GRAVADOR"

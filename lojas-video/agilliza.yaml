@@ -33,8 +33,15 @@ appId: br.com.agillizatech.correspondente
     direction: DOWN
 
 # Simulações
+- scrollUntilVisible:
+    element: "Abrir menu de navegação"
+    direction: UP
+    optional: true
 - tapOn: "Abrir menu de navegação"
 - tapOn: "Simulações"
+- scrollUntilVisible:
+    element: "Consultar simulações"
+    optional: true
 - tapOn: "Consultar simulações"
 - waitForAnimationToEnd:
     timeout: 5000
@@ -43,11 +50,18 @@ appId: br.com.agillizatech.correspondente
     direction: UP
 
 # Propostas
+- scrollUntilVisible:
+    element: "Abrir menu de navegação"
+    direction: UP
+    optional: true
 - tapOn: "Abrir menu de navegação"
 - scrollUntilVisible:
     element: "Propostas"
     optional: true
 - tapOn: "Propostas"
+- scrollUntilVisible:
+    element: "Consultar propostas"
+    optional: true
 - tapOn: "Consultar propostas"
 - waitForAnimationToEnd:
     timeout: 5000
@@ -56,18 +70,29 @@ appId: br.com.agillizatech.correspondente
     direction: UP
 
 # Clientes
+- scrollUntilVisible:
+    element: "Abrir menu de navegação"
+    direction: UP
+    optional: true
 - tapOn: "Abrir menu de navegação"
 - scrollUntilVisible:
     element: "Clientes"
     direction: UP
     optional: true
 - tapOn: "Clientes"
+- scrollUntilVisible:
+    element: "Consultar clientes"
+    optional: true
 - tapOn: "Consultar clientes"
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 06-clientes
 
 # Chat: denunciar e bloquear
+- scrollUntilVisible:
+    element: "Abrir menu de navegação"
+    direction: UP
+    optional: true
 - tapOn: "Abrir menu de navegação"
 - scrollUntilVisible:
     element: "Chat"
