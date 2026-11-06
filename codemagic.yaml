@@ -102,3 +102,4 @@ workflows:
             lojas-video/agilliza.yaml video
     artifacts:
       - video/**
+      - lojas-video/*.png
