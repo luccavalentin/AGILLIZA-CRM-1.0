@@ -2,6 +2,8 @@
 # Abre o app, entra com a conta do revisor e percorre o uso típico (painel, simulações,
 # propostas, clientes e chat com denúncia/bloqueio). Não cria, altera nem envia nada.
 # Os textos vêm de src/routes/auth.tsx e src/components/app-shell/nav-config.ts.
+# 3ª rodada (08/11): cada tela abre um tour ("1 de 6", Fechar o tour) que cobria o cabeçalho
+# e parou a 2ª rodada; o roteiro fecha o tour e o aviso de cookies antes de seguir.
 appId: br.com.agillizatech.correspondente
 ---
 - launchApp:
@@ -25,6 +27,18 @@ appId: br.com.agillizatech.correspondente
     text: "Pular"
     optional: true
 - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - takeScreenshot: 03-painel
 - swipe:
     direction: UP
@@ -37,7 +51,28 @@ appId: br.com.agillizatech.correspondente
     element: "Abrir menu de navegação"
     direction: UP
     optional: true
+# Espera a rolagem parar e tira o tour da frente antes de abrir o menu.
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - tapOn: "Abrir menu de navegação"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      notVisible: "Menu de navegação"
+    commands:
+      - tapOn: "Abrir menu de navegação"
+      - waitForAnimationToEnd
 - tapOn: "Simulações"
 - scrollUntilVisible:
     element: "Consultar simulações"
@@ -45,6 +80,18 @@ appId: br.com.agillizatech.correspondente
 - tapOn: "Consultar simulações"
 - waitForAnimationToEnd:
     timeout: 5000
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - takeScreenshot: 04-simulacoes
 - swipe:
     direction: UP
@@ -54,7 +101,28 @@ appId: br.com.agillizatech.correspondente
     element: "Abrir menu de navegação"
     direction: UP
     optional: true
+# Espera a rolagem parar e tira o tour da frente antes de abrir o menu.
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - tapOn: "Abrir menu de navegação"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      notVisible: "Menu de navegação"
+    commands:
+      - tapOn: "Abrir menu de navegação"
+      - waitForAnimationToEnd
 - scrollUntilVisible:
     element: "Propostas"
     optional: true
@@ -65,6 +133,18 @@ appId: br.com.agillizatech.correspondente
 - tapOn: "Consultar propostas"
 - waitForAnimationToEnd:
     timeout: 5000
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - takeScreenshot: 05-propostas
 - swipe:
     direction: UP
@@ -74,7 +154,28 @@ appId: br.com.agillizatech.correspondente
     element: "Abrir menu de navegação"
     direction: UP
     optional: true
+# Espera a rolagem parar e tira o tour da frente antes de abrir o menu.
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - tapOn: "Abrir menu de navegação"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      notVisible: "Menu de navegação"
+    commands:
+      - tapOn: "Abrir menu de navegação"
+      - waitForAnimationToEnd
 - scrollUntilVisible:
     element: "Clientes"
     direction: UP
@@ -86,6 +187,18 @@ appId: br.com.agillizatech.correspondente
 - tapOn: "Consultar clientes"
 - waitForAnimationToEnd:
     timeout: 5000
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - takeScreenshot: 06-clientes
 
 # Chat: denunciar e bloquear
@@ -93,21 +206,78 @@ appId: br.com.agillizatech.correspondente
     element: "Abrir menu de navegação"
     direction: UP
     optional: true
+# Espera a rolagem parar e tira o tour da frente antes de abrir o menu.
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - tapOn: "Abrir menu de navegação"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      notVisible: "Menu de navegação"
+    commands:
+      - tapOn: "Abrir menu de navegação"
+      - waitForAnimationToEnd
 - scrollUntilVisible:
     element: "Chat"
     optional: true
 - tapOn: "Chat"
 - waitForAnimationToEnd:
     timeout: 5000
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - takeScreenshot: 07-chat
 - tapOn:
     text: "Mais opções"
     optional: true
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - takeScreenshot: 08-chat-opcoes
 - tapOn:
     text: "Denunciar"
     optional: true
+- runFlow:
+    when:
+      visible: "Fechar o tour"
+    commands:
+      - tapOn: "Fechar o tour"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Entendi"
+    commands:
+      - tapOn: "Entendi"
+      - waitForAnimationToEnd
 - takeScreenshot: 09-denunciar
 - extendedWaitUntil:
     visible: "§pausa§"
