@@ -82,6 +82,8 @@ const COLUNAS: ColunaKanban[] = [
   { destino: "analise_juridica", agrega: ["analise_juridica", "emissao_contrato"] },
   { destino: "contrato_emitido", agrega: ["contrato_emitido"] },
   { destino: "registrado", agrega: ["registrado"] },
+  // Portal do Itaú/Santander cancelou ou recusou: a equipe corrige no banco.
+  { destino: "correcao_banco", agrega: ["correcao_banco"] },
   { destino: "erro_envio", agrega: ["erro_envio"] },
   { destino: "cancelada", agrega: ["cancelada"] },
 ];

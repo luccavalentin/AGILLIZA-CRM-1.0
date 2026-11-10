@@ -11,6 +11,12 @@ function rotuloDoDia(data: Date): string {
 }
 
 /**
+ * O que vem de fora do Agilliza. `portal_banco` é o que o robô leu nos portais
+ * do Itaú, do Santander e do BPO do Bradesco (etapa, apontamento, pendência).
+ */
+const TIPOS_DO_BANCO = new Set(["banco", "homefin_documento", "homefin_fup", "portal_banco"]);
+
+/**
  * Histórico de comentários da proposta em formato de chat: o que sai do
  * Agilliza fica à direita, com quem escreveu; o que vem da integração fica à
  * esquerda, em nome dela. Um separador marca cada dia. Usado na aba FUP e na
@@ -33,15 +39,16 @@ export function HistoricoComentarios({ followups }: { followups: any[] }) {
         const quando = new Date(f.created_at);
         const anterior = i > 0 ? new Date(ordenados[i - 1].created_at) : null;
         const novoDia = !anterior || anterior.toDateString() !== quando.toDateString();
-        const nosso =
-          f.tipo !== "banco" && f.tipo !== "homefin_documento" && f.tipo !== "homefin_fup";
+        const nosso = !TIPOS_DO_BANCO.has(f.tipo);
         const autor = nosso
           ? `Agilliza · ${f.autor_nome ?? "operador"}`
           : f.tipo === "homefin_documento"
             ? "HomeFin · análise de documento"
             : f.tipo === "homefin_fup"
               ? "HomeFin · follow-up"
-              : "HomeFin · integração";
+              : f.tipo === "portal_banco"
+                ? "Portal do banco"
+                : "HomeFin · integração";
         return (
           <div key={f.id} className="flex flex-col gap-2.5">
             {novoDia && (

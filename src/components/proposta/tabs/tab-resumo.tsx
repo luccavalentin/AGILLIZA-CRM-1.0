@@ -516,7 +516,8 @@ export function TabResumo({
  */
 function UltimoRetornoBanco({ followups, onVer }: { followups?: any[]; onVer?: () => void }) {
   const ultimo = (followups ?? [])
-    .filter((f) => f?.tipo === "homefin_fup")
+    // FUP da integração e o que o robô leu no portal do Itaú, Santander ou BPO.
+    .filter((f) => f?.tipo === "homefin_fup" || f?.tipo === "portal_banco")
     .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))[0];
   if (!ultimo) return null;
   const quando = new Date(ultimo.created_at).toLocaleString("pt-BR", {
