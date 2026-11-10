@@ -44,6 +44,8 @@ const MAPA: Record<PropostaStatus, StepperCodigo> = {
   aguardando_envio: "simulacao",
   erro_envio: "simulacao",
   cancelada: "simulacao",
+  // O stepper mostra um aviso próprio; aqui só precisa de uma etapa válida.
+  correcao_banco: "credito",
   // Tudo que é crédito ocupa a etapa Crédito, como no provedor: enviado, em
   // análise, aprovado, condicionado e recusado.
   enviada_banco: "credito",

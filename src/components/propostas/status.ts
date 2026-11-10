@@ -20,6 +20,7 @@ export const STATUS_PROPOSTA: Record<PropostaStatus, { tone: Tone; label: string
   credito_recusado: { tone: "danger", label: "Crédito recusado" },
   erro_envio: { tone: "danger", label: "Erro no envio" },
   cancelada: { tone: "danger", label: "Cancelada" },
+  correcao_banco: { tone: "danger", label: "Correção no portal do banco" },
   // Legados granulares (mantidos p/ compatibilidade com dados/relatórios antigos).
   checklist_documentacao: { tone: "info", label: "Coleta de documentos" },
   cadastro_complementar: { tone: "info", label: "Coleta de documentos" },

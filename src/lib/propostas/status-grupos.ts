@@ -49,6 +49,7 @@ const TODOS_OS_STATUS: PropostaStatus[] = [
   "engenharia_vistoria",
   "analise_juridica",
   "registrado",
+  "correcao_banco",
 ];
 
 /** Mapa status -> grupo. Retorna null para status que não se encaixam. */
@@ -76,6 +77,8 @@ export function grupoDoStatus(status: string | null | undefined): GrupoProposta 
     case "engenharia_vistoria":
     case "analise_juridica":
     case "registrado":
+    // Crédito saiu; o portal do banco pede correção para a proposta seguir.
+    case "correcao_banco":
       return "aprovadas";
     // Recusadas pelo banco.
     case "credito_recusado":

@@ -44,6 +44,9 @@ export type PropostaStatus =
   | "erro_envio"
   | "aguardando_envio"
   | "cancelada"
+  // Portal do Itaú/Santander mostrou a proposta cancelada ou recusada: a
+  // equipe corrige no banco e devolve a proposta à etapa em que estava.
+  | "correcao_banco"
   // Status legados (mantidos para compatibilidade com dados/relatórios antigos).
   | "aguardando_documentos"
   | "engenharia_vistoria"
@@ -64,7 +67,7 @@ export const TRANSICOES: Record<PropostaStatus, PropostaStatus[]> = {
     "cancelada",
   ],
   em_analise_credito: ["credito_aprovado", "credito_condicionado", "credito_recusado", "cancelada"],
-  credito_aprovado: ["formularios", "aguardando_documentos", "engenharia_vistoria", "cancelada"],
+  credito_aprovado: ["formularios", "aguardando_documentos", "engenharia_vistoria", "correcao_banco", "cancelada"],
   // O condicionado segue para documentos como a aprovação plena, mas também
   // pode virar aprovação (condições cumpridas) ou recusa (não cumpridas).
   credito_condicionado: [
@@ -73,17 +76,31 @@ export const TRANSICOES: Record<PropostaStatus, PropostaStatus[]> = {
     "aguardando_documentos",
     "engenharia_vistoria",
     "credito_recusado",
+    "correcao_banco",
     "cancelada",
   ],
-  aguardando_documentos: ["engenharia_vistoria", "cancelada"],
-  engenharia_vistoria: ["analise_juridica", "cancelada"],
-  analise_juridica: ["contrato_emitido", "cancelada"],
+  aguardando_documentos: ["engenharia_vistoria", "correcao_banco", "cancelada"],
+  engenharia_vistoria: ["analise_juridica", "correcao_banco", "cancelada"],
+  analise_juridica: ["contrato_emitido", "correcao_banco", "cancelada"],
   // Registro é a última etapa do provedor e fecha o ciclo aqui também.
   contrato_emitido: ["registrado"],
   // Formulários do banco (Itaú/Santander) -> documentos.
-  formularios: ["aguardando_documentos", "cancelada"],
+  formularios: ["aguardando_documentos", "correcao_banco", "cancelada"],
   credito_recusado: [],
   cancelada: [],
+  // Corrigido no banco: volta à etapa em que o portal estiver. O robô dos
+  // portais também tira daqui quando o banco volta a andar.
+  correcao_banco: [
+    "credito_aprovado",
+    "credito_condicionado",
+    "formularios",
+    "aguardando_documentos",
+    "engenharia_vistoria",
+    "analise_juridica",
+    "contrato_emitido",
+    "credito_recusado",
+    "cancelada",
+  ],
   // Legados granulares -> encaminham para o fluxo novo simplificado.
   checklist_documentacao: ["aguardando_documentos", "cancelada"],
   cadastro_complementar: ["aguardando_documentos", "cancelada"],

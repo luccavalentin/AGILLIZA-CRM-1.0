@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Check, Ban } from "lucide-react";
+import { Check, Ban, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SituacaoDocumentacao } from "@/lib/propostas/documentacao-status";
 import { DocumentacaoProposta } from "./documentacao-proposta";
@@ -49,6 +49,28 @@ export function PipelineStepper({
         centralizado={centralizado}
       />
     ) : null;
+
+  if (status === "correcao_banco") {
+    // O portal do Itaú/Santander cancelou ou recusou: o detalhe traz a frase
+    // do portal ("Cancelada (etapa Análise de Crédito)").
+    return (
+      <div className="flex w-full items-center gap-3 rounded-2xl border border-destructive/25 bg-destructive/5 px-4 py-3.5">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-destructive/10 text-destructive">
+          <AlertTriangle className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-destructive">
+            Correção no portal do banco: corrija lá para a proposta seguir
+          </p>
+          {detalheStatus && (
+            <p className="mt-0.5 break-words text-xs text-muted-foreground">
+              Portal do banco: {detalheStatus}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (status === "cancelada") {
     return (
